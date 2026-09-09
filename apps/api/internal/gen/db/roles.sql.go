@@ -179,6 +179,36 @@ func (q *Queries) ListRolesForUser(ctx context.Context, userID uuid.UUID) ([]Lis
 	return items, nil
 }
 
+const listSystemRoles = `-- name: ListSystemRoles :many
+select id, tenant_id, slug from roles where tenant_id = $1 and is_system = true
+`
+
+type ListSystemRolesRow struct {
+	ID       uuid.UUID `json:"id"`
+	TenantID uuid.UUID `json:"tenant_id"`
+	Slug     string    `json:"slug"`
+}
+
+func (q *Queries) ListSystemRoles(ctx context.Context, tenantID uuid.UUID) ([]ListSystemRolesRow, error) {
+	rows, err := q.db.Query(ctx, listSystemRoles, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListSystemRolesRow{}
+	for rows.Next() {
+		var i ListSystemRolesRow
+		if err := rows.Scan(&i.ID, &i.TenantID, &i.Slug); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const upsertPermission = `-- name: UpsertPermission :exec
 insert into permissions (code, group_name, description)
 values ($1, $2, $3)

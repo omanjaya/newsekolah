@@ -22,40 +22,11 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/telemetry"
 )
 
-// roleSlug names the seven system roles carried over from
-// docs/analysis/backend-inventory.md section 1.2, plus librarian for the
-// library module (docs/analysis/backend-inventory.md section 7).
-type roleSeed struct {
-	slug        string
-	name        string
-	permissions []string
-}
+// System roles and their default permissions come from authz.RoleDefaults so
+// seed and cmd/migrate never disagree.
+type roleSeed = authz.RoleDefault
 
-var systemRoles = []roleSeed{
-	{"super_admin", "Super Admin", authz.Codes()},
-	{"admin", "Admin Sekolah", filterOut(authz.Codes(), authz.PermManagePermissions)},
-	{"teacher", "Guru", []string{
-		authz.PermViewDashboard, authz.PermViewAnnouncements, authz.PermViewSchedules,
-		authz.PermViewAttendance, authz.PermManageAttendance, authz.PermViewNotifications,
-		authz.PermManageGrades, authz.PermViewLibrary,
-	}},
-	{"staff", "Pegawai", []string{
-		authz.PermViewDashboard, authz.PermViewAnnouncements, authz.PermViewNotifications, authz.PermViewLibrary,
-	}},
-	{"student", "Siswa", []string{
-		authz.PermViewDashboard, authz.PermViewAnnouncements, authz.PermViewNotifications,
-		authz.PermViewOwnGrades, authz.PermSubmitLeaveRequests, authz.PermViewAttendance, authz.PermViewLibrary,
-	}},
-	{"parent", "Orang Tua", []string{
-		authz.PermViewDashboard, authz.PermViewAnnouncements, authz.PermViewNotifications,
-		authz.PermViewChildAttendance, authz.PermViewChildGrades,
-	}},
-	{"librarian", "Pustakawan", []string{
-		authz.PermViewDashboard, authz.PermViewNotifications, authz.PermViewLibrary,
-		authz.PermManageLibraryCatalog, authz.PermManageLibraryCirculation,
-		authz.PermManageLibraryMembers, authz.PermManageLibrarySettings, authz.PermViewLibraryReports,
-	}},
-}
+var systemRoles = authz.RoleDefaults()
 
 type dutySeed struct {
 	slug        string
@@ -156,17 +127,17 @@ func seedRoles(ctx context.Context, q *db.Queries, tenantID uuid.UUID) (map[stri
 	ids := make(map[string]uuid.UUID, len(systemRoles))
 	for _, rs := range systemRoles {
 		role, err := q.CreateRole(ctx, db.CreateRoleParams{
-			TenantID: tenantID, Slug: rs.slug, Name: rs.name, IsSystem: true,
+			TenantID: tenantID, Slug: rs.Slug, Name: rs.Name, IsSystem: true,
 		})
 		if err != nil {
-			return nil, fmt.Errorf("create role %s: %w", rs.slug, err)
+			return nil, fmt.Errorf("create role %s: %w", rs.Slug, err)
 		}
-		for _, code := range rs.permissions {
+		for _, code := range rs.Permissions {
 			if err := q.AddRolePermission(ctx, db.AddRolePermissionParams{RoleID: role.ID, PermissionCode: code, TenantID: tenantID}); err != nil {
-				return nil, fmt.Errorf("grant %s to %s: %w", code, rs.slug, err)
+				return nil, fmt.Errorf("grant %s to %s: %w", code, rs.Slug, err)
 			}
 		}
-		ids[rs.slug] = role.ID
+		ids[rs.Slug] = role.ID
 	}
 	return ids, nil
 }
@@ -253,12 +224,3 @@ func seedUsers(ctx context.Context, q *db.Queries, tenantID uuid.UUID, roleIDs m
 	return nil
 }
 
-func filterOut(codes []string, exclude string) []string {
-	out := make([]string, 0, len(codes))
-	for _, c := range codes {
-		if c != exclude {
-			out = append(out, c)
-		}
-	}
-	return out
-}

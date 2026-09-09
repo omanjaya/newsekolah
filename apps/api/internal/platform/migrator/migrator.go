@@ -17,6 +17,7 @@ import (
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/db"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/authz"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
 	migrationsfs "github.com/omanjaya/newsekolah/apps/api/migrations"
 )
 
@@ -66,6 +67,44 @@ func PostUp(ctx context.Context, pool *pgxpool.Pool) error {
 			Code: p.Code, GroupName: p.Group, Description: p.Description,
 		}); err != nil {
 			return fmt.Errorf("upsert permission %s: %w", p.Code, err)
+		}
+	}
+	return syncSystemRoleDefaults(ctx, pool)
+}
+
+// syncSystemRoleDefaults grants every system role the permissions its
+// default set gained since the tenant was created. It only ever adds rows,
+// so an admin's customisations (granted or revoked) survive each deploy.
+func syncSystemRoleDefaults(ctx context.Context, pool *pgxpool.Pool) error {
+	tenantIDs, err := db.New(pool).ListTenantIDs(ctx)
+	if err != nil {
+		return fmt.Errorf("list tenants: %w", err)
+	}
+	defaults := map[string][]string{}
+	for _, rd := range authz.RoleDefaults() {
+		defaults[rd.Slug] = rd.Permissions
+	}
+	for _, tenantID := range tenantIDs {
+		err := database.WithTenantTx(ctx, pool, tenantID, func(ctx context.Context) error {
+			tx, _ := database.TxFromContext(ctx)
+			q := db.New(tx)
+			roles, err := q.ListSystemRoles(ctx, tenantID)
+			if err != nil {
+				return err
+			}
+			for _, role := range roles {
+				for _, code := range defaults[role.Slug] {
+					if err := q.AddRolePermission(ctx, db.AddRolePermissionParams{
+						RoleID: role.ID, PermissionCode: code, TenantID: tenantID,
+					}); err != nil {
+						return fmt.Errorf("grant %s to %s: %w", code, role.Slug, err)
+					}
+				}
+			}
+			return nil
+		})
+		if err != nil {
+			return fmt.Errorf("sync roles for tenant %s: %w", tenantID, err)
 		}
 	}
 	return nil

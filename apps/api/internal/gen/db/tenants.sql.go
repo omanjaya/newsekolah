@@ -152,6 +152,30 @@ func (q *Queries) GetTenantBySlug(ctx context.Context, slug string) (Tenant, err
 	return i, err
 }
 
+const listTenantIDs = `-- name: ListTenantIDs :many
+select id from tenants where status <> 'deleted' order by created_at
+`
+
+func (q *Queries) ListTenantIDs(ctx context.Context) ([]uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, listTenantIDs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []uuid.UUID{}
+	for rows.Next() {
+		var id uuid.UUID
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const searchTenants = `-- name: SearchTenants :many
 select id, slug, name, education_level, timezone, locale, status, plan, primary_domain, created_at, updated_at from tenants where name ilike $1 or slug ilike $1 order by name limit 20
 `

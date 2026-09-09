@@ -20,3 +20,6 @@ returning *;
 
 -- name: SearchTenants :many
 select * from tenants where name ilike $1 or slug ilike $1 order by name limit 20;
+
+-- name: ListTenantIDs :many
+select id from tenants where status <> 'deleted' order by created_at;

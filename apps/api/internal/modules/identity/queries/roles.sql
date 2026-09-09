@@ -30,3 +30,6 @@ on conflict do nothing;
 insert into permissions (code, group_name, description)
 values ($1, $2, $3)
 on conflict (code) do update set group_name = excluded.group_name, description = excluded.description;
+
+-- name: ListSystemRoles :many
+select id, tenant_id, slug from roles where tenant_id = $1 and is_system = true;
