@@ -186,3 +186,26 @@ func toAcademicYear(row db.AcademicYear) domain.AcademicYear {
 		IsActive: row.IsActive,
 	}
 }
+
+// SetupCounts answers the onboarding checklist in one round trip.
+func (r *Repository) SetupCounts(ctx context.Context, tenantID uuid.UUID, yearID uuid.NullUUID) (service.SetupCounts, error) {
+	row, err := r.queries(ctx).SetupCounts(ctx, db.SetupCountsParams{TenantID: tenantID, YearID: pdatabase.NullUUID(yearID)})
+	if err != nil {
+		return service.SetupCounts{}, fmt.Errorf("setup counts: %w", err)
+	}
+	return service.SetupCounts{
+		AcademicYears: int(row.AcademicYears), Terms: int(row.Terms), GradeLevels: int(row.GradeLevels), Classes: int(row.Classes),
+		Subjects: int(row.Subjects), PeriodTemplates: int(row.PeriodTemplates), Periods: int(row.Periods), SchoolDays: int(row.SchoolDays),
+		Teachers: int(row.Teachers), Students: int(row.Students), Enrollments: int(row.Enrollments),
+		TeachingAssignments: int(row.TeachingAssignments), Schedules: int(row.Schedules), DutyAssignments: int(row.DutyAssignments),
+	}, nil
+}
+
+func (r *Repository) UpdateTenantProfile(ctx context.Context, tenantID uuid.UUID, name, educationLevel, timezone, locale string) error {
+	if _, err := r.queries(ctx).UpdateTenantProfile(ctx, db.UpdateTenantProfileParams{
+		ID: tenantID, Name: name, EducationLevel: educationLevel, Timezone: timezone, Locale: locale,
+	}); err != nil {
+		return fmt.Errorf("update tenant profile: %w", err)
+	}
+	return nil
+}

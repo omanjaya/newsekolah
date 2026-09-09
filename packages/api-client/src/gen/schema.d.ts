@@ -3140,6 +3140,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/tenant/setup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** What the school still has to configure before it can operate */
+        get: operations["getSetupChecklist"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tenant/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** The school's name, level, timezone and default language */
+        put: operations["updateSchoolProfile"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -4680,6 +4714,27 @@ export interface components {
             topic: string;
             activities: string;
             reflection?: string;
+        };
+        SetupStep: {
+            key: string;
+            done: boolean;
+            count: number;
+            required: boolean;
+        };
+        SetupChecklist: {
+            steps: components["schemas"]["SetupStep"][];
+            required_done: number;
+            required_total: number;
+            ready_to_operate: boolean;
+            active_year_label?: string;
+        };
+        SchoolProfileWrite: {
+            name: string;
+            /** @enum {string} */
+            education_level: "sd" | "smp" | "sma" | "smk" | "other";
+            timezone: string;
+            /** @enum {string} */
+            locale: "id" | "en";
         };
         TenantSummary: {
             /** Format: uuid */
@@ -11211,6 +11266,53 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+        };
+    };
+    getSetupChecklist: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Checklist */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SetupChecklist"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    updateSchoolProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SchoolProfileWrite"];
+            };
+        };
+        responses: {
+            /** @description Saved */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
         };
     };
 }

@@ -575,6 +575,10 @@ type Querier interface {
 	SetMfaRecoveryCodes(ctx context.Context, arg SetMfaRecoveryCodesParams) error
 	SetUserAvatarAsset(ctx context.Context, arg SetUserAvatarAssetParams) error
 	SetUserStatus(ctx context.Context, arg SetUserStatusParams) error
+	// One round trip for the onboarding checklist: how much of the school's
+	// master data exists. Every count is scoped to the active academic year
+	// where the table has one.
+	SetupCounts(ctx context.Context, arg SetupCountsParams) (SetupCountsRow, error)
 	SoftDeleteDutyType(ctx context.Context, arg SoftDeleteDutyTypeParams) error
 	StarBalance(ctx context.Context, arg StarBalanceParams) (int32, error)
 	SubmitAttendanceSession(ctx context.Context, arg SubmitAttendanceSessionParams) (AttendanceSession, error)
@@ -593,6 +597,7 @@ type Querier interface {
 	UpdateOwnProfile(ctx context.Context, arg UpdateOwnProfileParams) error
 	UpdateRole(ctx context.Context, arg UpdateRoleParams) error
 	UpdateSchedule(ctx context.Context, arg UpdateScheduleParams) (Schedule, error)
+	UpdateTenantProfile(ctx context.Context, arg UpdateTenantProfileParams) (Tenant, error)
 	UpdateUserBasic(ctx context.Context, arg UpdateUserBasicParams) error
 	UpdateUserLastLogin(ctx context.Context, arg UpdateUserLastLoginParams) error
 	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error

@@ -21,6 +21,7 @@ import (
 // platform/tenant.Loader (this module owns tenant resolution reads).
 type Repository interface {
 	tenant.Loader
+	SetupReader
 
 	GetTenantByID(ctx context.Context, id uuid.UUID) (tenant.Tenant, error)
 	GetPlatformSetting(ctx context.Context, key string) (string, bool, error)

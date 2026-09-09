@@ -50,8 +50,64 @@ paths:
                       $ref: "#/components/schemas/TenantSummary"
         "400":
           $ref: "#/components/responses/BadRequest"
+  /v1/tenant/setup:
+    get:
+      tags: [tenant]
+      operationId: getSetupChecklist
+      x-permission: manage_settings
+      summary: What the school still has to configure before it can operate
+      responses:
+        "200":
+          description: Checklist
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SetupChecklist" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/tenant/profile:
+    put:
+      tags: [tenant]
+      operationId: updateSchoolProfile
+      x-permission: manage_settings
+      summary: The school's name, level, timezone and default language
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SchoolProfileWrite" }
+      responses:
+        "204": { description: Saved }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
 components:
   schemas:
+    SetupStep:
+      type: object
+      required: [key, done, count, required]
+      properties:
+        key: { type: string }
+        done: { type: boolean }
+        count: { type: integer }
+        required: { type: boolean }
+    SetupChecklist:
+      type: object
+      required: [steps, required_done, required_total, ready_to_operate]
+      properties:
+        steps: { type: array, items: { $ref: "#/components/schemas/SetupStep" } }
+        required_done: { type: integer }
+        required_total: { type: integer }
+        ready_to_operate: { type: boolean }
+        active_year_label: { type: string }
+    SchoolProfileWrite:
+      type: object
+      required: [name, education_level, timezone, locale]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 150 }
+        education_level: { type: string, enum: [sd, smp, sma, smk, other] }
+        timezone: { type: string, maxLength: 60 }
+        locale: { type: string, enum: [id, en] }
     TenantSummary:
       type: object
       required:
