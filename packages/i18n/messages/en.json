@@ -163,6 +163,12 @@
         "modules": "Modules"
       }
     },
+    "platform": {
+      "label": "Platform",
+      "items": {
+        "tenants": "Schools"
+      }
+    },
     "compact": {
       "attendance": "Attendance",
       "permits": "Permits",

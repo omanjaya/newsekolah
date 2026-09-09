@@ -24,6 +24,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/notifications"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/permits"
 	permitsservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/service"
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/platform"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/reports"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/school"
@@ -147,6 +148,15 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		Pool: pool, Notifier: wiring.AnnouncementNotifier{Svc: notificationsModule.Service}, Clock: clock.Real{}, Logger: logger,
 	})
 
+	platformDeps := platform.Dependencies{
+		Pool: pool, Admin: wiring.PlatformIdentity{Identity: identityModule.Service}, Jobs: jobInserter,
+		Clock: clock.Real{}, Mode: cfg.TenancyMode, Bucket: cfg.S3Bucket,
+	}
+	if sharedStorage != nil {
+		platformDeps.Storage = wiring.PlatformStorage{Client: sharedStorage}
+	}
+	platformModule := platform.Register(platformDeps)
+
 	var (
 		workers  *river.Workers
 		periodic []*river.PeriodicJob
@@ -161,6 +171,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		periodic = append(periodic, notificationPeriodic...)
 		periodic = append(periodic, announcementsModule.RegisterJobs(workers)...)
 		periodic = append(periodic, reportsModule.RegisterJobs(workers, wiring.ReportsEmailSender{Email: senders.Email}, logger)...)
+		platformModule.RegisterJobs(workers)
 	}
 	riverClient, err := jobs.NewClient(pool, workers, logger, periodic...)
 	if err != nil {
@@ -197,6 +208,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		GradingHandler:       gradingModule.Handler,
 		ReportsHandler:       reportsModule.Handler,
 		FamilyHandler:        familyModule.Handler,
+		PlatformHandler:      platformModule.Handler,
 		healthHandler:        &healthHandler{version: version, pool: pool, redis: redisClient},
 	}
 

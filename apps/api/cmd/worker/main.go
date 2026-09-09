@@ -10,16 +10,19 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/announcements"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/notifications"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/permits"
 	permitsservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/service"
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/platform"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/school"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/config"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/jobs"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/storage"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/telemetry"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/tenant"
 	"github.com/omanjaya/newsekolah/apps/api/internal/wiring"
@@ -71,6 +74,17 @@ func run(logger *slog.Logger) error {
 	})
 	periodic = append(periodic, announcementsModule.RegisterJobs(workers)...)
 
+	// The export job has no dependency on identity: RunExport only reads
+	// tenant tables and writes to object storage, so this process never
+	// needs an IdentityProvisioner (only cmd/api's synchronous
+	// CreatePlatformTenant call does).
+	platformDeps := platform.Dependencies{Pool: pool, Clock: clock.Real{}, Mode: cfg.TenancyMode, Bucket: cfg.S3Bucket}
+	if s3 := workerStorageClientFor(cfg, logger); s3 != nil {
+		platformDeps.Storage = wiring.PlatformStorage{Client: s3}
+	}
+	platformModule := platform.Register(platformDeps)
+	platformModule.RegisterJobs(workers)
+
 	client, err := jobs.NewClient(pool, workers, logger, periodic...)
 	if err != nil {
 		return err
@@ -84,6 +98,29 @@ func run(logger *slog.Logger) error {
 	<-ctx.Done()
 	logger.Info("worker stopping")
 	return client.Stop(context.Background())
+}
+
+// workerStorageClientFor mirrors cmd/api/wire.go's storageClientFor: a dev
+// box without S3 configured just runs with exports disabled instead of
+// failing to start.
+func workerStorageClientFor(cfg config.Config, logger *slog.Logger) permitsservice.Storage {
+	if cfg.S3Endpoint == "" || cfg.S3Bucket == "" {
+		logger.Warn("S3 not configured; tenant exports disabled")
+		return nil
+	}
+	client, err := storage.NewClient(storage.Config{
+		Endpoint: cfg.S3Endpoint, Bucket: cfg.S3Bucket, AccessKey: cfg.S3AccessKey, SecretKey: cfg.S3SecretKey, UseSSL: cfg.S3UseSSL,
+	})
+	if err != nil {
+		logger.Warn("S3 client init failed; tenant exports disabled", "error", err)
+		return nil
+	}
+	ensureCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := client.EnsureBucket(ensureCtx); err != nil {
+		logger.Warn("S3 bucket not reachable; tenant exports may fail", "bucket", cfg.S3Bucket, "error", err)
+	}
+	return client
 }
 
 func tenantModeFor(cfg config.Config) tenant.Mode {

@@ -2,6 +2,7 @@ import { domainIcons } from "@newsekolah/ui";
 import type { LucideIcon } from "lucide-react";
 import {
   Bell,
+  Building2,
   ClipboardList,
   FileSpreadsheet,
   ListChecks,
@@ -43,6 +44,7 @@ const GROUP = {
   communication: "nav.communication.label",
   schoolData: "nav.schoolData.label",
   settings: "nav.settings.label",
+  platform: "nav.platform.label",
 } as const;
 
 /**
@@ -276,6 +278,15 @@ export const navigation: NavItem[] = [
     icon: UserRound,
     showInTabBar: true,
     group: GROUP.settings,
+  },
+
+  {
+    key: "platform-tenants",
+    labelKey: "nav.platform.items.tenants",
+    href: "/platform",
+    icon: Building2,
+    permission: "platform_superadmin",
+    group: GROUP.platform,
   },
 ];
 

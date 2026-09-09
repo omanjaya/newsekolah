@@ -863,6 +863,16 @@ type TenantDomain struct {
 	CreatedAt         pgtype.Timestamptz `json:"created_at"`
 }
 
+type TenantExport struct {
+	ID           uuid.UUID          `json:"id"`
+	TenantID     uuid.UUID          `json:"tenant_id"`
+	Status       string             `json:"status"`
+	ObjectKey    string             `json:"object_key"`
+	ErrorMessage string             `json:"error_message"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	CompletedAt  pgtype.Timestamptz `json:"completed_at"`
+}
+
 type TenantPolicy struct {
 	TenantID      uuid.UUID          `json:"tenant_id"`
 	Kind          string             `json:"kind"`

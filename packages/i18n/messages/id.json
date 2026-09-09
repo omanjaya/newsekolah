@@ -163,6 +163,12 @@
         "modules": "Modul"
       }
     },
+    "platform": {
+      "label": "Platform",
+      "items": {
+        "tenants": "Sekolah"
+      }
+    },
     "compact": {
       "attendance": "Presensi",
       "permits": "Izin",

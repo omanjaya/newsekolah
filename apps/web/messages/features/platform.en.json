@@ -1,0 +1,88 @@
+{
+  "tenants": {
+    "eyebrow": "Platform",
+    "title": "Platform Console",
+    "subtitle": "Manage every school on this multi-tenant deployment.",
+    "add": "Add school",
+    "columns": {
+      "name": "School",
+      "level": "Level",
+      "status": "Status",
+      "users": "Users",
+      "activeYear": "Active academic year",
+      "lastActivity": "Last activity",
+      "actions": "Actions"
+    },
+    "status": {
+      "trial": "Trial",
+      "active": "Active",
+      "suspended": "Suspended",
+      "offboarding": "Offboarding"
+    },
+    "level": {
+      "sd": "Elementary",
+      "smp": "Junior high",
+      "sma": "Senior high",
+      "smk": "Vocational"
+    },
+    "never": "Never",
+    "emptyTitle": "No schools yet",
+    "emptyBody": "Schools you create will show up here.",
+    "viewDetail": "View detail",
+    "suspend": "Suspend",
+    "resume": "Resume",
+    "suspended": "School suspended",
+    "resumed": "School resumed",
+    "create": {
+      "title": "Add a new school",
+      "slug": "Slug",
+      "slugHint": "Lowercase letters, digits and hyphens, e.g. sman-1-denpasar",
+      "name": "School name",
+      "level": "Level",
+      "timezone": "Timezone",
+      "adminSectionTitle": "First administrator",
+      "adminUsername": "Username",
+      "adminEmail": "Email (optional)",
+      "adminName": "Full name",
+      "submit": "Create school",
+      "cancel": "Cancel",
+      "created": "School created"
+    },
+    "created": {
+      "title": "School created",
+      "body": "Give the following credentials to the school's administrator. This password is shown once and cannot be retrieved again.",
+      "username": "Username",
+      "password": "Password",
+      "done": "Done"
+    },
+    "detail": {
+      "title": "School detail",
+      "domainTitle": "Custom domain",
+      "domainPlaceholder": "school.example.sch.id",
+      "domainSave": "Save domain",
+      "domainSaved": "Domain updated",
+      "domainNone": "Not set",
+      "flagsTitle": "Active modules",
+      "modules": {
+        "library": "Library",
+        "discipline": "Discipline",
+        "grading": "Grading",
+        "permits": "Permits",
+        "announcements": "Announcements",
+        "reports": "Reports"
+      },
+      "flagUpdated": "Module updated",
+      "exportTitle": "Export school data",
+      "exportBody": "Builds a ZIP with this school's core data (users, academic years, classes) as CSV.",
+      "exportButton": "Start export",
+      "exportStatus": {
+        "pending": "Queued",
+        "running": "Running",
+        "done": "Done",
+        "failed": "Failed"
+      },
+      "exportDownload": "Download file",
+      "storageBucket": "Storage bucket"
+    }
+  }
+}

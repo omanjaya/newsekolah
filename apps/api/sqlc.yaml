@@ -13,6 +13,7 @@ sql:
       - "internal/modules/discipline/queries"
       - "internal/modules/grading/queries"
       - "internal/modules/reports/queries"
+      - "internal/modules/platform/queries"
     schema: "migrations"
     gen:
       go:
