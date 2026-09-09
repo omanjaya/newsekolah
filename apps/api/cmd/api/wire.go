@@ -23,6 +23,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/notifications"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/permits"
 	permitsservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/service"
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/reports"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/school"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/auth"
@@ -149,6 +150,14 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	jobInserter.client = riverClient
 	bg := &background{jobs: riverClient, runWorkers: cfg.WorkerInline, logger: logger}
 
+	reportsModule := reports.Register(reports.Dependencies{
+		Attendance: wiring.AttendanceReports{Svc: attendanceModule.Service},
+		Discipline: wiring.DisciplineReports{Svc: disciplineModule.Service, Directory: wiring.IdentityNames{Svc: identityModule.Service}},
+		Grading:    wiring.GradingReports{Svc: gradingModule.Service},
+		Permits:    wiring.PermitsReports{Svc: permitsModule.Service},
+		Perms:      identityModule.Service,
+	})
+
 	doc, err := api.GetSpec()
 	if err != nil {
 		return nil, nil, err
@@ -169,6 +178,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		AnnouncementsHandler: announcementsModule.Handler,
 		DisciplineHandler:    disciplineModule.Handler,
 		GradingHandler:       gradingModule.Handler,
+		ReportsHandler:       reportsModule.Handler,
 		healthHandler:        &healthHandler{version: version, pool: pool, redis: redisClient},
 	}
 

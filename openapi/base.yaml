@@ -51,3 +51,5 @@ tags:
     description: Violations, warning letters, counseling
   - name: grading
     description: Assessment components, grades, report scores, stars
+  - name: reports
+    description: Report centre and exports

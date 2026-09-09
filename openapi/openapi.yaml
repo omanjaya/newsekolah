@@ -52,6 +52,8 @@ tags:
     description: Violations, warning letters, counseling
   - name: grading
     description: Assessment components, grades, report scores, stars
+  - name: reports
+    description: Report centre and exports
 paths:
   /v1/academic/years:
     get:
@@ -6070,6 +6072,78 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
+  /v1/reports:
+    get:
+      tags:
+        - reports
+      operationId: listReports
+      x-permission: authenticated
+      summary: Reports this user may run, with the arguments each one needs
+      responses:
+        "200":
+          description: Catalogue
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ReportDefinition"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /v1/reports/{reportKind}/export:
+    get:
+      tags:
+        - reports
+      operationId: exportReport
+      x-permission: authenticated
+      summary: Run one report and download it as XLSX
+      parameters:
+        - name: reportKind
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: class_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: subject_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: term_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: date
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Workbook
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /v1/schedules:
     get:
       tags:
@@ -9982,6 +10056,41 @@ components:
         updated_at:
           type: string
           format: date-time
+    ReportArgumentKind:
+      type: string
+      enum:
+        - class
+        - subject
+        - date
+        - term
+    ReportArgument:
+      type: object
+      required:
+        - name
+        - kind
+        - required
+      properties:
+        name:
+          type: string
+        kind:
+          $ref: "#/components/schemas/ReportArgumentKind"
+        required:
+          type: boolean
+    ReportDefinition:
+      type: object
+      required:
+        - kind
+        - permission
+        - arguments
+      properties:
+        kind:
+          type: string
+        permission:
+          type: string
+        arguments:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReportArgument"
     ScheduleSource:
       type: string
       enum:
