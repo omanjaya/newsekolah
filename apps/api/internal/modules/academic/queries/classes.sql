@@ -23,6 +23,14 @@ where tenant_id = $1
 order by name
 limit $3 offset $4;
 
+-- name: AcademicListAllClassesForYear :many
+-- Every class in an academic year, unpaginated: used by the new-academic-
+-- year setup to enumerate what would be copied forward, not by any
+-- paginated listing endpoint.
+select * from classes
+where tenant_id = $1 and academic_year_id = $2 and deleted_at is null
+order by name;
+
 -- name: AcademicListClassesByYearAndGradeLevel :many
 select * from classes
 where tenant_id = $1 and academic_year_id = $2 and grade_level_id = $3 and deleted_at is null

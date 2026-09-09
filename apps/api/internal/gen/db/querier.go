@@ -14,6 +14,7 @@ import (
 type Querier interface {
 	AcademicActivateTerm(ctx context.Context, arg AcademicActivateTermParams) error
 	AcademicActivateYear(ctx context.Context, arg AcademicActivateYearParams) error
+	AcademicAddCalendarEventGradeLevel(ctx context.Context, arg AcademicAddCalendarEventGradeLevelParams) error
 	AcademicApplyGradeLevelTemplateRow(ctx context.Context, arg AcademicApplyGradeLevelTemplateRowParams) (GradeLevel, error)
 	AcademicArchiveYear(ctx context.Context, arg AcademicArchiveYearParams) error
 	AcademicClearDefaultPeriodTemplate(ctx context.Context, tenantID uuid.UUID) error
@@ -82,7 +83,16 @@ type Querier interface {
 	AcademicGetTrackByID(ctx context.Context, arg AcademicGetTrackByIDParams) (Track, error)
 	AcademicGetWeekdayAssignment(ctx context.Context, arg AcademicGetWeekdayAssignmentParams) (PeriodDayAssignment, error)
 	AcademicGetYearByID(ctx context.Context, arg AcademicGetYearByIDParams) (AcademicYear, error)
+	// Every class in an academic year, unpaginated: used by the new-academic-
+	// year setup to enumerate what would be copied forward, not by any
+	// paginated listing endpoint.
+	AcademicListAllClassesForYear(ctx context.Context, arg AcademicListAllClassesForYearParams) ([]Class, error)
+	AcademicListCalendarEventGradeLevels(ctx context.Context, arg AcademicListCalendarEventGradeLevelsParams) ([]uuid.UUID, error)
 	AcademicListCalendarEvents(ctx context.Context, arg AcademicListCalendarEventsParams) ([]AcademicListCalendarEventsRow, error)
+	// Every non-teaching calendar event (holiday, no_school, semester_break)
+	// whose [date, end_date] range covers the given date, for
+	// domain.IsSchoolDay to evaluate against a grade level.
+	AcademicListCalendarEventsForDate(ctx context.Context, arg AcademicListCalendarEventsForDateParams) ([]AcademicCalendarEvent, error)
 	AcademicListClasses(ctx context.Context, arg AcademicListClassesParams) ([]AcademicListClassesRow, error)
 	AcademicListClassesByYearAndGradeLevel(ctx context.Context, arg AcademicListClassesByYearAndGradeLevelParams) ([]Class, error)
 	// Every class in one academic year (no pagination, no search): used to
@@ -114,6 +124,7 @@ type Querier interface {
 	AcademicListUnassignedStudents(ctx context.Context, arg AcademicListUnassignedStudentsParams) ([]AcademicListUnassignedStudentsRow, error)
 	AcademicListWeekdayAssignments(ctx context.Context, arg AcademicListWeekdayAssignmentsParams) ([]PeriodDayAssignment, error)
 	AcademicListYears(ctx context.Context, arg AcademicListYearsParams) ([]AcademicListYearsRow, error)
+	AcademicReplaceCalendarEventGradeLevels(ctx context.Context, arg AcademicReplaceCalendarEventGradeLevelsParams) error
 	AcademicSoftDeleteClass(ctx context.Context, arg AcademicSoftDeleteClassParams) error
 	AcademicSoftDeleteRoom(ctx context.Context, arg AcademicSoftDeleteRoomParams) error
 	AcademicSoftDeleteSubject(ctx context.Context, arg AcademicSoftDeleteSubjectParams) error

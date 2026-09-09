@@ -37,10 +37,11 @@ type yearRepository interface {
 	ActivateTerm(ctx context.Context, tenantID, id, yearID uuid.UUID) error
 
 	CreateCalendarEvent(ctx context.Context, e domain.CalendarEvent) (domain.CalendarEvent, error)
-	UpdateCalendarEvent(ctx context.Context, tenantID, id uuid.UUID, date time.Time, kind, name string) (domain.CalendarEvent, error)
+	UpdateCalendarEvent(ctx context.Context, tenantID, id uuid.UUID, date, endDate time.Time, kind, name string, gradeLevelIDs []uuid.UUID) (domain.CalendarEvent, error)
 	GetCalendarEventByID(ctx context.Context, tenantID, id uuid.UUID) (domain.CalendarEvent, error)
 	DeleteCalendarEvent(ctx context.Context, tenantID, id uuid.UUID) error
 	ListCalendarEvents(ctx context.Context, tenantID, yearID uuid.UUID, kind string, page Page) ([]domain.CalendarEvent, int64, error)
+	ListCalendarEventsForDate(ctx context.Context, tenantID, yearID uuid.UUID, date time.Time) ([]domain.CalendarEvent, error)
 
 	UpsertSchoolDay(ctx context.Context, tenantID, yearID uuid.UUID, dayOfWeek int16, isActive bool) error
 	ListSchoolDays(ctx context.Context, tenantID, yearID uuid.UUID) ([]domain.SchoolDay, error)
@@ -241,26 +242,65 @@ func (s *Service) ListCalendarEvents(ctx context.Context, tenantID, yearID uuid.
 	return events, total, err
 }
 
-func (s *Service) CreateCalendarEvent(ctx context.Context, tenantID, yearID uuid.UUID, date time.Time, kind, name string) (domain.CalendarEvent, error) {
+func (s *Service) CreateCalendarEvent(ctx context.Context, tenantID, yearID uuid.UUID, date, endDate time.Time, kind, name string, gradeLevelIDs []uuid.UUID) (domain.CalendarEvent, error) {
+	if err := domain.ValidateCalendarEventRange(date, endDate); err != nil {
+		return domain.CalendarEvent{}, err
+	}
 	var event domain.CalendarEvent
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error
 		event, err = s.repo.CreateCalendarEvent(ctx, domain.CalendarEvent{
-			TenantID: tenantID, AcademicYearID: yearID, Date: date, Kind: kind, Name: name,
+			TenantID: tenantID, AcademicYearID: yearID, Date: date, EndDate: endDate, Kind: kind, Name: name, GradeLevelIDs: gradeLevelIDs,
 		})
 		return err
 	})
 	return event, err
 }
 
-func (s *Service) UpdateCalendarEvent(ctx context.Context, tenantID, id uuid.UUID, date time.Time, kind, name string) (domain.CalendarEvent, error) {
+func (s *Service) UpdateCalendarEvent(ctx context.Context, tenantID, id uuid.UUID, date, endDate time.Time, kind, name string, gradeLevelIDs []uuid.UUID) (domain.CalendarEvent, error) {
+	if err := domain.ValidateCalendarEventRange(date, endDate); err != nil {
+		return domain.CalendarEvent{}, err
+	}
 	var event domain.CalendarEvent
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error
-		event, err = s.repo.UpdateCalendarEvent(ctx, tenantID, id, date, kind, name)
+		event, err = s.repo.UpdateCalendarEvent(ctx, tenantID, id, date, endDate, kind, name, gradeLevelIDs)
 		return mapNotFound(err, domain.ErrCalendarEventNotFound)
 	})
 	return event, err
+}
+
+// IsSchoolDay answers whether date is a teaching day in yearID, for
+// gradeLevelID (pass nil for a whole-school check): the weekly pattern
+// (school_days) combined with the year's calendar events, via the single
+// domain.IsSchoolDay rule. This is the method the CalendarReader interface
+// (readers.go) exposes to other modules, e.g. attendance's daily-status
+// algorithm.
+func (s *Service) IsSchoolDay(ctx context.Context, tenantID, yearID uuid.UUID, date time.Time, gradeLevelID *uuid.UUID) (bool, error) {
+	var result bool
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		days, err := s.repo.ListSchoolDays(ctx, tenantID, yearID)
+		if err != nil {
+			return err
+		}
+		weeklyActive := false
+		dayOfWeek := domain.IsoWeekday(date)
+		for _, d := range days {
+			if d.DayOfWeek == dayOfWeek {
+				weeklyActive = d.IsActive
+				break
+			}
+		}
+
+		events, err := s.repo.ListCalendarEventsForDate(ctx, tenantID, yearID, date)
+		if err != nil {
+			return err
+		}
+
+		result = domain.IsSchoolDay(date, weeklyActive, events, gradeLevelID)
+		return nil
+	})
+	return result, err
 }
 
 func (s *Service) DeleteCalendarEvent(ctx context.Context, tenantID, id uuid.UUID) error {

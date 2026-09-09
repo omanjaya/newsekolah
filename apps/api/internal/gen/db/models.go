@@ -18,6 +18,13 @@ type AcademicCalendarEvent struct {
 	Date           pgtype.Date `json:"date"`
 	Kind           string      `json:"kind"`
 	Name           string      `json:"name"`
+	EndDate        pgtype.Date `json:"end_date"`
+}
+
+type AcademicCalendarEventGradeLevel struct {
+	TenantID        uuid.UUID `json:"tenant_id"`
+	CalendarEventID uuid.UUID `json:"calendar_event_id"`
+	GradeLevelID    uuid.UUID `json:"grade_level_id"`
 }
 
 type AcademicYear struct {

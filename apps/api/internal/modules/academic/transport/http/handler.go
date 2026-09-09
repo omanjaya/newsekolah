@@ -69,6 +69,7 @@ var notFoundErrs = []error{
 	domain.ErrAcademicYearNotFound,
 	domain.ErrTermNotFound,
 	domain.ErrCalendarEventNotFound,
+	domain.ErrNewYearSourceNotFound,
 	domain.ErrGradeLevelNotFound,
 	domain.ErrTrackNotFound,
 	domain.ErrClassNotFound,
@@ -108,6 +109,8 @@ var validationErrs = []error{
 	domain.ErrInvalidPeriod,
 	domain.ErrInvalidDayOfWeek,
 	domain.ErrUnknownTemplate,
+	domain.ErrInvalidCalendarEventRange,
+	domain.ErrNewYearSameAsSource,
 }
 
 // mapDomainError maps a domain sentinel error to a stable httpx.Error; any

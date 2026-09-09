@@ -1,0 +1,34 @@
+{
+  "eyebrow": "Data Sekolah",
+  "title": "Kalender Akademik",
+  "locale": "id-ID",
+  "weekdays": ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"],
+  "previousMonth": "Bulan sebelumnya",
+  "nextMonth": "Bulan berikutnya",
+  "addEvent": "Tambah Acara",
+  "editEvent": "Ubah Acara",
+  "deleteEvent": "Hapus Acara",
+  "eventSaved": "Acara kalender disimpan.",
+  "eventDeleted": "Acara kalender dihapus.",
+  "deleteConfirmTitle": "Hapus acara ini?",
+  "deleteConfirmBody": "\"{name}\" akan dihapus dari kalender akademik dan tidak dapat dikembalikan.",
+  "emptyTitle": "Belum ada acara di kalender",
+  "emptyBody": "Tambahkan hari libur, ujian, atau acara sekolah agar terlihat pada kalender tahun ajaran ini.",
+  "kind": {
+    "holiday": "Libur",
+    "exam": "Ujian",
+    "event": "Acara",
+    "no_school": "Tidak Ada KBM",
+    "semester_break": "Libur Semester"
+  },
+  "form": {
+    "name": "Nama Acara",
+    "startDate": "Tanggal Mulai",
+    "endDate": "Tanggal Selesai",
+    "kind": "Jenis",
+    "gradeLevels": "Berlaku untuk Kelas",
+    "gradeLevelsHint": "Kosongkan agar berlaku untuk seluruh tingkat kelas.",
+    "cancel": "Batal",
+    "save": "Simpan"
+  }
+}

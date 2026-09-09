@@ -1,0 +1,34 @@
+{
+  "eyebrow": "School Data",
+  "title": "Academic Calendar",
+  "locale": "en-US",
+  "weekdays": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+  "previousMonth": "Previous month",
+  "nextMonth": "Next month",
+  "addEvent": "Add Event",
+  "editEvent": "Edit Event",
+  "deleteEvent": "Delete Event",
+  "eventSaved": "Calendar event saved.",
+  "eventDeleted": "Calendar event deleted.",
+  "deleteConfirmTitle": "Delete this event?",
+  "deleteConfirmBody": "\"{name}\" will be removed from the academic calendar and cannot be undone.",
+  "emptyTitle": "No calendar events yet",
+  "emptyBody": "Add holidays, exams, or school events so they show up on this academic year's calendar.",
+  "kind": {
+    "holiday": "Holiday",
+    "exam": "Exam",
+    "event": "Event",
+    "no_school": "No School",
+    "semester_break": "Semester Break"
+  },
+  "form": {
+    "name": "Event Name",
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "kind": "Kind",
+    "gradeLevels": "Applies to Grade Levels",
+    "gradeLevelsHint": "Leave empty to apply to every grade level.",
+    "cancel": "Cancel",
+    "save": "Save"
+  }
+}

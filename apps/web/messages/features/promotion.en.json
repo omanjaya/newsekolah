@@ -1,0 +1,31 @@
+{
+  "eyebrow": "School Data",
+  "title": "Class Promotion",
+  "description": "Move students from one academic year to the next: promote, retain, graduate, or mark as transferred.",
+  "fromYear": "From Academic Year",
+  "toYear": "To Academic Year",
+  "preview": "Show Plan",
+  "sameYearError": "The source and destination academic years must differ.",
+  "emptyTitle": "No active students",
+  "emptyBody": "There are no actively enrolled students in the selected source academic year.",
+  "unresolvedCount": "{n} still need a target class",
+  "table": {
+    "student": "Student",
+    "fromClass": "Current Class",
+    "action": "Outcome",
+    "targetClass": "Target Class",
+    "chooseClass": "Choose a class"
+  },
+  "action": {
+    "promote": "Promote",
+    "retain": "Retain",
+    "graduate": "Graduate",
+    "transfer": "Transfer"
+  },
+  "effectiveOn": "Effective From",
+  "commit": "Apply Promotion",
+  "resolveBeforeCommit": "Choose a target class for every student before applying.",
+  "confirmTitle": "Apply this class promotion?",
+  "confirmBody": "{n} students will be processed. This moves each student's enrollment status and cannot be undone once applied.",
+  "committed": "Class promotion applied."
+}

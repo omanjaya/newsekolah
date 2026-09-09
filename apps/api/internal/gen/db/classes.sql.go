@@ -119,6 +119,53 @@ func (q *Queries) AcademicGetClassByID(ctx context.Context, arg AcademicGetClass
 	return i, err
 }
 
+const academicListAllClassesForYear = `-- name: AcademicListAllClassesForYear :many
+select id, tenant_id, academic_year_id, grade_level_id, track_id, name, room_id, capacity, homeroom_teacher_id, created_at, updated_at, deleted_at from classes
+where tenant_id = $1 and academic_year_id = $2 and deleted_at is null
+order by name
+`
+
+type AcademicListAllClassesForYearParams struct {
+	TenantID       uuid.UUID `json:"tenant_id"`
+	AcademicYearID uuid.UUID `json:"academic_year_id"`
+}
+
+// Every class in an academic year, unpaginated: used by the new-academic-
+// year setup to enumerate what would be copied forward, not by any
+// paginated listing endpoint.
+func (q *Queries) AcademicListAllClassesForYear(ctx context.Context, arg AcademicListAllClassesForYearParams) ([]Class, error) {
+	rows, err := q.db.Query(ctx, academicListAllClassesForYear, arg.TenantID, arg.AcademicYearID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Class{}
+	for rows.Next() {
+		var i Class
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.AcademicYearID,
+			&i.GradeLevelID,
+			&i.TrackID,
+			&i.Name,
+			&i.RoomID,
+			&i.Capacity,
+			&i.HomeroomTeacherID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const academicListClasses = `-- name: AcademicListClasses :many
 select classes.id, classes.tenant_id, classes.academic_year_id, classes.grade_level_id, classes.track_id, classes.name, classes.room_id, classes.capacity, classes.homeroom_teacher_id, classes.created_at, classes.updated_at, classes.deleted_at, count(*) over () as total_count
 from classes

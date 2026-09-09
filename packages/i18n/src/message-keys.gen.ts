@@ -104,10 +104,12 @@ export type MessageKey =
   | "nav.permits.items.plannedLeave"
   | "nav.permits.items.verification"
   | "nav.permits.label"
+  | "nav.schoolData.items.academicCalendar"
   | "nav.schoolData.items.academicYear"
   | "nav.schoolData.items.assignments"
   | "nav.schoolData.items.classesAndStudents"
   | "nav.schoolData.items.periods"
+  | "nav.schoolData.items.promotion"
   | "nav.schoolData.items.rooms"
   | "nav.schoolData.items.subjects"
   | "nav.schoolData.items.teachersAndStaff"
@@ -236,10 +238,12 @@ export const MESSAGE_KEYS: readonly MessageKey[] = [
   "nav.permits.items.plannedLeave",
   "nav.permits.items.verification",
   "nav.permits.label",
+  "nav.schoolData.items.academicCalendar",
   "nav.schoolData.items.academicYear",
   "nav.schoolData.items.assignments",
   "nav.schoolData.items.classesAndStudents",
   "nav.schoolData.items.periods",
+  "nav.schoolData.items.promotion",
   "nav.schoolData.items.rooms",
   "nav.schoolData.items.subjects",
   "nav.schoolData.items.teachersAndStaff",
