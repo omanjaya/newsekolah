@@ -124,4 +124,4 @@ reload untuk API dan web; lihat `infra/docker/README.dev.md`.
 - `@newsekolah/ui-tokens`: `dist/tokens.ts` masih TypeScript mentah; terbitkan juga `dist/tokens.js` + `.d.ts` agar bisa di-`require` dari konfigurasi Tailwind tanpa transpiler.
 - ~~`apps/api/cmd/seed`: belum idempoten~~ selesai: seed sekarang upsert dan mengisi data operasional (jadwal, presensi, katalog pelanggaran, komponen penilaian, tautan orang tua).
 - `apps/web`: unggah bukti izin dan berkas lain memakai presigned URL; belum ada indikator progres unggah.
-- Import Dapodik dan ETL dari MySQL SION belum dikerjakan (Fase 3).
+- ETL dari MySQL SION (`apps/api/cmd/etl`, `docs/13-etl-sion.md`) selesai: identitas, akademik, jadwal, presensi, disiplin, dan izin yang sudah terbit. Exit permit, late arrival, dan permohonan izin yang belum final sengaja tidak dimigrasikan (lihat dokumen). Import Dapodik belum dikerjakan.
