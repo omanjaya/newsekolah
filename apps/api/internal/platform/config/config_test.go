@@ -13,6 +13,7 @@ func clearEnv(t *testing.T) {
 	vars := []string{
 		"APP_ENV", "TENANCY_MODE", "API_ADDR", "APP_ORIGINS", "APP_TIMEZONE", "BASE_DOMAIN",
 		"DATABASE_URL", "REDIS_URL", "JWT_SIGNING_KEY", "JWT_SIGNING_KEY_FILE",
+		"DOCUMENT_SIGNING_KEY", "DOCUMENT_SIGNING_KEY_FILE",
 		"ACCESS_TOKEN_TTL", "REFRESH_TOKEN_TTL", "TRUSTED_PROXIES", "BODY_LIMIT_BYTES",
 		"S3_ENDPOINT", "S3_BUCKET", "S3_ACCESS_KEY", "S3_SECRET_KEY", "SMTP_URL",
 		"WHATSAPP_PROVIDER", "WHATSAPP_TOKEN", "WHATSAPP_PHONE_ID",
@@ -37,6 +38,7 @@ func TestLoad_SucceedsWithMinimumRequiredVars(t *testing.T) {
 	clearEnv(t)
 	t.Setenv("DATABASE_URL", "postgres://localhost/test")
 	t.Setenv("JWT_SIGNING_KEY", "base64key")
+	t.Setenv("DOCUMENT_SIGNING_KEY", "a-test-document-signing-key-32-chars-long")
 
 	cfg, err := Load()
 	if err != nil {
@@ -54,6 +56,7 @@ func TestLoad_RequiresAppOriginsInProduction(t *testing.T) {
 	clearEnv(t)
 	t.Setenv("DATABASE_URL", "postgres://localhost/test")
 	t.Setenv("JWT_SIGNING_KEY", "base64key")
+	t.Setenv("DOCUMENT_SIGNING_KEY", "a-test-document-signing-key-32-chars-long")
 	t.Setenv("APP_ENV", "production")
 
 	if _, err := Load(); err == nil {
@@ -70,6 +73,7 @@ func TestLoad_RejectsInvalidTenancyMode(t *testing.T) {
 	clearEnv(t)
 	t.Setenv("DATABASE_URL", "postgres://localhost/test")
 	t.Setenv("JWT_SIGNING_KEY", "base64key")
+	t.Setenv("DOCUMENT_SIGNING_KEY", "a-test-document-signing-key-32-chars-long")
 	t.Setenv("TENANCY_MODE", "both")
 
 	if _, err := Load(); err == nil {
@@ -81,6 +85,7 @@ func TestLoad_RequiresWhatsAppCredentialsWhenProviderIsNotNoop(t *testing.T) {
 	clearEnv(t)
 	t.Setenv("DATABASE_URL", "postgres://localhost/test")
 	t.Setenv("JWT_SIGNING_KEY", "base64key")
+	t.Setenv("DOCUMENT_SIGNING_KEY", "a-test-document-signing-key-32-chars-long")
 	t.Setenv("WHATSAPP_PROVIDER", "meta")
 
 	if _, err := Load(); err == nil {
@@ -98,6 +103,7 @@ func TestLoad_FileIndirectionForSecrets(t *testing.T) {
 
 	t.Setenv("DATABASE_URL", "postgres://localhost/test")
 	t.Setenv("JWT_SIGNING_KEY_FILE", keyPath)
+	t.Setenv("DOCUMENT_SIGNING_KEY", "a-test-document-signing-key-32-chars-long")
 
 	cfg, err := Load()
 	if err != nil {
@@ -105,5 +111,16 @@ func TestLoad_FileIndirectionForSecrets(t *testing.T) {
 	}
 	if cfg.JWTSigningKey != "from-file-key" {
 		t.Errorf("expected JWTSigningKey read from file (trimmed), got %q", cfg.JWTSigningKey)
+	}
+}
+
+func TestLoad_RejectsShortDocumentSigningKey(t *testing.T) {
+	clearEnv(t)
+	t.Setenv("DATABASE_URL", "postgres://localhost/test")
+	t.Setenv("JWT_SIGNING_KEY", "base64key")
+	t.Setenv("DOCUMENT_SIGNING_KEY", "too-short")
+
+	if _, err := Load(); err == nil {
+		t.Fatal("expected Load to reject a DOCUMENT_SIGNING_KEY shorter than 32 characters")
 	}
 }

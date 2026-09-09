@@ -15,47 +15,147 @@ type Querier interface {
 	ActivateAcademicYear(ctx context.Context, arg ActivateAcademicYearParams) error
 	AddDutyPermission(ctx context.Context, arg AddDutyPermissionParams) error
 	AddRolePermission(ctx context.Context, arg AddRolePermissionParams) error
+	AdvanceWorkflowInstanceStage(ctx context.Context, arg AdvanceWorkflowInstanceStageParams) (WorkflowInstance, error)
 	AssignUserRole(ctx context.Context, arg AssignUserRoleParams) error
+	ClearDefaultDocumentTemplate(ctx context.Context, arg ClearDefaultDocumentTemplateParams) error
+	// Bug fix vs. the old app (docs/08-security.md section 7): single atomic
+	// UPDATE guarded by consumed_at IS NULL AND expires_at > now(), so two
+	// concurrent scans of the same token can never both succeed.
+	ConsumeScanToken(ctx context.Context, arg ConsumeScanTokenParams) (ScanToken, error)
+	CountWorkflowInstancesForSubjectYear(ctx context.Context, arg CountWorkflowInstancesForSubjectYearParams) (int64, error)
 	CreateAcademicYear(ctx context.Context, arg CreateAcademicYearParams) (AcademicYear, error)
 	CreateClass(ctx context.Context, arg CreateClassParams) (Class, error)
+	CreateDocumentTemplate(ctx context.Context, arg CreateDocumentTemplateParams) (DocumentTemplate, error)
 	CreateDutyAssignment(ctx context.Context, arg CreateDutyAssignmentParams) (DutyAssignment, error)
 	CreateDutyType(ctx context.Context, arg CreateDutyTypeParams) (DutyType, error)
+	CreateExitPermit(ctx context.Context, arg CreateExitPermitParams) (ExitPermit, error)
 	CreateGradeLevel(ctx context.Context, arg CreateGradeLevelParams) (GradeLevel, error)
+	CreateIssuedDocument(ctx context.Context, arg CreateIssuedDocumentParams) (IssuedDocument, error)
+	CreateLateArrival(ctx context.Context, arg CreateLateArrivalParams) (LateArrival, error)
+	CreateLeaveDocument(ctx context.Context, arg CreateLeaveDocumentParams) (LeaveDocument, error)
+	CreateLeaveRequest(ctx context.Context, arg CreateLeaveRequestParams) (LeaveRequest, error)
 	CreatePasswordReset(ctx context.Context, arg CreatePasswordResetParams) (PasswordReset, error)
+	// cross-module read/write; the assets table is shared platform
+	// infrastructure (migrations/0001_platform_core.up.sql), not owned by any
+	// single feature module. permits writes here for evidence images it
+	// re-encodes and letters it renders, same as any other module would.
+	CreatePermitsAsset(ctx context.Context, arg CreatePermitsAssetParams) (uuid.UUID, error)
 	CreateRole(ctx context.Context, arg CreateRoleParams) (Role, error)
+	CreateScanToken(ctx context.Context, arg CreateScanTokenParams) (ScanToken, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error)
 	CreateTenant(ctx context.Context, arg CreateTenantParams) (Tenant, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	CreateUserProfile(ctx context.Context, arg CreateUserProfileParams) error
+	CreateWorkflowDefinition(ctx context.Context, arg CreateWorkflowDefinitionParams) (WorkflowDefinition, error)
+	CreateWorkflowEvent(ctx context.Context, arg CreateWorkflowEventParams) (WorkflowEvent, error)
+	CreateWorkflowInstance(ctx context.Context, arg CreateWorkflowInstanceParams) (WorkflowInstance, error)
+	DeactivateActiveWorkflowDefinitions(ctx context.Context, arg DeactivateActiveWorkflowDefinitionsParams) error
 	DeactivateAllAcademicYears(ctx context.Context, tenantID uuid.UUID) error
+	DeleteExpiredScanTokens(ctx context.Context, arg DeleteExpiredScanTokensParams) (int64, error)
+	// Bug fix vs. the old app (docs/02-system-design.md section 6.2 step 4):
+	// any instance still in_progress past its opening day is force-closed so
+	// it never blocks the next day's attendance. openedBefore is the instant
+	// of local midnight for the tenant's timezone, computed by the caller so
+	// this query stays timezone-agnostic.
+	ExpireHangingWorkflowInstances(ctx context.Context, arg ExpireHangingWorkflowInstancesParams) ([]WorkflowInstance, error)
 	GetAcademicYearByID(ctx context.Context, arg GetAcademicYearByIDParams) (AcademicYear, error)
 	GetActiveAcademicYear(ctx context.Context, tenantID uuid.UUID) (AcademicYear, error)
+	// cross-module read; replace with reader interface after merge.
+	//
+	// academic (classes, enrollments, periods) and identity (users,
+	// teacher_profiles, student_profiles, duty_types, duty_assignments) own
+	// these tables; permits only reads them, read-only, to evaluate approver
+	// rules and snapshot names. Once every module has merged, each query here
+	// should become a call through a narrow exported interface (the same
+	// pattern identity/service.AcademicYearReader already uses for the school
+	// module) instead of permits querying another module's tables directly.
+	GetActiveEnrollment(ctx context.Context, arg GetActiveEnrollmentParams) (GetActiveEnrollmentRow, error)
+	GetActiveWorkflowDefinition(ctx context.Context, arg GetActiveWorkflowDefinitionParams) (WorkflowDefinition, error)
+	GetAssetObjectKey(ctx context.Context, arg GetAssetObjectKeyParams) (string, error)
+	GetClassName(ctx context.Context, arg GetClassNameParams) (string, error)
+	GetDefaultDocumentTemplate(ctx context.Context, arg GetDefaultDocumentTemplateParams) (DocumentTemplate, error)
+	GetDocumentTemplateByID(ctx context.Context, arg GetDocumentTemplateByIDParams) (DocumentTemplate, error)
 	GetDutyTypeBySlug(ctx context.Context, arg GetDutyTypeBySlugParams) (DutyType, error)
+	GetExitPermit(ctx context.Context, arg GetExitPermitParams) (ExitPermit, error)
+	// permits.AttendanceBlocker: a student mid-flow cannot be marked present
+	// for today's attendance until this resolves, per
+	// docs/analysis/backend-inventory.md 1.16 ("selama belum completed siswa
+	// tidak bisa ditandai hadir").
+	GetInProgressLateArrivalToday(ctx context.Context, arg GetInProgressLateArrivalTodayParams) (WorkflowInstance, error)
+	// Any not-yet-terminal instance of this kind for this subject, used to
+	// reject a new submission with a clear 409 before the DB constraint would.
+	GetInProgressWorkflowInstance(ctx context.Context, arg GetInProgressWorkflowInstanceParams) (WorkflowInstance, error)
+	GetIssuedDocumentByEntity(ctx context.Context, arg GetIssuedDocumentByEntityParams) (IssuedDocument, error)
+	GetIssuedDocumentByVerificationHash(ctx context.Context, arg GetIssuedDocumentByVerificationHashParams) (IssuedDocument, error)
+	GetLateArrival(ctx context.Context, arg GetLateArrivalParams) (LateArrival, error)
+	GetLatestWorkflowDefinitionVersion(ctx context.Context, arg GetLatestWorkflowDefinitionVersionParams) (int32, error)
+	GetLeaveDocument(ctx context.Context, arg GetLeaveDocumentParams) (LeaveDocument, error)
+	GetLeaveRequest(ctx context.Context, arg GetLeaveRequestParams) (LeaveRequest, error)
+	GetPeriod(ctx context.Context, arg GetPeriodParams) (GetPeriodRow, error)
 	GetPlatformSetting(ctx context.Context, key string) ([]byte, error)
 	GetRoleBySlug(ctx context.Context, arg GetRoleBySlugParams) (Role, error)
+	GetScanTokenByHash(ctx context.Context, arg GetScanTokenByHashParams) (ScanToken, error)
 	GetSessionByID(ctx context.Context, arg GetSessionByIDParams) (Session, error)
 	GetSessionByRefreshHash(ctx context.Context, arg GetSessionByRefreshHashParams) (Session, error)
 	GetSingleTenant(ctx context.Context) (Tenant, error)
+	GetStudentGuardianName(ctx context.Context, arg GetStudentGuardianNameParams) (string, error)
 	GetTenantByDomain(ctx context.Context, primaryDomain pgtype.Text) (Tenant, error)
 	GetTenantByID(ctx context.Context, id uuid.UUID) (Tenant, error)
 	GetTenantBySlug(ctx context.Context, slug string) (Tenant, error)
 	GetUserByID(ctx context.Context, arg GetUserByIDParams) (User, error)
 	GetUserByUsername(ctx context.Context, arg GetUserByUsernameParams) (User, error)
+	GetUserName(ctx context.Context, arg GetUserNameParams) (string, error)
+	GetWorkflowDefinitionByID(ctx context.Context, arg GetWorkflowDefinitionByIDParams) (WorkflowDefinition, error)
+	// Used to resolve a stage's approver for a later stage's distinct_from check.
+	GetWorkflowEventByStage(ctx context.Context, arg GetWorkflowEventByStageParams) (WorkflowEvent, error)
+	GetWorkflowInstanceByID(ctx context.Context, arg GetWorkflowInstanceByIDParams) (WorkflowInstance, error)
+	GetWorkflowInstanceForUpdate(ctx context.Context, arg GetWorkflowInstanceForUpdateParams) (WorkflowInstance, error)
+	// Evaluates the "duty:<slug>" approver rule: does user_id currently hold
+	// an active duty of this slug, and (for a class-scoped duty) does it cover
+	// class_id (NULL class_id matches only a school-scoped duty).
+	HasActiveDuty(ctx context.Context, arg HasActiveDutyParams) (bool, error)
 	InsertLoginAttempt(ctx context.Context, arg InsertLoginAttemptParams) error
+	IsActiveTeacher(ctx context.Context, arg IsActiveTeacherParams) (bool, error)
 	IsSessionActive(ctx context.Context, arg IsSessionActiveParams) (pgtype.Bool, error)
+	IssueLeaveRequest(ctx context.Context, arg IssueLeaveRequestParams) (LeaveRequest, error)
 	ListAcademicYears(ctx context.Context, tenantID uuid.UUID) ([]AcademicYear, error)
 	ListActiveDutyAssignmentsForUser(ctx context.Context, arg ListActiveDutyAssignmentsForUserParams) ([]ListActiveDutyAssignmentsForUserRow, error)
 	ListActiveDutyAssignmentsWithPermissions(ctx context.Context, arg ListActiveDutyAssignmentsWithPermissionsParams) ([]ListActiveDutyAssignmentsWithPermissionsRow, error)
 	ListActiveSessionsForUser(ctx context.Context, arg ListActiveSessionsForUserParams) ([]Session, error)
+	// tenants carries no RLS policy (see modules/school/repository.go), so
+	// this is safe to run off the pool directly for the platform-wide expiry
+	// and token-cleanup jobs, which must iterate every tenant.
+	ListActiveTenants(ctx context.Context) ([]ListActiveTenantsRow, error)
+	ListDocumentTemplates(ctx context.Context, tenantID uuid.UUID) ([]DocumentTemplate, error)
+	ListExitPermitsForReport(ctx context.Context, arg ListExitPermitsForReportParams) ([]ListExitPermitsForReportRow, error)
+	ListLateArrivalsForReview(ctx context.Context, tenantID uuid.UUID) ([]ListLateArrivalsForReviewRow, error)
+	ListLeaveDocuments(ctx context.Context, arg ListLeaveDocumentsParams) ([]LeaveDocument, error)
+	ListLeaveRequestsBySubject(ctx context.Context, arg ListLeaveRequestsBySubjectParams) ([]ListLeaveRequestsBySubjectRow, error)
+	ListLeaveRequestsForReview(ctx context.Context, arg ListLeaveRequestsForReviewParams) ([]ListLeaveRequestsForReviewRow, error)
 	ListPermissionCodesForDutyTypes(ctx context.Context, dutyTypeIds []uuid.UUID) ([]ListPermissionCodesForDutyTypesRow, error)
 	ListPermissionCodesForRoles(ctx context.Context, roleIds []uuid.UUID) ([]string, error)
 	ListRolesForUser(ctx context.Context, userID uuid.UUID) ([]ListRolesForUserRow, error)
 	ListTenantSettingsByPrefix(ctx context.Context, arg ListTenantSettingsByPrefixParams) ([]TenantSetting, error)
+	ListWorkflowDefinitions(ctx context.Context, tenantID uuid.UUID) ([]WorkflowDefinition, error)
+	ListWorkflowEventsByInstance(ctx context.Context, arg ListWorkflowEventsByInstanceParams) ([]WorkflowEvent, error)
+	ListWorkflowInstancesByClassAndKind(ctx context.Context, arg ListWorkflowInstancesByClassAndKindParams) ([]WorkflowInstance, error)
+	ListWorkflowInstancesBySubject(ctx context.Context, arg ListWorkflowInstancesBySubjectParams) ([]WorkflowInstance, error)
+	MarkExitPermitExited(ctx context.Context, arg MarkExitPermitExitedParams) (ExitPermit, error)
+	MarkExitPermitIssued(ctx context.Context, arg MarkExitPermitIssuedParams) (ExitPermit, error)
+	MarkLateArrivalCompleted(ctx context.Context, arg MarkLateArrivalCompletedParams) (LateArrival, error)
+	// Bug fix vs. the old app (docs/analysis/backend-inventory.md 1.14/1.17):
+	// the issued number comes from this single atomic UPDATE ... RETURNING
+	// (implemented as an upsert since the row may not exist yet), never a
+	// COUNT(*) + 1 that two concurrent issuances could both compute.
+	NextDocumentSequenceValue(ctx context.Context, arg NextDocumentSequenceValueParams) (int64, error)
 	RevokeOtherUserSessions(ctx context.Context, arg RevokeOtherUserSessionsParams) error
 	RevokeSession(ctx context.Context, arg RevokeSessionParams) error
 	RevokeSessionFamily(ctx context.Context, arg RevokeSessionFamilyParams) error
 	SearchTenants(ctx context.Context, name string) ([]Tenant, error)
+	SetDefaultDocumentTemplate(ctx context.Context, arg SetDefaultDocumentTemplateParams) (DocumentTemplate, error)
 	TouchSessionLastSeen(ctx context.Context, arg TouchSessionLastSeenParams) error
+	UpdateDocumentTemplate(ctx context.Context, arg UpdateDocumentTemplateParams) (DocumentTemplate, error)
+	UpdateLateArrivalReview(ctx context.Context, arg UpdateLateArrivalReviewParams) (LateArrival, error)
 	UpdateUserLastLogin(ctx context.Context, arg UpdateUserLastLoginParams) error
 	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error
 	UpsertPermission(ctx context.Context, arg UpsertPermissionParams) error

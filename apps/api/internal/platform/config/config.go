@@ -33,6 +33,11 @@ type Config struct {
 	AccessTokenTTL  time.Duration
 	RefreshTokenTTL time.Duration
 
+	// DocumentSigningKey is a dedicated HMAC secret for issued_documents
+	// verification codes (docs/08-security.md): a compromise of one key
+	// must not unlock the other, so this is never JWTSigningKey.
+	DocumentSigningKey string
+
 	TrustedProxies []string
 	BodyLimitBytes int64
 
@@ -81,7 +86,8 @@ func Load() (Config, error) {
 		DatabaseURL: req("DATABASE_URL"),
 		RedisURL:    lookup("REDIS_URL"),
 
-		JWTSigningKey: req("JWT_SIGNING_KEY"),
+		JWTSigningKey:      req("JWT_SIGNING_KEY"),
+		DocumentSigningKey: req("DOCUMENT_SIGNING_KEY"),
 
 		S3Endpoint:  lookup("S3_ENDPOINT"),
 		S3Bucket:    lookup("S3_BUCKET"),
@@ -101,6 +107,10 @@ func Load() (Config, error) {
 
 	if c.TenancyMode != TenancySingle && c.TenancyMode != TenancyMulti {
 		errs = append(errs, "TENANCY_MODE (must be single or multi)")
+	}
+
+	if c.DocumentSigningKey != "" && len(c.DocumentSigningKey) < 32 {
+		errs = append(errs, "DOCUMENT_SIGNING_KEY (must be at least 32 characters)")
 	}
 
 	origins := lookup("APP_ORIGINS")
