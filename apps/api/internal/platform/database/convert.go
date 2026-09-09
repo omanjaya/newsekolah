@@ -25,6 +25,23 @@ func TextOrEmpty(t pgtype.Text) string {
 	return t.String
 }
 
+// Int2 converts a Go int to pgtype.Int2, treating 0 as NULL. It backs the
+// handful of small "year" columns (entry_year, joined_year) where 0 is not
+// a meaningful year, only "not set".
+func Int2(n int) pgtype.Int2 {
+	if n == 0 {
+		return pgtype.Int2{}
+	}
+	return pgtype.Int2{Int16: int16(n), Valid: true} //nolint:gosec // callers pass calendar years, far within int16 range
+}
+
+func Int2OrZero(n pgtype.Int2) int {
+	if !n.Valid {
+		return 0
+	}
+	return int(n.Int16)
+}
+
 func Date(t time.Time) pgtype.Date {
 	if t.IsZero() {
 		return pgtype.Date{}

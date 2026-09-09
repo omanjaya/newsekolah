@@ -46,9 +46,23 @@ type MeResult struct {
 	Duties             []DutyView
 	ActiveAcademicYear *AcademicYearView
 	MustChangePassword bool
+	ImpersonatedBy     *ImpersonatorView
 }
 
-func (s *Service) Me(ctx context.Context, tenantID, userID uuid.UUID) (MeResult, error) {
+// ImpersonatorView identifies the real admin behind an impersonation
+// session, for the UI banner docs/08-security.md section 2 requires
+// ("ditandai di UI").
+type ImpersonatorView struct {
+	UserID uuid.UUID
+	Name   string
+}
+
+// Me builds the current-user view. actorID is the real admin's ID when the
+// caller's session is an impersonation session (from the access token's
+// `act` claim), or an invalid uuid.NullUUID otherwise; the transport layer
+// is what reads the claim (service must not depend on platform/httpx), so
+// it is passed in rather than read from ctx here.
+func (s *Service) Me(ctx context.Context, tenantID, userID uuid.UUID, actorID uuid.NullUUID) (MeResult, error) {
 	var result MeResult
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		user, err := s.repo.GetUserByID(ctx, tenantID, userID)
@@ -56,7 +70,17 @@ func (s *Service) Me(ctx context.Context, tenantID, userID uuid.UUID) (MeResult,
 			return domain.ErrUserNotFound
 		}
 		result, err = s.me(ctx, user)
-		return err
+		if err != nil {
+			return err
+		}
+		if actorID.Valid {
+			actor, err := s.repo.GetUserByID(ctx, tenantID, actorID.UUID)
+			if err != nil {
+				return domain.ErrUserNotFound
+			}
+			result.ImpersonatedBy = &ImpersonatorView{UserID: actor.ID, Name: actor.Name}
+		}
+		return nil
 	})
 	return result, err
 }

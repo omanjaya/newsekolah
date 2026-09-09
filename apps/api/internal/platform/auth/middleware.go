@@ -85,13 +85,24 @@ func (a *Authenticator) authenticate(r *http.Request, token string) (authz.Ident
 	ctx = httpx.WithTenantID(ctx, tenantID)
 	ctx = httpx.WithSessionID(ctx, sessionID)
 
-	return authz.Identity{
+	identity := authz.Identity{
 		Authenticated: true,
 		UserID:        userID,
 		TenantID:      tenantID,
 		SessionID:     sessionID,
 		Roles:         claims.Roles,
-	}, ctx
+	}
+
+	if claims.ActorID != "" {
+		actorID, err := uuid.Parse(claims.ActorID)
+		if err != nil {
+			return authz.Identity{Err: httpx.ErrTokenInvalid}, ctx
+		}
+		identity.ActorUserID = uuid.NullUUID{UUID: actorID, Valid: true}
+		ctx = httpx.WithActorID(ctx, actorID)
+	}
+
+	return identity, ctx
 }
 
 func bearerToken(r *http.Request) (string, bool) {

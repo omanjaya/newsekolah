@@ -26,6 +26,10 @@ type Claims struct {
 	TenantID  string   `json:"tid"`
 	SessionID string   `json:"sid"`
 	Roles     []string `json:"roles"`
+	// ActorID is set only for an impersonation session's access token: the
+	// real admin's user ID, while Subject stays the impersonated user (the
+	// session owner). docs/08-security.md section 2.
+	ActorID string `json:"act,omitempty"`
 }
 
 type TokenIssuer struct {
@@ -59,6 +63,20 @@ func NewTokenIssuer(key *ecdsa.PrivateKey, issuer string, accessTTL time.Duratio
 // IssueAccessToken mints a 15-minute ES256 access token per
 // docs/08-security.md section 2.
 func (i *TokenIssuer) IssueAccessToken(userID, tenantID, sessionID uuid.UUID, roles []string, now time.Time) (string, time.Time, error) {
+	return i.issue(userID, tenantID, sessionID, uuid.Nil, roles, now)
+}
+
+// IssueImpersonationAccessToken mints an access token whose subject is the
+// impersonated user (userID, matching the impersonation session's owner)
+// but whose `act` claim identifies the real admin (actorID), per
+// docs/08-security.md section 2. Every downstream check (authz, audit)
+// reads Subject as "who this session is" and ActorID as "who is really
+// driving it".
+func (i *TokenIssuer) IssueImpersonationAccessToken(actorID, userID, tenantID, sessionID uuid.UUID, roles []string, now time.Time) (string, time.Time, error) {
+	return i.issue(userID, tenantID, sessionID, actorID, roles, now)
+}
+
+func (i *TokenIssuer) issue(userID, tenantID, sessionID, actorID uuid.UUID, roles []string, now time.Time) (string, time.Time, error) {
 	expiresAt := now.Add(i.accessTTL)
 	claims := Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
@@ -70,6 +88,9 @@ func (i *TokenIssuer) IssueAccessToken(userID, tenantID, sessionID uuid.UUID, ro
 		TenantID:  tenantID.String(),
 		SessionID: sessionID.String(),
 		Roles:     roles,
+	}
+	if actorID != uuid.Nil {
+		claims.ActorID = actorID.String()
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodES256, claims)

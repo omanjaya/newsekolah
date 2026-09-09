@@ -106,6 +106,9 @@ func (s *Service) refresh(ctx context.Context, tenantID uuid.UUID, refreshToken 
 	if err != nil {
 		return AuthResult{}, domain.ErrSessionNotFound
 	}
+	if !session.Kind.CanRefresh() {
+		return AuthResult{}, domain.ErrSessionExpired
+	}
 
 	switch domain.EvaluateRefresh(session, now) {
 	case domain.RefreshReuseDetected:

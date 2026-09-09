@@ -15,6 +15,7 @@ const (
 	sessionIDKey
 	refreshCookieKey
 	requestMetaKey
+	actorIDKey
 )
 
 // RequestMeta carries per-request client metadata that oapi-codegen's
@@ -53,6 +54,18 @@ func WithUserID(ctx context.Context, userID uuid.UUID) context.Context {
 
 func UserIDFromContext(ctx context.Context) (uuid.UUID, bool) {
 	id, ok := ctx.Value(userIDKey).(uuid.UUID)
+	return id, ok
+}
+
+// WithActorID records the real, non-impersonated actor for a request whose
+// access token carries an `act` claim (an impersonation session). Absent
+// for every ordinary request.
+func WithActorID(ctx context.Context, actorID uuid.UUID) context.Context {
+	return context.WithValue(ctx, actorIDKey, actorID)
+}
+
+func ActorIDFromContext(ctx context.Context) (uuid.UUID, bool) {
+	id, ok := ctx.Value(actorIDKey).(uuid.UUID)
 	return id, ok
 }
 

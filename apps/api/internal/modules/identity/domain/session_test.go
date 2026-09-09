@@ -45,3 +45,12 @@ func TestEvaluateRefresh(t *testing.T) {
 		})
 	}
 }
+
+func TestSessionKindCanRefresh(t *testing.T) {
+	if !SessionLogin.CanRefresh() {
+		t.Error("a login session must be refreshable")
+	}
+	if SessionImpersonation.CanRefresh() {
+		t.Error("an impersonation session must not be refreshable, per its fixed 30-minute lifetime")
+	}
+}

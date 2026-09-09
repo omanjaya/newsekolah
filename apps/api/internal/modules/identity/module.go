@@ -10,6 +10,8 @@ import (
 	transporthttp "github.com/omanjaya/newsekolah/apps/api/internal/modules/identity/transport/http"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/auth"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/notify"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/storage"
 )
 
 type Dependencies struct {
@@ -22,6 +24,15 @@ type Dependencies struct {
 	Branding     transporthttp.BrandingReader
 	SessionCache transporthttp.SessionCache
 	IsProduction bool
+
+	// ResetLimiter bounds password-reset-request attempts per IP. Email is
+	// where the reset link/OTP goes; a nil-noop sender still lets the flow
+	// work in dev (the link ends up in the server log via Mailpit/no-op).
+	// Storage is nil when S3 is not configured, which disables the avatar
+	// upload endpoints with a clear error rather than a panic.
+	ResetLimiter service.IPRateLimiter
+	Email        notify.EmailSender
+	Storage      *storage.Client
 }
 
 type Module struct {
@@ -31,7 +42,11 @@ type Module struct {
 
 func Register(deps Dependencies) *Module {
 	repo := repository.New(deps.Pool)
-	svc := service.New(deps.Pool, repo, deps.Years, deps.Limiter, deps.Tokens, deps.Clock, deps.Config, auth.NewRefreshToken)
+	svc := service.New(deps.Pool, repo, deps.Years, deps.Limiter, deps.Tokens, deps.Clock, deps.Config, auth.NewRefreshToken, service.Extras{
+		ResetLimiter: deps.ResetLimiter,
+		Email:        deps.Email,
+		Storage:      deps.Storage,
+	})
 	handler := transporthttp.New(svc, deps.Branding, deps.SessionCache, deps.IsProduction)
 	return &Module{Service: svc, Handler: handler}
 }

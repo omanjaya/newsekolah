@@ -135,8 +135,11 @@ type Querier interface {
 	ActivateAcademicYear(ctx context.Context, arg ActivateAcademicYearParams) error
 	AddDutyPermission(ctx context.Context, arg AddDutyPermissionParams) error
 	AddRolePermission(ctx context.Context, arg AddRolePermissionParams) error
+	ArchiveUser(ctx context.Context, arg ArchiveUserParams) error
 	AssignUserRole(ctx context.Context, arg AssignUserRoleParams) error
 	CancelSubstitutionRequest(ctx context.Context, arg CancelSubstitutionRequestParams) (SubstitutionRequest, error)
+	ClassExistsInTenant(ctx context.Context, arg ClassExistsInTenantParams) (bool, error)
+	CountAssignmentsForDutyType(ctx context.Context, arg CountAssignmentsForDutyTypeParams) (int64, error)
 	// The input to "meeting_number" in the session payload: how many prior
 	// meetings this schedule has already had, so meeting_number = count + 1.
 	CountAttendanceSessionsForScheduleBeforeDate(ctx context.Context, arg CountAttendanceSessionsForScheduleBeforeDateParams) (int64, error)
@@ -145,12 +148,15 @@ type Querier interface {
 	// for a class (attendance/domain.ComputeDailyStatus's Expected input).
 	CountSchedulesForClassDay(ctx context.Context, arg CountSchedulesForClassDayParams) (int64, error)
 	CountSubmittedSessionsByClassDate(ctx context.Context, arg CountSubmittedSessionsByClassDateParams) (int64, error)
+	CountUsersForRole(ctx context.Context, arg CountUsersForRoleParams) (int64, error)
 	CreateAcademicYear(ctx context.Context, arg CreateAcademicYearParams) (AcademicYear, error)
+	CreateAsset(ctx context.Context, arg CreateAssetParams) (Asset, error)
 	CreateAttendanceCorrection(ctx context.Context, arg CreateAttendanceCorrectionParams) (AttendanceCorrection, error)
 	CreateClass(ctx context.Context, arg CreateClassParams) (Class, error)
 	CreateDutyAssignment(ctx context.Context, arg CreateDutyAssignmentParams) (DutyAssignment, error)
 	CreateDutyType(ctx context.Context, arg CreateDutyTypeParams) (DutyType, error)
 	CreateGradeLevel(ctx context.Context, arg CreateGradeLevelParams) (GradeLevel, error)
+	CreateImpersonationSession(ctx context.Context, arg CreateImpersonationSessionParams) (Session, error)
 	CreateJournal(ctx context.Context, arg CreateJournalParams) (ClassJournal, error)
 	CreatePasswordReset(ctx context.Context, arg CreatePasswordResetParams) (PasswordReset, error)
 	CreateRole(ctx context.Context, arg CreateRoleParams) (Role, error)
@@ -162,13 +168,20 @@ type Querier interface {
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	CreateUserProfile(ctx context.Context, arg CreateUserProfileParams) error
 	DeactivateAllAcademicYears(ctx context.Context, tenantID uuid.UUID) error
+	DeleteDutyAssignment(ctx context.Context, arg DeleteDutyAssignmentParams) error
+	DeleteDutyPermissions(ctx context.Context, arg DeleteDutyPermissionsParams) error
 	DeleteJournal(ctx context.Context, arg DeleteJournalParams) error
+	DeleteRole(ctx context.Context, arg DeleteRoleParams) error
+	DeleteRolePermissions(ctx context.Context, arg DeleteRolePermissionsParams) error
 	DeleteSchedule(ctx context.Context, arg DeleteScheduleParams) error
 	DeleteSchedulesByAcademicYear(ctx context.Context, arg DeleteSchedulesByAcademicYearParams) error
+	DeleteUserRoles(ctx context.Context, arg DeleteUserRolesParams) error
+	EmailExists(ctx context.Context, arg EmailExistsParams) (bool, error)
 	GetAcademicYearByID(ctx context.Context, arg GetAcademicYearByIDParams) (AcademicYear, error)
 	GetAcceptedSubstitutionForScheduleDate(ctx context.Context, arg GetAcceptedSubstitutionForScheduleDateParams) (SubstitutionRequest, error)
 	GetActiveAcademicYear(ctx context.Context, tenantID uuid.UUID) (AcademicYear, error)
 	GetActiveSubstitutionForScheduleDate(ctx context.Context, arg GetActiveSubstitutionForScheduleDateParams) (SubstitutionRequest, error)
+	GetAssetByID(ctx context.Context, arg GetAssetByIDParams) (Asset, error)
 	GetAttendanceDailySummary(ctx context.Context, arg GetAttendanceDailySummaryParams) (AttendanceDailySummary, error)
 	GetAttendanceSessionByID(ctx context.Context, arg GetAttendanceSessionByIDParams) (AttendanceSession, error)
 	GetAttendanceSessionBySchedule(ctx context.Context, arg GetAttendanceSessionByScheduleParams) (AttendanceSession, error)
@@ -179,6 +192,8 @@ type Querier interface {
 	// own sqlc queries over the same tables once both are merged into one
 	// generated db package.
 	GetClassRefForSchedule(ctx context.Context, arg GetClassRefForScheduleParams) (GetClassRefForScheduleRow, error)
+	GetDutyAssignmentByID(ctx context.Context, arg GetDutyAssignmentByIDParams) (DutyAssignment, error)
+	GetDutyTypeByID(ctx context.Context, arg GetDutyTypeByIDParams) (DutyType, error)
 	GetDutyTypeBySlug(ctx context.Context, arg GetDutyTypeBySlugParams) (DutyType, error)
 	// The class a student is actively enrolled in this academic year, for the
 	// student calendar and monthly summary views, which take a student_user_id
@@ -201,21 +216,29 @@ type Querier interface {
 	// The student's most recent recorded status in this class+subject before
 	// the given date, used to prefill "previous_status" in the session payload.
 	GetPreviousEntryForStudent(ctx context.Context, arg GetPreviousEntryForStudentParams) (string, error)
+	GetRoleByID(ctx context.Context, arg GetRoleByIDParams) (Role, error)
 	GetRoleBySlug(ctx context.Context, arg GetRoleBySlugParams) (Role, error)
 	GetScheduleByID(ctx context.Context, arg GetScheduleByIDParams) (Schedule, error)
 	GetSessionByID(ctx context.Context, arg GetSessionByIDParams) (Session, error)
 	GetSessionByRefreshHash(ctx context.Context, arg GetSessionByRefreshHashParams) (Session, error)
 	GetSingleTenant(ctx context.Context) (Tenant, error)
+	GetStaffProfile(ctx context.Context, arg GetStaffProfileParams) (StaffProfile, error)
+	GetStudentProfile(ctx context.Context, arg GetStudentProfileParams) (StudentProfile, error)
 	GetSubjectRefForSchedule(ctx context.Context, arg GetSubjectRefForScheduleParams) (GetSubjectRefForScheduleRow, error)
 	GetSubstitutionByID(ctx context.Context, arg GetSubstitutionByIDParams) (SubstitutionRequest, error)
+	GetTeacherProfile(ctx context.Context, arg GetTeacherProfileParams) (TeacherProfile, error)
 	GetTeachingAssignmentRef(ctx context.Context, arg GetTeachingAssignmentRefParams) (GetTeachingAssignmentRefRow, error)
 	GetTenantByDomain(ctx context.Context, primaryDomain pgtype.Text) (Tenant, error)
 	GetTenantByID(ctx context.Context, id uuid.UUID) (Tenant, error)
 	GetTenantBySlug(ctx context.Context, slug string) (Tenant, error)
 	GetTenantSettingValue(ctx context.Context, arg GetTenantSettingValueParams) ([]byte, error)
 	GetTenantTimezoneForAttendance(ctx context.Context, id uuid.UUID) (string, error)
+	GetUserAdminByID(ctx context.Context, arg GetUserAdminByIDParams) (GetUserAdminByIDRow, error)
 	GetUserByID(ctx context.Context, arg GetUserByIDParams) (User, error)
 	GetUserByUsername(ctx context.Context, arg GetUserByUsernameParams) (User, error)
+	GetUserByUsernameOrEmail(ctx context.Context, arg GetUserByUsernameOrEmailParams) (User, error)
+	GetValidPasswordResetByHash(ctx context.Context, arg GetValidPasswordResetByHashParams) (PasswordReset, error)
+	InsertImpersonationAction(ctx context.Context, arg InsertImpersonationActionParams) error
 	InsertLoginAttempt(ctx context.Context, arg InsertLoginAttemptParams) error
 	IsActiveTeacherRef(ctx context.Context, arg IsActiveTeacherRefParams) (bool, error)
 	IsSchoolDayRef(ctx context.Context, arg IsSchoolDayRefParams) (bool, error)
@@ -245,6 +268,10 @@ type Querier interface {
 	ListAttendanceSessionsByClassDate(ctx context.Context, arg ListAttendanceSessionsByClassDateParams) ([]AttendanceSession, error)
 	ListAttendanceSessionsByDateRange(ctx context.Context, arg ListAttendanceSessionsByDateRangeParams) ([]AttendanceSession, error)
 	ListAttendanceSessionsByTeacherDate(ctx context.Context, arg ListAttendanceSessionsByTeacherDateParams) ([]AttendanceSession, error)
+	// Ordered by id descending: audit_logs.id is a uuidv7 (time-sortable), so
+	// this gives newest-first without needing a second sort key even though
+	// the table's primary key is (id, occurred_at) for partitioning.
+	ListAuditLogs(ctx context.Context, arg ListAuditLogsParams) ([]AuditLog, error)
 	ListCorrectionsByEntry(ctx context.Context, arg ListCorrectionsByEntryParams) ([]AttendanceCorrection, error)
 	// Every schedule occurrence whose period is currently running (start
 	// period's starts_at through end period's ends_at straddle now_time, in
@@ -252,6 +279,9 @@ type Querier interface {
 	// if one has been opened -- the raw input to the monitor snapshot's
 	// per-class submission cards.
 	ListCurrentPeriodScheduleCardsForAttendance(ctx context.Context, arg ListCurrentPeriodScheduleCardsForAttendanceParams) ([]ListCurrentPeriodScheduleCardsForAttendanceRow, error)
+	ListDutyAssignmentsAdmin(ctx context.Context, arg ListDutyAssignmentsAdminParams) ([]ListDutyAssignmentsAdminRow, error)
+	ListDutyPermissionCodes(ctx context.Context, arg ListDutyPermissionCodesParams) ([]string, error)
+	ListDutyTypes(ctx context.Context, arg ListDutyTypesParams) ([]DutyType, error)
 	ListEntriesBySession(ctx context.Context, arg ListEntriesBySessionParams) ([]AttendanceEntry, error)
 	// Every status code recorded for one student across the given date's
 	// submitted sessions -- the raw input to attendance/domain.ComputeDailyStatus.
@@ -261,6 +291,9 @@ type Querier interface {
 	ListPeriodsRefByTemplate(ctx context.Context, arg ListPeriodsRefByTemplateParams) ([]Period, error)
 	ListPermissionCodesForDutyTypes(ctx context.Context, dutyTypeIds []uuid.UUID) ([]ListPermissionCodesForDutyTypesRow, error)
 	ListPermissionCodesForRoles(ctx context.Context, roleIds []uuid.UUID) ([]string, error)
+	ListPermissionsCatalog(ctx context.Context) ([]Permission, error)
+	ListRolePermissionCodes(ctx context.Context, arg ListRolePermissionCodesParams) ([]string, error)
+	ListRolesByTenant(ctx context.Context, tenantID uuid.UUID) ([]Role, error)
 	ListRolesForUser(ctx context.Context, userID uuid.UUID) ([]ListRolesForUserRow, error)
 	ListSchedulesByAcademicYear(ctx context.Context, arg ListSchedulesByAcademicYearParams) ([]Schedule, error)
 	ListSchedulesByClass(ctx context.Context, arg ListSchedulesByClassParams) ([]Schedule, error)
@@ -271,24 +304,43 @@ type Querier interface {
 	ListSystemRoles(ctx context.Context, tenantID uuid.UUID) ([]ListSystemRolesRow, error)
 	ListTenantIDs(ctx context.Context) ([]uuid.UUID, error)
 	ListTenantSettingsByPrefix(ctx context.Context, arg ListTenantSettingsByPrefixParams) ([]TenantSetting, error)
+	ListUserRoleSlugs(ctx context.Context, userID uuid.UUID) ([]string, error)
+	ListUsersAdmin(ctx context.Context, arg ListUsersAdminParams) ([]ListUsersAdminRow, error)
+	MarkPasswordResetUsed(ctx context.Context, arg MarkPasswordResetUsedParams) error
 	// Idempotent open: a second call for the same (schedule_id, date) returns
 	// no row from the INSERT and the caller falls back to GetAttendanceSessionBySchedule.
 	OpenAttendanceSession(ctx context.Context, arg OpenAttendanceSessionParams) (AttendanceSession, error)
+	PermissionExists(ctx context.Context, code string) (bool, error)
 	RespondSubstitutionRequest(ctx context.Context, arg RespondSubstitutionRequestParams) (SubstitutionRequest, error)
+	RestoreUser(ctx context.Context, arg RestoreUserParams) error
 	RevokeOtherUserSessions(ctx context.Context, arg RevokeOtherUserSessionsParams) error
 	RevokeSession(ctx context.Context, arg RevokeSessionParams) error
 	RevokeSessionFamily(ctx context.Context, arg RevokeSessionFamilyParams) error
 	SearchTenants(ctx context.Context, name string) ([]Tenant, error)
+	SetUserAvatarAsset(ctx context.Context, arg SetUserAvatarAssetParams) error
+	SetUserStatus(ctx context.Context, arg SetUserStatusParams) error
+	SoftDeleteDutyType(ctx context.Context, arg SoftDeleteDutyTypeParams) error
 	SubmitAttendanceSession(ctx context.Context, arg SubmitAttendanceSessionParams) (AttendanceSession, error)
 	TouchSessionLastSeen(ctx context.Context, arg TouchSessionLastSeenParams) error
+	UpdateDutyAssignment(ctx context.Context, arg UpdateDutyAssignmentParams) error
+	UpdateDutyType(ctx context.Context, arg UpdateDutyTypeParams) error
 	UpdateJournal(ctx context.Context, arg UpdateJournalParams) (ClassJournal, error)
+	UpdateOwnProfile(ctx context.Context, arg UpdateOwnProfileParams) error
+	UpdateRole(ctx context.Context, arg UpdateRoleParams) error
 	UpdateSchedule(ctx context.Context, arg UpdateScheduleParams) (Schedule, error)
+	UpdateUserBasic(ctx context.Context, arg UpdateUserBasicParams) error
 	UpdateUserLastLogin(ctx context.Context, arg UpdateUserLastLoginParams) error
 	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error
 	UpsertAttendanceDailySummary(ctx context.Context, arg UpsertAttendanceDailySummaryParams) error
 	UpsertAttendanceEntry(ctx context.Context, arg UpsertAttendanceEntryParams) (AttendanceEntry, error)
 	UpsertPermission(ctx context.Context, arg UpsertPermissionParams) error
+	UpsertStaffProfile(ctx context.Context, arg UpsertStaffProfileParams) error
+	UpsertStudentProfile(ctx context.Context, arg UpsertStudentProfileParams) error
+	UpsertTeacherProfile(ctx context.Context, arg UpsertTeacherProfileParams) error
 	UpsertTenantSetting(ctx context.Context, arg UpsertTenantSettingParams) error
+	UpsertUserProfile(ctx context.Context, arg UpsertUserProfileParams) error
+	UserExistsInTenant(ctx context.Context, arg UserExistsInTenantParams) (bool, error)
+	UsernameExists(ctx context.Context, arg UsernameExistsParams) (bool, error)
 }
 
 var _ Querier = (*Queries)(nil)

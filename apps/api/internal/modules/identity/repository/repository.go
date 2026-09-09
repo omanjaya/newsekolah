@@ -238,6 +238,7 @@ func toDomainSession(row db.Session) domain.Session {
 		FamilyID:  row.FamilyID,
 		UserID:    row.UserID,
 		TenantID:  row.TenantID,
+		Kind:      domain.SessionKind(row.Kind),
 		Client:    domain.ClientKind(row.Client),
 		RevokedAt: pdatabase.TimePtr(row.RevokedAt),
 		ExpiresAt: pdatabase.TimeOrZero(row.ExpiresAt),
