@@ -56,6 +56,8 @@ tags:
     description: Report centre and exports
   - name: family
     description: Parent view of a linked child
+  - name: platform
+    description: Cross-tenant platform console (multi-tenant deployments only)
 paths:
   /v1/academic/years:
     get:
@@ -6444,6 +6446,338 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
+  /v1/platform/tenants:
+    get:
+      tags:
+        - platform
+      operationId: listPlatformTenants
+      x-permission: platform_superadmin
+      summary: List every tenant with a health summary
+      responses:
+        "200":
+          description: Tenants
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/PlatformTenantHealth"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    post:
+      tags:
+        - platform
+      operationId: createPlatformTenant
+      x-permission: platform_superadmin
+      summary: Provision a new tenant and its first administrator
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlatformTenantCreate"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlatformTenantCreated"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/platform/tenants/{tenantId}:
+    get:
+      tags:
+        - platform
+      operationId: getPlatformTenant
+      x-permission: platform_superadmin
+      summary: One tenant's health summary and module flags
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Tenant detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlatformTenantDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/platform/tenants/{tenantId}/suspend:
+    post:
+      tags:
+        - platform
+      operationId: suspendPlatformTenant
+      x-permission: platform_superadmin
+      summary: Suspend a tenant (blocks sign-in without deleting anything)
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Suspended
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlatformTenant"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/platform/tenants/{tenantId}/resume:
+    post:
+      tags:
+        - platform
+      operationId: resumePlatformTenant
+      x-permission: platform_superadmin
+      summary: Reverse a suspension
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Resumed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlatformTenant"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/platform/tenants/{tenantId}/domain:
+    put:
+      tags:
+        - platform
+      operationId: updatePlatformTenantDomain
+      x-permission: platform_superadmin
+      summary: Set a tenant's custom domain
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - domain
+              properties:
+                domain:
+                  type: string
+                  minLength: 1
+                  maxLength: 253
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlatformTenant"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/platform/tenants/{tenantId}/flags:
+    get:
+      tags:
+        - platform
+      operationId: listPlatformTenantFlags
+      x-permission: platform_superadmin
+      summary: Module feature flags for a tenant
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Flags
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/PlatformModuleFlag"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/platform/tenants/{tenantId}/flags/{module}:
+    put:
+      tags:
+        - platform
+      operationId: setPlatformTenantFlag
+      x-permission: platform_superadmin
+      summary: Enable or disable one module for a tenant
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: module
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/PlatformModule"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - enabled
+              properties:
+                enabled:
+                  type: boolean
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlatformModuleFlag"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/platform/tenants/{tenantId}/exports:
+    post:
+      tags:
+        - platform
+      operationId: requestPlatformTenantExport
+      x-permission: platform_superadmin
+      summary: Enqueue a ZIP export of the tenant's core tables
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "201":
+          description: Export enqueued
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlatformExport"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/platform/tenants/{tenantId}/exports/{exportId}:
+    get:
+      tags:
+        - platform
+      operationId: getPlatformTenantExport
+      x-permission: platform_superadmin
+      summary: Export status, with a download URL once it is done
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: exportId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Export
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlatformExport"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
   /v1/reports:
     get:
       tags:
@@ -10650,6 +10984,177 @@ components:
           type: string
           format: date-time
         updated_at:
+          type: string
+          format: date-time
+    PlatformEducationLevel:
+      type: string
+      enum:
+        - sd
+        - smp
+        - sma
+        - smk
+    PlatformTenantStatus:
+      type: string
+      enum:
+        - trial
+        - active
+        - suspended
+        - offboarding
+    PlatformModule:
+      type: string
+      enum:
+        - library
+        - discipline
+        - grading
+        - permits
+        - announcements
+        - reports
+    PlatformTenant:
+      type: object
+      required:
+        - id
+        - slug
+        - name
+        - education_level
+        - timezone
+        - status
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        name:
+          type: string
+        education_level:
+          $ref: "#/components/schemas/PlatformEducationLevel"
+        timezone:
+          type: string
+        status:
+          $ref: "#/components/schemas/PlatformTenantStatus"
+        primary_domain:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    PlatformTenantHealth:
+      allOf:
+        - $ref: "#/components/schemas/PlatformTenant"
+        - type: object
+          required:
+            - user_count
+            - storage_bucket
+          properties:
+            user_count:
+              type: integer
+            active_academic_year:
+              type: string
+            last_activity_at:
+              type: string
+              format: date-time
+            storage_bucket:
+              type: string
+    PlatformModuleFlag:
+      type: object
+      required:
+        - module
+        - enabled
+      properties:
+        module:
+          $ref: "#/components/schemas/PlatformModule"
+        enabled:
+          type: boolean
+    PlatformTenantDetail:
+      allOf:
+        - $ref: "#/components/schemas/PlatformTenantHealth"
+        - type: object
+          required:
+            - flags
+          properties:
+            flags:
+              type: array
+              items:
+                $ref: "#/components/schemas/PlatformModuleFlag"
+    PlatformTenantCreate:
+      type: object
+      required:
+        - slug
+        - name
+        - education_level
+        - timezone
+        - admin_username
+        - admin_name
+      properties:
+        slug:
+          type: string
+          minLength: 2
+          maxLength: 64
+        name:
+          type: string
+          minLength: 1
+          maxLength: 150
+        education_level:
+          $ref: "#/components/schemas/PlatformEducationLevel"
+        timezone:
+          type: string
+          minLength: 1
+        admin_username:
+          type: string
+          minLength: 3
+          maxLength: 80
+        admin_email:
+          type: string
+          format: email
+        admin_name:
+          type: string
+          minLength: 1
+          maxLength: 150
+    PlatformTenantCreated:
+      type: object
+      required:
+        - tenant
+        - admin_username
+        - admin_password
+      properties:
+        tenant:
+          $ref: "#/components/schemas/PlatformTenant"
+        admin_username:
+          type: string
+        admin_password:
+          type: string
+          description: Shown exactly once; the server never stores or returns it again.
+    PlatformExportStatus:
+      type: string
+      enum:
+        - pending
+        - running
+        - done
+        - failed
+    PlatformExport:
+      type: object
+      required:
+        - id
+        - tenant_id
+        - status
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenant_id:
+          type: string
+          format: uuid
+        status:
+          $ref: "#/components/schemas/PlatformExportStatus"
+        download_url:
+          type: string
+        error_message:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        completed_at:
           type: string
           format: date-time
     ReportArgumentKind:

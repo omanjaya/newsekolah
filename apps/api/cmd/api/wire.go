@@ -24,6 +24,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/notifications"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/permits"
 	permitsservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/service"
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/platform"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/reports"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/school"
@@ -95,8 +96,9 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	// permits is built first with a late-bound attendance sync, then
 	// attendance receives permits' blocker/overrider.
 	sync := &lateBoundSync{}
+	documentStorage := storageClientFor(cfg, logger)
 	permitsModule := permits.Register(permits.Dependencies{
-		Pool: pool, Years: schoolModule.Service, Bus: eventBus, Storage: storageClientFor(cfg, logger),
+		Pool: pool, Years: schoolModule.Service, Bus: eventBus, Storage: documentStorage,
 		Schedule: permitsScheduleLookup{schedules: schedulingModule.ScheduleReader, periods: academicModule.Service, years: schoolModule.Service},
 		Sync:     sync,
 		Clock:    clock.Real{}, Config: permitsservice.DefaultConfig([]byte(cfg.DocumentSigningKey), cfg.S3Bucket), Logger: logger,
@@ -131,6 +133,15 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		Pool: pool, Notifier: wiring.AnnouncementNotifier{Svc: notificationsModule.Service}, Clock: clock.Real{}, Logger: logger,
 	})
 
+	platformDeps := platform.Dependencies{
+		Pool: pool, Admin: wiring.PlatformIdentity{Identity: identityModule.Service}, Jobs: jobInserter,
+		Clock: clock.Real{}, Mode: cfg.TenancyMode, Bucket: cfg.S3Bucket,
+	}
+	if documentStorage != nil {
+		platformDeps.Storage = wiring.PlatformStorage{Client: documentStorage}
+	}
+	platformModule := platform.Register(platformDeps)
+
 	var (
 		workers  *river.Workers
 		periodic []*river.PeriodicJob
@@ -144,6 +155,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		}
 		periodic = append(periodic, notificationPeriodic...)
 		periodic = append(periodic, announcementsModule.RegisterJobs(workers)...)
+		platformModule.RegisterJobs(workers)
 	}
 	riverClient, err := jobs.NewClient(pool, workers, logger, periodic...)
 	if err != nil {
@@ -188,6 +200,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		GradingHandler:       gradingModule.Handler,
 		ReportsHandler:       reportsModule.Handler,
 		FamilyHandler:        familyModule.Handler,
+		PlatformHandler:      platformModule.Handler,
 		healthHandler:        &healthHandler{version: version, pool: pool, redis: redisClient},
 	}
 

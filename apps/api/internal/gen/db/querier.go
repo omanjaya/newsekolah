@@ -565,6 +565,20 @@ type Querier interface {
 	// no row from the INSERT and the caller falls back to GetAttendanceSessionBySchedule.
 	OpenAttendanceSession(ctx context.Context, arg OpenAttendanceSessionParams) (AttendanceSession, error)
 	PermissionExists(ctx context.Context, code string) (bool, error)
+	PlatformActiveAcademicYearLabel(ctx context.Context, tenantID uuid.UUID) (string, error)
+	PlatformCountTenantUsers(ctx context.Context, tenantID uuid.UUID) (int64, error)
+	PlatformCreateExport(ctx context.Context, tenantID uuid.UUID) (TenantExport, error)
+	PlatformExportAcademicYears(ctx context.Context, tenantID uuid.UUID) ([]PlatformExportAcademicYearsRow, error)
+	PlatformExportClasses(ctx context.Context, tenantID uuid.UUID) ([]PlatformExportClassesRow, error)
+	PlatformExportUsers(ctx context.Context, tenantID uuid.UUID) ([]PlatformExportUsersRow, error)
+	PlatformGetExport(ctx context.Context, arg PlatformGetExportParams) (TenantExport, error)
+	PlatformLastActivityAt(ctx context.Context, tenantID pgtype.UUID) (pgtype.Timestamptz, error)
+	PlatformListFeatureFlags(ctx context.Context, tenantID uuid.UUID) ([]PlatformListFeatureFlagsRow, error)
+	PlatformListTenants(ctx context.Context) ([]Tenant, error)
+	PlatformUpdateExportStatus(ctx context.Context, arg PlatformUpdateExportStatusParams) (TenantExport, error)
+	PlatformUpdateTenantDomain(ctx context.Context, arg PlatformUpdateTenantDomainParams) (Tenant, error)
+	PlatformUpdateTenantStatus(ctx context.Context, arg PlatformUpdateTenantStatusParams) (Tenant, error)
+	PlatformUpsertFeatureFlag(ctx context.Context, arg PlatformUpsertFeatureFlagParams) (FeatureFlag, error)
 	RecordDeliveryAttempt(ctx context.Context, arg RecordDeliveryAttemptParams) error
 	RespondSubstitutionRequest(ctx context.Context, arg RespondSubstitutionRequestParams) (SubstitutionRequest, error)
 	RestoreUser(ctx context.Context, arg RestoreUserParams) error

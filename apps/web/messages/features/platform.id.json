@@ -1,0 +1,88 @@
+{
+  "tenants": {
+    "eyebrow": "Platform",
+    "title": "Konsol Platform",
+    "subtitle": "Kelola setiap sekolah pada penyebaran multi-sekolah ini.",
+    "add": "Tambah Sekolah",
+    "columns": {
+      "name": "Sekolah",
+      "level": "Jenjang",
+      "status": "Status",
+      "users": "Pengguna",
+      "activeYear": "Tahun Ajaran Aktif",
+      "lastActivity": "Aktivitas Terakhir",
+      "actions": "Aksi"
+    },
+    "status": {
+      "trial": "Uji Coba",
+      "active": "Aktif",
+      "suspended": "Ditangguhkan",
+      "offboarding": "Penonaktifan"
+    },
+    "level": {
+      "sd": "SD",
+      "smp": "SMP",
+      "sma": "SMA",
+      "smk": "SMK"
+    },
+    "never": "Belum pernah",
+    "emptyTitle": "Belum ada sekolah",
+    "emptyBody": "Sekolah yang dibuat akan muncul di sini.",
+    "viewDetail": "Lihat detail",
+    "suspend": "Tangguhkan",
+    "resume": "Aktifkan kembali",
+    "suspended": "Sekolah ditangguhkan",
+    "resumed": "Sekolah diaktifkan kembali",
+    "create": {
+      "title": "Tambah sekolah baru",
+      "slug": "Slug",
+      "slugHint": "Huruf kecil, angka, dan tanda hubung, contoh: sman-1-denpasar",
+      "name": "Nama sekolah",
+      "level": "Jenjang",
+      "timezone": "Zona waktu",
+      "adminSectionTitle": "Administrator pertama",
+      "adminUsername": "Nama pengguna",
+      "adminEmail": "Email (opsional)",
+      "adminName": "Nama lengkap",
+      "submit": "Buat sekolah",
+      "cancel": "Batal",
+      "created": "Sekolah berhasil dibuat"
+    },
+    "created": {
+      "title": "Sekolah dibuat",
+      "body": "Berikan kredensial berikut kepada administrator sekolah. Kata sandi ini hanya ditampilkan sekali dan tidak dapat dilihat lagi.",
+      "username": "Nama pengguna",
+      "password": "Kata sandi",
+      "done": "Selesai"
+    },
+    "detail": {
+      "title": "Detail Sekolah",
+      "domainTitle": "Domain khusus",
+      "domainPlaceholder": "sekolah.contoh.sch.id",
+      "domainSave": "Simpan domain",
+      "domainSaved": "Domain diperbarui",
+      "domainNone": "Belum diatur",
+      "flagsTitle": "Modul aktif",
+      "modules": {
+        "library": "Perpustakaan",
+        "discipline": "Kesiswaan",
+        "grading": "Penilaian",
+        "permits": "Perizinan",
+        "announcements": "Pengumuman",
+        "reports": "Laporan"
+      },
+      "flagUpdated": "Modul diperbarui",
+      "exportTitle": "Ekspor data sekolah",
+      "exportBody": "Membuat berkas ZIP berisi data inti sekolah ini (pengguna, tahun ajaran, kelas) sebagai CSV.",
+      "exportButton": "Mulai ekspor",
+      "exportStatus": {
+        "pending": "Menunggu diproses",
+        "running": "Sedang diproses",
+        "done": "Selesai",
+        "failed": "Gagal"
+      },
+      "exportDownload": "Unduh berkas",
+      "storageBucket": "Bucket penyimpanan"
+    }
+  }
+}
