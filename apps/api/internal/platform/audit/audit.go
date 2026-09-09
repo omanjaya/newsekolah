@@ -54,6 +54,14 @@ func Record(ctx context.Context, tenantID uuid.UUID, action, entityType string, 
 	}
 
 	meta := httpx.RequestMetaFromContext(ctx)
+	if keyName, ok := httpx.APIKeyNameFromContext(ctx); ok {
+		// A request authenticated with an API key still names its owning
+		// user as actor (permissions and scope are the owner's), but the
+		// entry must also name the key, per the integrations module's
+		// requirement that audit entries are traceable to the credential
+		// used, not only the human who created it.
+		meta.UserAgent = fmt.Sprintf("api-key:%s %s", keyName, meta.UserAgent)
+	}
 
 	const stmt = `
 		insert into audit_logs (

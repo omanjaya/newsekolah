@@ -16,6 +16,8 @@ const (
 	refreshCookieKey
 	requestMetaKey
 	actorIDKey
+	apiKeyIDKey
+	apiKeyNameKey
 )
 
 // RequestMeta carries per-request client metadata that oapi-codegen's
@@ -76,6 +78,28 @@ func WithSessionID(ctx context.Context, sessionID uuid.UUID) context.Context {
 func SessionIDFromContext(ctx context.Context) (uuid.UUID, bool) {
 	id, ok := ctx.Value(sessionIDKey).(uuid.UUID)
 	return id, ok
+}
+
+// WithAPIKeyID and WithAPIKeyName record which API key authenticated a
+// request, for a session-authenticated request neither is set. Audit
+// writes read the name back out so an entry made through a key names it
+// instead of only the key's owning user (docs on the integrations module).
+func WithAPIKeyID(ctx context.Context, keyID uuid.UUID) context.Context {
+	return context.WithValue(ctx, apiKeyIDKey, keyID)
+}
+
+func APIKeyIDFromContext(ctx context.Context) (uuid.UUID, bool) {
+	id, ok := ctx.Value(apiKeyIDKey).(uuid.UUID)
+	return id, ok
+}
+
+func WithAPIKeyName(ctx context.Context, name string) context.Context {
+	return context.WithValue(ctx, apiKeyNameKey, name)
+}
+
+func APIKeyNameFromContext(ctx context.Context) (string, bool) {
+	name, ok := ctx.Value(apiKeyNameKey).(string)
+	return name, ok && name != ""
 }
 
 func WithRefreshCookie(ctx context.Context, value string) context.Context {

@@ -1,0 +1,97 @@
+{
+  "navLabel": "Integrasi",
+  "eyebrow": "Pengaturan",
+  "title": "Kunci API dan webhook",
+  "description": "Kelola akses mesin ke data sekolah: kunci API untuk memanggil endpoint, dan webhook untuk menerima peristiwa secara otomatis.",
+  "tabs": {
+    "apiKeys": "Kunci API",
+    "webhooks": "Webhook",
+    "deliveries": "Log pengiriman"
+  },
+  "apiKeys": {
+    "description": "Kunci API memberi akses ke endpoint yang sama dengan sesi biasa, dibatasi pada izin yang dipilih saat kunci dibuat.",
+    "createButton": "Buat kunci",
+    "revoke": "Cabut",
+    "revoked": "Kunci dicabut",
+    "revokeConfirmTitle": "Cabut kunci API?",
+    "revokeConfirmBody": "Kunci \"{name}\" akan berhenti berfungsi seketika. Tindakan ini tidak dapat dibatalkan.",
+    "emptyTitle": "Belum ada kunci API",
+    "emptyBody": "Buat kunci untuk memberi akses mesin ke data sekolah ini.",
+    "neverUsed": "Belum pernah dipakai",
+    "statusActive": "Aktif",
+    "statusRevoked": "Dicabut",
+    "statusExpired": "Kedaluwarsa",
+    "columns": {
+      "name": "Nama",
+      "permissions": "Izin",
+      "status": "Status",
+      "lastUsed": "Terakhir dipakai"
+    },
+    "create": {
+      "dialogTitle": "Buat kunci API",
+      "dialogBody": "Pilih izin yang diberikan ke kunci ini. Izin tidak bisa melebihi izin akun Anda sendiri.",
+      "nameLabel": "Nama kunci",
+      "namePlaceholder": "Contoh: Integrasi absensi CI",
+      "permissionsLabel": "Izin",
+      "noPermissions": "Akun Anda belum memiliki izin yang bisa diberikan ke kunci.",
+      "submit": "Buat kunci",
+      "createdTitle": "Kunci API dibuat",
+      "shownOnceWarning": "Token ini hanya ditampilkan sekali. Simpan sekarang; server hanya menyimpan bentuk hash-nya.",
+      "tokenLabel": "Token",
+      "copyToken": "Salin token",
+      "tokenCopied": "Token disalin",
+      "copyFailed": "Token tidak dapat disalin otomatis, salin secara manual",
+      "done": "Sudah disimpan"
+    }
+  },
+  "webhooks": {
+    "description": "Endpoint webhook menerima peristiwa lewat permintaan POST bertanda tangan HMAC. Lihat docs/14-public-api.md untuk skema verifikasi.",
+    "create": "Tambah endpoint",
+    "edit": "Ubah",
+    "delete": "Hapus",
+    "deleted": "Endpoint dihapus",
+    "viewDeliveries": "Lihat pengiriman",
+    "deleteConfirmTitle": "Hapus endpoint webhook?",
+    "deleteConfirmBody": "Endpoint \"{url}\" tidak akan menerima peristiwa lagi. Tindakan ini tidak dapat dibatalkan.",
+    "emptyTitle": "Belum ada endpoint webhook",
+    "emptyBody": "Tambahkan endpoint untuk menerima peristiwa sekolah secara otomatis.",
+    "statusActive": "Aktif",
+    "statusDisabled": "Dinonaktifkan",
+    "columns": {
+      "url": "URL",
+      "eventTypes": "Jenis peristiwa",
+      "status": "Status"
+    },
+    "form": {
+      "createTitle": "Tambah endpoint webhook",
+      "editTitle": "Ubah endpoint webhook",
+      "dialogBody": "URL harus dapat diakses publik; alamat privat atau loopback ditolak.",
+      "urlLabel": "URL endpoint",
+      "descriptionLabel": "Deskripsi (opsional)",
+      "eventTypesLabel": "Jenis peristiwa",
+      "submit": "Simpan",
+      "created": "Endpoint dibuat",
+      "updated": "Endpoint diperbarui"
+    }
+  },
+  "deliveries": {
+    "filterEndpoint": "Endpoint",
+    "filterEndpointAll": "Semua endpoint",
+    "retry": "Coba lagi",
+    "retryEnqueued": "Pengiriman ulang dijadwalkan",
+    "emptyTitle": "Belum ada riwayat pengiriman",
+    "emptyBody": "Riwayat pengiriman muncul setelah peristiwa pertama terjadi.",
+    "statusSuccess": "Berhasil",
+    "statusFailed": "Gagal",
+    "statusPending": "Menunggu percobaan berikut",
+    "columns": {
+      "when": "Waktu",
+      "eventType": "Jenis peristiwa",
+      "status": "Status",
+      "attempts": "Percobaan",
+      "reason": "Alasan"
+    },
+    "pagePrev": "Sebelumnya",
+    "pageNext": "Berikutnya"
+  }
+}

@@ -176,6 +176,7 @@ type Querier interface {
 	CountUnreadNotifications(ctx context.Context, arg CountUnreadNotificationsParams) (int64, error)
 	CountUsersForRole(ctx context.Context, arg CountUsersForRoleParams) (int64, error)
 	CountWorkflowInstancesForSubjectYear(ctx context.Context, arg CountWorkflowInstancesForSubjectYearParams) (int64, error)
+	CreateAPIKey(ctx context.Context, arg CreateAPIKeyParams) (IntegrationApiKey, error)
 	CreateAcademicYear(ctx context.Context, arg CreateAcademicYearParams) (AcademicYear, error)
 	CreateAnnouncement(ctx context.Context, arg CreateAnnouncementParams) (Announcement, error)
 	CreateAsset(ctx context.Context, arg CreateAssetParams) (Asset, error)
@@ -215,6 +216,8 @@ type Querier interface {
 	CreateViolationRecord(ctx context.Context, arg CreateViolationRecordParams) (ViolationRecord, error)
 	CreateViolationType(ctx context.Context, arg CreateViolationTypeParams) (ViolationType, error)
 	CreateWarningLetter(ctx context.Context, arg CreateWarningLetterParams) (WarningLetter, error)
+	CreateWebhookDelivery(ctx context.Context, arg CreateWebhookDeliveryParams) (IntegrationWebhookDelivery, error)
+	CreateWebhookEndpoint(ctx context.Context, arg CreateWebhookEndpointParams) (IntegrationWebhookEndpoint, error)
 	CreateWorkflowDefinition(ctx context.Context, arg CreateWorkflowDefinitionParams) (WorkflowDefinition, error)
 	CreateWorkflowEvent(ctx context.Context, arg CreateWorkflowEventParams) (WorkflowEvent, error)
 	CreateWorkflowInstance(ctx context.Context, arg CreateWorkflowInstanceParams) (WorkflowInstance, error)
@@ -246,6 +249,8 @@ type Querier interface {
 	DeleteSchedulesByAcademicYear(ctx context.Context, arg DeleteSchedulesByAcademicYearParams) error
 	DeleteUserRoles(ctx context.Context, arg DeleteUserRolesParams) error
 	DeleteViolationType(ctx context.Context, arg DeleteViolationTypeParams) error
+	DeleteWebhookEndpoint(ctx context.Context, arg DeleteWebhookEndpointParams) error
+	DisableWebhookEndpoint(ctx context.Context, arg DisableWebhookEndpointParams) error
 	DisciplineActiveClassID(ctx context.Context, arg DisciplineActiveClassIDParams) (uuid.UUID, error)
 	DisciplineCreatePolicy(ctx context.Context, arg DisciplineCreatePolicyParams) error
 	DisciplineGetLatestPolicy(ctx context.Context, arg DisciplineGetLatestPolicyParams) (DisciplineGetLatestPolicyRow, error)
@@ -261,6 +266,7 @@ type Querier interface {
 	// of local midnight for the tenant's timezone, computed by the caller so
 	// this query stays timezone-agnostic.
 	ExpireHangingWorkflowInstances(ctx context.Context, arg ExpireHangingWorkflowInstancesParams) ([]WorkflowInstance, error)
+	GetAPIKeyByID(ctx context.Context, arg GetAPIKeyByIDParams) (IntegrationApiKey, error)
 	GetAcademicYearByID(ctx context.Context, arg GetAcademicYearByIDParams) (AcademicYear, error)
 	GetAcceptedSubstitutionForScheduleDate(ctx context.Context, arg GetAcceptedSubstitutionForScheduleDateParams) (SubstitutionRequest, error)
 	GetActiveAcademicYear(ctx context.Context, tenantID uuid.UUID) (AcademicYear, error)
@@ -374,6 +380,8 @@ type Querier interface {
 	GetViolationRecord(ctx context.Context, arg GetViolationRecordParams) (ViolationRecord, error)
 	GetViolationType(ctx context.Context, arg GetViolationTypeParams) (ViolationType, error)
 	GetWarningLetter(ctx context.Context, arg GetWarningLetterParams) (WarningLetter, error)
+	GetWebhookDeliveryByID(ctx context.Context, arg GetWebhookDeliveryByIDParams) (IntegrationWebhookDelivery, error)
+	GetWebhookEndpointByID(ctx context.Context, arg GetWebhookEndpointByIDParams) (IntegrationWebhookEndpoint, error)
 	GetWorkflowDefinitionByID(ctx context.Context, arg GetWorkflowDefinitionByIDParams) (WorkflowDefinition, error)
 	// Used to resolve a stage's approver for a later stage's distinct_from check.
 	GetWorkflowEventByStage(ctx context.Context, arg GetWorkflowEventByStageParams) (WorkflowEvent, error)
@@ -396,6 +404,7 @@ type Querier interface {
 	// class_id (NULL class_id matches only a school-scoped duty).
 	HasActiveDuty(ctx context.Context, arg HasActiveDutyParams) (bool, error)
 	IncrementPushDeviceFailure(ctx context.Context, arg IncrementPushDeviceFailureParams) error
+	IncrementWebhookEndpointFailure(ctx context.Context, arg IncrementWebhookEndpointFailureParams) (int32, error)
 	InsertImpersonationAction(ctx context.Context, arg InsertImpersonationActionParams) error
 	InsertLoginAttempt(ctx context.Context, arg InsertLoginAttemptParams) error
 	InsertMessageDelivery(ctx context.Context, arg InsertMessageDeliveryParams) (MessageDelivery, error)
@@ -408,6 +417,7 @@ type Querier interface {
 	IsSessionActive(ctx context.Context, arg IsSessionActiveParams) (pgtype.Bool, error)
 	IssueLeaveRequest(ctx context.Context, arg IssueLeaveRequestParams) (LeaveRequest, error)
 	LinkParentStudent(ctx context.Context, arg LinkParentStudentParams) (ParentStudent, error)
+	ListAPIKeys(ctx context.Context, tenantID uuid.UUID) ([]IntegrationApiKey, error)
 	ListAcademicYears(ctx context.Context, tenantID uuid.UUID) ([]AcademicYear, error)
 	// Every schedule a teacher is standing in for on one date, accepted only --
 	// the input to the attendance module's "today's sessions" list
@@ -462,6 +472,7 @@ type Querier interface {
 	ListActiveTenantsForReportSchedules(ctx context.Context) ([]ListActiveTenantsForReportSchedulesRow, error)
 	// cross-module read: users table is owned by the identity module.
 	ListActiveUserIDsForTenant(ctx context.Context, tenantID uuid.UUID) ([]uuid.UUID, error)
+	ListActiveWebhookEndpointsForEvent(ctx context.Context, arg ListActiveWebhookEndpointsForEventParams) ([]IntegrationWebhookEndpoint, error)
 	ListAllGradeRanges(ctx context.Context, arg ListAllGradeRangesParams) ([]ReportGradeRange, error)
 	ListAnnouncementsForAdmin(ctx context.Context, arg ListAnnouncementsForAdminParams) ([]Announcement, error)
 	ListAttendanceDailySummaryForClassDate(ctx context.Context, arg ListAttendanceDailySummaryForClassDateParams) ([]AttendanceDailySummary, error)
@@ -576,6 +587,8 @@ type Querier interface {
 	ListViolationTypes(ctx context.Context, arg ListViolationTypesParams) ([]ViolationType, error)
 	ListWarningLetters(ctx context.Context, arg ListWarningLettersParams) ([]WarningLetter, error)
 	ListWarningLettersForStudent(ctx context.Context, arg ListWarningLettersForStudentParams) ([]WarningLetter, error)
+	ListWebhookDeliveries(ctx context.Context, arg ListWebhookDeliveriesParams) ([]IntegrationWebhookDelivery, error)
+	ListWebhookEndpoints(ctx context.Context, tenantID uuid.UUID) ([]IntegrationWebhookEndpoint, error)
 	ListWorkflowDefinitions(ctx context.Context, tenantID uuid.UUID) ([]WorkflowDefinition, error)
 	ListWorkflowEventsByInstance(ctx context.Context, arg ListWorkflowEventsByInstanceParams) ([]WorkflowEvent, error)
 	ListWorkflowInstancesByClassAndKind(ctx context.Context, arg ListWorkflowInstancesByClassAndKindParams) ([]WorkflowInstance, error)
@@ -621,8 +634,10 @@ type Querier interface {
 	PlatformUpdateTenantStatus(ctx context.Context, arg PlatformUpdateTenantStatusParams) (Tenant, error)
 	PlatformUpsertFeatureFlag(ctx context.Context, arg PlatformUpsertFeatureFlagParams) (FeatureFlag, error)
 	RecordDeliveryAttempt(ctx context.Context, arg RecordDeliveryAttemptParams) error
+	ResetWebhookEndpointFailure(ctx context.Context, arg ResetWebhookEndpointFailureParams) error
 	RespondSubstitutionRequest(ctx context.Context, arg RespondSubstitutionRequestParams) (SubstitutionRequest, error)
 	RestoreUser(ctx context.Context, arg RestoreUserParams) error
+	RevokeAPIKey(ctx context.Context, arg RevokeAPIKeyParams) (IntegrationApiKey, error)
 	RevokeOtherUserSessions(ctx context.Context, arg RevokeOtherUserSessionsParams) error
 	RevokeSession(ctx context.Context, arg RevokeSessionParams) error
 	RevokeSessionFamily(ctx context.Context, arg RevokeSessionFamilyParams) error
@@ -643,6 +658,7 @@ type Querier interface {
 	StarBalance(ctx context.Context, arg StarBalanceParams) (int32, error)
 	SubmitAttendanceSession(ctx context.Context, arg SubmitAttendanceSessionParams) (AttendanceSession, error)
 	SumActivePoints(ctx context.Context, arg SumActivePointsParams) (int32, error)
+	TouchAPIKeyLastUsed(ctx context.Context, arg TouchAPIKeyLastUsedParams) error
 	TouchPushDeviceUsed(ctx context.Context, arg TouchPushDeviceUsedParams) error
 	TouchSessionLastSeen(ctx context.Context, arg TouchSessionLastSeenParams) error
 	UnlinkParentStudent(ctx context.Context, arg UnlinkParentStudentParams) error
@@ -664,6 +680,8 @@ type Querier interface {
 	UpdateUserLastLogin(ctx context.Context, arg UpdateUserLastLoginParams) error
 	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error
 	UpdateViolationType(ctx context.Context, arg UpdateViolationTypeParams) (ViolationType, error)
+	UpdateWebhookDeliveryAttempt(ctx context.Context, arg UpdateWebhookDeliveryAttemptParams) error
+	UpdateWebhookEndpoint(ctx context.Context, arg UpdateWebhookEndpointParams) (IntegrationWebhookEndpoint, error)
 	UpsertAttendanceDailySummary(ctx context.Context, arg UpsertAttendanceDailySummaryParams) error
 	UpsertAttendanceEntry(ctx context.Context, arg UpsertAttendanceEntryParams) (AttendanceEntry, error)
 	UpsertGrade(ctx context.Context, arg UpsertGradeParams) (Grade, error)

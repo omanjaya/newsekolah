@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/announcements"
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/integrations"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/notifications"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/permits"
 	permitsservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/service"
@@ -20,6 +21,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/school"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/config"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/crypto"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/jobs"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/storage"
@@ -73,6 +75,19 @@ func run(logger *slog.Logger) error {
 		Pool: pool, Notifier: wiring.AnnouncementNotifier{Svc: notificationsModule.Service}, Clock: clock.Real{}, Logger: logger,
 	})
 	periodic = append(periodic, announcementsModule.RegisterJobs(workers)...)
+
+	// Perms is nil: this process only works the delivery job, it never
+	// serves CreateAPIKey (the only use case that consults it), so there is
+	// no PermissionsProvider to build here without pulling in the whole
+	// identity module for a call path that never runs.
+	sealer, err := crypto.NewSealer("v1", cfg.EncryptionSecret())
+	if err != nil {
+		return err
+	}
+	integrationsModule := integrations.Register(integrations.Dependencies{
+		Pool: pool, Perms: nil, Sealer: sealer, Jobs: nil, Clock: clock.Real{}, Logger: logger,
+	})
+	integrationsModule.RegisterJobs(workers, clock.Real{})
 
 	// The export job has no dependency on identity: RunExport only reads
 	// tenant tables and writes to object storage, so this process never
