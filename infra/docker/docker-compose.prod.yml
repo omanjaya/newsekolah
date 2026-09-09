@@ -1,0 +1,215 @@
+# Single-school self-host stack. See infra/README.md for install and operation.
+#
+# Secrets: every variable below can be provided directly via .env, or as a
+# Docker/Swarm file secret by setting the `_FILE` variant instead (for example
+# JWT_SIGNING_KEY_FILE=/run/secrets/jwt_signing_key). Postgres and MinIO honor
+# `_FILE` natively; apps/api reads `_FILE` for its own settings per
+# docs/08-security.md section 8. Never set a bare secret value in this file.
+name: newsekolah
+
+x-api-image: &api-image
+  build:
+    context: ../../apps/api
+    dockerfile: Dockerfile
+  image: ${API_IMAGE:-newsekolah-api:local}
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-newsekolah}
+      POSTGRES_USER: ${POSTGRES_USER:-newsekolah}
+    # Sane defaults for a 2 vCPU / 4 GB VPS (docs/09-tech-stack.md section 5);
+    # override via the matching env vars for bigger hardware.
+    command:
+      - postgres
+      - -c
+      - shared_buffers=${POSTGRES_SHARED_BUFFERS:-256MB}
+      - -c
+      - effective_cache_size=${POSTGRES_EFFECTIVE_CACHE_SIZE:-768MB}
+      - -c
+      - max_connections=${POSTGRES_MAX_CONNECTIONS:-100}
+      - -c
+      - work_mem=${POSTGRES_WORK_MEM:-4MB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    # No published port: only containers on this compose network reach Postgres.
+    expose:
+      - "5432"
+    healthcheck:
+      test:
+        ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-newsekolah} -d ${POSTGRES_DB:-newsekolah}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    # No published port: Redis is reached only from api/worker on this network.
+    expose:
+      - "6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-${S3_ACCESS_KEY}}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-${S3_SECRET_KEY}}
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    # No published port: object storage is reached only from api/worker/backup
+    # and, for the console, via an operator SSH tunnel — never the public internet.
+    expose:
+      - "9000"
+      - "9001"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    env_file: .env
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >
+        mc alias set local http://minio:9000 "${MINIO_ROOT_USER:-$S3_ACCESS_KEY}" "${MINIO_ROOT_PASSWORD:-$S3_SECRET_KEY}" &&
+        mc mb --ignore-existing "local/${S3_BUCKET:-newsekolah}" &&
+        mc anonymous set none "local/${S3_BUCKET:-newsekolah}"
+    restart: "no"
+
+  migrate:
+    <<: *api-image
+    env_file: .env
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+    command: ["/migrate", "up"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    <<: *api-image
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      APP_ENV: production
+      TENANCY_MODE: ${TENANCY_MODE:-single}
+    command: ["/api"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_started
+      minio-init:
+        condition: service_completed_successfully
+    expose:
+      - "8080"
+    # The api binary runs a distroless final stage (no shell/curl/wget), so the
+    # healthcheck needs the binary itself to expose a self-check subcommand:
+    # `/api --healthcheck` should perform a local GET /health and exit 0/1.
+    # Coordinate this with apps/api; see infra/README.md "known gaps".
+    healthcheck:
+      test: ["CMD", "/api", "--healthcheck"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  worker:
+    <<: *api-image
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      APP_ENV: production
+      TENANCY_MODE: ${TENANCY_MODE:-single}
+    command: ["/worker"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_started
+
+  web:
+    build:
+      context: ../../apps/web
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+    image: ${WEB_IMAGE:-newsekolah-web:local}
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+    depends_on:
+      api:
+        condition: service_healthy
+    expose:
+      - "3000"
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ../caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      api:
+        condition: service_healthy
+      web:
+        condition: service_started
+
+  # Optional daily backup sidecar: pg_dump + MinIO mirror to an S3 target,
+  # encrypted with age when BACKUP_AGE_RECIPIENT is set. Enable with
+  # `docker compose --profile backup up -d`. See infra/scripts/backup.sh.
+  backup:
+    build:
+      context: ../..
+      dockerfile: infra/docker/backup/Dockerfile
+    image: ${BACKUP_IMAGE:-newsekolah-backup:local}
+    restart: unless-stopped
+    profiles: ["backup"]
+    env_file: .env
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      BACKUP_CRON_SCHEDULE: ${BACKUP_CRON_SCHEDULE:-0 2 * * *}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    volumes:
+      - backup_work:/work
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
+  caddy_data:
+  caddy_config:
+  backup_work:

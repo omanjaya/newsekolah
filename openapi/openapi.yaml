@@ -2,18 +2,31 @@ openapi: 3.1.0
 info:
   title: newsekolah API
   version: 0.1.0
+  license:
+    name: Proprietary
+    url: https://github.com/omanjaya/newsekolah
   description: |
     Contract-first API for the school platform. Every operation declares `x-permission`
     (a permission code) or `x-public: true`. Errors always use the Error schema with a stable `code`.
 servers:
   - url: http://localhost:8080
+    description: Local development
+  - url: https://{host}
+    description: Deployed instance (tenant host)
+    variables:
+      host:
+        default: sion.sch.id
 security:
   - bearerAuth: []
 tags:
   - name: system
+    description: Liveness and metadata
   - name: auth
+    description: Login, token refresh, sessions
   - name: me
+    description: Current user
   - name: tenant
+    description: School (tenant) discovery and branding
 
 paths:
   /health:
@@ -37,6 +50,11 @@ paths:
                   checks:
                     type: object
                     additionalProperties: { type: string, enum: [ok, fail, skipped] }
+        "503":
+          description: A dependency is down
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
 
   /v1/tenant/branding:
     get:
@@ -77,6 +95,7 @@ paths:
                   data:
                     type: array
                     items: { $ref: "#/components/schemas/TenantSummary" }
+        "400": { $ref: "#/components/responses/BadRequest" }
 
   /v1/auth/login:
     post:
@@ -162,6 +181,7 @@ paths:
                   data:
                     type: array
                     items: { $ref: "#/components/schemas/Session" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
 
   /v1/auth/sessions/{sessionId}:
     delete:
@@ -176,6 +196,8 @@ paths:
           schema: { type: string, format: uuid }
       responses:
         "204": { description: Revoked }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
 
   /v1/me:
@@ -386,7 +408,7 @@ components:
               scope_label: { type: string }
         active_academic_year:
           type: object
-          nullable: true
+          description: Omitted when the tenant has no active academic year.
           required: [id, label]
           properties:
             id: { type: string, format: uuid }
@@ -395,7 +417,7 @@ components:
         must_change_password: { type: boolean }
         impersonated_by:
           type: object
-          nullable: true
+          description: Present only during an impersonation session.
           properties:
             user_id: { type: string, format: uuid }
             name: { type: string }

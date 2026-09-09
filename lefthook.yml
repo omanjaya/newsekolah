@@ -1,0 +1,28 @@
+# Local git hooks. Install once per clone: `pnpm exec lefthook install`.
+pre-commit:
+  parallel: true
+  commands:
+    prettier:
+      glob: "*.{js,jsx,ts,tsx,json,md,yml,yaml,css}"
+      exclude: "reference/**"
+      run: pnpm exec prettier --check {staged_files}
+
+    eslint:
+      glob: "*.{ts,tsx}"
+      exclude: "reference/**"
+      run: pnpm exec eslint {staged_files}
+
+    gofmt:
+      root: "apps/api/"
+      glob: "*.go"
+      run: test -z "$(gofmt -l {staged_files})"
+
+    govet:
+      root: "apps/api/"
+      glob: "*.go"
+      run: go vet ./...
+
+commit-msg:
+  commands:
+    commitlint:
+      run: pnpm exec commitlint --edit {1}

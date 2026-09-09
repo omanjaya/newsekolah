@@ -1,0 +1,311 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GO_VERSION: "1.26"
+  NODE_VERSION: "24"
+
+jobs:
+  api:
+    name: api
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: newsekolah
+          POSTGRES_PASSWORD: newsekolah
+          POSTGRES_DB: newsekolah
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U newsekolah -d newsekolah"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+      redis:
+        image: redis:7
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    env:
+      APP_ENV: test
+      DATABASE_URL: postgres://newsekolah:newsekolah@localhost:5432/newsekolah?sslmode=disable
+      REDIS_URL: redis://localhost:6379/0
+      JWT_SIGNING_KEY: MHcCAQEEIKj6op4Zg2Ny8DXA4V4L4jgWzL7Y8jkD2j0xJb+bwe1poAoGCCqGSM49AwEHoUQDQgAEIn8oJKW1SPqZg6qfMBaSNqGwfHYm2GfCVKZQgHt4YVCFcAqxDoOFN35+VbC/aMd8HK3XkFq5tuTPZjfDdrvHqA==
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          filter: blob:none
+
+      - name: Check for relevant changes
+        id: changes
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            api:
+              - "apps/api/**"
+              - "go.work*"
+
+      - uses: actions/setup-go@v5
+        if: steps.changes.outputs.api == 'true'
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: apps/api/go.sum
+
+      - name: go build
+        if: steps.changes.outputs.api == 'true'
+        working-directory: apps/api
+        run: go build ./...
+
+      - name: go vet
+        if: steps.changes.outputs.api == 'true'
+        working-directory: apps/api
+        run: go vet ./...
+
+      - name: golangci-lint
+        if: steps.changes.outputs.api == 'true'
+        uses: golangci/golangci-lint-action@v6
+        with:
+          working-directory: apps/api
+          version: latest
+
+      - name: go test (race, with testcontainers)
+        if: steps.changes.outputs.api == 'true'
+        working-directory: apps/api
+        # Docker is preinstalled on ubuntu-latest runners, so tests using
+        # testcontainers-go (in addition to the service containers above)
+        # can start their own throwaway containers.
+        run: go test ./... -race -count=1
+
+  web-packages:
+    name: web-packages
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          filter: blob:none
+
+      - name: Check for relevant changes
+        id: changes
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            web: &web
+              - "apps/web/**"
+            packages:
+              - "packages/**"
+              - *web
+              - "pnpm-lock.yaml"
+              - "pnpm-workspace.yaml"
+              - "turbo.json"
+              - "package.json"
+
+      - uses: actions/setup-node@v4
+        if: steps.changes.outputs.packages == 'true'
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Enable corepack (pnpm 10)
+        if: steps.changes.outputs.packages == 'true'
+        run: corepack enable
+
+      - uses: actions/setup-node@v4
+        if: steps.changes.outputs.packages == 'true'
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: pnpm install
+        if: steps.changes.outputs.packages == 'true'
+        run: pnpm install --frozen-lockfile
+
+      - name: typecheck
+        if: steps.changes.outputs.packages == 'true'
+        run: pnpm typecheck
+
+      - name: lint
+        if: steps.changes.outputs.packages == 'true'
+        run: pnpm lint
+
+      - name: test
+        if: steps.changes.outputs.packages == 'true'
+        run: pnpm test
+
+      - name: build
+        if: steps.changes.outputs.packages == 'true'
+        run: pnpm build
+
+  mobile:
+    name: mobile
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          filter: blob:none
+
+      - name: Check for relevant changes
+        id: changes
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            mobile:
+              - "apps/mobile/**"
+              - "packages/**"
+              - "pnpm-lock.yaml"
+
+      - uses: actions/setup-node@v4
+        if: steps.changes.outputs.mobile == 'true'
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Enable corepack (pnpm 10)
+        if: steps.changes.outputs.mobile == 'true'
+        run: corepack enable
+
+      - uses: actions/setup-node@v4
+        if: steps.changes.outputs.mobile == 'true'
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: pnpm install
+        if: steps.changes.outputs.mobile == 'true'
+        run: pnpm install --frozen-lockfile
+
+      - name: typecheck
+        if: steps.changes.outputs.mobile == 'true'
+        run: pnpm --filter @newsekolah/mobile typecheck
+
+      - name: lint
+        if: steps.changes.outputs.mobile == 'true'
+        run: pnpm --filter @newsekolah/mobile lint
+
+      - name: test
+        if: steps.changes.outputs.mobile == 'true'
+        run: pnpm --filter @newsekolah/mobile test
+
+  openapi:
+    name: openapi
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          filter: blob:none
+
+      - name: Check for relevant changes
+        id: changes
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            openapi:
+              - "openapi/**"
+
+      - uses: actions/setup-node@v4
+        if: steps.changes.outputs.openapi == 'true'
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Lint contract
+        if: steps.changes.outputs.openapi == 'true'
+        run: npx --yes @redocly/cli@latest lint openapi/openapi.yaml
+
+      - name: Fetch base branch for diffing
+        if: steps.changes.outputs.openapi == 'true' && github.event_name == 'pull_request'
+        run: git fetch --depth=1 origin "${{ github.base_ref }}"
+
+      - name: Check breaking changes against main
+        if: steps.changes.outputs.openapi == 'true' && github.event_name == 'pull_request'
+        uses: oasdiff/oasdiff-action/breaking@v0
+        with:
+          base: "origin/${{ github.base_ref }}:openapi/openapi.yaml"
+          revision: "HEAD:openapi/openapi.yaml"
+          fail-on: WARN
+          github-token: ${{ github.token }}
+
+  security:
+    name: security
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: gitleaks
+        # Plain CLI rather than gitleaks/gitleaks-action@v2: the action's
+        # hosted-license gate applies to organization-owned repos, which
+        # would otherwise make this job fail closed on a missing secret.
+        run: |
+          curl -fsSL https://github.com/gitleaks/gitleaks/releases/download/v8.21.2/gitleaks_8.21.2_linux_x64.tar.gz \
+            | tar -xz -C /usr/local/bin gitleaks
+          gitleaks detect --source . --redact --no-banner
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: apps/api/go.sum
+
+      - name: govulncheck
+        working-directory: apps/api
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          govulncheck ./...
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - run: corepack enable
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: pnpm install
+        run: pnpm install --frozen-lockfile
+
+      - name: pnpm audit
+        run: pnpm audit --audit-level high
+
+  migrations-check:
+    name: migrations-check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          filter: blob:none
+
+      - name: Check for relevant changes
+        id: changes
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            migrations:
+              - "apps/api/migrations/**"
+
+      - name: Verify sequential, gap-free, paired migrations
+        if: steps.changes.outputs.migrations == 'true'
+        run: bash infra/scripts/check-migrations.sh apps/api/migrations
+
+  emoji-check:
+    name: emoji-check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for pictographic emoji
+        run: bash infra/scripts/check-no-emoji.sh
