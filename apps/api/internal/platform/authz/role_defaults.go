@@ -21,9 +21,11 @@ func RoleDefaults() []RoleDefault {
 			PermViewDashboard, PermViewAnnouncements, PermViewSchedules, PermViewAcademicData,
 			PermViewAttendance, PermManageAttendance, PermViewNotifications,
 			PermManageGrades, PermViewLibrary, PermIssueScanTokens,
+			PermCreateAnnouncements, PermEditAnnouncements, PermPublishAnnouncements,
 		}},
 		{"staff", "Pegawai", []string{
 			PermViewDashboard, PermViewAnnouncements, PermViewNotifications, PermViewLibrary, PermViewAcademicData, PermIssueScanTokens,
+			PermCreateAnnouncements, PermEditAnnouncements, PermPublishAnnouncements,
 		}},
 		{"student", "Siswa", []string{
 			PermViewDashboard, PermViewAnnouncements, PermViewNotifications, PermViewSchedules, PermViewAcademicData,

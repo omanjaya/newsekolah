@@ -1,0 +1,410 @@
+paths:
+  /v1/announcements:
+    get:
+      tags:
+        - announcements
+      operationId: listAnnouncements
+      x-permission: view_announcements
+      summary: Announcements for the admin list screen
+      parameters:
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/AnnouncementStatus"
+        - name: cursor
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: Announcements
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnnouncementPage"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags:
+        - announcements
+      operationId: createAnnouncement
+      x-permission: create_announcements
+      summary: Create a draft announcement
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnnouncementCreate"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Announcement"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/announcements/{announcementId}:
+    get:
+      tags:
+        - announcements
+      operationId: getAnnouncement
+      x-permission: view_announcements
+      summary: One announcement, with its current read count
+      parameters:
+        - $ref: "#/components/parameters/AnnouncementIdParam"
+      responses:
+        "200":
+          description: Announcement
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Announcement"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      tags:
+        - announcements
+      operationId: updateAnnouncement
+      x-permission: edit_announcements
+      summary: Edit a draft or scheduled announcement (not one already published)
+      parameters:
+        - $ref: "#/components/parameters/AnnouncementIdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnnouncementCreate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Announcement"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Announcement is already published or archived
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      tags:
+        - announcements
+      operationId: deleteAnnouncement
+      x-permission: delete_announcements
+      summary: Soft-delete an announcement
+      parameters:
+        - $ref: "#/components/parameters/AnnouncementIdParam"
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/announcements/{announcementId}/publish:
+    post:
+      tags:
+        - announcements
+      operationId: publishAnnouncement
+      x-permission: publish_announcements
+      summary: Publish now, fanning out a notification to the resolved audience
+      parameters:
+        - $ref: "#/components/parameters/AnnouncementIdParam"
+      responses:
+        "200":
+          description: Published
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Announcement"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Announcement is already published or archived
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/announcements/{announcementId}/schedule:
+    post:
+      tags:
+        - announcements
+      operationId: scheduleAnnouncement
+      x-permission: publish_announcements
+      summary: Schedule a draft to publish automatically at its starts_at
+      parameters:
+        - $ref: "#/components/parameters/AnnouncementIdParam"
+      responses:
+        "200":
+          description: Scheduled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Announcement"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Announcement is not a draft, or has no starts_at in the future
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/announcements/{announcementId}/archive:
+    post:
+      tags:
+        - announcements
+      operationId: archiveAnnouncement
+      x-permission: publish_announcements
+      summary: Archive a published announcement (removes it from /v1/me/announcements)
+      parameters:
+        - $ref: "#/components/parameters/AnnouncementIdParam"
+      responses:
+        "200":
+          description: Archived
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Announcement"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/me/announcements:
+    get:
+      tags:
+        - announcements
+      operationId: listMyAnnouncements
+      x-permission: authenticated
+      summary: Published announcements addressed to the current user, pinned first
+      responses:
+        "200":
+          description: Announcements
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/MyAnnouncement"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /v1/me/announcements/{announcementId}/read:
+    post:
+      tags:
+        - announcements
+      operationId: markAnnouncementRead
+      x-permission: authenticated
+      summary: Record that the current user has read this announcement
+      parameters:
+        - $ref: "#/components/parameters/AnnouncementIdParam"
+      responses:
+        "204":
+          description: Marked
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+components:
+  parameters:
+    AnnouncementIdParam:
+      name: announcementId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  schemas:
+    AnnouncementStatus:
+      type: string
+      enum:
+        - draft
+        - scheduled
+        - published
+        - archived
+    AudienceType:
+      type: string
+      enum:
+        - all
+        - roles
+        - classes
+        - users
+    Audience:
+      type: object
+      description: Exactly one of role_slugs/class_ids/user_ids is meaningful, matching type.
+      required:
+        - type
+      properties:
+        type:
+          $ref: "#/components/schemas/AudienceType"
+        role_slugs:
+          type: array
+          items:
+            type: string
+        class_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+        user_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+    AnnouncementCreate:
+      type: object
+      required:
+        - title
+        - body_html
+        - audience
+      properties:
+        title:
+          type: string
+          maxLength: 180
+        body_html:
+          type: string
+          maxLength: 20000
+        audience:
+          $ref: "#/components/schemas/Audience"
+        is_pinned:
+          type: boolean
+          default: false
+        starts_at:
+          type: string
+          format: date-time
+        ends_at:
+          type: string
+          format: date-time
+    Announcement:
+      type: object
+      required:
+        - id
+        - title
+        - body_html
+        - body_text
+        - audience
+        - is_pinned
+        - status
+        - recipient_count
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        body_html:
+          type: string
+        body_text:
+          type: string
+        audience:
+          $ref: "#/components/schemas/Audience"
+        is_pinned:
+          type: boolean
+        status:
+          $ref: "#/components/schemas/AnnouncementStatus"
+        starts_at:
+          type: string
+          format: date-time
+        ends_at:
+          type: string
+          format: date-time
+        published_at:
+          type: string
+          format: date-time
+        recipient_count:
+          type: integer
+        read_count:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+    AnnouncementPage:
+      type: object
+      required:
+        - data
+        - page
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Announcement"
+        page:
+          type: object
+          required:
+            - next_cursor
+          properties:
+            next_cursor:
+              type: string
+    MyAnnouncement:
+      type: object
+      required:
+        - id
+        - title
+        - body_html
+        - is_pinned
+        - is_read
+        - published_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        body_html:
+          type: string
+        is_pinned:
+          type: boolean
+        is_read:
+          type: boolean
+        published_at:
+          type: string
+          format: date-time

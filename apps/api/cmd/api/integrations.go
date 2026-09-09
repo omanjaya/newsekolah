@@ -2,16 +2,24 @@ package main
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"github.com/riverqueue/river"
+	"github.com/riverqueue/river/rivertype"
 
 	academicdomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/academic/domain"
 	academicservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/academic/service"
 	attendancedomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance/domain"
+	identityservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/identity/service"
+	notificationsservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/notifications/service"
 	permitsservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling"
 	schoolservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/school/service"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/realtime"
 )
 
 // Cross-module adapters live here, in the wiring layer, so no module imports
@@ -103,4 +111,49 @@ func (o permitsOverrider) Override(ctx context.Context, tenantID, studentUserID 
 		return "", "", false, err
 	}
 	return status, attendancedomain.SourceLeave, true, nil
+}
+
+// Notifications and announcements adapters.
+
+// hubRealtimePublisher pushes "notification_created" events to the
+// recipient's own WebSocket topic (see ws.go for the topic convention).
+type hubRealtimePublisher struct{ hub *realtime.Hub }
+
+func (p hubRealtimePublisher) Publish(ctx context.Context, userID uuid.UUID, event notificationsservice.RealtimeEvent) error {
+	tenantID, ok := httpx.TenantIDFromContext(ctx)
+	if !ok {
+		return nil
+	}
+	return p.hub.Publish("user:"+tenantID.String()+":"+userID.String(), map[string]any{"type": event.Type, "payload": event.Payload})
+}
+
+// identityContacts resolves the email and phone the email/WhatsApp
+// channels deliver to, through identity's own service.
+type identityContacts struct{ svc *identityservice.Service }
+
+func (c identityContacts) EmailForUser(ctx context.Context, tenantID, userID uuid.UUID) (string, bool, error) {
+	view, err := c.svc.GetUser(ctx, tenantID, userID)
+	if err != nil {
+		return "", false, err
+	}
+	return view.Email, view.Email != "", nil
+}
+
+func (c identityContacts) PhoneNumberForUser(ctx context.Context, tenantID, userID uuid.UUID) (string, bool, error) {
+	view, err := c.svc.GetUser(ctx, tenantID, userID)
+	if err != nil {
+		return "", false, err
+	}
+	return view.Phone, view.Phone != "", nil
+}
+
+// lateBoundJobs lets the notifications module be constructed before the
+// River client, whose periodic-job list depends on the modules' workers.
+type lateBoundJobs struct{ client *river.Client[pgx.Tx] }
+
+func (l *lateBoundJobs) InsertTx(ctx context.Context, tx pgx.Tx, args river.JobArgs, opts *river.InsertOpts) (*rivertype.JobInsertResult, error) {
+	if l.client == nil {
+		return nil, errors.New("jobs: river client not initialised")
+	}
+	return l.client.InsertTx(ctx, tx, args, opts)
 }

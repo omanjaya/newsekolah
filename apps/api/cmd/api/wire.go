@@ -7,14 +7,18 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
+	"github.com/riverqueue/river"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/api"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/academic"
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/announcements"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/identity"
 	identityservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/identity/service"
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/notifications"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/permits"
 	permitsservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling"
@@ -25,21 +29,23 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/config"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/events"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/jobs"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/realtime"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/storage"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/tenant"
+	"github.com/omanjaya/newsekolah/apps/api/internal/wiring"
 )
 
 // buildRouter wires the two Phase 0 modules and every platform middleware
 // into a single http.Handler. It is the one function both main() and the
 // integration tests call, so a test never risks exercising wiring that
 // production does not.
-func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, redisClient *redis.Client, version string) (http.Handler, error) {
+func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, redisClient *redis.Client, version string) (http.Handler, *background, error) {
 	store := kvStoreFor(redisClient)
 
 	signingKey, err := auth.ParseSigningKey(cfg.JWTSigningKey)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	tokenIssuer := auth.NewTokenIssuer(signingKey, "newsekolah", cfg.AccessTokenTTL)
 	sessionCache := auth.NewSessionCache(store)
@@ -51,6 +57,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	}
 
 	schoolModule := school.Register(pool, mode)
+	senders := wiring.SendersFromConfig(cfg, logger)
 	identityModule := identity.Register(identity.Dependencies{
 		Pool:         pool,
 		Years:        schoolModule.Service,
@@ -61,6 +68,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		Branding:     schoolModule.Handler,
 		SessionCache: sessionCache,
 		IsProduction: cfg.IsProduction(),
+		Email:        senders.Email,
 	})
 
 	academicModule := academic.Register(pool, clock.Real{})
@@ -90,23 +98,60 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	})
 	sync.inner = attendanceSyncAdapter{force: attendanceModule.Service.ForceStatus}
 
+	// Background jobs: every module registers its workers on one River
+	// client. With WORKER_INLINE the API process also runs them, so a small
+	// school needs a single process; otherwise cmd/worker runs them and this
+	// client only enqueues.
+	jobInserter := &lateBoundJobs{}
+	notificationsModule := notifications.Register(notifications.Dependencies{
+		Pool: pool, Jobs: jobInserter, Realtime: hubRealtimePublisher{hub: hub},
+		Contacts: identityContacts{svc: identityModule.Service}, Bus: eventBus, Clock: clock.Real{},
+		Push: senders.Push, Email: senders.Email, WhatsApp: senders.WhatsApp,
+	})
+	announcementsModule := announcements.Register(announcements.Dependencies{
+		Pool: pool, Notifier: wiring.AnnouncementNotifier{Svc: notificationsModule.Service}, Clock: clock.Real{}, Logger: logger,
+	})
+
+	var (
+		workers  *river.Workers
+		periodic []*river.PeriodicJob
+	)
+	if cfg.WorkerInline {
+		workers = jobs.NewWorkers()
+		periodic = append(periodic, permitsModule.RegisterJobs(workers, logger)...)
+		notificationPeriodic, err := notificationsModule.RegisterJobs(workers)
+		if err != nil {
+			return nil, nil, err
+		}
+		periodic = append(periodic, notificationPeriodic...)
+		periodic = append(periodic, announcementsModule.RegisterJobs(workers)...)
+	}
+	riverClient, err := jobs.NewClient(pool, workers, logger, periodic...)
+	if err != nil {
+		return nil, nil, err
+	}
+	jobInserter.client = riverClient
+	bg := &background{jobs: riverClient, runWorkers: cfg.WorkerInline, logger: logger}
+
 	doc, err := api.GetSpec()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	ops, err := authz.LoadOperationPermissions(doc)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	server := &combinedServer{
-		Handler:           identityModule.Handler,
-		TenantHandler:     schoolModule.Handler,
-		SchedulingHandler: schedulingModule.Handler,
-		AttendanceHandler: attendanceModule.Handler,
-		AcademicHandler:   academicModule.Handler,
-		PermitsHandler:    permitsModule.Handler,
-		healthHandler:     &healthHandler{version: version, pool: pool, redis: redisClient},
+		Handler:              identityModule.Handler,
+		TenantHandler:        schoolModule.Handler,
+		SchedulingHandler:    schedulingModule.Handler,
+		AttendanceHandler:    attendanceModule.Handler,
+		AcademicHandler:      academicModule.Handler,
+		PermitsHandler:       permitsModule.Handler,
+		NotificationsHandler: notificationsModule.Handler,
+		AnnouncementsHandler: announcementsModule.Handler,
+		healthHandler:        &healthHandler{version: version, pool: pool, redis: redisClient},
 	}
 
 	strict := api.NewStrictHandlerWithOptions(
@@ -139,7 +184,33 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	// here is visible to the attendance module's monitor presence count.
 	mountRealtimeRoutes(router, pool, tokenIssuer, hub, cfg.AppOrigins, logger)
 
-	return router, nil
+	return router, bg, nil
+}
+
+// background owns the River client built by buildRouter. Start is a no-op
+// for enqueue-only mode (WORKER_INLINE=false); Stop always closes cleanly.
+type background struct {
+	jobs       *river.Client[pgx.Tx]
+	runWorkers bool
+	logger     *slog.Logger
+}
+
+func (b *background) Start(ctx context.Context) error {
+	if b == nil || !b.runWorkers {
+		return nil
+	}
+	if err := b.jobs.Start(ctx); err != nil {
+		return err
+	}
+	b.logger.Info("inline job workers started")
+	return nil
+}
+
+func (b *background) Stop(ctx context.Context) error {
+	if b == nil || !b.runWorkers {
+		return nil
+	}
+	return b.jobs.Stop(ctx)
 }
 
 func broadcasterFor(redisClient *redis.Client) realtime.Broadcaster {

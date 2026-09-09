@@ -1,25 +1,31 @@
 // Package notify sends outbound messages: email (SMTP), WhatsApp, and push
-// (web/APNs/FCM). No module sends a notification yet in this phase; these
-// are the adapters later phases' notification module will call from a
-// River job, never synchronously from a request handler.
+// (web/APNs/FCM). The notifications module's delivery worker is the only
+// caller -- adapters here are never invoked synchronously from a request
+// handler, so a slow provider cannot stall an HTTP response.
 package notify
 
 import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
+	"mime"
 	"net/smtp"
 	"net/url"
+	"strings"
 )
 
 // ErrProviderNotImplemented is returned by a non-noop provider this phase
 // has not implemented yet, rather than silently pretending to send.
 var ErrProviderNotImplemented = errors.New("notify: provider not implemented")
 
+// EmailMessage carries both a plain-text and an HTML body; the SMTP sender
+// sends a multipart/alternative message so either can render.
 type EmailMessage struct {
-	To      string
-	Subject string
-	Body    string
+	To       string
+	Subject  string
+	TextBody string
+	HTMLBody string
 }
 
 type EmailSender interface {
@@ -28,7 +34,9 @@ type EmailSender interface {
 
 // NewEmailSender parses an SMTP_URL like "smtp://user:pass@host:port" (no
 // credentials for the local Mailpit dev server) and returns a sender that
-// delivers over that connection.
+// delivers over that connection. An empty smtpURL returns a sender that
+// silently succeeds, for environments (tests, a school with no configured
+// mail relay) that never actually need email delivery.
 func NewEmailSender(smtpURL, fromAddress string) (EmailSender, error) {
 	if smtpURL == "" {
 		return noopEmailSender{}, nil
@@ -51,7 +59,7 @@ type smtpEmailSender struct {
 }
 
 func (s *smtpEmailSender) Send(_ context.Context, msg EmailMessage) error {
-	body := fmt.Sprintf("To: %s\r\nSubject: %s\r\n\r\n%s\r\n", msg.To, msg.Subject, msg.Body)
+	body := buildMultipartEmail(s.from, msg)
 
 	var auth smtp.Auth
 	if s.user != nil {
@@ -59,10 +67,37 @@ func (s *smtpEmailSender) Send(_ context.Context, msg EmailMessage) error {
 		auth = smtp.PlainAuth("", s.user.Username(), password, hostOnly(s.addr))
 	}
 
-	if err := smtp.SendMail(s.addr, auth, s.from, []string{msg.To}, []byte(body)); err != nil {
+	if err := smtp.SendMail(s.addr, auth, s.from, []string{msg.To}, body); err != nil {
 		return fmt.Errorf("send email: %w", err)
 	}
 	return nil
+}
+
+// buildMultipartEmail renders a minimal multipart/alternative RFC 5322
+// message by hand (text/plain first, then text/html), rather than pulling
+// in a MIME-building dependency for two parts.
+func buildMultipartEmail(from string, msg EmailMessage) []byte {
+	const boundary = "newsekolah-notify-boundary"
+
+	var b strings.Builder
+	fmt.Fprintf(&b, "From: %s\r\n", from)
+	fmt.Fprintf(&b, "To: %s\r\n", msg.To)
+	fmt.Fprintf(&b, "Subject: %s\r\n", mime.QEncoding.Encode("UTF-8", msg.Subject))
+	fmt.Fprintf(&b, "MIME-Version: 1.0\r\n")
+	fmt.Fprintf(&b, "Content-Type: multipart/alternative; boundary=%q\r\n\r\n", boundary)
+
+	fmt.Fprintf(&b, "--%s\r\n", boundary)
+	b.WriteString("Content-Type: text/plain; charset=UTF-8\r\n\r\n")
+	b.WriteString(msg.TextBody)
+	b.WriteString("\r\n\r\n")
+
+	fmt.Fprintf(&b, "--%s\r\n", boundary)
+	b.WriteString("Content-Type: text/html; charset=UTF-8\r\n\r\n")
+	b.WriteString(msg.HTMLBody)
+	b.WriteString("\r\n\r\n")
+
+	fmt.Fprintf(&b, "--%s--\r\n", boundary)
+	return []byte(b.String())
 }
 
 func hostOnly(addr string) string {
@@ -79,32 +114,31 @@ type WhatsAppSender interface {
 	Send(ctx context.Context, toPhone, message string) error
 }
 
-type noopWhatsAppSender struct{}
+// noopWhatsAppSender is the WHATSAPP_PROVIDER=noop (default) implementation:
+// it logs the message it would have sent instead of silently discarding
+// it, so a school that has not configured WhatsApp yet can still see in
+// its logs which notifications would have gone out.
+type noopWhatsAppSender struct {
+	logger *slog.Logger
+}
 
-func (noopWhatsAppSender) Send(context.Context, string, string) error { return nil }
+func (s noopWhatsAppSender) Send(_ context.Context, toPhone, message string) error {
+	s.logger.Info("whatsapp send skipped (WHATSAPP_PROVIDER=noop)", "to", toPhone, "message", message)
+	return nil
+}
 
-// NewWhatsAppSender returns the noop sender for provider "noop" (the
-// config default), or an error for any other provider: docs/09-tech-stack.md
-// names "meta" and "fonnte" as intended providers, but wiring their
-// specific APIs is not part of this phase's identity/school scope.
-func NewWhatsAppSender(provider, _, _ string) (WhatsAppSender, error) {
+// NewWhatsAppSender returns the logging noop sender for provider "noop"
+// (the config default), or the Meta Cloud API sender for "meta".
+func NewWhatsAppSender(provider, token, phoneID string, logger *slog.Logger) (WhatsAppSender, error) {
+	if logger == nil {
+		logger = slog.Default()
+	}
 	switch provider {
 	case "", "noop":
-		return noopWhatsAppSender{}, nil
+		return noopWhatsAppSender{logger: logger}, nil
+	case "meta":
+		return newMetaWhatsAppSender(token, phoneID), nil
 	default:
 		return nil, fmt.Errorf("%w: %q", ErrProviderNotImplemented, provider)
 	}
 }
-
-// PushSender delivers a push notification to one registered device.
-// docs/09-tech-stack.md: Web Push (VAPID), APNs, FCM v1 share one outbox;
-// no push_devices consumer exists yet in this phase.
-type PushSender interface {
-	Send(ctx context.Context, deviceToken, title, body string) error
-}
-
-type noopPushSender struct{}
-
-func (noopPushSender) Send(context.Context, string, string, string) error { return nil }
-
-func NewNoopPushSender() PushSender { return noopPushSender{} }

@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"html"
 	"log/slog"
 
 	"github.com/google/uuid"
@@ -76,10 +77,12 @@ func (s *Service) sendPasswordResetEmail(ctx context.Context, user domain.User, 
 		return
 	}
 	link := s.cfg.WebBaseURL + "/reset-password?token=" + token
+	text := "Use this link within 30 minutes to set a new password: " + link
 	msg := notify.EmailMessage{
-		To:      user.Email,
-		Subject: "Reset your password",
-		Body:    "Use this link within 30 minutes to set a new password: " + link,
+		To:       user.Email,
+		Subject:  "Reset your password",
+		TextBody: text,
+		HTMLBody: "<p>Use this link within 30 minutes to set a new password:</p><p><a href=\"" + html.EscapeString(link) + "\">" + html.EscapeString(link) + "</a></p>",
 	}
 	if err := s.extras.Email.Send(ctx, msg); err != nil {
 		slog.ErrorContext(ctx, "send password reset email failed", "user_id", user.ID, "error", err)

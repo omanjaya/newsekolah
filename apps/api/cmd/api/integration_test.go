@@ -81,7 +81,7 @@ func testConfig(dsn string) config.Config {
 func newTestServer(t *testing.T, dsn string, pool *pgxpool.Pool) http.Handler {
 	t.Helper()
 	logger := slog.New(slog.NewJSONHandler(io.Discard, nil))
-	router, err := buildRouter(testConfig(dsn), logger, pool, nil, "test")
+	router, _, err := buildRouter(testConfig(dsn), logger, pool, nil, "test")
 	require.NoError(t, err)
 	return router
 }

@@ -32,6 +32,32 @@ type AcademicYear struct {
 	ArchivedAt pgtype.Timestamptz `json:"archived_at"`
 }
 
+type Announcement struct {
+	ID             uuid.UUID          `json:"id"`
+	TenantID       uuid.UUID          `json:"tenant_id"`
+	SenderUserID   uuid.UUID          `json:"sender_user_id"`
+	Title          string             `json:"title"`
+	BodyHtml       string             `json:"body_html"`
+	BodyText       string             `json:"body_text"`
+	Audience       []byte             `json:"audience"`
+	IsPinned       bool               `json:"is_pinned"`
+	Status         string             `json:"status"`
+	StartsAt       pgtype.Timestamptz `json:"starts_at"`
+	EndsAt         pgtype.Timestamptz `json:"ends_at"`
+	PublishedAt    pgtype.Timestamptz `json:"published_at"`
+	RecipientCount int32              `json:"recipient_count"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+	DeletedAt      pgtype.Timestamptz `json:"deleted_at"`
+}
+
+type AnnouncementRead struct {
+	AnnouncementID uuid.UUID          `json:"announcement_id"`
+	UserID         uuid.UUID          `json:"user_id"`
+	TenantID       uuid.UUID          `json:"tenant_id"`
+	ReadAt         pgtype.Timestamptz `json:"read_at"`
+}
+
 type Asset struct {
 	ID         uuid.UUID          `json:"id"`
 	TenantID   uuid.UUID          `json:"tenant_id"`
@@ -338,12 +364,76 @@ type LoginAttemptsDefault struct {
 	OccurredAt pgtype.Timestamptz `json:"occurred_at"`
 }
 
+type MessageDelivery struct {
+	ID                    uuid.UUID          `json:"id"`
+	TenantID              uuid.UUID          `json:"tenant_id"`
+	NotificationID        uuid.UUID          `json:"notification_id"`
+	NotificationCreatedAt pgtype.Timestamptz `json:"notification_created_at"`
+	Channel               string             `json:"channel"`
+	Provider              string             `json:"provider"`
+	Target                string             `json:"target"`
+	Status                string             `json:"status"`
+	ProviderMessageID     pgtype.Text        `json:"provider_message_id"`
+	Error                 pgtype.Text        `json:"error"`
+	Attempts              int32              `json:"attempts"`
+	SentAt                pgtype.Timestamptz `json:"sent_at"`
+	CreatedAt             pgtype.Timestamptz `json:"created_at"`
+}
+
 type MfaTotp struct {
 	UserID            uuid.UUID          `json:"user_id"`
 	TenantID          uuid.UUID          `json:"tenant_id"`
 	SecretEncrypted   []byte             `json:"secret_encrypted"`
 	ConfirmedAt       pgtype.Timestamptz `json:"confirmed_at"`
 	RecoveryCodesHash []string           `json:"recovery_codes_hash"`
+}
+
+type Notification struct {
+	ID             uuid.UUID          `json:"id"`
+	TenantID       uuid.UUID          `json:"tenant_id"`
+	UserID         uuid.UUID          `json:"user_id"`
+	Kind           string             `json:"kind"`
+	Title          string             `json:"title"`
+	Body           string             `json:"body"`
+	Href           pgtype.Text        `json:"href"`
+	Data           []byte             `json:"data"`
+	AnnouncementID pgtype.UUID        `json:"announcement_id"`
+	ReadAt         pgtype.Timestamptz `json:"read_at"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+}
+
+type NotificationPreference struct {
+	TenantID  uuid.UUID          `json:"tenant_id"`
+	UserID    uuid.UUID          `json:"user_id"`
+	Kind      string             `json:"kind"`
+	Channel   string             `json:"channel"`
+	Enabled   bool               `json:"enabled"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+}
+
+type NotificationSetting struct {
+	UserID          uuid.UUID          `json:"user_id"`
+	TenantID        uuid.UUID          `json:"tenant_id"`
+	QuietHoursStart pgtype.Int2        `json:"quiet_hours_start"`
+	QuietHoursEnd   pgtype.Int2        `json:"quiet_hours_end"`
+	DigestEnabled   bool               `json:"digest_enabled"`
+	DigestHour      int16              `json:"digest_hour"`
+	LastDigestAt    pgtype.Timestamptz `json:"last_digest_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+}
+
+type NotificationsDefault struct {
+	ID             uuid.UUID          `json:"id"`
+	TenantID       uuid.UUID          `json:"tenant_id"`
+	UserID         uuid.UUID          `json:"user_id"`
+	Kind           string             `json:"kind"`
+	Title          string             `json:"title"`
+	Body           string             `json:"body"`
+	Href           pgtype.Text        `json:"href"`
+	Data           []byte             `json:"data"`
+	AnnouncementID pgtype.UUID        `json:"announcement_id"`
+	ReadAt         pgtype.Timestamptz `json:"read_at"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
 }
 
 type ParentStudent struct {
@@ -409,6 +499,22 @@ type PlatformSetting struct {
 	Key       string             `json:"key"`
 	Value     []byte             `json:"value"`
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+}
+
+type PushDevice struct {
+	ID              uuid.UUID          `json:"id"`
+	TenantID        uuid.UUID          `json:"tenant_id"`
+	UserID          uuid.UUID          `json:"user_id"`
+	Platform        string             `json:"platform"`
+	TokenOrEndpoint string             `json:"token_or_endpoint"`
+	EndpointHash    []byte             `json:"endpoint_hash"`
+	P256dh          pgtype.Text        `json:"p256dh"`
+	AuthKey         pgtype.Text        `json:"auth_key"`
+	DeviceName      pgtype.Text        `json:"device_name"`
+	FailureCount    int32              `json:"failure_count"`
+	LastUsedAt      pgtype.Timestamptz `json:"last_used_at"`
+	ExpiresAt       pgtype.Timestamptz `json:"expires_at"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
 }
 
 type Role struct {

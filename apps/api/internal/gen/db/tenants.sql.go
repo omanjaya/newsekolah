@@ -152,6 +152,52 @@ func (q *Queries) GetTenantBySlug(ctx context.Context, slug string) (Tenant, err
 	return i, err
 }
 
+const getTenantTimezone = `-- name: GetTenantTimezone :one
+select timezone from tenants where id = $1
+`
+
+// cross-module read: see ListActiveTenantsForMaintenance above.
+func (q *Queries) GetTenantTimezone(ctx context.Context, id uuid.UUID) (string, error) {
+	row := q.db.QueryRow(ctx, getTenantTimezone, id)
+	var timezone string
+	err := row.Scan(&timezone)
+	return timezone, err
+}
+
+const listActiveTenantsForMaintenance = `-- name: ListActiveTenantsForMaintenance :many
+select id, timezone from tenants where status = 'active'
+`
+
+type ListActiveTenantsForMaintenanceRow struct {
+	ID       uuid.UUID `json:"id"`
+	Timezone string    `json:"timezone"`
+}
+
+// cross-module read: tenants is the platform-wide registry owned by the
+// school module. Not RLS-protected (tenant resolution must work before any
+// tenant context exists). Used by the digest/retention/pruning periodic
+// jobs, which loop one tenant at a time rather than ever querying across
+// tenants in a single statement.
+func (q *Queries) ListActiveTenantsForMaintenance(ctx context.Context) ([]ListActiveTenantsForMaintenanceRow, error) {
+	rows, err := q.db.Query(ctx, listActiveTenantsForMaintenance)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListActiveTenantsForMaintenanceRow{}
+	for rows.Next() {
+		var i ListActiveTenantsForMaintenanceRow
+		if err := rows.Scan(&i.ID, &i.Timezone); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listTenantIDs = `-- name: ListTenantIDs :many
 select id from tenants where status <> 'deleted' order by created_at
 `

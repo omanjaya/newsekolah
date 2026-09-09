@@ -53,6 +53,27 @@ type Config struct {
 	WhatsAppToken    string
 	WhatsAppPhoneID  string
 
+	VAPIDPublicKey  string
+	VAPIDPrivateKey string
+	VAPIDSubject    string
+
+	APNSKeyP8      string
+	APNSKeyID      string
+	APNSTeamID     string
+	APNSTopic      string
+	APNSProduction bool
+
+	FCMProjectID          string
+	FCMServiceAccountJSON string
+
+	// WorkerInline runs every River worker inside cmd/api instead of
+	// requiring a separate cmd/worker process, per docs/10-mobile-strategy.md
+	// and the notifications module's brief: a single small school should not
+	// need to operate two processes. Defaults to true; a deployment running
+	// cmd/worker separately should set it false in cmd/api's environment to
+	// avoid double-registering the same job kinds.
+	WorkerInline bool
+
 	OTelExporterEndpoint string
 
 	SeedPassword string
@@ -103,6 +124,18 @@ func Load() (Config, error) {
 		WhatsAppProvider: orDefault(lookup("WHATSAPP_PROVIDER"), "noop"),
 		WhatsAppToken:    lookup("WHATSAPP_TOKEN"),
 		WhatsAppPhoneID:  lookup("WHATSAPP_PHONE_ID"),
+
+		VAPIDPublicKey:  lookup("VAPID_PUBLIC_KEY"),
+		VAPIDPrivateKey: lookup("VAPID_PRIVATE_KEY"),
+		VAPIDSubject:    orDefault(lookup("VAPID_SUBJECT"), "mailto:admin@newsekolah.invalid"),
+
+		APNSKeyP8:  lookup("APNS_KEY_P8"),
+		APNSKeyID:  lookup("APNS_KEY_ID"),
+		APNSTeamID: lookup("APNS_TEAM_ID"),
+		APNSTopic:  lookup("APNS_TOPIC"),
+
+		FCMProjectID:          lookup("FCM_PROJECT_ID"),
+		FCMServiceAccountJSON: lookup("FCM_SERVICE_ACCOUNT_JSON"),
 
 		OTelExporterEndpoint: lookup("OTEL_EXPORTER_OTLP_ENDPOINT"),
 
@@ -155,6 +188,20 @@ func Load() (Config, error) {
 		if c.WhatsAppPhoneID == "" {
 			errs = append(errs, "WHATSAPP_PHONE_ID (required when WHATSAPP_PROVIDER != noop)")
 		}
+	}
+
+	apnsProduction := orDefault(lookup("APNS_PRODUCTION"), "false")
+	if b, err := strconv.ParseBool(apnsProduction); err == nil {
+		c.APNSProduction = b
+	} else {
+		errs = append(errs, "APNS_PRODUCTION (must be true or false)")
+	}
+
+	workerInline := orDefault(lookup("WORKER_INLINE"), "true")
+	if b, err := strconv.ParseBool(workerInline); err == nil {
+		c.WorkerInline = b
+	} else {
+		errs = append(errs, "WORKER_INLINE (must be true or false)")
 	}
 
 	if len(errs) > 0 {

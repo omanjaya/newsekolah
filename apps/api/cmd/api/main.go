@@ -63,10 +63,14 @@ func run(logger *slog.Logger) error {
 		defer func() { _ = redisClient.Close() }()
 	}
 
-	router, err := buildRouter(cfg, logger, pool, redisClient, version)
+	router, bg, err := buildRouter(cfg, logger, pool, redisClient, version)
 	if err != nil {
 		return err
 	}
+	if err := bg.Start(ctx); err != nil {
+		return err
+	}
+	defer func() { _ = bg.Stop(context.Background()) }()
 
 	httpServer := httpx.NewServer(cfg.APIAddr, router)
 

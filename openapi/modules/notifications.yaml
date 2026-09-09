@@ -1,0 +1,431 @@
+paths:
+  /v1/notifications:
+    get:
+      tags:
+        - notifications
+      operationId: listNotifications
+      x-permission: authenticated
+      summary: The current user's own inbox, newest first
+      parameters:
+        - name: unread_only
+          in: query
+          schema:
+            type: boolean
+            default: false
+        - name: cursor
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: Notifications
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationPage"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /v1/notifications/unread-count:
+    get:
+      tags:
+        - notifications
+      operationId: getUnreadNotificationCount
+      x-permission: authenticated
+      summary: Unread count for the current user (badge)
+      responses:
+        "200":
+          description: Count
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - count
+                properties:
+                  count:
+                    type: integer
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /v1/notifications/read-all:
+    put:
+      tags:
+        - notifications
+      operationId: markAllNotificationsRead
+      x-permission: authenticated
+      summary: Mark every unread notification for the current user as read
+      responses:
+        "204":
+          description: Marked
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /v1/notifications/{notificationId}/read:
+    put:
+      tags:
+        - notifications
+      operationId: markNotificationRead
+      x-permission: authenticated
+      summary: Mark one notification as read
+      parameters:
+        - name: notificationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Marked
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/notification-preferences:
+    get:
+      tags:
+        - notifications
+      operationId: listNotificationPreferences
+      x-permission: authenticated
+      summary: The current user's channel preferences for a set of notification kinds
+      parameters:
+        - name: kinds
+          in: query
+          required: true
+          description: Comma-separated notification kinds
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Preferences
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationPreferenceMap"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    put:
+      tags:
+        - notifications
+      operationId: setNotificationPreference
+      x-permission: authenticated
+      summary: Enable or disable one channel for one notification kind
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NotificationPreferenceUpdate"
+      responses:
+        "204":
+          description: Saved
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /v1/notification-settings:
+    get:
+      tags:
+        - notifications
+      operationId: getNotificationSettings
+      x-permission: authenticated
+      summary: The current user's quiet hours and daily digest settings
+      responses:
+        "200":
+          description: Settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationSettings"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    put:
+      tags:
+        - notifications
+      operationId: updateNotificationSettings
+      x-permission: authenticated
+      summary: Update quiet hours and daily digest settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NotificationSettingsUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationSettings"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /v1/push-devices:
+    get:
+      tags:
+        - notifications
+      operationId: listPushDevices
+      x-permission: authenticated
+      summary: The current user's registered push devices
+      responses:
+        "200":
+          description: Devices
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/PushDevice"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags:
+        - notifications
+      operationId: registerPushDevice
+      x-permission: authenticated
+      summary: Register (or refresh) a push device for the current user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PushDeviceRegistration"
+      responses:
+        "200":
+          description: Registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PushDevice"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    delete:
+      tags:
+        - notifications
+      operationId: unregisterPushDevice
+      x-permission: authenticated
+      summary: Unregister a push device by its token or endpoint
+      parameters:
+        - name: token_or_endpoint
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Unregistered
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /v1/tenant/notification-defaults:
+    get:
+      tags:
+        - notifications
+      operationId: getTenantNotificationDefaults
+      x-permission: manage_notification_settings
+      summary: Tenant-wide default channels for one notification kind
+      parameters:
+        - name: kind
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Defaults
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationChannelMap"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    put:
+      tags:
+        - notifications
+      operationId: setTenantNotificationDefault
+      x-permission: manage_notification_settings
+      summary: Set the tenant-wide default for one (kind, channel) pair
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NotificationPreferenceUpdate"
+      responses:
+        "204":
+          description: Saved
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+components:
+  schemas:
+    NotificationChannel:
+      type: string
+      enum:
+        - inapp
+        - push
+        - whatsapp
+        - email
+    Notification:
+      type: object
+      required:
+        - id
+        - kind
+        - title
+        - body
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          type: string
+        title:
+          type: string
+        body:
+          type: string
+        href:
+          type: string
+        data:
+          type: object
+          additionalProperties: true
+        read_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+    NotificationPage:
+      type: object
+      required:
+        - data
+        - page
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Notification"
+        page:
+          type: object
+          required:
+            - next_cursor
+          properties:
+            next_cursor:
+              type: string
+    NotificationPreferenceMap:
+      type: object
+      description: Map of "kind" to a map of channel -> enabled.
+      additionalProperties:
+        $ref: "#/components/schemas/NotificationChannelMap"
+    NotificationChannelMap:
+      type: object
+      additionalProperties:
+        type: boolean
+    NotificationPreferenceUpdate:
+      type: object
+      required:
+        - kind
+        - channel
+        - enabled
+      properties:
+        kind:
+          type: string
+        channel:
+          $ref: "#/components/schemas/NotificationChannel"
+        enabled:
+          type: boolean
+    NotificationSettings:
+      type: object
+      required:
+        - digest_enabled
+        - digest_hour
+      properties:
+        quiet_hours_start:
+          type: integer
+          minimum: 0
+          maximum: 23
+        quiet_hours_end:
+          type: integer
+          minimum: 0
+          maximum: 23
+        digest_enabled:
+          type: boolean
+        digest_hour:
+          type: integer
+          minimum: 0
+          maximum: 23
+    NotificationSettingsUpdate:
+      type: object
+      required:
+        - digest_enabled
+        - digest_hour
+      properties:
+        quiet_hours_start:
+          type: integer
+          minimum: 0
+          maximum: 23
+        quiet_hours_end:
+          type: integer
+          minimum: 0
+          maximum: 23
+        digest_enabled:
+          type: boolean
+        digest_hour:
+          type: integer
+          minimum: 0
+          maximum: 23
+    PushPlatform:
+      type: string
+      description: "One of: web, ios, android (validated server-side, not as an OpenAPI enum, to avoid colliding with ClientKind's identical value set in codegen)."
+      maxLength: 20
+    PushDeviceRegistration:
+      type: object
+      required:
+        - platform
+        - token_or_endpoint
+      properties:
+        platform:
+          $ref: "#/components/schemas/PushPlatform"
+        token_or_endpoint:
+          type: string
+          description: iOS/Android device token, or the web push subscription endpoint URL.
+        p256dh:
+          type: string
+          description: Required for platform=web.
+        auth_key:
+          type: string
+          description: Required for platform=web.
+        device_name:
+          type: string
+    PushDevice:
+      type: object
+      required:
+        - id
+        - platform
+        - device_name
+      properties:
+        id:
+          type: string
+          format: uuid
+        platform:
+          $ref: "#/components/schemas/PushPlatform"
+        device_name:
+          type: string

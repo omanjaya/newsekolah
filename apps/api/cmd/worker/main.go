@@ -11,6 +11,8 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/announcements"
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/notifications"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/permits"
 	permitsservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/school"
@@ -20,6 +22,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/jobs"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/telemetry"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/tenant"
+	"github.com/omanjaya/newsekolah/apps/api/internal/wiring"
 )
 
 func main() {
@@ -52,6 +55,21 @@ func run(logger *slog.Logger) error {
 		Config: permitsservice.DefaultConfig([]byte(cfg.DocumentSigningKey), cfg.S3Bucket), Logger: logger,
 	})
 	periodic := permitsModule.RegisterJobs(workers, logger)
+
+	senders := wiring.SendersFromConfig(cfg, logger)
+	notificationsModule := notifications.Register(notifications.Dependencies{
+		Pool: pool, Jobs: nil, Clock: clock.Real{},
+		Push: senders.Push, Email: senders.Email, WhatsApp: senders.WhatsApp,
+	})
+	notificationPeriodic, err := notificationsModule.RegisterJobs(workers)
+	if err != nil {
+		return err
+	}
+	periodic = append(periodic, notificationPeriodic...)
+	announcementsModule := announcements.Register(announcements.Dependencies{
+		Pool: pool, Notifier: wiring.AnnouncementNotifier{Svc: notificationsModule.Service}, Clock: clock.Real{}, Logger: logger,
+	})
+	periodic = append(periodic, announcementsModule.RegisterJobs(workers)...)
 
 	client, err := jobs.NewClient(pool, workers, logger, periodic...)
 	if err != nil {
