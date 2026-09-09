@@ -1,0 +1,185 @@
+{
+  "nav": {
+    "catalogue": "Catalogue",
+    "desk": "Loan desk",
+    "stocktake": "Stocktake"
+  },
+  "catalogue": {
+    "eyebrow": "Library",
+    "title": "Catalogue",
+    "searchPlaceholder": "Search title, author, or ISBN",
+    "addTitle": "Add title",
+    "columns": {
+      "title": "Title",
+      "author": "Author",
+      "classification": "Classification",
+      "copies": "Copies",
+      "actions": "Actions"
+    },
+    "copiesAvailable": "{available} of {total} available",
+    "emptyTitle": "No titles in the catalogue yet",
+    "emptyBody": "Titles you add will show up here.",
+    "viewCopies": "View copies",
+    "form": {
+      "title": "Title",
+      "subtitle": "Subtitle",
+      "author": "Author",
+      "publisher": "Publisher",
+      "publishYear": "Publish year",
+      "isbn": "ISBN",
+      "classification": "Classification",
+      "save": "Save",
+      "saved": "Title saved"
+    }
+  },
+  "copies": {
+    "title": "Copies",
+    "addCopy": "Add copy",
+    "columns": {
+      "barcode": "Barcode",
+      "condition": "Condition",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "condition": {
+      "good": "Good",
+      "fair": "Fair",
+      "damaged": "Damaged",
+      "lost": "Lost"
+    },
+    "status": {
+      "available": "Available",
+      "on_loan": "On loan",
+      "reserved": "Reserved",
+      "withdrawn": "Withdrawn"
+    },
+    "printLabel": "Print label",
+    "form": {
+      "barcode": "Barcode",
+      "condition": "Condition",
+      "notes": "Notes",
+      "save": "Save",
+      "saved": "Copy added"
+    },
+    "emptyTitle": "No copies yet",
+    "emptyBody": "Add physical copies, each with its own barcode."
+  },
+  "desk": {
+    "eyebrow": "Library",
+    "title": "Loan desk",
+    "borrow": {
+      "heading": "Borrow",
+      "barcode": "Copy barcode",
+      "memberId": "Member ID",
+      "submit": "Lend",
+      "success": "Loan recorded"
+    },
+    "overdue": {
+      "heading": "Overdue",
+      "columns": {
+        "member": "Member",
+        "dueOn": "Due on",
+        "actions": "Actions"
+      },
+      "emptyTitle": "Nothing overdue",
+      "emptyBody": "Every active loan is still within its due date."
+    },
+    "return": "Return",
+    "renew": "Renew",
+    "returned": "Return recorded",
+    "renewed": "Loan renewed"
+  },
+  "memberHistory": {
+    "title": "Loan history",
+    "columns": {
+      "title": "Title",
+      "borrowedAt": "Borrowed on",
+      "dueOn": "Due on",
+      "status": "Status",
+      "fine": "Fine"
+    },
+    "status": {
+      "active": "On loan",
+      "returned": "Returned",
+      "lost": "Lost"
+    },
+    "reservationsHeading": "Reservations",
+    "printCard": "Print member card",
+    "emptyTitle": "No loan history yet"
+  },
+  "stocktake": {
+    "eyebrow": "Library",
+    "title": "Stocktake",
+    "startNew": "Start a new session",
+    "form": {
+      "name": "Session name",
+      "notes": "Notes",
+      "start": "Start"
+    },
+    "columns": {
+      "name": "Name",
+      "startedOn": "Started on",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "status": {
+      "open": "Open",
+      "closed": "Closed"
+    },
+    "emptyTitle": "No stocktake sessions yet",
+    "scan": {
+      "heading": "Scan barcode",
+      "placeholder": "Scan or type a barcode",
+      "submit": "Record"
+    },
+    "close": "Close session",
+    "result": {
+      "heading": "Stocktake result",
+      "expected": "Expected",
+      "scanned": "Scanned",
+      "missing": "Missing",
+      "unexpected": "Unexpected"
+    }
+  },
+  "reports": {
+    "overdueMembers": {
+      "title": "Overdue members",
+      "columns": {
+        "member": "Member",
+        "loanCount": "Loan count",
+        "fine": "Fine"
+      }
+    },
+    "mostBorrowed": {
+      "title": "Most-borrowed titles",
+      "columns": {
+        "title": "Title",
+        "loanCount": "Loans"
+      }
+    }
+  },
+  "opac": {
+    "title": "Library Catalogue",
+    "searchPlaceholder": "Search title, author, or ISBN",
+    "columns": {
+      "title": "Title",
+      "author": "Author",
+      "availability": "Availability"
+    },
+    "available": "Available",
+    "unavailable": "All copies out",
+    "emptyTitle": "Nothing found",
+    "emptyBody": "Try a different search term."
+  },
+  "policy": {
+    "title": "Circulation policy",
+    "loanDays": "Loan length (days)",
+    "maxActiveLoans": "Active loan limit",
+    "maxRenewals": "Renewal limit",
+    "renewalDays": "Extra days on renewal",
+    "finePerDay": "Fine per day (Rp)",
+    "reservationHoldDays": "Reservation hold days",
+    "save": "Save",
+    "saved": "Policy saved"
+  }
+}

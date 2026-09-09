@@ -11,6 +11,7 @@ sql:
       - "internal/modules/academic/queries"
       - "internal/modules/permits/queries"
       - "internal/modules/discipline/queries"
+      - "internal/modules/library/queries"
       - "internal/modules/grading/queries"
       - "internal/modules/reports/queries"
       - "internal/modules/platform/queries"

@@ -57,3 +57,5 @@ tags:
     description: Parent view of a linked child
   - name: platform
     description: Cross-tenant platform console (multi-tenant deployments only)
+  - name: library
+    description: Catalogue, circulation, reservations, stocktake, and the public OPAC

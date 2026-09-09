@@ -1,0 +1,22 @@
+package httpx
+
+import "net/http"
+
+var (
+	ErrLibraryTitleNotFound          = NewError(http.StatusNotFound, "LIBRARY_TITLE_NOT_FOUND")
+	ErrLibraryCopyNotFound           = NewError(http.StatusNotFound, "LIBRARY_COPY_NOT_FOUND")
+	ErrLibraryCopyBarcodeExists      = NewError(http.StatusConflict, "LIBRARY_COPY_BARCODE_EXISTS")
+	ErrLibraryCopyNotAvailable       = NewError(http.StatusConflict, "LIBRARY_COPY_NOT_AVAILABLE")
+	ErrLibraryCopyOnLoan             = NewError(http.StatusConflict, "LIBRARY_COPY_ON_LOAN")
+	ErrLibraryLoanNotFound           = NewError(http.StatusNotFound, "LIBRARY_LOAN_NOT_FOUND")
+	ErrLibraryLoanAlreadyReturned    = NewError(http.StatusConflict, "LIBRARY_LOAN_ALREADY_RETURNED")
+	ErrLibraryLoanLimitReached       = NewError(http.StatusConflict, "LIBRARY_LOAN_LIMIT_REACHED")
+	ErrLibraryRenewalLimitReached    = NewError(http.StatusConflict, "LIBRARY_RENEWAL_LIMIT_REACHED")
+	ErrLibraryRenewalBlockedOverdue  = NewError(http.StatusConflict, "LIBRARY_RENEWAL_BLOCKED_OVERDUE")
+	ErrLibraryRenewalBlockedReserved = NewError(http.StatusConflict, "LIBRARY_RENEWAL_BLOCKED_RESERVED")
+	ErrLibraryReservationNotFound    = NewError(http.StatusNotFound, "LIBRARY_RESERVATION_NOT_FOUND")
+	ErrLibraryReservationNotWaiting  = NewError(http.StatusConflict, "LIBRARY_RESERVATION_NOT_WAITING")
+	ErrLibraryCopyAvailableForLoan   = NewError(http.StatusConflict, "LIBRARY_COPY_AVAILABLE_FOR_LOAN")
+	ErrLibraryStocktakeNotFound      = NewError(http.StatusNotFound, "LIBRARY_STOCKTAKE_NOT_FOUND")
+	ErrLibraryStocktakeClosed        = NewError(http.StatusConflict, "LIBRARY_STOCKTAKE_CLOSED")
+)
