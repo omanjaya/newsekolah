@@ -229,7 +229,18 @@
       }
     },
     "duty": {
-      "navLabel": "Piket"
+      "navLabel": "Piket",
+      "eyebrow": "Perizinan",
+      "title": "Meja piket",
+      "intro": "Tampilkan QR sesuai keperluan. Setiap kode sekali pakai dan diperbarui otomatis saat kedaluwarsa. Persetujuan izin keluar ada di halaman Izin Keluar, tab Setujui.",
+      "purposes": {
+        "classroom_entry": "QR masuk kelas",
+        "late_arrival": "QR terlambat"
+      },
+      "help": {
+        "classroom_entry": "Siswa memindai kode ini saat masuk kelas untuk mencatat kehadiran mandiri pada sesi yang sedang berjalan.",
+        "late_arrival": "Siswa yang datang terlambat memindai kode ini. Namanya masuk ke antrean peninjauan di halaman Terlambat."
+      }
     },
     "common": {
       "weekdays": {
@@ -404,6 +415,176 @@
         "cancel": "Batal",
         "send": "Kirim permintaan"
       }
+    },
+    "permits": {
+      "workflow": {
+        "status": {
+          "in_progress": "Berjalan",
+          "approved": "Disetujui",
+          "completed": "Selesai",
+          "rejected": "Ditolak",
+          "cancelled": "Dibatalkan",
+          "expired": "Kedaluwarsa"
+        },
+        "waitingFor": "Menunggu: {stage}",
+        "verification": {
+          "qr_scan": "Pindai QR",
+          "manual": "Ditinjau langsung",
+          "auto": "Otomatis"
+        }
+      },
+      "scan": {
+        "placeholder": "Tempel atau ketik kode di bawah QR",
+        "submit": "Kirim kode"
+      },
+      "qr": {
+        "expiresIn": "Berlaku {seconds} detik lagi",
+        "expired": "Kode sudah kedaluwarsa",
+        "renew": "Buat kode baru"
+      },
+      "exit": {
+        "eyebrow": "Perizinan",
+        "title": "Izin keluar",
+        "tabMine": "Izin saya",
+        "tabApprove": "Setujui",
+        "tabGate": "Gerbang",
+        "noAccessTitle": "Tidak ada akses izin keluar",
+        "noAccessBody": "Peran Anda tidak terlibat dalam alur izin keluar.",
+        "request": "Ajukan izin keluar",
+        "activeHint": "Masih ada izin yang berjalan. Selesaikan atau batalkan dulu sebelum mengajukan lagi.",
+        "emptyTitle": "Belum ada izin keluar",
+        "emptyBody": "Pengajuan izin keluar Anda tampil di sini beserta tahapnya.",
+        "stageLabel": "Tahap: {stage}",
+        "finished": "Selesai",
+        "detailTitle": "Detail izin keluar",
+        "student": "Siswa",
+        "code": "Kode izin",
+        "scanStageLabel": "Pindai QR {stage}: masukkan kode",
+        "stageDone": "Tahap disetujui",
+        "showGateQr": "Tampilkan QR gerbang",
+        "exitedTitle": "Sudah keluar gerbang",
+        "cancel": "Batalkan izin",
+        "cancelled": "Izin dibatalkan",
+        "form": {
+          "destination": "Tujuan",
+          "destinationPlaceholder": "Contoh: Puskesmas, urusan keluarga",
+          "from": "Dari jam",
+          "to": "Sampai jam",
+          "pick": "Pilih",
+          "stagesHint": "Setelah diajukan, minta guru piket lalu guru kelas memindai untuk menyetujui. QR gerbang muncul setelah tahap terakhir.",
+          "requiredError": "Tujuan dan rentang jam wajib diisi.",
+          "created": "Izin keluar diajukan",
+          "submit": "Ajukan"
+        },
+        "approve": {
+          "hint": "Minta siswa menunjukkan kode izinnya, lalu tampilkan QR persetujuan agar dipindai siswa.",
+          "permitCode": "Kode izin siswa",
+          "showQr": "Tampilkan QR persetujuan"
+        },
+        "gate": {
+          "hint": "Pindai QR gerbang yang ditunjukkan siswa atau tempel kodenya.",
+          "payloadLabel": "Kode QR gerbang",
+          "needPayload": "Kode gerbang harus berasal dari QR siswa.",
+          "passed": "Siswa diizinkan keluar",
+          "lastTitle": "Terakhir keluar"
+        }
+      },
+      "late": {
+        "eyebrow": "Perizinan",
+        "title": "Terlambat",
+        "tabQueue": "Antrean piket",
+        "tabMine": "Saya",
+        "noneTitle": "Tidak ada catatan keterlambatan aktif",
+        "noneBody": "Jika Anda datang terlambat, pindai QR terlambat di meja piket lalu masukkan kodenya di sini.",
+        "reasonLabel": "Alasan",
+        "scanDutyLabel": "Kode QR terlambat dari guru piket",
+        "opened": "Keterlambatan tercatat. Tunggu peninjauan guru piket.",
+        "occurrence": "Keterlambatan ke",
+        "occurrenceValue": "ke-{n}",
+        "requiredAction": "Tindak lanjut",
+        "actions": {
+          "none": "Tidak ada",
+          "call_parent": "Hubungi orang tua",
+          "send_home": "Dipulangkan"
+        },
+        "scanStageLabel": "Pindai QR {stage}: masukkan kode",
+        "stageDone": "Tahap selesai",
+        "waitManual": "Menunggu {stage} meninjau.",
+        "queueEmptyTitle": "Tidak ada keterlambatan menunggu",
+        "queueEmptyBody": "Siswa yang memindai QR terlambat Anda akan masuk ke antrean ini.",
+        "unknownStudent": "Siswa",
+        "review": "Tinjau",
+        "reviewTitle": "Tinjau keterlambatan",
+        "homeroomReported": "Sudah dilaporkan ke wali kelas",
+        "reviewHint": "Setelah ditinjau, siswa memindai QR pimpinan untuk menutup alur.",
+        "reviewed": "Peninjauan tersimpan",
+        "cancel": "Batal",
+        "submitReview": "Simpan peninjauan"
+      },
+      "leave": {
+        "eyebrow": "Perizinan",
+        "title": "Izin terencana",
+        "tabQueue": "Antrean",
+        "tabMine": "Pengajuan saya",
+        "noAccessTitle": "Tidak ada akses",
+        "noAccessBody": "Peran Anda tidak terlibat dalam alur izin terencana.",
+        "submit": "Ajukan izin",
+        "emptyTitle": "Belum ada pengajuan",
+        "emptyBody": "Izin sakit, upacara, atau dispensasi yang Anda ajukan tampil di sini.",
+        "detailTitle": "Detail izin",
+        "student": "Siswa",
+        "dates": "Tanggal",
+        "letterNumber": "Nomor surat",
+        "categories": {
+          "sick": "Sakit",
+          "religious_ceremony": "Upacara keagamaan",
+          "dispensation": "Dispensasi",
+          "other": "Lainnya"
+        },
+        "viewEvidence": "Lihat bukti",
+        "uploadEvidence": "Unggah bukti (JPG/PNG)",
+        "evidenceUploaded": "Bukti terunggah",
+        "downloadLetter": "Unduh surat",
+        "reviewNote": "Catatan",
+        "reject": "Tolak",
+        "approve": "Setujui",
+        "rejected": "Pengajuan ditolak",
+        "approved": "Pengajuan disetujui dan diteruskan ke guru BK",
+        "issueLetter": "Terbitkan surat",
+        "issued": "Surat izin diterbitkan",
+        "issuedTitle": "Surat izin sudah terbit",
+        "issuedBody": "Presensi pada tanggal izin diisi otomatis. Surat bisa diunduh di atas.",
+        "queueEmptyTitle": "Tidak ada pengajuan menunggu",
+        "queueEmptyBody": "Pengajuan dari kelas binaan Anda, atau yang menunggu penerbitan surat, tampil di sini.",
+        "form": {
+          "category": "Jenis izin",
+          "startsOn": "Mulai",
+          "endsOn": "Sampai",
+          "reason": "Keterangan",
+          "evidenceHint": "Bukti (surat dokter, undangan) bisa diunggah setelah pengajuan dibuat.",
+          "requiredError": "Tanggal dan keterangan wajib diisi.",
+          "rangeError": "Tanggal selesai tidak boleh sebelum tanggal mulai.",
+          "submitted": "Pengajuan terkirim ke wali kelas",
+          "send": "Kirim pengajuan"
+        }
+      }
+    },
+    "verify": {
+      "title": "Verifikasi dokumen",
+      "notFoundTitle": "Kode tidak dikenal",
+      "notFoundBody": "Dokumen dengan kode ini tidak ditemukan atau kodenya salah.",
+      "validTitle": "Dokumen asli diterbitkan sekolah",
+      "revokedTitle": "Dokumen telah dicabut",
+      "number": "Nomor",
+      "kind": "Jenis",
+      "kinds": {
+        "leave_letter": "Surat izin",
+        "warning_letter": "Surat peringatan"
+      },
+      "issuedAt": "Diterbitkan",
+      "student": "Siswa",
+      "validity": "Berlaku",
+      "footer": "Halaman ini hanya menampilkan data minimal untuk memastikan keaslian dokumen."
     }
   }
 }

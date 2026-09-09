@@ -229,7 +229,18 @@
       }
     },
     "duty": {
-      "navLabel": "Duty desk"
+      "navLabel": "Duty desk",
+      "eyebrow": "Permits",
+      "title": "Duty desk",
+      "intro": "Show the QR for each purpose. Every code is single-use and renews itself when it expires. Exit permit approvals live on the Exit Permits page, Approve tab.",
+      "purposes": {
+        "classroom_entry": "Classroom entry QR",
+        "late_arrival": "Late arrival QR"
+      },
+      "help": {
+        "classroom_entry": "Students scan this code when entering class to record their own presence for the running session.",
+        "late_arrival": "Students arriving late scan this code. They appear in the review queue on the Late Arrivals page."
+      }
     },
     "common": {
       "weekdays": {
@@ -404,6 +415,176 @@
         "cancel": "Cancel",
         "send": "Send request"
       }
+    },
+    "permits": {
+      "workflow": {
+        "status": {
+          "in_progress": "In progress",
+          "approved": "Approved",
+          "completed": "Completed",
+          "rejected": "Rejected",
+          "cancelled": "Cancelled",
+          "expired": "Expired"
+        },
+        "waitingFor": "Waiting for: {stage}",
+        "verification": {
+          "qr_scan": "QR scan",
+          "manual": "Manual review",
+          "auto": "Automatic"
+        }
+      },
+      "scan": {
+        "placeholder": "Paste or type the code under the QR",
+        "submit": "Submit code"
+      },
+      "qr": {
+        "expiresIn": "Valid for {seconds} more seconds",
+        "expired": "This code has expired",
+        "renew": "Generate a new code"
+      },
+      "exit": {
+        "eyebrow": "Permits",
+        "title": "Exit permits",
+        "tabMine": "My permits",
+        "tabApprove": "Approve",
+        "tabGate": "Gate",
+        "noAccessTitle": "No exit permit access",
+        "noAccessBody": "Your role is not part of the exit permit flow.",
+        "request": "Request an exit permit",
+        "activeHint": "A permit is still in progress. Finish or cancel it before requesting another.",
+        "emptyTitle": "No exit permits yet",
+        "emptyBody": "Your exit permit requests and their stages show up here.",
+        "stageLabel": "Stage: {stage}",
+        "finished": "Finished",
+        "detailTitle": "Exit permit",
+        "student": "Student",
+        "code": "Permit code",
+        "scanStageLabel": "Scan the {stage} QR: enter the code",
+        "stageDone": "Stage approved",
+        "showGateQr": "Show gate QR",
+        "exitedTitle": "Left through the gate",
+        "cancel": "Cancel permit",
+        "cancelled": "Permit cancelled",
+        "form": {
+          "destination": "Destination",
+          "destinationPlaceholder": "For example: clinic, family matter",
+          "from": "From period",
+          "to": "To period",
+          "pick": "Pick",
+          "stagesHint": "After submitting, ask the duty teacher and then your class teacher to scan and approve. The gate QR appears after the last stage.",
+          "requiredError": "Destination and period range are required.",
+          "created": "Exit permit requested",
+          "submit": "Submit"
+        },
+        "approve": {
+          "hint": "Ask the student for their permit code, then show the approval QR for them to scan.",
+          "permitCode": "Student's permit code",
+          "showQr": "Show approval QR"
+        },
+        "gate": {
+          "hint": "Scan the gate QR the student shows, or paste its code.",
+          "payloadLabel": "Gate QR code",
+          "needPayload": "The gate code must come from the student's QR.",
+          "passed": "Student cleared to leave",
+          "lastTitle": "Last exit"
+        }
+      },
+      "late": {
+        "eyebrow": "Permits",
+        "title": "Late arrivals",
+        "tabQueue": "Duty queue",
+        "tabMine": "Me",
+        "noneTitle": "No active late arrival",
+        "noneBody": "If you arrive late, scan the late-arrival QR at the duty desk and enter its code here.",
+        "reasonLabel": "Reason",
+        "scanDutyLabel": "Late-arrival QR code from the duty teacher",
+        "opened": "Late arrival recorded. Wait for the duty teacher's review.",
+        "occurrence": "Occurrence",
+        "occurrenceValue": "#{n}",
+        "requiredAction": "Follow-up",
+        "actions": {
+          "none": "None",
+          "call_parent": "Call parent",
+          "send_home": "Send home"
+        },
+        "scanStageLabel": "Scan the {stage} QR: enter the code",
+        "stageDone": "Stage completed",
+        "waitManual": "Waiting for {stage} to review.",
+        "queueEmptyTitle": "No late arrivals waiting",
+        "queueEmptyBody": "Students who scan your late-arrival QR appear in this queue.",
+        "unknownStudent": "Student",
+        "review": "Review",
+        "reviewTitle": "Review late arrival",
+        "homeroomReported": "Reported to the homeroom teacher",
+        "reviewHint": "After review, the student scans the leadership QR to close the flow.",
+        "reviewed": "Review saved",
+        "cancel": "Cancel",
+        "submitReview": "Save review"
+      },
+      "leave": {
+        "eyebrow": "Permits",
+        "title": "Planned leave",
+        "tabQueue": "Queue",
+        "tabMine": "My requests",
+        "noAccessTitle": "No access",
+        "noAccessBody": "Your role is not part of the planned leave flow.",
+        "submit": "Request leave",
+        "emptyTitle": "No requests yet",
+        "emptyBody": "Sick, ceremony or dispensation leave you request shows up here.",
+        "detailTitle": "Leave request",
+        "student": "Student",
+        "dates": "Dates",
+        "letterNumber": "Letter number",
+        "categories": {
+          "sick": "Sick",
+          "religious_ceremony": "Religious ceremony",
+          "dispensation": "Dispensation",
+          "other": "Other"
+        },
+        "viewEvidence": "View evidence",
+        "uploadEvidence": "Upload evidence (JPG/PNG)",
+        "evidenceUploaded": "Evidence uploaded",
+        "downloadLetter": "Download letter",
+        "reviewNote": "Note",
+        "reject": "Reject",
+        "approve": "Approve",
+        "rejected": "Request rejected",
+        "approved": "Request approved and forwarded to the counselor",
+        "issueLetter": "Issue letter",
+        "issued": "Leave letter issued",
+        "issuedTitle": "Leave letter issued",
+        "issuedBody": "Attendance for the leave dates is filled automatically. The letter can be downloaded above.",
+        "queueEmptyTitle": "No requests waiting",
+        "queueEmptyBody": "Requests from your homeroom class, or awaiting letter issuance, show up here.",
+        "form": {
+          "category": "Leave type",
+          "startsOn": "From",
+          "endsOn": "To",
+          "reason": "Details",
+          "evidenceHint": "Evidence (doctor's note, invitation) can be uploaded after the request is created.",
+          "requiredError": "Dates and details are required.",
+          "rangeError": "End date cannot be before the start date.",
+          "submitted": "Request sent to the homeroom teacher",
+          "send": "Send request"
+        }
+      }
+    },
+    "verify": {
+      "title": "Document verification",
+      "notFoundTitle": "Unknown code",
+      "notFoundBody": "No document matches this code, or the code is wrong.",
+      "validTitle": "Genuine document issued by the school",
+      "revokedTitle": "This document has been revoked",
+      "number": "Number",
+      "kind": "Kind",
+      "kinds": {
+        "leave_letter": "Leave letter",
+        "warning_letter": "Warning letter"
+      },
+      "issuedAt": "Issued",
+      "student": "Student",
+      "validity": "Valid",
+      "footer": "This page shows only the minimum needed to confirm the document is genuine."
     }
   }
 }
