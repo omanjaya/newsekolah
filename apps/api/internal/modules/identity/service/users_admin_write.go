@@ -64,10 +64,13 @@ func (s *Service) CreateUser(ctx context.Context, tenantID, actorID uuid.UUID, i
 			return err
 		}
 
-		view, err = s.toUserAdminView(ctx, tenantID, UserAdminRow{
-			ID: user.ID, Username: user.Username, Email: user.Email, Phone: in.Phone, Name: user.Name,
-			Status: user.Status, ProfileKind: in.ProfileKind, Locale: locale,
-		})
+		// Re-read so the response carries database-assigned fields
+		// (created_at, must_change_password) exactly as stored.
+		row, err := s.repo.GetUserAdminByID(ctx, tenantID, user.ID)
+		if err != nil {
+			return fmt.Errorf("reload created user: %w", err)
+		}
+		view, err = s.toUserAdminView(ctx, tenantID, row)
 		if err != nil {
 			return err
 		}

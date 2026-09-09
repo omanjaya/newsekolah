@@ -115,9 +115,18 @@ func (s *Service) prepareRoleGrants(ctx context.Context, tenantID, actorID uuid.
 
 	resolved := make([]domain.RoleGrant, len(grants))
 	for i, g := range grants {
-		role, err := s.repo.GetRoleBySlug(ctx, tenantID, g.Slug)
+		// The HTTP contract sends role IDs; the Excel import sends slugs.
+		var (
+			role RoleRecord
+			err  error
+		)
+		if g.RoleID != uuid.Nil {
+			role, err = s.repo.GetRoleByID(ctx, tenantID, g.RoleID)
+		} else {
+			role, err = s.repo.GetRoleBySlug(ctx, tenantID, g.Slug)
+		}
 		if err != nil {
-			return nil, fmt.Errorf("role %q: %w", g.Slug, domain.ErrRoleNotFound)
+			return nil, fmt.Errorf("role %q/%s: %w", g.Slug, g.RoleID, domain.ErrRoleNotFound)
 		}
 		resolved[i] = domain.RoleGrant{RoleID: role.ID, Slug: role.Slug, IsPrimary: g.IsPrimary}
 	}
