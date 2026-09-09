@@ -1,0 +1,16 @@
+reference/
+node_modules/
+dist/
+.next/
+.turbo/
+coverage/
+storybook-static/
+.env
+.env.*
+!.env.example
+.DS_Store
+*.log
+apps/api/bin/
+apps/mobile/.expo/
+apps/mobile/ios/
+apps/mobile/android/

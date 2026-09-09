@@ -1,0 +1,7 @@
+reference/
+node_modules/
+dist/
+.next/
+apps/api/
+pnpm-lock.yaml
+**/gen/**

@@ -1,0 +1,401 @@
+openapi: 3.1.0
+info:
+  title: newsekolah API
+  version: 0.1.0
+  description: |
+    Contract-first API for the school platform. Every operation declares `x-permission`
+    (a permission code) or `x-public: true`. Errors always use the Error schema with a stable `code`.
+servers:
+  - url: http://localhost:8080
+security:
+  - bearerAuth: []
+tags:
+  - name: system
+  - name: auth
+  - name: me
+  - name: tenant
+
+paths:
+  /health:
+    get:
+      tags: [system]
+      operationId: getHealth
+      x-public: true
+      security: []
+      summary: Liveness and dependency status
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, checks]
+                properties:
+                  status: { type: string, enum: [ok, degraded] }
+                  version: { type: string }
+                  checks:
+                    type: object
+                    additionalProperties: { type: string, enum: [ok, fail, skipped] }
+
+  /v1/tenant/branding:
+    get:
+      tags: [tenant]
+      operationId: getTenantBranding
+      x-public: true
+      security: []
+      summary: Public branding for the resolved tenant (login screen, manifest)
+      responses:
+        "200":
+          description: Branding
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TenantBranding" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /v1/tenants/lookup:
+    get:
+      tags: [tenant]
+      operationId: lookupTenants
+      x-public: true
+      security: []
+      summary: Search schools by name or slug (mobile school picker). Returns nothing in single-tenant mode except the single tenant.
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema: { type: string, minLength: 2, maxLength: 80 }
+      responses:
+        "200":
+          description: Matches
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/TenantSummary" }
+
+  /v1/auth/login:
+    post:
+      tags: [auth]
+      operationId: login
+      x-public: true
+      security: []
+      summary: Password login
+      description: |
+        Web clients (`client: web`) receive the refresh token in an httpOnly cookie scoped to `/v1/auth`
+        and only the access token in the body. Mobile clients receive both tokens in the body.
+      parameters:
+        - $ref: "#/components/parameters/TenantHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LoginRequest" }
+      responses:
+        "200":
+          description: Authenticated
+          headers:
+            Set-Cookie:
+              description: "`refresh_token` cookie for web clients"
+              schema: { type: string }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AuthTokens" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+
+  /v1/auth/refresh:
+    post:
+      tags: [auth]
+      operationId: refreshToken
+      x-public: true
+      security: []
+      summary: Rotate refresh token and mint a new access token
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refresh_token:
+                  type: string
+                  description: Required for mobile clients; web clients send the cookie instead.
+      responses:
+        "200":
+          description: New tokens
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AuthTokens" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /v1/auth/logout:
+    post:
+      tags: [auth]
+      operationId: logout
+      x-permission: authenticated
+      summary: Revoke the current session (and clear the web cookie)
+      responses:
+        "204": { description: Logged out }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /v1/auth/sessions:
+    get:
+      tags: [auth]
+      operationId: listSessions
+      x-permission: authenticated
+      summary: Active sessions of the current user
+      responses:
+        "200":
+          description: Sessions
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/Session" }
+
+  /v1/auth/sessions/{sessionId}:
+    delete:
+      tags: [auth]
+      operationId: revokeSession
+      x-permission: authenticated
+      summary: Revoke one of the current user's sessions
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "204": { description: Revoked }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /v1/me:
+    get:
+      tags: [me]
+      operationId: getMe
+      x-permission: authenticated
+      summary: Current user, roles, effective permissions, tenant
+      responses:
+        "200":
+          description: Me
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Me" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /v1/me/password:
+    put:
+      tags: [me]
+      operationId: changePassword
+      x-permission: authenticated
+      summary: Change own password; revokes other sessions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [current_password, new_password]
+              properties:
+                current_password: { type: string }
+                new_password: { type: string, minLength: 8, maxLength: 128 }
+      responses:
+        "204": { description: Changed }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    TenantHeader:
+      name: X-Tenant
+      in: header
+      required: false
+      description: Tenant slug for mobile clients before a token exists. Ignored when the host already resolves a tenant or in single-tenant mode.
+      schema: { type: string }
+
+  responses:
+    BadRequest:
+      description: Validation failed
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Unauthorized:
+      description: Missing, expired, or revoked credentials
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Forbidden:
+      description: Authenticated but not allowed
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    RateLimited:
+      description: Too many attempts
+      headers:
+        Retry-After:
+          schema: { type: integer }
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              description: Stable machine code, SCREAMING_SNAKE_CASE (e.g. AUTH_INVALID_CREDENTIALS, AUTH_TOKEN_EXPIRED, TENANT_NOT_FOUND, VALIDATION_FAILED, RATE_LIMITED, FORBIDDEN, NOT_FOUND).
+            message:
+              type: string
+              description: Human-readable, localized by Accept-Language (default id).
+            details:
+              type: array
+              items:
+                type: object
+                required: [field, code]
+                properties:
+                  field: { type: string }
+                  code: { type: string }
+                  message: { type: string }
+            request_id: { type: string }
+
+    ClientKind:
+      type: string
+      enum: [web, ios, android]
+
+    LoginRequest:
+      type: object
+      required: [username, password, client]
+      properties:
+        username: { type: string, minLength: 1, maxLength: 80 }
+        password: { type: string, minLength: 1, maxLength: 128 }
+        client: { $ref: "#/components/schemas/ClientKind" }
+        device_id: { type: string, maxLength: 100 }
+        device_name: { type: string, maxLength: 150 }
+
+    AuthTokens:
+      type: object
+      required: [access_token, access_expires_at, token_type, user]
+      properties:
+        token_type: { type: string, enum: [Bearer] }
+        access_token: { type: string }
+        access_expires_at: { type: string, format: date-time }
+        refresh_token:
+          type: string
+          description: Present only for mobile clients.
+        refresh_expires_at: { type: string, format: date-time }
+        user: { $ref: "#/components/schemas/Me" }
+
+    Session:
+      type: object
+      required: [id, client, created_at, last_seen_at, is_current]
+      properties:
+        id: { type: string, format: uuid }
+        client: { $ref: "#/components/schemas/ClientKind" }
+        device_name: { type: string }
+        ip: { type: string }
+        user_agent: { type: string }
+        created_at: { type: string, format: date-time }
+        last_seen_at: { type: string, format: date-time }
+        is_current: { type: boolean }
+
+    TenantSummary:
+      type: object
+      required: [id, slug, name]
+      properties:
+        id: { type: string, format: uuid }
+        slug: { type: string }
+        name: { type: string }
+        city: { type: string }
+
+    TenantBranding:
+      type: object
+      required: [tenant_id, slug, name, accent_color, locale, timezone]
+      properties:
+        tenant_id: { type: string, format: uuid }
+        slug: { type: string }
+        name: { type: string }
+        short_name: { type: string }
+        tagline: { type: string }
+        logo_url: { type: string, format: uri }
+        favicon_url: { type: string, format: uri }
+        accent_color: { type: string, pattern: "^#[0-9A-Fa-f]{6}$" }
+        locale: { type: string, enum: [id, en] }
+        timezone: { type: string }
+
+    Role:
+      type: object
+      required: [id, slug, name, is_primary]
+      properties:
+        id: { type: string, format: uuid }
+        slug: { type: string }
+        name: { type: string }
+        is_primary: { type: boolean }
+
+    Me:
+      type: object
+      required: [id, username, name, roles, permissions, tenant, must_change_password]
+      properties:
+        id: { type: string, format: uuid }
+        username: { type: string }
+        email: { type: string }
+        name: { type: string }
+        avatar_url: { type: string, format: uri }
+        profile_kind: { type: string, enum: [student, teacher, staff, parent] }
+        roles:
+          type: array
+          items: { $ref: "#/components/schemas/Role" }
+        permissions:
+          type: array
+          items: { type: string }
+          description: Effective permission codes (role plus active duty permissions).
+        duties:
+          type: array
+          items:
+            type: object
+            required: [slug, scope_kind]
+            properties:
+              slug: { type: string }
+              scope_kind: { type: string, enum: [school, class, student] }
+              scope_id: { type: string, format: uuid }
+              scope_label: { type: string }
+        active_academic_year:
+          type: object
+          nullable: true
+          required: [id, label]
+          properties:
+            id: { type: string, format: uuid }
+            label: { type: string }
+        tenant: { $ref: "#/components/schemas/TenantBranding" }
+        must_change_password: { type: boolean }
+        impersonated_by:
+          type: object
+          nullable: true
+          properties:
+            user_id: { type: string, format: uuid }
+            name: { type: string }
