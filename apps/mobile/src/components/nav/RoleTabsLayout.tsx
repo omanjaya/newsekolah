@@ -17,7 +17,7 @@ const LABELS: Record<string, string> = {
 interface CenterActionConfig {
   icon: LucideIcon;
   label: string;
-  renderSheetContent: () => React.ReactNode;
+  renderSheetContent: (close: () => void) => React.ReactNode;
 }
 
 interface RoleTabsLayoutProps {
@@ -62,7 +62,7 @@ export function RoleTabsLayout({ centerAction }: RoleTabsLayoutProps): React.JSX
           onClose={() => setSheetVisible(false)}
           title={centerAction.label}
         >
-          {centerAction.renderSheetContent()}
+          {centerAction.renderSheetContent(() => setSheetVisible(false))}
         </Sheet>
       ) : null}
     </View>

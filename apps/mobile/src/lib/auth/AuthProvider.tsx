@@ -9,6 +9,7 @@ import { loadStoredTokens, secureTokenStore } from "@/lib/auth/token-store";
 import { getStableDeviceId, getDeviceName } from "@/lib/auth/device";
 import { isBiometricUnlockAvailable, unlockWithBiometrics } from "@/lib/auth/biometric";
 import { resolveDefaultTabGroup, resolveTabGroups } from "@/lib/auth/roles";
+import { registerPushDevice } from "@/lib/push/register-device";
 
 const BIOMETRIC_PREF_KEY = "newsekolah.biometric_unlock_enabled";
 
@@ -42,6 +43,9 @@ export function AuthProvider({ children }: PropsWithChildren): React.JSX.Element
     setMe(nextMe);
     setActiveTabGroupState(resolveDefaultTabGroup(nextMe));
     setStatus("signed-in");
+    // Best effort: a denied permission or an Expo Go build without push
+    // credentials must never block sign-in.
+    void registerPushDevice().catch(() => undefined);
   }, []);
 
   const handleSessionExpired = useCallback(() => {
