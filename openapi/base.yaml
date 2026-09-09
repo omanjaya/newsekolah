@@ -27,3 +27,11 @@ tags:
     description: Current user
   - name: tenant
     description: School (tenant) discovery and branding
+  - name: users
+    description: User administration
+  - name: roles
+    description: Roles, permissions
+  - name: duties
+    description: Duty types and assignments
+  - name: audit
+    description: Audit log

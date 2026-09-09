@@ -60,6 +60,45 @@ func (e ClientKind) Valid() bool {
 	}
 }
 
+// Defines values for CreateUserRequestLocale.
+const (
+	CreateUserRequestLocaleEn CreateUserRequestLocale = "en"
+	CreateUserRequestLocaleId CreateUserRequestLocale = "id"
+)
+
+// Valid indicates whether the value is a known member of the CreateUserRequestLocale enum.
+func (e CreateUserRequestLocale) Valid() bool {
+	switch e {
+	case CreateUserRequestLocaleEn:
+		return true
+	case CreateUserRequestLocaleId:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DutyScopeKind.
+const (
+	DutyScopeKindClass   DutyScopeKind = "class"
+	DutyScopeKindSchool  DutyScopeKind = "school"
+	DutyScopeKindStudent DutyScopeKind = "student"
+)
+
+// Valid indicates whether the value is a known member of the DutyScopeKind enum.
+func (e DutyScopeKind) Valid() bool {
+	switch e {
+	case DutyScopeKindClass:
+		return true
+	case DutyScopeKindSchool:
+		return true
+	case DutyScopeKindStudent:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for MeDutiesScopeKind.
 const (
 	MeDutiesScopeKindClass   MeDutiesScopeKind = "class"
@@ -105,18 +144,102 @@ func (e MeProfileKind) Valid() bool {
 	}
 }
 
+// Defines values for ProfileKind.
+const (
+	ProfileKindParent  ProfileKind = "parent"
+	ProfileKindStaff   ProfileKind = "staff"
+	ProfileKindStudent ProfileKind = "student"
+	ProfileKindTeacher ProfileKind = "teacher"
+)
+
+// Valid indicates whether the value is a known member of the ProfileKind enum.
+func (e ProfileKind) Valid() bool {
+	switch e {
+	case ProfileKindParent:
+		return true
+	case ProfileKindStaff:
+		return true
+	case ProfileKindStudent:
+		return true
+	case ProfileKindTeacher:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for TenantBrandingLocale.
 const (
-	En TenantBrandingLocale = "en"
-	Id TenantBrandingLocale = "id"
+	TenantBrandingLocaleEn TenantBrandingLocale = "en"
+	TenantBrandingLocaleId TenantBrandingLocale = "id"
 )
 
 // Valid indicates whether the value is a known member of the TenantBrandingLocale enum.
 func (e TenantBrandingLocale) Valid() bool {
 	switch e {
-	case En:
+	case TenantBrandingLocaleEn:
 		return true
-	case Id:
+	case TenantBrandingLocaleId:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UserProfileFieldsGender.
+const (
+	Empty UserProfileFieldsGender = ""
+	L     UserProfileFieldsGender = "L"
+	P     UserProfileFieldsGender = "P"
+)
+
+// Valid indicates whether the value is a known member of the UserProfileFieldsGender enum.
+func (e UserProfileFieldsGender) Valid() bool {
+	switch e {
+	case Empty:
+		return true
+	case L:
+		return true
+	case P:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UserStatus.
+const (
+	Active   UserStatus = "active"
+	Inactive UserStatus = "inactive"
+	Invited  UserStatus = "invited"
+)
+
+// Valid indicates whether the value is a known member of the UserStatus enum.
+func (e UserStatus) Valid() bool {
+	switch e {
+	case Active:
+		return true
+	case Inactive:
+		return true
+	case Invited:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UserWriteFieldsLocale.
+const (
+	UserWriteFieldsLocaleEn UserWriteFieldsLocale = "en"
+	UserWriteFieldsLocaleId UserWriteFieldsLocale = "id"
+)
+
+// Valid indicates whether the value is a known member of the UserWriteFieldsLocale enum.
+func (e UserWriteFieldsLocale) Valid() bool {
+	switch e {
+	case UserWriteFieldsLocaleEn:
+		return true
+	case UserWriteFieldsLocaleId:
 		return true
 	default:
 		return false
@@ -162,6 +285,71 @@ func (e GetHealth200JSONResponseBodyStatus) Valid() bool {
 	}
 }
 
+// Defines values for UpdateMyProfileJSONBodyLocale.
+const (
+	UpdateMyProfileJSONBodyLocaleEn UpdateMyProfileJSONBodyLocale = "en"
+	UpdateMyProfileJSONBodyLocaleId UpdateMyProfileJSONBodyLocale = "id"
+)
+
+// Valid indicates whether the value is a known member of the UpdateMyProfileJSONBodyLocale enum.
+func (e UpdateMyProfileJSONBodyLocale) Valid() bool {
+	switch e {
+	case UpdateMyProfileJSONBodyLocaleEn:
+		return true
+	case UpdateMyProfileJSONBodyLocaleId:
+		return true
+	default:
+		return false
+	}
+}
+
+// AdminRole defines model for AdminRole.
+type AdminRole struct {
+	Description *string            `json:"description,omitempty"`
+	Id          openapi_types.UUID `json:"id"`
+	IsSystem    bool               `json:"is_system"`
+	Name        string             `json:"name"`
+	Permissions []string           `json:"permissions"`
+	Slug        string             `json:"slug"`
+	UserCount   *int               `json:"user_count,omitempty"`
+}
+
+// AdminUser defines model for AdminUser.
+type AdminUser struct {
+	AvatarUrl          *string            `json:"avatar_url,omitempty"`
+	CreatedAt          time.Time          `json:"created_at"`
+	Email              *string            `json:"email,omitempty"`
+	Id                 openapi_types.UUID `json:"id"`
+	LastLoginAt        *time.Time         `json:"last_login_at,omitempty"`
+	Locale             *string            `json:"locale,omitempty"`
+	MustChangePassword bool               `json:"must_change_password"`
+	Name               string             `json:"name"`
+	Phone              *string            `json:"phone,omitempty"`
+
+	// Profile Optional profile columns; which ones apply depends on profile_kind.
+	Profile     *UserProfileFields `json:"profile,omitempty"`
+	ProfileKind ProfileKind        `json:"profile_kind"`
+	Roles       []Role             `json:"roles"`
+	Status      UserStatus         `json:"status"`
+	Username    string             `json:"username"`
+}
+
+// AuditLogEntry defines model for AuditLogEntry.
+type AuditLogEntry struct {
+	ActingAsUserId *openapi_types.UUID     `json:"acting_as_user_id,omitempty"`
+	Action         string                  `json:"action"`
+	ActorUserId    *openapi_types.UUID     `json:"actor_user_id,omitempty"`
+	After          *map[string]interface{} `json:"after,omitempty"`
+	Before         *map[string]interface{} `json:"before,omitempty"`
+	EntityId       *openapi_types.UUID     `json:"entity_id,omitempty"`
+	EntityType     string                  `json:"entity_type"`
+	Id             openapi_types.UUID      `json:"id"`
+	Ip             *string                 `json:"ip,omitempty"`
+	OccurredAt     time.Time               `json:"occurred_at"`
+	RequestId      *string                 `json:"request_id,omitempty"`
+	UserAgent      *string                 `json:"user_agent,omitempty"`
+}
+
 // AuthTokens defines model for AuthTokens.
 type AuthTokens struct {
 	AccessExpiresAt  time.Time  `json:"access_expires_at"`
@@ -179,6 +367,74 @@ type AuthTokensTokenType string
 
 // ClientKind defines model for ClientKind.
 type ClientKind string
+
+// CreateUserRequest defines model for CreateUserRequest.
+type CreateUserRequest struct {
+	Email  *openapi_types.Email     `json:"email,omitempty"`
+	Locale *CreateUserRequestLocale `json:"locale,omitempty"`
+	Name   string                   `json:"name"`
+
+	// Password When omitted a random initial password is set and the user must change it via a set-password token.
+	Password *string `json:"password,omitempty"`
+	Phone    *string `json:"phone,omitempty"`
+
+	// Profile Optional profile columns; which ones apply depends on profile_kind.
+	Profile     *UserProfileFields `json:"profile,omitempty"`
+	ProfileKind ProfileKind        `json:"profile_kind"`
+	Roles       []RoleGrant        `json:"roles"`
+
+	// Username Generated from the name when omitted.
+	Username *string `json:"username,omitempty"`
+}
+
+// CreateUserRequestLocale defines model for CreateUserRequest.Locale.
+type CreateUserRequestLocale string
+
+// DutyAssignment defines model for DutyAssignment.
+type DutyAssignment struct {
+	AcademicYearId openapi_types.UUID  `json:"academic_year_id"`
+	DutyName       string              `json:"duty_name"`
+	DutySlug       string              `json:"duty_slug"`
+	DutyTypeId     openapi_types.UUID  `json:"duty_type_id"`
+	EndsOn         *openapi_types.Date `json:"ends_on,omitempty"`
+	Id             openapi_types.UUID  `json:"id"`
+	IsActive       bool                `json:"is_active"`
+	ScopeClassId   *openapi_types.UUID `json:"scope_class_id,omitempty"`
+	ScopeStudentId *openapi_types.UUID `json:"scope_student_id,omitempty"`
+	StartsOn       openapi_types.Date  `json:"starts_on"`
+	UserId         openapi_types.UUID  `json:"user_id"`
+}
+
+// DutyAssignmentWrite defines model for DutyAssignmentWrite.
+type DutyAssignmentWrite struct {
+	AcademicYearId openapi_types.UUID  `json:"academic_year_id"`
+	DutyTypeId     openapi_types.UUID  `json:"duty_type_id"`
+	EndsOn         *openapi_types.Date `json:"ends_on,omitempty"`
+	ScopeClassId   *openapi_types.UUID `json:"scope_class_id,omitempty"`
+	ScopeStudentId *openapi_types.UUID `json:"scope_student_id,omitempty"`
+	StartsOn       *openapi_types.Date `json:"starts_on,omitempty"`
+	UserId         openapi_types.UUID  `json:"user_id"`
+}
+
+// DutyScopeKind defines model for DutyScopeKind.
+type DutyScopeKind string
+
+// DutyType defines model for DutyType.
+type DutyType struct {
+	Id          openapi_types.UUID `json:"id"`
+	IsActive    bool               `json:"is_active"`
+	Name        string             `json:"name"`
+	Permissions []string           `json:"permissions"`
+	ScopeKind   DutyScopeKind      `json:"scope_kind"`
+	Slug        string             `json:"slug"`
+}
+
+// DutyTypeWrite defines model for DutyTypeWrite.
+type DutyTypeWrite struct {
+	Name      string        `json:"name"`
+	ScopeKind DutyScopeKind `json:"scope_kind"`
+	Slug      string        `json:"slug"`
+}
 
 // Error defines model for Error.
 type Error struct {
@@ -245,12 +501,33 @@ type MeDutiesScopeKind string
 // MeProfileKind defines model for Me.ProfileKind.
 type MeProfileKind string
 
+// PermissionCodes defines model for PermissionCodes.
+type PermissionCodes struct {
+	Permissions []string `json:"permissions"`
+}
+
+// ProfileKind defines model for ProfileKind.
+type ProfileKind string
+
 // Role defines model for Role.
 type Role struct {
 	Id        openapi_types.UUID `json:"id"`
 	IsPrimary bool               `json:"is_primary"`
 	Name      string             `json:"name"`
 	Slug      string             `json:"slug"`
+}
+
+// RoleGrant defines model for RoleGrant.
+type RoleGrant struct {
+	IsPrimary *bool              `json:"is_primary,omitempty"`
+	RoleId    openapi_types.UUID `json:"role_id"`
+}
+
+// RoleWrite defines model for RoleWrite.
+type RoleWrite struct {
+	Description *string `json:"description,omitempty"`
+	Name        string  `json:"name"`
+	Slug        string  `json:"slug"`
 }
 
 // Session defines model for Session.
@@ -293,11 +570,69 @@ type TenantSummary struct {
 	Slug string             `json:"slug"`
 }
 
+// UpdateUserRequest defines model for UpdateUserRequest.
+type UpdateUserRequest = UserWriteFields
+
+// UserProfileFields Optional profile columns; which ones apply depends on profile_kind.
+type UserProfileFields struct {
+	Address          *string                  `json:"address,omitempty"`
+	BirthDate        *openapi_types.Date      `json:"birth_date,omitempty"`
+	BirthPlace       *string                  `json:"birth_place,omitempty"`
+	BloodType        *string                  `json:"blood_type,omitempty"`
+	City             *string                  `json:"city,omitempty"`
+	District         *string                  `json:"district,omitempty"`
+	EmployeeNumber   *string                  `json:"employee_number,omitempty"`
+	EmploymentStatus *string                  `json:"employment_status,omitempty"`
+	EntryYear        *int                     `json:"entry_year,omitempty"`
+	FatherName       *string                  `json:"father_name,omitempty"`
+	Gender           *UserProfileFieldsGender `json:"gender,omitempty"`
+	GuardianName     *string                  `json:"guardian_name,omitempty"`
+	GuardianPhone    *string                  `json:"guardian_phone,omitempty"`
+	JoinedYear       *int                     `json:"joined_year,omitempty"`
+	LastEducation    *string                  `json:"last_education,omitempty"`
+	MotherName       *string                  `json:"mother_name,omitempty"`
+	Nik              *string                  `json:"nik,omitempty"`
+	Nip              *string                  `json:"nip,omitempty"`
+	Nis              *string                  `json:"nis,omitempty"`
+	Nisn             *string                  `json:"nisn,omitempty"`
+	Nuptk            *string                  `json:"nuptk,omitempty"`
+	ParentOccupation *string                  `json:"parent_occupation,omitempty"`
+	Position         *string                  `json:"position,omitempty"`
+	PreviousSchool   *string                  `json:"previous_school,omitempty"`
+	Religion         *string                  `json:"religion,omitempty"`
+	Specialization   *string                  `json:"specialization,omitempty"`
+}
+
+// UserProfileFieldsGender defines model for UserProfileFields.Gender.
+type UserProfileFieldsGender string
+
+// UserStatus defines model for UserStatus.
+type UserStatus string
+
+// UserWriteFields defines model for UserWriteFields.
+type UserWriteFields struct {
+	Email  *openapi_types.Email   `json:"email,omitempty"`
+	Locale *UserWriteFieldsLocale `json:"locale,omitempty"`
+	Name   string                 `json:"name"`
+	Phone  *string                `json:"phone,omitempty"`
+
+	// Profile Optional profile columns; which ones apply depends on profile_kind.
+	Profile     *UserProfileFields `json:"profile,omitempty"`
+	ProfileKind ProfileKind        `json:"profile_kind"`
+	Roles       []RoleGrant        `json:"roles"`
+}
+
+// UserWriteFieldsLocale defines model for UserWriteFields.Locale.
+type UserWriteFieldsLocale string
+
 // TenantHeader defines model for TenantHeader.
 type TenantHeader = string
 
 // BadRequest defines model for BadRequest.
 type BadRequest = Error
+
+// Conflict defines model for Conflict.
+type Conflict = Error
 
 // Forbidden defines model for Forbidden.
 type Forbidden = Error
@@ -317,8 +652,42 @@ type GetHealth200JSONResponseBodyChecks string
 // GetHealth200JSONResponseBodyStatus defines parameters for GetHealth.
 type GetHealth200JSONResponseBodyStatus string
 
+// ListAuditLogsParams defines parameters for ListAuditLogs.
+type ListAuditLogsParams struct {
+	ActorUserId *openapi_types.UUID `form:"actor_user_id,omitempty" json:"actor_user_id,omitempty"`
+	EntityType  *string             `form:"entity_type,omitempty" json:"entity_type,omitempty"`
+	EntityId    *openapi_types.UUID `form:"entity_id,omitempty" json:"entity_id,omitempty"`
+	From        *time.Time          `form:"from,omitempty" json:"from,omitempty"`
+	To          *time.Time          `form:"to,omitempty" json:"to,omitempty"`
+	Cursor      *openapi_types.UUID `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit       *int                `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
 // LoginParams defines parameters for Login.
 type LoginParams struct {
+	// XTenant Tenant slug for mobile clients before a token exists. Ignored when the host already resolves a tenant or in single-tenant mode.
+	XTenant *TenantHeader `json:"X-Tenant,omitempty"`
+}
+
+// ConfirmPasswordResetJSONBody defines parameters for ConfirmPasswordReset.
+type ConfirmPasswordResetJSONBody struct {
+	NewPassword string `json:"new_password"`
+	Token       string `json:"token"`
+}
+
+// ConfirmPasswordResetParams defines parameters for ConfirmPasswordReset.
+type ConfirmPasswordResetParams struct {
+	// XTenant Tenant slug for mobile clients before a token exists. Ignored when the host already resolves a tenant or in single-tenant mode.
+	XTenant *TenantHeader `json:"X-Tenant,omitempty"`
+}
+
+// RequestPasswordResetJSONBody defines parameters for RequestPasswordReset.
+type RequestPasswordResetJSONBody struct {
+	UsernameOrEmail string `json:"username_or_email"`
+}
+
+// RequestPasswordResetParams defines parameters for RequestPasswordReset.
+type RequestPasswordResetParams struct {
 	// XTenant Tenant slug for mobile clients before a token exists. Ignored when the host already resolves a tenant or in single-tenant mode.
 	XTenant *TenantHeader `json:"X-Tenant,omitempty"`
 }
@@ -329,37 +698,153 @@ type RefreshTokenJSONBody struct {
 	RefreshToken *string `json:"refresh_token,omitempty"`
 }
 
+// ListDutyTypesParams defines parameters for ListDutyTypes.
+type ListDutyTypesParams struct {
+	IncludeInactive *bool `form:"include_inactive,omitempty" json:"include_inactive,omitempty"`
+}
+
+// UpdateDutyTypeJSONBody defines parameters for UpdateDutyType.
+type UpdateDutyTypeJSONBody struct {
+	IsActive  bool          `json:"is_active"`
+	Name      string        `json:"name"`
+	ScopeKind DutyScopeKind `json:"scope_kind"`
+}
+
+// ListDutyAssignmentsParams defines parameters for ListDutyAssignments.
+type ListDutyAssignmentsParams struct {
+	AcademicYearId openapi_types.UUID  `form:"academic_year_id" json:"academic_year_id"`
+	DutyTypeId     *openapi_types.UUID `form:"duty_type_id,omitempty" json:"duty_type_id,omitempty"`
+	UserId         *openapi_types.UUID `form:"user_id,omitempty" json:"user_id,omitempty"`
+}
+
+// UpdateDutyAssignmentJSONBody defines parameters for UpdateDutyAssignment.
+type UpdateDutyAssignmentJSONBody struct {
+	EndsOn   *openapi_types.Date `json:"ends_on,omitempty"`
+	IsActive bool                `json:"is_active"`
+}
+
+// ConfirmAvatarUploadJSONBody defines parameters for ConfirmAvatarUpload.
+type ConfirmAvatarUploadJSONBody struct {
+	ObjectKey string `json:"object_key"`
+}
+
 // ChangePasswordJSONBody defines parameters for ChangePassword.
 type ChangePasswordJSONBody struct {
 	CurrentPassword string `json:"current_password"`
 	NewPassword     string `json:"new_password"`
 }
 
+// UpdateMyProfileJSONBody defines parameters for UpdateMyProfile.
+type UpdateMyProfileJSONBody struct {
+	Email  *openapi_types.Email           `json:"email,omitempty"`
+	Locale *UpdateMyProfileJSONBodyLocale `json:"locale,omitempty"`
+	Name   *string                        `json:"name,omitempty"`
+	Phone  *string                        `json:"phone,omitempty"`
+}
+
+// UpdateMyProfileJSONBodyLocale defines parameters for UpdateMyProfile.
+type UpdateMyProfileJSONBodyLocale string
+
 // LookupTenantsParams defines parameters for LookupTenants.
 type LookupTenantsParams struct {
 	Q string `form:"q" json:"q"`
 }
 
+// ListUsersParams defines parameters for ListUsers.
+type ListUsersParams struct {
+	Q           *string      `form:"q,omitempty" json:"q,omitempty"`
+	Status      *UserStatus  `form:"status,omitempty" json:"status,omitempty"`
+	ProfileKind *ProfileKind `form:"profile_kind,omitempty" json:"profile_kind,omitempty"`
+
+	// Role Role slug
+	Role            *string             `form:"role,omitempty" json:"role,omitempty"`
+	IncludeArchived *bool               `form:"include_archived,omitempty" json:"include_archived,omitempty"`
+	Cursor          *openapi_types.UUID `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit           *int                `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ImpersonateUserJSONBody defines parameters for ImpersonateUser.
+type ImpersonateUserJSONBody struct {
+	Client *ClientKind `json:"client,omitempty"`
+}
+
 // LoginJSONRequestBody defines body for Login for application/json ContentType.
 type LoginJSONRequestBody = LoginRequest
+
+// ConfirmPasswordResetJSONRequestBody defines body for ConfirmPasswordReset for application/json ContentType.
+type ConfirmPasswordResetJSONRequestBody ConfirmPasswordResetJSONBody
+
+// RequestPasswordResetJSONRequestBody defines body for RequestPasswordReset for application/json ContentType.
+type RequestPasswordResetJSONRequestBody RequestPasswordResetJSONBody
 
 // RefreshTokenJSONRequestBody defines body for RefreshToken for application/json ContentType.
 type RefreshTokenJSONRequestBody RefreshTokenJSONBody
 
+// CreateDutyTypeJSONRequestBody defines body for CreateDutyType for application/json ContentType.
+type CreateDutyTypeJSONRequestBody = DutyTypeWrite
+
+// UpdateDutyTypeJSONRequestBody defines body for UpdateDutyType for application/json ContentType.
+type UpdateDutyTypeJSONRequestBody UpdateDutyTypeJSONBody
+
+// ReplaceDutyPermissionsJSONRequestBody defines body for ReplaceDutyPermissions for application/json ContentType.
+type ReplaceDutyPermissionsJSONRequestBody = PermissionCodes
+
+// CreateDutyAssignmentJSONRequestBody defines body for CreateDutyAssignment for application/json ContentType.
+type CreateDutyAssignmentJSONRequestBody = DutyAssignmentWrite
+
+// UpdateDutyAssignmentJSONRequestBody defines body for UpdateDutyAssignment for application/json ContentType.
+type UpdateDutyAssignmentJSONRequestBody UpdateDutyAssignmentJSONBody
+
+// ConfirmAvatarUploadJSONRequestBody defines body for ConfirmAvatarUpload for application/json ContentType.
+type ConfirmAvatarUploadJSONRequestBody ConfirmAvatarUploadJSONBody
+
 // ChangePasswordJSONRequestBody defines body for ChangePassword for application/json ContentType.
 type ChangePasswordJSONRequestBody ChangePasswordJSONBody
+
+// UpdateMyProfileJSONRequestBody defines body for UpdateMyProfile for application/json ContentType.
+type UpdateMyProfileJSONRequestBody UpdateMyProfileJSONBody
+
+// CreateRoleJSONRequestBody defines body for CreateRole for application/json ContentType.
+type CreateRoleJSONRequestBody = RoleWrite
+
+// UpdateRoleJSONRequestBody defines body for UpdateRole for application/json ContentType.
+type UpdateRoleJSONRequestBody = RoleWrite
+
+// ReplaceRolePermissionsJSONRequestBody defines body for ReplaceRolePermissions for application/json ContentType.
+type ReplaceRolePermissionsJSONRequestBody = PermissionCodes
+
+// CreateUserJSONRequestBody defines body for CreateUser for application/json ContentType.
+type CreateUserJSONRequestBody = CreateUserRequest
+
+// UpdateUserJSONRequestBody defines body for UpdateUser for application/json ContentType.
+type UpdateUserJSONRequestBody = UpdateUserRequest
+
+// ImpersonateUserJSONRequestBody defines body for ImpersonateUser for application/json ContentType.
+type ImpersonateUserJSONRequestBody ImpersonateUserJSONBody
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 	// GetHealth Liveness and dependency status
 	// (GET /health)
 	GetHealth(w http.ResponseWriter, r *http.Request)
+	// ListAuditLogs Audit log, newest first (cursor pagination)
+	// (GET /v1/audit-logs)
+	ListAuditLogs(w http.ResponseWriter, r *http.Request, params ListAuditLogsParams)
+	// StopImpersonation End the current impersonation session immediately
+	// (POST /v1/auth/impersonation/stop)
+	StopImpersonation(w http.ResponseWriter, r *http.Request)
 	// Login Password login
 	// (POST /v1/auth/login)
 	Login(w http.ResponseWriter, r *http.Request, params LoginParams)
 	// Logout Revoke the current session (and clear the web cookie)
 	// (POST /v1/auth/logout)
 	Logout(w http.ResponseWriter, r *http.Request)
+	// ConfirmPasswordReset Set a new password with a reset or set-password token
+	// (POST /v1/auth/password-reset/confirm)
+	ConfirmPasswordReset(w http.ResponseWriter, r *http.Request, params ConfirmPasswordResetParams)
+	// RequestPasswordReset Request a password reset link (always 202)
+	// (POST /v1/auth/password-reset/request)
+	RequestPasswordReset(w http.ResponseWriter, r *http.Request, params RequestPasswordResetParams)
 	// RefreshToken Rotate refresh token and mint a new access token
 	// (POST /v1/auth/refresh)
 	RefreshToken(w http.ResponseWriter, r *http.Request)
@@ -369,18 +854,96 @@ type ServerInterface interface {
 	// RevokeSession Revoke one of the current user's sessions
 	// (DELETE /v1/auth/sessions/{sessionId})
 	RevokeSession(w http.ResponseWriter, r *http.Request, sessionId openapi_types.UUID)
+	// ListDutyTypes Duty types with their granted permissions
+	// (GET /v1/duties)
+	ListDutyTypes(w http.ResponseWriter, r *http.Request, params ListDutyTypesParams)
+	// CreateDutyType Create a duty type
+	// (POST /v1/duties)
+	CreateDutyType(w http.ResponseWriter, r *http.Request)
+	// DeleteDutyType Delete an unused duty type
+	// (DELETE /v1/duties/{dutyId})
+	DeleteDutyType(w http.ResponseWriter, r *http.Request, dutyId openapi_types.UUID)
+	// UpdateDutyType Update a duty type
+	// (PUT /v1/duties/{dutyId})
+	UpdateDutyType(w http.ResponseWriter, r *http.Request, dutyId openapi_types.UUID)
+	// ReplaceDutyPermissions Replace the permissions a duty grants while active
+	// (PUT /v1/duties/{dutyId}/permissions)
+	ReplaceDutyPermissions(w http.ResponseWriter, r *http.Request, dutyId openapi_types.UUID)
+	// ListDutyAssignments Duty assignments in an academic year
+	// (GET /v1/duty-assignments)
+	ListDutyAssignments(w http.ResponseWriter, r *http.Request, params ListDutyAssignmentsParams)
+	// CreateDutyAssignment Assign a duty to a user for an academic year (optionally scoped)
+	// (POST /v1/duty-assignments)
+	CreateDutyAssignment(w http.ResponseWriter, r *http.Request)
+	// DeleteDutyAssignment Remove a duty assignment
+	// (DELETE /v1/duty-assignments/{assignmentId})
+	DeleteDutyAssignment(w http.ResponseWriter, r *http.Request, assignmentId openapi_types.UUID)
+	// UpdateDutyAssignment Activate, deactivate or end a duty assignment
+	// (PUT /v1/duty-assignments/{assignmentId})
+	UpdateDutyAssignment(w http.ResponseWriter, r *http.Request, assignmentId openapi_types.UUID)
 	// GetMe Current user, roles, effective permissions, tenant
 	// (GET /v1/me)
 	GetMe(w http.ResponseWriter, r *http.Request)
+	// ConfirmAvatarUpload Confirm the uploaded object as the new avatar (validated server-side)
+	// (POST /v1/me/avatar/confirm)
+	ConfirmAvatarUpload(w http.ResponseWriter, r *http.Request)
+	// RequestAvatarUpload Get a presigned upload URL for a new avatar
+	// (POST /v1/me/avatar/upload-url)
+	RequestAvatarUpload(w http.ResponseWriter, r *http.Request)
 	// ChangePassword Change own password; revokes other sessions
 	// (PUT /v1/me/password)
 	ChangePassword(w http.ResponseWriter, r *http.Request)
+	// UpdateMyProfile Update own name, email, phone and locale
+	// (PUT /v1/me/profile)
+	UpdateMyProfile(w http.ResponseWriter, r *http.Request)
+	// ListPermissions Permission catalog grouped by area
+	// (GET /v1/permissions)
+	ListPermissions(w http.ResponseWriter, r *http.Request)
+	// ListRoles Roles of the tenant with permissions and user counts
+	// (GET /v1/roles)
+	ListRoles(w http.ResponseWriter, r *http.Request)
+	// CreateRole Create a custom role
+	// (POST /v1/roles)
+	CreateRole(w http.ResponseWriter, r *http.Request)
+	// DeleteRole Delete an unused custom role
+	// (DELETE /v1/roles/{roleId})
+	DeleteRole(w http.ResponseWriter, r *http.Request, roleId openapi_types.UUID)
+	// UpdateRole Rename a custom role (system roles are immutable)
+	// (PUT /v1/roles/{roleId})
+	UpdateRole(w http.ResponseWriter, r *http.Request, roleId openapi_types.UUID)
+	// ReplaceRolePermissions Replace the permission set of a role (super_admin always keeps all)
+	// (PUT /v1/roles/{roleId}/permissions)
+	ReplaceRolePermissions(w http.ResponseWriter, r *http.Request, roleId openapi_types.UUID)
 	// GetTenantBranding Public branding for the resolved tenant (login screen, manifest)
 	// (GET /v1/tenant/branding)
 	GetTenantBranding(w http.ResponseWriter, r *http.Request)
 	// LookupTenants Search schools by name or slug (mobile school picker). Returns nothing in single-tenant mode except the single tenant.
 	// (GET /v1/tenants/lookup)
 	LookupTenants(w http.ResponseWriter, r *http.Request, params LookupTenantsParams)
+	// ListUsers List users with search and filters (cursor pagination)
+	// (GET /v1/users)
+	ListUsers(w http.ResponseWriter, r *http.Request, params ListUsersParams)
+	// CreateUser Create a user with profile and roles
+	// (POST /v1/users)
+	CreateUser(w http.ResponseWriter, r *http.Request)
+	// GetUser User detail
+	// (GET /v1/users/{userId})
+	GetUser(w http.ResponseWriter, r *http.Request, userId openapi_types.UUID)
+	// UpdateUser Update a user (username and password are not editable here)
+	// (PUT /v1/users/{userId})
+	UpdateUser(w http.ResponseWriter, r *http.Request, userId openapi_types.UUID)
+	// ArchiveUser Archive (soft delete) a user; cannot archive yourself
+	// (POST /v1/users/{userId}/archive)
+	ArchiveUser(w http.ResponseWriter, r *http.Request, userId openapi_types.UUID)
+	// ImpersonateUser Start a 30-minute impersonation session as this user
+	// (POST /v1/users/{userId}/impersonate)
+	ImpersonateUser(w http.ResponseWriter, r *http.Request, userId openapi_types.UUID)
+	// AdminResetPassword Issue a one-time set-password token for the user (never returns a password)
+	// (POST /v1/users/{userId}/reset-password)
+	AdminResetPassword(w http.ResponseWriter, r *http.Request, userId openapi_types.UUID)
+	// RestoreUser Restore an archived user
+	// (POST /v1/users/{userId}/restore)
+	RestoreUser(w http.ResponseWriter, r *http.Request, userId openapi_types.UUID)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
@@ -393,6 +956,18 @@ func (_ Unimplemented) GetHealth(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// ListAuditLogs Audit log, newest first (cursor pagination)
+// (GET /v1/audit-logs)
+func (_ Unimplemented) ListAuditLogs(w http.ResponseWriter, r *http.Request, params ListAuditLogsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// StopImpersonation End the current impersonation session immediately
+// (POST /v1/auth/impersonation/stop)
+func (_ Unimplemented) StopImpersonation(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // Login Password login
 // (POST /v1/auth/login)
 func (_ Unimplemented) Login(w http.ResponseWriter, r *http.Request, params LoginParams) {
@@ -402,6 +977,18 @@ func (_ Unimplemented) Login(w http.ResponseWriter, r *http.Request, params Logi
 // Logout Revoke the current session (and clear the web cookie)
 // (POST /v1/auth/logout)
 func (_ Unimplemented) Logout(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ConfirmPasswordReset Set a new password with a reset or set-password token
+// (POST /v1/auth/password-reset/confirm)
+func (_ Unimplemented) ConfirmPasswordReset(w http.ResponseWriter, r *http.Request, params ConfirmPasswordResetParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// RequestPasswordReset Request a password reset link (always 202)
+// (POST /v1/auth/password-reset/request)
+func (_ Unimplemented) RequestPasswordReset(w http.ResponseWriter, r *http.Request, params RequestPasswordResetParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -423,15 +1010,123 @@ func (_ Unimplemented) RevokeSession(w http.ResponseWriter, r *http.Request, ses
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// ListDutyTypes Duty types with their granted permissions
+// (GET /v1/duties)
+func (_ Unimplemented) ListDutyTypes(w http.ResponseWriter, r *http.Request, params ListDutyTypesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CreateDutyType Create a duty type
+// (POST /v1/duties)
+func (_ Unimplemented) CreateDutyType(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// DeleteDutyType Delete an unused duty type
+// (DELETE /v1/duties/{dutyId})
+func (_ Unimplemented) DeleteDutyType(w http.ResponseWriter, r *http.Request, dutyId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// UpdateDutyType Update a duty type
+// (PUT /v1/duties/{dutyId})
+func (_ Unimplemented) UpdateDutyType(w http.ResponseWriter, r *http.Request, dutyId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ReplaceDutyPermissions Replace the permissions a duty grants while active
+// (PUT /v1/duties/{dutyId}/permissions)
+func (_ Unimplemented) ReplaceDutyPermissions(w http.ResponseWriter, r *http.Request, dutyId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListDutyAssignments Duty assignments in an academic year
+// (GET /v1/duty-assignments)
+func (_ Unimplemented) ListDutyAssignments(w http.ResponseWriter, r *http.Request, params ListDutyAssignmentsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CreateDutyAssignment Assign a duty to a user for an academic year (optionally scoped)
+// (POST /v1/duty-assignments)
+func (_ Unimplemented) CreateDutyAssignment(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// DeleteDutyAssignment Remove a duty assignment
+// (DELETE /v1/duty-assignments/{assignmentId})
+func (_ Unimplemented) DeleteDutyAssignment(w http.ResponseWriter, r *http.Request, assignmentId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// UpdateDutyAssignment Activate, deactivate or end a duty assignment
+// (PUT /v1/duty-assignments/{assignmentId})
+func (_ Unimplemented) UpdateDutyAssignment(w http.ResponseWriter, r *http.Request, assignmentId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // GetMe Current user, roles, effective permissions, tenant
 // (GET /v1/me)
 func (_ Unimplemented) GetMe(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// ConfirmAvatarUpload Confirm the uploaded object as the new avatar (validated server-side)
+// (POST /v1/me/avatar/confirm)
+func (_ Unimplemented) ConfirmAvatarUpload(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// RequestAvatarUpload Get a presigned upload URL for a new avatar
+// (POST /v1/me/avatar/upload-url)
+func (_ Unimplemented) RequestAvatarUpload(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // ChangePassword Change own password; revokes other sessions
 // (PUT /v1/me/password)
 func (_ Unimplemented) ChangePassword(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// UpdateMyProfile Update own name, email, phone and locale
+// (PUT /v1/me/profile)
+func (_ Unimplemented) UpdateMyProfile(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListPermissions Permission catalog grouped by area
+// (GET /v1/permissions)
+func (_ Unimplemented) ListPermissions(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListRoles Roles of the tenant with permissions and user counts
+// (GET /v1/roles)
+func (_ Unimplemented) ListRoles(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CreateRole Create a custom role
+// (POST /v1/roles)
+func (_ Unimplemented) CreateRole(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// DeleteRole Delete an unused custom role
+// (DELETE /v1/roles/{roleId})
+func (_ Unimplemented) DeleteRole(w http.ResponseWriter, r *http.Request, roleId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// UpdateRole Rename a custom role (system roles are immutable)
+// (PUT /v1/roles/{roleId})
+func (_ Unimplemented) UpdateRole(w http.ResponseWriter, r *http.Request, roleId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ReplaceRolePermissions Replace the permission set of a role (super_admin always keeps all)
+// (PUT /v1/roles/{roleId}/permissions)
+func (_ Unimplemented) ReplaceRolePermissions(w http.ResponseWriter, r *http.Request, roleId openapi_types.UUID) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -444,6 +1139,54 @@ func (_ Unimplemented) GetTenantBranding(w http.ResponseWriter, r *http.Request)
 // LookupTenants Search schools by name or slug (mobile school picker). Returns nothing in single-tenant mode except the single tenant.
 // (GET /v1/tenants/lookup)
 func (_ Unimplemented) LookupTenants(w http.ResponseWriter, r *http.Request, params LookupTenantsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListUsers List users with search and filters (cursor pagination)
+// (GET /v1/users)
+func (_ Unimplemented) ListUsers(w http.ResponseWriter, r *http.Request, params ListUsersParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CreateUser Create a user with profile and roles
+// (POST /v1/users)
+func (_ Unimplemented) CreateUser(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetUser User detail
+// (GET /v1/users/{userId})
+func (_ Unimplemented) GetUser(w http.ResponseWriter, r *http.Request, userId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// UpdateUser Update a user (username and password are not editable here)
+// (PUT /v1/users/{userId})
+func (_ Unimplemented) UpdateUser(w http.ResponseWriter, r *http.Request, userId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ArchiveUser Archive (soft delete) a user; cannot archive yourself
+// (POST /v1/users/{userId}/archive)
+func (_ Unimplemented) ArchiveUser(w http.ResponseWriter, r *http.Request, userId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ImpersonateUser Start a 30-minute impersonation session as this user
+// (POST /v1/users/{userId}/impersonate)
+func (_ Unimplemented) ImpersonateUser(w http.ResponseWriter, r *http.Request, userId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// AdminResetPassword Issue a one-time set-password token for the user (never returns a password)
+// (POST /v1/users/{userId}/reset-password)
+func (_ Unimplemented) AdminResetPassword(w http.ResponseWriter, r *http.Request, userId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// RestoreUser Restore an archived user
+// (POST /v1/users/{userId}/restore)
+func (_ Unimplemented) RestoreUser(w http.ResponseWriter, r *http.Request, userId openapi_types.UUID) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -461,6 +1204,131 @@ func (siw *ServerInterfaceWrapper) GetHealth(w http.ResponseWriter, r *http.Requ
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetHealth(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListAuditLogs operation middleware
+func (siw *ServerInterfaceWrapper) ListAuditLogs(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListAuditLogsParams
+
+	// ------------- Optional query parameter "actor_user_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "actor_user_id", r.URL.Query(), &params.ActorUserId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "actor_user_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "actor_user_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "entity_type" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "entity_type", r.URL.Query(), &params.EntityType, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "entity_type"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "entity_type", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "entity_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "entity_id", r.URL.Query(), &params.EntityId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "entity_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "entity_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "from" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "from", r.URL.Query(), &params.From, runtime.BindQueryParameterOptions{Type: "string", Format: "date-time"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "from"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "from", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "to" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "to", r.URL.Query(), &params.To, runtime.BindQueryParameterOptions{Type: "string", Format: "date-time"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "to"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "to", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAuditLogs(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// StopImpersonation operation middleware
+func (siw *ServerInterfaceWrapper) StopImpersonation(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.StopImpersonation(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -525,6 +1393,88 @@ func (siw *ServerInterfaceWrapper) Logout(w http.ResponseWriter, r *http.Request
 	handler.ServeHTTP(w, r)
 }
 
+// ConfirmPasswordReset operation middleware
+func (siw *ServerInterfaceWrapper) ConfirmPasswordReset(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ConfirmPasswordResetParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "X-Tenant" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant")]; found {
+		var XTenant TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant", valueList[0], &XTenant, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant", Err: err})
+			return
+		}
+
+		params.XTenant = &XTenant
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ConfirmPasswordReset(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RequestPasswordReset operation middleware
+func (siw *ServerInterfaceWrapper) RequestPasswordReset(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RequestPasswordResetParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "X-Tenant" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant")]; found {
+		var XTenant TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant", valueList[0], &XTenant, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant", Err: err})
+			return
+		}
+
+		params.XTenant = &XTenant
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RequestPasswordReset(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // RefreshToken operation middleware
 func (siw *ServerInterfaceWrapper) RefreshToken(w http.ResponseWriter, r *http.Request) {
 
@@ -579,6 +1529,256 @@ func (siw *ServerInterfaceWrapper) RevokeSession(w http.ResponseWriter, r *http.
 	handler.ServeHTTP(w, r)
 }
 
+// ListDutyTypes operation middleware
+func (siw *ServerInterfaceWrapper) ListDutyTypes(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListDutyTypesParams
+
+	// ------------- Optional query parameter "include_inactive" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "include_inactive", r.URL.Query(), &params.IncludeInactive, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "include_inactive"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "include_inactive", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListDutyTypes(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateDutyType operation middleware
+func (siw *ServerInterfaceWrapper) CreateDutyType(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateDutyType(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteDutyType operation middleware
+func (siw *ServerInterfaceWrapper) DeleteDutyType(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "dutyId" -------------
+	var dutyId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "dutyId", chi.URLParam(r, "dutyId"), &dutyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "dutyId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteDutyType(w, r, dutyId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateDutyType operation middleware
+func (siw *ServerInterfaceWrapper) UpdateDutyType(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "dutyId" -------------
+	var dutyId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "dutyId", chi.URLParam(r, "dutyId"), &dutyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "dutyId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateDutyType(w, r, dutyId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ReplaceDutyPermissions operation middleware
+func (siw *ServerInterfaceWrapper) ReplaceDutyPermissions(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "dutyId" -------------
+	var dutyId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "dutyId", chi.URLParam(r, "dutyId"), &dutyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "dutyId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReplaceDutyPermissions(w, r, dutyId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListDutyAssignments operation middleware
+func (siw *ServerInterfaceWrapper) ListDutyAssignments(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListDutyAssignmentsParams
+
+	// ------------- Required query parameter "academic_year_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "academic_year_id", r.URL.Query(), &params.AcademicYearId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "academic_year_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "academic_year_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "duty_type_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "duty_type_id", r.URL.Query(), &params.DutyTypeId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "duty_type_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "duty_type_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "user_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "user_id", r.URL.Query(), &params.UserId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "user_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "user_id", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListDutyAssignments(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateDutyAssignment operation middleware
+func (siw *ServerInterfaceWrapper) CreateDutyAssignment(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateDutyAssignment(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteDutyAssignment operation middleware
+func (siw *ServerInterfaceWrapper) DeleteDutyAssignment(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "assignmentId" -------------
+	var assignmentId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "assignmentId", chi.URLParam(r, "assignmentId"), &assignmentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "assignmentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteDutyAssignment(w, r, assignmentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateDutyAssignment operation middleware
+func (siw *ServerInterfaceWrapper) UpdateDutyAssignment(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "assignmentId" -------------
+	var assignmentId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "assignmentId", chi.URLParam(r, "assignmentId"), &assignmentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "assignmentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateDutyAssignment(w, r, assignmentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetMe operation middleware
 func (siw *ServerInterfaceWrapper) GetMe(w http.ResponseWriter, r *http.Request) {
 
@@ -593,11 +1793,173 @@ func (siw *ServerInterfaceWrapper) GetMe(w http.ResponseWriter, r *http.Request)
 	handler.ServeHTTP(w, r)
 }
 
+// ConfirmAvatarUpload operation middleware
+func (siw *ServerInterfaceWrapper) ConfirmAvatarUpload(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ConfirmAvatarUpload(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RequestAvatarUpload operation middleware
+func (siw *ServerInterfaceWrapper) RequestAvatarUpload(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RequestAvatarUpload(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ChangePassword operation middleware
 func (siw *ServerInterfaceWrapper) ChangePassword(w http.ResponseWriter, r *http.Request) {
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ChangePassword(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateMyProfile operation middleware
+func (siw *ServerInterfaceWrapper) UpdateMyProfile(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateMyProfile(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListPermissions operation middleware
+func (siw *ServerInterfaceWrapper) ListPermissions(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListPermissions(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListRoles operation middleware
+func (siw *ServerInterfaceWrapper) ListRoles(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListRoles(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateRole operation middleware
+func (siw *ServerInterfaceWrapper) CreateRole(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateRole(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteRole operation middleware
+func (siw *ServerInterfaceWrapper) DeleteRole(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "roleId" -------------
+	var roleId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "roleId", chi.URLParam(r, "roleId"), &roleId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "roleId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteRole(w, r, roleId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateRole operation middleware
+func (siw *ServerInterfaceWrapper) UpdateRole(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "roleId" -------------
+	var roleId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "roleId", chi.URLParam(r, "roleId"), &roleId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "roleId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateRole(w, r, roleId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ReplaceRolePermissions operation middleware
+func (siw *ServerInterfaceWrapper) ReplaceRolePermissions(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "roleId" -------------
+	var roleId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "roleId", chi.URLParam(r, "roleId"), &roleId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "roleId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReplaceRolePermissions(w, r, roleId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -645,6 +2007,287 @@ func (siw *ServerInterfaceWrapper) LookupTenants(w http.ResponseWriter, r *http.
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.LookupTenants(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListUsers operation middleware
+func (siw *ServerInterfaceWrapper) ListUsers(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListUsersParams
+
+	// ------------- Optional query parameter "q" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "q", r.URL.Query(), &params.Q, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "q"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "q", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "status"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "profile_kind" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "profile_kind", r.URL.Query(), &params.ProfileKind, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "profile_kind"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "profile_kind", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "role" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "role", r.URL.Query(), &params.Role, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "role"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "role", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "include_archived" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "include_archived", r.URL.Query(), &params.IncludeArchived, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "include_archived"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "include_archived", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListUsers(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateUser operation middleware
+func (siw *ServerInterfaceWrapper) CreateUser(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateUser(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetUser operation middleware
+func (siw *ServerInterfaceWrapper) GetUser(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "userId" -------------
+	var userId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "userId", chi.URLParam(r, "userId"), &userId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "userId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetUser(w, r, userId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateUser operation middleware
+func (siw *ServerInterfaceWrapper) UpdateUser(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "userId" -------------
+	var userId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "userId", chi.URLParam(r, "userId"), &userId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "userId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateUser(w, r, userId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ArchiveUser operation middleware
+func (siw *ServerInterfaceWrapper) ArchiveUser(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "userId" -------------
+	var userId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "userId", chi.URLParam(r, "userId"), &userId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "userId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ArchiveUser(w, r, userId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ImpersonateUser operation middleware
+func (siw *ServerInterfaceWrapper) ImpersonateUser(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "userId" -------------
+	var userId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "userId", chi.URLParam(r, "userId"), &userId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "userId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ImpersonateUser(w, r, userId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AdminResetPassword operation middleware
+func (siw *ServerInterfaceWrapper) AdminResetPassword(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "userId" -------------
+	var userId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "userId", chi.URLParam(r, "userId"), &userId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "userId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AdminResetPassword(w, r, userId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RestoreUser operation middleware
+func (siw *ServerInterfaceWrapper) RestoreUser(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "userId" -------------
+	var userId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "userId", chi.URLParam(r, "userId"), &userId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "userId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RestoreUser(w, r, userId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -768,6 +2411,96 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	}
 
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/users", wrapper.ListUsers)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/users", wrapper.CreateUser)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/users/{userId}", wrapper.GetUser)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/v1/users/{userId}", wrapper.UpdateUser)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/users/{userId}/archive", wrapper.ArchiveUser)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/users/{userId}/restore", wrapper.RestoreUser)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/users/{userId}/reset-password", wrapper.AdminResetPassword)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/users/{userId}/impersonate", wrapper.ImpersonateUser)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/auth/impersonation/stop", wrapper.StopImpersonation)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/auth/password-reset/request", wrapper.RequestPasswordReset)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/auth/password-reset/confirm", wrapper.ConfirmPasswordReset)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/v1/me/profile", wrapper.UpdateMyProfile)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/me/avatar/upload-url", wrapper.RequestAvatarUpload)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/me/avatar/confirm", wrapper.ConfirmAvatarUpload)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/permissions", wrapper.ListPermissions)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/roles", wrapper.ListRoles)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/roles", wrapper.CreateRole)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/v1/roles/{roleId}", wrapper.DeleteRole)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/v1/roles/{roleId}", wrapper.UpdateRole)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/v1/roles/{roleId}/permissions", wrapper.ReplaceRolePermissions)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/duties", wrapper.ListDutyTypes)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/duties", wrapper.CreateDutyType)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/v1/duties/{dutyId}", wrapper.DeleteDutyType)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/v1/duties/{dutyId}", wrapper.UpdateDutyType)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/v1/duties/{dutyId}/permissions", wrapper.ReplaceDutyPermissions)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/duty-assignments", wrapper.ListDutyAssignments)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/duty-assignments", wrapper.CreateDutyAssignment)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/v1/duty-assignments/{assignmentId}", wrapper.DeleteDutyAssignment)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/v1/duty-assignments/{assignmentId}", wrapper.UpdateDutyAssignment)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/audit-logs", wrapper.ListAuditLogs)
+	})
+	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/v1/auth/login", wrapper.Login)
 	})
 	r.Group(func(r chi.Router) {
@@ -802,6 +2535,8 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 }
 
 type BadRequestJSONResponse Error
+
+type ConflictJSONResponse Error
 
 type ForbiddenJSONResponse Error
 
@@ -853,6 +2588,102 @@ func (response GetHealth503JSONResponse) VisitGetHealthResponse(w http.ResponseW
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListAuditLogsRequestObject struct {
+	Params ListAuditLogsParams
+}
+
+type ListAuditLogsResponseObject interface {
+	VisitListAuditLogsResponse(w http.ResponseWriter) error
+}
+
+type ListAuditLogs200JSONResponse struct {
+	Data       []AuditLogEntry     `json:"data"`
+	NextCursor *openapi_types.UUID `json:"next_cursor,omitempty"`
+}
+
+func (response ListAuditLogs200JSONResponse) VisitListAuditLogsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListAuditLogs401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListAuditLogs401JSONResponse) VisitListAuditLogsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListAuditLogs403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListAuditLogs403JSONResponse) VisitListAuditLogsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StopImpersonationRequestObject struct {
+}
+
+type StopImpersonationResponseObject interface {
+	VisitStopImpersonationResponse(w http.ResponseWriter) error
+}
+
+type StopImpersonation204Response struct {
+}
+
+func (response StopImpersonation204Response) VisitStopImpersonationResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type StopImpersonation400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response StopImpersonation400JSONResponse) VisitStopImpersonationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StopImpersonation401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response StopImpersonation401JSONResponse) VisitStopImpersonationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -968,6 +2799,85 @@ func (response Logout401JSONResponse) VisitLogoutResponse(w http.ResponseWriter)
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConfirmPasswordResetRequestObject struct {
+	Params ConfirmPasswordResetParams
+	Body   *ConfirmPasswordResetJSONRequestBody
+}
+
+type ConfirmPasswordResetResponseObject interface {
+	VisitConfirmPasswordResetResponse(w http.ResponseWriter) error
+}
+
+type ConfirmPasswordReset204Response struct {
+}
+
+func (response ConfirmPasswordReset204Response) VisitConfirmPasswordResetResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type ConfirmPasswordReset400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ConfirmPasswordReset400JSONResponse) VisitConfirmPasswordResetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RequestPasswordResetRequestObject struct {
+	Params RequestPasswordResetParams
+	Body   *RequestPasswordResetJSONRequestBody
+}
+
+type RequestPasswordResetResponseObject interface {
+	VisitRequestPasswordResetResponse(w http.ResponseWriter) error
+}
+
+type RequestPasswordReset202Response struct {
+}
+
+func (response RequestPasswordReset202Response) VisitRequestPasswordResetResponse(w http.ResponseWriter) error {
+	w.WriteHeader(202)
+	return nil
+}
+
+type RequestPasswordReset400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response RequestPasswordReset400JSONResponse) VisitRequestPasswordResetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RequestPasswordReset429JSONResponse struct{ RateLimitedJSONResponse }
+
+func (response RequestPasswordReset429JSONResponse) VisitRequestPasswordResetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -1113,6 +3023,661 @@ func (response RevokeSession404JSONResponse) VisitRevokeSessionResponse(w http.R
 	return err
 }
 
+type ListDutyTypesRequestObject struct {
+	Params ListDutyTypesParams
+}
+
+type ListDutyTypesResponseObject interface {
+	VisitListDutyTypesResponse(w http.ResponseWriter) error
+}
+
+type ListDutyTypes200JSONResponse struct {
+	Data []DutyType `json:"data"`
+}
+
+func (response ListDutyTypes200JSONResponse) VisitListDutyTypesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDutyTypes401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListDutyTypes401JSONResponse) VisitListDutyTypesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDutyTypes403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListDutyTypes403JSONResponse) VisitListDutyTypesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateDutyTypeRequestObject struct {
+	Body *CreateDutyTypeJSONRequestBody
+}
+
+type CreateDutyTypeResponseObject interface {
+	VisitCreateDutyTypeResponse(w http.ResponseWriter) error
+}
+
+type CreateDutyType201JSONResponse DutyType
+
+func (response CreateDutyType201JSONResponse) VisitCreateDutyTypeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateDutyType400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CreateDutyType400JSONResponse) VisitCreateDutyTypeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateDutyType401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateDutyType401JSONResponse) VisitCreateDutyTypeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateDutyType403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CreateDutyType403JSONResponse) VisitCreateDutyTypeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateDutyType409JSONResponse struct{ ConflictJSONResponse }
+
+func (response CreateDutyType409JSONResponse) VisitCreateDutyTypeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteDutyTypeRequestObject struct {
+	DutyId openapi_types.UUID `json:"dutyId"`
+}
+
+type DeleteDutyTypeResponseObject interface {
+	VisitDeleteDutyTypeResponse(w http.ResponseWriter) error
+}
+
+type DeleteDutyType204Response struct {
+}
+
+func (response DeleteDutyType204Response) VisitDeleteDutyTypeResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteDutyType401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response DeleteDutyType401JSONResponse) VisitDeleteDutyTypeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteDutyType403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response DeleteDutyType403JSONResponse) VisitDeleteDutyTypeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteDutyType404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response DeleteDutyType404JSONResponse) VisitDeleteDutyTypeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteDutyType409JSONResponse struct{ ConflictJSONResponse }
+
+func (response DeleteDutyType409JSONResponse) VisitDeleteDutyTypeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDutyTypeRequestObject struct {
+	DutyId openapi_types.UUID `json:"dutyId"`
+	Body   *UpdateDutyTypeJSONRequestBody
+}
+
+type UpdateDutyTypeResponseObject interface {
+	VisitUpdateDutyTypeResponse(w http.ResponseWriter) error
+}
+
+type UpdateDutyType200JSONResponse DutyType
+
+func (response UpdateDutyType200JSONResponse) VisitUpdateDutyTypeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDutyType400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response UpdateDutyType400JSONResponse) VisitUpdateDutyTypeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDutyType401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response UpdateDutyType401JSONResponse) VisitUpdateDutyTypeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDutyType403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response UpdateDutyType403JSONResponse) VisitUpdateDutyTypeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDutyType404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response UpdateDutyType404JSONResponse) VisitUpdateDutyTypeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReplaceDutyPermissionsRequestObject struct {
+	DutyId openapi_types.UUID `json:"dutyId"`
+	Body   *ReplaceDutyPermissionsJSONRequestBody
+}
+
+type ReplaceDutyPermissionsResponseObject interface {
+	VisitReplaceDutyPermissionsResponse(w http.ResponseWriter) error
+}
+
+type ReplaceDutyPermissions200JSONResponse DutyType
+
+func (response ReplaceDutyPermissions200JSONResponse) VisitReplaceDutyPermissionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReplaceDutyPermissions400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ReplaceDutyPermissions400JSONResponse) VisitReplaceDutyPermissionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReplaceDutyPermissions401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ReplaceDutyPermissions401JSONResponse) VisitReplaceDutyPermissionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReplaceDutyPermissions403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ReplaceDutyPermissions403JSONResponse) VisitReplaceDutyPermissionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReplaceDutyPermissions404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ReplaceDutyPermissions404JSONResponse) VisitReplaceDutyPermissionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDutyAssignmentsRequestObject struct {
+	Params ListDutyAssignmentsParams
+}
+
+type ListDutyAssignmentsResponseObject interface {
+	VisitListDutyAssignmentsResponse(w http.ResponseWriter) error
+}
+
+type ListDutyAssignments200JSONResponse struct {
+	Data []DutyAssignment `json:"data"`
+}
+
+func (response ListDutyAssignments200JSONResponse) VisitListDutyAssignmentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDutyAssignments400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListDutyAssignments400JSONResponse) VisitListDutyAssignmentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDutyAssignments401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListDutyAssignments401JSONResponse) VisitListDutyAssignmentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDutyAssignments403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListDutyAssignments403JSONResponse) VisitListDutyAssignmentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateDutyAssignmentRequestObject struct {
+	Body *CreateDutyAssignmentJSONRequestBody
+}
+
+type CreateDutyAssignmentResponseObject interface {
+	VisitCreateDutyAssignmentResponse(w http.ResponseWriter) error
+}
+
+type CreateDutyAssignment201JSONResponse DutyAssignment
+
+func (response CreateDutyAssignment201JSONResponse) VisitCreateDutyAssignmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateDutyAssignment400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CreateDutyAssignment400JSONResponse) VisitCreateDutyAssignmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateDutyAssignment401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateDutyAssignment401JSONResponse) VisitCreateDutyAssignmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateDutyAssignment403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CreateDutyAssignment403JSONResponse) VisitCreateDutyAssignmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateDutyAssignment404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response CreateDutyAssignment404JSONResponse) VisitCreateDutyAssignmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateDutyAssignment409JSONResponse struct{ ConflictJSONResponse }
+
+func (response CreateDutyAssignment409JSONResponse) VisitCreateDutyAssignmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteDutyAssignmentRequestObject struct {
+	AssignmentId openapi_types.UUID `json:"assignmentId"`
+}
+
+type DeleteDutyAssignmentResponseObject interface {
+	VisitDeleteDutyAssignmentResponse(w http.ResponseWriter) error
+}
+
+type DeleteDutyAssignment204Response struct {
+}
+
+func (response DeleteDutyAssignment204Response) VisitDeleteDutyAssignmentResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteDutyAssignment401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response DeleteDutyAssignment401JSONResponse) VisitDeleteDutyAssignmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteDutyAssignment403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response DeleteDutyAssignment403JSONResponse) VisitDeleteDutyAssignmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteDutyAssignment404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response DeleteDutyAssignment404JSONResponse) VisitDeleteDutyAssignmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDutyAssignmentRequestObject struct {
+	AssignmentId openapi_types.UUID `json:"assignmentId"`
+	Body         *UpdateDutyAssignmentJSONRequestBody
+}
+
+type UpdateDutyAssignmentResponseObject interface {
+	VisitUpdateDutyAssignmentResponse(w http.ResponseWriter) error
+}
+
+type UpdateDutyAssignment200JSONResponse DutyAssignment
+
+func (response UpdateDutyAssignment200JSONResponse) VisitUpdateDutyAssignmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDutyAssignment400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response UpdateDutyAssignment400JSONResponse) VisitUpdateDutyAssignmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDutyAssignment401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response UpdateDutyAssignment401JSONResponse) VisitUpdateDutyAssignmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDutyAssignment403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response UpdateDutyAssignment403JSONResponse) VisitUpdateDutyAssignmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDutyAssignment404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response UpdateDutyAssignment404JSONResponse) VisitUpdateDutyAssignmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetMeRequestObject struct {
 }
 
@@ -1144,6 +3709,111 @@ func (response GetMe401JSONResponse) VisitGetMeResponse(w http.ResponseWriter) e
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConfirmAvatarUploadRequestObject struct {
+	Body *ConfirmAvatarUploadJSONRequestBody
+}
+
+type ConfirmAvatarUploadResponseObject interface {
+	VisitConfirmAvatarUploadResponse(w http.ResponseWriter) error
+}
+
+type ConfirmAvatarUpload200JSONResponse struct {
+	AvatarUrl string `json:"avatar_url"`
+}
+
+func (response ConfirmAvatarUpload200JSONResponse) VisitConfirmAvatarUploadResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConfirmAvatarUpload400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ConfirmAvatarUpload400JSONResponse) VisitConfirmAvatarUploadResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConfirmAvatarUpload401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ConfirmAvatarUpload401JSONResponse) VisitConfirmAvatarUploadResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RequestAvatarUploadRequestObject struct {
+}
+
+type RequestAvatarUploadResponseObject interface {
+	VisitRequestAvatarUploadResponse(w http.ResponseWriter) error
+}
+
+type RequestAvatarUpload200JSONResponse struct {
+	ExpiresAt time.Time `json:"expires_at"`
+	ObjectKey string    `json:"object_key"`
+	UploadUrl string    `json:"upload_url"`
+}
+
+func (response RequestAvatarUpload200JSONResponse) VisitRequestAvatarUploadResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RequestAvatarUpload401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response RequestAvatarUpload401JSONResponse) VisitRequestAvatarUploadResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RequestAvatarUpload503JSONResponse Error
+
+func (response RequestAvatarUpload503JSONResponse) VisitRequestAvatarUploadResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -1188,6 +3858,500 @@ func (response ChangePassword401JSONResponse) VisitChangePasswordResponse(w http
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateMyProfileRequestObject struct {
+	Body *UpdateMyProfileJSONRequestBody
+}
+
+type UpdateMyProfileResponseObject interface {
+	VisitUpdateMyProfileResponse(w http.ResponseWriter) error
+}
+
+type UpdateMyProfile200JSONResponse Me
+
+func (response UpdateMyProfile200JSONResponse) VisitUpdateMyProfileResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateMyProfile400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response UpdateMyProfile400JSONResponse) VisitUpdateMyProfileResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateMyProfile401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response UpdateMyProfile401JSONResponse) VisitUpdateMyProfileResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateMyProfile409JSONResponse struct{ ConflictJSONResponse }
+
+func (response UpdateMyProfile409JSONResponse) VisitUpdateMyProfileResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPermissionsRequestObject struct {
+}
+
+type ListPermissionsResponseObject interface {
+	VisitListPermissionsResponse(w http.ResponseWriter) error
+}
+
+type ListPermissions200JSONResponse struct {
+	Groups []struct {
+		Name        string `json:"name"`
+		Permissions []struct {
+			Code        string `json:"code"`
+			Description string `json:"description"`
+		} `json:"permissions"`
+	} `json:"groups"`
+}
+
+func (response ListPermissions200JSONResponse) VisitListPermissionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPermissions401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListPermissions401JSONResponse) VisitListPermissionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPermissions403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListPermissions403JSONResponse) VisitListPermissionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListRolesRequestObject struct {
+}
+
+type ListRolesResponseObject interface {
+	VisitListRolesResponse(w http.ResponseWriter) error
+}
+
+type ListRoles200JSONResponse struct {
+	Data []AdminRole `json:"data"`
+}
+
+func (response ListRoles200JSONResponse) VisitListRolesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListRoles401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListRoles401JSONResponse) VisitListRolesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListRoles403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListRoles403JSONResponse) VisitListRolesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateRoleRequestObject struct {
+	Body *CreateRoleJSONRequestBody
+}
+
+type CreateRoleResponseObject interface {
+	VisitCreateRoleResponse(w http.ResponseWriter) error
+}
+
+type CreateRole201JSONResponse AdminRole
+
+func (response CreateRole201JSONResponse) VisitCreateRoleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateRole400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CreateRole400JSONResponse) VisitCreateRoleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateRole401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateRole401JSONResponse) VisitCreateRoleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateRole403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CreateRole403JSONResponse) VisitCreateRoleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateRole409JSONResponse struct{ ConflictJSONResponse }
+
+func (response CreateRole409JSONResponse) VisitCreateRoleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteRoleRequestObject struct {
+	RoleId openapi_types.UUID `json:"roleId"`
+}
+
+type DeleteRoleResponseObject interface {
+	VisitDeleteRoleResponse(w http.ResponseWriter) error
+}
+
+type DeleteRole204Response struct {
+}
+
+func (response DeleteRole204Response) VisitDeleteRoleResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteRole400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response DeleteRole400JSONResponse) VisitDeleteRoleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteRole401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response DeleteRole401JSONResponse) VisitDeleteRoleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteRole403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response DeleteRole403JSONResponse) VisitDeleteRoleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteRole404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response DeleteRole404JSONResponse) VisitDeleteRoleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteRole409JSONResponse struct{ ConflictJSONResponse }
+
+func (response DeleteRole409JSONResponse) VisitDeleteRoleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateRoleRequestObject struct {
+	RoleId openapi_types.UUID `json:"roleId"`
+	Body   *UpdateRoleJSONRequestBody
+}
+
+type UpdateRoleResponseObject interface {
+	VisitUpdateRoleResponse(w http.ResponseWriter) error
+}
+
+type UpdateRole200JSONResponse AdminRole
+
+func (response UpdateRole200JSONResponse) VisitUpdateRoleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateRole400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response UpdateRole400JSONResponse) VisitUpdateRoleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateRole401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response UpdateRole401JSONResponse) VisitUpdateRoleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateRole403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response UpdateRole403JSONResponse) VisitUpdateRoleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateRole404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response UpdateRole404JSONResponse) VisitUpdateRoleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReplaceRolePermissionsRequestObject struct {
+	RoleId openapi_types.UUID `json:"roleId"`
+	Body   *ReplaceRolePermissionsJSONRequestBody
+}
+
+type ReplaceRolePermissionsResponseObject interface {
+	VisitReplaceRolePermissionsResponse(w http.ResponseWriter) error
+}
+
+type ReplaceRolePermissions200JSONResponse AdminRole
+
+func (response ReplaceRolePermissions200JSONResponse) VisitReplaceRolePermissionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReplaceRolePermissions400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ReplaceRolePermissions400JSONResponse) VisitReplaceRolePermissionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReplaceRolePermissions401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ReplaceRolePermissions401JSONResponse) VisitReplaceRolePermissionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReplaceRolePermissions403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ReplaceRolePermissions403JSONResponse) VisitReplaceRolePermissionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReplaceRolePermissions404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ReplaceRolePermissions404JSONResponse) VisitReplaceRolePermissionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -1265,17 +4429,589 @@ func (response LookupTenants400JSONResponse) VisitLookupTenantsResponse(w http.R
 	return err
 }
 
+type ListUsersRequestObject struct {
+	Params ListUsersParams
+}
+
+type ListUsersResponseObject interface {
+	VisitListUsersResponse(w http.ResponseWriter) error
+}
+
+type ListUsers200JSONResponse struct {
+	Data       []AdminUser         `json:"data"`
+	NextCursor *openapi_types.UUID `json:"next_cursor,omitempty"`
+}
+
+func (response ListUsers200JSONResponse) VisitListUsersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListUsers401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListUsers401JSONResponse) VisitListUsersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListUsers403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListUsers403JSONResponse) VisitListUsersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateUserRequestObject struct {
+	Body *CreateUserJSONRequestBody
+}
+
+type CreateUserResponseObject interface {
+	VisitCreateUserResponse(w http.ResponseWriter) error
+}
+
+type CreateUser201JSONResponse AdminUser
+
+func (response CreateUser201JSONResponse) VisitCreateUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateUser400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CreateUser400JSONResponse) VisitCreateUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateUser401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateUser401JSONResponse) VisitCreateUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateUser403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CreateUser403JSONResponse) VisitCreateUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateUser409JSONResponse struct{ ConflictJSONResponse }
+
+func (response CreateUser409JSONResponse) VisitCreateUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetUserRequestObject struct {
+	UserId openapi_types.UUID `json:"userId"`
+}
+
+type GetUserResponseObject interface {
+	VisitGetUserResponse(w http.ResponseWriter) error
+}
+
+type GetUser200JSONResponse AdminUser
+
+func (response GetUser200JSONResponse) VisitGetUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetUser401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetUser401JSONResponse) VisitGetUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetUser403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetUser403JSONResponse) VisitGetUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetUser404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetUser404JSONResponse) VisitGetUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateUserRequestObject struct {
+	UserId openapi_types.UUID `json:"userId"`
+	Body   *UpdateUserJSONRequestBody
+}
+
+type UpdateUserResponseObject interface {
+	VisitUpdateUserResponse(w http.ResponseWriter) error
+}
+
+type UpdateUser200JSONResponse AdminUser
+
+func (response UpdateUser200JSONResponse) VisitUpdateUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateUser400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response UpdateUser400JSONResponse) VisitUpdateUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateUser401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response UpdateUser401JSONResponse) VisitUpdateUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateUser403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response UpdateUser403JSONResponse) VisitUpdateUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateUser404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response UpdateUser404JSONResponse) VisitUpdateUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateUser409JSONResponse struct{ ConflictJSONResponse }
+
+func (response UpdateUser409JSONResponse) VisitUpdateUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ArchiveUserRequestObject struct {
+	UserId openapi_types.UUID `json:"userId"`
+}
+
+type ArchiveUserResponseObject interface {
+	VisitArchiveUserResponse(w http.ResponseWriter) error
+}
+
+type ArchiveUser204Response struct {
+}
+
+func (response ArchiveUser204Response) VisitArchiveUserResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type ArchiveUser400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ArchiveUser400JSONResponse) VisitArchiveUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ArchiveUser401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ArchiveUser401JSONResponse) VisitArchiveUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ArchiveUser403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ArchiveUser403JSONResponse) VisitArchiveUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ArchiveUser404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ArchiveUser404JSONResponse) VisitArchiveUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ImpersonateUserRequestObject struct {
+	UserId openapi_types.UUID `json:"userId"`
+	Body   *ImpersonateUserJSONRequestBody
+}
+
+type ImpersonateUserResponseObject interface {
+	VisitImpersonateUserResponse(w http.ResponseWriter) error
+}
+
+type ImpersonateUser200ResponseHeaders struct {
+	SetCookie *string
+}
+
+type ImpersonateUser200JSONResponse struct {
+	Body    AuthTokens
+	Headers ImpersonateUser200ResponseHeaders
+}
+
+func (response ImpersonateUser200JSONResponse) VisitImpersonateUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.SetCookie != nil {
+		w.Header().Set("Set-Cookie", fmt.Sprint(*response.Headers.SetCookie))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ImpersonateUser401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ImpersonateUser401JSONResponse) VisitImpersonateUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ImpersonateUser403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ImpersonateUser403JSONResponse) VisitImpersonateUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ImpersonateUser404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ImpersonateUser404JSONResponse) VisitImpersonateUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminResetPasswordRequestObject struct {
+	UserId openapi_types.UUID `json:"userId"`
+}
+
+type AdminResetPasswordResponseObject interface {
+	VisitAdminResetPasswordResponse(w http.ResponseWriter) error
+}
+
+type AdminResetPassword200JSONResponse struct {
+	ExpiresInSeconds *int   `json:"expires_in_seconds,omitempty"`
+	SetPasswordToken string `json:"set_password_token"`
+}
+
+func (response AdminResetPassword200JSONResponse) VisitAdminResetPasswordResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminResetPassword401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response AdminResetPassword401JSONResponse) VisitAdminResetPasswordResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminResetPassword403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response AdminResetPassword403JSONResponse) VisitAdminResetPasswordResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminResetPassword404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response AdminResetPassword404JSONResponse) VisitAdminResetPasswordResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RestoreUserRequestObject struct {
+	UserId openapi_types.UUID `json:"userId"`
+}
+
+type RestoreUserResponseObject interface {
+	VisitRestoreUserResponse(w http.ResponseWriter) error
+}
+
+type RestoreUser204Response struct {
+}
+
+func (response RestoreUser204Response) VisitRestoreUserResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type RestoreUser401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response RestoreUser401JSONResponse) VisitRestoreUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RestoreUser403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response RestoreUser403JSONResponse) VisitRestoreUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RestoreUser404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response RestoreUser404JSONResponse) VisitRestoreUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 	// GetHealth Liveness and dependency status
 	// (GET /health)
 	GetHealth(ctx context.Context, request GetHealthRequestObject) (GetHealthResponseObject, error)
+	// ListAuditLogs Audit log, newest first (cursor pagination)
+	// (GET /v1/audit-logs)
+	ListAuditLogs(ctx context.Context, request ListAuditLogsRequestObject) (ListAuditLogsResponseObject, error)
+	// StopImpersonation End the current impersonation session immediately
+	// (POST /v1/auth/impersonation/stop)
+	StopImpersonation(ctx context.Context, request StopImpersonationRequestObject) (StopImpersonationResponseObject, error)
 	// Login Password login
 	// (POST /v1/auth/login)
 	Login(ctx context.Context, request LoginRequestObject) (LoginResponseObject, error)
 	// Logout Revoke the current session (and clear the web cookie)
 	// (POST /v1/auth/logout)
 	Logout(ctx context.Context, request LogoutRequestObject) (LogoutResponseObject, error)
+	// ConfirmPasswordReset Set a new password with a reset or set-password token
+	// (POST /v1/auth/password-reset/confirm)
+	ConfirmPasswordReset(ctx context.Context, request ConfirmPasswordResetRequestObject) (ConfirmPasswordResetResponseObject, error)
+	// RequestPasswordReset Request a password reset link (always 202)
+	// (POST /v1/auth/password-reset/request)
+	RequestPasswordReset(ctx context.Context, request RequestPasswordResetRequestObject) (RequestPasswordResetResponseObject, error)
 	// RefreshToken Rotate refresh token and mint a new access token
 	// (POST /v1/auth/refresh)
 	RefreshToken(ctx context.Context, request RefreshTokenRequestObject) (RefreshTokenResponseObject, error)
@@ -1285,18 +5021,96 @@ type StrictServerInterface interface {
 	// RevokeSession Revoke one of the current user's sessions
 	// (DELETE /v1/auth/sessions/{sessionId})
 	RevokeSession(ctx context.Context, request RevokeSessionRequestObject) (RevokeSessionResponseObject, error)
+	// ListDutyTypes Duty types with their granted permissions
+	// (GET /v1/duties)
+	ListDutyTypes(ctx context.Context, request ListDutyTypesRequestObject) (ListDutyTypesResponseObject, error)
+	// CreateDutyType Create a duty type
+	// (POST /v1/duties)
+	CreateDutyType(ctx context.Context, request CreateDutyTypeRequestObject) (CreateDutyTypeResponseObject, error)
+	// DeleteDutyType Delete an unused duty type
+	// (DELETE /v1/duties/{dutyId})
+	DeleteDutyType(ctx context.Context, request DeleteDutyTypeRequestObject) (DeleteDutyTypeResponseObject, error)
+	// UpdateDutyType Update a duty type
+	// (PUT /v1/duties/{dutyId})
+	UpdateDutyType(ctx context.Context, request UpdateDutyTypeRequestObject) (UpdateDutyTypeResponseObject, error)
+	// ReplaceDutyPermissions Replace the permissions a duty grants while active
+	// (PUT /v1/duties/{dutyId}/permissions)
+	ReplaceDutyPermissions(ctx context.Context, request ReplaceDutyPermissionsRequestObject) (ReplaceDutyPermissionsResponseObject, error)
+	// ListDutyAssignments Duty assignments in an academic year
+	// (GET /v1/duty-assignments)
+	ListDutyAssignments(ctx context.Context, request ListDutyAssignmentsRequestObject) (ListDutyAssignmentsResponseObject, error)
+	// CreateDutyAssignment Assign a duty to a user for an academic year (optionally scoped)
+	// (POST /v1/duty-assignments)
+	CreateDutyAssignment(ctx context.Context, request CreateDutyAssignmentRequestObject) (CreateDutyAssignmentResponseObject, error)
+	// DeleteDutyAssignment Remove a duty assignment
+	// (DELETE /v1/duty-assignments/{assignmentId})
+	DeleteDutyAssignment(ctx context.Context, request DeleteDutyAssignmentRequestObject) (DeleteDutyAssignmentResponseObject, error)
+	// UpdateDutyAssignment Activate, deactivate or end a duty assignment
+	// (PUT /v1/duty-assignments/{assignmentId})
+	UpdateDutyAssignment(ctx context.Context, request UpdateDutyAssignmentRequestObject) (UpdateDutyAssignmentResponseObject, error)
 	// GetMe Current user, roles, effective permissions, tenant
 	// (GET /v1/me)
 	GetMe(ctx context.Context, request GetMeRequestObject) (GetMeResponseObject, error)
+	// ConfirmAvatarUpload Confirm the uploaded object as the new avatar (validated server-side)
+	// (POST /v1/me/avatar/confirm)
+	ConfirmAvatarUpload(ctx context.Context, request ConfirmAvatarUploadRequestObject) (ConfirmAvatarUploadResponseObject, error)
+	// RequestAvatarUpload Get a presigned upload URL for a new avatar
+	// (POST /v1/me/avatar/upload-url)
+	RequestAvatarUpload(ctx context.Context, request RequestAvatarUploadRequestObject) (RequestAvatarUploadResponseObject, error)
 	// ChangePassword Change own password; revokes other sessions
 	// (PUT /v1/me/password)
 	ChangePassword(ctx context.Context, request ChangePasswordRequestObject) (ChangePasswordResponseObject, error)
+	// UpdateMyProfile Update own name, email, phone and locale
+	// (PUT /v1/me/profile)
+	UpdateMyProfile(ctx context.Context, request UpdateMyProfileRequestObject) (UpdateMyProfileResponseObject, error)
+	// ListPermissions Permission catalog grouped by area
+	// (GET /v1/permissions)
+	ListPermissions(ctx context.Context, request ListPermissionsRequestObject) (ListPermissionsResponseObject, error)
+	// ListRoles Roles of the tenant with permissions and user counts
+	// (GET /v1/roles)
+	ListRoles(ctx context.Context, request ListRolesRequestObject) (ListRolesResponseObject, error)
+	// CreateRole Create a custom role
+	// (POST /v1/roles)
+	CreateRole(ctx context.Context, request CreateRoleRequestObject) (CreateRoleResponseObject, error)
+	// DeleteRole Delete an unused custom role
+	// (DELETE /v1/roles/{roleId})
+	DeleteRole(ctx context.Context, request DeleteRoleRequestObject) (DeleteRoleResponseObject, error)
+	// UpdateRole Rename a custom role (system roles are immutable)
+	// (PUT /v1/roles/{roleId})
+	UpdateRole(ctx context.Context, request UpdateRoleRequestObject) (UpdateRoleResponseObject, error)
+	// ReplaceRolePermissions Replace the permission set of a role (super_admin always keeps all)
+	// (PUT /v1/roles/{roleId}/permissions)
+	ReplaceRolePermissions(ctx context.Context, request ReplaceRolePermissionsRequestObject) (ReplaceRolePermissionsResponseObject, error)
 	// GetTenantBranding Public branding for the resolved tenant (login screen, manifest)
 	// (GET /v1/tenant/branding)
 	GetTenantBranding(ctx context.Context, request GetTenantBrandingRequestObject) (GetTenantBrandingResponseObject, error)
 	// LookupTenants Search schools by name or slug (mobile school picker). Returns nothing in single-tenant mode except the single tenant.
 	// (GET /v1/tenants/lookup)
 	LookupTenants(ctx context.Context, request LookupTenantsRequestObject) (LookupTenantsResponseObject, error)
+	// ListUsers List users with search and filters (cursor pagination)
+	// (GET /v1/users)
+	ListUsers(ctx context.Context, request ListUsersRequestObject) (ListUsersResponseObject, error)
+	// CreateUser Create a user with profile and roles
+	// (POST /v1/users)
+	CreateUser(ctx context.Context, request CreateUserRequestObject) (CreateUserResponseObject, error)
+	// GetUser User detail
+	// (GET /v1/users/{userId})
+	GetUser(ctx context.Context, request GetUserRequestObject) (GetUserResponseObject, error)
+	// UpdateUser Update a user (username and password are not editable here)
+	// (PUT /v1/users/{userId})
+	UpdateUser(ctx context.Context, request UpdateUserRequestObject) (UpdateUserResponseObject, error)
+	// ArchiveUser Archive (soft delete) a user; cannot archive yourself
+	// (POST /v1/users/{userId}/archive)
+	ArchiveUser(ctx context.Context, request ArchiveUserRequestObject) (ArchiveUserResponseObject, error)
+	// ImpersonateUser Start a 30-minute impersonation session as this user
+	// (POST /v1/users/{userId}/impersonate)
+	ImpersonateUser(ctx context.Context, request ImpersonateUserRequestObject) (ImpersonateUserResponseObject, error)
+	// AdminResetPassword Issue a one-time set-password token for the user (never returns a password)
+	// (POST /v1/users/{userId}/reset-password)
+	AdminResetPassword(ctx context.Context, request AdminResetPasswordRequestObject) (AdminResetPasswordResponseObject, error)
+	// RestoreUser Restore an archived user
+	// (POST /v1/users/{userId}/restore)
+	RestoreUser(ctx context.Context, request RestoreUserRequestObject) (RestoreUserResponseObject, error)
 }
 
 type StrictHandlerFunc func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error)
@@ -1362,6 +5176,56 @@ func (sh *strictHandler) GetHealth(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// ListAuditLogs operation middleware
+func (sh *strictHandler) ListAuditLogs(w http.ResponseWriter, r *http.Request, params ListAuditLogsParams) {
+	var request ListAuditLogsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListAuditLogs(ctx, request.(ListAuditLogsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListAuditLogs")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListAuditLogsResponseObject); ok {
+		if err := validResponse.VisitListAuditLogsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// StopImpersonation operation middleware
+func (sh *strictHandler) StopImpersonation(w http.ResponseWriter, r *http.Request) {
+	var request StopImpersonationRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.StopImpersonation(ctx, request.(StopImpersonationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "StopImpersonation")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(StopImpersonationResponseObject); ok {
+		if err := validResponse.VisitStopImpersonationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // Login operation middleware
 func (sh *strictHandler) Login(w http.ResponseWriter, r *http.Request, params LoginParams) {
 	var request LoginRequestObject
@@ -1412,6 +5276,72 @@ func (sh *strictHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(LogoutResponseObject); ok {
 		if err := validResponse.VisitLogoutResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ConfirmPasswordReset operation middleware
+func (sh *strictHandler) ConfirmPasswordReset(w http.ResponseWriter, r *http.Request, params ConfirmPasswordResetParams) {
+	var request ConfirmPasswordResetRequestObject
+
+	request.Params = params
+
+	var body ConfirmPasswordResetJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ConfirmPasswordReset(ctx, request.(ConfirmPasswordResetRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ConfirmPasswordReset")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ConfirmPasswordResetResponseObject); ok {
+		if err := validResponse.VisitConfirmPasswordResetResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RequestPasswordReset operation middleware
+func (sh *strictHandler) RequestPasswordReset(w http.ResponseWriter, r *http.Request, params RequestPasswordResetParams) {
+	var request RequestPasswordResetRequestObject
+
+	request.Params = params
+
+	var body RequestPasswordResetJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RequestPasswordReset(ctx, request.(RequestPasswordResetRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RequestPasswordReset")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RequestPasswordResetResponseObject); ok {
+		if err := validResponse.VisitRequestPasswordResetResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -1503,6 +5433,271 @@ func (sh *strictHandler) RevokeSession(w http.ResponseWriter, r *http.Request, s
 	}
 }
 
+// ListDutyTypes operation middleware
+func (sh *strictHandler) ListDutyTypes(w http.ResponseWriter, r *http.Request, params ListDutyTypesParams) {
+	var request ListDutyTypesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListDutyTypes(ctx, request.(ListDutyTypesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListDutyTypes")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListDutyTypesResponseObject); ok {
+		if err := validResponse.VisitListDutyTypesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateDutyType operation middleware
+func (sh *strictHandler) CreateDutyType(w http.ResponseWriter, r *http.Request) {
+	var request CreateDutyTypeRequestObject
+
+	var body CreateDutyTypeJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateDutyType(ctx, request.(CreateDutyTypeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateDutyType")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateDutyTypeResponseObject); ok {
+		if err := validResponse.VisitCreateDutyTypeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteDutyType operation middleware
+func (sh *strictHandler) DeleteDutyType(w http.ResponseWriter, r *http.Request, dutyId openapi_types.UUID) {
+	var request DeleteDutyTypeRequestObject
+
+	request.DutyId = dutyId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteDutyType(ctx, request.(DeleteDutyTypeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteDutyType")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteDutyTypeResponseObject); ok {
+		if err := validResponse.VisitDeleteDutyTypeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateDutyType operation middleware
+func (sh *strictHandler) UpdateDutyType(w http.ResponseWriter, r *http.Request, dutyId openapi_types.UUID) {
+	var request UpdateDutyTypeRequestObject
+
+	request.DutyId = dutyId
+
+	var body UpdateDutyTypeJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateDutyType(ctx, request.(UpdateDutyTypeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateDutyType")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateDutyTypeResponseObject); ok {
+		if err := validResponse.VisitUpdateDutyTypeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ReplaceDutyPermissions operation middleware
+func (sh *strictHandler) ReplaceDutyPermissions(w http.ResponseWriter, r *http.Request, dutyId openapi_types.UUID) {
+	var request ReplaceDutyPermissionsRequestObject
+
+	request.DutyId = dutyId
+
+	var body ReplaceDutyPermissionsJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ReplaceDutyPermissions(ctx, request.(ReplaceDutyPermissionsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ReplaceDutyPermissions")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ReplaceDutyPermissionsResponseObject); ok {
+		if err := validResponse.VisitReplaceDutyPermissionsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListDutyAssignments operation middleware
+func (sh *strictHandler) ListDutyAssignments(w http.ResponseWriter, r *http.Request, params ListDutyAssignmentsParams) {
+	var request ListDutyAssignmentsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListDutyAssignments(ctx, request.(ListDutyAssignmentsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListDutyAssignments")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListDutyAssignmentsResponseObject); ok {
+		if err := validResponse.VisitListDutyAssignmentsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateDutyAssignment operation middleware
+func (sh *strictHandler) CreateDutyAssignment(w http.ResponseWriter, r *http.Request) {
+	var request CreateDutyAssignmentRequestObject
+
+	var body CreateDutyAssignmentJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateDutyAssignment(ctx, request.(CreateDutyAssignmentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateDutyAssignment")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateDutyAssignmentResponseObject); ok {
+		if err := validResponse.VisitCreateDutyAssignmentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteDutyAssignment operation middleware
+func (sh *strictHandler) DeleteDutyAssignment(w http.ResponseWriter, r *http.Request, assignmentId openapi_types.UUID) {
+	var request DeleteDutyAssignmentRequestObject
+
+	request.AssignmentId = assignmentId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteDutyAssignment(ctx, request.(DeleteDutyAssignmentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteDutyAssignment")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteDutyAssignmentResponseObject); ok {
+		if err := validResponse.VisitDeleteDutyAssignmentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateDutyAssignment operation middleware
+func (sh *strictHandler) UpdateDutyAssignment(w http.ResponseWriter, r *http.Request, assignmentId openapi_types.UUID) {
+	var request UpdateDutyAssignmentRequestObject
+
+	request.AssignmentId = assignmentId
+
+	var body UpdateDutyAssignmentJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateDutyAssignment(ctx, request.(UpdateDutyAssignmentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateDutyAssignment")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateDutyAssignmentResponseObject); ok {
+		if err := validResponse.VisitUpdateDutyAssignmentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetMe operation middleware
 func (sh *strictHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 	var request GetMeRequestObject
@@ -1520,6 +5715,61 @@ func (sh *strictHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetMeResponseObject); ok {
 		if err := validResponse.VisitGetMeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ConfirmAvatarUpload operation middleware
+func (sh *strictHandler) ConfirmAvatarUpload(w http.ResponseWriter, r *http.Request) {
+	var request ConfirmAvatarUploadRequestObject
+
+	var body ConfirmAvatarUploadJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ConfirmAvatarUpload(ctx, request.(ConfirmAvatarUploadRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ConfirmAvatarUpload")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ConfirmAvatarUploadResponseObject); ok {
+		if err := validResponse.VisitConfirmAvatarUploadResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RequestAvatarUpload operation middleware
+func (sh *strictHandler) RequestAvatarUpload(w http.ResponseWriter, r *http.Request) {
+	var request RequestAvatarUploadRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RequestAvatarUpload(ctx, request.(RequestAvatarUploadRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RequestAvatarUpload")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RequestAvatarUploadResponseObject); ok {
+		if err := validResponse.VisitRequestAvatarUploadResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -1551,6 +5801,208 @@ func (sh *strictHandler) ChangePassword(w http.ResponseWriter, r *http.Request) 
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ChangePasswordResponseObject); ok {
 		if err := validResponse.VisitChangePasswordResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateMyProfile operation middleware
+func (sh *strictHandler) UpdateMyProfile(w http.ResponseWriter, r *http.Request) {
+	var request UpdateMyProfileRequestObject
+
+	var body UpdateMyProfileJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateMyProfile(ctx, request.(UpdateMyProfileRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateMyProfile")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateMyProfileResponseObject); ok {
+		if err := validResponse.VisitUpdateMyProfileResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListPermissions operation middleware
+func (sh *strictHandler) ListPermissions(w http.ResponseWriter, r *http.Request) {
+	var request ListPermissionsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListPermissions(ctx, request.(ListPermissionsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListPermissions")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListPermissionsResponseObject); ok {
+		if err := validResponse.VisitListPermissionsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListRoles operation middleware
+func (sh *strictHandler) ListRoles(w http.ResponseWriter, r *http.Request) {
+	var request ListRolesRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListRoles(ctx, request.(ListRolesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListRoles")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListRolesResponseObject); ok {
+		if err := validResponse.VisitListRolesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateRole operation middleware
+func (sh *strictHandler) CreateRole(w http.ResponseWriter, r *http.Request) {
+	var request CreateRoleRequestObject
+
+	var body CreateRoleJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateRole(ctx, request.(CreateRoleRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateRole")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateRoleResponseObject); ok {
+		if err := validResponse.VisitCreateRoleResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteRole operation middleware
+func (sh *strictHandler) DeleteRole(w http.ResponseWriter, r *http.Request, roleId openapi_types.UUID) {
+	var request DeleteRoleRequestObject
+
+	request.RoleId = roleId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteRole(ctx, request.(DeleteRoleRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteRole")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteRoleResponseObject); ok {
+		if err := validResponse.VisitDeleteRoleResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateRole operation middleware
+func (sh *strictHandler) UpdateRole(w http.ResponseWriter, r *http.Request, roleId openapi_types.UUID) {
+	var request UpdateRoleRequestObject
+
+	request.RoleId = roleId
+
+	var body UpdateRoleJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateRole(ctx, request.(UpdateRoleRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateRole")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateRoleResponseObject); ok {
+		if err := validResponse.VisitUpdateRoleResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ReplaceRolePermissions operation middleware
+func (sh *strictHandler) ReplaceRolePermissions(w http.ResponseWriter, r *http.Request, roleId openapi_types.UUID) {
+	var request ReplaceRolePermissionsRequestObject
+
+	request.RoleId = roleId
+
+	var body ReplaceRolePermissionsJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ReplaceRolePermissions(ctx, request.(ReplaceRolePermissionsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ReplaceRolePermissions")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ReplaceRolePermissionsResponseObject); ok {
+		if err := validResponse.VisitReplaceRolePermissionsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -1608,59 +6060,338 @@ func (sh *strictHandler) LookupTenants(w http.ResponseWriter, r *http.Request, p
 	}
 }
 
+// ListUsers operation middleware
+func (sh *strictHandler) ListUsers(w http.ResponseWriter, r *http.Request, params ListUsersParams) {
+	var request ListUsersRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListUsers(ctx, request.(ListUsersRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListUsers")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListUsersResponseObject); ok {
+		if err := validResponse.VisitListUsersResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateUser operation middleware
+func (sh *strictHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
+	var request CreateUserRequestObject
+
+	var body CreateUserJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateUser(ctx, request.(CreateUserRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateUser")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateUserResponseObject); ok {
+		if err := validResponse.VisitCreateUserResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetUser operation middleware
+func (sh *strictHandler) GetUser(w http.ResponseWriter, r *http.Request, userId openapi_types.UUID) {
+	var request GetUserRequestObject
+
+	request.UserId = userId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetUser(ctx, request.(GetUserRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetUser")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetUserResponseObject); ok {
+		if err := validResponse.VisitGetUserResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateUser operation middleware
+func (sh *strictHandler) UpdateUser(w http.ResponseWriter, r *http.Request, userId openapi_types.UUID) {
+	var request UpdateUserRequestObject
+
+	request.UserId = userId
+
+	var body UpdateUserJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateUser(ctx, request.(UpdateUserRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateUser")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateUserResponseObject); ok {
+		if err := validResponse.VisitUpdateUserResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ArchiveUser operation middleware
+func (sh *strictHandler) ArchiveUser(w http.ResponseWriter, r *http.Request, userId openapi_types.UUID) {
+	var request ArchiveUserRequestObject
+
+	request.UserId = userId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ArchiveUser(ctx, request.(ArchiveUserRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ArchiveUser")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ArchiveUserResponseObject); ok {
+		if err := validResponse.VisitArchiveUserResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ImpersonateUser operation middleware
+func (sh *strictHandler) ImpersonateUser(w http.ResponseWriter, r *http.Request, userId openapi_types.UUID) {
+	var request ImpersonateUserRequestObject
+
+	request.UserId = userId
+
+	var body ImpersonateUserJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		if !errors.Is(err, io.EOF) {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+			return
+		}
+	} else {
+		request.Body = &body
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ImpersonateUser(ctx, request.(ImpersonateUserRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ImpersonateUser")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ImpersonateUserResponseObject); ok {
+		if err := validResponse.VisitImpersonateUserResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// AdminResetPassword operation middleware
+func (sh *strictHandler) AdminResetPassword(w http.ResponseWriter, r *http.Request, userId openapi_types.UUID) {
+	var request AdminResetPasswordRequestObject
+
+	request.UserId = userId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.AdminResetPassword(ctx, request.(AdminResetPasswordRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AdminResetPassword")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AdminResetPasswordResponseObject); ok {
+		if err := validResponse.VisitAdminResetPasswordResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RestoreUser operation middleware
+func (sh *strictHandler) RestoreUser(w http.ResponseWriter, r *http.Request, userId openapi_types.UUID) {
+	var request RestoreUserRequestObject
+
+	request.UserId = userId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RestoreUser(ctx, request.(RestoreUserRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RestoreUser")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RestoreUserResponseObject); ok {
+		if err := validResponse.VisitRestoreUserResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // Base64 encoded, compressed with deflate, json marshaled OpenAPI spec.
 // Stored as a slice of fixed-width chunks rather than one concatenated
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
+	"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",
+	"/w==",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

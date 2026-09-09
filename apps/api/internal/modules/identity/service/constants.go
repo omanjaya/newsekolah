@@ -22,3 +22,6 @@ const impersonationSessionTTL = 30 * time.Minute
 func knownPermissionSet() authz.Set {
 	return authz.NewSet(authz.Codes()...)
 }
+
+// PasswordResetTTL is exported for the transport layer to report token lifetime.
+const PasswordResetTTL = passwordResetTTL
