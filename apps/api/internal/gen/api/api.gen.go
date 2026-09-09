@@ -24,6 +24,30 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// Defines values for AttendanceRosterItemSource.
+const (
+	AttendanceRosterItemSourceLeave   AttendanceRosterItemSource = "leave"
+	AttendanceRosterItemSourcePermit  AttendanceRosterItemSource = "permit"
+	AttendanceRosterItemSourceSystem  AttendanceRosterItemSource = "system"
+	AttendanceRosterItemSourceTeacher AttendanceRosterItemSource = "teacher"
+)
+
+// Valid indicates whether the value is a known member of the AttendanceRosterItemSource enum.
+func (e AttendanceRosterItemSource) Valid() bool {
+	switch e {
+	case AttendanceRosterItemSourceLeave:
+		return true
+	case AttendanceRosterItemSourcePermit:
+		return true
+	case AttendanceRosterItemSourceSystem:
+		return true
+	case AttendanceRosterItemSourceTeacher:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AuthTokensTokenType.
 const (
 	Bearer AuthTokensTokenType = "Bearer"
@@ -105,6 +129,90 @@ func (e MeProfileKind) Valid() bool {
 	}
 }
 
+// Defines values for MonitorSessionCardStatus.
+const (
+	InProgress MonitorSessionCardStatus = "in_progress"
+	NotStarted MonitorSessionCardStatus = "not_started"
+	Submitted  MonitorSessionCardStatus = "submitted"
+)
+
+// Valid indicates whether the value is a known member of the MonitorSessionCardStatus enum.
+func (e MonitorSessionCardStatus) Valid() bool {
+	switch e {
+	case InProgress:
+		return true
+	case NotStarted:
+		return true
+	case Submitted:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SaveAttendanceEntriesRequestMode.
+const (
+	Correction SaveAttendanceEntriesRequestMode = "correction"
+	Normal     SaveAttendanceEntriesRequestMode = "normal"
+)
+
+// Valid indicates whether the value is a known member of the SaveAttendanceEntriesRequestMode enum.
+func (e SaveAttendanceEntriesRequestMode) Valid() bool {
+	switch e {
+	case Correction:
+		return true
+	case Normal:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ScheduleSource.
+const (
+	ScheduleSourceAdmin   ScheduleSource = "admin"
+	ScheduleSourceImport  ScheduleSource = "import"
+	ScheduleSourceTeacher ScheduleSource = "teacher"
+)
+
+// Valid indicates whether the value is a known member of the ScheduleSource enum.
+func (e ScheduleSource) Valid() bool {
+	switch e {
+	case ScheduleSourceAdmin:
+		return true
+	case ScheduleSourceImport:
+		return true
+	case ScheduleSourceTeacher:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SubstitutionStatus.
+const (
+	Accepted  SubstitutionStatus = "accepted"
+	Cancelled SubstitutionStatus = "cancelled"
+	Pending   SubstitutionStatus = "pending"
+	Rejected  SubstitutionStatus = "rejected"
+)
+
+// Valid indicates whether the value is a known member of the SubstitutionStatus enum.
+func (e SubstitutionStatus) Valid() bool {
+	switch e {
+	case Accepted:
+		return true
+	case Cancelled:
+		return true
+	case Pending:
+		return true
+	case Rejected:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for TenantBrandingLocale.
 const (
 	En TenantBrandingLocale = "en"
@@ -162,6 +270,137 @@ func (e GetHealth200JSONResponseBodyStatus) Valid() bool {
 	}
 }
 
+// Defines values for ExportJournalsParamsFormat.
+const (
+	Docx ExportJournalsParamsFormat = "docx"
+	Xlsx ExportJournalsParamsFormat = "xlsx"
+)
+
+// Valid indicates whether the value is a known member of the ExportJournalsParamsFormat enum.
+func (e ExportJournalsParamsFormat) Valid() bool {
+	switch e {
+	case Docx:
+		return true
+	case Xlsx:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListSubstitutionsParamsDirection.
+const (
+	Incoming ListSubstitutionsParamsDirection = "incoming"
+	Outgoing ListSubstitutionsParamsDirection = "outgoing"
+)
+
+// Valid indicates whether the value is a known member of the ListSubstitutionsParamsDirection enum.
+func (e ListSubstitutionsParamsDirection) Valid() bool {
+	switch e {
+	case Incoming:
+		return true
+	case Outgoing:
+		return true
+	default:
+		return false
+	}
+}
+
+// AttendanceCalendarDay defines model for AttendanceCalendarDay.
+type AttendanceCalendarDay struct {
+	Complete         bool               `json:"complete"`
+	Date             openapi_types.Date `json:"date"`
+	ExpectedSessions int                `json:"expected_sessions"`
+	Sessions         *[]struct {
+		ScheduleId openapi_types.UUID `json:"schedule_id"`
+		StatusCode *string            `json:"status_code,omitempty"`
+		SubjectId  openapi_types.UUID `json:"subject_id"`
+	} `json:"sessions,omitempty"`
+	StatusCode        string `json:"status_code"`
+	SubmittedSessions int    `json:"submitted_sessions"`
+}
+
+// AttendanceDailyReport defines model for AttendanceDailyReport.
+type AttendanceDailyReport struct {
+	ClassId           openapi_types.UUID      `json:"class_id"`
+	Complete          bool                    `json:"complete"`
+	Date              openapi_types.Date      `json:"date"`
+	ExpectedSessions  int                     `json:"expected_sessions"`
+	StatusCounts      map[string]int          `json:"status_counts"`
+	Students          []AttendanceRosterEntry `json:"students"`
+	SubmittedSessions int                     `json:"submitted_sessions"`
+}
+
+// AttendanceRosterEntry defines model for AttendanceRosterEntry.
+type AttendanceRosterEntry struct {
+	Complete          bool               `json:"complete"`
+	ExpectedSessions  int                `json:"expected_sessions"`
+	Name              string             `json:"name"`
+	StatusCode        string             `json:"status_code"`
+	StudentUserId     openapi_types.UUID `json:"student_user_id"`
+	SubmittedSessions int                `json:"submitted_sessions"`
+}
+
+// AttendanceRosterItem defines model for AttendanceRosterItem.
+type AttendanceRosterItem struct {
+	Blocked        *bool                       `json:"blocked,omitempty"`
+	BlockedReason  *string                     `json:"blocked_reason,omitempty"`
+	CurrentStatus  *string                     `json:"current_status,omitempty"`
+	Name           string                      `json:"name"`
+	Notes          *string                     `json:"notes,omitempty"`
+	PreviousStatus *string                     `json:"previous_status,omitempty"`
+	Source         *AttendanceRosterItemSource `json:"source,omitempty"`
+	StudentUserId  openapi_types.UUID          `json:"student_user_id"`
+}
+
+// AttendanceRosterItemSource defines model for AttendanceRosterItem.Source.
+type AttendanceRosterItemSource string
+
+// AttendanceSessionDetail defines model for AttendanceSessionDetail.
+type AttendanceSessionDetail struct {
+	ClassId              openapi_types.UUID     `json:"class_id"`
+	Date                 openapi_types.Date     `json:"date"`
+	EndPeriodId          openapi_types.UUID     `json:"end_period_id"`
+	Id                   openapi_types.UUID     `json:"id"`
+	IsSubstitute         bool                   `json:"is_substitute"`
+	JournalActivities    *string                `json:"journal_activities,omitempty"`
+	JournalReflection    *string                `json:"journal_reflection,omitempty"`
+	JournalTopic         *string                `json:"journal_topic,omitempty"`
+	MeetingNumber        int                    `json:"meeting_number"`
+	PreviousJournalTopic *string                `json:"previous_journal_topic,omitempty"`
+	Roster               []AttendanceRosterItem `json:"roster"`
+	ScheduleId           openapi_types.UUID     `json:"schedule_id"`
+	StartPeriodId        openapi_types.UUID     `json:"start_period_id"`
+	Statuses             []AttendanceStatusDef  `json:"statuses"`
+	SubjectId            openapi_types.UUID     `json:"subject_id"`
+	SubmittedAt          *time.Time             `json:"submitted_at,omitempty"`
+	SubstituteUserId     *openapi_types.UUID    `json:"substitute_user_id,omitempty"`
+	TeacherUserId        openapi_types.UUID     `json:"teacher_user_id"`
+}
+
+// AttendanceSessionSummary defines model for AttendanceSessionSummary.
+type AttendanceSessionSummary struct {
+	ClassId          openapi_types.UUID  `json:"class_id"`
+	Date             openapi_types.Date  `json:"date"`
+	EndPeriodId      openapi_types.UUID  `json:"end_period_id"`
+	Id               openapi_types.UUID  `json:"id"`
+	IsSubstitute     bool                `json:"is_substitute"`
+	ScheduleId       openapi_types.UUID  `json:"schedule_id"`
+	StartPeriodId    openapi_types.UUID  `json:"start_period_id"`
+	SubjectId        openapi_types.UUID  `json:"subject_id"`
+	SubmittedAt      *time.Time          `json:"submitted_at,omitempty"`
+	SubstituteUserId *openapi_types.UUID `json:"substitute_user_id,omitempty"`
+	TeacherUserId    openapi_types.UUID  `json:"teacher_user_id"`
+}
+
+// AttendanceStatusDef defines model for AttendanceStatusDef.
+type AttendanceStatusDef struct {
+	Code            string `json:"code"`
+	Color           string `json:"color"`
+	CountsAsPresent bool   `json:"counts_as_present"`
+	Label           string `json:"label"`
+}
+
 // AuthTokens defines model for AuthTokens.
 type AuthTokens struct {
 	AccessExpiresAt  time.Time  `json:"access_expires_at"`
@@ -195,6 +434,33 @@ type Error struct {
 		Message   string  `json:"message"`
 		RequestId *string `json:"request_id,omitempty"`
 	} `json:"error"`
+}
+
+// Journal defines model for Journal.
+type Journal struct {
+	AcademicYearId  openapi_types.UUID `json:"academic_year_id"`
+	Activities      string             `json:"activities"`
+	ClassId         openapi_types.UUID `json:"class_id"`
+	CreatedAt       time.Time          `json:"created_at"`
+	Id              openapi_types.UUID `json:"id"`
+	LessonDate      openapi_types.Date `json:"lesson_date"`
+	Reflection      *string            `json:"reflection,omitempty"`
+	SubjectId       openapi_types.UUID `json:"subject_id"`
+	TeacherUserId   openapi_types.UUID `json:"teacher_user_id"`
+	Topic           string             `json:"topic"`
+	UpdatedAt       time.Time          `json:"updated_at"`
+	WrittenByUserId openapi_types.UUID `json:"written_by_user_id"`
+}
+
+// JournalWriteRequest defines model for JournalWriteRequest.
+type JournalWriteRequest struct {
+	AcademicYearId openapi_types.UUID `json:"academic_year_id"`
+	Activities     string             `json:"activities"`
+	ClassId        openapi_types.UUID `json:"class_id"`
+	LessonDate     openapi_types.Date `json:"lesson_date"`
+	Reflection     *string            `json:"reflection,omitempty"`
+	SubjectId      openapi_types.UUID `json:"subject_id"`
+	Topic          string             `json:"topic"`
 }
 
 // LoginRequest defines model for LoginRequest.
@@ -245,12 +511,114 @@ type MeDutiesScopeKind string
 // MeProfileKind defines model for Me.ProfileKind.
 type MeProfileKind string
 
+// MonitorSessionCard defines model for MonitorSessionCard.
+type MonitorSessionCard struct {
+	ClassName   string                   `json:"class_name"`
+	Status      MonitorSessionCardStatus `json:"status"`
+	SubjectName string                   `json:"subject_name"`
+	TeacherName string                   `json:"teacher_name"`
+}
+
+// MonitorSessionCardStatus defines model for MonitorSessionCard.Status.
+type MonitorSessionCardStatus string
+
+// MonitorSnapshot defines model for MonitorSnapshot.
+type MonitorSnapshot struct {
+	GeneratedAt  time.Time            `json:"generated_at"`
+	Sessions     []MonitorSessionCard `json:"sessions"`
+	StatusCounts map[string]int       `json:"status_counts"`
+}
+
+// MutationPolicy defines model for MutationPolicy.
+type MutationPolicy struct {
+	CanDelete bool    `json:"can_delete"`
+	CanEdit   bool    `json:"can_edit"`
+	Reason    *string `json:"reason,omitempty"`
+}
+
+// PresenceSnapshot defines model for PresenceSnapshot.
+type PresenceSnapshot struct {
+	Count int      `json:"count"`
+	Keys  []string `json:"keys"`
+}
+
 // Role defines model for Role.
 type Role struct {
 	Id        openapi_types.UUID `json:"id"`
 	IsPrimary bool               `json:"is_primary"`
 	Name      string             `json:"name"`
 	Slug      string             `json:"slug"`
+}
+
+// SaveAttendanceEntriesRequest defines model for SaveAttendanceEntriesRequest.
+type SaveAttendanceEntriesRequest struct {
+	Entries []struct {
+		Notes         *string            `json:"notes,omitempty"`
+		StatusCode    string             `json:"status_code"`
+		StudentUserId openapi_types.UUID `json:"student_user_id"`
+	} `json:"entries"`
+	Journal *struct {
+		Activities string  `json:"activities"`
+		Reflection *string `json:"reflection,omitempty"`
+		Topic      string  `json:"topic"`
+	} `json:"journal,omitempty"`
+	Mode *SaveAttendanceEntriesRequestMode `json:"mode,omitempty"`
+
+	// Reason Required when mode is correction.
+	Reason *string `json:"reason,omitempty"`
+}
+
+// SaveAttendanceEntriesRequestMode defines model for SaveAttendanceEntriesRequest.Mode.
+type SaveAttendanceEntriesRequestMode string
+
+// Schedule defines model for Schedule.
+type Schedule struct {
+	AcademicYearId openapi_types.UUID  `json:"academic_year_id"`
+	ClassId        openapi_types.UUID  `json:"class_id"`
+	CreatedAt      time.Time           `json:"created_at"`
+	DayOfWeek      int                 `json:"day_of_week"`
+	EndPeriodId    openapi_types.UUID  `json:"end_period_id"`
+	Id             openapi_types.UUID  `json:"id"`
+	MutationPolicy *MutationPolicy     `json:"mutation_policy,omitempty"`
+	Notes          *string             `json:"notes,omitempty"`
+	RoomId         *openapi_types.UUID `json:"room_id,omitempty"`
+	Source         ScheduleSource      `json:"source"`
+	StartPeriodId  openapi_types.UUID  `json:"start_period_id"`
+	SubjectId      openapi_types.UUID  `json:"subject_id"`
+	TeacherUserId  openapi_types.UUID  `json:"teacher_user_id"`
+	TermId         *openapi_types.UUID `json:"term_id,omitempty"`
+	UpdatedAt      time.Time           `json:"updated_at"`
+}
+
+// ScheduleBlock defines model for ScheduleBlock.
+type ScheduleBlock struct {
+	ClassId       openapi_types.UUID   `json:"class_id"`
+	DayOfWeek     int                  `json:"day_of_week"`
+	EndSeq        int                  `json:"end_seq"`
+	RoomId        *openapi_types.UUID  `json:"room_id,omitempty"`
+	ScheduleIds   []openapi_types.UUID `json:"schedule_ids"`
+	Source        ScheduleSource       `json:"source"`
+	StartSeq      int                  `json:"start_seq"`
+	SubjectId     openapi_types.UUID   `json:"subject_id"`
+	TeacherUserId openapi_types.UUID   `json:"teacher_user_id"`
+}
+
+// ScheduleSource defines model for ScheduleSource.
+type ScheduleSource string
+
+// ScheduleWriteRequest defines model for ScheduleWriteRequest.
+type ScheduleWriteRequest struct {
+	AcademicYearId openapi_types.UUID  `json:"academic_year_id"`
+	ClassId        openapi_types.UUID  `json:"class_id"`
+	DayOfWeek      int                 `json:"day_of_week"`
+	EndPeriodId    openapi_types.UUID  `json:"end_period_id"`
+	Notes          *string             `json:"notes,omitempty"`
+	RoomId         *openapi_types.UUID `json:"room_id,omitempty"`
+	Source         *ScheduleSource     `json:"source,omitempty"`
+	StartPeriodId  openapi_types.UUID  `json:"start_period_id"`
+	SubjectId      openapi_types.UUID  `json:"subject_id"`
+	TeacherUserId  openapi_types.UUID  `json:"teacher_user_id"`
+	TermId         *openapi_types.UUID `json:"term_id,omitempty"`
 }
 
 // Session defines model for Session.
@@ -264,6 +632,32 @@ type Session struct {
 	LastSeenAt time.Time          `json:"last_seen_at"`
 	UserAgent  *string            `json:"user_agent,omitempty"`
 }
+
+// Substitution defines model for Substitution.
+type Substitution struct {
+	AcademicYearId   openapi_types.UUID `json:"academic_year_id"`
+	CreatedAt        time.Time          `json:"created_at"`
+	Date             openapi_types.Date `json:"date"`
+	Id               openapi_types.UUID `json:"id"`
+	RequesterNote    *string            `json:"requester_note,omitempty"`
+	RequesterUserId  openapi_types.UUID `json:"requester_user_id"`
+	RespondedAt      *time.Time         `json:"responded_at,omitempty"`
+	ResponseNote     *string            `json:"response_note,omitempty"`
+	ScheduleId       openapi_types.UUID `json:"schedule_id"`
+	Status           SubstitutionStatus `json:"status"`
+	SubstituteUserId openapi_types.UUID `json:"substitute_user_id"`
+}
+
+// SubstitutionCreateRequest defines model for SubstitutionCreateRequest.
+type SubstitutionCreateRequest struct {
+	Date             openapi_types.Date `json:"date"`
+	Note             *string            `json:"note,omitempty"`
+	ScheduleId       openapi_types.UUID `json:"schedule_id"`
+	SubstituteUserId openapi_types.UUID `json:"substitute_user_id"`
+}
+
+// SubstitutionStatus defines model for SubstitutionStatus.
+type SubstitutionStatus string
 
 // TenantBranding defines model for TenantBranding.
 type TenantBranding struct {
@@ -293,11 +687,20 @@ type TenantSummary struct {
 	Slug string             `json:"slug"`
 }
 
+// IdempotencyKeyHeader defines model for IdempotencyKeyHeader.
+type IdempotencyKeyHeader = string
+
+// MonitorTokenHeader defines model for MonitorTokenHeader.
+type MonitorTokenHeader = string
+
 // TenantHeader defines model for TenantHeader.
 type TenantHeader = string
 
 // BadRequest defines model for BadRequest.
 type BadRequest = Error
+
+// Conflict defines model for Conflict.
+type Conflict = Error
 
 // Forbidden defines model for Forbidden.
 type Forbidden = Error
@@ -308,6 +711,9 @@ type NotFound = Error
 // RateLimited defines model for RateLimited.
 type RateLimited = Error
 
+// ScheduleConflict defines model for ScheduleConflict.
+type ScheduleConflict = Error
+
 // Unauthorized defines model for Unauthorized.
 type Unauthorized = Error
 
@@ -316,6 +722,49 @@ type GetHealth200JSONResponseBodyChecks string
 
 // GetHealth200JSONResponseBodyStatus defines parameters for GetHealth.
 type GetHealth200JSONResponseBodyStatus string
+
+// GetHomeroomAttendanceParams defines parameters for GetHomeroomAttendance.
+type GetHomeroomAttendanceParams struct {
+	Date openapi_types.Date `form:"date" json:"date"`
+}
+
+// GetMyAttendanceCalendarParams defines parameters for GetMyAttendanceCalendar.
+type GetMyAttendanceCalendarParams struct {
+	// Month YYYY-MM
+	Month string `form:"month" json:"month"`
+}
+
+// GetDailyAttendanceReportParams defines parameters for GetDailyAttendanceReport.
+type GetDailyAttendanceReportParams struct {
+	Date    openapi_types.Date `form:"date" json:"date"`
+	ClassId openapi_types.UUID `form:"class_id" json:"class_id"`
+}
+
+// ExportDailyAttendanceReportParams defines parameters for ExportDailyAttendanceReport.
+type ExportDailyAttendanceReportParams struct {
+	Date    openapi_types.Date `form:"date" json:"date"`
+	ClassId openapi_types.UUID `form:"class_id" json:"class_id"`
+}
+
+// GetMonthlyAttendanceSummaryParams defines parameters for GetMonthlyAttendanceSummary.
+type GetMonthlyAttendanceSummaryParams struct {
+	StudentId openapi_types.UUID `form:"student_id" json:"student_id"`
+
+	// Month YYYY-MM
+	Month string `form:"month" json:"month"`
+}
+
+// OpenAttendanceSessionJSONBody defines parameters for OpenAttendanceSession.
+type OpenAttendanceSessionJSONBody struct {
+	Date       openapi_types.Date `json:"date"`
+	ScheduleId openapi_types.UUID `json:"schedule_id"`
+}
+
+// SaveAttendanceEntriesParams defines parameters for SaveAttendanceEntries.
+type SaveAttendanceEntriesParams struct {
+	// IdempotencyKey Client-generated key (mobile clients on unstable networks) that makes a POST/PUT safe to retry; docs/08-security.md section 7. The same key replays the first response instead of repeating the write.
+	IdempotencyKey *IdempotencyKeyHeader `json:"Idempotency-Key,omitempty"`
+}
 
 // LoginParams defines parameters for Login.
 type LoginParams struct {
@@ -329,10 +778,66 @@ type RefreshTokenJSONBody struct {
 	RefreshToken *string `json:"refresh_token,omitempty"`
 }
 
+// ListJournalsParams defines parameters for ListJournals.
+type ListJournalsParams struct {
+	AcademicYearId openapi_types.UUID  `form:"academic_year_id" json:"academic_year_id"`
+	ClassId        *openapi_types.UUID `form:"class_id,omitempty" json:"class_id,omitempty"`
+}
+
+// ExportJournalsParams defines parameters for ExportJournals.
+type ExportJournalsParams struct {
+	AcademicYearId openapi_types.UUID         `form:"academic_year_id" json:"academic_year_id"`
+	ClassId        *openapi_types.UUID        `form:"class_id,omitempty" json:"class_id,omitempty"`
+	Format         ExportJournalsParamsFormat `form:"format" json:"format"`
+}
+
+// ExportJournalsParamsFormat defines parameters for ExportJournals.
+type ExportJournalsParamsFormat string
+
 // ChangePasswordJSONBody defines parameters for ChangePassword.
 type ChangePasswordJSONBody struct {
 	CurrentPassword string `json:"current_password"`
 	NewPassword     string `json:"new_password"`
+}
+
+// GetMonitorSnapshotParams defines parameters for GetMonitorSnapshot.
+type GetMonitorSnapshotParams struct {
+	// XMonitorToken The tenant's configured monitor.display_token setting.
+	XMonitorToken MonitorTokenHeader `json:"X-Monitor-Token"`
+}
+
+// ListSchedulesParams defines parameters for ListSchedules.
+type ListSchedulesParams struct {
+	AcademicYearId openapi_types.UUID  `form:"academic_year_id" json:"academic_year_id"`
+	ClassId        *openapi_types.UUID `form:"class_id,omitempty" json:"class_id,omitempty"`
+	TeacherUserId  *openapi_types.UUID `form:"teacher_user_id,omitempty" json:"teacher_user_id,omitempty"`
+
+	// DayOfWeek 1 (Monday) through 7 (Sunday)
+	DayOfWeek *int `form:"day_of_week,omitempty" json:"day_of_week,omitempty"`
+}
+
+// BulkImportSchedulesJSONBody defines parameters for BulkImportSchedules.
+type BulkImportSchedulesJSONBody struct {
+	Schedules []ScheduleWriteRequest `json:"schedules"`
+}
+
+// ClearSchedulesJSONBody defines parameters for ClearSchedules.
+type ClearSchedulesJSONBody struct {
+	AcademicYearId openapi_types.UUID `json:"academic_year_id"`
+}
+
+// ListSubstitutionsParams defines parameters for ListSubstitutions.
+type ListSubstitutionsParams struct {
+	Direction ListSubstitutionsParamsDirection `form:"direction" json:"direction"`
+}
+
+// ListSubstitutionsParamsDirection defines parameters for ListSubstitutions.
+type ListSubstitutionsParamsDirection string
+
+// RespondSubstitutionJSONBody defines parameters for RespondSubstitution.
+type RespondSubstitutionJSONBody struct {
+	Accept bool    `json:"accept"`
+	Note   *string `json:"note,omitempty"`
 }
 
 // LookupTenantsParams defines parameters for LookupTenants.
@@ -340,20 +845,79 @@ type LookupTenantsParams struct {
 	Q string `form:"q" json:"q"`
 }
 
+// WsMonitorParams defines parameters for WsMonitor.
+type WsMonitorParams struct {
+	Token string `form:"token" json:"token"`
+}
+
+// OpenAttendanceSessionJSONRequestBody defines body for OpenAttendanceSession for application/json ContentType.
+type OpenAttendanceSessionJSONRequestBody OpenAttendanceSessionJSONBody
+
+// SaveAttendanceEntriesJSONRequestBody defines body for SaveAttendanceEntries for application/json ContentType.
+type SaveAttendanceEntriesJSONRequestBody = SaveAttendanceEntriesRequest
+
 // LoginJSONRequestBody defines body for Login for application/json ContentType.
 type LoginJSONRequestBody = LoginRequest
 
 // RefreshTokenJSONRequestBody defines body for RefreshToken for application/json ContentType.
 type RefreshTokenJSONRequestBody RefreshTokenJSONBody
 
+// UpsertJournalJSONRequestBody defines body for UpsertJournal for application/json ContentType.
+type UpsertJournalJSONRequestBody = JournalWriteRequest
+
 // ChangePasswordJSONRequestBody defines body for ChangePassword for application/json ContentType.
 type ChangePasswordJSONRequestBody ChangePasswordJSONBody
+
+// CreateScheduleJSONRequestBody defines body for CreateSchedule for application/json ContentType.
+type CreateScheduleJSONRequestBody = ScheduleWriteRequest
+
+// BulkImportSchedulesJSONRequestBody defines body for BulkImportSchedules for application/json ContentType.
+type BulkImportSchedulesJSONRequestBody BulkImportSchedulesJSONBody
+
+// ClearSchedulesJSONRequestBody defines body for ClearSchedules for application/json ContentType.
+type ClearSchedulesJSONRequestBody ClearSchedulesJSONBody
+
+// UpdateScheduleJSONRequestBody defines body for UpdateSchedule for application/json ContentType.
+type UpdateScheduleJSONRequestBody = ScheduleWriteRequest
+
+// CreateSubstitutionJSONRequestBody defines body for CreateSubstitution for application/json ContentType.
+type CreateSubstitutionJSONRequestBody = SubstitutionCreateRequest
+
+// RespondSubstitutionJSONRequestBody defines body for RespondSubstitution for application/json ContentType.
+type RespondSubstitutionJSONRequestBody RespondSubstitutionJSONBody
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 	// GetHealth Liveness and dependency status
 	// (GET /health)
 	GetHealth(w http.ResponseWriter, r *http.Request)
+	// GetHomeroomAttendance One day's daily status for every student in the caller's homeroom class
+	// (GET /v1/attendance/homeroom)
+	GetHomeroomAttendance(w http.ResponseWriter, r *http.Request, params GetHomeroomAttendanceParams)
+	// GetMyAttendanceCalendar The current student's daily status for one month
+	// (GET /v1/attendance/me/calendar)
+	GetMyAttendanceCalendar(w http.ResponseWriter, r *http.Request, params GetMyAttendanceCalendarParams)
+	// ListMyAttendanceToday Today's sessions for the current teacher (own schedules plus accepted substitutions)
+	// (GET /v1/attendance/me/today)
+	ListMyAttendanceToday(w http.ResponseWriter, r *http.Request)
+	// GetDailyAttendanceReport One class's expected vs. submitted sessions and per-student status for one day
+	// (GET /v1/attendance/reports/daily)
+	GetDailyAttendanceReport(w http.ResponseWriter, r *http.Request, params GetDailyAttendanceReportParams)
+	// ExportDailyAttendanceReport The daily report as an XLSX file
+	// (GET /v1/attendance/reports/daily/export)
+	ExportDailyAttendanceReport(w http.ResponseWriter, r *http.Request, params ExportDailyAttendanceReportParams)
+	// GetMonthlyAttendanceSummary One student's daily statuses for one month
+	// (GET /v1/attendance/reports/monthly)
+	GetMonthlyAttendanceSummary(w http.ResponseWriter, r *http.Request, params GetMonthlyAttendanceSummaryParams)
+	// OpenAttendanceSession Open (idempotently) the session for a schedule occurrence and return its full recording payload
+	// (POST /v1/attendance/sessions)
+	OpenAttendanceSession(w http.ResponseWriter, r *http.Request)
+	// GetAttendanceSession One session's full recording payload
+	// (GET /v1/attendance/sessions/{sessionId})
+	GetAttendanceSession(w http.ResponseWriter, r *http.Request, sessionId openapi_types.UUID)
+	// SaveAttendanceEntries Save a batch of student statuses and the lesson journal for a session
+	// (PUT /v1/attendance/sessions/{sessionId}/entries)
+	SaveAttendanceEntries(w http.ResponseWriter, r *http.Request, sessionId openapi_types.UUID, params SaveAttendanceEntriesParams)
 	// Login Password login
 	// (POST /v1/auth/login)
 	Login(w http.ResponseWriter, r *http.Request, params LoginParams)
@@ -369,18 +933,78 @@ type ServerInterface interface {
 	// RevokeSession Revoke one of the current user's sessions
 	// (DELETE /v1/auth/sessions/{sessionId})
 	RevokeSession(w http.ResponseWriter, r *http.Request, sessionId openapi_types.UUID)
+	// ListJournals My own journals for an academic year, or (class_id given, requires view_journals_all) every journal for a class
+	// (GET /v1/journals)
+	ListJournals(w http.ResponseWriter, r *http.Request, params ListJournalsParams)
+	// UpsertJournal Create or update the journal for a class/subject/date (unique per day)
+	// (POST /v1/journals)
+	UpsertJournal(w http.ResponseWriter, r *http.Request)
+	// ExportJournals Export journals as XLSX or DOCX
+	// (GET /v1/journals/export)
+	ExportJournals(w http.ResponseWriter, r *http.Request, params ExportJournalsParams)
+	// DeleteJournal Delete a journal (its own teacher/writer only)
+	// (DELETE /v1/journals/{journalId})
+	DeleteJournal(w http.ResponseWriter, r *http.Request, journalId openapi_types.UUID)
+	// GetJournal One journal
+	// (GET /v1/journals/{journalId})
+	GetJournal(w http.ResponseWriter, r *http.Request, journalId openapi_types.UUID)
 	// GetMe Current user, roles, effective permissions, tenant
 	// (GET /v1/me)
 	GetMe(w http.ResponseWriter, r *http.Request)
 	// ChangePassword Change own password; revokes other sessions
 	// (PUT /v1/me/password)
 	ChangePassword(w http.ResponseWriter, r *http.Request)
+	// GetMonitorPresence Who currently has a realtime socket open, by role
+	// (GET /v1/monitor/presence)
+	GetMonitorPresence(w http.ResponseWriter, r *http.Request)
+	// GetMonitorSnapshot Public monitor-display snapshot, gated by the tenant's monitor.display_token setting
+	// (GET /v1/monitor/snapshot)
+	GetMonitorSnapshot(w http.ResponseWriter, r *http.Request, params GetMonitorSnapshotParams)
+	// ListSchedules Grid of schedules for a class, a teacher, or one day, merged into contiguous blocks
+	// (GET /v1/schedules)
+	ListSchedules(w http.ResponseWriter, r *http.Request, params ListSchedulesParams)
+	// CreateSchedule Create a schedule (admin for any teacher, or a teacher for themselves within the edit deadline)
+	// (POST /v1/schedules)
+	CreateSchedule(w http.ResponseWriter, r *http.Request)
+	// BulkImportSchedules Create many schedules atomically (typically after clearing the academic year)
+	// (POST /v1/schedules/bulk-import)
+	BulkImportSchedules(w http.ResponseWriter, r *http.Request)
+	// ClearSchedules Delete every schedule for one academic year
+	// (POST /v1/schedules/clear)
+	ClearSchedules(w http.ResponseWriter, r *http.Request)
+	// DeleteSchedule Delete a schedule (admin, or the owning teacher within the edit deadline)
+	// (DELETE /v1/schedules/{scheduleId})
+	DeleteSchedule(w http.ResponseWriter, r *http.Request, scheduleId openapi_types.UUID)
+	// GetSchedule One schedule
+	// (GET /v1/schedules/{scheduleId})
+	GetSchedule(w http.ResponseWriter, r *http.Request, scheduleId openapi_types.UUID)
+	// UpdateSchedule Update a schedule (admin, or the owning teacher within the edit deadline)
+	// (PUT /v1/schedules/{scheduleId})
+	UpdateSchedule(w http.ResponseWriter, r *http.Request, scheduleId openapi_types.UUID)
+	// ListSubstitutions Substitution requests directed at me (incoming) or made by me (outgoing)
+	// (GET /v1/substitutions)
+	ListSubstitutions(w http.ResponseWriter, r *http.Request, params ListSubstitutionsParams)
+	// CreateSubstitution Request a substitute for one dated occurrence of my own schedule
+	// (POST /v1/substitutions)
+	CreateSubstitution(w http.ResponseWriter, r *http.Request)
+	// CancelSubstitution Cancel a substitution request I made
+	// (POST /v1/substitutions/{substitutionId}/cancel)
+	CancelSubstitution(w http.ResponseWriter, r *http.Request, substitutionId openapi_types.UUID)
+	// RespondSubstitution Accept or reject a substitution request addressed to me
+	// (POST /v1/substitutions/{substitutionId}/respond)
+	RespondSubstitution(w http.ResponseWriter, r *http.Request, substitutionId openapi_types.UUID)
 	// GetTenantBranding Public branding for the resolved tenant (login screen, manifest)
 	// (GET /v1/tenant/branding)
 	GetTenantBranding(w http.ResponseWriter, r *http.Request)
 	// LookupTenants Search schools by name or slug (mobile school picker). Returns nothing in single-tenant mode except the single tenant.
 	// (GET /v1/tenants/lookup)
 	LookupTenants(w http.ResponseWriter, r *http.Request, params LookupTenantsParams)
+	// WsMe Realtime per-user channel (WebSocket upgrade). Authenticated by the access token, sent either as a bearer Authorization header (native clients) or as a `bearer.<token>` WebSocket subprotocol (browsers).
+	// (GET /ws/me)
+	WsMe(w http.ResponseWriter, r *http.Request)
+	// WsMonitor Realtime monitor channel (WebSocket upgrade). Authenticated by the same monitor.display_token as GET /v1/monitor/snapshot, passed as a query parameter since browsers cannot set custom headers before the handshake completes.
+	// (GET /ws/monitor)
+	WsMonitor(w http.ResponseWriter, r *http.Request, params WsMonitorParams)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
@@ -390,6 +1014,60 @@ type Unimplemented struct{}
 // GetHealth Liveness and dependency status
 // (GET /health)
 func (_ Unimplemented) GetHealth(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetHomeroomAttendance One day's daily status for every student in the caller's homeroom class
+// (GET /v1/attendance/homeroom)
+func (_ Unimplemented) GetHomeroomAttendance(w http.ResponseWriter, r *http.Request, params GetHomeroomAttendanceParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetMyAttendanceCalendar The current student's daily status for one month
+// (GET /v1/attendance/me/calendar)
+func (_ Unimplemented) GetMyAttendanceCalendar(w http.ResponseWriter, r *http.Request, params GetMyAttendanceCalendarParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListMyAttendanceToday Today's sessions for the current teacher (own schedules plus accepted substitutions)
+// (GET /v1/attendance/me/today)
+func (_ Unimplemented) ListMyAttendanceToday(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetDailyAttendanceReport One class's expected vs. submitted sessions and per-student status for one day
+// (GET /v1/attendance/reports/daily)
+func (_ Unimplemented) GetDailyAttendanceReport(w http.ResponseWriter, r *http.Request, params GetDailyAttendanceReportParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ExportDailyAttendanceReport The daily report as an XLSX file
+// (GET /v1/attendance/reports/daily/export)
+func (_ Unimplemented) ExportDailyAttendanceReport(w http.ResponseWriter, r *http.Request, params ExportDailyAttendanceReportParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetMonthlyAttendanceSummary One student's daily statuses for one month
+// (GET /v1/attendance/reports/monthly)
+func (_ Unimplemented) GetMonthlyAttendanceSummary(w http.ResponseWriter, r *http.Request, params GetMonthlyAttendanceSummaryParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// OpenAttendanceSession Open (idempotently) the session for a schedule occurrence and return its full recording payload
+// (POST /v1/attendance/sessions)
+func (_ Unimplemented) OpenAttendanceSession(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetAttendanceSession One session's full recording payload
+// (GET /v1/attendance/sessions/{sessionId})
+func (_ Unimplemented) GetAttendanceSession(w http.ResponseWriter, r *http.Request, sessionId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// SaveAttendanceEntries Save a batch of student statuses and the lesson journal for a session
+// (PUT /v1/attendance/sessions/{sessionId}/entries)
+func (_ Unimplemented) SaveAttendanceEntries(w http.ResponseWriter, r *http.Request, sessionId openapi_types.UUID, params SaveAttendanceEntriesParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -423,6 +1101,36 @@ func (_ Unimplemented) RevokeSession(w http.ResponseWriter, r *http.Request, ses
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// ListJournals My own journals for an academic year, or (class_id given, requires view_journals_all) every journal for a class
+// (GET /v1/journals)
+func (_ Unimplemented) ListJournals(w http.ResponseWriter, r *http.Request, params ListJournalsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// UpsertJournal Create or update the journal for a class/subject/date (unique per day)
+// (POST /v1/journals)
+func (_ Unimplemented) UpsertJournal(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ExportJournals Export journals as XLSX or DOCX
+// (GET /v1/journals/export)
+func (_ Unimplemented) ExportJournals(w http.ResponseWriter, r *http.Request, params ExportJournalsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// DeleteJournal Delete a journal (its own teacher/writer only)
+// (DELETE /v1/journals/{journalId})
+func (_ Unimplemented) DeleteJournal(w http.ResponseWriter, r *http.Request, journalId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetJournal One journal
+// (GET /v1/journals/{journalId})
+func (_ Unimplemented) GetJournal(w http.ResponseWriter, r *http.Request, journalId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // GetMe Current user, roles, effective permissions, tenant
 // (GET /v1/me)
 func (_ Unimplemented) GetMe(w http.ResponseWriter, r *http.Request) {
@@ -435,6 +1143,84 @@ func (_ Unimplemented) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// GetMonitorPresence Who currently has a realtime socket open, by role
+// (GET /v1/monitor/presence)
+func (_ Unimplemented) GetMonitorPresence(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetMonitorSnapshot Public monitor-display snapshot, gated by the tenant's monitor.display_token setting
+// (GET /v1/monitor/snapshot)
+func (_ Unimplemented) GetMonitorSnapshot(w http.ResponseWriter, r *http.Request, params GetMonitorSnapshotParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListSchedules Grid of schedules for a class, a teacher, or one day, merged into contiguous blocks
+// (GET /v1/schedules)
+func (_ Unimplemented) ListSchedules(w http.ResponseWriter, r *http.Request, params ListSchedulesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CreateSchedule Create a schedule (admin for any teacher, or a teacher for themselves within the edit deadline)
+// (POST /v1/schedules)
+func (_ Unimplemented) CreateSchedule(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// BulkImportSchedules Create many schedules atomically (typically after clearing the academic year)
+// (POST /v1/schedules/bulk-import)
+func (_ Unimplemented) BulkImportSchedules(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ClearSchedules Delete every schedule for one academic year
+// (POST /v1/schedules/clear)
+func (_ Unimplemented) ClearSchedules(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// DeleteSchedule Delete a schedule (admin, or the owning teacher within the edit deadline)
+// (DELETE /v1/schedules/{scheduleId})
+func (_ Unimplemented) DeleteSchedule(w http.ResponseWriter, r *http.Request, scheduleId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetSchedule One schedule
+// (GET /v1/schedules/{scheduleId})
+func (_ Unimplemented) GetSchedule(w http.ResponseWriter, r *http.Request, scheduleId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// UpdateSchedule Update a schedule (admin, or the owning teacher within the edit deadline)
+// (PUT /v1/schedules/{scheduleId})
+func (_ Unimplemented) UpdateSchedule(w http.ResponseWriter, r *http.Request, scheduleId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListSubstitutions Substitution requests directed at me (incoming) or made by me (outgoing)
+// (GET /v1/substitutions)
+func (_ Unimplemented) ListSubstitutions(w http.ResponseWriter, r *http.Request, params ListSubstitutionsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CreateSubstitution Request a substitute for one dated occurrence of my own schedule
+// (POST /v1/substitutions)
+func (_ Unimplemented) CreateSubstitution(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CancelSubstitution Cancel a substitution request I made
+// (POST /v1/substitutions/{substitutionId}/cancel)
+func (_ Unimplemented) CancelSubstitution(w http.ResponseWriter, r *http.Request, substitutionId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// RespondSubstitution Accept or reject a substitution request addressed to me
+// (POST /v1/substitutions/{substitutionId}/respond)
+func (_ Unimplemented) RespondSubstitution(w http.ResponseWriter, r *http.Request, substitutionId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // GetTenantBranding Public branding for the resolved tenant (login screen, manifest)
 // (GET /v1/tenant/branding)
 func (_ Unimplemented) GetTenantBranding(w http.ResponseWriter, r *http.Request) {
@@ -444,6 +1230,18 @@ func (_ Unimplemented) GetTenantBranding(w http.ResponseWriter, r *http.Request)
 // LookupTenants Search schools by name or slug (mobile school picker). Returns nothing in single-tenant mode except the single tenant.
 // (GET /v1/tenants/lookup)
 func (_ Unimplemented) LookupTenants(w http.ResponseWriter, r *http.Request, params LookupTenantsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// WsMe Realtime per-user channel (WebSocket upgrade). Authenticated by the access token, sent either as a bearer Authorization header (native clients) or as a `bearer.<token>` WebSocket subprotocol (browsers).
+// (GET /ws/me)
+func (_ Unimplemented) WsMe(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// WsMonitor Realtime monitor channel (WebSocket upgrade). Authenticated by the same monitor.display_token as GET /v1/monitor/snapshot, passed as a query parameter since browsers cannot set custom headers before the handshake completes.
+// (GET /ws/monitor)
+func (_ Unimplemented) WsMonitor(w http.ResponseWriter, r *http.Request, params WsMonitorParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -461,6 +1259,314 @@ func (siw *ServerInterfaceWrapper) GetHealth(w http.ResponseWriter, r *http.Requ
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetHealth(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetHomeroomAttendance operation middleware
+func (siw *ServerInterfaceWrapper) GetHomeroomAttendance(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetHomeroomAttendanceParams
+
+	// ------------- Required query parameter "date" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "date", r.URL.Query(), &params.Date, runtime.BindQueryParameterOptions{Type: "string", Format: "date"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "date"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "date", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetHomeroomAttendance(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetMyAttendanceCalendar operation middleware
+func (siw *ServerInterfaceWrapper) GetMyAttendanceCalendar(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetMyAttendanceCalendarParams
+
+	// ------------- Required query parameter "month" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "month", r.URL.Query(), &params.Month, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "month"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "month", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetMyAttendanceCalendar(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListMyAttendanceToday operation middleware
+func (siw *ServerInterfaceWrapper) ListMyAttendanceToday(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListMyAttendanceToday(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetDailyAttendanceReport operation middleware
+func (siw *ServerInterfaceWrapper) GetDailyAttendanceReport(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetDailyAttendanceReportParams
+
+	// ------------- Required query parameter "date" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "date", r.URL.Query(), &params.Date, runtime.BindQueryParameterOptions{Type: "string", Format: "date"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "date"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "date", Err: err})
+		}
+		return
+	}
+
+	// ------------- Required query parameter "class_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "class_id", r.URL.Query(), &params.ClassId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "class_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "class_id", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetDailyAttendanceReport(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ExportDailyAttendanceReport operation middleware
+func (siw *ServerInterfaceWrapper) ExportDailyAttendanceReport(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ExportDailyAttendanceReportParams
+
+	// ------------- Required query parameter "date" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "date", r.URL.Query(), &params.Date, runtime.BindQueryParameterOptions{Type: "string", Format: "date"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "date"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "date", Err: err})
+		}
+		return
+	}
+
+	// ------------- Required query parameter "class_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "class_id", r.URL.Query(), &params.ClassId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "class_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "class_id", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ExportDailyAttendanceReport(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetMonthlyAttendanceSummary operation middleware
+func (siw *ServerInterfaceWrapper) GetMonthlyAttendanceSummary(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetMonthlyAttendanceSummaryParams
+
+	// ------------- Required query parameter "student_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "student_id", r.URL.Query(), &params.StudentId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "student_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "student_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Required query parameter "month" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "month", r.URL.Query(), &params.Month, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "month"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "month", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetMonthlyAttendanceSummary(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// OpenAttendanceSession operation middleware
+func (siw *ServerInterfaceWrapper) OpenAttendanceSession(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.OpenAttendanceSession(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetAttendanceSession operation middleware
+func (siw *ServerInterfaceWrapper) GetAttendanceSession(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "sessionId" -------------
+	var sessionId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "sessionId", chi.URLParam(r, "sessionId"), &sessionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "sessionId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAttendanceSession(w, r, sessionId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SaveAttendanceEntries operation middleware
+func (siw *ServerInterfaceWrapper) SaveAttendanceEntries(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "sessionId" -------------
+	var sessionId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "sessionId", chi.URLParam(r, "sessionId"), &sessionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "sessionId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params SaveAttendanceEntriesParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKeyHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = &IdempotencyKey
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SaveAttendanceEntries(w, r, sessionId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -579,6 +1685,177 @@ func (siw *ServerInterfaceWrapper) RevokeSession(w http.ResponseWriter, r *http.
 	handler.ServeHTTP(w, r)
 }
 
+// ListJournals operation middleware
+func (siw *ServerInterfaceWrapper) ListJournals(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListJournalsParams
+
+	// ------------- Required query parameter "academic_year_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "academic_year_id", r.URL.Query(), &params.AcademicYearId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "academic_year_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "academic_year_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "class_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "class_id", r.URL.Query(), &params.ClassId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "class_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "class_id", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListJournals(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpsertJournal operation middleware
+func (siw *ServerInterfaceWrapper) UpsertJournal(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpsertJournal(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ExportJournals operation middleware
+func (siw *ServerInterfaceWrapper) ExportJournals(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ExportJournalsParams
+
+	// ------------- Required query parameter "academic_year_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "academic_year_id", r.URL.Query(), &params.AcademicYearId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "academic_year_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "academic_year_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "class_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "class_id", r.URL.Query(), &params.ClassId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "class_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "class_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Required query parameter "format" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "format", r.URL.Query(), &params.Format, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "format"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "format", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ExportJournals(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteJournal operation middleware
+func (siw *ServerInterfaceWrapper) DeleteJournal(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "journalId" -------------
+	var journalId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "journalId", chi.URLParam(r, "journalId"), &journalId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "journalId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteJournal(w, r, journalId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetJournal operation middleware
+func (siw *ServerInterfaceWrapper) GetJournal(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "journalId" -------------
+	var journalId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "journalId", chi.URLParam(r, "journalId"), &journalId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "journalId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetJournal(w, r, journalId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetMe operation middleware
 func (siw *ServerInterfaceWrapper) GetMe(w http.ResponseWriter, r *http.Request) {
 
@@ -598,6 +1875,356 @@ func (siw *ServerInterfaceWrapper) ChangePassword(w http.ResponseWriter, r *http
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ChangePassword(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetMonitorPresence operation middleware
+func (siw *ServerInterfaceWrapper) GetMonitorPresence(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetMonitorPresence(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetMonitorSnapshot operation middleware
+func (siw *ServerInterfaceWrapper) GetMonitorSnapshot(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetMonitorSnapshotParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Monitor-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Monitor-Token")]; found {
+		var XMonitorToken MonitorTokenHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Monitor-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Monitor-Token", valueList[0], &XMonitorToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Monitor-Token", Err: err})
+			return
+		}
+
+		params.XMonitorToken = XMonitorToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Monitor-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Monitor-Token", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetMonitorSnapshot(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListSchedules operation middleware
+func (siw *ServerInterfaceWrapper) ListSchedules(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListSchedulesParams
+
+	// ------------- Required query parameter "academic_year_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "academic_year_id", r.URL.Query(), &params.AcademicYearId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "academic_year_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "academic_year_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "class_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "class_id", r.URL.Query(), &params.ClassId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "class_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "class_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "teacher_user_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "teacher_user_id", r.URL.Query(), &params.TeacherUserId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "teacher_user_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "teacher_user_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "day_of_week" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "day_of_week", r.URL.Query(), &params.DayOfWeek, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "day_of_week"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "day_of_week", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListSchedules(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateSchedule operation middleware
+func (siw *ServerInterfaceWrapper) CreateSchedule(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateSchedule(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// BulkImportSchedules operation middleware
+func (siw *ServerInterfaceWrapper) BulkImportSchedules(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.BulkImportSchedules(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ClearSchedules operation middleware
+func (siw *ServerInterfaceWrapper) ClearSchedules(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ClearSchedules(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteSchedule operation middleware
+func (siw *ServerInterfaceWrapper) DeleteSchedule(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "scheduleId" -------------
+	var scheduleId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "scheduleId", chi.URLParam(r, "scheduleId"), &scheduleId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "scheduleId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteSchedule(w, r, scheduleId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetSchedule operation middleware
+func (siw *ServerInterfaceWrapper) GetSchedule(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "scheduleId" -------------
+	var scheduleId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "scheduleId", chi.URLParam(r, "scheduleId"), &scheduleId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "scheduleId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetSchedule(w, r, scheduleId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateSchedule operation middleware
+func (siw *ServerInterfaceWrapper) UpdateSchedule(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "scheduleId" -------------
+	var scheduleId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "scheduleId", chi.URLParam(r, "scheduleId"), &scheduleId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "scheduleId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateSchedule(w, r, scheduleId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListSubstitutions operation middleware
+func (siw *ServerInterfaceWrapper) ListSubstitutions(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListSubstitutionsParams
+
+	// ------------- Required query parameter "direction" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "direction", r.URL.Query(), &params.Direction, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "direction"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "direction", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListSubstitutions(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateSubstitution operation middleware
+func (siw *ServerInterfaceWrapper) CreateSubstitution(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateSubstitution(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CancelSubstitution operation middleware
+func (siw *ServerInterfaceWrapper) CancelSubstitution(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "substitutionId" -------------
+	var substitutionId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "substitutionId", chi.URLParam(r, "substitutionId"), &substitutionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "substitutionId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CancelSubstitution(w, r, substitutionId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RespondSubstitution operation middleware
+func (siw *ServerInterfaceWrapper) RespondSubstitution(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "substitutionId" -------------
+	var substitutionId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "substitutionId", chi.URLParam(r, "substitutionId"), &substitutionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "substitutionId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RespondSubstitution(w, r, substitutionId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -645,6 +2272,53 @@ func (siw *ServerInterfaceWrapper) LookupTenants(w http.ResponseWriter, r *http.
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.LookupTenants(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// WsMe operation middleware
+func (siw *ServerInterfaceWrapper) WsMe(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.WsMe(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// WsMonitor operation middleware
+func (siw *ServerInterfaceWrapper) WsMonitor(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params WsMonitorParams
+
+	// ------------- Required query parameter "token" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "token", r.URL.Query(), &params.Token, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "token"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "token", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.WsMonitor(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -768,6 +2442,45 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	}
 
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/attendance/me/today", wrapper.ListMyAttendanceToday)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/attendance/sessions", wrapper.OpenAttendanceSession)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/attendance/sessions/{sessionId}", wrapper.GetAttendanceSession)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/v1/attendance/sessions/{sessionId}/entries", wrapper.SaveAttendanceEntries)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/attendance/me/calendar", wrapper.GetMyAttendanceCalendar)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/attendance/homeroom", wrapper.GetHomeroomAttendance)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/attendance/reports/daily", wrapper.GetDailyAttendanceReport)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/attendance/reports/daily/export", wrapper.ExportDailyAttendanceReport)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/attendance/reports/monthly", wrapper.GetMonthlyAttendanceSummary)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/monitor/snapshot", wrapper.GetMonitorSnapshot)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/monitor/presence", wrapper.GetMonitorPresence)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/ws/monitor", wrapper.WsMonitor)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/ws/me", wrapper.WsMe)
+	})
+	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/v1/auth/login", wrapper.Login)
 	})
 	r.Group(func(r chi.Router) {
@@ -789,6 +2502,54 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Put(options.BaseURL+"/v1/me/password", wrapper.ChangePassword)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/schedules", wrapper.ListSchedules)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/schedules", wrapper.CreateSchedule)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/schedules/bulk-import", wrapper.BulkImportSchedules)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/schedules/clear", wrapper.ClearSchedules)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/v1/schedules/{scheduleId}", wrapper.DeleteSchedule)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/schedules/{scheduleId}", wrapper.GetSchedule)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/v1/schedules/{scheduleId}", wrapper.UpdateSchedule)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/substitutions", wrapper.ListSubstitutions)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/substitutions", wrapper.CreateSubstitution)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/substitutions/{substitutionId}/respond", wrapper.RespondSubstitution)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/substitutions/{substitutionId}/cancel", wrapper.CancelSubstitution)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/journals", wrapper.ListJournals)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/journals", wrapper.UpsertJournal)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/journals/export", wrapper.ExportJournals)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/v1/journals/{journalId}", wrapper.DeleteJournal)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/journals/{journalId}", wrapper.GetJournal)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/health", wrapper.GetHealth)
 	})
 	r.Group(func(r chi.Router) {
@@ -803,6 +2564,8 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 
 type BadRequestJSONResponse Error
 
+type ConflictJSONResponse Error
+
 type ForbiddenJSONResponse Error
 
 type NotFoundJSONResponse Error
@@ -815,6 +2578,8 @@ type RateLimitedJSONResponse struct {
 
 	Headers RateLimitedResponseHeaders
 }
+
+type ScheduleConflictJSONResponse Error
 
 type UnauthorizedJSONResponse Error
 
@@ -853,6 +2618,402 @@ func (response GetHealth503JSONResponse) VisitGetHealthResponse(w http.ResponseW
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetHomeroomAttendanceRequestObject struct {
+	Params GetHomeroomAttendanceParams
+}
+
+type GetHomeroomAttendanceResponseObject interface {
+	VisitGetHomeroomAttendanceResponse(w http.ResponseWriter) error
+}
+
+type GetHomeroomAttendance200JSONResponse struct {
+	Data []AttendanceRosterEntry `json:"data"`
+}
+
+func (response GetHomeroomAttendance200JSONResponse) VisitGetHomeroomAttendanceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetHomeroomAttendance403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetHomeroomAttendance403JSONResponse) VisitGetHomeroomAttendanceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMyAttendanceCalendarRequestObject struct {
+	Params GetMyAttendanceCalendarParams
+}
+
+type GetMyAttendanceCalendarResponseObject interface {
+	VisitGetMyAttendanceCalendarResponse(w http.ResponseWriter) error
+}
+
+type GetMyAttendanceCalendar200JSONResponse struct {
+	Data []AttendanceCalendarDay `json:"data"`
+}
+
+func (response GetMyAttendanceCalendar200JSONResponse) VisitGetMyAttendanceCalendarResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMyAttendanceCalendar400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetMyAttendanceCalendar400JSONResponse) VisitGetMyAttendanceCalendarResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListMyAttendanceTodayRequestObject struct {
+}
+
+type ListMyAttendanceTodayResponseObject interface {
+	VisitListMyAttendanceTodayResponse(w http.ResponseWriter) error
+}
+
+type ListMyAttendanceToday200JSONResponse struct {
+	Data []AttendanceSessionSummary `json:"data"`
+}
+
+func (response ListMyAttendanceToday200JSONResponse) VisitListMyAttendanceTodayResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListMyAttendanceToday401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListMyAttendanceToday401JSONResponse) VisitListMyAttendanceTodayResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetDailyAttendanceReportRequestObject struct {
+	Params GetDailyAttendanceReportParams
+}
+
+type GetDailyAttendanceReportResponseObject interface {
+	VisitGetDailyAttendanceReportResponse(w http.ResponseWriter) error
+}
+
+type GetDailyAttendanceReport200JSONResponse AttendanceDailyReport
+
+func (response GetDailyAttendanceReport200JSONResponse) VisitGetDailyAttendanceReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetDailyAttendanceReport400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetDailyAttendanceReport400JSONResponse) VisitGetDailyAttendanceReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ExportDailyAttendanceReportRequestObject struct {
+	Params ExportDailyAttendanceReportParams
+}
+
+type ExportDailyAttendanceReportResponseObject interface {
+	VisitExportDailyAttendanceReportResponse(w http.ResponseWriter) error
+}
+
+type ExportDailyAttendanceReport200ApplicationvndOpenxmlformatsOfficedocumentSpreadsheetmlSheetResponse struct {
+	Body          io.Reader
+	ContentLength int64
+}
+
+func (response ExportDailyAttendanceReport200ApplicationvndOpenxmlformatsOfficedocumentSpreadsheetmlSheetResponse) VisitExportDailyAttendanceReportResponse(w http.ResponseWriter) error {
+
+	w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type ExportDailyAttendanceReport400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ExportDailyAttendanceReport400JSONResponse) VisitExportDailyAttendanceReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMonthlyAttendanceSummaryRequestObject struct {
+	Params GetMonthlyAttendanceSummaryParams
+}
+
+type GetMonthlyAttendanceSummaryResponseObject interface {
+	VisitGetMonthlyAttendanceSummaryResponse(w http.ResponseWriter) error
+}
+
+type GetMonthlyAttendanceSummary200JSONResponse struct {
+	Data   []AttendanceCalendarDay `json:"data"`
+	Totals map[string]int          `json:"totals"`
+}
+
+func (response GetMonthlyAttendanceSummary200JSONResponse) VisitGetMonthlyAttendanceSummaryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMonthlyAttendanceSummary400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetMonthlyAttendanceSummary400JSONResponse) VisitGetMonthlyAttendanceSummaryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OpenAttendanceSessionRequestObject struct {
+	Body *OpenAttendanceSessionJSONRequestBody
+}
+
+type OpenAttendanceSessionResponseObject interface {
+	VisitOpenAttendanceSessionResponse(w http.ResponseWriter) error
+}
+
+type OpenAttendanceSession200JSONResponse AttendanceSessionDetail
+
+func (response OpenAttendanceSession200JSONResponse) VisitOpenAttendanceSessionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OpenAttendanceSession400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response OpenAttendanceSession400JSONResponse) VisitOpenAttendanceSessionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OpenAttendanceSession403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response OpenAttendanceSession403JSONResponse) VisitOpenAttendanceSessionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAttendanceSessionRequestObject struct {
+	SessionId openapi_types.UUID `json:"sessionId"`
+}
+
+type GetAttendanceSessionResponseObject interface {
+	VisitGetAttendanceSessionResponse(w http.ResponseWriter) error
+}
+
+type GetAttendanceSession200JSONResponse AttendanceSessionDetail
+
+func (response GetAttendanceSession200JSONResponse) VisitGetAttendanceSessionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAttendanceSession403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetAttendanceSession403JSONResponse) VisitGetAttendanceSessionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAttendanceSession404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetAttendanceSession404JSONResponse) VisitGetAttendanceSessionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SaveAttendanceEntriesRequestObject struct {
+	SessionId openapi_types.UUID `json:"sessionId"`
+	Params    SaveAttendanceEntriesParams
+	Body      *SaveAttendanceEntriesJSONRequestBody
+}
+
+type SaveAttendanceEntriesResponseObject interface {
+	VisitSaveAttendanceEntriesResponse(w http.ResponseWriter) error
+}
+
+type SaveAttendanceEntries200JSONResponse AttendanceSessionDetail
+
+func (response SaveAttendanceEntries200JSONResponse) VisitSaveAttendanceEntriesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SaveAttendanceEntries400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response SaveAttendanceEntries400JSONResponse) VisitSaveAttendanceEntriesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SaveAttendanceEntries403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response SaveAttendanceEntries403JSONResponse) VisitSaveAttendanceEntriesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SaveAttendanceEntries409JSONResponse Error
+
+func (response SaveAttendanceEntries409JSONResponse) VisitSaveAttendanceEntriesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -1113,6 +3274,236 @@ func (response RevokeSession404JSONResponse) VisitRevokeSessionResponse(w http.R
 	return err
 }
 
+type ListJournalsRequestObject struct {
+	Params ListJournalsParams
+}
+
+type ListJournalsResponseObject interface {
+	VisitListJournalsResponse(w http.ResponseWriter) error
+}
+
+type ListJournals200JSONResponse struct {
+	Data []Journal `json:"data"`
+}
+
+func (response ListJournals200JSONResponse) VisitListJournalsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListJournals403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListJournals403JSONResponse) VisitListJournalsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpsertJournalRequestObject struct {
+	Body *UpsertJournalJSONRequestBody
+}
+
+type UpsertJournalResponseObject interface {
+	VisitUpsertJournalResponse(w http.ResponseWriter) error
+}
+
+type UpsertJournal200JSONResponse Journal
+
+func (response UpsertJournal200JSONResponse) VisitUpsertJournalResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpsertJournal400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response UpsertJournal400JSONResponse) VisitUpsertJournalResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpsertJournal403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response UpsertJournal403JSONResponse) VisitUpsertJournalResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ExportJournalsRequestObject struct {
+	Params ExportJournalsParams
+}
+
+type ExportJournalsResponseObject interface {
+	VisitExportJournalsResponse(w http.ResponseWriter) error
+}
+
+type ExportJournals200ApplicationvndOpenxmlformatsOfficedocumentSpreadsheetmlSheetResponse struct {
+	Body          io.Reader
+	ContentLength int64
+}
+
+func (response ExportJournals200ApplicationvndOpenxmlformatsOfficedocumentSpreadsheetmlSheetResponse) VisitExportJournalsResponse(w http.ResponseWriter) error {
+
+	w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type ExportJournals200ApplicationvndOpenxmlformatsOfficedocumentWordprocessingmlDocumentResponse struct {
+	Body          io.Reader
+	ContentLength int64
+}
+
+func (response ExportJournals200ApplicationvndOpenxmlformatsOfficedocumentWordprocessingmlDocumentResponse) VisitExportJournalsResponse(w http.ResponseWriter) error {
+
+	w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type ExportJournals403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ExportJournals403JSONResponse) VisitExportJournalsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteJournalRequestObject struct {
+	JournalId openapi_types.UUID `json:"journalId"`
+}
+
+type DeleteJournalResponseObject interface {
+	VisitDeleteJournalResponse(w http.ResponseWriter) error
+}
+
+type DeleteJournal204Response struct {
+}
+
+func (response DeleteJournal204Response) VisitDeleteJournalResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteJournal403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response DeleteJournal403JSONResponse) VisitDeleteJournalResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteJournal404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response DeleteJournal404JSONResponse) VisitDeleteJournalResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetJournalRequestObject struct {
+	JournalId openapi_types.UUID `json:"journalId"`
+}
+
+type GetJournalResponseObject interface {
+	VisitGetJournalResponse(w http.ResponseWriter) error
+}
+
+type GetJournal200JSONResponse Journal
+
+func (response GetJournal200JSONResponse) VisitGetJournalResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetJournal404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetJournal404JSONResponse) VisitGetJournalResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetMeRequestObject struct {
 }
 
@@ -1192,6 +3583,679 @@ func (response ChangePassword401JSONResponse) VisitChangePasswordResponse(w http
 	return err
 }
 
+type GetMonitorPresenceRequestObject struct {
+}
+
+type GetMonitorPresenceResponseObject interface {
+	VisitGetMonitorPresenceResponse(w http.ResponseWriter) error
+}
+
+type GetMonitorPresence200JSONResponse PresenceSnapshot
+
+func (response GetMonitorPresence200JSONResponse) VisitGetMonitorPresenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMonitorPresence401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetMonitorPresence401JSONResponse) VisitGetMonitorPresenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMonitorSnapshotRequestObject struct {
+	Params GetMonitorSnapshotParams
+}
+
+type GetMonitorSnapshotResponseObject interface {
+	VisitGetMonitorSnapshotResponse(w http.ResponseWriter) error
+}
+
+type GetMonitorSnapshot200JSONResponse MonitorSnapshot
+
+func (response GetMonitorSnapshot200JSONResponse) VisitGetMonitorSnapshotResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMonitorSnapshot401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetMonitorSnapshot401JSONResponse) VisitGetMonitorSnapshotResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListSchedulesRequestObject struct {
+	Params ListSchedulesParams
+}
+
+type ListSchedulesResponseObject interface {
+	VisitListSchedulesResponse(w http.ResponseWriter) error
+}
+
+type ListSchedules200JSONResponse struct {
+	Data []ScheduleBlock `json:"data"`
+}
+
+func (response ListSchedules200JSONResponse) VisitListSchedulesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListSchedules400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListSchedules400JSONResponse) VisitListSchedulesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListSchedules401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListSchedules401JSONResponse) VisitListSchedulesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateScheduleRequestObject struct {
+	Body *CreateScheduleJSONRequestBody
+}
+
+type CreateScheduleResponseObject interface {
+	VisitCreateScheduleResponse(w http.ResponseWriter) error
+}
+
+type CreateSchedule201JSONResponse Schedule
+
+func (response CreateSchedule201JSONResponse) VisitCreateScheduleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateSchedule400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CreateSchedule400JSONResponse) VisitCreateScheduleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateSchedule401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateSchedule401JSONResponse) VisitCreateScheduleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateSchedule403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CreateSchedule403JSONResponse) VisitCreateScheduleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateSchedule409JSONResponse struct{ ScheduleConflictJSONResponse }
+
+func (response CreateSchedule409JSONResponse) VisitCreateScheduleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BulkImportSchedulesRequestObject struct {
+	Body *BulkImportSchedulesJSONRequestBody
+}
+
+type BulkImportSchedulesResponseObject interface {
+	VisitBulkImportSchedulesResponse(w http.ResponseWriter) error
+}
+
+type BulkImportSchedules201JSONResponse struct {
+	Data []Schedule `json:"data"`
+}
+
+func (response BulkImportSchedules201JSONResponse) VisitBulkImportSchedulesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BulkImportSchedules400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response BulkImportSchedules400JSONResponse) VisitBulkImportSchedulesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BulkImportSchedules409JSONResponse struct{ ScheduleConflictJSONResponse }
+
+func (response BulkImportSchedules409JSONResponse) VisitBulkImportSchedulesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ClearSchedulesRequestObject struct {
+	Body *ClearSchedulesJSONRequestBody
+}
+
+type ClearSchedulesResponseObject interface {
+	VisitClearSchedulesResponse(w http.ResponseWriter) error
+}
+
+type ClearSchedules204Response struct {
+}
+
+func (response ClearSchedules204Response) VisitClearSchedulesResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type ClearSchedules400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ClearSchedules400JSONResponse) VisitClearSchedulesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteScheduleRequestObject struct {
+	ScheduleId openapi_types.UUID `json:"scheduleId"`
+}
+
+type DeleteScheduleResponseObject interface {
+	VisitDeleteScheduleResponse(w http.ResponseWriter) error
+}
+
+type DeleteSchedule204Response struct {
+}
+
+func (response DeleteSchedule204Response) VisitDeleteScheduleResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteSchedule403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response DeleteSchedule403JSONResponse) VisitDeleteScheduleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteSchedule404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response DeleteSchedule404JSONResponse) VisitDeleteScheduleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetScheduleRequestObject struct {
+	ScheduleId openapi_types.UUID `json:"scheduleId"`
+}
+
+type GetScheduleResponseObject interface {
+	VisitGetScheduleResponse(w http.ResponseWriter) error
+}
+
+type GetSchedule200JSONResponse Schedule
+
+func (response GetSchedule200JSONResponse) VisitGetScheduleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetSchedule404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetSchedule404JSONResponse) VisitGetScheduleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateScheduleRequestObject struct {
+	ScheduleId openapi_types.UUID `json:"scheduleId"`
+	Body       *UpdateScheduleJSONRequestBody
+}
+
+type UpdateScheduleResponseObject interface {
+	VisitUpdateScheduleResponse(w http.ResponseWriter) error
+}
+
+type UpdateSchedule200JSONResponse Schedule
+
+func (response UpdateSchedule200JSONResponse) VisitUpdateScheduleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateSchedule400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response UpdateSchedule400JSONResponse) VisitUpdateScheduleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateSchedule403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response UpdateSchedule403JSONResponse) VisitUpdateScheduleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateSchedule404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response UpdateSchedule404JSONResponse) VisitUpdateScheduleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateSchedule409JSONResponse struct{ ScheduleConflictJSONResponse }
+
+func (response UpdateSchedule409JSONResponse) VisitUpdateScheduleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListSubstitutionsRequestObject struct {
+	Params ListSubstitutionsParams
+}
+
+type ListSubstitutionsResponseObject interface {
+	VisitListSubstitutionsResponse(w http.ResponseWriter) error
+}
+
+type ListSubstitutions200JSONResponse struct {
+	Data []Substitution `json:"data"`
+}
+
+func (response ListSubstitutions200JSONResponse) VisitListSubstitutionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListSubstitutions400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListSubstitutions400JSONResponse) VisitListSubstitutionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateSubstitutionRequestObject struct {
+	Body *CreateSubstitutionJSONRequestBody
+}
+
+type CreateSubstitutionResponseObject interface {
+	VisitCreateSubstitutionResponse(w http.ResponseWriter) error
+}
+
+type CreateSubstitution201JSONResponse Substitution
+
+func (response CreateSubstitution201JSONResponse) VisitCreateSubstitutionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateSubstitution400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CreateSubstitution400JSONResponse) VisitCreateSubstitutionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateSubstitution403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CreateSubstitution403JSONResponse) VisitCreateSubstitutionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateSubstitution409JSONResponse struct{ ConflictJSONResponse }
+
+func (response CreateSubstitution409JSONResponse) VisitCreateSubstitutionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelSubstitutionRequestObject struct {
+	SubstitutionId openapi_types.UUID `json:"substitutionId"`
+}
+
+type CancelSubstitutionResponseObject interface {
+	VisitCancelSubstitutionResponse(w http.ResponseWriter) error
+}
+
+type CancelSubstitution200JSONResponse Substitution
+
+func (response CancelSubstitution200JSONResponse) VisitCancelSubstitutionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelSubstitution403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CancelSubstitution403JSONResponse) VisitCancelSubstitutionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelSubstitution404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response CancelSubstitution404JSONResponse) VisitCancelSubstitutionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelSubstitution409JSONResponse struct{ ConflictJSONResponse }
+
+func (response CancelSubstitution409JSONResponse) VisitCancelSubstitutionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RespondSubstitutionRequestObject struct {
+	SubstitutionId openapi_types.UUID `json:"substitutionId"`
+	Body           *RespondSubstitutionJSONRequestBody
+}
+
+type RespondSubstitutionResponseObject interface {
+	VisitRespondSubstitutionResponse(w http.ResponseWriter) error
+}
+
+type RespondSubstitution200JSONResponse Substitution
+
+func (response RespondSubstitution200JSONResponse) VisitRespondSubstitutionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RespondSubstitution403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response RespondSubstitution403JSONResponse) VisitRespondSubstitutionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RespondSubstitution404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response RespondSubstitution404JSONResponse) VisitRespondSubstitutionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RespondSubstitution409JSONResponse struct{ ConflictJSONResponse }
+
+func (response RespondSubstitution409JSONResponse) VisitRespondSubstitutionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetTenantBrandingRequestObject struct {
 }
 
@@ -1265,11 +4329,97 @@ func (response LookupTenants400JSONResponse) VisitLookupTenantsResponse(w http.R
 	return err
 }
 
+type WsMeRequestObject struct {
+}
+
+type WsMeResponseObject interface {
+	VisitWsMeResponse(w http.ResponseWriter) error
+}
+
+type WsMe101Response struct {
+}
+
+func (response WsMe101Response) VisitWsMeResponse(w http.ResponseWriter) error {
+	w.WriteHeader(101)
+	return nil
+}
+
+type WsMe401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response WsMe401JSONResponse) VisitWsMeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type WsMonitorRequestObject struct {
+	Params WsMonitorParams
+}
+
+type WsMonitorResponseObject interface {
+	VisitWsMonitorResponse(w http.ResponseWriter) error
+}
+
+type WsMonitor101Response struct {
+}
+
+func (response WsMonitor101Response) VisitWsMonitorResponse(w http.ResponseWriter) error {
+	w.WriteHeader(101)
+	return nil
+}
+
+type WsMonitor401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response WsMonitor401JSONResponse) VisitWsMonitorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 	// GetHealth Liveness and dependency status
 	// (GET /health)
 	GetHealth(ctx context.Context, request GetHealthRequestObject) (GetHealthResponseObject, error)
+	// GetHomeroomAttendance One day's daily status for every student in the caller's homeroom class
+	// (GET /v1/attendance/homeroom)
+	GetHomeroomAttendance(ctx context.Context, request GetHomeroomAttendanceRequestObject) (GetHomeroomAttendanceResponseObject, error)
+	// GetMyAttendanceCalendar The current student's daily status for one month
+	// (GET /v1/attendance/me/calendar)
+	GetMyAttendanceCalendar(ctx context.Context, request GetMyAttendanceCalendarRequestObject) (GetMyAttendanceCalendarResponseObject, error)
+	// ListMyAttendanceToday Today's sessions for the current teacher (own schedules plus accepted substitutions)
+	// (GET /v1/attendance/me/today)
+	ListMyAttendanceToday(ctx context.Context, request ListMyAttendanceTodayRequestObject) (ListMyAttendanceTodayResponseObject, error)
+	// GetDailyAttendanceReport One class's expected vs. submitted sessions and per-student status for one day
+	// (GET /v1/attendance/reports/daily)
+	GetDailyAttendanceReport(ctx context.Context, request GetDailyAttendanceReportRequestObject) (GetDailyAttendanceReportResponseObject, error)
+	// ExportDailyAttendanceReport The daily report as an XLSX file
+	// (GET /v1/attendance/reports/daily/export)
+	ExportDailyAttendanceReport(ctx context.Context, request ExportDailyAttendanceReportRequestObject) (ExportDailyAttendanceReportResponseObject, error)
+	// GetMonthlyAttendanceSummary One student's daily statuses for one month
+	// (GET /v1/attendance/reports/monthly)
+	GetMonthlyAttendanceSummary(ctx context.Context, request GetMonthlyAttendanceSummaryRequestObject) (GetMonthlyAttendanceSummaryResponseObject, error)
+	// OpenAttendanceSession Open (idempotently) the session for a schedule occurrence and return its full recording payload
+	// (POST /v1/attendance/sessions)
+	OpenAttendanceSession(ctx context.Context, request OpenAttendanceSessionRequestObject) (OpenAttendanceSessionResponseObject, error)
+	// GetAttendanceSession One session's full recording payload
+	// (GET /v1/attendance/sessions/{sessionId})
+	GetAttendanceSession(ctx context.Context, request GetAttendanceSessionRequestObject) (GetAttendanceSessionResponseObject, error)
+	// SaveAttendanceEntries Save a batch of student statuses and the lesson journal for a session
+	// (PUT /v1/attendance/sessions/{sessionId}/entries)
+	SaveAttendanceEntries(ctx context.Context, request SaveAttendanceEntriesRequestObject) (SaveAttendanceEntriesResponseObject, error)
 	// Login Password login
 	// (POST /v1/auth/login)
 	Login(ctx context.Context, request LoginRequestObject) (LoginResponseObject, error)
@@ -1285,18 +4435,78 @@ type StrictServerInterface interface {
 	// RevokeSession Revoke one of the current user's sessions
 	// (DELETE /v1/auth/sessions/{sessionId})
 	RevokeSession(ctx context.Context, request RevokeSessionRequestObject) (RevokeSessionResponseObject, error)
+	// ListJournals My own journals for an academic year, or (class_id given, requires view_journals_all) every journal for a class
+	// (GET /v1/journals)
+	ListJournals(ctx context.Context, request ListJournalsRequestObject) (ListJournalsResponseObject, error)
+	// UpsertJournal Create or update the journal for a class/subject/date (unique per day)
+	// (POST /v1/journals)
+	UpsertJournal(ctx context.Context, request UpsertJournalRequestObject) (UpsertJournalResponseObject, error)
+	// ExportJournals Export journals as XLSX or DOCX
+	// (GET /v1/journals/export)
+	ExportJournals(ctx context.Context, request ExportJournalsRequestObject) (ExportJournalsResponseObject, error)
+	// DeleteJournal Delete a journal (its own teacher/writer only)
+	// (DELETE /v1/journals/{journalId})
+	DeleteJournal(ctx context.Context, request DeleteJournalRequestObject) (DeleteJournalResponseObject, error)
+	// GetJournal One journal
+	// (GET /v1/journals/{journalId})
+	GetJournal(ctx context.Context, request GetJournalRequestObject) (GetJournalResponseObject, error)
 	// GetMe Current user, roles, effective permissions, tenant
 	// (GET /v1/me)
 	GetMe(ctx context.Context, request GetMeRequestObject) (GetMeResponseObject, error)
 	// ChangePassword Change own password; revokes other sessions
 	// (PUT /v1/me/password)
 	ChangePassword(ctx context.Context, request ChangePasswordRequestObject) (ChangePasswordResponseObject, error)
+	// GetMonitorPresence Who currently has a realtime socket open, by role
+	// (GET /v1/monitor/presence)
+	GetMonitorPresence(ctx context.Context, request GetMonitorPresenceRequestObject) (GetMonitorPresenceResponseObject, error)
+	// GetMonitorSnapshot Public monitor-display snapshot, gated by the tenant's monitor.display_token setting
+	// (GET /v1/monitor/snapshot)
+	GetMonitorSnapshot(ctx context.Context, request GetMonitorSnapshotRequestObject) (GetMonitorSnapshotResponseObject, error)
+	// ListSchedules Grid of schedules for a class, a teacher, or one day, merged into contiguous blocks
+	// (GET /v1/schedules)
+	ListSchedules(ctx context.Context, request ListSchedulesRequestObject) (ListSchedulesResponseObject, error)
+	// CreateSchedule Create a schedule (admin for any teacher, or a teacher for themselves within the edit deadline)
+	// (POST /v1/schedules)
+	CreateSchedule(ctx context.Context, request CreateScheduleRequestObject) (CreateScheduleResponseObject, error)
+	// BulkImportSchedules Create many schedules atomically (typically after clearing the academic year)
+	// (POST /v1/schedules/bulk-import)
+	BulkImportSchedules(ctx context.Context, request BulkImportSchedulesRequestObject) (BulkImportSchedulesResponseObject, error)
+	// ClearSchedules Delete every schedule for one academic year
+	// (POST /v1/schedules/clear)
+	ClearSchedules(ctx context.Context, request ClearSchedulesRequestObject) (ClearSchedulesResponseObject, error)
+	// DeleteSchedule Delete a schedule (admin, or the owning teacher within the edit deadline)
+	// (DELETE /v1/schedules/{scheduleId})
+	DeleteSchedule(ctx context.Context, request DeleteScheduleRequestObject) (DeleteScheduleResponseObject, error)
+	// GetSchedule One schedule
+	// (GET /v1/schedules/{scheduleId})
+	GetSchedule(ctx context.Context, request GetScheduleRequestObject) (GetScheduleResponseObject, error)
+	// UpdateSchedule Update a schedule (admin, or the owning teacher within the edit deadline)
+	// (PUT /v1/schedules/{scheduleId})
+	UpdateSchedule(ctx context.Context, request UpdateScheduleRequestObject) (UpdateScheduleResponseObject, error)
+	// ListSubstitutions Substitution requests directed at me (incoming) or made by me (outgoing)
+	// (GET /v1/substitutions)
+	ListSubstitutions(ctx context.Context, request ListSubstitutionsRequestObject) (ListSubstitutionsResponseObject, error)
+	// CreateSubstitution Request a substitute for one dated occurrence of my own schedule
+	// (POST /v1/substitutions)
+	CreateSubstitution(ctx context.Context, request CreateSubstitutionRequestObject) (CreateSubstitutionResponseObject, error)
+	// CancelSubstitution Cancel a substitution request I made
+	// (POST /v1/substitutions/{substitutionId}/cancel)
+	CancelSubstitution(ctx context.Context, request CancelSubstitutionRequestObject) (CancelSubstitutionResponseObject, error)
+	// RespondSubstitution Accept or reject a substitution request addressed to me
+	// (POST /v1/substitutions/{substitutionId}/respond)
+	RespondSubstitution(ctx context.Context, request RespondSubstitutionRequestObject) (RespondSubstitutionResponseObject, error)
 	// GetTenantBranding Public branding for the resolved tenant (login screen, manifest)
 	// (GET /v1/tenant/branding)
 	GetTenantBranding(ctx context.Context, request GetTenantBrandingRequestObject) (GetTenantBrandingResponseObject, error)
 	// LookupTenants Search schools by name or slug (mobile school picker). Returns nothing in single-tenant mode except the single tenant.
 	// (GET /v1/tenants/lookup)
 	LookupTenants(ctx context.Context, request LookupTenantsRequestObject) (LookupTenantsResponseObject, error)
+	// WsMe Realtime per-user channel (WebSocket upgrade). Authenticated by the access token, sent either as a bearer Authorization header (native clients) or as a `bearer.<token>` WebSocket subprotocol (browsers).
+	// (GET /ws/me)
+	WsMe(ctx context.Context, request WsMeRequestObject) (WsMeResponseObject, error)
+	// WsMonitor Realtime monitor channel (WebSocket upgrade). Authenticated by the same monitor.display_token as GET /v1/monitor/snapshot, passed as a query parameter since browsers cannot set custom headers before the handshake completes.
+	// (GET /ws/monitor)
+	WsMonitor(ctx context.Context, request WsMonitorRequestObject) (WsMonitorResponseObject, error)
 }
 
 type StrictHandlerFunc func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error)
@@ -1355,6 +4565,251 @@ func (sh *strictHandler) GetHealth(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetHealthResponseObject); ok {
 		if err := validResponse.VisitGetHealthResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetHomeroomAttendance operation middleware
+func (sh *strictHandler) GetHomeroomAttendance(w http.ResponseWriter, r *http.Request, params GetHomeroomAttendanceParams) {
+	var request GetHomeroomAttendanceRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetHomeroomAttendance(ctx, request.(GetHomeroomAttendanceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetHomeroomAttendance")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetHomeroomAttendanceResponseObject); ok {
+		if err := validResponse.VisitGetHomeroomAttendanceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetMyAttendanceCalendar operation middleware
+func (sh *strictHandler) GetMyAttendanceCalendar(w http.ResponseWriter, r *http.Request, params GetMyAttendanceCalendarParams) {
+	var request GetMyAttendanceCalendarRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetMyAttendanceCalendar(ctx, request.(GetMyAttendanceCalendarRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetMyAttendanceCalendar")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetMyAttendanceCalendarResponseObject); ok {
+		if err := validResponse.VisitGetMyAttendanceCalendarResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListMyAttendanceToday operation middleware
+func (sh *strictHandler) ListMyAttendanceToday(w http.ResponseWriter, r *http.Request) {
+	var request ListMyAttendanceTodayRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListMyAttendanceToday(ctx, request.(ListMyAttendanceTodayRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListMyAttendanceToday")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListMyAttendanceTodayResponseObject); ok {
+		if err := validResponse.VisitListMyAttendanceTodayResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetDailyAttendanceReport operation middleware
+func (sh *strictHandler) GetDailyAttendanceReport(w http.ResponseWriter, r *http.Request, params GetDailyAttendanceReportParams) {
+	var request GetDailyAttendanceReportRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetDailyAttendanceReport(ctx, request.(GetDailyAttendanceReportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetDailyAttendanceReport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetDailyAttendanceReportResponseObject); ok {
+		if err := validResponse.VisitGetDailyAttendanceReportResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ExportDailyAttendanceReport operation middleware
+func (sh *strictHandler) ExportDailyAttendanceReport(w http.ResponseWriter, r *http.Request, params ExportDailyAttendanceReportParams) {
+	var request ExportDailyAttendanceReportRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ExportDailyAttendanceReport(ctx, request.(ExportDailyAttendanceReportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ExportDailyAttendanceReport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ExportDailyAttendanceReportResponseObject); ok {
+		if err := validResponse.VisitExportDailyAttendanceReportResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetMonthlyAttendanceSummary operation middleware
+func (sh *strictHandler) GetMonthlyAttendanceSummary(w http.ResponseWriter, r *http.Request, params GetMonthlyAttendanceSummaryParams) {
+	var request GetMonthlyAttendanceSummaryRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetMonthlyAttendanceSummary(ctx, request.(GetMonthlyAttendanceSummaryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetMonthlyAttendanceSummary")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetMonthlyAttendanceSummaryResponseObject); ok {
+		if err := validResponse.VisitGetMonthlyAttendanceSummaryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// OpenAttendanceSession operation middleware
+func (sh *strictHandler) OpenAttendanceSession(w http.ResponseWriter, r *http.Request) {
+	var request OpenAttendanceSessionRequestObject
+
+	var body OpenAttendanceSessionJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.OpenAttendanceSession(ctx, request.(OpenAttendanceSessionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "OpenAttendanceSession")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(OpenAttendanceSessionResponseObject); ok {
+		if err := validResponse.VisitOpenAttendanceSessionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetAttendanceSession operation middleware
+func (sh *strictHandler) GetAttendanceSession(w http.ResponseWriter, r *http.Request, sessionId openapi_types.UUID) {
+	var request GetAttendanceSessionRequestObject
+
+	request.SessionId = sessionId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAttendanceSession(ctx, request.(GetAttendanceSessionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAttendanceSession")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetAttendanceSessionResponseObject); ok {
+		if err := validResponse.VisitGetAttendanceSessionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SaveAttendanceEntries operation middleware
+func (sh *strictHandler) SaveAttendanceEntries(w http.ResponseWriter, r *http.Request, sessionId openapi_types.UUID, params SaveAttendanceEntriesParams) {
+	var request SaveAttendanceEntriesRequestObject
+
+	request.SessionId = sessionId
+	request.Params = params
+
+	var body SaveAttendanceEntriesJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SaveAttendanceEntries(ctx, request.(SaveAttendanceEntriesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SaveAttendanceEntries")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SaveAttendanceEntriesResponseObject); ok {
+		if err := validResponse.VisitSaveAttendanceEntriesResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -1503,6 +4958,141 @@ func (sh *strictHandler) RevokeSession(w http.ResponseWriter, r *http.Request, s
 	}
 }
 
+// ListJournals operation middleware
+func (sh *strictHandler) ListJournals(w http.ResponseWriter, r *http.Request, params ListJournalsParams) {
+	var request ListJournalsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListJournals(ctx, request.(ListJournalsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListJournals")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListJournalsResponseObject); ok {
+		if err := validResponse.VisitListJournalsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpsertJournal operation middleware
+func (sh *strictHandler) UpsertJournal(w http.ResponseWriter, r *http.Request) {
+	var request UpsertJournalRequestObject
+
+	var body UpsertJournalJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpsertJournal(ctx, request.(UpsertJournalRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpsertJournal")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpsertJournalResponseObject); ok {
+		if err := validResponse.VisitUpsertJournalResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ExportJournals operation middleware
+func (sh *strictHandler) ExportJournals(w http.ResponseWriter, r *http.Request, params ExportJournalsParams) {
+	var request ExportJournalsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ExportJournals(ctx, request.(ExportJournalsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ExportJournals")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ExportJournalsResponseObject); ok {
+		if err := validResponse.VisitExportJournalsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteJournal operation middleware
+func (sh *strictHandler) DeleteJournal(w http.ResponseWriter, r *http.Request, journalId openapi_types.UUID) {
+	var request DeleteJournalRequestObject
+
+	request.JournalId = journalId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteJournal(ctx, request.(DeleteJournalRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteJournal")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteJournalResponseObject); ok {
+		if err := validResponse.VisitDeleteJournalResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetJournal operation middleware
+func (sh *strictHandler) GetJournal(w http.ResponseWriter, r *http.Request, journalId openapi_types.UUID) {
+	var request GetJournalRequestObject
+
+	request.JournalId = journalId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetJournal(ctx, request.(GetJournalRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetJournal")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetJournalResponseObject); ok {
+		if err := validResponse.VisitGetJournalResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetMe operation middleware
 func (sh *strictHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 	var request GetMeRequestObject
@@ -1551,6 +5141,376 @@ func (sh *strictHandler) ChangePassword(w http.ResponseWriter, r *http.Request) 
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ChangePasswordResponseObject); ok {
 		if err := validResponse.VisitChangePasswordResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetMonitorPresence operation middleware
+func (sh *strictHandler) GetMonitorPresence(w http.ResponseWriter, r *http.Request) {
+	var request GetMonitorPresenceRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetMonitorPresence(ctx, request.(GetMonitorPresenceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetMonitorPresence")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetMonitorPresenceResponseObject); ok {
+		if err := validResponse.VisitGetMonitorPresenceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetMonitorSnapshot operation middleware
+func (sh *strictHandler) GetMonitorSnapshot(w http.ResponseWriter, r *http.Request, params GetMonitorSnapshotParams) {
+	var request GetMonitorSnapshotRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetMonitorSnapshot(ctx, request.(GetMonitorSnapshotRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetMonitorSnapshot")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetMonitorSnapshotResponseObject); ok {
+		if err := validResponse.VisitGetMonitorSnapshotResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListSchedules operation middleware
+func (sh *strictHandler) ListSchedules(w http.ResponseWriter, r *http.Request, params ListSchedulesParams) {
+	var request ListSchedulesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListSchedules(ctx, request.(ListSchedulesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListSchedules")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListSchedulesResponseObject); ok {
+		if err := validResponse.VisitListSchedulesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateSchedule operation middleware
+func (sh *strictHandler) CreateSchedule(w http.ResponseWriter, r *http.Request) {
+	var request CreateScheduleRequestObject
+
+	var body CreateScheduleJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateSchedule(ctx, request.(CreateScheduleRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateSchedule")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateScheduleResponseObject); ok {
+		if err := validResponse.VisitCreateScheduleResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// BulkImportSchedules operation middleware
+func (sh *strictHandler) BulkImportSchedules(w http.ResponseWriter, r *http.Request) {
+	var request BulkImportSchedulesRequestObject
+
+	var body BulkImportSchedulesJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.BulkImportSchedules(ctx, request.(BulkImportSchedulesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "BulkImportSchedules")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(BulkImportSchedulesResponseObject); ok {
+		if err := validResponse.VisitBulkImportSchedulesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ClearSchedules operation middleware
+func (sh *strictHandler) ClearSchedules(w http.ResponseWriter, r *http.Request) {
+	var request ClearSchedulesRequestObject
+
+	var body ClearSchedulesJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ClearSchedules(ctx, request.(ClearSchedulesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ClearSchedules")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ClearSchedulesResponseObject); ok {
+		if err := validResponse.VisitClearSchedulesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteSchedule operation middleware
+func (sh *strictHandler) DeleteSchedule(w http.ResponseWriter, r *http.Request, scheduleId openapi_types.UUID) {
+	var request DeleteScheduleRequestObject
+
+	request.ScheduleId = scheduleId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteSchedule(ctx, request.(DeleteScheduleRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteSchedule")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteScheduleResponseObject); ok {
+		if err := validResponse.VisitDeleteScheduleResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetSchedule operation middleware
+func (sh *strictHandler) GetSchedule(w http.ResponseWriter, r *http.Request, scheduleId openapi_types.UUID) {
+	var request GetScheduleRequestObject
+
+	request.ScheduleId = scheduleId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetSchedule(ctx, request.(GetScheduleRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetSchedule")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetScheduleResponseObject); ok {
+		if err := validResponse.VisitGetScheduleResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateSchedule operation middleware
+func (sh *strictHandler) UpdateSchedule(w http.ResponseWriter, r *http.Request, scheduleId openapi_types.UUID) {
+	var request UpdateScheduleRequestObject
+
+	request.ScheduleId = scheduleId
+
+	var body UpdateScheduleJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateSchedule(ctx, request.(UpdateScheduleRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateSchedule")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateScheduleResponseObject); ok {
+		if err := validResponse.VisitUpdateScheduleResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListSubstitutions operation middleware
+func (sh *strictHandler) ListSubstitutions(w http.ResponseWriter, r *http.Request, params ListSubstitutionsParams) {
+	var request ListSubstitutionsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListSubstitutions(ctx, request.(ListSubstitutionsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListSubstitutions")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListSubstitutionsResponseObject); ok {
+		if err := validResponse.VisitListSubstitutionsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateSubstitution operation middleware
+func (sh *strictHandler) CreateSubstitution(w http.ResponseWriter, r *http.Request) {
+	var request CreateSubstitutionRequestObject
+
+	var body CreateSubstitutionJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateSubstitution(ctx, request.(CreateSubstitutionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateSubstitution")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateSubstitutionResponseObject); ok {
+		if err := validResponse.VisitCreateSubstitutionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CancelSubstitution operation middleware
+func (sh *strictHandler) CancelSubstitution(w http.ResponseWriter, r *http.Request, substitutionId openapi_types.UUID) {
+	var request CancelSubstitutionRequestObject
+
+	request.SubstitutionId = substitutionId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CancelSubstitution(ctx, request.(CancelSubstitutionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CancelSubstitution")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CancelSubstitutionResponseObject); ok {
+		if err := validResponse.VisitCancelSubstitutionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RespondSubstitution operation middleware
+func (sh *strictHandler) RespondSubstitution(w http.ResponseWriter, r *http.Request, substitutionId openapi_types.UUID) {
+	var request RespondSubstitutionRequestObject
+
+	request.SubstitutionId = substitutionId
+
+	var body RespondSubstitutionJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RespondSubstitution(ctx, request.(RespondSubstitutionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RespondSubstitution")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RespondSubstitutionResponseObject); ok {
+		if err := validResponse.VisitRespondSubstitutionResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -1608,59 +5568,169 @@ func (sh *strictHandler) LookupTenants(w http.ResponseWriter, r *http.Request, p
 	}
 }
 
+// WsMe operation middleware
+func (sh *strictHandler) WsMe(w http.ResponseWriter, r *http.Request) {
+	var request WsMeRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.WsMe(ctx, request.(WsMeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "WsMe")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(WsMeResponseObject); ok {
+		if err := validResponse.VisitWsMeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// WsMonitor operation middleware
+func (sh *strictHandler) WsMonitor(w http.ResponseWriter, r *http.Request, params WsMonitorParams) {
+	var request WsMonitorRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.WsMonitor(ctx, request.(WsMonitorRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "WsMonitor")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(WsMonitorResponseObject); ok {
+		if err := validResponse.VisitWsMonitorResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // Base64 encoded, compressed with deflate, json marshaled OpenAPI spec.
 // Stored as a slice of fixed-width chunks rather than one concatenated
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
+	"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",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

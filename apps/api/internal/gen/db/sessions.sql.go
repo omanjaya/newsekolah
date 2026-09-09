@@ -13,6 +13,44 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countAttendanceSessionsForScheduleBeforeDate = `-- name: CountAttendanceSessionsForScheduleBeforeDate :one
+select count(*)::bigint from attendance_sessions
+where tenant_id = $1 and schedule_id = $2 and date < $3
+`
+
+type CountAttendanceSessionsForScheduleBeforeDateParams struct {
+	TenantID   uuid.UUID   `json:"tenant_id"`
+	ScheduleID uuid.UUID   `json:"schedule_id"`
+	Date       pgtype.Date `json:"date"`
+}
+
+// The input to "meeting_number" in the session payload: how many prior
+// meetings this schedule has already had, so meeting_number = count + 1.
+func (q *Queries) CountAttendanceSessionsForScheduleBeforeDate(ctx context.Context, arg CountAttendanceSessionsForScheduleBeforeDateParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countAttendanceSessionsForScheduleBeforeDate, arg.TenantID, arg.ScheduleID, arg.Date)
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
+const countSubmittedSessionsByClassDate = `-- name: CountSubmittedSessionsByClassDate :one
+select count(*)::bigint from attendance_sessions
+where tenant_id = $1 and class_id = $2 and date = $3 and submitted_at is not null
+`
+
+type CountSubmittedSessionsByClassDateParams struct {
+	TenantID uuid.UUID   `json:"tenant_id"`
+	ClassID  uuid.UUID   `json:"class_id"`
+	Date     pgtype.Date `json:"date"`
+}
+
+func (q *Queries) CountSubmittedSessionsByClassDate(ctx context.Context, arg CountSubmittedSessionsByClassDateParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countSubmittedSessionsByClassDate, arg.TenantID, arg.ClassID, arg.Date)
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const createSession = `-- name: CreateSession :one
 insert into sessions (tenant_id, user_id, kind, refresh_token_hash, family_id, client, device_id, device_name, user_agent, ip, expires_at)
 values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
@@ -66,6 +104,112 @@ func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (S
 		&i.ExpiresAt,
 		&i.RevokedAt,
 		&i.RevokedReason,
+	)
+	return i, err
+}
+
+const getAttendanceSessionByID = `-- name: GetAttendanceSessionByID :one
+select id, tenant_id, academic_year_id, schedule_id, date, class_id, subject_id, teacher_user_id, substitute_user_id, start_period_id, end_period_id, notes, submitted_at, submitted_by, created_at, updated_at from attendance_sessions where tenant_id = $1 and id = $2
+`
+
+type GetAttendanceSessionByIDParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	ID       uuid.UUID `json:"id"`
+}
+
+func (q *Queries) GetAttendanceSessionByID(ctx context.Context, arg GetAttendanceSessionByIDParams) (AttendanceSession, error) {
+	row := q.db.QueryRow(ctx, getAttendanceSessionByID, arg.TenantID, arg.ID)
+	var i AttendanceSession
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.AcademicYearID,
+		&i.ScheduleID,
+		&i.Date,
+		&i.ClassID,
+		&i.SubjectID,
+		&i.TeacherUserID,
+		&i.SubstituteUserID,
+		&i.StartPeriodID,
+		&i.EndPeriodID,
+		&i.Notes,
+		&i.SubmittedAt,
+		&i.SubmittedBy,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getAttendanceSessionBySchedule = `-- name: GetAttendanceSessionBySchedule :one
+select id, tenant_id, academic_year_id, schedule_id, date, class_id, subject_id, teacher_user_id, substitute_user_id, start_period_id, end_period_id, notes, submitted_at, submitted_by, created_at, updated_at from attendance_sessions where tenant_id = $1 and schedule_id = $2 and date = $3
+`
+
+type GetAttendanceSessionByScheduleParams struct {
+	TenantID   uuid.UUID   `json:"tenant_id"`
+	ScheduleID uuid.UUID   `json:"schedule_id"`
+	Date       pgtype.Date `json:"date"`
+}
+
+func (q *Queries) GetAttendanceSessionBySchedule(ctx context.Context, arg GetAttendanceSessionByScheduleParams) (AttendanceSession, error) {
+	row := q.db.QueryRow(ctx, getAttendanceSessionBySchedule, arg.TenantID, arg.ScheduleID, arg.Date)
+	var i AttendanceSession
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.AcademicYearID,
+		&i.ScheduleID,
+		&i.Date,
+		&i.ClassID,
+		&i.SubjectID,
+		&i.TeacherUserID,
+		&i.SubstituteUserID,
+		&i.StartPeriodID,
+		&i.EndPeriodID,
+		&i.Notes,
+		&i.SubmittedAt,
+		&i.SubmittedBy,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getLatestAttendanceSessionBeforeDate = `-- name: GetLatestAttendanceSessionBeforeDate :one
+select id, tenant_id, academic_year_id, schedule_id, date, class_id, subject_id, teacher_user_id, substitute_user_id, start_period_id, end_period_id, notes, submitted_at, submitted_by, created_at, updated_at from attendance_sessions
+where tenant_id = $1 and schedule_id = $2 and date < $3
+order by date desc
+limit 1
+`
+
+type GetLatestAttendanceSessionBeforeDateParams struct {
+	TenantID   uuid.UUID   `json:"tenant_id"`
+	ScheduleID uuid.UUID   `json:"schedule_id"`
+	Date       pgtype.Date `json:"date"`
+}
+
+// The previous meeting of this schedule, used to look up its journal for
+// "previous_journal_topic".
+func (q *Queries) GetLatestAttendanceSessionBeforeDate(ctx context.Context, arg GetLatestAttendanceSessionBeforeDateParams) (AttendanceSession, error) {
+	row := q.db.QueryRow(ctx, getLatestAttendanceSessionBeforeDate, arg.TenantID, arg.ScheduleID, arg.Date)
+	var i AttendanceSession
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.AcademicYearID,
+		&i.ScheduleID,
+		&i.Date,
+		&i.ClassID,
+		&i.SubjectID,
+		&i.TeacherUserID,
+		&i.SubstituteUserID,
+		&i.StartPeriodID,
+		&i.EndPeriodID,
+		&i.Notes,
+		&i.SubmittedAt,
+		&i.SubmittedBy,
+		&i.CreatedAt,
+		&i.UpdatedAt,
 	)
 	return i, err
 }
@@ -209,6 +353,218 @@ func (q *Queries) ListActiveSessionsForUser(ctx context.Context, arg ListActiveS
 	return items, nil
 }
 
+const listAttendanceSessionsByClassDate = `-- name: ListAttendanceSessionsByClassDate :many
+select id, tenant_id, academic_year_id, schedule_id, date, class_id, subject_id, teacher_user_id, substitute_user_id, start_period_id, end_period_id, notes, submitted_at, submitted_by, created_at, updated_at from attendance_sessions where tenant_id = $1 and class_id = $2 and date = $3 order by created_at
+`
+
+type ListAttendanceSessionsByClassDateParams struct {
+	TenantID uuid.UUID   `json:"tenant_id"`
+	ClassID  uuid.UUID   `json:"class_id"`
+	Date     pgtype.Date `json:"date"`
+}
+
+func (q *Queries) ListAttendanceSessionsByClassDate(ctx context.Context, arg ListAttendanceSessionsByClassDateParams) ([]AttendanceSession, error) {
+	rows, err := q.db.Query(ctx, listAttendanceSessionsByClassDate, arg.TenantID, arg.ClassID, arg.Date)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []AttendanceSession{}
+	for rows.Next() {
+		var i AttendanceSession
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.AcademicYearID,
+			&i.ScheduleID,
+			&i.Date,
+			&i.ClassID,
+			&i.SubjectID,
+			&i.TeacherUserID,
+			&i.SubstituteUserID,
+			&i.StartPeriodID,
+			&i.EndPeriodID,
+			&i.Notes,
+			&i.SubmittedAt,
+			&i.SubmittedBy,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAttendanceSessionsByDateRange = `-- name: ListAttendanceSessionsByDateRange :many
+select id, tenant_id, academic_year_id, schedule_id, date, class_id, subject_id, teacher_user_id, substitute_user_id, start_period_id, end_period_id, notes, submitted_at, submitted_by, created_at, updated_at from attendance_sessions
+where tenant_id = $1 and academic_year_id = $2 and date between $3 and $4
+order by date, created_at
+`
+
+type ListAttendanceSessionsByDateRangeParams struct {
+	TenantID       uuid.UUID   `json:"tenant_id"`
+	AcademicYearID uuid.UUID   `json:"academic_year_id"`
+	Date           pgtype.Date `json:"date"`
+	Date_2         pgtype.Date `json:"date_2"`
+}
+
+func (q *Queries) ListAttendanceSessionsByDateRange(ctx context.Context, arg ListAttendanceSessionsByDateRangeParams) ([]AttendanceSession, error) {
+	rows, err := q.db.Query(ctx, listAttendanceSessionsByDateRange,
+		arg.TenantID,
+		arg.AcademicYearID,
+		arg.Date,
+		arg.Date_2,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []AttendanceSession{}
+	for rows.Next() {
+		var i AttendanceSession
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.AcademicYearID,
+			&i.ScheduleID,
+			&i.Date,
+			&i.ClassID,
+			&i.SubjectID,
+			&i.TeacherUserID,
+			&i.SubstituteUserID,
+			&i.StartPeriodID,
+			&i.EndPeriodID,
+			&i.Notes,
+			&i.SubmittedAt,
+			&i.SubmittedBy,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAttendanceSessionsByTeacherDate = `-- name: ListAttendanceSessionsByTeacherDate :many
+select id, tenant_id, academic_year_id, schedule_id, date, class_id, subject_id, teacher_user_id, substitute_user_id, start_period_id, end_period_id, notes, submitted_at, submitted_by, created_at, updated_at from attendance_sessions
+where tenant_id = $1 and date = $2 and (teacher_user_id = $3 or substitute_user_id = $3)
+order by created_at
+`
+
+type ListAttendanceSessionsByTeacherDateParams struct {
+	TenantID      uuid.UUID   `json:"tenant_id"`
+	Date          pgtype.Date `json:"date"`
+	TeacherUserID uuid.UUID   `json:"teacher_user_id"`
+}
+
+func (q *Queries) ListAttendanceSessionsByTeacherDate(ctx context.Context, arg ListAttendanceSessionsByTeacherDateParams) ([]AttendanceSession, error) {
+	rows, err := q.db.Query(ctx, listAttendanceSessionsByTeacherDate, arg.TenantID, arg.Date, arg.TeacherUserID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []AttendanceSession{}
+	for rows.Next() {
+		var i AttendanceSession
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.AcademicYearID,
+			&i.ScheduleID,
+			&i.Date,
+			&i.ClassID,
+			&i.SubjectID,
+			&i.TeacherUserID,
+			&i.SubstituteUserID,
+			&i.StartPeriodID,
+			&i.EndPeriodID,
+			&i.Notes,
+			&i.SubmittedAt,
+			&i.SubmittedBy,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const openAttendanceSession = `-- name: OpenAttendanceSession :one
+insert into attendance_sessions (
+  tenant_id, academic_year_id, schedule_id, date, class_id, subject_id, teacher_user_id,
+  substitute_user_id, start_period_id, end_period_id
+) values (
+  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10
+)
+on conflict (schedule_id, date) do nothing
+returning id, tenant_id, academic_year_id, schedule_id, date, class_id, subject_id, teacher_user_id, substitute_user_id, start_period_id, end_period_id, notes, submitted_at, submitted_by, created_at, updated_at
+`
+
+type OpenAttendanceSessionParams struct {
+	TenantID         uuid.UUID   `json:"tenant_id"`
+	AcademicYearID   uuid.UUID   `json:"academic_year_id"`
+	ScheduleID       uuid.UUID   `json:"schedule_id"`
+	Date             pgtype.Date `json:"date"`
+	ClassID          uuid.UUID   `json:"class_id"`
+	SubjectID        uuid.UUID   `json:"subject_id"`
+	TeacherUserID    uuid.UUID   `json:"teacher_user_id"`
+	SubstituteUserID pgtype.UUID `json:"substitute_user_id"`
+	StartPeriodID    uuid.UUID   `json:"start_period_id"`
+	EndPeriodID      uuid.UUID   `json:"end_period_id"`
+}
+
+// Idempotent open: a second call for the same (schedule_id, date) returns
+// no row from the INSERT and the caller falls back to GetAttendanceSessionBySchedule.
+func (q *Queries) OpenAttendanceSession(ctx context.Context, arg OpenAttendanceSessionParams) (AttendanceSession, error) {
+	row := q.db.QueryRow(ctx, openAttendanceSession,
+		arg.TenantID,
+		arg.AcademicYearID,
+		arg.ScheduleID,
+		arg.Date,
+		arg.ClassID,
+		arg.SubjectID,
+		arg.TeacherUserID,
+		arg.SubstituteUserID,
+		arg.StartPeriodID,
+		arg.EndPeriodID,
+	)
+	var i AttendanceSession
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.AcademicYearID,
+		&i.ScheduleID,
+		&i.Date,
+		&i.ClassID,
+		&i.SubjectID,
+		&i.TeacherUserID,
+		&i.SubstituteUserID,
+		&i.StartPeriodID,
+		&i.EndPeriodID,
+		&i.Notes,
+		&i.SubmittedAt,
+		&i.SubmittedBy,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const revokeOtherUserSessions = `-- name: RevokeOtherUserSessions :exec
 update sessions
 set revoked_at = now(), revoked_reason = $4
@@ -260,6 +616,49 @@ type RevokeSessionFamilyParams struct {
 func (q *Queries) RevokeSessionFamily(ctx context.Context, arg RevokeSessionFamilyParams) error {
 	_, err := q.db.Exec(ctx, revokeSessionFamily, arg.TenantID, arg.FamilyID, arg.RevokedReason)
 	return err
+}
+
+const submitAttendanceSession = `-- name: SubmitAttendanceSession :one
+update attendance_sessions
+set submitted_at = now(), submitted_by = $3, notes = $4
+where tenant_id = $1 and id = $2
+returning id, tenant_id, academic_year_id, schedule_id, date, class_id, subject_id, teacher_user_id, substitute_user_id, start_period_id, end_period_id, notes, submitted_at, submitted_by, created_at, updated_at
+`
+
+type SubmitAttendanceSessionParams struct {
+	TenantID    uuid.UUID   `json:"tenant_id"`
+	ID          uuid.UUID   `json:"id"`
+	SubmittedBy pgtype.UUID `json:"submitted_by"`
+	Notes       pgtype.Text `json:"notes"`
+}
+
+func (q *Queries) SubmitAttendanceSession(ctx context.Context, arg SubmitAttendanceSessionParams) (AttendanceSession, error) {
+	row := q.db.QueryRow(ctx, submitAttendanceSession,
+		arg.TenantID,
+		arg.ID,
+		arg.SubmittedBy,
+		arg.Notes,
+	)
+	var i AttendanceSession
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.AcademicYearID,
+		&i.ScheduleID,
+		&i.Date,
+		&i.ClassID,
+		&i.SubjectID,
+		&i.TeacherUserID,
+		&i.SubstituteUserID,
+		&i.StartPeriodID,
+		&i.EndPeriodID,
+		&i.Notes,
+		&i.SubmittedAt,
+		&i.SubmittedBy,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }
 
 const touchSessionLastSeen = `-- name: TouchSessionLastSeen :exec

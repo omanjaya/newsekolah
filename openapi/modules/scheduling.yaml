@@ -1,0 +1,520 @@
+paths:
+  /v1/schedules:
+    get:
+      tags: [scheduling]
+      operationId: listSchedules
+      x-permission: view_schedules
+      summary: Grid of schedules for a class, a teacher, or one day, merged into contiguous blocks
+      parameters:
+        - name: academic_year_id
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+        - name: class_id
+          in: query
+          schema: { type: string, format: uuid }
+        - name: teacher_user_id
+          in: query
+          schema: { type: string, format: uuid }
+        - name: day_of_week
+          in: query
+          description: 1 (Monday) through 7 (Sunday)
+          schema: { type: integer, minimum: 1, maximum: 7 }
+      responses:
+        "200":
+          description: Schedule blocks
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/ScheduleBlock" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      tags: [scheduling]
+      operationId: createSchedule
+      x-permission: view_schedules
+      summary: Create a schedule (admin for any teacher, or a teacher for themselves within the edit deadline)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ScheduleWriteRequest" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Schedule" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/ScheduleConflict" }
+  /v1/schedules/bulk-import:
+    post:
+      tags: [scheduling]
+      operationId: bulkImportSchedules
+      x-permission: manage_schedules
+      summary: Create many schedules atomically (typically after clearing the academic year)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [schedules]
+              properties:
+                schedules:
+                  type: array
+                  items: { $ref: "#/components/schemas/ScheduleWriteRequest" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/Schedule" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "409": { $ref: "#/components/responses/ScheduleConflict" }
+  /v1/schedules/clear:
+    post:
+      tags: [scheduling]
+      operationId: clearSchedules
+      x-permission: manage_schedules
+      summary: Delete every schedule for one academic year
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [academic_year_id]
+              properties:
+                academic_year_id: { type: string, format: uuid }
+      responses:
+        "204": { description: Cleared }
+        "400": { $ref: "#/components/responses/BadRequest" }
+  /v1/schedules/{scheduleId}:
+    parameters:
+      - name: scheduleId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      tags: [scheduling]
+      operationId: getSchedule
+      x-permission: view_schedules
+      summary: One schedule
+      responses:
+        "200":
+          description: Schedule
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Schedule" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: [scheduling]
+      operationId: updateSchedule
+      x-permission: view_schedules
+      summary: Update a schedule (admin, or the owning teacher within the edit deadline)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ScheduleWriteRequest" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Schedule" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/ScheduleConflict" }
+    delete:
+      tags: [scheduling]
+      operationId: deleteSchedule
+      x-permission: view_schedules
+      summary: Delete a schedule (admin, or the owning teacher within the edit deadline)
+      responses:
+        "204": { description: Deleted }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /v1/substitutions:
+    get:
+      tags: [scheduling]
+      operationId: listSubstitutions
+      x-permission: view_schedules
+      summary: Substitution requests directed at me (incoming) or made by me (outgoing)
+      parameters:
+        - name: direction
+          in: query
+          required: true
+          schema: { type: string, enum: [incoming, outgoing] }
+      responses:
+        "200":
+          description: Substitution requests
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/Substitution" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+    post:
+      tags: [scheduling]
+      operationId: createSubstitution
+      x-permission: view_schedules
+      summary: Request a substitute for one dated occurrence of my own schedule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SubstitutionCreateRequest" }
+      responses:
+        "201":
+          description: Requested
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Substitution" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /v1/substitutions/{substitutionId}/respond:
+    parameters:
+      - name: substitutionId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      tags: [scheduling]
+      operationId: respondSubstitution
+      x-permission: view_schedules
+      summary: Accept or reject a substitution request addressed to me
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [accept]
+              properties:
+                accept: { type: boolean }
+                note: { type: string, maxLength: 500 }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Substitution" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /v1/substitutions/{substitutionId}/cancel:
+    parameters:
+      - name: substitutionId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      tags: [scheduling]
+      operationId: cancelSubstitution
+      x-permission: view_schedules
+      summary: Cancel a substitution request I made
+      responses:
+        "200":
+          description: Cancelled
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Substitution" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /v1/journals:
+    get:
+      tags: [journals]
+      operationId: listJournals
+      x-permission: authenticated
+      summary:
+        My own journals for an academic year, or (class_id given, requires view_journals_all) every journal for a
+        class
+      parameters:
+        - name: academic_year_id
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+        - name: class_id
+          in: query
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Journals
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/Journal" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: [journals]
+      operationId: upsertJournal
+      x-permission: authenticated
+      summary: Create or update the journal for a class/subject/date (unique per day)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/JournalWriteRequest" }
+      responses:
+        "200":
+          description: Created or updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Journal" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/journals/export:
+    get:
+      tags: [journals]
+      operationId: exportJournals
+      x-permission: authenticated
+      summary: Export journals as XLSX or DOCX
+      parameters:
+        - name: academic_year_id
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+        - name: class_id
+          in: query
+          schema: { type: string, format: uuid }
+        - name: format
+          in: query
+          required: true
+          schema: { type: string, enum: [xlsx, docx] }
+      responses:
+        "200":
+          description: File
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: { type: string, format: binary }
+            application/vnd.openxmlformats-officedocument.wordprocessingml.document:
+              schema: { type: string, format: binary }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/journals/{journalId}:
+    parameters:
+      - name: journalId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      tags: [journals]
+      operationId: getJournal
+      x-permission: authenticated
+      summary: One journal
+      responses:
+        "200":
+          description: Journal
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Journal" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: [journals]
+      operationId: deleteJournal
+      x-permission: authenticated
+      summary: Delete a journal (its own teacher/writer only)
+      responses:
+        "204": { description: Deleted }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+components:
+  responses:
+    ScheduleConflict:
+      description: The class or the teacher already has an overlapping schedule
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Conflict:
+      description: The request conflicts with existing state
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+  schemas:
+    ScheduleSource:
+      type: string
+      enum: [admin, teacher, import]
+    MutationPolicy:
+      type: object
+      required: [can_edit, can_delete]
+      properties:
+        can_edit: { type: boolean }
+        can_delete: { type: boolean }
+        reason: { type: string }
+    Schedule:
+      type: object
+      required:
+        - id
+        - academic_year_id
+        - class_id
+        - subject_id
+        - teacher_user_id
+        - day_of_week
+        - start_period_id
+        - end_period_id
+        - source
+        - created_at
+        - updated_at
+      properties:
+        id: { type: string, format: uuid }
+        academic_year_id: { type: string, format: uuid }
+        term_id: { type: string, format: uuid }
+        class_id: { type: string, format: uuid }
+        subject_id: { type: string, format: uuid }
+        teacher_user_id: { type: string, format: uuid }
+        room_id: { type: string, format: uuid }
+        day_of_week: { type: integer, minimum: 1, maximum: 7 }
+        start_period_id: { type: string, format: uuid }
+        end_period_id: { type: string, format: uuid }
+        source: { $ref: "#/components/schemas/ScheduleSource" }
+        notes: { type: string }
+        mutation_policy: { $ref: "#/components/schemas/MutationPolicy" }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    ScheduleBlock:
+      type: object
+      required:
+        [
+          schedule_ids,
+          class_id,
+          subject_id,
+          teacher_user_id,
+          day_of_week,
+          start_seq,
+          end_seq,
+          source,
+        ]
+      properties:
+        schedule_ids:
+          type: array
+          items: { type: string, format: uuid }
+        class_id: { type: string, format: uuid }
+        subject_id: { type: string, format: uuid }
+        teacher_user_id: { type: string, format: uuid }
+        room_id: { type: string, format: uuid }
+        day_of_week: { type: integer }
+        start_seq: { type: integer }
+        end_seq: { type: integer }
+        source: { $ref: "#/components/schemas/ScheduleSource" }
+    ScheduleWriteRequest:
+      type: object
+      required:
+        [
+          academic_year_id,
+          class_id,
+          subject_id,
+          teacher_user_id,
+          day_of_week,
+          start_period_id,
+          end_period_id,
+        ]
+      properties:
+        academic_year_id: { type: string, format: uuid }
+        term_id: { type: string, format: uuid }
+        class_id: { type: string, format: uuid }
+        subject_id: { type: string, format: uuid }
+        teacher_user_id: { type: string, format: uuid }
+        room_id: { type: string, format: uuid }
+        day_of_week: { type: integer, minimum: 1, maximum: 7 }
+        start_period_id: { type: string, format: uuid }
+        end_period_id: { type: string, format: uuid }
+        source: { $ref: "#/components/schemas/ScheduleSource" }
+        notes: { type: string, maxLength: 500 }
+    SubstitutionStatus:
+      type: string
+      enum: [pending, accepted, rejected, cancelled]
+    Substitution:
+      type: object
+      required:
+        - id
+        - academic_year_id
+        - schedule_id
+        - date
+        - requester_user_id
+        - substitute_user_id
+        - status
+        - created_at
+      properties:
+        id: { type: string, format: uuid }
+        academic_year_id: { type: string, format: uuid }
+        schedule_id: { type: string, format: uuid }
+        date: { type: string, format: date }
+        requester_user_id: { type: string, format: uuid }
+        substitute_user_id: { type: string, format: uuid }
+        status: { $ref: "#/components/schemas/SubstitutionStatus" }
+        requester_note: { type: string }
+        response_note: { type: string }
+        responded_at: { type: string, format: date-time }
+        created_at: { type: string, format: date-time }
+    SubstitutionCreateRequest:
+      type: object
+      required: [schedule_id, date, substitute_user_id]
+      properties:
+        schedule_id: { type: string, format: uuid }
+        date: { type: string, format: date }
+        substitute_user_id: { type: string, format: uuid }
+        note: { type: string, maxLength: 500 }
+    Journal:
+      type: object
+      required:
+        - id
+        - academic_year_id
+        - teacher_user_id
+        - written_by_user_id
+        - class_id
+        - subject_id
+        - lesson_date
+        - topic
+        - activities
+        - created_at
+        - updated_at
+      properties:
+        id: { type: string, format: uuid }
+        academic_year_id: { type: string, format: uuid }
+        teacher_user_id: { type: string, format: uuid }
+        written_by_user_id: { type: string, format: uuid }
+        class_id: { type: string, format: uuid }
+        subject_id: { type: string, format: uuid }
+        lesson_date: { type: string, format: date }
+        topic: { type: string }
+        activities: { type: string }
+        reflection: { type: string }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    JournalWriteRequest:
+      type: object
+      required: [academic_year_id, class_id, subject_id, lesson_date, topic, activities]
+      properties:
+        academic_year_id: { type: string, format: uuid }
+        class_id: { type: string, format: uuid }
+        subject_id: { type: string, format: uuid }
+        lesson_date: { type: string, format: date }
+        topic: { type: string, maxLength: 300 }
+        activities: { type: string }
+        reflection: { type: string }

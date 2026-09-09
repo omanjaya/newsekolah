@@ -4,6 +4,8 @@ sql:
     queries:
       - "internal/modules/identity/queries"
       - "internal/modules/school/queries"
+      - "internal/modules/scheduling/queries"
+      - "internal/modules/attendance/queries"
     schema: "migrations"
     gen:
       go:

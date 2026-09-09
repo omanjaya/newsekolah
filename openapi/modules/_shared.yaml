@@ -75,3 +75,14 @@ components:
                     type: string
             request_id:
               type: string
+  parameters:
+    IdempotencyKeyHeader:
+      name: Idempotency-Key
+      in: header
+      required: false
+      description:
+        Client-generated key (mobile clients on unstable networks) that makes a POST/PUT safe to retry;
+        docs/08-security.md section 7. The same key replays the first response instead of repeating the write.
+      schema:
+        type: string
+        maxLength: 100
