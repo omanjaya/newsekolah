@@ -94,9 +94,11 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	// permits and attendance depend on each other only through adapters:
 	// permits is built first with a late-bound attendance sync, then
 	// attendance receives permits' blocker/overrider.
+	sharedStorage := storageClientFor(cfg, logger)
+
 	sync := &lateBoundSync{}
 	permitsModule := permits.Register(permits.Dependencies{
-		Pool: pool, Years: schoolModule.Service, Bus: eventBus, Storage: storageClientFor(cfg, logger),
+		Pool: pool, Years: schoolModule.Service, Bus: eventBus, Storage: sharedStorage,
 		Schedule: permitsScheduleLookup{schedules: schedulingModule.ScheduleReader, periods: academicModule.Service, years: schoolModule.Service},
 		Sync:     sync,
 		Clock:    clock.Real{}, Config: permitsservice.DefaultConfig([]byte(cfg.DocumentSigningKey), cfg.S3Bucket), Logger: logger,
@@ -115,6 +117,20 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	disciplineModule := discipline.Register(discipline.Dependencies{
 		Pool: pool, Years: schoolModule.Service, Docs: wiring.DisciplineDocuments{Permits: permitsModule.Service},
 		Sealer: sealer, Bus: eventBus, Clock: clock.Real{},
+	})
+
+	// Built before the jobs block below so its periodic due-schedule scan
+	// can be registered alongside every other module's.
+	reportsModule := reports.Register(reports.Dependencies{
+		Pool:       pool,
+		Attendance: wiring.AttendanceReports{Svc: attendanceModule.Service},
+		Discipline: wiring.DisciplineReports{Svc: disciplineModule.Service, Directory: wiring.IdentityNames{Svc: identityModule.Service}},
+		Grading:    wiring.GradingReports{Svc: gradingModule.Service},
+		Permits:    wiring.PermitsReports{Svc: permitsModule.Service},
+		Perms:      identityModule.Service,
+		Emails:     identityModule.Service,
+		Storage:    sharedStorage,
+		Clock:      clock.Real{},
 	})
 
 	// Background jobs: every module registers its workers on one River
@@ -144,6 +160,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		}
 		periodic = append(periodic, notificationPeriodic...)
 		periodic = append(periodic, announcementsModule.RegisterJobs(workers)...)
+		periodic = append(periodic, reportsModule.RegisterJobs(workers, wiring.ReportsEmailSender{Email: senders.Email}, logger)...)
 	}
 	riverClient, err := jobs.NewClient(pool, workers, logger, periodic...)
 	if err != nil {
@@ -158,14 +175,6 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		Grading:    wiring.FamilyGrading{Svc: gradingModule.Service},
 		Discipline: wiring.FamilyDiscipline{Svc: disciplineModule.Service},
 	})
-	reportsModule := reports.Register(reports.Dependencies{
-		Attendance: wiring.AttendanceReports{Svc: attendanceModule.Service},
-		Discipline: wiring.DisciplineReports{Svc: disciplineModule.Service, Directory: wiring.IdentityNames{Svc: identityModule.Service}},
-		Grading:    wiring.GradingReports{Svc: gradingModule.Service},
-		Permits:    wiring.PermitsReports{Svc: permitsModule.Service},
-		Perms:      identityModule.Service,
-	})
-
 	doc, err := api.GetSpec()
 	if err != nil {
 		return nil, nil, err

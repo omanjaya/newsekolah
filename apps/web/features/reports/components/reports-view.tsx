@@ -1,14 +1,25 @@
 "use client";
 
-import { EmptyState, PageHeader, Skeleton, cn } from "@newsekolah/ui";
+import {
+  EmptyState,
+  PageHeader,
+  Skeleton,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+  cn,
+} from "@newsekolah/ui";
 import { ChevronDown, FileSpreadsheet } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
+import { useCan } from "../../../lib/session/session-provider";
 import { useReportsQuery } from "../api";
 
 import { ReportArgsForm } from "./report-args-form";
+import { SchedulesView } from "./schedules-view";
 
 /**
  * Report centre: one catalogue of exports, filtered server-side to what the
@@ -18,72 +29,109 @@ import { ReportArgsForm } from "./report-args-form";
  */
 export function ReportsView(): ReactElement {
   const t = useTranslations("app.reports");
-  const [selectedKind, setSelectedKind] = useState<string | null>(null);
-  const reports = useReportsQuery();
+  const canManageSchedules = useCan("manage_report_schedules");
 
-  const items = reports.data?.data ?? [];
+  if (!canManageSchedules) {
+    return (
+      <div className="flex flex-col gap-6 p-4 md:p-6">
+        <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
+        <p className="text-[13px] text-fg-muted">{t("description")}</p>
+        <ExportsTab />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
       <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
       <p className="text-[13px] text-fg-muted">{t("description")}</p>
-
-      {reports.isLoading ? (
-        <Skeleton className="h-64 w-full" aria-busy="true" />
-      ) : items.length === 0 ? (
-        <EmptyState
-          icon={<FileSpreadsheet aria-hidden="true" />}
-          title={t("emptyTitle")}
-          description={t("emptyBody")}
-        />
-      ) : (
-        <ul className="flex flex-col gap-2">
-          {items.map((report) => {
-            const isSelected = selectedKind === report.kind;
-            // Report kinds are dotted slugs ("attendance.daily"), but a
-            // next-intl key cannot contain a dot: it is the namespace
-            // separator. The catalog uses underscores instead.
-            const kindKey = report.kind.replaceAll(".", "_");
-            const label = t.has(`kinds.${kindKey}.label`)
-              ? t(`kinds.${kindKey}.label`)
-              : report.kind;
-            const description = t.has(`kinds.${kindKey}.description`)
-              ? t(`kinds.${kindKey}.description`)
-              : undefined;
-            return (
-              <li key={report.kind} className="rounded-sm border border-border bg-surface">
-                <button
-                  type="button"
-                  className="flex w-full items-center justify-between gap-4 p-4 text-left"
-                  aria-expanded={isSelected}
-                  onClick={() => {
-                    setSelectedKind(isSelected ? null : report.kind);
-                  }}
-                >
-                  <div className="flex flex-col gap-1">
-                    <span className="text-[14px] font-medium text-fg">{label}</span>
-                    {description && (
-                      <span className="text-[13px] text-fg-muted">{description}</span>
-                    )}
-                  </div>
-                  <ChevronDown
-                    className={cn(
-                      "size-4 shrink-0 text-fg-muted transition-transform duration-[var(--duration-fast)]",
-                      isSelected && "rotate-180",
-                    )}
-                    aria-hidden="true"
-                  />
-                </button>
-                {isSelected && (
-                  <div className="border-t border-border p-4">
-                    <ReportArgsForm key={report.kind} report={report} />
-                  </div>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      )}
+      <ReportsTabs />
     </div>
+  );
+}
+
+function ReportsTabs(): ReactElement {
+  const t = useTranslations("app.reports");
+  const [tab, setTab] = useState("exports");
+
+  return (
+    <Tabs value={tab} onValueChange={setTab}>
+      <TabsList>
+        <TabsTrigger value="exports">{t("tabs.exports")}</TabsTrigger>
+        <TabsTrigger value="schedules">{t("tabs.schedules")}</TabsTrigger>
+      </TabsList>
+      <TabsContent value="exports" className="pt-4">
+        <ExportsTab />
+      </TabsContent>
+      <TabsContent value="schedules" className="pt-4">
+        <SchedulesView />
+      </TabsContent>
+    </Tabs>
+  );
+}
+
+function ExportsTab(): ReactElement {
+  const t = useTranslations("app.reports");
+  const [selectedKind, setSelectedKind] = useState<string | null>(null);
+  const reports = useReportsQuery();
+
+  const items = reports.data?.data ?? [];
+
+  if (reports.isLoading) {
+    return <Skeleton className="h-64 w-full" aria-busy="true" />;
+  }
+  if (items.length === 0) {
+    return (
+      <EmptyState
+        icon={<FileSpreadsheet aria-hidden="true" />}
+        title={t("emptyTitle")}
+        description={t("emptyBody")}
+      />
+    );
+  }
+
+  return (
+    <ul className="flex flex-col gap-2">
+      {items.map((report) => {
+        const isSelected = selectedKind === report.kind;
+        // Report kinds are dotted slugs ("attendance.daily"), but a
+        // next-intl key cannot contain a dot: it is the namespace
+        // separator. The catalog uses underscores instead.
+        const kindKey = report.kind.replaceAll(".", "_");
+        const label = t.has(`kinds.${kindKey}.label`) ? t(`kinds.${kindKey}.label`) : report.kind;
+        const description = t.has(`kinds.${kindKey}.description`)
+          ? t(`kinds.${kindKey}.description`)
+          : undefined;
+        return (
+          <li key={report.kind} className="rounded-sm border border-border bg-surface">
+            <button
+              type="button"
+              className="flex w-full items-center justify-between gap-4 p-4 text-left"
+              aria-expanded={isSelected}
+              onClick={() => {
+                setSelectedKind(isSelected ? null : report.kind);
+              }}
+            >
+              <div className="flex flex-col gap-1">
+                <span className="text-[14px] font-medium text-fg">{label}</span>
+                {description && <span className="text-[13px] text-fg-muted">{description}</span>}
+              </div>
+              <ChevronDown
+                className={cn(
+                  "size-4 shrink-0 text-fg-muted transition-transform duration-[var(--duration-fast)]",
+                  isSelected && "rotate-180",
+                )}
+                aria-hidden="true"
+              />
+            </button>
+            {isSelected && (
+              <div className="border-t border-border p-4">
+                <ReportArgsForm key={report.kind} report={report} />
+              </div>
+            )}
+          </li>
+        );
+      })}
+    </ul>
   );
 }

@@ -47,6 +47,14 @@ func (s *Service) resolveNewUsername(ctx context.Context, tenantID uuid.UUID, ex
 	return username, nil
 }
 
+// EmailExists reports whether email belongs to a user of tenantID. Exposed
+// for other modules that need to validate a caller-supplied address is a
+// real account (e.g. reports' schedule recipients) without importing
+// identity's repository directly.
+func (s *Service) EmailExists(ctx context.Context, tenantID uuid.UUID, email string) (bool, error) {
+	return s.repo.EmailExists(ctx, tenantID, email)
+}
+
 func (s *Service) checkEmailFree(ctx context.Context, tenantID uuid.UUID, email string) error {
 	if email == "" {
 		return nil

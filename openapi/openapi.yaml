@@ -6516,6 +6516,188 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
+  /v1/reports/schedules:
+    get:
+      tags:
+        - reports
+      operationId: listReportSchedules
+      x-permission: manage_report_schedules
+      summary: Recurring exports configured for this tenant
+      responses:
+        "200":
+          description: Schedules
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ReportSchedule"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags:
+        - reports
+      operationId: createReportSchedule
+      x-permission: manage_report_schedules
+      summary: Schedule a recurring export
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReportScheduleWrite"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportSchedule"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/reports/schedules/{scheduleId}:
+    put:
+      tags:
+        - reports
+      operationId: updateReportSchedule
+      x-permission: manage_report_schedules
+      summary: Edit a recurring export
+      parameters:
+        - name: scheduleId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReportScheduleWrite"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportSchedule"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags:
+        - reports
+      operationId: deleteReportSchedule
+      x-permission: manage_report_schedules
+      summary: Remove a recurring export
+      parameters:
+        - name: scheduleId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/reports/schedules/{scheduleId}/enabled:
+    put:
+      tags:
+        - reports
+      operationId: setReportScheduleEnabled
+      x-permission: manage_report_schedules
+      summary: Turn a recurring export on or off without editing it
+      parameters:
+        - name: scheduleId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - enabled
+              properties:
+                enabled:
+                  type: boolean
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportSchedule"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/reports/schedules/{scheduleId}/runs:
+    get:
+      tags:
+        - reports
+      operationId: listReportScheduleRuns
+      x-permission: manage_report_schedules
+      summary: Run history for one recurring export, most recent first
+      parameters:
+        - name: scheduleId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+      responses:
+        "200":
+          description: Runs
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ReportScheduleRun"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /v1/schedules:
     get:
       tags:
@@ -10687,6 +10869,127 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ReportArgument"
+    ReportScheduleCadence:
+      type: string
+      enum:
+        - daily
+        - weekly
+        - monthly
+    ReportScheduleParams:
+      type: object
+      properties:
+        class_id:
+          type: string
+          format: uuid
+        subject_id:
+          type: string
+          format: uuid
+        term_id:
+          type: string
+          format: uuid
+    ReportScheduleWrite:
+      type: object
+      required:
+        - report_kind
+        - cadence
+        - hour
+        - recipients
+      properties:
+        report_kind:
+          type: string
+        params:
+          $ref: "#/components/schemas/ReportScheduleParams"
+        cadence:
+          $ref: "#/components/schemas/ReportScheduleCadence"
+        weekday:
+          type: integer
+          minimum: 0
+          maximum: 6
+          description: Required when cadence is weekly (0 = Sunday .. 6 = Saturday)
+        day_of_month:
+          type: integer
+          minimum: 1
+          maximum: 31
+          description: Required when cadence is monthly; clamped to the last day of shorter months
+        hour:
+          type: integer
+          minimum: 0
+          maximum: 23
+          description: Hour to run in the tenant's own timezone
+        recipients:
+          type: array
+          minItems: 1
+          maxItems: 10
+          items:
+            type: string
+            format: email
+    ReportSchedule:
+      allOf:
+        - $ref: "#/components/schemas/ReportScheduleWrite"
+        - type: object
+          required:
+            - id
+            - enabled
+            - next_run_at
+            - created_by
+            - created_at
+            - updated_at
+          properties:
+            id:
+              type: string
+              format: uuid
+            enabled:
+              type: boolean
+            next_run_at:
+              type: string
+              format: date-time
+            created_by:
+              type: string
+              format: uuid
+            created_at:
+              type: string
+              format: date-time
+            updated_at:
+              type: string
+              format: date-time
+    ReportScheduleRunStatus:
+      type: string
+      enum:
+        - pending
+        - success
+        - failed
+    ReportScheduleRun:
+      type: object
+      required:
+        - id
+        - schedule_id
+        - due_at
+        - status
+        - error_message
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        schedule_id:
+          type: string
+          format: uuid
+        due_at:
+          type: string
+          format: date-time
+        status:
+          $ref: "#/components/schemas/ReportScheduleRunStatus"
+        error_message:
+          type: string
+        object_key:
+          type: string
+        ran_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
     ScheduleSource:
       type: string
       enum:

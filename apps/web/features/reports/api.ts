@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError, type components } from "@newsekolah/api-client";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { getAccessToken } from "../../lib/api/access-token";
 import { useApiClient } from "../../lib/api/client";
@@ -12,6 +12,11 @@ export type ReportDefinition = components["schemas"]["ReportDefinition"];
 export type ReportArgument = components["schemas"]["ReportArgument"];
 export type ReportArgumentKind = components["schemas"]["ReportArgumentKind"];
 export type Term = components["schemas"]["Term"];
+
+export type ReportSchedule = components["schemas"]["ReportSchedule"];
+export type ReportScheduleWrite = components["schemas"]["ReportScheduleWrite"];
+export type ReportScheduleCadence = components["schemas"]["ReportScheduleCadence"];
+export type ReportScheduleRun = components["schemas"]["ReportScheduleRun"];
 
 /**
  * Query keys stay local to this feature (never `packages/api-client`'s
@@ -117,4 +122,82 @@ export async function downloadReportExport(
   } finally {
     URL.revokeObjectURL(url);
   }
+}
+
+// Scheduled exports.
+
+const SCHEDULES_KEY = ["reports", "schedules"] as const;
+const SCHEDULE_RUNS_KEY = (scheduleId: string) =>
+  ["reports", "schedules", scheduleId, "runs"] as const;
+
+function useInvalidateSchedules() {
+  const queryClient = useQueryClient();
+  return () => queryClient.invalidateQueries({ queryKey: SCHEDULES_KEY });
+}
+
+export function useReportSchedulesQuery() {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: SCHEDULES_KEY,
+    queryFn: () => client.GET("/v1/reports/schedules"),
+  });
+}
+
+export function useCreateReportScheduleMutation() {
+  const client = useApiClient();
+  const invalidate = useInvalidateSchedules();
+  return useMutation({
+    mutationFn: (body: ReportScheduleWrite) => client.POST("/v1/reports/schedules", { body }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useUpdateReportScheduleMutation() {
+  const client = useApiClient();
+  const invalidate = useInvalidateSchedules();
+  return useMutation({
+    mutationFn: ({ id, ...body }: ReportScheduleWrite & { id: string }) =>
+      client.PUT("/v1/reports/schedules/{scheduleId}", {
+        params: { path: { scheduleId: id } },
+        body,
+      }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useDeleteReportScheduleMutation() {
+  const client = useApiClient();
+  const invalidate = useInvalidateSchedules();
+  return useMutation({
+    mutationFn: (id: string) =>
+      client.DELETE("/v1/reports/schedules/{scheduleId}", {
+        params: { path: { scheduleId: id } },
+      }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useSetReportScheduleEnabledMutation() {
+  const client = useApiClient();
+  const invalidate = useInvalidateSchedules();
+  return useMutation({
+    mutationFn: ({ id, enabled }: { id: string; enabled: boolean }) =>
+      client.PUT("/v1/reports/schedules/{scheduleId}/enabled", {
+        params: { path: { scheduleId: id } },
+        body: { enabled },
+      }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useReportScheduleRunsQuery(scheduleId: string | null) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: SCHEDULE_RUNS_KEY(scheduleId ?? ""),
+    queryFn: () =>
+      client.GET("/v1/reports/schedules/{scheduleId}/runs", {
+        params: { path: { scheduleId: scheduleId ?? "" } },
+      }),
+    enabled: scheduleId !== null,
+  });
 }

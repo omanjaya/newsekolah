@@ -3,8 +3,10 @@
 package wiring
 
 import (
+	"context"
 	"log/slog"
 
+	reportsjobs "github.com/omanjaya/newsekolah/apps/api/internal/modules/reports/transport/jobs"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/config"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/notify"
 )
@@ -30,4 +32,15 @@ func SendersFromConfig(cfg config.Config, logger *slog.Logger) notify.Senders {
 		return fallback
 	}
 	return senders
+}
+
+// ReportsEmailSender adapts platform/notify.EmailSender to the report
+// schedule job's own narrow EmailSender interface, so that package does
+// not need to import platform/notify just to name its message type.
+type ReportsEmailSender struct{ Email notify.EmailSender }
+
+func (r ReportsEmailSender) Send(ctx context.Context, msg reportsjobs.EmailMessage) error {
+	return r.Email.Send(ctx, notify.EmailMessage{
+		To: msg.To, Subject: msg.Subject, TextBody: msg.TextBody, HTMLBody: msg.HTMLBody,
+	})
 }

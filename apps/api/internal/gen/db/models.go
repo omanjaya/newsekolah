@@ -594,6 +594,34 @@ type ReportGradeRange struct {
 	IncreaseAmount pgtype.Numeric `json:"increase_amount"`
 }
 
+type ReportSchedule struct {
+	ID         uuid.UUID          `json:"id"`
+	TenantID   uuid.UUID          `json:"tenant_id"`
+	ReportKind string             `json:"report_kind"`
+	Params     []byte             `json:"params"`
+	Cadence    string             `json:"cadence"`
+	Weekday    pgtype.Int2        `json:"weekday"`
+	DayOfMonth pgtype.Int2        `json:"day_of_month"`
+	Hour       int16              `json:"hour"`
+	Recipients []string           `json:"recipients"`
+	Enabled    bool               `json:"enabled"`
+	CreatedBy  uuid.UUID          `json:"created_by"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
+}
+
+type ReportScheduleRun struct {
+	ID           uuid.UUID          `json:"id"`
+	TenantID     uuid.UUID          `json:"tenant_id"`
+	ScheduleID   uuid.UUID          `json:"schedule_id"`
+	DueAt        pgtype.Timestamptz `json:"due_at"`
+	Status       string             `json:"status"`
+	ErrorMessage string             `json:"error_message"`
+	ObjectKey    string             `json:"object_key"`
+	RanAt        pgtype.Timestamptz `json:"ran_at"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+}
+
 type ReportScore struct {
 	ID             uuid.UUID          `json:"id"`
 	TenantID       uuid.UUID          `json:"tenant_id"`
