@@ -12,6 +12,67 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const claimReportScheduleRun = `-- name: ClaimReportScheduleRun :one
+insert into report_schedule_runs (tenant_id, schedule_id, due_at, status)
+values ($1, $2, $3, 'pending')
+on conflict (schedule_id, due_at) do nothing
+returning id, tenant_id, schedule_id, due_at, status, error_message, object_key, ran_at, created_at
+`
+
+type ClaimReportScheduleRunParams struct {
+	TenantID   uuid.UUID          `json:"tenant_id"`
+	ScheduleID uuid.UUID          `json:"schedule_id"`
+	DueAt      pgtype.Timestamptz `json:"due_at"`
+}
+
+// Inserts a pending run row for one due slot. The unique (schedule_id,
+// due_at) constraint makes this the run-once-per-slot guard: a second
+// wake-up in the same hour (or a retried job) finds zero rows returned
+// instead of erroring, and the caller treats that as "already claimed".
+func (q *Queries) ClaimReportScheduleRun(ctx context.Context, arg ClaimReportScheduleRunParams) (ReportScheduleRun, error) {
+	row := q.db.QueryRow(ctx, claimReportScheduleRun, arg.TenantID, arg.ScheduleID, arg.DueAt)
+	var i ReportScheduleRun
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.ScheduleID,
+		&i.DueAt,
+		&i.Status,
+		&i.ErrorMessage,
+		&i.ObjectKey,
+		&i.RanAt,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const completeReportScheduleRun = `-- name: CompleteReportScheduleRun :exec
+update report_schedule_runs
+set status = $3, error_message = $4, object_key = $5, ran_at = $6
+where tenant_id = $1 and id = $2
+`
+
+type CompleteReportScheduleRunParams struct {
+	TenantID     uuid.UUID          `json:"tenant_id"`
+	ID           uuid.UUID          `json:"id"`
+	Status       string             `json:"status"`
+	ErrorMessage string             `json:"error_message"`
+	ObjectKey    string             `json:"object_key"`
+	RanAt        pgtype.Timestamptz `json:"ran_at"`
+}
+
+func (q *Queries) CompleteReportScheduleRun(ctx context.Context, arg CompleteReportScheduleRunParams) error {
+	_, err := q.db.Exec(ctx, completeReportScheduleRun,
+		arg.TenantID,
+		arg.ID,
+		arg.Status,
+		arg.ErrorMessage,
+		arg.ObjectKey,
+		arg.RanAt,
+	)
+	return err
+}
+
 const countSchedulesForClassDay = `-- name: CountSchedulesForClassDay :one
 select count(*)::bigint from schedules
 where tenant_id = $1 and academic_year_id = $2 and class_id = $3 and day_of_week = $4
@@ -36,6 +97,57 @@ func (q *Queries) CountSchedulesForClassDay(ctx context.Context, arg CountSchedu
 	var column_1 int64
 	err := row.Scan(&column_1)
 	return column_1, err
+}
+
+const createReportSchedule = `-- name: CreateReportSchedule :one
+insert into report_schedules (tenant_id, report_kind, params, cadence, weekday, day_of_month, hour, recipients, enabled, created_by)
+values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+returning id, tenant_id, report_kind, params, cadence, weekday, day_of_month, hour, recipients, enabled, created_by, created_at, updated_at
+`
+
+type CreateReportScheduleParams struct {
+	TenantID   uuid.UUID   `json:"tenant_id"`
+	ReportKind string      `json:"report_kind"`
+	Params     []byte      `json:"params"`
+	Cadence    string      `json:"cadence"`
+	Weekday    pgtype.Int2 `json:"weekday"`
+	DayOfMonth pgtype.Int2 `json:"day_of_month"`
+	Hour       int16       `json:"hour"`
+	Recipients []string    `json:"recipients"`
+	Enabled    bool        `json:"enabled"`
+	CreatedBy  uuid.UUID   `json:"created_by"`
+}
+
+func (q *Queries) CreateReportSchedule(ctx context.Context, arg CreateReportScheduleParams) (ReportSchedule, error) {
+	row := q.db.QueryRow(ctx, createReportSchedule,
+		arg.TenantID,
+		arg.ReportKind,
+		arg.Params,
+		arg.Cadence,
+		arg.Weekday,
+		arg.DayOfMonth,
+		arg.Hour,
+		arg.Recipients,
+		arg.Enabled,
+		arg.CreatedBy,
+	)
+	var i ReportSchedule
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.ReportKind,
+		&i.Params,
+		&i.Cadence,
+		&i.Weekday,
+		&i.DayOfMonth,
+		&i.Hour,
+		&i.Recipients,
+		&i.Enabled,
+		&i.CreatedBy,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }
 
 const createSchedule = `-- name: CreateSchedule :one
@@ -110,6 +222,20 @@ func (q *Queries) CreateSchedule(ctx context.Context, arg CreateScheduleParams) 
 	return i, err
 }
 
+const deleteReportSchedule = `-- name: DeleteReportSchedule :exec
+delete from report_schedules where tenant_id = $1 and id = $2
+`
+
+type DeleteReportScheduleParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	ID       uuid.UUID `json:"id"`
+}
+
+func (q *Queries) DeleteReportSchedule(ctx context.Context, arg DeleteReportScheduleParams) error {
+	_, err := q.db.Exec(ctx, deleteReportSchedule, arg.TenantID, arg.ID)
+	return err
+}
+
 const deleteSchedule = `-- name: DeleteSchedule :exec
 delete from schedules where tenant_id = $1 and id = $2
 `
@@ -136,6 +262,36 @@ type DeleteSchedulesByAcademicYearParams struct {
 func (q *Queries) DeleteSchedulesByAcademicYear(ctx context.Context, arg DeleteSchedulesByAcademicYearParams) error {
 	_, err := q.db.Exec(ctx, deleteSchedulesByAcademicYear, arg.TenantID, arg.AcademicYearID)
 	return err
+}
+
+const getReportSchedule = `-- name: GetReportSchedule :one
+select id, tenant_id, report_kind, params, cadence, weekday, day_of_month, hour, recipients, enabled, created_by, created_at, updated_at from report_schedules where tenant_id = $1 and id = $2
+`
+
+type GetReportScheduleParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	ID       uuid.UUID `json:"id"`
+}
+
+func (q *Queries) GetReportSchedule(ctx context.Context, arg GetReportScheduleParams) (ReportSchedule, error) {
+	row := q.db.QueryRow(ctx, getReportSchedule, arg.TenantID, arg.ID)
+	var i ReportSchedule
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.ReportKind,
+		&i.Params,
+		&i.Cadence,
+		&i.Weekday,
+		&i.DayOfMonth,
+		&i.Hour,
+		&i.Recipients,
+		&i.Enabled,
+		&i.CreatedBy,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }
 
 const getScheduleByID = `-- name: GetScheduleByID :one
@@ -173,6 +329,134 @@ func (q *Queries) GetScheduleByID(ctx context.Context, arg GetScheduleByIDParams
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const listEnabledReportSchedulesForHour = `-- name: ListEnabledReportSchedulesForHour :many
+select id, tenant_id, report_kind, params, cadence, weekday, day_of_month, hour, recipients, enabled, created_by, created_at, updated_at from report_schedules where tenant_id = $1 and enabled and hour = $2
+`
+
+type ListEnabledReportSchedulesForHourParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	Hour     int16     `json:"hour"`
+}
+
+// Fetches every enabled schedule due at this tenant-local hour, whatever
+// its cadence; the service filters weekday/day-of-month in Go (domain.
+// Schedule.IsDueAt) since the day-of-month clamp for short months is not
+// expressible as a plain column comparison.
+func (q *Queries) ListEnabledReportSchedulesForHour(ctx context.Context, arg ListEnabledReportSchedulesForHourParams) ([]ReportSchedule, error) {
+	rows, err := q.db.Query(ctx, listEnabledReportSchedulesForHour, arg.TenantID, arg.Hour)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ReportSchedule{}
+	for rows.Next() {
+		var i ReportSchedule
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.ReportKind,
+			&i.Params,
+			&i.Cadence,
+			&i.Weekday,
+			&i.DayOfMonth,
+			&i.Hour,
+			&i.Recipients,
+			&i.Enabled,
+			&i.CreatedBy,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listReportScheduleRuns = `-- name: ListReportScheduleRuns :many
+select id, tenant_id, schedule_id, due_at, status, error_message, object_key, ran_at, created_at from report_schedule_runs
+where tenant_id = $1 and schedule_id = $2
+order by due_at desc
+limit $3
+`
+
+type ListReportScheduleRunsParams struct {
+	TenantID   uuid.UUID `json:"tenant_id"`
+	ScheduleID uuid.UUID `json:"schedule_id"`
+	Limit      int32     `json:"limit"`
+}
+
+func (q *Queries) ListReportScheduleRuns(ctx context.Context, arg ListReportScheduleRunsParams) ([]ReportScheduleRun, error) {
+	rows, err := q.db.Query(ctx, listReportScheduleRuns, arg.TenantID, arg.ScheduleID, arg.Limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ReportScheduleRun{}
+	for rows.Next() {
+		var i ReportScheduleRun
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.ScheduleID,
+			&i.DueAt,
+			&i.Status,
+			&i.ErrorMessage,
+			&i.ObjectKey,
+			&i.RanAt,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listReportSchedules = `-- name: ListReportSchedules :many
+select id, tenant_id, report_kind, params, cadence, weekday, day_of_month, hour, recipients, enabled, created_by, created_at, updated_at from report_schedules where tenant_id = $1 order by created_at desc
+`
+
+func (q *Queries) ListReportSchedules(ctx context.Context, tenantID uuid.UUID) ([]ReportSchedule, error) {
+	rows, err := q.db.Query(ctx, listReportSchedules, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ReportSchedule{}
+	for rows.Next() {
+		var i ReportSchedule
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.ReportKind,
+			&i.Params,
+			&i.Cadence,
+			&i.Weekday,
+			&i.DayOfMonth,
+			&i.Hour,
+			&i.Recipients,
+			&i.Enabled,
+			&i.CreatedBy,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listSchedulesByAcademicYear = `-- name: ListSchedulesByAcademicYear :many
@@ -382,6 +666,87 @@ func (q *Queries) ListSchedulesByTeacher(ctx context.Context, arg ListSchedulesB
 		return nil, err
 	}
 	return items, nil
+}
+
+const setReportScheduleEnabled = `-- name: SetReportScheduleEnabled :one
+update report_schedules set enabled = $3 where tenant_id = $1 and id = $2 returning id, tenant_id, report_kind, params, cadence, weekday, day_of_month, hour, recipients, enabled, created_by, created_at, updated_at
+`
+
+type SetReportScheduleEnabledParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	ID       uuid.UUID `json:"id"`
+	Enabled  bool      `json:"enabled"`
+}
+
+func (q *Queries) SetReportScheduleEnabled(ctx context.Context, arg SetReportScheduleEnabledParams) (ReportSchedule, error) {
+	row := q.db.QueryRow(ctx, setReportScheduleEnabled, arg.TenantID, arg.ID, arg.Enabled)
+	var i ReportSchedule
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.ReportKind,
+		&i.Params,
+		&i.Cadence,
+		&i.Weekday,
+		&i.DayOfMonth,
+		&i.Hour,
+		&i.Recipients,
+		&i.Enabled,
+		&i.CreatedBy,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const updateReportSchedule = `-- name: UpdateReportSchedule :one
+update report_schedules
+set report_kind = $3, params = $4, cadence = $5, weekday = $6, day_of_month = $7, hour = $8, recipients = $9
+where tenant_id = $1 and id = $2
+returning id, tenant_id, report_kind, params, cadence, weekday, day_of_month, hour, recipients, enabled, created_by, created_at, updated_at
+`
+
+type UpdateReportScheduleParams struct {
+	TenantID   uuid.UUID   `json:"tenant_id"`
+	ID         uuid.UUID   `json:"id"`
+	ReportKind string      `json:"report_kind"`
+	Params     []byte      `json:"params"`
+	Cadence    string      `json:"cadence"`
+	Weekday    pgtype.Int2 `json:"weekday"`
+	DayOfMonth pgtype.Int2 `json:"day_of_month"`
+	Hour       int16       `json:"hour"`
+	Recipients []string    `json:"recipients"`
+}
+
+func (q *Queries) UpdateReportSchedule(ctx context.Context, arg UpdateReportScheduleParams) (ReportSchedule, error) {
+	row := q.db.QueryRow(ctx, updateReportSchedule,
+		arg.TenantID,
+		arg.ID,
+		arg.ReportKind,
+		arg.Params,
+		arg.Cadence,
+		arg.Weekday,
+		arg.DayOfMonth,
+		arg.Hour,
+		arg.Recipients,
+	)
+	var i ReportSchedule
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.ReportKind,
+		&i.Params,
+		&i.Cadence,
+		&i.Weekday,
+		&i.DayOfMonth,
+		&i.Hour,
+		&i.Recipients,
+		&i.Enabled,
+		&i.CreatedBy,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }
 
 const updateSchedule = `-- name: UpdateSchedule :one

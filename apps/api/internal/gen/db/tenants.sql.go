@@ -57,6 +57,17 @@ func (q *Queries) CreateTenant(ctx context.Context, arg CreateTenantParams) (Ten
 	return i, err
 }
 
+const getReportScheduleTenantTimezone = `-- name: GetReportScheduleTenantTimezone :one
+select timezone from tenants where id = $1
+`
+
+func (q *Queries) GetReportScheduleTenantTimezone(ctx context.Context, id uuid.UUID) (string, error) {
+	row := q.db.QueryRow(ctx, getReportScheduleTenantTimezone, id)
+	var timezone string
+	err := row.Scan(&timezone)
+	return timezone, err
+}
+
 const getSingleTenant = `-- name: GetSingleTenant :one
 select id, slug, name, education_level, timezone, locale, status, plan, primary_domain, created_at, updated_at from tenants order by created_at asc limit 1
 `
@@ -187,6 +198,40 @@ func (q *Queries) ListActiveTenantsForMaintenance(ctx context.Context) ([]ListAc
 	items := []ListActiveTenantsForMaintenanceRow{}
 	for rows.Next() {
 		var i ListActiveTenantsForMaintenanceRow
+		if err := rows.Scan(&i.ID, &i.Timezone); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listActiveTenantsForReportSchedules = `-- name: ListActiveTenantsForReportSchedules :many
+select id, timezone from tenants where status = 'active'
+`
+
+type ListActiveTenantsForReportSchedulesRow struct {
+	ID       uuid.UUID `json:"id"`
+	Timezone string    `json:"timezone"`
+}
+
+// cross-module read: tenants is the platform-wide registry owned by the
+// school module and is not RLS-protected (the same justification as
+// notifications' identical query -- tenant resolution must work before
+// any tenant context exists). The hourly report-schedule job loops one
+// tenant at a time rather than ever joining across tenants.
+func (q *Queries) ListActiveTenantsForReportSchedules(ctx context.Context) ([]ListActiveTenantsForReportSchedulesRow, error) {
+	rows, err := q.db.Query(ctx, listActiveTenantsForReportSchedules)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListActiveTenantsForReportSchedulesRow{}
+	for rows.Next() {
+		var i ListActiveTenantsForReportSchedulesRow
 		if err := rows.Scan(&i.ID, &i.Timezone); err != nil {
 			return nil, err
 		}

@@ -139,8 +139,14 @@ type Querier interface {
 	ArchiveUser(ctx context.Context, arg ArchiveUserParams) error
 	AssignUserRole(ctx context.Context, arg AssignUserRoleParams) error
 	CancelSubstitutionRequest(ctx context.Context, arg CancelSubstitutionRequestParams) (SubstitutionRequest, error)
+	// Inserts a pending run row for one due slot. The unique (schedule_id,
+	// due_at) constraint makes this the run-once-per-slot guard: a second
+	// wake-up in the same hour (or a retried job) finds zero rows returned
+	// instead of erroring, and the caller treats that as "already claimed".
+	ClaimReportScheduleRun(ctx context.Context, arg ClaimReportScheduleRunParams) (ReportScheduleRun, error)
 	ClassExistsInTenant(ctx context.Context, arg ClassExistsInTenantParams) (bool, error)
 	ClearDefaultDocumentTemplate(ctx context.Context, arg ClearDefaultDocumentTemplateParams) error
+	CompleteReportScheduleRun(ctx context.Context, arg CompleteReportScheduleRunParams) error
 	ConfirmMfaTotp(ctx context.Context, arg ConfirmMfaTotpParams) (MfaTotp, error)
 	// Bug fix vs. the old app (docs/08-security.md section 7): single atomic
 	// UPDATE guarded by consumed_at IS NULL AND expires_at > now(), so two
@@ -184,6 +190,7 @@ type Querier interface {
 	// single feature module. permits writes here for evidence images it
 	// re-encodes and letters it renders, same as any other module would.
 	CreatePermitsAsset(ctx context.Context, arg CreatePermitsAssetParams) (uuid.UUID, error)
+	CreateReportSchedule(ctx context.Context, arg CreateReportScheduleParams) (ReportSchedule, error)
 	CreateRole(ctx context.Context, arg CreateRoleParams) (Role, error)
 	CreateScanToken(ctx context.Context, arg CreateScanTokenParams) (ScanToken, error)
 	CreateSchedule(ctx context.Context, arg CreateScheduleParams) (Schedule, error)
@@ -220,6 +227,7 @@ type Querier interface {
 	// at a time -- see docs/08-security.md section 4 on always filtering by
 	// tenant even where RLS would also catch it.
 	DeleteReadNotificationsOlderThan(ctx context.Context, arg DeleteReadNotificationsOlderThanParams) (int64, error)
+	DeleteReportSchedule(ctx context.Context, arg DeleteReportScheduleParams) error
 	DeleteRole(ctx context.Context, arg DeleteRoleParams) error
 	DeleteRolePermissions(ctx context.Context, arg DeleteRolePermissionsParams) error
 	DeleteSchedule(ctx context.Context, arg DeleteScheduleParams) error
@@ -322,6 +330,8 @@ type Querier interface {
 	GetPreviousEntryForStudent(ctx context.Context, arg GetPreviousEntryForStudentParams) (string, error)
 	GetPublication(ctx context.Context, arg GetPublicationParams) (GradePublication, error)
 	GetPushDeviceByID(ctx context.Context, arg GetPushDeviceByIDParams) (PushDevice, error)
+	GetReportSchedule(ctx context.Context, arg GetReportScheduleParams) (ReportSchedule, error)
+	GetReportScheduleTenantTimezone(ctx context.Context, id uuid.UUID) (string, error)
 	GetRoleByID(ctx context.Context, arg GetRoleByIDParams) (Role, error)
 	GetRoleBySlug(ctx context.Context, arg GetRoleBySlugParams) (Role, error)
 	GetScanTokenByHash(ctx context.Context, arg GetScanTokenByHashParams) (ScanToken, error)
@@ -432,6 +442,12 @@ type Querier interface {
 	// jobs, which loop one tenant at a time rather than ever querying across
 	// tenants in a single statement.
 	ListActiveTenantsForMaintenance(ctx context.Context) ([]ListActiveTenantsForMaintenanceRow, error)
+	// cross-module read: tenants is the platform-wide registry owned by the
+	// school module and is not RLS-protected (the same justification as
+	// notifications' identical query -- tenant resolution must work before
+	// any tenant context exists). The hourly report-schedule job loops one
+	// tenant at a time rather than ever joining across tenants.
+	ListActiveTenantsForReportSchedules(ctx context.Context) ([]ListActiveTenantsForReportSchedulesRow, error)
 	// cross-module read: users table is owned by the identity module.
 	ListActiveUserIDsForTenant(ctx context.Context, tenantID uuid.UUID) ([]uuid.UUID, error)
 	ListAllGradeRanges(ctx context.Context, arg ListAllGradeRangesParams) ([]ReportGradeRange, error)
@@ -462,6 +478,11 @@ type Querier interface {
 	ListDutyAssignmentsAdmin(ctx context.Context, arg ListDutyAssignmentsAdminParams) ([]ListDutyAssignmentsAdminRow, error)
 	ListDutyPermissionCodes(ctx context.Context, arg ListDutyPermissionCodesParams) ([]string, error)
 	ListDutyTypes(ctx context.Context, arg ListDutyTypesParams) ([]DutyType, error)
+	// Fetches every enabled schedule due at this tenant-local hour, whatever
+	// its cadence; the service filters weekday/day-of-month in Go (domain.
+	// Schedule.IsDueAt) since the day-of-month clamp for short months is not
+	// expressible as a plain column comparison.
+	ListEnabledReportSchedulesForHour(ctx context.Context, arg ListEnabledReportSchedulesForHourParams) ([]ReportSchedule, error)
 	ListEntriesBySession(ctx context.Context, arg ListEntriesBySessionParams) ([]AttendanceEntry, error)
 	// Every status code recorded for one student across the given date's
 	// submitted sessions -- the raw input to attendance/domain.ComputeDailyStatus.
@@ -492,6 +513,8 @@ type Querier interface {
 	ListPushDevicesForUser(ctx context.Context, arg ListPushDevicesForUserParams) ([]PushDevice, error)
 	ListPushDevicesForUsers(ctx context.Context, arg ListPushDevicesForUsersParams) ([]PushDevice, error)
 	ListReadAnnouncementIDsForUser(ctx context.Context, arg ListReadAnnouncementIDsForUserParams) ([]uuid.UUID, error)
+	ListReportScheduleRuns(ctx context.Context, arg ListReportScheduleRunsParams) ([]ReportScheduleRun, error)
+	ListReportSchedules(ctx context.Context, tenantID uuid.UUID) ([]ReportSchedule, error)
 	ListReportScores(ctx context.Context, arg ListReportScoresParams) ([]ReportScore, error)
 	ListReportScoresForStudent(ctx context.Context, arg ListReportScoresForStudentParams) ([]ReportScore, error)
 	ListRolePermissionCodes(ctx context.Context, arg ListRolePermissionCodesParams) ([]string, error)
@@ -577,6 +600,7 @@ type Querier interface {
 	SetExitPermitGateToken(ctx context.Context, arg SetExitPermitGateTokenParams) (ExitPermit, error)
 	SetManualReportScore(ctx context.Context, arg SetManualReportScoreParams) (ReportScore, error)
 	SetMfaRecoveryCodes(ctx context.Context, arg SetMfaRecoveryCodesParams) error
+	SetReportScheduleEnabled(ctx context.Context, arg SetReportScheduleEnabledParams) (ReportSchedule, error)
 	SetUserAvatarAsset(ctx context.Context, arg SetUserAvatarAssetParams) error
 	SetUserStatus(ctx context.Context, arg SetUserStatusParams) error
 	// One round trip for the onboarding checklist: how much of the school's
@@ -600,6 +624,7 @@ type Querier interface {
 	UpdateJournal(ctx context.Context, arg UpdateJournalParams) (ClassJournal, error)
 	UpdateLateArrivalReview(ctx context.Context, arg UpdateLateArrivalReviewParams) (LateArrival, error)
 	UpdateOwnProfile(ctx context.Context, arg UpdateOwnProfileParams) error
+	UpdateReportSchedule(ctx context.Context, arg UpdateReportScheduleParams) (ReportSchedule, error)
 	UpdateRole(ctx context.Context, arg UpdateRoleParams) error
 	UpdateSchedule(ctx context.Context, arg UpdateScheduleParams) (Schedule, error)
 	UpdateTenantProfile(ctx context.Context, arg UpdateTenantProfileParams) (Tenant, error)

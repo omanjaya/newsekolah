@@ -6,6 +6,85 @@
   "emptyTitle": "Tidak ada laporan yang bisa diunduh",
   "emptyBody": "Akun ini belum memiliki akses ke laporan apa pun. Hubungi admin sekolah bila akses ini diperlukan.",
   "download": "Unduh",
+  "tabs": {
+    "exports": "Unduhan",
+    "schedules": "Jadwal"
+  },
+  "schedules": {
+    "description": "Laporan berulang yang dikirim otomatis lewat email sesuai jadwal yang dipilih.",
+    "add": "Jadwal baru",
+    "edit": "Ubah",
+    "delete": "Hapus",
+    "deleted": "Jadwal dihapus.",
+    "emptyTitle": "Belum ada jadwal",
+    "emptyBody": "Buat jadwal agar laporan dikirim otomatis lewat email secara berkala.",
+    "viewHistory": "Lihat riwayat pengiriman",
+    "deleteTitle": "Hapus jadwal ini?",
+    "deleteBody": "\"{report}\" akan berhenti dikirim. Tindakan ini tidak bisa dibatalkan.",
+    "columns": {
+      "report": "Laporan",
+      "cadence": "Frekuensi",
+      "recipients": "Penerima",
+      "nextRun": "Jalan berikutnya",
+      "enabled": "Aktif",
+      "actions": "Aksi"
+    },
+    "cadenceSummary": {
+      "daily": "Setiap hari pukul {hour}:00",
+      "weekly": "Setiap minggu, {weekday} pukul {hour}:00",
+      "monthly": "Setiap bulan, tanggal {day} pukul {hour}:00"
+    },
+    "form": {
+      "createTitle": "Jadwal baru",
+      "editTitle": "Ubah jadwal",
+      "reportKind": "Laporan",
+      "reportKindPlaceholder": "Pilih laporan",
+      "class": "Kelas",
+      "classPlaceholder": "Pilih kelas",
+      "subject": "Mata pelajaran",
+      "subjectPlaceholder": "Pilih mata pelajaran",
+      "term": "Semester",
+      "termPlaceholder": "Pilih semester",
+      "cadence": "Frekuensi",
+      "cadenceDaily": "Harian",
+      "cadenceWeekly": "Mingguan",
+      "cadenceMonthly": "Bulanan",
+      "weekday": "Hari dalam seminggu",
+      "weekdayName": {
+        "0": "Minggu",
+        "1": "Senin",
+        "2": "Selasa",
+        "3": "Rabu",
+        "4": "Kamis",
+        "5": "Jumat",
+        "6": "Sabtu"
+      },
+      "dayOfMonth": "Tanggal dalam sebulan",
+      "dayOfMonthHint": "Jika bulan tersebut lebih pendek, jadwal berjalan pada hari terakhir bulan itu.",
+      "hour": "Jam",
+      "hourHint": "Berjalan sesuai zona waktu sekolah.",
+      "recipients": "Penerima",
+      "recipientPlaceholder": "email@sekolah.sch.id",
+      "addRecipient": "Tambah",
+      "removeRecipient": "Hapus {email}",
+      "recipientInvalid": "Masukkan alamat email yang valid.",
+      "recipientDuplicate": "Alamat ini sudah ditambahkan.",
+      "recipientLimit": "Maksimal 10 penerima.",
+      "cancel": "Batal",
+      "submit": "Simpan",
+      "saved": "Jadwal disimpan."
+    },
+    "runs": {
+      "title": "Riwayat pengiriman",
+      "emptyTitle": "Belum ada riwayat",
+      "emptyBody": "Jadwal ini belum pernah jatuh tempo.",
+      "status": {
+        "pending": "Menunggu",
+        "success": "Terkirim",
+        "failed": "Gagal"
+      }
+    }
+  },
   "arguments": {
     "class": "Kelas",
     "classPlaceholder": "Pilih kelas",

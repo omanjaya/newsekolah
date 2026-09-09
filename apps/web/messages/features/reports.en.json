@@ -6,6 +6,85 @@
   "emptyTitle": "No reports available to download",
   "emptyBody": "This account has no access to any report. Contact the school admin if access is needed.",
   "download": "Download",
+  "tabs": {
+    "exports": "Exports",
+    "schedules": "Schedules"
+  },
+  "schedules": {
+    "description": "Recurring exports emailed automatically on a cadence you choose.",
+    "add": "New schedule",
+    "edit": "Edit",
+    "delete": "Delete",
+    "deleted": "Schedule deleted.",
+    "emptyTitle": "No schedules yet",
+    "emptyBody": "Create a schedule to have a report emailed automatically on a cadence.",
+    "viewHistory": "View run history",
+    "deleteTitle": "Delete this schedule?",
+    "deleteBody": "\"{report}\" will stop being sent. This cannot be undone.",
+    "columns": {
+      "report": "Report",
+      "cadence": "Cadence",
+      "recipients": "Recipients",
+      "nextRun": "Next run",
+      "enabled": "Enabled",
+      "actions": "Actions"
+    },
+    "cadenceSummary": {
+      "daily": "Daily at {hour}:00",
+      "weekly": "Weekly, {weekday} at {hour}:00",
+      "monthly": "Monthly, day {day} at {hour}:00"
+    },
+    "form": {
+      "createTitle": "New schedule",
+      "editTitle": "Edit schedule",
+      "reportKind": "Report",
+      "reportKindPlaceholder": "Select a report",
+      "class": "Class",
+      "classPlaceholder": "Select a class",
+      "subject": "Subject",
+      "subjectPlaceholder": "Select a subject",
+      "term": "Term",
+      "termPlaceholder": "Select a term",
+      "cadence": "Cadence",
+      "cadenceDaily": "Daily",
+      "cadenceWeekly": "Weekly",
+      "cadenceMonthly": "Monthly",
+      "weekday": "Day of the week",
+      "weekdayName": {
+        "0": "Sunday",
+        "1": "Monday",
+        "2": "Tuesday",
+        "3": "Wednesday",
+        "4": "Thursday",
+        "5": "Friday",
+        "6": "Saturday"
+      },
+      "dayOfMonth": "Day of the month",
+      "dayOfMonthHint": "If a month has fewer days, the schedule runs on that month's last day instead.",
+      "hour": "Hour",
+      "hourHint": "Runs in the school's own timezone.",
+      "recipients": "Recipients",
+      "recipientPlaceholder": "email@school.sch.id",
+      "addRecipient": "Add",
+      "removeRecipient": "Remove {email}",
+      "recipientInvalid": "Enter a valid email address.",
+      "recipientDuplicate": "This address was already added.",
+      "recipientLimit": "Up to 10 recipients.",
+      "cancel": "Cancel",
+      "submit": "Save",
+      "saved": "Schedule saved."
+    },
+    "runs": {
+      "title": "Run history",
+      "emptyTitle": "No runs yet",
+      "emptyBody": "This schedule has not been due yet.",
+      "status": {
+        "pending": "Pending",
+        "success": "Sent",
+        "failed": "Failed"
+      }
+    }
+  },
   "arguments": {
     "class": "Class",
     "classPlaceholder": "Select a class",

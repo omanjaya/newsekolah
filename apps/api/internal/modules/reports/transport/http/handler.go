@@ -22,12 +22,13 @@ type PermissionChecker interface {
 }
 
 type ReportsHandler struct {
-	service *service.Service
-	perms   PermissionChecker
+	service   *service.Service
+	schedules *service.ScheduleService
+	perms     PermissionChecker
 }
 
-func New(svc *service.Service, perms PermissionChecker) *ReportsHandler {
-	return &ReportsHandler{service: svc, perms: perms}
+func New(svc *service.Service, schedules *service.ScheduleService, perms PermissionChecker) *ReportsHandler {
+	return &ReportsHandler{service: svc, schedules: schedules, perms: perms}
 }
 
 func tenantID(ctx context.Context) uuid.UUID { id, _ := httpx.TenantIDFromContext(ctx); return id }

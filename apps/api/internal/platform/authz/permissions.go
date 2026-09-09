@@ -49,6 +49,8 @@ const (
 	PermViewOwnGrades = "view_own_grades"
 	PermViewReports   = "view_reports"
 
+	PermManageReportSchedules = "manage_report_schedules"
+
 	PermViewLibrary              = "view_library"
 	PermManageLibraryCatalog     = "manage_library_catalog"
 	PermManageLibraryCirculation = "manage_library_circulation"
@@ -99,6 +101,7 @@ var Catalog = []Permission{
 	{PermManageGrades, "grading", "Enter and edit grades"},
 	{PermViewOwnGrades, "grading", "View own grades (student)"},
 	{PermViewReports, "reporting", "View cross-module reports"},
+	{PermManageReportSchedules, "reporting", "Configure recurring report exports and their recipients"},
 
 	{PermViewLibrary, "library", "Browse the library catalog"},
 	{PermManageLibraryCatalog, "library", "Manage bibliographies and items"},
