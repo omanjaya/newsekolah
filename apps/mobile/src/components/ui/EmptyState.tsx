@@ -1,0 +1,34 @@
+import { View, Text } from "react-native";
+import type { LucideIcon } from "lucide-react-native";
+import { Button } from "@/components/ui/Button";
+
+interface EmptyStateProps {
+  icon: LucideIcon;
+  title: string;
+  description?: string;
+  actionLabel?: string;
+  onAction?: () => void;
+}
+
+export function EmptyState({
+  icon: Icon,
+  title,
+  description,
+  actionLabel,
+  onAction,
+}: EmptyStateProps): React.JSX.Element {
+  return (
+    <View className="flex-1 items-center justify-center gap-2 px-8 py-12">
+      <Icon size={32} strokeWidth={1.75} color="#8A8A8A" importantForAccessibility="no" />
+      <Text className="text-center text-md font-medium text-ink dark:text-ink-dark">{title}</Text>
+      {description ? (
+        <Text className="text-center text-sm text-ink/70 dark:text-ink-dark/70">{description}</Text>
+      ) : null}
+      {actionLabel && onAction ? (
+        <View className="mt-2">
+          <Button label={actionLabel} onPress={onAction} variant="secondary" />
+        </View>
+      ) : null}
+    </View>
+  );
+}

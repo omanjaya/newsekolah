@@ -1,0 +1,9 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Default accent (DESIGN.md: #1F3A5F). Overridden at runtime per tenant branding
+   via the `vars()` style applied at the app root -- see src/theme/accent.ts. */
+:root {
+  --color-accent: 31 58 95;
+}

@@ -1,0 +1,65 @@
+import { ActivityIndicator, Pressable, Text, type GestureResponderEvent } from "react-native";
+import { cn } from "@/lib/cn";
+
+export type ButtonVariant = "primary" | "secondary" | "ghost" | "destructive";
+
+interface ButtonProps {
+  label: string;
+  onPress: (event: GestureResponderEvent) => void;
+  variant?: ButtonVariant;
+  disabled?: boolean;
+  loading?: boolean;
+  fullWidth?: boolean;
+  testID?: string;
+}
+
+const VARIANT_CLASSES: Record<ButtonVariant, string> = {
+  primary: "bg-accent",
+  secondary: "bg-surface dark:bg-surface-dark border border-line dark:border-line-dark",
+  ghost: "bg-transparent",
+  destructive: "bg-status-absent",
+};
+
+const VARIANT_TEXT_CLASSES: Record<ButtonVariant, string> = {
+  primary: "text-white",
+  secondary: "text-ink dark:text-ink-dark",
+  ghost: "text-accent",
+  destructive: "text-white",
+};
+
+/** Minimum 44pt tap target per DESIGN.md; radius 4 (no pill buttons). */
+export function Button({
+  label,
+  onPress,
+  variant = "primary",
+  disabled = false,
+  loading = false,
+  fullWidth = false,
+  testID,
+}: ButtonProps): React.JSX.Element {
+  const isDisabled = disabled || loading;
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ disabled: isDisabled, busy: loading }}
+      testID={testID}
+      onPress={onPress}
+      disabled={isDisabled}
+      className={cn(
+        "min-h-11 flex-row items-center justify-center rounded-input px-4",
+        VARIANT_CLASSES[variant],
+        fullWidth && "w-full",
+        isDisabled && "opacity-50",
+      )}
+    >
+      {loading ? (
+        <ActivityIndicator
+          color={variant === "primary" || variant === "destructive" ? "#FFFFFF" : "#1F3A5F"}
+        />
+      ) : (
+        <Text className={cn("text-base font-medium", VARIANT_TEXT_CLASSES[variant])}>{label}</Text>
+      )}
+    </Pressable>
+  );
+}

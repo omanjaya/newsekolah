@@ -1,0 +1,17 @@
+node_modules/
+.expo/
+dist/
+web-build/
+*.orig.*
+.env*.local
+ios/
+android/
+.metro-health-check*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+expo-env.d.ts
+.turbo/
+coverage/
