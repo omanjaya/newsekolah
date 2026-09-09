@@ -151,7 +151,7 @@ export interface paths {
         /** List calendar events for an academic year */
         get: operations["listCalendarEvents"];
         put?: never;
-        /** Add a calendar event (holiday, exam, event, no_school) */
+        /** Add a calendar event (holiday, exam, event, no_school, semester_break) */
         post: operations["createCalendarEvent"];
         delete?: never;
         options?: never;
@@ -456,6 +456,40 @@ export interface paths {
         put?: never;
         /** Apply the promotion plan (re-computed server-side from the same inputs); items with no resolvable target class are skipped, not partially applied */
         post: operations["commitPromotion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academic/new-year-setup/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Compute (without writing) which subject offerings and classes from_year_id has that to_year_id does not yet */
+        post: operations["previewNewYearSetup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academic/new-year-setup/commit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Copy every subject offering and class from_year_id has that to_year_id does not yet have; re-running an already-applied commit copies nothing */
+        post: operations["commitNewYearSetup"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3593,7 +3627,7 @@ export interface components {
             ends_on: string;
         };
         /** @enum {string} */
-        CalendarEventKind: "holiday" | "exam" | "event" | "no_school";
+        CalendarEventKind: "holiday" | "exam" | "event" | "no_school" | "semester_break";
         CalendarEvent: {
             /** Format: uuid */
             id: string;
@@ -3601,14 +3635,24 @@ export interface components {
             academic_year_id: string;
             /** Format: date */
             date: string;
+            /**
+             * Format: date
+             * @description Inclusive end of the event's date range; equals date for a single-day event.
+             */
+            end_date: string;
             kind: components["schemas"]["CalendarEventKind"];
             name: string;
+            /** @description Grade levels this event applies to; empty means school-wide. */
+            grade_level_ids?: string[];
         };
         CalendarEventInput: {
             /** Format: date */
             date: string;
+            /** Format: date */
+            end_date: string;
             kind: components["schemas"]["CalendarEventKind"];
             name: string;
+            grade_level_ids?: string[];
         };
         CalendarEventList: {
             data: components["schemas"]["CalendarEvent"][];
@@ -3730,7 +3774,7 @@ export interface components {
             page: components["schemas"]["PageMeta"];
         };
         /** @enum {string} */
-        PromotionAction: "promote" | "retain" | "graduate";
+        PromotionAction: "promote" | "retain" | "graduate" | "transfer";
         PromotionOverride: {
             /** Format: uuid */
             student_user_id: string;
@@ -3766,6 +3810,41 @@ export interface components {
         PromotionCommitResult: {
             applied: components["schemas"]["PromotionPlanItem"][];
             skipped: components["schemas"]["PromotionPlanItem"][];
+        };
+        NewYearSetupRequest: {
+            /** Format: uuid */
+            from_year_id: string;
+            /** Format: uuid */
+            to_year_id: string;
+        };
+        SubjectOfferingCopyItem: {
+            /** Format: uuid */
+            subject_id: string;
+            /** Format: uuid */
+            grade_level_id?: string;
+            hours_per_week: number;
+            /** @description True when to_year_id already has an offering for this subject and grade level */
+            already_exists: boolean;
+        };
+        ClassCopyItem: {
+            name: string;
+            /** Format: uuid */
+            grade_level_id: string;
+            /** Format: uuid */
+            room_id?: string;
+            capacity?: number;
+            /** Format: uuid */
+            homeroom_teacher_id?: string;
+            /** @description True when to_year_id already has a class of this name */
+            already_exists: boolean;
+        };
+        NewYearSetupPlan: {
+            subject_offerings: components["schemas"]["SubjectOfferingCopyItem"][];
+            classes: components["schemas"]["ClassCopyItem"][];
+        };
+        NewYearSetupResult: {
+            subject_offerings_copied: number;
+            classes_copied: number;
         };
         /** @enum {string} */
         ImportRowAction: "assign" | "move" | "unchanged" | "error";
@@ -6375,6 +6454,60 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             403: components["responses"]["Forbidden"];
+        };
+    };
+    previewNewYearSetup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewYearSetupRequest"];
+            };
+        };
+        responses: {
+            /** @description New academic year setup plan */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NewYearSetupPlan"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    commitNewYearSetup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewYearSetupRequest"];
+            };
+        };
+        responses: {
+            /** @description New academic year setup result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NewYearSetupResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     downloadEnrollmentImportTemplate: {

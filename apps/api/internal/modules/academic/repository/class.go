@@ -198,6 +198,21 @@ func (r *Repository) ListClassesForYear(ctx context.Context, tenantID, yearID uu
 	return targets, nil
 }
 
+// ListAllClassesForYear returns every class in yearID, unpaginated -- the
+// new-academic-year setup's copy-forward step needs the whole list, not a
+// page of it.
+func (r *Repository) ListAllClassesForYear(ctx context.Context, tenantID, yearID uuid.UUID) ([]domain.Class, error) {
+	rows, err := r.queries(ctx).AcademicListAllClassesForYear(ctx, db.AcademicListAllClassesForYearParams{TenantID: tenantID, AcademicYearID: yearID})
+	if err != nil {
+		return nil, err
+	}
+	classes := make([]domain.Class, len(rows))
+	for i, row := range rows {
+		classes[i] = toClass(row)
+	}
+	return classes, nil
+}
+
 func toClass(row db.Class) domain.Class {
 	return domain.Class{
 		ID: row.ID, TenantID: row.TenantID, AcademicYearID: row.AcademicYearID, GradeLevelID: row.GradeLevelID,

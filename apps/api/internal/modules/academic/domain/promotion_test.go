@@ -84,6 +84,21 @@ func TestBuildPromotionPlan(t *testing.T) {
 		require.Equal(t, forcedClass, *plan[0].TargetClassID)
 	})
 
+	t.Run("an override can force a transfer out, with no target class needed", func(t *testing.T) {
+		student := uuid.New()
+		candidates := []domain.PromotionCandidate{
+			{StudentUserID: student, EnrollmentID: uuid.New(), FromClassID: uuid.New(), GradeLevelID: gradeX, GradeSequence: 1},
+		}
+		overrides := []domain.PromotionOverride{{StudentUserID: student, Action: domain.PromotionActionTransfer}}
+
+		plan := domain.BuildPromotionPlan(candidates, targets, overrides, gradeLevelBySequence, 3)
+
+		require.Len(t, plan, 1)
+		require.Equal(t, domain.PromotionActionTransfer, plan[0].Action)
+		require.Nil(t, plan[0].TargetClassID)
+		require.False(t, plan[0].Unresolved)
+	})
+
 	t.Run("an override can force graduation early", func(t *testing.T) {
 		student := uuid.New()
 		candidates := []domain.PromotionCandidate{

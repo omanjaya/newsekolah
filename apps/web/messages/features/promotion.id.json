@@ -1,0 +1,31 @@
+{
+  "eyebrow": "Data Sekolah",
+  "title": "Kenaikan Kelas",
+  "description": "Pindahkan siswa dari satu tahun ajaran ke tahun ajaran berikutnya: naik kelas, tinggal kelas, lulus, atau pindah sekolah.",
+  "fromYear": "Dari Tahun Ajaran",
+  "toYear": "Ke Tahun Ajaran",
+  "preview": "Tampilkan Rencana",
+  "sameYearError": "Tahun ajaran asal dan tujuan harus berbeda.",
+  "emptyTitle": "Tidak ada siswa aktif",
+  "emptyBody": "Tidak ada siswa dengan status aktif di tahun ajaran asal yang dipilih.",
+  "unresolvedCount": "{n} belum ditentukan kelasnya",
+  "table": {
+    "student": "Siswa",
+    "fromClass": "Kelas Asal",
+    "action": "Status",
+    "targetClass": "Kelas Tujuan",
+    "chooseClass": "Pilih kelas"
+  },
+  "action": {
+    "promote": "Naik Kelas",
+    "retain": "Tinggal Kelas",
+    "graduate": "Lulus",
+    "transfer": "Pindah Sekolah"
+  },
+  "effectiveOn": "Berlaku Mulai",
+  "commit": "Terapkan Kenaikan Kelas",
+  "resolveBeforeCommit": "Tentukan kelas tujuan untuk setiap siswa sebelum menerapkan.",
+  "confirmTitle": "Terapkan kenaikan kelas ini?",
+  "confirmBody": "{n} siswa akan diproses. Aksi ini akan memindahkan status pendaftaran siswa dan tidak dapat dibatalkan begitu diterapkan.",
+  "committed": "Kenaikan kelas berhasil diterapkan."
+}

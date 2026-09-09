@@ -86,26 +86,43 @@ func BuildDefaultTerms(yearID, tenantID uuid.UUID, startsOn, endsOn time.Time, c
 }
 
 const (
-	CalendarEventHoliday  = "holiday"
-	CalendarEventExam     = "exam"
-	CalendarEventEvent    = "event"
-	CalendarEventNoSchool = "no_school"
+	CalendarEventHoliday       = "holiday"
+	CalendarEventExam          = "exam"
+	CalendarEventEvent         = "event"
+	CalendarEventNoSchool      = "no_school"
+	CalendarEventSemesterBreak = "semester_break"
 )
 
 var CalendarEventKinds = map[string]bool{
-	CalendarEventHoliday:  true,
-	CalendarEventExam:     true,
-	CalendarEventEvent:    true,
-	CalendarEventNoSchool: true,
+	CalendarEventHoliday:       true,
+	CalendarEventExam:          true,
+	CalendarEventEvent:         true,
+	CalendarEventNoSchool:      true,
+	CalendarEventSemesterBreak: true,
 }
 
+// CalendarEvent is a named event on an academic year's calendar, covering
+// the inclusive date range [Date, EndDate]. GradeLevelIDs narrows the
+// event to specific grade levels (e.g. an exam block for grade 12 only);
+// an empty slice means it applies to every grade level.
 type CalendarEvent struct {
 	ID             uuid.UUID
 	TenantID       uuid.UUID
 	AcademicYearID uuid.UUID
 	Date           time.Time
+	EndDate        time.Time
 	Kind           string
 	Name           string
+	GradeLevelIDs  []uuid.UUID
+}
+
+// ValidateCalendarEventRange enforces endDate >= date: a single-day event
+// has endDate == date.
+func ValidateCalendarEventRange(date, endDate time.Time) error {
+	if endDate.Before(date) {
+		return ErrInvalidCalendarEventRange
+	}
+	return nil
 }
 
 type SchoolDay struct {

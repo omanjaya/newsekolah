@@ -148,7 +148,9 @@
         "rooms": "Ruang",
         "periods": "Jam Pelajaran",
         "assignments": "Tugas",
-        "violationCatalog": "Katalog Pelanggaran"
+        "violationCatalog": "Katalog Pelanggaran",
+        "academicCalendar": "Kalender Akademik",
+        "promotion": "Kenaikan Kelas"
       }
     },
     "settings": {

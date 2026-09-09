@@ -341,7 +341,7 @@ paths:
         - academic
       operationId: createCalendarEvent
       x-permission: manage_academic_years
-      summary: Add a calendar event (holiday, exam, event, no_school)
+      summary: Add a calendar event (holiday, exam, event, no_school, semester_break)
       requestBody:
         required: true
         content:
@@ -968,6 +968,59 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "403":
           $ref: "#/components/responses/Forbidden"
+  /v1/academic/new-year-setup/preview:
+    post:
+      tags:
+        - academic
+      operationId: previewNewYearSetup
+      x-permission: manage_academic_years
+      summary: Compute (without writing) which subject offerings and classes from_year_id has that to_year_id does not yet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewYearSetupRequest"
+      responses:
+        "200":
+          description: New academic year setup plan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NewYearSetupPlan"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/academic/new-year-setup/commit:
+    post:
+      tags:
+        - academic
+      operationId: commitNewYearSetup
+      x-permission: manage_academic_years
+      summary: Copy every subject offering and class from_year_id has that to_year_id does not yet have; re-running an
+        already-applied commit copies nothing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewYearSetupRequest"
+      responses:
+        "200":
+          description: New academic year setup result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NewYearSetupResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /v1/academic/enrollments/import/template:
     get:
       tags:
@@ -7858,12 +7911,14 @@ components:
         - exam
         - event
         - no_school
+        - semester_break
     CalendarEvent:
       type: object
       required:
         - id
         - academic_year_id
         - date
+        - end_date
         - kind
         - name
       properties:
@@ -7876,18 +7931,32 @@ components:
         date:
           type: string
           format: date
+        end_date:
+          type: string
+          format: date
+          description: Inclusive end of the event's date range; equals date for a single-day event.
         kind:
           $ref: "#/components/schemas/CalendarEventKind"
         name:
           type: string
+        grade_level_ids:
+          type: array
+          description: Grade levels this event applies to; empty means school-wide.
+          items:
+            type: string
+            format: uuid
     CalendarEventInput:
       type: object
       required:
         - date
+        - end_date
         - kind
         - name
       properties:
         date:
+          type: string
+          format: date
+        end_date:
           type: string
           format: date
         kind:
@@ -7896,6 +7965,11 @@ components:
           type: string
           minLength: 1
           maxLength: 150
+        grade_level_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
     CalendarEventList:
       type: object
       required:
@@ -8196,6 +8270,7 @@ components:
         - promote
         - retain
         - graduate
+        - transfer
     PromotionOverride:
       type: object
       required:
@@ -8281,6 +8356,83 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/PromotionPlanItem"
+    NewYearSetupRequest:
+      type: object
+      required:
+        - from_year_id
+        - to_year_id
+      properties:
+        from_year_id:
+          type: string
+          format: uuid
+        to_year_id:
+          type: string
+          format: uuid
+    SubjectOfferingCopyItem:
+      type: object
+      required:
+        - subject_id
+        - hours_per_week
+        - already_exists
+      properties:
+        subject_id:
+          type: string
+          format: uuid
+        grade_level_id:
+          type: string
+          format: uuid
+        hours_per_week:
+          type: integer
+        already_exists:
+          type: boolean
+          description: True when to_year_id already has an offering for this subject and grade level
+    ClassCopyItem:
+      type: object
+      required:
+        - name
+        - grade_level_id
+        - already_exists
+      properties:
+        name:
+          type: string
+        grade_level_id:
+          type: string
+          format: uuid
+        room_id:
+          type: string
+          format: uuid
+        capacity:
+          type: integer
+        homeroom_teacher_id:
+          type: string
+          format: uuid
+        already_exists:
+          type: boolean
+          description: True when to_year_id already has a class of this name
+    NewYearSetupPlan:
+      type: object
+      required:
+        - subject_offerings
+        - classes
+      properties:
+        subject_offerings:
+          type: array
+          items:
+            $ref: "#/components/schemas/SubjectOfferingCopyItem"
+        classes:
+          type: array
+          items:
+            $ref: "#/components/schemas/ClassCopyItem"
+    NewYearSetupResult:
+      type: object
+      required:
+        - subject_offerings_copied
+        - classes_copied
+      properties:
+        subject_offerings_copied:
+          type: integer
+        classes_copied:
+          type: integer
     ImportRowAction:
       type: string
       enum:

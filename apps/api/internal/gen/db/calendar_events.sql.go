@@ -12,16 +12,33 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const academicAddCalendarEventGradeLevel = `-- name: AcademicAddCalendarEventGradeLevel :exec
+insert into academic_calendar_event_grade_levels (tenant_id, calendar_event_id, grade_level_id)
+values ($1, $2, $3)
+`
+
+type AcademicAddCalendarEventGradeLevelParams struct {
+	TenantID        uuid.UUID `json:"tenant_id"`
+	CalendarEventID uuid.UUID `json:"calendar_event_id"`
+	GradeLevelID    uuid.UUID `json:"grade_level_id"`
+}
+
+func (q *Queries) AcademicAddCalendarEventGradeLevel(ctx context.Context, arg AcademicAddCalendarEventGradeLevelParams) error {
+	_, err := q.db.Exec(ctx, academicAddCalendarEventGradeLevel, arg.TenantID, arg.CalendarEventID, arg.GradeLevelID)
+	return err
+}
+
 const academicCreateCalendarEvent = `-- name: AcademicCreateCalendarEvent :one
-insert into academic_calendar_events (tenant_id, academic_year_id, date, kind, name)
-values ($1, $2, $3, $4, $5)
-returning id, tenant_id, academic_year_id, date, kind, name
+insert into academic_calendar_events (tenant_id, academic_year_id, date, end_date, kind, name)
+values ($1, $2, $3, $4, $5, $6)
+returning id, tenant_id, academic_year_id, date, kind, name, end_date
 `
 
 type AcademicCreateCalendarEventParams struct {
 	TenantID       uuid.UUID   `json:"tenant_id"`
 	AcademicYearID uuid.UUID   `json:"academic_year_id"`
 	Date           pgtype.Date `json:"date"`
+	EndDate        pgtype.Date `json:"end_date"`
 	Kind           string      `json:"kind"`
 	Name           string      `json:"name"`
 }
@@ -31,6 +48,7 @@ func (q *Queries) AcademicCreateCalendarEvent(ctx context.Context, arg AcademicC
 		arg.TenantID,
 		arg.AcademicYearID,
 		arg.Date,
+		arg.EndDate,
 		arg.Kind,
 		arg.Name,
 	)
@@ -42,6 +60,7 @@ func (q *Queries) AcademicCreateCalendarEvent(ctx context.Context, arg AcademicC
 		&i.Date,
 		&i.Kind,
 		&i.Name,
+		&i.EndDate,
 	)
 	return i, err
 }
@@ -61,7 +80,7 @@ func (q *Queries) AcademicDeleteCalendarEvent(ctx context.Context, arg AcademicD
 }
 
 const academicGetCalendarEventByID = `-- name: AcademicGetCalendarEventByID :one
-select id, tenant_id, academic_year_id, date, kind, name from academic_calendar_events where tenant_id = $1 and id = $2
+select id, tenant_id, academic_year_id, date, kind, name, end_date from academic_calendar_events where tenant_id = $1 and id = $2
 `
 
 type AcademicGetCalendarEventByIDParams struct {
@@ -79,12 +98,44 @@ func (q *Queries) AcademicGetCalendarEventByID(ctx context.Context, arg Academic
 		&i.Date,
 		&i.Kind,
 		&i.Name,
+		&i.EndDate,
 	)
 	return i, err
 }
 
+const academicListCalendarEventGradeLevels = `-- name: AcademicListCalendarEventGradeLevels :many
+select grade_level_id from academic_calendar_event_grade_levels
+where tenant_id = $1 and calendar_event_id = $2
+order by grade_level_id
+`
+
+type AcademicListCalendarEventGradeLevelsParams struct {
+	TenantID        uuid.UUID `json:"tenant_id"`
+	CalendarEventID uuid.UUID `json:"calendar_event_id"`
+}
+
+func (q *Queries) AcademicListCalendarEventGradeLevels(ctx context.Context, arg AcademicListCalendarEventGradeLevelsParams) ([]uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, academicListCalendarEventGradeLevels, arg.TenantID, arg.CalendarEventID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []uuid.UUID{}
+	for rows.Next() {
+		var grade_level_id uuid.UUID
+		if err := rows.Scan(&grade_level_id); err != nil {
+			return nil, err
+		}
+		items = append(items, grade_level_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const academicListCalendarEvents = `-- name: AcademicListCalendarEvents :many
-select academic_calendar_events.id, academic_calendar_events.tenant_id, academic_calendar_events.academic_year_id, academic_calendar_events.date, academic_calendar_events.kind, academic_calendar_events.name, count(*) over () as total_count
+select academic_calendar_events.id, academic_calendar_events.tenant_id, academic_calendar_events.academic_year_id, academic_calendar_events.date, academic_calendar_events.kind, academic_calendar_events.name, academic_calendar_events.end_date, count(*) over () as total_count
 from academic_calendar_events
 where tenant_id = $1 and academic_year_id = $2
   and ($5::text is null or kind = $5)
@@ -127,6 +178,7 @@ func (q *Queries) AcademicListCalendarEvents(ctx context.Context, arg AcademicLi
 			&i.AcademicCalendarEvent.Date,
 			&i.AcademicCalendarEvent.Kind,
 			&i.AcademicCalendarEvent.Name,
+			&i.AcademicCalendarEvent.EndDate,
 			&i.TotalCount,
 		); err != nil {
 			return nil, err
@@ -139,17 +191,76 @@ func (q *Queries) AcademicListCalendarEvents(ctx context.Context, arg AcademicLi
 	return items, nil
 }
 
+const academicListCalendarEventsForDate = `-- name: AcademicListCalendarEventsForDate :many
+select id, tenant_id, academic_year_id, date, kind, name, end_date from academic_calendar_events
+where tenant_id = $1 and academic_year_id = $2
+  and kind in ('holiday', 'no_school', 'semester_break')
+  and date <= $3 and end_date >= $3
+`
+
+type AcademicListCalendarEventsForDateParams struct {
+	TenantID       uuid.UUID   `json:"tenant_id"`
+	AcademicYearID uuid.UUID   `json:"academic_year_id"`
+	Date           pgtype.Date `json:"date"`
+}
+
+// Every non-teaching calendar event (holiday, no_school, semester_break)
+// whose [date, end_date] range covers the given date, for
+// domain.IsSchoolDay to evaluate against a grade level.
+func (q *Queries) AcademicListCalendarEventsForDate(ctx context.Context, arg AcademicListCalendarEventsForDateParams) ([]AcademicCalendarEvent, error) {
+	rows, err := q.db.Query(ctx, academicListCalendarEventsForDate, arg.TenantID, arg.AcademicYearID, arg.Date)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []AcademicCalendarEvent{}
+	for rows.Next() {
+		var i AcademicCalendarEvent
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.AcademicYearID,
+			&i.Date,
+			&i.Kind,
+			&i.Name,
+			&i.EndDate,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const academicReplaceCalendarEventGradeLevels = `-- name: AcademicReplaceCalendarEventGradeLevels :exec
+delete from academic_calendar_event_grade_levels where tenant_id = $1 and calendar_event_id = $2
+`
+
+type AcademicReplaceCalendarEventGradeLevelsParams struct {
+	TenantID        uuid.UUID `json:"tenant_id"`
+	CalendarEventID uuid.UUID `json:"calendar_event_id"`
+}
+
+func (q *Queries) AcademicReplaceCalendarEventGradeLevels(ctx context.Context, arg AcademicReplaceCalendarEventGradeLevelsParams) error {
+	_, err := q.db.Exec(ctx, academicReplaceCalendarEventGradeLevels, arg.TenantID, arg.CalendarEventID)
+	return err
+}
+
 const academicUpdateCalendarEvent = `-- name: AcademicUpdateCalendarEvent :one
 update academic_calendar_events
-set date = $3, kind = $4, name = $5
+set date = $3, end_date = $4, kind = $5, name = $6
 where tenant_id = $1 and id = $2
-returning id, tenant_id, academic_year_id, date, kind, name
+returning id, tenant_id, academic_year_id, date, kind, name, end_date
 `
 
 type AcademicUpdateCalendarEventParams struct {
 	TenantID uuid.UUID   `json:"tenant_id"`
 	ID       uuid.UUID   `json:"id"`
 	Date     pgtype.Date `json:"date"`
+	EndDate  pgtype.Date `json:"end_date"`
 	Kind     string      `json:"kind"`
 	Name     string      `json:"name"`
 }
@@ -159,6 +270,7 @@ func (q *Queries) AcademicUpdateCalendarEvent(ctx context.Context, arg AcademicU
 		arg.TenantID,
 		arg.ID,
 		arg.Date,
+		arg.EndDate,
 		arg.Kind,
 		arg.Name,
 	)
@@ -170,6 +282,7 @@ func (q *Queries) AcademicUpdateCalendarEvent(ctx context.Context, arg AcademicU
 		&i.Date,
 		&i.Kind,
 		&i.Name,
+		&i.EndDate,
 	)
 	return i, err
 }

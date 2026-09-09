@@ -3,8 +3,10 @@ import type { LucideIcon } from "lucide-react";
 import {
   Bell,
   Building2,
+  CalendarDays,
   ClipboardList,
   FileSpreadsheet,
+  GraduationCap,
   ListChecks,
   Home,
   Repeat,
@@ -215,6 +217,22 @@ export const navigation: NavItem[] = [
     href: "/school/duties",
     icon: ShieldCheck,
     permission: "manage_master_data",
+    group: GROUP.schoolData,
+  },
+  {
+    key: "school-calendar",
+    labelKey: "nav.schoolData.items.academicCalendar",
+    href: "/school/calendar",
+    icon: CalendarDays,
+    permission: "view_academic_data",
+    group: GROUP.schoolData,
+  },
+  {
+    key: "school-promotion",
+    labelKey: "nav.schoolData.items.promotion",
+    href: "/school/promotion",
+    icon: GraduationCap,
+    permission: "manage_enrollments",
     group: GROUP.schoolData,
   },
 

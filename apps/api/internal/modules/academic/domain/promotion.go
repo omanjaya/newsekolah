@@ -6,6 +6,10 @@ const (
 	PromotionActionPromote  = "promote"
 	PromotionActionRetain   = "retain"
 	PromotionActionGraduate = "graduate"
+	// PromotionActionTransfer marks a student as leaving to another
+	// school instead of continuing here: like graduate, it closes the
+	// source enrollment without opening one in the destination year.
+	PromotionActionTransfer = "transfer"
 )
 
 // PromotionCandidate is one currently-enrolled student the planner
@@ -88,6 +92,8 @@ func BuildPromotionPlan(
 		switch {
 		case hasOverride && override.Action == PromotionActionGraduate:
 			item.Action = PromotionActionGraduate
+		case hasOverride && override.Action == PromotionActionTransfer:
+			item.Action = PromotionActionTransfer
 		case hasOverride && override.Action == PromotionActionRetain:
 			item.Action = PromotionActionRetain
 			item.TargetClassID = firstNonNil(override.TargetClassID, findTarget(targets, c.GradeLevelID, c.TrackID))
@@ -101,7 +107,8 @@ func BuildPromotionPlan(
 			item.TargetClassID = promoteTarget(targets, gradeLevelIDBySequence, c)
 		}
 
-		if item.Action != PromotionActionGraduate && item.TargetClassID == nil {
+		needsTarget := item.Action == PromotionActionPromote || item.Action == PromotionActionRetain
+		if needsTarget && item.TargetClassID == nil {
 			item.Unresolved = true
 		}
 

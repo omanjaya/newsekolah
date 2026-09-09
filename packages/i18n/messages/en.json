@@ -148,7 +148,9 @@
         "rooms": "Rooms",
         "periods": "Periods",
         "assignments": "Assignments",
-        "violationCatalog": "Violation Catalog"
+        "violationCatalog": "Violation Catalog",
+        "academicCalendar": "Academic Calendar",
+        "promotion": "Class Promotion"
       }
     },
     "settings": {

@@ -140,22 +140,50 @@ func (r *Repository) ActivateTerm(ctx context.Context, tenantID, id, yearID uuid
 
 func (r *Repository) CreateCalendarEvent(ctx context.Context, e domain.CalendarEvent) (domain.CalendarEvent, error) {
 	row, err := r.queries(ctx).AcademicCreateCalendarEvent(ctx, db.AcademicCreateCalendarEventParams{
-		TenantID: e.TenantID, AcademicYearID: e.AcademicYearID, Date: pdatabase.Date(e.Date), Kind: e.Kind, Name: e.Name,
+		TenantID: e.TenantID, AcademicYearID: e.AcademicYearID,
+		Date: pdatabase.Date(e.Date), EndDate: pdatabase.Date(e.EndDate), Kind: e.Kind, Name: e.Name,
 	})
 	if err != nil {
 		return domain.CalendarEvent{}, err
 	}
-	return toCalendarEvent(row), nil
+	if err := r.replaceCalendarEventGradeLevels(ctx, e.TenantID, row.ID, e.GradeLevelIDs); err != nil {
+		return domain.CalendarEvent{}, err
+	}
+	event := toCalendarEvent(row)
+	event.GradeLevelIDs = e.GradeLevelIDs
+	return event, nil
 }
 
-func (r *Repository) UpdateCalendarEvent(ctx context.Context, tenantID, id uuid.UUID, date time.Time, kind, name string) (domain.CalendarEvent, error) {
+func (r *Repository) UpdateCalendarEvent(ctx context.Context, tenantID, id uuid.UUID, date, endDate time.Time, kind, name string, gradeLevelIDs []uuid.UUID) (domain.CalendarEvent, error) {
 	row, err := r.queries(ctx).AcademicUpdateCalendarEvent(ctx, db.AcademicUpdateCalendarEventParams{
-		TenantID: tenantID, ID: id, Date: pdatabase.Date(date), Kind: kind, Name: name,
+		TenantID: tenantID, ID: id, Date: pdatabase.Date(date), EndDate: pdatabase.Date(endDate), Kind: kind, Name: name,
 	})
 	if err != nil {
 		return domain.CalendarEvent{}, err
 	}
-	return toCalendarEvent(row), nil
+	if err := r.replaceCalendarEventGradeLevels(ctx, tenantID, id, gradeLevelIDs); err != nil {
+		return domain.CalendarEvent{}, err
+	}
+	event := toCalendarEvent(row)
+	event.GradeLevelIDs = gradeLevelIDs
+	return event, nil
+}
+
+func (r *Repository) replaceCalendarEventGradeLevels(ctx context.Context, tenantID, eventID uuid.UUID, gradeLevelIDs []uuid.UUID) error {
+	q := r.queries(ctx)
+	if err := q.AcademicReplaceCalendarEventGradeLevels(ctx, db.AcademicReplaceCalendarEventGradeLevelsParams{
+		TenantID: tenantID, CalendarEventID: eventID,
+	}); err != nil {
+		return err
+	}
+	for _, gradeLevelID := range gradeLevelIDs {
+		if err := q.AcademicAddCalendarEventGradeLevel(ctx, db.AcademicAddCalendarEventGradeLevelParams{
+			TenantID: tenantID, CalendarEventID: eventID, GradeLevelID: gradeLevelID,
+		}); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (r *Repository) GetCalendarEventByID(ctx context.Context, tenantID, id uuid.UUID) (domain.CalendarEvent, error) {
@@ -163,7 +191,15 @@ func (r *Repository) GetCalendarEventByID(ctx context.Context, tenantID, id uuid
 	if err != nil {
 		return domain.CalendarEvent{}, err
 	}
-	return toCalendarEvent(row), nil
+	event := toCalendarEvent(row)
+	gradeLevelIDs, err := r.queries(ctx).AcademicListCalendarEventGradeLevels(ctx, db.AcademicListCalendarEventGradeLevelsParams{
+		TenantID: tenantID, CalendarEventID: id,
+	})
+	if err != nil {
+		return domain.CalendarEvent{}, err
+	}
+	event.GradeLevelIDs = gradeLevelIDs
+	return event, nil
 }
 
 func (r *Repository) DeleteCalendarEvent(ctx context.Context, tenantID, id uuid.UUID) error {
@@ -180,10 +216,44 @@ func (r *Repository) ListCalendarEvents(ctx context.Context, tenantID, yearID uu
 	events := make([]domain.CalendarEvent, len(rows))
 	var total int64
 	for i, row := range rows {
-		events[i] = toCalendarEvent(row.AcademicCalendarEvent)
+		event := toCalendarEvent(row.AcademicCalendarEvent)
+		gradeLevelIDs, err := r.queries(ctx).AcademicListCalendarEventGradeLevels(ctx, db.AcademicListCalendarEventGradeLevelsParams{
+			TenantID: tenantID, CalendarEventID: event.ID,
+		})
+		if err != nil {
+			return nil, 0, err
+		}
+		event.GradeLevelIDs = gradeLevelIDs
+		events[i] = event
 		total = row.TotalCount
 	}
 	return events, total, nil
+}
+
+// ListCalendarEventsForDate returns every non-teaching calendar event
+// (holiday, no_school, semester_break) whose range covers date, each with
+// its grade-level targeting resolved -- the input domain.IsSchoolDay
+// needs.
+func (r *Repository) ListCalendarEventsForDate(ctx context.Context, tenantID, yearID uuid.UUID, date time.Time) ([]domain.CalendarEvent, error) {
+	rows, err := r.queries(ctx).AcademicListCalendarEventsForDate(ctx, db.AcademicListCalendarEventsForDateParams{
+		TenantID: tenantID, AcademicYearID: yearID, Date: pdatabase.Date(date),
+	})
+	if err != nil {
+		return nil, err
+	}
+	events := make([]domain.CalendarEvent, len(rows))
+	for i, row := range rows {
+		event := toCalendarEvent(row)
+		gradeLevelIDs, err := r.queries(ctx).AcademicListCalendarEventGradeLevels(ctx, db.AcademicListCalendarEventGradeLevelsParams{
+			TenantID: tenantID, CalendarEventID: event.ID,
+		})
+		if err != nil {
+			return nil, err
+		}
+		event.GradeLevelIDs = gradeLevelIDs
+		events[i] = event
+	}
+	return events, nil
 }
 
 func (r *Repository) UpsertSchoolDay(ctx context.Context, tenantID, yearID uuid.UUID, dayOfWeek int16, isActive bool) error {
@@ -249,6 +319,7 @@ func toCalendarEvent(row db.AcademicCalendarEvent) domain.CalendarEvent {
 		TenantID:       row.TenantID,
 		AcademicYearID: row.AcademicYearID,
 		Date:           pdatabase.DateOrZero(row.Date),
+		EndDate:        pdatabase.DateOrZero(row.EndDate),
 		Kind:           row.Kind,
 		Name:           row.Name,
 	}

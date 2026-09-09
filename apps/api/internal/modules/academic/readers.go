@@ -2,6 +2,7 @@ package academic
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -33,6 +34,17 @@ type PeriodReader interface {
 	PeriodsToday(ctx context.Context, tenantID, yearID uuid.UUID, dayOfWeek int16, now domain.ClockTime) (domain.Period, bool, error)
 }
 
+// CalendarReader is the narrow read surface a module needs from the
+// academic calendar: whether a given date is a school day for the tenant
+// (weekly pattern plus holidays/no-school days/semester breaks), optionally
+// scoped to one grade level. attendance's daily-status algorithm is the
+// intended consumer -- see apps/api/internal/wiring/calendar.go for how
+// this is meant to be wired in without attendance importing this module
+// directly.
+type CalendarReader interface {
+	IsSchoolDay(ctx context.Context, tenantID, academicYearID uuid.UUID, date time.Time, gradeLevelID *uuid.UUID) (bool, error)
+}
+
 // TeachingReader is the narrow read surface a module needs to check
 // whether a teacher is assigned to teach a subject in a class -- e.g.
 // grading refusing to accept scores from a teacher with no assignment
@@ -48,5 +60,6 @@ var (
 	_ YearReader     = (*service.Service)(nil)
 	_ ClassReader    = (*service.Service)(nil)
 	_ PeriodReader   = (*service.Service)(nil)
+	_ CalendarReader = (*service.Service)(nil)
 	_ TeachingReader = (*service.Service)(nil)
 )

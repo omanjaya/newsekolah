@@ -11,7 +11,11 @@ var (
 	ErrTermNotFound      = errors.New("term not found")
 	ErrTermSequenceTaken = errors.New("term sequence already used in this academic year")
 
-	ErrCalendarEventNotFound = errors.New("calendar event not found")
+	ErrCalendarEventNotFound     = errors.New("calendar event not found")
+	ErrInvalidCalendarEventRange = errors.New("end_date must not be before date")
+
+	ErrNewYearSourceNotFound = errors.New("source academic year not found")
+	ErrNewYearSameAsSource   = errors.New("destination academic year must differ from the source year")
 
 	ErrGradeLevelNotFound   = errors.New("grade level not found")
 	ErrGradeLevelCodeExists = errors.New("grade level code already exists")

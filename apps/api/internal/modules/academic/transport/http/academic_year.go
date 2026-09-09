@@ -3,8 +3,11 @@ package http
 import (
 	"context"
 
+	"github.com/google/uuid"
+
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/api"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/academic/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/academic/service"
 )
 
 func (h *AcademicHandler) ListAcademicYears(ctx context.Context, request api.ListAcademicYearsRequestObject) (api.ListAcademicYearsResponseObject, error) {
@@ -132,7 +135,9 @@ func (h *AcademicHandler) ListCalendarEvents(ctx context.Context, request api.Li
 
 func (h *AcademicHandler) CreateCalendarEvent(ctx context.Context, request api.CreateCalendarEventRequestObject) (api.CreateCalendarEventResponseObject, error) {
 	tenantID := tenantIDFromContext(ctx)
-	event, err := h.service.CreateCalendarEvent(ctx, tenantID, request.YearId, toDate(request.Body.Date), string(request.Body.Kind), request.Body.Name)
+	event, err := h.service.CreateCalendarEvent(ctx, tenantID, request.YearId,
+		toDate(request.Body.Date), toDate(request.Body.EndDate), string(request.Body.Kind), request.Body.Name,
+		fromAPIGradeLevelIDs(request.Body.GradeLevelIds))
 	if err != nil {
 		return nil, mapDomainError(err)
 	}
@@ -141,11 +146,62 @@ func (h *AcademicHandler) CreateCalendarEvent(ctx context.Context, request api.C
 
 func (h *AcademicHandler) UpdateCalendarEvent(ctx context.Context, request api.UpdateCalendarEventRequestObject) (api.UpdateCalendarEventResponseObject, error) {
 	tenantID := tenantIDFromContext(ctx)
-	event, err := h.service.UpdateCalendarEvent(ctx, tenantID, request.EventId, toDate(request.Body.Date), string(request.Body.Kind), request.Body.Name)
+	event, err := h.service.UpdateCalendarEvent(ctx, tenantID, request.EventId,
+		toDate(request.Body.Date), toDate(request.Body.EndDate), string(request.Body.Kind), request.Body.Name,
+		fromAPIGradeLevelIDs(request.Body.GradeLevelIds))
 	if err != nil {
 		return nil, mapDomainError(err)
 	}
 	return api.UpdateCalendarEvent200JSONResponse(toAPICalendarEvent(event)), nil
+}
+
+func fromAPIGradeLevelIDs(ids *[]uuid.UUID) []uuid.UUID {
+	if ids == nil {
+		return nil
+	}
+	return *ids
+}
+
+func (h *AcademicHandler) PreviewNewYearSetup(ctx context.Context, request api.PreviewNewYearSetupRequestObject) (api.PreviewNewYearSetupResponseObject, error) {
+	tenantID := tenantIDFromContext(ctx)
+	plan, err := h.service.PreviewNewYearSetup(ctx, tenantID, request.Body.FromYearId, request.Body.ToYearId)
+	if err != nil {
+		return nil, mapDomainError(err)
+	}
+	return api.PreviewNewYearSetup200JSONResponse(toAPINewYearSetupPlan(plan)), nil
+}
+
+func (h *AcademicHandler) CommitNewYearSetup(ctx context.Context, request api.CommitNewYearSetupRequestObject) (api.CommitNewYearSetupResponseObject, error) {
+	tenantID := tenantIDFromContext(ctx)
+	result, err := h.service.CommitNewYearSetup(ctx, tenantID, request.Body.FromYearId, request.Body.ToYearId)
+	if err != nil {
+		return nil, mapDomainError(err)
+	}
+	return api.CommitNewYearSetup200JSONResponse{
+		SubjectOfferingsCopied: result.SubjectOfferingsCopied, ClassesCopied: result.ClassesCopied,
+	}, nil
+}
+
+func toAPINewYearSetupPlan(plan service.NewYearSetupPlan) api.NewYearSetupPlan {
+	offerings := make([]api.SubjectOfferingCopyItem, len(plan.SubjectOfferings))
+	for i, o := range plan.SubjectOfferings {
+		offerings[i] = api.SubjectOfferingCopyItem{
+			SubjectId: o.SubjectID, GradeLevelId: o.GradeLevelID, HoursPerWeek: int(o.HoursPerWeek), AlreadyExists: o.AlreadyExists,
+		}
+	}
+	classes := make([]api.ClassCopyItem, len(plan.Classes))
+	for i, c := range plan.Classes {
+		item := api.ClassCopyItem{
+			Name: c.Name, GradeLevelId: c.GradeLevelID, HomeroomTeacherId: c.HomeroomTeacherID,
+			RoomId: c.RoomID, AlreadyExists: c.AlreadyExists,
+		}
+		if c.Capacity != nil {
+			capacity := int(*c.Capacity)
+			item.Capacity = &capacity
+		}
+		classes[i] = item
+	}
+	return api.NewYearSetupPlan{SubjectOfferings: offerings, Classes: classes}
 }
 
 func (h *AcademicHandler) DeleteCalendarEvent(ctx context.Context, request api.DeleteCalendarEventRequestObject) (api.DeleteCalendarEventResponseObject, error) {
@@ -193,7 +249,12 @@ func toAPITerm(t domain.Term) api.Term {
 }
 
 func toAPICalendarEvent(e domain.CalendarEvent) api.CalendarEvent {
-	return api.CalendarEvent{
-		Id: e.ID, AcademicYearId: e.AcademicYearID, Date: toAPIDate(e.Date), Kind: api.CalendarEventKind(e.Kind), Name: e.Name,
+	out := api.CalendarEvent{
+		Id: e.ID, AcademicYearId: e.AcademicYearID, Date: toAPIDate(e.Date), EndDate: toAPIDate(e.EndDate),
+		Kind: api.CalendarEventKind(e.Kind), Name: e.Name,
 	}
+	if len(e.GradeLevelIDs) > 0 {
+		out.GradeLevelIds = &e.GradeLevelIDs
+	}
+	return out
 }

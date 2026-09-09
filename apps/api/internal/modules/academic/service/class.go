@@ -15,6 +15,7 @@ type classRepository interface {
 	GetClassByID(ctx context.Context, tenantID, id uuid.UUID) (domain.Class, error)
 	ListClasses(ctx context.Context, tenantID, yearID uuid.UUID, search string, gradeLevelID *uuid.UUID, page Page) ([]domain.Class, int64, error)
 	ListClassesByYearAndGradeLevel(ctx context.Context, tenantID, yearID, gradeLevelID uuid.UUID) ([]domain.Class, error)
+	ListAllClassesForYear(ctx context.Context, tenantID, yearID uuid.UUID) ([]domain.Class, error)
 	SoftDeleteClass(ctx context.Context, tenantID, id uuid.UUID) error
 	CountEnrollmentsForClass(ctx context.Context, tenantID, id uuid.UUID) (int64, error)
 	CountTeachingAssignmentsForClass(ctx context.Context, tenantID, id uuid.UUID) (int64, error)
