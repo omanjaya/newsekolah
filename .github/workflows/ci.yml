@@ -219,6 +219,12 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
+      - name: Check bundle is up to date
+        if: steps.changes.outputs.openapi == 'true'
+        run: |
+          npm install --no-save yaml@2 >/dev/null
+          node openapi/bundle.mjs --check
+
       - name: Lint contract
         if: steps.changes.outputs.openapi == 'true'
         run: npx --yes @redocly/cli@latest lint openapi/openapi.yaml
