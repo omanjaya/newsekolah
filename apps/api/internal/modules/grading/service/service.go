@@ -16,7 +16,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
 )
 
-const policyKindGradingScale = "grading.scale"
+const policyKindGradingScale = "grading"
 
 type Term struct {
 	ID             uuid.UUID

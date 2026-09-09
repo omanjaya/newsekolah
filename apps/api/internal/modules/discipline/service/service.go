@@ -17,7 +17,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
 )
 
-const policyKindSPLevels = "discipline.sp_levels"
+const policyKindSPLevels = "discipline_levels"
 
 type Repository interface {
 	ListViolationTypes(ctx context.Context, tenantID uuid.UUID, includeInactive bool) ([]domain.ViolationType, error)

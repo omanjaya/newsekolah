@@ -125,6 +125,10 @@ func run(logger *slog.Logger) error {
 		return err
 	}
 
+	if err := seedPhase2(ctx, pool, q, tenant.ID, year.ID, users, cfg.EncryptionSecret(), logger); err != nil {
+		return err
+	}
+
 	logger.Info("seed complete", "tenant_slug", tenant.Slug, "password", cfg.SeedPassword)
 	return nil
 }
