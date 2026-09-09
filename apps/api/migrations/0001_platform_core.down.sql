@@ -1,0 +1,12 @@
+drop table if exists audit_logs_default;
+drop table if exists audit_logs;
+drop table if exists assets;
+drop table if exists feature_flags;
+drop table if exists platform_admins;
+drop table if exists platform_settings;
+drop table if exists tenant_policies;
+drop table if exists tenant_settings;
+drop table if exists tenant_domains;
+drop table if exists tenants;
+drop function if exists set_updated_at();
+drop function if exists uuidv7();

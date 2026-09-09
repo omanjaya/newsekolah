@@ -243,6 +243,8 @@ export interface components {
             slug: string;
             name: string;
             short_name?: string;
+            /** @description Platform-wide product name (interim "SION"); use as app title fallback. */
+            product_name?: string;
             tagline?: string;
             /** Format: uri */
             logo_url?: string;

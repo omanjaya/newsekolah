@@ -1,0 +1,98 @@
+version: "2"
+
+linters:
+  enable:
+    - errcheck
+    - govet
+    - staticcheck
+    - gosec
+    - gocyclo
+    - depguard
+    - forbidigo
+    - revive
+    - sqlclosecheck
+    - bodyclose
+  settings:
+    gocyclo:
+      min-complexity: 15
+    revive:
+      rules:
+        - name: redefines-builtin-id
+        - name: unreachable-code
+        - name: indent-error-flow
+        - name: error-strings
+        - name: context-as-argument
+        - name: receiver-naming
+        - name: increment-decrement
+        - name: unused-parameter
+        - name: unexported-return
+    forbidigo:
+      forbid:
+        - pattern: ^time\.Now(\.\.\.)?$
+          msg: use clock.Clock instead of time.Now() outside internal/platform/clock
+    depguard:
+      rules:
+        domain:
+          files:
+            - "**/domain/**"
+          deny:
+            - pkg: github.com/jackc/pgx
+              desc: domain must not depend on the database driver
+            - pkg: github.com/go-chi/chi
+              desc: domain must not depend on the HTTP router
+            - pkg: github.com/omanjaya/newsekolah/apps/api/internal/gen
+              desc: domain must not depend on generated API or DB code
+            - pkg: github.com/omanjaya/newsekolah/apps/api/internal/platform/database
+              desc: domain must not depend on the database layer
+            - pkg: github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx
+              desc: domain must not depend on the HTTP layer
+        service:
+          files:
+            - "**/service/**"
+          deny:
+            - pkg: github.com/go-chi/chi
+              desc: service must not depend on the HTTP router
+            - pkg: github.com/omanjaya/newsekolah/apps/api/internal/gen/api
+              desc: service must not depend on generated API DTOs
+            - pkg: github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx
+              desc: service must not depend on the HTTP layer
+        repository:
+          files:
+            - "**/repository/**"
+          deny:
+            - pkg: github.com/go-chi/chi
+              desc: repository must not depend on the HTTP router
+            - pkg: github.com/omanjaya/newsekolah/apps/api/internal/gen/api
+              desc: repository must not depend on generated API DTOs
+        transport:
+          files:
+            - "**/transport/**"
+          deny:
+            - pkg: github.com/omanjaya/newsekolah/apps/api/internal/gen/db
+              desc: transport must not depend on generated DB queries
+            - pkg: github.com/jackc/pgx
+              desc: transport must not depend on the database driver
+
+  exclusions:
+    rules:
+      - path: internal/platform/clock/
+        linters: [forbidigo]
+      - path: _test\.go
+        linters: [gosec, gocyclo, forbidigo, revive]
+      - path: internal/gen/
+        linters:
+          - errcheck
+          - govet
+          - staticcheck
+          - gosec
+          - gocyclo
+          - depguard
+          - forbidigo
+          - revive
+          - sqlclosecheck
+          - bodyclose
+
+formatters:
+  enable:
+    - gofmt
+    - goimports

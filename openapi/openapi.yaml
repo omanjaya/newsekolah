@@ -148,6 +148,10 @@ paths:
       responses:
         "200":
           description: New tokens
+          headers:
+            Set-Cookie:
+              description: "Rotated `refresh_token` cookie for web clients"
+              schema: { type: string }
           content:
             application/json:
               schema: { $ref: "#/components/schemas/AuthTokens" }
@@ -160,7 +164,12 @@ paths:
       x-permission: authenticated
       summary: Revoke the current session (and clear the web cookie)
       responses:
-        "204": { description: Logged out }
+        "204":
+          description: Logged out
+          headers:
+            Set-Cookie:
+              description: "Expired `refresh_token` cookie, clearing it for web clients"
+              schema: { type: string }
         "401": { $ref: "#/components/responses/Unauthorized" }
 
   /v1/auth/sessions:
@@ -363,6 +372,9 @@ components:
         slug: { type: string }
         name: { type: string }
         short_name: { type: string }
+        product_name:
+          type: string
+          description: Platform-wide product name (interim "SION"); use as app title fallback.
         tagline: { type: string }
         logo_url: { type: string, format: uri }
         favicon_url: { type: string, format: uri }
