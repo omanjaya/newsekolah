@@ -3,6 +3,8 @@ import type { LucideIcon } from "lucide-react";
 import {
   Bell,
   ClipboardList,
+  FileSpreadsheet,
+  ListChecks,
   Home,
   Repeat,
   Settings,
@@ -220,6 +222,29 @@ export const navigation: NavItem[] = [
     href: "/settings/roles",
     icon: ShieldCheck,
     permission: "view_roles",
+    group: GROUP.settings,
+  },
+  {
+    key: "reports",
+    labelKey: "app.reports.navLabel",
+    href: "/reports",
+    icon: FileSpreadsheet,
+    permission: "view_reports",
+    group: GROUP.settings,
+  },
+  {
+    key: "setup",
+    labelKey: "app.onboarding.navLabel",
+    href: "/setup",
+    icon: ListChecks,
+    permission: "manage_settings",
+    group: GROUP.settings,
+  },
+  {
+    key: "settings-security",
+    labelKey: "app.security.navLabel",
+    href: "/settings/security",
+    icon: ShieldCheck,
     group: GROUP.settings,
   },
   {
