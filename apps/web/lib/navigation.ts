@@ -10,6 +10,7 @@ import {
   ListChecks,
   Home,
   MessageCircle,
+  Plug,
   Repeat,
   Settings,
   ShieldCheck,
@@ -307,6 +308,14 @@ export const navigation: NavItem[] = [
     href: "/settings/audit-logs",
     icon: ShieldCheck,
     permission: "view_audit_logs",
+    group: GROUP.settings,
+  },
+  {
+    key: "settings-integrations",
+    labelKey: "app.integrations.navLabel",
+    href: "/settings/integrations",
+    icon: Plug,
+    permission: "view_integrations",
     group: GROUP.settings,
   },
   {

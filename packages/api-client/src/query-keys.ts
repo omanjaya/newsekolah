@@ -65,4 +65,10 @@ export const queryKeys = {
   lateArrival: (id: string) => ["permits", "late-arrival", id] as const,
   lateArrivalQueue: () => ["permits", "late-arrival-queue"] as const,
   workflowDefinitions: () => ["permits", "workflow-definitions"] as const,
+
+  apiKeys: () => ["integrations", "api-keys"] as const,
+  webhookEndpoints: () => ["integrations", "webhook-endpoints"] as const,
+  webhookEventTypes: () => ["integrations", "event-types"] as const,
+  webhookDeliveries: (endpointId: string, cursor: string) =>
+    ["integrations", "webhook-deliveries", endpointId, cursor] as const,
 };

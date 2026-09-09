@@ -1,0 +1,97 @@
+{
+  "navLabel": "Integrations",
+  "eyebrow": "Settings",
+  "title": "API keys and webhooks",
+  "description": "Manage machine access to your school's data: API keys to call endpoints, and webhooks to receive events automatically.",
+  "tabs": {
+    "apiKeys": "API keys",
+    "webhooks": "Webhooks",
+    "deliveries": "Delivery log"
+  },
+  "apiKeys": {
+    "description": "An API key reaches the same endpoints a session does, bounded to the permissions selected when it was created.",
+    "createButton": "Create key",
+    "revoke": "Revoke",
+    "revoked": "Key revoked",
+    "revokeConfirmTitle": "Revoke this API key?",
+    "revokeConfirmBody": "The key \"{name}\" will stop working immediately. This cannot be undone.",
+    "emptyTitle": "No API keys yet",
+    "emptyBody": "Create a key to give machine access to this school's data.",
+    "neverUsed": "Never used",
+    "statusActive": "Active",
+    "statusRevoked": "Revoked",
+    "statusExpired": "Expired",
+    "columns": {
+      "name": "Name",
+      "permissions": "Permissions",
+      "status": "Status",
+      "lastUsed": "Last used"
+    },
+    "create": {
+      "dialogTitle": "Create API key",
+      "dialogBody": "Choose the permissions granted to this key. They can never exceed your own account's permissions.",
+      "nameLabel": "Key name",
+      "namePlaceholder": "e.g. Attendance CI integration",
+      "permissionsLabel": "Permissions",
+      "noPermissions": "Your account has no permissions to grant to a key.",
+      "submit": "Create key",
+      "createdTitle": "API key created",
+      "shownOnceWarning": "This token is shown once. Save it now; the server only keeps its hash.",
+      "tokenLabel": "Token",
+      "copyToken": "Copy token",
+      "tokenCopied": "Token copied",
+      "copyFailed": "Could not copy automatically, copy it manually",
+      "done": "Saved it"
+    }
+  },
+  "webhooks": {
+    "description": "A webhook endpoint receives events as an HMAC-signed POST request. See docs/14-public-api.md for the verification scheme.",
+    "create": "Add endpoint",
+    "edit": "Edit",
+    "delete": "Delete",
+    "deleted": "Endpoint deleted",
+    "viewDeliveries": "View deliveries",
+    "deleteConfirmTitle": "Delete this webhook endpoint?",
+    "deleteConfirmBody": "The endpoint \"{url}\" will stop receiving events. This cannot be undone.",
+    "emptyTitle": "No webhook endpoints yet",
+    "emptyBody": "Add an endpoint to receive school events automatically.",
+    "statusActive": "Active",
+    "statusDisabled": "Disabled",
+    "columns": {
+      "url": "URL",
+      "eventTypes": "Event types",
+      "status": "Status"
+    },
+    "form": {
+      "createTitle": "Add webhook endpoint",
+      "editTitle": "Edit webhook endpoint",
+      "dialogBody": "The URL must be publicly reachable; a private or loopback address is refused.",
+      "urlLabel": "Endpoint URL",
+      "descriptionLabel": "Description (optional)",
+      "eventTypesLabel": "Event types",
+      "submit": "Save",
+      "created": "Endpoint created",
+      "updated": "Endpoint updated"
+    }
+  },
+  "deliveries": {
+    "filterEndpoint": "Endpoint",
+    "filterEndpointAll": "All endpoints",
+    "retry": "Retry",
+    "retryEnqueued": "Retry enqueued",
+    "emptyTitle": "No deliveries yet",
+    "emptyBody": "Delivery history appears once the first event occurs.",
+    "statusSuccess": "Success",
+    "statusFailed": "Failed",
+    "statusPending": "Awaiting next attempt",
+    "columns": {
+      "when": "When",
+      "eventType": "Event type",
+      "status": "Status",
+      "attempts": "Attempts",
+      "reason": "Reason"
+    },
+    "pagePrev": "Previous",
+    "pageNext": "Next"
+  }
+}

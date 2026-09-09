@@ -60,6 +60,8 @@ tags:
     description: Cross-tenant platform console (multi-tenant deployments only)
   - name: library
     description: Catalogue, circulation, reservations, stocktake, and the public OPAC
+  - name: integrations
+    description: API keys and outgoing webhooks for machine access to the API
 paths:
   /v1/academic/years:
     get:
@@ -5549,6 +5551,258 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
+  /v1/integrations/event-types:
+    get:
+      tags:
+        - integrations
+      operationId: listIntegrationEventTypes
+      x-permission: view_integrations
+      summary: Event types a webhook endpoint may subscribe to
+      responses:
+        "200":
+          description: Event types
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventTypeList"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/integrations/api-keys:
+    get:
+      tags:
+        - integrations
+      operationId: listAPIKeys
+      x-permission: view_integrations
+      summary: API keys issued for this school
+      responses:
+        "200":
+          description: API keys
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/APIKey"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags:
+        - integrations
+      operationId: createAPIKey
+      x-permission: manage_integrations
+      summary: Issue a new API key; the token is returned once, here only
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/APIKeyCreate"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIKeyCreated"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/integrations/api-keys/{apiKeyId}/revoke:
+    post:
+      tags:
+        - integrations
+      operationId: revokeAPIKey
+      x-permission: manage_integrations
+      summary: Revoke an API key immediately
+      parameters:
+        - $ref: "#/components/parameters/APIKeyIdParam"
+      responses:
+        "200":
+          description: Revoked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/APIKey"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: The key was already revoked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/integrations/webhook-endpoints:
+    get:
+      tags:
+        - integrations
+      operationId: listWebhookEndpoints
+      x-permission: view_integrations
+      summary: Registered webhook endpoints
+      responses:
+        "200":
+          description: Webhook endpoints
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/WebhookEndpoint"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags:
+        - integrations
+      operationId: createWebhookEndpoint
+      x-permission: manage_integrations
+      summary: Register a webhook endpoint
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WebhookEndpointCreate"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebhookEndpoint"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/integrations/webhook-endpoints/{webhookEndpointId}:
+    put:
+      tags:
+        - integrations
+      operationId: updateWebhookEndpoint
+      x-permission: manage_integrations
+      summary: Update a webhook endpoint's url, description, or subscribed events
+      parameters:
+        - $ref: "#/components/parameters/WebhookEndpointIdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WebhookEndpointCreate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebhookEndpoint"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags:
+        - integrations
+      operationId: deleteWebhookEndpoint
+      x-permission: manage_integrations
+      summary: Remove a webhook endpoint
+      parameters:
+        - $ref: "#/components/parameters/WebhookEndpointIdParam"
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/integrations/webhook-deliveries:
+    get:
+      tags:
+        - integrations
+      operationId: listWebhookDeliveries
+      x-permission: view_integrations
+      summary: Webhook delivery log
+      parameters:
+        - name: endpoint_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: cursor
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: Webhook deliveries
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebhookDeliveryPage"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/integrations/webhook-deliveries/{webhookDeliveryId}/retry:
+    post:
+      tags:
+        - integrations
+      operationId: retryWebhookDelivery
+      x-permission: manage_integrations
+      summary: Retry a failed webhook delivery
+      parameters:
+        - $ref: "#/components/parameters/WebhookDeliveryIdParam"
+      responses:
+        "204":
+          description: Retry enqueued
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Only a failed delivery can be retried
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /v1/library/policy:
     get:
       tags:
@@ -12570,6 +12824,205 @@ components:
         last_used_at:
           type: string
           format: date-time
+    EventTypeList:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            type: string
+    APIKeyCreate:
+      type: object
+      required:
+        - name
+        - permissions
+      properties:
+        name:
+          type: string
+          maxLength: 120
+        permissions:
+          type: array
+          minItems: 1
+          items:
+            type: string
+        ip_allowlist:
+          type: array
+          items:
+            type: string
+        rate_limit_per_minute:
+          type: integer
+          minimum: 1
+          maximum: 6000
+        expires_at:
+          type: string
+          format: date-time
+    APIKey:
+      type: object
+      required:
+        - id
+        - name
+        - permissions
+        - ip_allowlist
+        - rate_limit_per_minute
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+        ip_allowlist:
+          type: array
+          items:
+            type: string
+        rate_limit_per_minute:
+          type: integer
+        expires_at:
+          type: string
+          format: date-time
+        revoked_at:
+          type: string
+          format: date-time
+        last_used_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+    APIKeyCreated:
+      type: object
+      required:
+        - api_key
+        - token
+      properties:
+        api_key:
+          $ref: "#/components/schemas/APIKey"
+        token:
+          type: string
+          description: The plaintext key, shown exactly once. Only its hash is stored.
+    WebhookEndpointCreate:
+      type: object
+      required:
+        - url
+        - event_types
+      properties:
+        url:
+          type: string
+          maxLength: 2048
+        description:
+          type: string
+          maxLength: 500
+        event_types:
+          type: array
+          minItems: 1
+          items:
+            type: string
+    WebhookEndpointStatus:
+      type: string
+      enum:
+        - active
+        - disabled
+    WebhookEndpoint:
+      type: object
+      required:
+        - id
+        - url
+        - description
+        - event_types
+        - status
+        - disabled_reason
+        - consecutive_failures
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        url:
+          type: string
+        description:
+          type: string
+        event_types:
+          type: array
+          items:
+            type: string
+        status:
+          $ref: "#/components/schemas/WebhookEndpointStatus"
+        disabled_reason:
+          type: string
+        consecutive_failures:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    WebhookDeliveryStatus:
+      type: string
+      enum:
+        - pending
+        - success
+        - failed
+    WebhookDelivery:
+      type: object
+      required:
+        - id
+        - endpoint_id
+        - event_type
+        - status
+        - attempt_count
+        - last_error
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        endpoint_id:
+          type: string
+          format: uuid
+        event_type:
+          type: string
+        status:
+          $ref: "#/components/schemas/WebhookDeliveryStatus"
+        attempt_count:
+          type: integer
+        last_status_code:
+          type: integer
+        last_error:
+          type: string
+        delivered_at:
+          type: string
+          format: date-time
+        next_attempt_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+    WebhookDeliveryPage:
+      type: object
+      required:
+        - data
+        - page
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/WebhookDelivery"
+        page:
+          type: object
+          required:
+            - next_cursor
+          properties:
+            next_cursor:
+              type: string
     LibraryPolicy:
       type: object
       required:
@@ -14713,6 +15166,27 @@ components:
         single-tenant mode.
       schema:
         type: string
+    APIKeyIdParam:
+      name: apiKeyId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    WebhookEndpointIdParam:
+      name: webhookEndpointId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    WebhookDeliveryIdParam:
+      name: webhookDeliveryId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
     WhatsAppTemplateId:
       name: templateId
       in: path

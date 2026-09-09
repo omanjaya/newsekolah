@@ -21,6 +21,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/grading"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/identity"
 	identityservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/identity/service"
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/integrations"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/library"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/notifications"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/permits"
@@ -167,6 +168,14 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	announcementsModule := announcements.Register(announcements.Dependencies{
 		Pool: pool, Notifier: wiring.AnnouncementNotifier{Svc: notificationsModule.Service}, Clock: clock.Real{}, Logger: logger,
 	})
+	integrationsModule := integrations.Register(integrations.Dependencies{
+		Pool: pool, Bus: eventBus, Perms: identityModule.Service, Sealer: sealer, Jobs: jobInserter, Clock: clock.Real{}, Logger: logger,
+	})
+	// The key lookup path only exists once the integrations module is
+	// built, so it is attached here rather than at NewAuthenticator time;
+	// authenticator.Middleware reads it per-request, so ordering only
+	// matters relative to the first served request, not to router.Use below.
+	authenticator.WithAPIKeys(integrationsModule.Service, store)
 
 	platformDeps := platform.Dependencies{
 		Pool: pool, Admin: wiring.PlatformIdentity{Identity: identityModule.Service}, Jobs: jobInserter,
@@ -192,6 +201,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		periodic = append(periodic, announcementsModule.RegisterJobs(workers)...)
 		periodic = append(periodic, reportsModule.RegisterJobs(workers, wiring.ReportsEmailSender{Email: senders.Email}, logger)...)
 		platformModule.RegisterJobs(workers)
+		integrationsModule.RegisterJobs(workers, clock.Real{})
 	}
 	riverClient, err := jobs.NewClient(pool, workers, logger, periodic...)
 	if err != nil {
@@ -234,6 +244,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		FamilyHandler:        familyModule.Handler,
 		PlatformHandler:      platformModule.Handler,
 		LibraryHandler:       libraryModule.Handler,
+		IntegrationsHandler:  integrationsModule.Handler,
 		healthHandler:        &healthHandler{version: version, pool: pool, redis: redisClient},
 	}
 

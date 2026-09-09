@@ -24,6 +24,13 @@ type Identity struct {
 	// admin identified by the access token's `act` claim, as opposed to
 	// UserID, which is the impersonated user the session belongs to.
 	ActorUserID uuid.NullUUID
+
+	// KeyPermissions is set only when the request authenticated with an API
+	// key (platform/auth's key-based path) rather than a session. It caps
+	// the effective permission set at whatever explicit subset the key was
+	// created with, on top of (never instead of) the owning user's own
+	// permissions -- a key can never grant more than its creator has.
+	KeyPermissions *Set
 }
 
 type identityCtxKey struct{}
@@ -73,6 +80,9 @@ func Authorize(ctx context.Context, ops OperationPermissions, provider Permissio
 		return err
 	}
 	if !perms.Has(perm) {
+		return httpx.ErrForbidden
+	}
+	if id.KeyPermissions != nil && !id.KeyPermissions.Has(perm) {
 		return httpx.ErrForbidden
 	}
 	return nil

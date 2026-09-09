@@ -379,6 +379,53 @@ type ImpersonationAction struct {
 	OccurredAt pgtype.Timestamptz `json:"occurred_at"`
 }
 
+type IntegrationApiKey struct {
+	ID                 uuid.UUID          `json:"id"`
+	TenantID           uuid.UUID          `json:"tenant_id"`
+	Name               string             `json:"name"`
+	SecretHash         string             `json:"secret_hash"`
+	Permissions        []string           `json:"permissions"`
+	CreatedBy          uuid.UUID          `json:"created_by"`
+	IpAllowlist        []string           `json:"ip_allowlist"`
+	RateLimitPerMinute int32              `json:"rate_limit_per_minute"`
+	ExpiresAt          pgtype.Timestamptz `json:"expires_at"`
+	RevokedAt          pgtype.Timestamptz `json:"revoked_at"`
+	LastUsedAt         pgtype.Timestamptz `json:"last_used_at"`
+	CreatedAt          pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt          pgtype.Timestamptz `json:"updated_at"`
+}
+
+type IntegrationWebhookDelivery struct {
+	ID             uuid.UUID          `json:"id"`
+	TenantID       uuid.UUID          `json:"tenant_id"`
+	EndpointID     uuid.UUID          `json:"endpoint_id"`
+	EventType      string             `json:"event_type"`
+	EventID        uuid.UUID          `json:"event_id"`
+	Payload        []byte             `json:"payload"`
+	Status         string             `json:"status"`
+	AttemptCount   int32              `json:"attempt_count"`
+	LastStatusCode pgtype.Int4        `json:"last_status_code"`
+	LastError      string             `json:"last_error"`
+	DeliveredAt    pgtype.Timestamptz `json:"delivered_at"`
+	NextAttemptAt  pgtype.Timestamptz `json:"next_attempt_at"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+}
+
+type IntegrationWebhookEndpoint struct {
+	ID                      uuid.UUID          `json:"id"`
+	TenantID                uuid.UUID          `json:"tenant_id"`
+	Url                     string             `json:"url"`
+	Description             string             `json:"description"`
+	EventTypes              []string           `json:"event_types"`
+	SigningSecretCiphertext []byte             `json:"signing_secret_ciphertext"`
+	Status                  string             `json:"status"`
+	DisabledReason          string             `json:"disabled_reason"`
+	ConsecutiveFailures     int32              `json:"consecutive_failures"`
+	CreatedBy               uuid.UUID          `json:"created_by"`
+	CreatedAt               pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt               pgtype.Timestamptz `json:"updated_at"`
+}
+
 type IssuedDocument struct {
 	ID                   uuid.UUID          `json:"id"`
 	TenantID             uuid.UUID          `json:"tenant_id"`

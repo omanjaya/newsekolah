@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/announcements"
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/integrations"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/notifications"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/permits"
 	permitsservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/service"
@@ -79,6 +80,15 @@ func run(logger *slog.Logger) error {
 		Pool: pool, Notifier: wiring.AnnouncementNotifier{Svc: notificationsModule.Service}, Clock: clock.Real{}, Logger: logger,
 	})
 	periodic = append(periodic, announcementsModule.RegisterJobs(workers)...)
+
+	// Perms is nil: this process only works the delivery job, it never
+	// serves CreateAPIKey (the only use case that consults it), so there is
+	// no PermissionsProvider to build here without pulling in the whole
+	// identity module for a call path that never runs.
+	integrationsModule := integrations.Register(integrations.Dependencies{
+		Pool: pool, Perms: nil, Sealer: sealer, Jobs: nil, Clock: clock.Real{}, Logger: logger,
+	})
+	integrationsModule.RegisterJobs(workers, clock.Real{})
 
 	// The export job has no dependency on identity: RunExport only reads
 	// tenant tables and writes to object storage, so this process never

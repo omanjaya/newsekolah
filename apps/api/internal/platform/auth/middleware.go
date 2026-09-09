@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"strings"
 
@@ -22,10 +23,22 @@ type Authenticator struct {
 	issuer   *TokenIssuer
 	cache    *SessionCache
 	sessions SessionLookup
+	apiKeys  APIKeyLookup
+	apiRate  *APIKeyRateLimiter
 }
 
 func NewAuthenticator(issuer *TokenIssuer, cache *SessionCache, sessions SessionLookup) *Authenticator {
 	return &Authenticator{issuer: issuer, cache: cache, sessions: sessions}
+}
+
+// WithAPIKeys enables the "nsk_..." bearer token path. Called once at
+// wiring time after the integrations module (which implements APIKeyLookup)
+// is constructed; without it, a request presenting an API key token is
+// treated as an unrecognized token, same as before this module existed.
+func (a *Authenticator) WithAPIKeys(lookup APIKeyLookup, store KVStore) *Authenticator {
+	a.apiKeys = lookup
+	a.apiRate = NewAPIKeyRateLimiter(store)
+	return a
 }
 
 // Middleware is intentionally "soft": it never itself rejects a request. It
@@ -42,9 +55,87 @@ func (a *Authenticator) Middleware(next http.Handler) http.Handler {
 			return
 		}
 
-		id, ctx := a.authenticate(r, token)
+		var (
+			id  authz.Identity
+			ctx context.Context
+		)
+		if a.apiKeys != nil && strings.HasPrefix(token, APIKeyTokenPrefix) {
+			id, ctx = a.authenticateAPIKey(r, token)
+		} else {
+			id, ctx = a.authenticate(r, token)
+		}
 		next.ServeHTTP(w, r.WithContext(authz.WithIdentity(ctx, id)))
 	})
+}
+
+// authenticateAPIKey verifies a "nsk_..." token through the injected
+// APIKeyLookup and applies the key's own per-minute rate limit, on top of
+// (not instead of) whatever limits apply to the resolved user's session
+// requests.
+func (a *Authenticator) authenticateAPIKey(r *http.Request, token string) (authz.Identity, context.Context) {
+	ctx := r.Context()
+
+	tenantID := uuid.Nil
+	if resolved, ok := tenant.FromContext(ctx); ok {
+		tenantID = resolved.ID
+	}
+
+	keyID, secret, ok := ParseAPIKeyToken(token)
+	if !ok {
+		return authz.Identity{Err: httpx.ErrAPIKeyInvalid}, ctx
+	}
+
+	principal, err := a.apiKeys.Authenticate(ctx, tenantID, APIKeyTokenPrefix+keyID.String()+"."+secret, clientIP(r))
+	if err != nil {
+		return authz.Identity{Err: mapAPIKeyError(err)}, ctx
+	}
+
+	if a.apiRate != nil {
+		allowed, rateErr := a.apiRate.Allow(ctx, principal.KeyID, principal.RateLimitPerMinute)
+		if rateErr != nil {
+			return authz.Identity{Err: httpx.ErrInternal}, ctx
+		}
+		if !allowed {
+			return authz.Identity{Err: httpx.ErrAPIKeyRateLimited}, ctx
+		}
+	}
+
+	ctx = httpx.WithUserID(ctx, principal.OwnerUserID)
+	ctx = httpx.WithTenantID(ctx, tenantID)
+	ctx = httpx.WithAPIKeyID(ctx, principal.KeyID)
+	ctx = httpx.WithAPIKeyName(ctx, principal.KeyName)
+
+	permissions := principal.Permissions
+	return authz.Identity{
+		Authenticated:  true,
+		UserID:         principal.OwnerUserID,
+		TenantID:       tenantID,
+		KeyPermissions: &permissions,
+	}, ctx
+}
+
+func mapAPIKeyError(err error) *httpx.Error {
+	switch {
+	case errors.Is(err, ErrAPIKeyExpired):
+		return httpx.ErrAPIKeyExpired
+	case errors.Is(err, ErrAPIKeyRevoked):
+		return httpx.ErrAPIKeyRevokedAuth
+	case errors.Is(err, ErrAPIKeyIPNotAllowed):
+		return httpx.ErrAPIKeyIPNotAllowed
+	case errors.Is(err, ErrAPIKeyRateLimited):
+		return httpx.ErrAPIKeyRateLimited
+	case errors.Is(err, ErrAPIKeyNotFound):
+		return httpx.ErrAPIKeyInvalid
+	default:
+		return httpx.ErrAPIKeyInvalid
+	}
+}
+
+// clientIP reads the address RealIP middleware already resolved (trusted
+// proxy chain applied), so the ip allow list check sees the same address
+// every other part of the request pipeline does.
+func clientIP(r *http.Request) string {
+	return httpx.RequestMetaFromContext(r.Context()).IP
 }
 
 func (a *Authenticator) authenticate(r *http.Request, token string) (authz.Identity, context.Context) {

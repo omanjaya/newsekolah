@@ -59,3 +59,5 @@ tags:
     description: Cross-tenant platform console (multi-tenant deployments only)
   - name: library
     description: Catalogue, circulation, reservations, stocktake, and the public OPAC
+  - name: integrations
+    description: API keys and outgoing webhooks for machine access to the API
