@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"encoding/json"
-	"time"
 
 	"github.com/google/uuid"
 
@@ -34,7 +33,7 @@ func (s *Service) loadStatusPolicy(ctx context.Context, tenantID uuid.UUID) (dom
 		if err != nil {
 			return domain.StatusPolicy{}, err
 		}
-		if err := s.repo.CreatePolicy(ctx, tenantID, policyKindAttendanceStatuses, def.Version, encoded, time.Now(), uuid.NullUUID{}); err != nil {
+		if err := s.repo.CreatePolicy(ctx, tenantID, policyKindAttendanceStatuses, def.Version, encoded, s.clock.Now(), uuid.NullUUID{}); err != nil {
 			return domain.StatusPolicy{}, err
 		}
 		return def, nil

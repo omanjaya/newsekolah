@@ -26,7 +26,7 @@ func (s *Service) ListToday(ctx context.Context, tenantID, teacherUserID uuid.UU
 		}
 
 		loc := s.tenantLocation(ctx, tenantID)
-		now := time.Now().In(loc)
+		now := s.clock.Now().In(loc)
 		today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, loc)
 		dayOfWeek := domain.IsoWeekday(now)
 

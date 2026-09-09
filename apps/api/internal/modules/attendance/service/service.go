@@ -9,6 +9,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
+
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -180,6 +182,7 @@ type Service struct {
 	events    EventPublisher
 	realtime  RealtimePublisher
 	presence  PresenceReader
+	clock     clock.Clock
 }
 
 func New(
@@ -188,7 +191,8 @@ func New(
 	blocker Blocker, overrider Overrider, events EventPublisher, realtime RealtimePublisher, presence PresenceReader,
 ) *Service {
 	return &Service{
-		pool: pool, repo: repo, years: years, schedules: schedules, access: access, journals: journals,
+		clock: clock.Real{},
+		pool:  pool, repo: repo, years: years, schedules: schedules, access: access, journals: journals,
 		blocker: blocker, overrider: overrider, events: events, realtime: realtime, presence: presence,
 	}
 }
@@ -223,4 +227,10 @@ func (s *Service) tenantLocation(ctx context.Context, tenantID uuid.UUID) *time.
 		return time.UTC
 	}
 	return loc
+}
+
+// WithClock swaps the clock; tests use it to pin "now".
+func (s *Service) WithClock(c clock.Clock) *Service {
+	s.clock = c
+	return s
 }

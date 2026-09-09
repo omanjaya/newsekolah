@@ -34,7 +34,7 @@ func (s *Service) GetMonitorSnapshot(ctx context.Context, tenantID uuid.UUID) (M
 		}
 
 		loc := s.tenantLocation(ctx, tenantID)
-		now := time.Now().In(loc)
+		now := s.clock.Now().In(loc)
 		today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, loc)
 		dayOfWeek := domain.IsoWeekday(now)
 
@@ -59,7 +59,7 @@ func (s *Service) GetMonitorSnapshot(ctx context.Context, tenantID uuid.UUID) (M
 			return err
 		}
 
-		out = MonitorSnapshot{GeneratedAt: time.Now(), StatusCounts: counts, Sessions: sessions}
+		out = MonitorSnapshot{GeneratedAt: s.clock.Now(), StatusCounts: counts, Sessions: sessions}
 		return nil
 	})
 	return out, err

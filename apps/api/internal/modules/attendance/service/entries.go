@@ -76,7 +76,7 @@ func (s *Service) SaveEntries(ctx context.Context, tenantID uuid.UUID, actor Act
 
 		loc := s.tenantLocation(ctx, tenantID)
 		if err := domain.ResolveSaveWindow(domain.SaveWindowInput{
-			Now: time.Now().In(loc), SessionDate: session.Date, PeriodEndAt: periodEnd, CorrectionDays: correctionDays,
+			Now: s.clock.Now().In(loc), SessionDate: session.Date, PeriodEndAt: periodEnd, CorrectionDays: correctionDays,
 			IsGlobalCorrector: actor.IsGlobalCorrector, IsHomeroomOfClass: isHomeroom,
 		}, mode); err != nil {
 			return err
