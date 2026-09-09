@@ -66,11 +66,40 @@ func mapAuthError(err error) error {
 	case errors.Is(err, domain.ErrPasswordTooShort), errors.Is(err, domain.ErrPasswordTooLong):
 		return httpx.ErrValidation.WithDetails(httpx.ErrorDetail{Field: "new_password", Code: "INVALID_LENGTH"})
 	default:
+		if mapped := mapSSOOrPasskeyError(err); mapped != nil {
+			return mapped
+		}
 		var appErr *httpx.Error
 		if errors.As(err, &appErr) {
 			return appErr
 		}
 		return httpx.Internal(err)
+	}
+}
+
+// mapSSOOrPasskeyError is mapAuthError's continuation for the Google SSO
+// and passkey sign-in paths, split out so mapAuthError itself stays under
+// the project's cyclomatic-complexity limit (docs/04-clean-code.md).
+func mapSSOOrPasskeyError(err error) error {
+	switch {
+	case errors.Is(err, domain.ErrSSONotConfigured):
+		return httpx.ErrSSONotConfigured
+	case errors.Is(err, domain.ErrSSOAccountNotFound):
+		return httpx.ErrSSOAccountNotFound
+	case errors.Is(err, domain.ErrSSOInvalidToken):
+		return httpx.ErrSSOInvalidToken
+	case errors.Is(err, domain.ErrSSOClientSecretRequired):
+		return httpx.ErrSSOClientSecretRequired
+	case errors.Is(err, domain.ErrPasskeyNotConfigured):
+		return httpx.ErrPasskeyNotConfigured
+	case errors.Is(err, domain.ErrPasskeyNotFound):
+		return httpx.ErrPasskeyNotFound
+	case errors.Is(err, domain.ErrPasskeyChallenge):
+		return httpx.ErrPasskeyChallenge
+	case errors.Is(err, domain.ErrPasskeyInvalidResponse):
+		return httpx.ErrPasskeyInvalidResponse
+	default:
+		return nil
 	}
 }
 

@@ -50,5 +50,27 @@
     "otpLabel": "Verification code",
     "otpBody": "This account uses two-factor authentication. Enter a code from your authenticator app or one of your recovery codes.",
     "submit": "Sign in with code"
+  },
+  "passkeys": {
+    "title": "Passkeys",
+    "description": "Sign in without a password using this device's fingerprint, face, or a security key.",
+    "emptyTitle": "No passkeys yet",
+    "emptyBody": "Add a passkey to sign in from this device without a password.",
+    "addAction": "Add passkey",
+    "renameAction": "Rename",
+    "removeAction": "Remove",
+    "addDialogTitle": "Add a passkey",
+    "addDialogBody": "Give it a name you'll recognize, then follow your device's prompt to create the passkey.",
+    "namePlaceholder": "e.g. Work laptop",
+    "addConfirm": "Create passkey",
+    "renameDialogTitle": "Rename passkey",
+    "renameConfirm": "Save",
+    "removeDialogTitle": "Remove passkey",
+    "removeDialogBody": "The passkey \"{name}\" will no longer work to sign in.",
+    "toasts": {
+      "added": "Passkey added",
+      "renamed": "Passkey renamed",
+      "removed": "Passkey removed"
+    }
   }
 }

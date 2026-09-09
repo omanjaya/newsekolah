@@ -26,11 +26,16 @@ export function middleware(request: NextRequest) {
     "default-src 'self'",
     // Next's dev runtime evaluates source-mapped chunks with eval; production
     // builds do not, so 'unsafe-eval' never reaches a deployed policy.
-    `script-src 'self' 'nonce-${nonce}'${process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""}`,
+    // accounts.google.com is Google Identity Services, loaded only by the
+    // login screen's "Sign in with Google" button (features/auth); it is
+    // allowed unconditionally here because middleware runs before any
+    // tenant's SSO configuration is known.
+    `script-src 'self' 'nonce-${nonce}' https://accounts.google.com${process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""}`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: https:",
     "font-src 'self' data:",
-    `connect-src 'self' ${apiOrigin} ${wsOrigin}`.trim(),
+    `connect-src 'self' https://accounts.google.com ${apiOrigin} ${wsOrigin}`.trim(),
+    "frame-src https://accounts.google.com",
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'",

@@ -16,6 +16,7 @@ import {
 
 import { EnrollDialog } from "./enroll-dialog";
 import { MfaCodeDialog } from "./mfa-code-dialog";
+import { PasskeysSection } from "./passkeys-section";
 import { RecoveryCodesDialog } from "./recovery-codes-dialog";
 
 const LOW_RECOVERY_CODES_THRESHOLD = 2;
@@ -143,6 +144,8 @@ export function SecurityView(): ReactElement {
           )}
         </div>
       </section>
+
+      <PasskeysSection />
 
       {activeDialog === "enroll" && startEnrolment.data && (
         <EnrollDialog

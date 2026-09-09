@@ -857,6 +857,16 @@ type Session struct {
 	RevokedReason    pgtype.Text        `json:"revoked_reason"`
 }
 
+type SsoGoogleConfig struct {
+	TenantID              uuid.UUID          `json:"tenant_id"`
+	ClientID              string             `json:"client_id"`
+	ClientSecretEncrypted []byte             `json:"client_secret_encrypted"`
+	HostedDomain          string             `json:"hosted_domain"`
+	Enabled               bool               `json:"enabled"`
+	CreatedAt             pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt             pgtype.Timestamptz `json:"updated_at"`
+}
+
 type StaffProfile struct {
 	UserID           uuid.UUID          `json:"user_id"`
 	TenantID         uuid.UUID          `json:"tenant_id"`
@@ -1131,6 +1141,7 @@ type WebauthnCredential struct {
 	Name         pgtype.Text        `json:"name"`
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 	LastUsedAt   pgtype.Timestamptz `json:"last_used_at"`
+	Data         []byte             `json:"data"`
 }
 
 type WhatsappProviderConfig struct {

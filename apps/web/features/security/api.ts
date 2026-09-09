@@ -4,9 +4,11 @@ import { type components } from "@newsekolah/api-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { useApiClient } from "../../lib/api/client";
+import { createPasskey } from "../../lib/webauthn";
 
 export type MfaStatus = components["schemas"]["MfaStatus"];
 export type MfaEnrolment = components["schemas"]["MfaEnrolment"];
+export type Passkey = components["schemas"]["Passkey"];
 
 /**
  * Query keys local to this feature (not added to the shared
@@ -15,6 +17,7 @@ export type MfaEnrolment = components["schemas"]["MfaEnrolment"];
  */
 const keys = {
   mfaStatus: () => ["security", "mfa", "status"] as const,
+  passkeys: () => ["security", "passkeys"] as const,
 };
 
 /** GET /v1/me/mfa: whether two-factor is enrolled, confirmed, and codes left. */
@@ -70,6 +73,70 @@ export function useRegenerateMfaRecoveryCodesMutation() {
     mutationFn: (code: string) => client.POST("/v1/me/mfa/recovery-codes", { body: { code } }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: keys.mfaStatus() });
+    },
+  });
+}
+
+/** GET /v1/me/passkeys. */
+export function usePasskeysQuery() {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: keys.passkeys(),
+    queryFn: async () => (await client.GET("/v1/me/passkeys")).data,
+  });
+}
+
+/**
+ * Runs the full passkey registration ceremony: fetches creation options
+ * from the server, hands them to the browser's WebAuthn API, and sends
+ * the resulting attestation back with the label the user picked. The
+ * browser prompt (Touch ID, Windows Hello, a security key, ...) happens
+ * inside `createPasskey` and can only run from a user gesture, which is
+ * why this stays one mutation rather than two separate calls the caller
+ * has to sequence itself.
+ */
+export function useRegisterPasskeyMutation() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (name: string) => {
+      const options = await client.POST("/v1/me/passkeys/options");
+      const credential = await createPasskey(options.public_key);
+      return client.POST("/v1/me/passkeys", {
+        body: { ceremony_id: options.ceremony_id, credential, name },
+      });
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: keys.passkeys() });
+    },
+  });
+}
+
+/** PATCH /v1/me/passkeys/{passkeyId}. */
+export function useRenamePasskeyMutation() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ passkeyId, name }: { passkeyId: string; name: string }) =>
+      client.PATCH("/v1/me/passkeys/{passkeyId}", {
+        params: { path: { passkeyId } },
+        body: { name },
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: keys.passkeys() });
+    },
+  });
+}
+
+/** DELETE /v1/me/passkeys/{passkeyId}. */
+export function useDeletePasskeyMutation() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (passkeyId: string) =>
+      client.DELETE("/v1/me/passkeys/{passkeyId}", { params: { path: { passkeyId } } }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: keys.passkeys() });
     },
   });
 }

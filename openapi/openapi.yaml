@@ -5152,6 +5152,373 @@ paths:
                 $ref: "#/components/schemas/Me"
         "401":
           $ref: "#/components/responses/Unauthorized"
+  /v1/auth/sso/google:
+    get:
+      tags:
+        - auth
+      operationId: getGoogleSSOAvailability
+      x-public: true
+      security: []
+      summary: Whether Google sign-in should be offered on the login screen
+      description: |
+        Public and unauthenticated on purpose: the login screen calls this before anyone has signed in to
+        decide whether to render the "Sign in with Google" button. It returns the OAuth client id (not a
+        secret; Google Identity Services needs it in the browser) but never the client secret.
+      parameters:
+        - $ref: "#/components/parameters/TenantHeader"
+      responses:
+        "200":
+          description: Availability
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - enabled
+                properties:
+                  enabled:
+                    type: boolean
+                  client_id:
+                    type: string
+                    description: Present only when enabled.
+    post:
+      tags:
+        - auth
+      operationId: loginWithGoogle
+      x-public: true
+      security: []
+      summary: Sign in with a verified Google ID token
+      description: |
+        Verifies the ID token's signature against Google's published keys, then its issuer, audience, expiry,
+        and (when the tenant restricts it) hosted domain. The token's email must match an existing active
+        user of this tenant; identity never creates an account from this flow. On success this issues the
+        same session and token pair as `POST /v1/auth/login`.
+      parameters:
+        - $ref: "#/components/parameters/TenantHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id_token
+                - client
+              properties:
+                id_token:
+                  type: string
+                  description: The Google ID token (JWT) produced by Google Identity Services on the client.
+                client:
+                  $ref: "#/components/schemas/ClientKind"
+                device_id:
+                  type: string
+                  maxLength: 100
+                device_name:
+                  type: string
+                  maxLength: 150
+      responses:
+        "200":
+          description: Authenticated
+          headers:
+            Set-Cookie:
+              description: "`refresh_token` cookie for web clients"
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthTokens"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/settings/sso/google:
+    get:
+      tags:
+        - sso
+      operationId: getGoogleSSOConfig
+      x-permission: manage_settings
+      summary: Read this school's Google Workspace SSO configuration
+      responses:
+        "200":
+          description: Current configuration, or configured=false when none exists yet
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GoogleSSOConfig"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    put:
+      tags:
+        - sso
+      operationId: setGoogleSSOConfig
+      x-permission: manage_settings
+      summary: Create or replace this school's Google Workspace SSO configuration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GoogleSSOConfigInput"
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GoogleSSOConfig"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    delete:
+      tags:
+        - sso
+      operationId: deleteGoogleSSOConfig
+      x-permission: manage_settings
+      summary: Remove this school's Google Workspace SSO configuration
+      responses:
+        "204":
+          description: Removed
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/auth/passkeys/login/options:
+    post:
+      tags:
+        - passkeys
+      operationId: beginPasskeyLogin
+      x-public: true
+      security: []
+      summary: Start a passkey sign-in ceremony for one account
+      parameters:
+        - $ref: "#/components/parameters/TenantHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+              properties:
+                username:
+                  type: string
+                  minLength: 1
+                  maxLength: 80
+      responses:
+        "200":
+          description: WebAuthn credential request options
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PasskeyCeremony"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/auth/passkeys/login:
+    post:
+      tags:
+        - passkeys
+      operationId: finishPasskeyLogin
+      x-public: true
+      security: []
+      summary: Complete a passkey sign-in ceremony
+      parameters:
+        - $ref: "#/components/parameters/TenantHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - ceremony_id
+                - credential
+                - client
+              properties:
+                ceremony_id:
+                  type: string
+                credential:
+                  type: object
+                  additionalProperties: true
+                  description: The JSON produced by the browser's `PublicKeyCredential.toJSON()` after `navigator.credentials.get()`.
+                client:
+                  $ref: "#/components/schemas/ClientKind"
+                device_id:
+                  type: string
+                  maxLength: 100
+                device_name:
+                  type: string
+                  maxLength: 150
+      responses:
+        "200":
+          description: Authenticated
+          headers:
+            Set-Cookie:
+              description: "`refresh_token` cookie for web clients"
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthTokens"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /v1/me/passkeys:
+    get:
+      tags:
+        - passkeys
+      operationId: listPasskeys
+      x-permission: authenticated
+      summary: List the current user's registered passkeys
+      responses:
+        "200":
+          description: Passkeys
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Passkey"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags:
+        - passkeys
+      operationId: finishPasskeyRegistration
+      x-permission: authenticated
+      summary: Complete a passkey registration ceremony
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - ceremony_id
+                - credential
+                - name
+              properties:
+                ceremony_id:
+                  type: string
+                credential:
+                  type: object
+                  additionalProperties: true
+                  description: The JSON produced by the browser's `PublicKeyCredential.toJSON()` after `navigator.credentials.create()`.
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                  description: Label the user picks for this passkey (e.g. "MacBook", "Yubikey").
+      responses:
+        "201":
+          description: Registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Passkey"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/me/passkeys/options:
+    post:
+      tags:
+        - passkeys
+      operationId: beginPasskeyRegistration
+      x-permission: authenticated
+      summary: Start a passkey registration ceremony for the current user
+      responses:
+        "200":
+          description: WebAuthn credential creation options
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PasskeyCeremony"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/me/passkeys/{passkeyId}:
+    patch:
+      tags:
+        - passkeys
+      operationId: renamePasskey
+      x-permission: authenticated
+      summary: Rename one of the current user's passkeys
+      parameters:
+        - name: passkeyId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+      responses:
+        "200":
+          description: Renamed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Passkey"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags:
+        - passkeys
+      operationId: deletePasskey
+      x-permission: authenticated
+      summary: Remove one of the current user's passkeys
+      parameters:
+        - name: passkeyId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Removed
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /v1/me/password:
     put:
       tags:
@@ -12133,6 +12500,76 @@ components:
               format: uuid
             name:
               type: string
+    GoogleSSOConfig:
+      type: object
+      required:
+        - configured
+        - enabled
+      properties:
+        configured:
+          type: boolean
+          description: False when this school has never saved a configuration.
+        client_id:
+          type: string
+        hosted_domain:
+          type: string
+        enabled:
+          type: boolean
+    GoogleSSOConfigInput:
+      type: object
+      required:
+        - client_id
+        - hosted_domain
+        - enabled
+      properties:
+        client_id:
+          type: string
+          minLength: 1
+          maxLength: 255
+        client_secret:
+          type: string
+          description: Required the first time a school configures Google SSO. Omit or send empty to keep the currently stored
+            secret unchanged.
+        hosted_domain:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: The Google Workspace domain (the "hd" claim) an ID token must carry to be accepted.
+        enabled:
+          type: boolean
+    PasskeyCeremony:
+      type: object
+      required:
+        - ceremony_id
+        - public_key
+      properties:
+        ceremony_id:
+          type: string
+          description: Echo this back in the matching finish call.
+        public_key:
+          type: object
+          additionalProperties: true
+          description: |
+            The WebAuthn options object, shaped for `PublicKeyCredential.parseCreationOptionsFromJSON()`
+            (registration) or `.parseRequestOptionsFromJSON()` (login).
+    Passkey:
+      type: object
+      required:
+        - id
+        - name
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        last_used_at:
+          type: string
+          format: date-time
     LibraryPolicy:
       type: object
       required:

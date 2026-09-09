@@ -68,7 +68,12 @@
       "passwordLabel": "Kata sandi",
       "tenantLabel": "Sekolah",
       "submit": "Masuk",
-      "submitting": "Memeriksa akun"
+      "submitting": "Memeriksa akun",
+      "orDivider": "atau",
+      "googleButton": "Masuk dengan Google",
+      "passkeyButton": "Masuk dengan passkey",
+      "passkeyUsernameRequired": "Isi nama pengguna dahulu untuk masuk dengan passkey",
+      "backToPassword": "Masuk dengan kata sandi"
     },
     "changePassword": {
       "title": "Ubah kata sandi",
@@ -189,6 +194,14 @@
     "FORBIDDEN": "Anda tidak memiliki akses untuk tindakan ini",
     "NOT_FOUND": "Data yang dicari tidak ditemukan",
     "NETWORK": "Tidak dapat terhubung ke server, periksa koneksi",
-    "UNKNOWN": "Terjadi kesalahan, coba lagi"
+    "UNKNOWN": "Terjadi kesalahan, coba lagi",
+    "SSO_NOT_CONFIGURED": "Masuk dengan Google belum diaktifkan untuk sekolah ini",
+    "SSO_ACCOUNT_NOT_FOUND": "Akun Google ini tidak terhubung dengan akun aktif di sekolah ini",
+    "SSO_INVALID_TOKEN": "Gagal memverifikasi akun Google, coba masuk kembali",
+    "SSO_CLIENT_SECRET_REQUIRED": "Client secret wajib diisi",
+    "PASSKEY_NOT_CONFIGURED": "Passkey belum tersedia di server ini",
+    "PASSKEY_NOT_FOUND": "Passkey tidak ditemukan",
+    "PASSKEY_CHALLENGE_EXPIRED": "Permintaan passkey sudah kedaluwarsa, coba lagi",
+    "PASSKEY_INVALID_RESPONSE": "Perangkat tidak dapat memverifikasi passkey ini"
   }
 }

@@ -68,7 +68,12 @@
       "passwordLabel": "Password",
       "tenantLabel": "School",
       "submit": "Sign in",
-      "submitting": "Checking your account"
+      "submitting": "Checking your account",
+      "orDivider": "or",
+      "googleButton": "Sign in with Google",
+      "passkeyButton": "Sign in with a passkey",
+      "passkeyUsernameRequired": "Enter your username first to sign in with a passkey",
+      "backToPassword": "Sign in with a password"
     },
     "changePassword": {
       "title": "Change password",
@@ -189,6 +194,14 @@
     "FORBIDDEN": "You do not have access to this action",
     "NOT_FOUND": "The requested data was not found",
     "NETWORK": "Could not reach the server, check your connection",
-    "UNKNOWN": "Something went wrong, please try again"
+    "UNKNOWN": "Something went wrong, please try again",
+    "SSO_NOT_CONFIGURED": "Sign in with Google is not enabled for this school",
+    "SSO_ACCOUNT_NOT_FOUND": "This Google account is not linked to an active account at this school",
+    "SSO_INVALID_TOKEN": "Could not verify your Google account, please try again",
+    "SSO_CLIENT_SECRET_REQUIRED": "A client secret is required",
+    "PASSKEY_NOT_CONFIGURED": "Passkeys are not available on this server",
+    "PASSKEY_NOT_FOUND": "Passkey not found",
+    "PASSKEY_CHALLENGE_EXPIRED": "That passkey request has expired, please try again",
+    "PASSKEY_INVALID_RESPONSE": "Your device could not verify this passkey"
   }
 }
