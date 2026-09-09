@@ -21,15 +21,15 @@ import { useApiClient } from "../../lib/api/client";
  */
 export function useLoginMutation() {
   const client = useApiClient();
-  const mutation = useLoginBase(client);
+  const mutation = useLoginBase(client, {
+    onTokens: (data) => {
+      setAccessToken(data.access_token);
+    },
+  });
 
   return {
     ...mutation,
-    mutateAsync: async (input: LoginInput) => {
-      const result = await mutation.mutateAsync({ ...input, client: "web" });
-      setAccessToken(result.access_token);
-      return result;
-    },
+    mutateAsync: (input: LoginInput) => mutation.mutateAsync({ ...input, client: "web" }),
   };
 }
 

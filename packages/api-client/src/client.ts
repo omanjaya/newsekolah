@@ -195,8 +195,13 @@ export function createApiClient(options: CreateApiClientOptions): NewsekolahApiC
       if (response.status !== 401) {
         return response;
       }
+      // Refresh when the access token expired, or when the request went out
+      // with no token at all (a fresh page load whose session lives only in
+      // the httpOnly refresh cookie). Any other 401 is a real rejection.
       const { code } = await parseErrorFromResponse(response);
-      if (code !== "AUTH_TOKEN_EXPIRED") {
+      const hadToken = request.headers.has("Authorization");
+      const isRefreshCall = request.url.endsWith("/v1/auth/refresh");
+      if (isRefreshCall || (hadToken && code !== "AUTH_TOKEN_EXPIRED")) {
         return response;
       }
       // refreshAccessToken already clears the token store and calls

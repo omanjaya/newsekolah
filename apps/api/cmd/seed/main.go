@@ -289,7 +289,7 @@ func seedUsers(ctx context.Context, q *db.Queries, tenantID uuid.UUID, roleIDs m
 
 		user, err = q.CreateUser(ctx, db.CreateUserParams{
 			TenantID: tenantID, Username: us.username, PasswordHash: hash, Name: us.name,
-			Status: "active", MustChangePassword: true, Locale: "id",
+			Status: "active", MustChangePassword: false, Locale: "id",
 		})
 		if err != nil {
 			return nil, fmt.Errorf("create user %s: %w", us.username, err)
