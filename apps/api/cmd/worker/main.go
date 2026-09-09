@@ -20,6 +20,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/school"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/config"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/crypto"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/jobs"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/storage"
@@ -60,9 +61,14 @@ func run(logger *slog.Logger) error {
 	periodic := permitsModule.RegisterJobs(workers, logger)
 
 	senders := wiring.SendersFromConfig(cfg, logger)
+	sealer, err := crypto.NewSealer("v1", cfg.EncryptionSecret())
+	if err != nil {
+		return err
+	}
 	notificationsModule := notifications.Register(notifications.Dependencies{
 		Pool: pool, Jobs: nil, Clock: clock.Real{},
 		Push: senders.Push, Email: senders.Email, WhatsApp: senders.WhatsApp,
+		Sealer: sealer, WhatsAppAppSecret: cfg.WhatsAppAppSecret, WhatsAppWebhookVerifyToken: cfg.WhatsAppWebhookVerifyToken,
 	})
 	notificationPeriodic, err := notificationsModule.RegisterJobs(workers)
 	if err != nil {

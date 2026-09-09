@@ -257,6 +257,7 @@ type Querier interface {
 	DeleteSchedulesByAcademicYear(ctx context.Context, arg DeleteSchedulesByAcademicYearParams) error
 	DeleteUserRoles(ctx context.Context, arg DeleteUserRolesParams) error
 	DeleteViolationType(ctx context.Context, arg DeleteViolationTypeParams) error
+	DeleteWhatsAppTemplate(ctx context.Context, arg DeleteWhatsAppTemplateParams) (int64, error)
 	DisciplineActiveClassID(ctx context.Context, arg DisciplineActiveClassIDParams) (uuid.UUID, error)
 	DisciplineCreatePolicy(ctx context.Context, arg DisciplineCreatePolicyParams) error
 	DisciplineGetLatestPolicy(ctx context.Context, arg DisciplineGetLatestPolicyParams) (DisciplineGetLatestPolicyRow, error)
@@ -394,6 +395,11 @@ type Querier interface {
 	GetViolationRecord(ctx context.Context, arg GetViolationRecordParams) (ViolationRecord, error)
 	GetViolationType(ctx context.Context, arg GetViolationTypeParams) (ViolationType, error)
 	GetWarningLetter(ctx context.Context, arg GetWarningLetterParams) (WarningLetter, error)
+	GetWhatsAppDelivery(ctx context.Context, arg GetWhatsAppDeliveryParams) (MessageDelivery, error)
+	GetWhatsAppProviderConfig(ctx context.Context, tenantID uuid.UUID) (WhatsappProviderConfig, error)
+	GetWhatsAppProviderConfigByPhoneNumberID(ctx context.Context, phoneNumberID string) (WhatsappProviderConfig, error)
+	GetWhatsAppTemplate(ctx context.Context, arg GetWhatsAppTemplateParams) (WhatsappTemplate, error)
+	GetWhatsAppTemplateByName(ctx context.Context, arg GetWhatsAppTemplateByNameParams) (WhatsappTemplate, error)
 	GetWorkflowDefinitionByID(ctx context.Context, arg GetWorkflowDefinitionByIDParams) (WorkflowDefinition, error)
 	// Used to resolve a stage's approver for a later stage's distinct_from check.
 	GetWorkflowEventByStage(ctx context.Context, arg GetWorkflowEventByStageParams) (WorkflowEvent, error)
@@ -421,6 +427,7 @@ type Querier interface {
 	InsertMessageDelivery(ctx context.Context, arg InsertMessageDeliveryParams) (MessageDelivery, error)
 	InsertNotification(ctx context.Context, arg InsertNotificationParams) (Notification, error)
 	InsertStarEvent(ctx context.Context, arg InsertStarEventParams) (StarEvent, error)
+	InsertWhatsAppTemplate(ctx context.Context, arg InsertWhatsAppTemplateParams) (WhatsappTemplate, error)
 	IsActiveTeacher(ctx context.Context, arg IsActiveTeacherParams) (bool, error)
 	IsActiveTeacherRef(ctx context.Context, arg IsActiveTeacherRefParams) (bool, error)
 	IsParentOfStudent(ctx context.Context, arg IsParentOfStudentParams) (bool, error)
@@ -607,6 +614,8 @@ type Querier interface {
 	ListViolationTypes(ctx context.Context, arg ListViolationTypesParams) ([]ViolationType, error)
 	ListWarningLetters(ctx context.Context, arg ListWarningLettersParams) ([]WarningLetter, error)
 	ListWarningLettersForStudent(ctx context.Context, arg ListWarningLettersForStudentParams) ([]WarningLetter, error)
+	ListWhatsAppDeliveries(ctx context.Context, arg ListWhatsAppDeliveriesParams) ([]MessageDelivery, error)
+	ListWhatsAppTemplates(ctx context.Context, tenantID uuid.UUID) ([]WhatsappTemplate, error)
 	ListWorkflowDefinitions(ctx context.Context, tenantID uuid.UUID) ([]WorkflowDefinition, error)
 	ListWorkflowEventsByInstance(ctx context.Context, arg ListWorkflowEventsByInstanceParams) ([]WorkflowEvent, error)
 	ListWorkflowInstancesByClassAndKind(ctx context.Context, arg ListWorkflowInstancesByClassAndKindParams) ([]WorkflowInstance, error)
@@ -667,6 +676,7 @@ type Querier interface {
 	SearchTenants(ctx context.Context, name string) ([]Tenant, error)
 	SetAnnouncementRecipientCount(ctx context.Context, arg SetAnnouncementRecipientCountParams) error
 	SetDefaultDocumentTemplate(ctx context.Context, arg SetDefaultDocumentTemplateParams) (DocumentTemplate, error)
+	SetDeliveryTemplateAndPayload(ctx context.Context, arg SetDeliveryTemplateAndPayloadParams) error
 	SetExitPermitGateToken(ctx context.Context, arg SetExitPermitGateTokenParams) (ExitPermit, error)
 	SetManualReportScore(ctx context.Context, arg SetManualReportScoreParams) (ReportScore, error)
 	SetMfaRecoveryCodes(ctx context.Context, arg SetMfaRecoveryCodesParams) error
@@ -704,6 +714,8 @@ type Querier interface {
 	UpdateUserLastLogin(ctx context.Context, arg UpdateUserLastLoginParams) error
 	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error
 	UpdateViolationType(ctx context.Context, arg UpdateViolationTypeParams) (ViolationType, error)
+	UpdateWhatsAppDeliveryReceipt(ctx context.Context, arg UpdateWhatsAppDeliveryReceiptParams) (int64, error)
+	UpdateWhatsAppTemplate(ctx context.Context, arg UpdateWhatsAppTemplateParams) (WhatsappTemplate, error)
 	UpsertAttendanceDailySummary(ctx context.Context, arg UpsertAttendanceDailySummaryParams) error
 	UpsertAttendanceEntry(ctx context.Context, arg UpsertAttendanceEntryParams) (AttendanceEntry, error)
 	UpsertGrade(ctx context.Context, arg UpsertGradeParams) (Grade, error)
@@ -720,6 +732,7 @@ type Querier interface {
 	UpsertTeacherProfile(ctx context.Context, arg UpsertTeacherProfileParams) error
 	UpsertTenantSetting(ctx context.Context, arg UpsertTenantSettingParams) error
 	UpsertUserProfile(ctx context.Context, arg UpsertUserProfileParams) error
+	UpsertWhatsAppProviderConfig(ctx context.Context, arg UpsertWhatsAppProviderConfigParams) error
 	UserExistsInTenant(ctx context.Context, arg UserExistsInTenantParams) (bool, error)
 	UsernameExists(ctx context.Context, arg UsernameExistsParams) (bool, error)
 	// cross-module read: users table is owned by the identity module.

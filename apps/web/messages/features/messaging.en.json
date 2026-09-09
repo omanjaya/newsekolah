@@ -1,0 +1,89 @@
+{
+  "navLabel": "WhatsApp",
+  "eyebrow": "Settings",
+  "title": "WhatsApp",
+  "description": "Choose a WhatsApp delivery provider, manage message templates, and monitor the delivery log.",
+  "tabs": {
+    "provider": "Provider",
+    "templates": "Templates",
+    "deliveries": "Delivery log"
+  },
+  "provider": {
+    "title": "Delivery provider",
+    "body": "A school can use the Meta Cloud API directly, or its own local gateway. Tokens and keys are never displayed again after being saved.",
+    "providerLabel": "Provider",
+    "providerMeta": "Meta Cloud API",
+    "providerGateway": "Local gateway",
+    "activeLabel": "Enable WhatsApp delivery",
+    "activeHint": "While disabled, WhatsApp notifications fall back to the server's default configuration.",
+    "meta": {
+      "phoneNumberIdLabel": "Phone number ID",
+      "phoneNumberIdHint": "From WhatsApp Business Manager.",
+      "accessTokenLabel": "Access token",
+      "accessTokenPlaceholderSet": "Saved — leave blank to keep this token",
+      "accessTokenPlaceholderUnset": "Not set"
+    },
+    "gateway": {
+      "urlLabel": "Gateway URL",
+      "urlHint": "The school's own WhatsApp gateway endpoint.",
+      "headerNameLabel": "Auth header name",
+      "headerValueLabel": "Auth header value",
+      "headerValuePlaceholderSet": "Saved — leave blank to keep this value",
+      "headerValuePlaceholderUnset": "Not set"
+    },
+    "save": "Save",
+    "saved": "WhatsApp configuration saved"
+  },
+  "templates": {
+    "title": "Message templates",
+    "body": "Each template maps to a template already approved in WhatsApp Business Manager. Wrap a variable name in double curly braces to create a placeholder.",
+    "addNew": "Add template",
+    "empty": "No templates yet.",
+    "form": {
+      "nameLabel": "Template name",
+      "localeLabel": "Locale",
+      "metaTemplateNameLabel": "Meta template name",
+      "bodyLabel": "Message body",
+      "bodyHint": "Example: Hello parent_name, the amount payment is due on due_date (wrap each in double curly braces).",
+      "placeholdersLabel": "Detected variables",
+      "save": "Save template",
+      "cancel": "Cancel",
+      "delete": "Delete"
+    },
+    "preview": {
+      "title": "Preview",
+      "variableValueLabel": "Value for {variable}",
+      "renderedLabel": "Result",
+      "missingVariables": "Missing variables: {variables}"
+    },
+    "created": "Template created",
+    "updated": "Template updated",
+    "deleted": "Template deleted",
+    "confirmDelete": "Delete this template?"
+  },
+  "deliveries": {
+    "title": "Delivery log",
+    "body": "Every WhatsApp send attempt, successful or not, is recorded here.",
+    "empty": "No deliveries yet.",
+    "columns": {
+      "target": "Recipient",
+      "provider": "Provider",
+      "status": "Status",
+      "attempts": "Attempts",
+      "createdAt": "Created",
+      "actions": "Actions"
+    },
+    "status": {
+      "pending": "Pending",
+      "sent": "Sent",
+      "failed": "Failed",
+      "delivered": "Delivered",
+      "read": "Read"
+    },
+    "filterAll": "All statuses",
+    "resend": "Resend",
+    "resent": "Resend queued",
+    "loadMore": "Load more",
+    "errorLabel": "Failure reason"
+  }
+}

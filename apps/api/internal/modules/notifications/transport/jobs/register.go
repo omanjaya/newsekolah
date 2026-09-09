@@ -7,6 +7,7 @@ import (
 	"github.com/riverqueue/river"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/notifications/service"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/notify"
 )
 
@@ -18,6 +19,7 @@ type Dependencies struct {
 	Push     notify.PushSender
 	Email    notify.EmailSender
 	WhatsApp notify.WhatsAppSender
+	Clock    clock.Clock
 }
 
 // Register adds every notifications job kind to workers. Called once at
@@ -29,7 +31,7 @@ func Register(workers *river.Workers, deps Dependencies) error {
 	if err := river.AddWorkerSafely(workers, &DeliverEmailWorker{svc: deps.Service, email: deps.Email}); err != nil {
 		return fmt.Errorf("register email delivery worker: %w", err)
 	}
-	if err := river.AddWorkerSafely(workers, &DeliverWhatsAppWorker{svc: deps.Service, whatsApp: deps.WhatsApp}); err != nil {
+	if err := river.AddWorkerSafely(workers, &DeliverWhatsAppWorker{svc: deps.Service, whatsApp: deps.WhatsApp, clock: deps.Clock}); err != nil {
 		return fmt.Errorf("register whatsapp delivery worker: %w", err)
 	}
 	if err := river.AddWorkerSafely(workers, &DigestWorker{svc: deps.Service, email: deps.Email}); err != nil {

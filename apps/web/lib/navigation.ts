@@ -9,6 +9,7 @@ import {
   GraduationCap,
   ListChecks,
   Home,
+  MessageCircle,
   Repeat,
   Settings,
   ShieldCheck,
@@ -305,6 +306,14 @@ export const navigation: NavItem[] = [
     labelKey: "app.settings.notifications.navLabel",
     href: "/settings/notifications",
     icon: Bell,
+    group: GROUP.settings,
+  },
+  {
+    key: "settings-whatsapp",
+    labelKey: "app.messaging.navLabel",
+    href: "/settings/whatsapp",
+    icon: MessageCircle,
+    permission: "manage_whatsapp",
     group: GROUP.settings,
   },
   {

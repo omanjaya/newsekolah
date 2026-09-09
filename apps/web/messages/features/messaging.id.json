@@ -1,0 +1,89 @@
+{
+  "navLabel": "WhatsApp",
+  "eyebrow": "Pengaturan",
+  "title": "WhatsApp",
+  "description": "Pilih penyedia pengiriman WhatsApp, kelola template pesan, dan pantau log pengiriman.",
+  "tabs": {
+    "provider": "Penyedia",
+    "templates": "Template",
+    "deliveries": "Log pengiriman"
+  },
+  "provider": {
+    "title": "Penyedia pengiriman",
+    "body": "Sekolah dapat memakai Meta Cloud API langsung, atau gateway lokal sendiri. Token dan kunci tidak pernah ditampilkan kembali setelah disimpan.",
+    "providerLabel": "Penyedia",
+    "providerMeta": "Meta Cloud API",
+    "providerGateway": "Gateway lokal",
+    "activeLabel": "Aktifkan pengiriman WhatsApp",
+    "activeHint": "Saat nonaktif, notifikasi WhatsApp jatuh kembali ke pengaturan bawaan server.",
+    "meta": {
+      "phoneNumberIdLabel": "Phone number ID",
+      "phoneNumberIdHint": "Dari WhatsApp Business Manager.",
+      "accessTokenLabel": "Access token",
+      "accessTokenPlaceholderSet": "Tersimpan — kosongkan untuk tetap memakai token ini",
+      "accessTokenPlaceholderUnset": "Belum diisi"
+    },
+    "gateway": {
+      "urlLabel": "URL gateway",
+      "urlHint": "Endpoint gateway WhatsApp milik sekolah.",
+      "headerNameLabel": "Nama header otentikasi",
+      "headerValueLabel": "Nilai header otentikasi",
+      "headerValuePlaceholderSet": "Tersimpan — kosongkan untuk tetap memakai nilai ini",
+      "headerValuePlaceholderUnset": "Belum diisi"
+    },
+    "save": "Simpan",
+    "saved": "Konfigurasi WhatsApp disimpan"
+  },
+  "templates": {
+    "title": "Template pesan",
+    "body": "Setiap template memetakan ke template yang sudah disetujui di WhatsApp Business Manager. Tulis nama variabel di antara dua kurung kurawal ganda untuk membuat placeholder.",
+    "addNew": "Tambah template",
+    "empty": "Belum ada template.",
+    "form": {
+      "nameLabel": "Nama template",
+      "localeLabel": "Locale",
+      "metaTemplateNameLabel": "Nama template di Meta",
+      "bodyLabel": "Isi pesan",
+      "bodyHint": "Contoh: Halo, nama_ortu, tagihan jumlah jatuh tempo tanggal (masing-masing dibungkus kurung kurawal ganda).",
+      "placeholdersLabel": "Variabel terdeteksi",
+      "save": "Simpan template",
+      "cancel": "Batal",
+      "delete": "Hapus"
+    },
+    "preview": {
+      "title": "Pratinjau",
+      "variableValueLabel": "Nilai untuk {{variable}}",
+      "renderedLabel": "Hasil",
+      "missingVariables": "Variabel belum diisi: {{variables}}"
+    },
+    "created": "Template dibuat",
+    "updated": "Template diperbarui",
+    "deleted": "Template dihapus",
+    "confirmDelete": "Hapus template ini?"
+  },
+  "deliveries": {
+    "title": "Log pengiriman",
+    "body": "Setiap percobaan pengiriman WhatsApp, berhasil maupun gagal, tercatat di sini.",
+    "empty": "Belum ada pengiriman.",
+    "columns": {
+      "target": "Nomor tujuan",
+      "provider": "Penyedia",
+      "status": "Status",
+      "attempts": "Percobaan",
+      "createdAt": "Dibuat",
+      "actions": "Aksi"
+    },
+    "status": {
+      "pending": "Menunggu",
+      "sent": "Terkirim",
+      "failed": "Gagal",
+      "delivered": "Sampai",
+      "read": "Dibaca"
+    },
+    "filterAll": "Semua status",
+    "resend": "Kirim ulang",
+    "resent": "Pengiriman ulang dijadwalkan",
+    "loadMore": "Muat lebih banyak",
+    "errorLabel": "Alasan gagal"
+  }
+}

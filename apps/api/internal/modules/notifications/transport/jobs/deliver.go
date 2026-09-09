@@ -10,10 +10,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/riverqueue/river"
 
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/notifications/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/notifications/service"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/notify"
 )
 
@@ -86,20 +89,81 @@ func (w *DeliverEmailWorker) Work(ctx context.Context, job *river.Job[service.De
 	return w.svc.RecordDeliveryAttempt(ctx, args.TenantID, args.DeliveryID, service.DeliveryStatusSent, "", "")
 }
 
-// DeliverWhatsAppWorker sends one WhatsApp message.
+// messageIDSender is the optional extra a notify.WhatsAppSender may
+// implement to report the provider's message id (see whatsapp_meta.go and
+// whatsapp_gateway.go). Kept here rather than added to the WhatsAppSender
+// interface itself, so every existing implementation (and every future
+// provider that has no message id to report) stays a plain Send(...) error.
+type messageIDSender interface {
+	SendWithMessageID(ctx context.Context, toPhone, message string) (string, error)
+}
+
+// DeliverWhatsAppWorker sends one WhatsApp message. It resolves the
+// tenant's own provider configuration on every attempt (rather than once
+// at enqueue time) so a school that fixes its configuration between
+// retries does not have to wait for the notification to be re-sent from
+// scratch, and falls back to the deployment-wide default sender when a
+// tenant has none configured or has switched it off.
 type DeliverWhatsAppWorker struct {
 	river.WorkerDefaults[service.DeliverWhatsAppArgs]
 	svc      *service.Service
-	whatsApp notify.WhatsAppSender
+	whatsApp notify.WhatsAppSender // deployment-wide fallback (WHATSAPP_PROVIDER env config, or noop)
+	clock    clock.Clock
 }
 
 func (w *DeliverWhatsAppWorker) Work(ctx context.Context, job *river.Job[service.DeliverWhatsAppArgs]) error {
 	args := job.Args
 
-	sendErr := w.whatsApp.Send(ctx, args.ToPhone, args.Message)
+	sender := w.resolveSender(ctx, args)
+
+	var (
+		messageID string
+		sendErr   error
+	)
+	if idSender, ok := sender.(messageIDSender); ok {
+		messageID, sendErr = idSender.SendWithMessageID(ctx, args.ToPhone, args.Message)
+	} else {
+		sendErr = sender.Send(ctx, args.ToPhone, args.Message)
+	}
+
 	if sendErr != nil {
 		_ = w.svc.RecordDeliveryAttempt(ctx, args.TenantID, args.DeliveryID, service.DeliveryStatusFailed, "", sendErr.Error())
 		return fmt.Errorf("deliver whatsapp message: %w", sendErr)
 	}
-	return w.svc.RecordDeliveryAttempt(ctx, args.TenantID, args.DeliveryID, service.DeliveryStatusSent, "", "")
+	return w.svc.RecordDeliveryAttempt(ctx, args.TenantID, args.DeliveryID, service.DeliveryStatusSent, messageID, "")
+}
+
+// resolveSender picks the tenant's own Meta or gateway configuration when
+// one is active, otherwise the deployment-wide fallback. Any error
+// resolving the tenant config (not configured, decryption failure, ...) is
+// treated the same as "not configured": fall back rather than fail the
+// whole send, since the fallback (env config or noop) is always safe.
+func (w *DeliverWhatsAppWorker) resolveSender(ctx context.Context, args service.DeliverWhatsAppArgs) notify.WhatsAppSender {
+	cfg, err := w.svc.ResolveWhatsAppProvider(ctx, args.TenantID)
+	if err != nil {
+		return w.whatsApp
+	}
+
+	templateName, locale := args.MetaTemplateName, args.Locale
+
+	switch cfg.Provider {
+	case domain.WhatsAppProviderMeta:
+		return notify.NewMetaWhatsAppSender(cfg.AccessToken, cfg.PhoneNumberID, templateName, locale, nil)
+	case domain.WhatsAppProviderGateway:
+		return notify.NewGatewayWhatsAppSender(cfg.GatewayURL, cfg.GatewayHeaderName, cfg.GatewayHeaderValue, nil)
+	default:
+		return w.whatsApp
+	}
+}
+
+// NextRetry overrides River's default backoff with
+// domain.WhatsAppRetryBackoff (exponential from 30s, capped at 1h), per
+// docs/12-roadmap.md's requirement that WhatsApp delivery retry with
+// backoff rather than River's default schedule.
+func (w *DeliverWhatsAppWorker) NextRetry(job *river.Job[service.DeliverWhatsAppArgs]) time.Time {
+	clk := w.clock
+	if clk == nil {
+		clk = clock.Real{}
+	}
+	return clk.Now().Add(domain.WhatsAppRetryBackoff(job.Attempt))
 }

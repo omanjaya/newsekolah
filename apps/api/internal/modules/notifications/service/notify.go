@@ -174,6 +174,9 @@ func (s *Service) enqueueWhatsApp(ctx context.Context, tx pgx.Tx, tenantID uuid.
 		return fmt.Errorf("insert whatsapp delivery: %w", err)
 	}
 	message := n.Title + "\n\n" + n.Body
+	if err := s.repo.SetDeliveryTemplateAndPayload(ctx, tenantID, deliveryID, uuid.NullUUID{}, message); err != nil {
+		return fmt.Errorf("record whatsapp payload: %w", err)
+	}
 	_, err = s.jobs.InsertTx(ctx, tx, DeliverWhatsAppArgs{
 		TenantID: tenantID, NotificationID: n.ID, NotificationCreatedAt: n.CreatedAt,
 		DeliveryID: deliveryID, ToPhone: phone, Message: message,

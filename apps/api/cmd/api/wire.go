@@ -151,6 +151,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		Pool: pool, Jobs: jobInserter, Realtime: hubRealtimePublisher{hub: hub},
 		Contacts: identityContacts{svc: identityModule.Service}, Bus: eventBus, Clock: clock.Real{},
 		Push: senders.Push, Email: senders.Email, WhatsApp: senders.WhatsApp,
+		Sealer: sealer, WhatsAppAppSecret: cfg.WhatsAppAppSecret, WhatsAppWebhookVerifyToken: cfg.WhatsAppWebhookVerifyToken,
 	})
 	announcementsModule := announcements.Register(announcements.Dependencies{
 		Pool: pool, Notifier: wiring.AnnouncementNotifier{Svc: notificationsModule.Service}, Clock: clock.Real{}, Logger: logger,

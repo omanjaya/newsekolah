@@ -9,8 +9,10 @@ import (
 // Delivery status values recorded in message_deliveries. Matches the
 // table's check constraint.
 const (
-	DeliveryStatusSent   = "sent"
-	DeliveryStatusFailed = "failed"
+	DeliveryStatusSent      = "sent"
+	DeliveryStatusFailed    = "failed"
+	DeliveryStatusDelivered = "delivered"
+	DeliveryStatusRead      = "read"
 )
 
 // RecordDeliveryAttempt is called by every "notifications.deliver_*"

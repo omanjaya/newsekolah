@@ -14,6 +14,7 @@ import (
 	transporthttp "github.com/omanjaya/newsekolah/apps/api/internal/modules/notifications/transport/http"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/notifications/transport/jobs"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/crypto"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/events"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/notify"
 )
@@ -30,6 +31,17 @@ type Dependencies struct {
 	Push     notify.PushSender
 	Email    notify.EmailSender
 	WhatsApp notify.WhatsAppSender
+
+	// WhatsApp per-tenant provider config: Sealer encrypts the stored
+	// access token/gateway header, WhatsAppAppSecret verifies the inbound
+	// status webhook's signature, and WhatsAppWebhookVerifyToken answers
+	// Meta's GET verification handshake. All three are optional -- a
+	// deployment that never sets them simply cannot use per-tenant
+	// WhatsApp provider config or the webhook, and keeps working on the
+	// deployment-wide WhatsApp env config alone.
+	Sealer                     *crypto.Sealer
+	WhatsAppAppSecret          string
+	WhatsAppWebhookVerifyToken string
 }
 
 type Module struct {
@@ -44,6 +56,7 @@ func Register(deps Dependencies) *Module {
 		clk = clock.Real{}
 	}
 	svc := service.New(deps.Pool, repository.New(deps.Pool), deps.Jobs, deps.Realtime, clk, deps.Contacts)
+	svc.SetWhatsAppSecrets(deps.Sealer, deps.WhatsAppAppSecret, deps.WhatsAppWebhookVerifyToken)
 	if deps.Bus != nil {
 		service.RegisterEventHandlers(deps.Bus, svc)
 	}
@@ -72,7 +85,11 @@ func (m *Module) RegisterJobs(workers *river.Workers) ([]*river.PeriodicJob, err
 			return nil, err
 		}
 	}
-	if err := jobs.Register(workers, jobs.Dependencies{Service: m.Service, Push: push, Email: email, WhatsApp: whatsApp}); err != nil {
+	clk := m.deps.Clock
+	if clk == nil {
+		clk = clock.Real{}
+	}
+	if err := jobs.Register(workers, jobs.Dependencies{Service: m.Service, Push: push, Email: email, WhatsApp: whatsApp, Clock: clk}); err != nil {
 		return nil, fmt.Errorf("notifications jobs: %w", err)
 	}
 	return jobs.PeriodicJobs(), nil

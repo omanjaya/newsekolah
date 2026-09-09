@@ -6452,6 +6452,303 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+  /v1/whatsapp/provider-config:
+    get:
+      tags:
+        - whatsapp
+      operationId: getWhatsAppProviderConfig
+      x-permission: manage_whatsapp
+      summary: The tenant's WhatsApp gateway configuration (never the secret itself)
+      responses:
+        "200":
+          description: Configuration status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WhatsAppProviderStatus"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    put:
+      tags:
+        - whatsapp
+      operationId: setWhatsAppProviderConfig
+      x-permission: manage_whatsapp
+      summary: Configure the tenant's WhatsApp gateway (Meta Cloud API or a local gateway)
+      description: |
+        Leaving access_token (provider=meta) or gateway_header_value (provider=gateway) empty keeps the
+        previously saved secret -- the web client never re-displays a saved token, so it cannot resubmit it.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WhatsAppProviderInput"
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WhatsAppProviderStatus"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/whatsapp/templates:
+    get:
+      tags:
+        - whatsapp
+      operationId: listWhatsAppTemplates
+      x-permission: manage_whatsapp
+      summary: The tenant's WhatsApp message templates
+      responses:
+        "200":
+          description: Templates
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/WhatsAppTemplate"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags:
+        - whatsapp
+      operationId: createWhatsAppTemplate
+      x-permission: manage_whatsapp
+      summary: Create a WhatsApp message template
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WhatsAppTemplateInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WhatsAppTemplate"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/whatsapp/templates/{templateId}:
+    put:
+      tags:
+        - whatsapp
+      operationId: updateWhatsAppTemplate
+      x-permission: manage_whatsapp
+      summary: Update a WhatsApp message template
+      parameters:
+        - $ref: "#/components/parameters/WhatsAppTemplateId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WhatsAppTemplateInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WhatsAppTemplate"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags:
+        - whatsapp
+      operationId: deleteWhatsAppTemplate
+      x-permission: manage_whatsapp
+      summary: Delete a WhatsApp message template
+      parameters:
+        - $ref: "#/components/parameters/WhatsAppTemplateId"
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/whatsapp/templates/{templateId}/preview:
+    post:
+      tags:
+        - whatsapp
+      operationId: previewWhatsAppTemplate
+      x-permission: manage_whatsapp
+      summary: Render a template against sample variables, without sending anything
+      parameters:
+        - $ref: "#/components/parameters/WhatsAppTemplateId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WhatsAppTemplatePreviewInput"
+      responses:
+        "200":
+          description: Rendered preview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WhatsAppTemplatePreview"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/whatsapp/deliveries:
+    get:
+      tags:
+        - whatsapp
+      operationId: listWhatsAppDeliveries
+      x-permission: manage_whatsapp
+      summary: The WhatsApp delivery log, newest first
+      parameters:
+        - name: status
+          in: query
+          description: Filter to one delivery status; omitted or empty returns every status.
+          schema:
+            $ref: "#/components/schemas/WhatsAppDeliveryStatus"
+        - name: cursor
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: Deliveries
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WhatsAppDeliveryPage"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/whatsapp/deliveries/{deliveryId}/resend:
+    post:
+      tags:
+        - whatsapp
+      operationId: resendWhatsAppDelivery
+      x-permission: manage_whatsapp
+      summary: Re-send a WhatsApp message, recording a new delivery log entry
+      parameters:
+        - name: deliveryId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: New delivery queued
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WhatsAppDelivery"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/whatsapp/webhook:
+    get:
+      tags:
+        - whatsapp
+      operationId: verifyWhatsAppWebhook
+      x-public: true
+      security: []
+      summary: Meta's webhook verification handshake (hub.challenge echo)
+      parameters:
+        - name: hub.mode
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: hub.verify_token
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: hub.challenge
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Challenge echoed back
+          content:
+            text/plain:
+              schema:
+                type: string
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags:
+        - whatsapp
+      operationId: receiveWhatsAppWebhook
+      x-public: true
+      security: []
+      summary: Inbound WhatsApp delivery status updates (delivered, read)
+      description: |
+        Meta sends this as application/json, but the body is declared here as application/octet-stream (raw
+        bytes) on purpose: the signature must be verified over the exact bytes received, before any JSON
+        decoding, and the generated server only hands over a raw io.Reader for a non-JSON content type.
+      parameters:
+        - name: X-Hub-Signature-256
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      responses:
+        "200":
+          description: Processed
+        "401":
+          description: Invalid signature
   /v1/scan-tokens:
     post:
       tags:
@@ -12360,6 +12657,198 @@ components:
           $ref: "#/components/schemas/PushPlatform"
         device_name:
           type: string
+    WhatsAppProviderKind:
+      type: string
+      enum:
+        - meta
+        - gateway
+    WhatsAppProviderInput:
+      type: object
+      required:
+        - provider
+      properties:
+        provider:
+          $ref: "#/components/schemas/WhatsAppProviderKind"
+        phone_number_id:
+          type: string
+          description: Meta Cloud API phone number id (provider=meta).
+        access_token:
+          type: string
+          description: Meta Cloud API access token (provider=meta). Empty keeps the previously saved token.
+        gateway_url:
+          type: string
+          description: URL the local gateway exposes for sending (provider=gateway).
+        gateway_header_name:
+          type: string
+          description: Auth header name the gateway expects (provider=gateway).
+        gateway_header_value:
+          type: string
+          description: Auth header value (provider=gateway). Empty keeps the previously saved value.
+        is_active:
+          type: boolean
+    WhatsAppProviderStatus:
+      type: object
+      required:
+        - provider
+        - has_access_token
+        - has_gateway_header
+        - is_active
+      properties:
+        provider:
+          $ref: "#/components/schemas/WhatsAppProviderKind"
+        phone_number_id:
+          type: string
+        has_access_token:
+          type: boolean
+          description: Whether an access token is stored, without revealing it.
+        gateway_url:
+          type: string
+        gateway_header_name:
+          type: string
+        has_gateway_header:
+          type: boolean
+          description: Whether a gateway header value is stored, without revealing it.
+        is_active:
+          type: boolean
+        updated_at:
+          type: string
+          format: date-time
+    WhatsAppTemplateInput:
+      type: object
+      required:
+        - name
+        - locale
+        - meta_template_name
+        - body
+      properties:
+        name:
+          type: string
+        locale:
+          type: string
+          description: BCP-47 locale code, e.g. "id" or "en".
+        meta_template_name:
+          type: string
+          description: The template name already approved in the tenant's WhatsApp Business Manager.
+        body:
+          type: string
+          description: Template body with {{placeholder}} variables.
+    WhatsAppTemplate:
+      type: object
+      required:
+        - id
+        - name
+        - locale
+        - meta_template_name
+        - body
+        - placeholders
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        locale:
+          type: string
+        meta_template_name:
+          type: string
+        body:
+          type: string
+        placeholders:
+          type: array
+          items:
+            type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    WhatsAppTemplatePreviewInput:
+      type: object
+      properties:
+        variables:
+          type: object
+          additionalProperties:
+            type: string
+    WhatsAppTemplatePreview:
+      type: object
+      required:
+        - rendered
+      properties:
+        rendered:
+          type: string
+        missing_variables:
+          type: array
+          items:
+            type: string
+    WhatsAppDeliveryStatus:
+      type: string
+      enum:
+        - pending
+        - sent
+        - failed
+        - delivered
+        - read
+    WhatsAppDelivery:
+      type: object
+      required:
+        - id
+        - target
+        - provider
+        - status
+        - attempts
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        target:
+          type: string
+          description: Recipient phone number.
+        provider:
+          type: string
+        template_id:
+          type: string
+          format: uuid
+        status:
+          $ref: "#/components/schemas/WhatsAppDeliveryStatus"
+        provider_message_id:
+          type: string
+        error:
+          type: string
+        attempts:
+          type: integer
+        sent_at:
+          type: string
+          format: date-time
+        delivered_at:
+          type: string
+          format: date-time
+        read_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+    WhatsAppDeliveryPage:
+      type: object
+      required:
+        - data
+        - page
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/WhatsAppDelivery"
+        page:
+          type: object
+          required:
+            - next_cursor
+          properties:
+            next_cursor:
+              type: string
     ScanPurpose:
       type: string
       enum:
@@ -13787,3 +14276,10 @@ components:
         single-tenant mode.
       schema:
         type: string
+    WhatsAppTemplateId:
+      name: templateId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid

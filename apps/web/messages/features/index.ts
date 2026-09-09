@@ -15,6 +15,8 @@ import gradingEn from "./grading.en.json";
 import gradingId from "./grading.id.json";
 import libraryEn from "./library.en.json";
 import libraryId from "./library.id.json";
+import messagingEn from "./messaging.en.json";
+import messagingId from "./messaging.id.json";
 import onboardingEn from "./onboarding.en.json";
 import onboardingId from "./onboarding.id.json";
 import platformEn from "./platform.en.json";
@@ -36,3 +38,4 @@ registerFeatureMessages({ namespace: "promotion", id: promotionId, en: promotion
 registerFeatureMessages({ namespace: "security", id: securityId, en: securityEn });
 registerFeatureMessages({ namespace: "platform", id: platformId, en: platformEn });
 registerFeatureMessages({ namespace: "library", id: libraryId, en: libraryEn });
+registerFeatureMessages({ namespace: "messaging", id: messagingId, en: messagingEn });
