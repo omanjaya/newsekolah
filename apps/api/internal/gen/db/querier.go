@@ -12,6 +12,126 @@ import (
 )
 
 type Querier interface {
+	AcademicActivateTerm(ctx context.Context, arg AcademicActivateTermParams) error
+	AcademicActivateYear(ctx context.Context, arg AcademicActivateYearParams) error
+	AcademicApplyGradeLevelTemplateRow(ctx context.Context, arg AcademicApplyGradeLevelTemplateRowParams) (GradeLevel, error)
+	AcademicArchiveYear(ctx context.Context, arg AcademicArchiveYearParams) error
+	AcademicClearDefaultPeriodTemplate(ctx context.Context, tenantID uuid.UUID) error
+	AcademicCloseEnrollment(ctx context.Context, arg AcademicCloseEnrollmentParams) (Enrollment, error)
+	AcademicCountClassesForGradeLevel(ctx context.Context, arg AcademicCountClassesForGradeLevelParams) (int64, error)
+	AcademicCountClassesForRoom(ctx context.Context, arg AcademicCountClassesForRoomParams) (int64, error)
+	AcademicCountClassesForTrack(ctx context.Context, arg AcademicCountClassesForTrackParams) (int64, error)
+	AcademicCountClassesForYear(ctx context.Context, arg AcademicCountClassesForYearParams) (int64, error)
+	AcademicCountEnrollmentsForClass(ctx context.Context, arg AcademicCountEnrollmentsForClassParams) (int64, error)
+	AcademicCountEnrollmentsForYear(ctx context.Context, arg AcademicCountEnrollmentsForYearParams) (int64, error)
+	AcademicCountOfferingsForSubject(ctx context.Context, arg AcademicCountOfferingsForSubjectParams) (int64, error)
+	AcademicCountTeachingAssignmentsForClass(ctx context.Context, arg AcademicCountTeachingAssignmentsForClassParams) (int64, error)
+	AcademicCountTeachingAssignmentsForSubject(ctx context.Context, arg AcademicCountTeachingAssignmentsForSubjectParams) (int64, error)
+	AcademicCountWeekdayAssignmentsForTemplate(ctx context.Context, arg AcademicCountWeekdayAssignmentsForTemplateParams) (int64, error)
+	AcademicCreateCalendarEvent(ctx context.Context, arg AcademicCreateCalendarEventParams) (AcademicCalendarEvent, error)
+	AcademicCreateClass(ctx context.Context, arg AcademicCreateClassParams) (Class, error)
+	AcademicCreateEnrollment(ctx context.Context, arg AcademicCreateEnrollmentParams) (Enrollment, error)
+	AcademicCreateGradeLevel(ctx context.Context, arg AcademicCreateGradeLevelParams) (GradeLevel, error)
+	AcademicCreatePeriod(ctx context.Context, arg AcademicCreatePeriodParams) (Period, error)
+	AcademicCreatePeriodTemplate(ctx context.Context, arg AcademicCreatePeriodTemplateParams) (PeriodTemplate, error)
+	AcademicCreateRoom(ctx context.Context, arg AcademicCreateRoomParams) (Room, error)
+	AcademicCreateSubject(ctx context.Context, arg AcademicCreateSubjectParams) (Subject, error)
+	AcademicCreateSubjectOffering(ctx context.Context, arg AcademicCreateSubjectOfferingParams) (SubjectOffering, error)
+	AcademicCreateTeachingAssignment(ctx context.Context, arg AcademicCreateTeachingAssignmentParams) (TeachingAssignment, error)
+	AcademicCreateTerm(ctx context.Context, arg AcademicCreateTermParams) (Term, error)
+	AcademicCreateTrack(ctx context.Context, arg AcademicCreateTrackParams) (Track, error)
+	AcademicCreateYear(ctx context.Context, arg AcademicCreateYearParams) (AcademicYear, error)
+	AcademicDeactivateAllTermsForYear(ctx context.Context, arg AcademicDeactivateAllTermsForYearParams) error
+	AcademicDeactivateAllYears(ctx context.Context, tenantID uuid.UUID) error
+	AcademicDeleteCalendarEvent(ctx context.Context, arg AcademicDeleteCalendarEventParams) error
+	AcademicDeleteGradeLevel(ctx context.Context, arg AcademicDeleteGradeLevelParams) error
+	AcademicDeletePeriod(ctx context.Context, arg AcademicDeletePeriodParams) error
+	AcademicDeletePeriodTemplate(ctx context.Context, arg AcademicDeletePeriodTemplateParams) error
+	AcademicDeleteSubjectOffering(ctx context.Context, arg AcademicDeleteSubjectOfferingParams) error
+	AcademicDeleteTeachingAssignment(ctx context.Context, arg AcademicDeleteTeachingAssignmentParams) error
+	AcademicDeleteTeachingAssignmentsForTeacherInYear(ctx context.Context, arg AcademicDeleteTeachingAssignmentsForTeacherInYearParams) error
+	AcademicDeleteTerm(ctx context.Context, arg AcademicDeleteTermParams) error
+	AcademicDeleteTrack(ctx context.Context, arg AcademicDeleteTrackParams) error
+	AcademicFindStudentByNIS(ctx context.Context, arg AcademicFindStudentByNISParams) (AcademicFindStudentByNISRow, error)
+	// Read-only lookups against tables owned by the identity module (users,
+	// student_profiles). Per the ownership convention already used for
+	// cross-module reads (e.g. academic reads school's academic_years
+	// directly), these are additive, read-only queries scoped to exactly what
+	// class/enrollment management and Excel import need: no module here writes
+	// to another module's table.
+	AcademicFindStudentByUsername(ctx context.Context, arg AcademicFindStudentByUsernameParams) (AcademicFindStudentByUsernameRow, error)
+	AcademicGetActiveEnrollment(ctx context.Context, arg AcademicGetActiveEnrollmentParams) (Enrollment, error)
+	AcademicGetActiveYear(ctx context.Context, tenantID uuid.UUID) (AcademicYear, error)
+	AcademicGetCalendarEventByID(ctx context.Context, arg AcademicGetCalendarEventByIDParams) (AcademicCalendarEvent, error)
+	// Reads the tenant's current "calendar" policy (owned by the platform/tenant
+	// domain, table tenant_policies): the effective row as of asOf, i.e. the
+	// highest version whose effective_from has passed. Read-only, additive --
+	// this module does not write tenant_policies.
+	AcademicGetCalendarPolicy(ctx context.Context, arg AcademicGetCalendarPolicyParams) ([]byte, error)
+	AcademicGetClassByID(ctx context.Context, arg AcademicGetClassByIDParams) (Class, error)
+	AcademicGetDefaultPeriodTemplate(ctx context.Context, tenantID uuid.UUID) (PeriodTemplate, error)
+	AcademicGetEnrollmentByID(ctx context.Context, arg AcademicGetEnrollmentByIDParams) (Enrollment, error)
+	AcademicGetGradeLevelByID(ctx context.Context, arg AcademicGetGradeLevelByIDParams) (GradeLevel, error)
+	AcademicGetPeriodByID(ctx context.Context, arg AcademicGetPeriodByIDParams) (Period, error)
+	AcademicGetPeriodTemplateByID(ctx context.Context, arg AcademicGetPeriodTemplateByIDParams) (PeriodTemplate, error)
+	AcademicGetRoomByID(ctx context.Context, arg AcademicGetRoomByIDParams) (Room, error)
+	AcademicGetSubjectByID(ctx context.Context, arg AcademicGetSubjectByIDParams) (Subject, error)
+	AcademicGetSubjectOfferingByID(ctx context.Context, arg AcademicGetSubjectOfferingByIDParams) (SubjectOffering, error)
+	AcademicGetTeachingAssignmentByID(ctx context.Context, arg AcademicGetTeachingAssignmentByIDParams) (TeachingAssignment, error)
+	AcademicGetTermByID(ctx context.Context, arg AcademicGetTermByIDParams) (Term, error)
+	AcademicGetTrackByID(ctx context.Context, arg AcademicGetTrackByIDParams) (Track, error)
+	AcademicGetWeekdayAssignment(ctx context.Context, arg AcademicGetWeekdayAssignmentParams) (PeriodDayAssignment, error)
+	AcademicGetYearByID(ctx context.Context, arg AcademicGetYearByIDParams) (AcademicYear, error)
+	AcademicListCalendarEvents(ctx context.Context, arg AcademicListCalendarEventsParams) ([]AcademicListCalendarEventsRow, error)
+	AcademicListClasses(ctx context.Context, arg AcademicListClassesParams) ([]AcademicListClassesRow, error)
+	AcademicListClassesByYearAndGradeLevel(ctx context.Context, arg AcademicListClassesByYearAndGradeLevelParams) ([]Class, error)
+	// Every class in one academic year (no pagination, no search): used to
+	// build the promotion planner's destination-year target list.
+	AcademicListClassesForYear(ctx context.Context, arg AcademicListClassesForYearParams) ([]AcademicListClassesForYearRow, error)
+	AcademicListEnrollmentsByClass(ctx context.Context, arg AcademicListEnrollmentsByClassParams) ([]AcademicListEnrollmentsByClassRow, error)
+	AcademicListEnrollmentsByYear(ctx context.Context, arg AcademicListEnrollmentsByYearParams) ([]Enrollment, error)
+	// Joins classes to scope active enrollments to one grade level, for
+	// promotion planning: candidates are every actively-enrolled student in
+	// that grade for the source academic year.
+	AcademicListEnrollmentsByYearAndGradeLevel(ctx context.Context, arg AcademicListEnrollmentsByYearAndGradeLevelParams) ([]Enrollment, error)
+	AcademicListGradeLevels(ctx context.Context, tenantID uuid.UUID) ([]GradeLevel, error)
+	AcademicListPeriodTemplates(ctx context.Context, tenantID uuid.UUID) ([]PeriodTemplate, error)
+	AcademicListPeriodsByTemplate(ctx context.Context, arg AcademicListPeriodsByTemplateParams) ([]Period, error)
+	// Every actively-enrolled student in the source academic year, with the
+	// grade level and track their current class carries -- everything
+	// domain.BuildPromotionPlan needs, in one round trip.
+	AcademicListPromotionCandidates(ctx context.Context, arg AcademicListPromotionCandidatesParams) ([]AcademicListPromotionCandidatesRow, error)
+	AcademicListRooms(ctx context.Context, arg AcademicListRoomsParams) ([]AcademicListRoomsRow, error)
+	AcademicListSchoolDays(ctx context.Context, arg AcademicListSchoolDaysParams) ([]SchoolDay, error)
+	AcademicListSubjectOfferings(ctx context.Context, arg AcademicListSubjectOfferingsParams) ([]SubjectOffering, error)
+	AcademicListSubjects(ctx context.Context, arg AcademicListSubjectsParams) ([]AcademicListSubjectsRow, error)
+	AcademicListTeachingAssignments(ctx context.Context, arg AcademicListTeachingAssignmentsParams) ([]AcademicListTeachingAssignmentsRow, error)
+	AcademicListTeachingAssignmentsByTeacher(ctx context.Context, arg AcademicListTeachingAssignmentsByTeacherParams) ([]TeachingAssignment, error)
+	AcademicListTermsByYear(ctx context.Context, arg AcademicListTermsByYearParams) ([]Term, error)
+	AcademicListTracks(ctx context.Context, tenantID uuid.UUID) ([]Track, error)
+	// Every active student user in the tenant with no active enrollment in the
+	// given academic year.
+	AcademicListUnassignedStudents(ctx context.Context, arg AcademicListUnassignedStudentsParams) ([]AcademicListUnassignedStudentsRow, error)
+	AcademicListWeekdayAssignments(ctx context.Context, arg AcademicListWeekdayAssignmentsParams) ([]PeriodDayAssignment, error)
+	AcademicListYears(ctx context.Context, arg AcademicListYearsParams) ([]AcademicListYearsRow, error)
+	AcademicSoftDeleteClass(ctx context.Context, arg AcademicSoftDeleteClassParams) error
+	AcademicSoftDeleteRoom(ctx context.Context, arg AcademicSoftDeleteRoomParams) error
+	AcademicSoftDeleteSubject(ctx context.Context, arg AcademicSoftDeleteSubjectParams) error
+	AcademicTeacherHasAssignment(ctx context.Context, arg AcademicTeacherHasAssignmentParams) (bool, error)
+	AcademicUpdateCalendarEvent(ctx context.Context, arg AcademicUpdateCalendarEventParams) (AcademicCalendarEvent, error)
+	AcademicUpdateClass(ctx context.Context, arg AcademicUpdateClassParams) (Class, error)
+	AcademicUpdateGradeLevel(ctx context.Context, arg AcademicUpdateGradeLevelParams) (GradeLevel, error)
+	AcademicUpdatePeriod(ctx context.Context, arg AcademicUpdatePeriodParams) (Period, error)
+	AcademicUpdatePeriodTemplate(ctx context.Context, arg AcademicUpdatePeriodTemplateParams) (PeriodTemplate, error)
+	AcademicUpdateRoom(ctx context.Context, arg AcademicUpdateRoomParams) (Room, error)
+	AcademicUpdateSubject(ctx context.Context, arg AcademicUpdateSubjectParams) (Subject, error)
+	AcademicUpdateSubjectOffering(ctx context.Context, arg AcademicUpdateSubjectOfferingParams) (SubjectOffering, error)
+	AcademicUpdateTeachingAssignment(ctx context.Context, arg AcademicUpdateTeachingAssignmentParams) (TeachingAssignment, error)
+	AcademicUpdateTerm(ctx context.Context, arg AcademicUpdateTermParams) (Term, error)
+	AcademicUpdateTrack(ctx context.Context, arg AcademicUpdateTrackParams) (Track, error)
+	AcademicUpdateYear(ctx context.Context, arg AcademicUpdateYearParams) (AcademicYear, error)
+	AcademicUpsertSchoolDay(ctx context.Context, arg AcademicUpsertSchoolDayParams) error
+	AcademicUpsertWeekdayAssignment(ctx context.Context, arg AcademicUpsertWeekdayAssignmentParams) error
 	ActivateAcademicYear(ctx context.Context, arg ActivateAcademicYearParams) error
 	AddDutyPermission(ctx context.Context, arg AddDutyPermissionParams) error
 	AddRolePermission(ctx context.Context, arg AddRolePermissionParams) error

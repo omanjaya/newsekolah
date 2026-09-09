@@ -21,14 +21,15 @@ type AcademicCalendarEvent struct {
 }
 
 type AcademicYear struct {
-	ID        uuid.UUID          `json:"id"`
-	TenantID  uuid.UUID          `json:"tenant_id"`
-	Label     string             `json:"label"`
-	StartsOn  pgtype.Date        `json:"starts_on"`
-	EndsOn    pgtype.Date        `json:"ends_on"`
-	IsActive  bool               `json:"is_active"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	ID         uuid.UUID          `json:"id"`
+	TenantID   uuid.UUID          `json:"tenant_id"`
+	Label      string             `json:"label"`
+	StartsOn   pgtype.Date        `json:"starts_on"`
+	EndsOn     pgtype.Date        `json:"ends_on"`
+	IsActive   bool               `json:"is_active"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
+	ArchivedAt pgtype.Timestamptz `json:"archived_at"`
 }
 
 type Asset struct {

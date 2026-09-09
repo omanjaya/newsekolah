@@ -27,3 +27,5 @@ tags:
     description: Current user
   - name: tenant
     description: School (tenant) discovery and branding
+  - name: academic
+    description: Academic years, terms, calendar, grade structure, classes, enrollments, subjects, periods, teaching assignments

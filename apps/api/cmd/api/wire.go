@@ -8,6 +8,7 @@ import (
 	"github.com/redis/go-redis/v9"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/api"
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/academic"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/identity"
 	identityservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/identity/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/school"
@@ -52,6 +53,8 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		IsProduction: cfg.IsProduction(),
 	})
 
+	academicModule := academic.Register(pool, clock.Real{})
+
 	authenticator := auth.NewAuthenticator(tokenIssuer, sessionCache, identityModule.Service)
 
 	doc, err := api.GetSpec()
@@ -64,9 +67,10 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	}
 
 	server := &combinedServer{
-		Handler:       identityModule.Handler,
-		TenantHandler: schoolModule.Handler,
-		healthHandler: &healthHandler{version: version, pool: pool, redis: redisClient},
+		Handler:         identityModule.Handler,
+		TenantHandler:   schoolModule.Handler,
+		AcademicHandler: academicModule.Handler,
+		healthHandler:   &healthHandler{version: version, pool: pool, redis: redisClient},
 	}
 
 	strict := api.NewStrictHandlerWithOptions(
