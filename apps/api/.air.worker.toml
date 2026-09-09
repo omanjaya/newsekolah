@@ -1,0 +1,20 @@
+# Air configuration for cmd/worker, used by the dev compose file's
+# optional `worker` profile.
+root = "."
+tmp_dir = "tmp/worker"
+
+[build]
+  cmd = "go build -o ./tmp/worker/worker ./cmd/worker"
+  bin = "./tmp/worker/worker"
+  include_ext = ["go", "sql"]
+  exclude_dir = ["tmp", "testdata", "internal/gen"]
+  exclude_regex = ["_test\\.go$"]
+  delay = 300
+  send_interrupt = true
+  kill_delay = "2s"
+
+[log]
+  time = false
+
+[misc]
+  clean_on_exit = true

@@ -1,4 +1,35 @@
+# Development stack with hot reload.
+#
+#   docker compose -f infra/docker/docker-compose.dev.yml up
+#
+# The API rebuilds through Air and the web app through Next's Fast Refresh,
+# both from the repository bind-mounted into the container. Only the
+# backing services were here before; api, worker and web are new, and every
+# one of them can still be run on the host instead by leaving its profile
+# out (see the `services` profile below).
 name: newsekolah-dev
+
+x-api-env: &api-env
+  APP_ENV: development
+  API_ADDR: ":8080"
+  DATABASE_URL: postgres://newsekolah:newsekolah@postgres:5432/newsekolah?sslmode=disable
+  REDIS_URL: redis://redis:6379/0
+  # Dev-only secrets. Production reads real ones from the environment.
+  JWT_SIGNING_KEY_FILE: /run/secrets/jwt_key
+  DOCUMENT_SIGNING_KEY: dev-document-signing-key-32-bytes-min
+  DATA_ENCRYPTION_KEY: dev-data-encryption-key-32-bytes-min
+  SEED_PASSWORD: "Password123!"
+  TENANCY_MODE: single
+  BASE_DOMAIN: localhost
+  APP_ORIGINS: http://localhost:3000
+  S3_ENDPOINT: minio:9000
+  S3_BUCKET: newsekolah
+  S3_ACCESS_KEY: minioadmin
+  S3_SECRET_KEY: minioadmin
+  S3_USE_SSL: "false"
+  SMTP_URL: smtp://mailpit:1025
+  WORKER_INLINE: "true"
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -29,9 +60,135 @@ services:
       MINIO_ROOT_PASSWORD: minioadmin
     ports: ["9000:9000", "9001:9001"]
     volumes: [miniodata:/data]
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
   mailpit:
     image: axllent/mailpit:latest
     ports: ["8025:8025", "1025:1025"]
+
+  # One-shot: generates the dev JWT signing key the API and worker read.
+  keygen:
+    build:
+      context: ../../apps/api
+      dockerfile: Dockerfile.dev
+    working_dir: /src
+    volumes:
+      - ../../apps/api:/src
+      - api-gocache:/root/.cache/go-build
+      - api-gomod:/go/pkg/mod
+      - devsecrets:/run/secrets
+    command: >
+      sh -c "test -s /run/secrets/jwt_key ||
+             go run ./cmd/keygen > /run/secrets/jwt_key"
+
+  migrate:
+    build:
+      context: ../../apps/api
+      dockerfile: Dockerfile.dev
+    environment: *api-env
+    working_dir: /src
+    volumes:
+      - ../../apps/api:/src
+      - api-gocache:/root/.cache/go-build
+      - api-gomod:/go/pkg/mod
+      - devsecrets:/run/secrets
+    depends_on:
+      postgres: {condition: service_healthy}
+      keygen: {condition: service_completed_successfully}
+    command: ["go", "run", "./cmd/migrate", "up"]
+
+  api:
+    build:
+      context: ../../apps/api
+      dockerfile: Dockerfile.dev
+    environment: *api-env
+    ports: ["8080:8080"]
+    volumes:
+      - ../../apps/api:/src
+      - api-gocache:/root/.cache/go-build
+      - api-gomod:/go/pkg/mod
+      - devsecrets:/run/secrets
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_started}
+      migrate: {condition: service_completed_successfully}
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 60s
+
+  # The worker runs separately here so the split deployment is exercised in
+  # development too; WORKER_INLINE stays true on the API for convenience.
+  worker:
+    build:
+      context: ../../apps/api
+      dockerfile: Dockerfile.dev
+    environment:
+      <<: *api-env
+      WORKER_INLINE: "false"
+    working_dir: /src
+    volumes:
+      - ../../apps/api:/src
+      - api-gocache:/root/.cache/go-build
+      - api-gomod:/go/pkg/mod
+      - devsecrets:/run/secrets
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+    command: ["air", "-c", ".air.worker.toml"]
+    profiles: ["worker"]
+
+  # One-shot demo data: docker compose ... run --rm seed
+  seed:
+    build:
+      context: ../../apps/api
+      dockerfile: Dockerfile.dev
+    environment: *api-env
+    working_dir: /src
+    volumes:
+      - ../../apps/api:/src
+      - api-gocache:/root/.cache/go-build
+      - api-gomod:/go/pkg/mod
+      - devsecrets:/run/secrets
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+    command: ["go", "run", "./cmd/seed"]
+    profiles: ["seed"]
+
+  web:
+    build:
+      context: ../../
+      dockerfile: apps/web/Dockerfile.dev
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8080
+      # Server components talk to the API over the compose network; the
+      # browser uses the published port above.
+      API_INTERNAL_URL: http://api:8080
+      NEXT_TELEMETRY_DISABLED: "1"
+      WATCHPACK_POLLING: "true"
+    ports: ["3000:3000"]
+    volumes:
+      - ../../apps/web:/repo/apps/web
+      - ../../packages:/repo/packages
+      - ../../openapi:/repo/openapi
+      # Named volumes keep the container's installed dependencies and build
+      # cache from being shadowed by whatever the host has.
+      - web-node-modules:/repo/node_modules
+      - web-app-node-modules:/repo/apps/web/node_modules
+      - web-next-cache:/repo/apps/web/.next
+    depends_on:
+      api: {condition: service_started}
+
 volumes:
   pgdata:
   miniodata:
+  devsecrets:
+  api-gocache:
+  api-gomod:
+  web-node-modules:
+  web-app-node-modules:
+  web-next-cache:

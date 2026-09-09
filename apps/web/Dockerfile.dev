@@ -1,0 +1,21 @@
+# syntax=docker/dockerfile:1
+# Development image only: Next.js dev server with Fast Refresh. The repo is
+# bind-mounted, so this image only carries the toolchain and dependencies.
+# Build context must be the monorepo root.
+FROM node:24-alpine
+
+RUN corepack enable && apk add --no-cache libc6-compat
+WORKDIR /repo
+
+# Dependencies are installed into the image so a fresh clone starts without
+# a host install; the compose file keeps node_modules on named volumes so a
+# host install never shadows the container's.
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
+COPY apps/web/package.json apps/web/
+COPY packages ./packages
+RUN pnpm install --frozen-lockfile --filter @newsekolah/web...
+
+WORKDIR /repo/apps/web
+ENV NEXT_TELEMETRY_DISABLED=1
+EXPOSE 3000
+CMD ["pnpm", "dev", "--hostname", "0.0.0.0"]

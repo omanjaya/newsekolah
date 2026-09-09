@@ -1,0 +1,16 @@
+# syntax=docker/dockerfile:1
+# Development image only: the Go toolchain stays in the container and Air
+# rebuilds on every save. Production uses apps/api/Dockerfile.
+FROM golang:1.26-alpine
+
+RUN apk add --no-cache git curl postgresql-client
+RUN go install github.com/air-verse/air@v1.63.0
+
+WORKDIR /src
+
+# Warm the module cache so the first `air` run does not download the world.
+COPY go.mod go.sum ./
+RUN go mod download
+
+EXPOSE 8080
+CMD ["air", "-c", ".air.toml"]

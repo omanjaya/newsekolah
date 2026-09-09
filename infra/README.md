@@ -8,7 +8,7 @@ operational scripts. Design rationale: `docs/02-system-design.md` section 8, `do
 ```
 infra/
   docker/
-    docker-compose.dev.yml    local development (Postgres, Redis, MinIO, Mailpit)
+    docker-compose.dev.yml    local development with hot reload (web, api, Postgres, Redis, MinIO, Mailpit)
     docker-compose.prod.yml   self-host single-school stack
     .env.prod.example         template for infra/docker/.env
     backup/                   backup sidecar image
@@ -127,3 +127,7 @@ Caddy routing differ (docs/02-system-design.md section 8, docs/08-security.md se
   standalone output, `NEXT_PUBLIC_API_URL` build arg and runtime env) — nothing further should be
   needed here once the Dockerfile lands.
 - `.github/workflows/release.yml` builds `apps/web/Dockerfile` too, for the same reason.
+
+## Development
+
+Hot-reload stack for day-to-day work: see [docker/README.dev.md](docker/README.dev.md).

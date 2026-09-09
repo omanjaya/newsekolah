@@ -11,6 +11,7 @@ storybook-static/
 .DS_Store
 *.log
 apps/api/bin/
+apps/api/tmp/
 apps/mobile/.expo/
 apps/mobile/ios/
 apps/mobile/android/
