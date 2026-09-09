@@ -141,6 +141,7 @@ type Querier interface {
 	CancelSubstitutionRequest(ctx context.Context, arg CancelSubstitutionRequestParams) (SubstitutionRequest, error)
 	ClassExistsInTenant(ctx context.Context, arg ClassExistsInTenantParams) (bool, error)
 	ClearDefaultDocumentTemplate(ctx context.Context, arg ClearDefaultDocumentTemplateParams) error
+	ConfirmMfaTotp(ctx context.Context, arg ConfirmMfaTotpParams) (MfaTotp, error)
 	// Bug fix vs. the old app (docs/08-security.md section 7): single atomic
 	// UPDATE guarded by consumed_at IS NULL AND expires_at > now(), so two
 	// concurrent scans of the same token can never both succeed.
@@ -210,6 +211,7 @@ type Querier interface {
 	DeleteExpiredScanTokens(ctx context.Context, arg DeleteExpiredScanTokensParams) (int64, error)
 	DeleteGradeRange(ctx context.Context, arg DeleteGradeRangeParams) error
 	DeleteJournal(ctx context.Context, arg DeleteJournalParams) error
+	DeleteMfaTotp(ctx context.Context, arg DeleteMfaTotpParams) error
 	DeletePushDeviceByEndpointHash(ctx context.Context, arg DeletePushDeviceByEndpointHashParams) error
 	DeletePushDeviceByID(ctx context.Context, arg DeletePushDeviceByIDParams) error
 	// Retention: read notifications older than the cutoff (180 days, per
@@ -308,6 +310,7 @@ type Querier interface {
 	GetLatestWorkflowDefinitionVersion(ctx context.Context, arg GetLatestWorkflowDefinitionVersionParams) (int32, error)
 	GetLeaveDocument(ctx context.Context, arg GetLeaveDocumentParams) (LeaveDocument, error)
 	GetLeaveRequest(ctx context.Context, arg GetLeaveRequestParams) (LeaveRequest, error)
+	GetMfaTotp(ctx context.Context, arg GetMfaTotpParams) (MfaTotp, error)
 	GetNotificationByID(ctx context.Context, arg GetNotificationByIDParams) (Notification, error)
 	GetNotificationSettings(ctx context.Context, arg GetNotificationSettingsParams) (NotificationSetting, error)
 	GetPeriod(ctx context.Context, arg GetPeriodParams) (GetPeriodRow, error)
@@ -569,6 +572,7 @@ type Querier interface {
 	SetDefaultDocumentTemplate(ctx context.Context, arg SetDefaultDocumentTemplateParams) (DocumentTemplate, error)
 	SetExitPermitGateToken(ctx context.Context, arg SetExitPermitGateTokenParams) (ExitPermit, error)
 	SetManualReportScore(ctx context.Context, arg SetManualReportScoreParams) (ReportScore, error)
+	SetMfaRecoveryCodes(ctx context.Context, arg SetMfaRecoveryCodesParams) error
 	SetUserAvatarAsset(ctx context.Context, arg SetUserAvatarAssetParams) error
 	SetUserStatus(ctx context.Context, arg SetUserStatusParams) error
 	SoftDeleteDutyType(ctx context.Context, arg SoftDeleteDutyTypeParams) error
@@ -596,6 +600,7 @@ type Querier interface {
 	UpsertAttendanceDailySummary(ctx context.Context, arg UpsertAttendanceDailySummaryParams) error
 	UpsertAttendanceEntry(ctx context.Context, arg UpsertAttendanceEntryParams) (AttendanceEntry, error)
 	UpsertGrade(ctx context.Context, arg UpsertGradeParams) (Grade, error)
+	UpsertMfaTotp(ctx context.Context, arg UpsertMfaTotpParams) (MfaTotp, error)
 	UpsertNotificationPreference(ctx context.Context, arg UpsertNotificationPreferenceParams) error
 	UpsertNotificationSettings(ctx context.Context, arg UpsertNotificationSettingsParams) (NotificationSetting, error)
 	UpsertPermission(ctx context.Context, arg UpsertPermissionParams) error

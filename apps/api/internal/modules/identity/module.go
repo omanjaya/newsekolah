@@ -33,6 +33,8 @@ type Dependencies struct {
 	ResetLimiter service.IPRateLimiter
 	Email        notify.EmailSender
 	Storage      *storage.Client
+	// MfaSealer enables TOTP two-factor when set (platform/crypto).
+	MfaSealer service.Sealer
 }
 
 type Module struct {
@@ -46,6 +48,8 @@ func Register(deps Dependencies) *Module {
 		ResetLimiter: deps.ResetLimiter,
 		Email:        deps.Email,
 		Storage:      deps.Storage,
+		MfaRepo:      repo,
+		MfaSealer:    deps.MfaSealer,
 	})
 	handler := transporthttp.New(svc, deps.Branding, deps.SessionCache, deps.IsProduction)
 	return &Module{Service: svc, Handler: handler}

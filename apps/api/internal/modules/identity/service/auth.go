@@ -21,6 +21,9 @@ type LoginInput struct {
 	DeviceName string
 	IP         string
 	UserAgent  string
+	// OTP carries the TOTP or recovery code when the account has a second
+	// factor; an empty value on an enrolled account returns ErrMfaRequired.
+	OTP string
 }
 
 type AuthResult struct {
@@ -72,6 +75,20 @@ func (s *Service) login(ctx context.Context, in LoginInput) (AuthResult, error) 
 	if !user.CanAuthenticate() {
 		s.recordLoginAttemptDurably(ctx, in.TenantID, in.Username, in.IP, false)
 		return AuthResult{}, domain.ErrAccountNotActive
+	}
+
+	requiresMFA, err := s.RequiresTOTP(ctx, in.TenantID, user.ID)
+	if err != nil {
+		return AuthResult{}, err
+	}
+	if requiresMFA {
+		if in.OTP == "" {
+			return AuthResult{}, domain.ErrMfaRequired
+		}
+		if err := s.verifyTOTPInTx(ctx, in.TenantID, user.ID, in.OTP); err != nil {
+			s.recordLoginAttemptDurably(ctx, in.TenantID, in.Username, in.IP, false)
+			return AuthResult{}, err
+		}
 	}
 
 	_ = s.repo.RecordLoginAttempt(ctx, in.TenantID, in.Username, in.IP, true)

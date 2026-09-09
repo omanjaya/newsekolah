@@ -18,6 +18,10 @@ import (
 // anything not listed falls through to mapAuthError.
 var adminErrorMap = map[error]error{
 	domain.ErrUserNotFound:                httpx.ErrNotFound,
+	domain.ErrMfaNotAvailable:             httpx.ErrMfaNotAvailable,
+	domain.ErrMfaNotEnrolled:              httpx.ErrMfaNotEnrolled,
+	domain.ErrMfaInvalidCode:              httpx.ErrMfaInvalidCode,
+	domain.ErrMfaRequired:                 httpx.ErrMfaRequired,
 	domain.ErrRoleNotFound:                httpx.ErrNotFound,
 	domain.ErrDutyTypeNotFound:            httpx.ErrNotFound,
 	domain.ErrDutyAssignmentNotFound:      httpx.ErrNotFound,

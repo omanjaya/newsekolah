@@ -5,10 +5,12 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/db"
@@ -253,4 +255,47 @@ func (r *Repository) ListUserIDsWithActiveDuty(ctx context.Context, tenantID uui
 		return nil, fmt.Errorf("list users with duty %s: %w", slug, err)
 	}
 	return ids, nil
+}
+
+// TOTP two-factor.
+
+func (r *Repository) GetTOTP(ctx context.Context, tenantID, userID uuid.UUID) (service.TOTPRecord, bool, error) {
+	row, err := r.queries(ctx).GetMfaTotp(ctx, db.GetMfaTotpParams{TenantID: tenantID, UserID: userID})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return service.TOTPRecord{}, false, nil
+	}
+	if err != nil {
+		return service.TOTPRecord{}, false, fmt.Errorf("get totp: %w", err)
+	}
+	return service.TOTPRecord{SecretEncrypted: row.SecretEncrypted, Confirmed: row.ConfirmedAt.Valid, RecoveryHashes: row.RecoveryCodesHash}, true, nil
+}
+
+func (r *Repository) UpsertTOTP(ctx context.Context, tenantID, userID uuid.UUID, secret []byte, recoveryHashes []string) error {
+	if _, err := r.queries(ctx).UpsertMfaTotp(ctx, db.UpsertMfaTotpParams{
+		UserID: userID, TenantID: tenantID, SecretEncrypted: secret, RecoveryCodesHash: recoveryHashes,
+	}); err != nil {
+		return fmt.Errorf("upsert totp: %w", err)
+	}
+	return nil
+}
+
+func (r *Repository) ConfirmTOTP(ctx context.Context, tenantID, userID uuid.UUID) error {
+	if _, err := r.queries(ctx).ConfirmMfaTotp(ctx, db.ConfirmMfaTotpParams{TenantID: tenantID, UserID: userID}); err != nil {
+		return fmt.Errorf("confirm totp: %w", err)
+	}
+	return nil
+}
+
+func (r *Repository) SetRecoveryCodes(ctx context.Context, tenantID, userID uuid.UUID, hashes []string) error {
+	if err := r.queries(ctx).SetMfaRecoveryCodes(ctx, db.SetMfaRecoveryCodesParams{TenantID: tenantID, UserID: userID, RecoveryCodesHash: hashes}); err != nil {
+		return fmt.Errorf("set recovery codes: %w", err)
+	}
+	return nil
+}
+
+func (r *Repository) DeleteTOTP(ctx context.Context, tenantID, userID uuid.UUID) error {
+	if err := r.queries(ctx).DeleteMfaTotp(ctx, db.DeleteMfaTotpParams{TenantID: tenantID, UserID: userID}); err != nil {
+		return fmt.Errorf("delete totp: %w", err)
+	}
+	return nil
 }

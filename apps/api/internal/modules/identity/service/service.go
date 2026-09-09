@@ -124,6 +124,10 @@ type Extras struct {
 	ResetLimiter IPRateLimiter
 	Email        notify.EmailSender
 	Storage      *storage.Client // nil when S3 is not configured; avatar upload then returns ErrUploadNotConfigured
+	// MfaRepo and MfaSealer enable TOTP two-factor. Both nil means the
+	// feature is off and every MFA call returns ErrMfaNotAvailable.
+	MfaRepo   MfaRepository
+	MfaSealer Sealer
 }
 
 type Service struct {
@@ -136,10 +140,12 @@ type Service struct {
 	cfg        Config
 	newRefresh func() (token string, hash []byte, err error)
 	extras     Extras
+	mfaRepo    MfaRepository
+	mfaSealer  Sealer
 }
 
 func New(pool *pgxpool.Pool, repo Repository, years AcademicYearReader, limiter RateLimiter, tokens TokenIssuer, clk clock.Clock, cfg Config, newRefresh func() (string, []byte, error), extras Extras) *Service {
-	return &Service{pool: pool, repo: repo, years: years, limiter: limiter, tokens: tokens, clock: clk, cfg: cfg, newRefresh: newRefresh, extras: extras}
+	return &Service{pool: pool, repo: repo, years: years, limiter: limiter, tokens: tokens, clock: clk, cfg: cfg, newRefresh: newRefresh, extras: extras, mfaRepo: extras.MfaRepo, mfaSealer: extras.MfaSealer}
 }
 
 // withTx opens the tenant-scoped transaction for one use case, per

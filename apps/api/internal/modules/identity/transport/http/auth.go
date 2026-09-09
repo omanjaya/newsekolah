@@ -34,6 +34,7 @@ func (h *Handler) Login(ctx context.Context, request api.LoginRequestObject) (ap
 		DeviceName: deviceName,
 		IP:         ip,
 		UserAgent:  userAgent,
+		OTP:        strOf(body.Otp),
 	})
 	if err != nil {
 		return nil, mapAuthError(err)

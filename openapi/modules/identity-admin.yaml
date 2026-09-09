@@ -685,8 +685,108 @@ paths:
                     items: { $ref: "#/components/schemas/DirectoryUser" }
         "401": { $ref: "#/components/responses/Unauthorized" }
 
+  /v1/me/mfa:
+    get:
+      tags: [users]
+      operationId: getMfaStatus
+      x-permission: authenticated
+      summary: Whether two-factor is enrolled for the current user
+      responses:
+        "200":
+          description: Status
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MfaStatus" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /v1/me/mfa/enroll:
+    post:
+      tags: [users]
+      operationId: startMfaEnrolment
+      x-permission: authenticated
+      summary: Start TOTP enrolment; returns the secret, otpauth URL and recovery codes once
+      responses:
+        "201":
+          description: Enrolment started
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MfaEnrolment" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /v1/me/mfa/confirm:
+    post:
+      tags: [users]
+      operationId: confirmMfaEnrolment
+      x-permission: authenticated
+      summary: Activate two-factor by proving a current code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MfaCode" }
+      responses:
+        "204": { description: Confirmed }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /v1/me/mfa/disable:
+    post:
+      tags: [users]
+      operationId: disableMfa
+      x-permission: authenticated
+      summary: Turn two-factor off (requires a current code or a recovery code)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MfaCode" }
+      responses:
+        "204": { description: Disabled }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /v1/me/mfa/recovery-codes:
+    post:
+      tags: [users]
+      operationId: regenerateMfaRecoveryCodes
+      x-permission: authenticated
+      summary: Replace the recovery codes (shown once)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MfaCode" }
+      responses:
+        "200":
+          description: New codes
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [recovery_codes]
+                properties:
+                  recovery_codes: { type: array, items: { type: string } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
 components:
   schemas:
+    MfaStatus:
+      type: object
+      required: [enrolled, confirmed, remaining_recovery_codes]
+      properties:
+        enrolled: { type: boolean }
+        confirmed: { type: boolean }
+        remaining_recovery_codes: { type: integer }
+    MfaEnrolment:
+      type: object
+      required: [secret, otpauth_url, recovery_codes]
+      properties:
+        secret: { type: string }
+        otpauth_url: { type: string }
+        recovery_codes: { type: array, items: { type: string } }
+    MfaCode:
+      type: object
+      required: [code]
+      properties:
+        code: { type: string, minLength: 6, maxLength: 32 }
     DirectoryUser:
       type: object
       required: [id, name, username]

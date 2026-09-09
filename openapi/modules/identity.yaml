@@ -208,6 +208,10 @@ components:
         device_name:
           type: string
           maxLength: 150
+        otp:
+          type: string
+          maxLength: 32
+          description: TOTP or recovery code, required when the account has two-factor enabled.
     AuthTokens:
       type: object
       required:

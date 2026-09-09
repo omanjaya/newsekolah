@@ -52,6 +52,10 @@ func deviceInfoFromContext(ctx context.Context) (ip, userAgent string) {
 
 func mapAuthError(err error) error {
 	switch {
+	case errors.Is(err, domain.ErrMfaRequired):
+		return httpx.ErrMfaRequired
+	case errors.Is(err, domain.ErrMfaInvalidCode):
+		return httpx.ErrMfaInvalidCode
 	case errors.Is(err, domain.ErrRateLimited):
 		return httpx.ErrRateLimited
 	case errors.Is(err, domain.ErrInvalidCredentials), errors.Is(err, domain.ErrAccountNotActive):

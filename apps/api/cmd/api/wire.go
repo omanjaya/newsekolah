@@ -62,6 +62,10 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 
 	schoolModule := school.Register(pool, mode)
 	senders := wiring.SendersFromConfig(cfg, logger)
+	sealer, err := crypto.NewSealer("v1", cfg.EncryptionSecret())
+	if err != nil {
+		return nil, nil, err
+	}
 	identityModule := identity.Register(identity.Dependencies{
 		Pool:         pool,
 		Years:        schoolModule.Service,
@@ -73,6 +77,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		SessionCache: sessionCache,
 		IsProduction: cfg.IsProduction(),
 		Email:        senders.Email,
+		MfaSealer:    sealer,
 	})
 
 	academicModule := academic.Register(pool, clock.Real{})
@@ -103,10 +108,6 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	})
 	sync.inner = attendanceSyncAdapter{force: attendanceModule.Service.ForceStatus}
 
-	sealer, err := crypto.NewSealer("v1", cfg.EncryptionSecret())
-	if err != nil {
-		return nil, nil, err
-	}
 	gradingModule := grading.Register(grading.Dependencies{
 		Pool: pool, Years: schoolModule.Service, Perms: identityModule.Service, Clock: clock.Real{},
 	})
