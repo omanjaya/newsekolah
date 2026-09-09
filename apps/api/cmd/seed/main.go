@@ -24,7 +24,6 @@ import (
 
 // System roles and their default permissions come from authz.RoleDefaults so
 // seed and cmd/migrate never disagree.
-type roleSeed = authz.RoleDefault
 
 var systemRoles = authz.RoleDefaults()
 
@@ -223,4 +222,3 @@ func seedUsers(ctx context.Context, q *db.Queries, tenantID uuid.UUID, roleIDs m
 	_ = yearID // reserved for a future duty_assignments seed (e.g. the teacher as homeroom of X-A)
 	return nil
 }
-
