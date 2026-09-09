@@ -1,6 +1,7 @@
 import { getRequestConfig } from "next-intl/server";
 
 import { getMessages } from "../lib/i18n/get-messages";
+import "../messages/features";
 import { getTenantBrandingServer } from "../lib/tenant/get-branding.server";
 
 // next-intl needs this file (registered in next.config.ts) so server

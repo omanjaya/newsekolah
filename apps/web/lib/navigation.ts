@@ -36,6 +36,7 @@ export interface NavItem {
 
 const GROUP = {
   academic: "nav.academic.label",
+  discipline: "nav.discipline.label",
   permits: "nav.permits.label",
   communication: "nav.communication.label",
   schoolData: "nav.schoolData.label",
@@ -86,6 +87,46 @@ export const navigation: NavItem[] = [
     group: GROUP.academic,
   },
 
+  {
+    key: "grading",
+    labelKey: "nav.academic.items.grading",
+    href: "/grading",
+    icon: domainIcons.grades,
+    permission: "manage_grades",
+    group: GROUP.academic,
+  },
+  {
+    key: "my-grades",
+    labelKey: "nav.compact.grades",
+    href: "/my-grades",
+    icon: domainIcons.grades,
+    permission: "view_own_grades",
+    group: GROUP.academic,
+  },
+  {
+    key: "violations",
+    labelKey: "nav.discipline.items.violations",
+    href: "/discipline/violations",
+    icon: domainIcons.violation,
+    permission: "view_discipline",
+    group: GROUP.discipline,
+  },
+  {
+    key: "warning-letters",
+    labelKey: "nav.discipline.items.warningLetters",
+    href: "/discipline/warning-letters",
+    icon: domainIcons.violation,
+    permission: "view_discipline",
+    group: GROUP.discipline,
+  },
+  {
+    key: "counseling",
+    labelKey: "nav.discipline.items.counseling",
+    href: "/discipline/counseling",
+    icon: domainIcons.violation,
+    permission: "manage_counseling",
+    group: GROUP.discipline,
+  },
   {
     key: "leave-requests",
     labelKey: "nav.permits.items.plannedLeave",
@@ -179,6 +220,14 @@ export const navigation: NavItem[] = [
     href: "/settings/roles",
     icon: ShieldCheck,
     permission: "view_roles",
+    group: GROUP.settings,
+  },
+  {
+    key: "settings-audit",
+    labelKey: "app.audit.navLabel",
+    href: "/settings/audit-logs",
+    icon: ShieldCheck,
+    permission: "view_audit_logs",
     group: GROUP.settings,
   },
   {

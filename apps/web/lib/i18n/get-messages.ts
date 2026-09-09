@@ -9,11 +9,36 @@ const shared: Record<Locale, object> = { id: idShared, en: enShared };
 const app: Record<Locale, object> = { id: idApp, en: enApp };
 
 /**
- * Merges the shared `@newsekolah/i18n` catalog (auth, common, nav, errors,
- * validation) with apps/web's own `messages/*.json` (shell and page copy
- * that has no reason to live in a package shared with the mobile app), so
- * `useTranslations()` can read either one through a single messages object.
+ * Feature catalogs live in their own files under `messages/features/` so two
+ * people (or two agents) can add copy for different screens without editing
+ * the same JSON. Every file exports one object merged under `app.<feature>`;
+ * the file name before the locale suffix is the namespace.
+ */
+interface FeatureCatalog {
+  namespace: string;
+  id: Record<string, unknown>;
+  en: Record<string, unknown>;
+}
+
+const features: FeatureCatalog[] = [];
+
+/** Registers one feature's copy; called from messages/features/index.ts. */
+export function registerFeatureMessages(catalog: FeatureCatalog): void {
+  features.push(catalog);
+}
+
+/**
+ * Merges the shared `@newsekolah/i18n` catalog with apps/web's own
+ * `messages/*.json` and every registered feature catalog, so
+ * `useTranslations()` reads them all through one messages object.
  */
 export function getMessages(locale: Locale) {
-  return { ...shared[locale], ...app[locale] };
+  const appMessages = app[locale] as { app?: Record<string, unknown> };
+  const merged: Record<string, unknown> = { ...shared[locale], ...appMessages };
+  const appSection = { ...(appMessages.app ?? {}) } as Record<string, unknown>;
+  for (const feature of features) {
+    appSection[feature.namespace] = feature[locale];
+  }
+  merged.app = appSection;
+  return merged;
 }
