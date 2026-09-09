@@ -38,3 +38,17 @@ order by date, created_at;
 -- name: CountSubmittedSessionsByClassDate :one
 select count(*)::bigint from attendance_sessions
 where tenant_id = $1 and class_id = $2 and date = $3 and submitted_at is not null;
+
+-- name: CountAttendanceSessionsForScheduleBeforeDate :one
+-- The input to "meeting_number" in the session payload: how many prior
+-- meetings this schedule has already had, so meeting_number = count + 1.
+select count(*)::bigint from attendance_sessions
+where tenant_id = $1 and schedule_id = $2 and date < $3;
+
+-- name: GetLatestAttendanceSessionBeforeDate :one
+-- The previous meeting of this schedule, used to look up its journal for
+-- "previous_journal_topic".
+select * from attendance_sessions
+where tenant_id = $1 and schedule_id = $2 and date < $3
+order by date desc
+limit 1;

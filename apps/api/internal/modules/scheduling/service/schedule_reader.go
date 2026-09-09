@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -18,13 +19,14 @@ import (
 // reverse, is what keeps internal/modules/scheduling free of an import
 // cycle back through here.
 type ScheduleRef struct {
-	ID            uuid.UUID
-	ClassID       uuid.UUID
-	SubjectID     uuid.UUID
-	TeacherUserID uuid.UUID
-	StartPeriodID uuid.UUID
-	EndPeriodID   uuid.UUID
-	DayOfWeek     int16
+	ID             uuid.UUID
+	AcademicYearID uuid.UUID
+	ClassID        uuid.UUID
+	SubjectID      uuid.UUID
+	TeacherUserID  uuid.UUID
+	StartPeriodID  uuid.UUID
+	EndPeriodID    uuid.UUID
+	DayOfWeek      int16
 }
 
 // ScheduleReaderAdapter implements scheduling.ScheduleReader over a
@@ -66,6 +68,29 @@ func (a *ScheduleReaderAdapter) ListSchedulesForTeacherDay(ctx context.Context, 
 	return out, err
 }
 
+// ListAcceptedSubstitutionsForSubstituteDate returns the schedule each
+// accepted substitution for substituteUserID on date covers, for
+// attendance's "today's sessions" list (own schedules plus accepted
+// substitutions).
+func (a *ScheduleReaderAdapter) ListAcceptedSubstitutionsForSubstituteDate(ctx context.Context, tenantID, substituteUserID uuid.UUID, date time.Time) ([]ScheduleRef, error) {
+	var out []ScheduleRef
+	err := a.svc.withTx(ctx, tenantID, func(ctx context.Context) error {
+		subs, err := a.svc.repo.ListAcceptedSubstitutionsForSubstituteDate(ctx, tenantID, substituteUserID, date)
+		if err != nil {
+			return err
+		}
+		for _, sub := range subs {
+			sched, err := a.svc.repo.GetScheduleByID(ctx, tenantID, sub.ScheduleID)
+			if err != nil {
+				return err
+			}
+			out = append(out, toRef(sched))
+		}
+		return nil
+	})
+	return out, err
+}
+
 func (a *ScheduleReaderAdapter) CountSchedulesForClassDay(ctx context.Context, tenantID, academicYearID, classID uuid.UUID, dayOfWeek int16) (int64, error) {
 	var out int64
 	err := a.svc.withTx(ctx, tenantID, func(ctx context.Context) error {
@@ -78,7 +103,8 @@ func (a *ScheduleReaderAdapter) CountSchedulesForClassDay(ctx context.Context, t
 
 func toRef(sched domain.Schedule) ScheduleRef {
 	return ScheduleRef{
-		ID: sched.ID, ClassID: sched.ClassID, SubjectID: sched.SubjectID, TeacherUserID: sched.TeacherUserID,
-		StartPeriodID: sched.StartPeriodID, EndPeriodID: sched.EndPeriodID, DayOfWeek: sched.DayOfWeek,
+		ID: sched.ID, AcademicYearID: sched.AcademicYearID, ClassID: sched.ClassID, SubjectID: sched.SubjectID,
+		TeacherUserID: sched.TeacherUserID, StartPeriodID: sched.StartPeriodID, EndPeriodID: sched.EndPeriodID,
+		DayOfWeek: sched.DayOfWeek,
 	}
 }

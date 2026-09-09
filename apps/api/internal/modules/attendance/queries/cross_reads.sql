@@ -1,0 +1,83 @@
+-- cross-module read; replace with academic/identity/school reader
+-- interfaces after merge. Every query in this file reads a table owned by
+-- another module (academic: enrollments/schedules/classes/subjects/periods;
+-- identity: duty_assignments/duty_types; platform: tenants), built in
+-- parallel in other worktrees. Names are suffixed "ForAttendance" to avoid
+-- colliding with those modules' own sqlc queries over the same tables once
+-- all are merged into one generated db package.
+
+-- name: ListActiveEnrollmentsForAttendance :many
+-- Every actively enrolled student of a class, with the display name and
+-- NIS the roster and reports need -- the same shape scheduling's own
+-- cross-module reads use for ClassRef/SubjectRef.
+select
+  en.student_user_id,
+  u.name,
+  sp.nis
+from enrollments en
+join users u on u.id = en.student_user_id
+left join student_profiles sp on sp.user_id = en.student_user_id
+where en.tenant_id = $1 and en.academic_year_id = $2 and en.class_id = $3 and en.status = 'active'
+order by u.name;
+
+-- name: GetEnrolledClassForAttendance :one
+-- The class a student is actively enrolled in this academic year, for the
+-- student calendar and monthly summary views, which take a student_user_id
+-- rather than a class_id.
+select class_id
+from enrollments
+where tenant_id = $1 and academic_year_id = $2 and student_user_id = $3 and status = 'active'
+limit 1;
+
+-- name: GetHomeroomClassForAttendance :one
+-- The class a teacher is homeroom (wali kelas) duty holder of this
+-- academic year, if any -- duty slug "homeroom", scope_class_id per
+-- docs/analysis/backend-inventory.md section 1.9's global-corrector rule.
+select da.scope_class_id
+from duty_assignments da
+join duty_types dt on dt.id = da.duty_type_id
+where da.tenant_id = $1
+  and da.academic_year_id = $2
+  and da.user_id = $3
+  and dt.slug = 'homeroom'
+  and da.is_active
+  and dt.is_active
+  and da.scope_class_id is not null
+  and da.starts_on <= current_date
+  and (da.ends_on is null or da.ends_on >= current_date)
+limit 1;
+
+-- name: GetTenantTimezoneForAttendance :one
+select timezone from tenants where id = $1;
+
+-- name: ListCurrentPeriodScheduleCardsForAttendance :many
+-- Every schedule occurrence whose period is currently running (start
+-- period's starts_at through end period's ends_at straddle now_time, in
+-- the tenant's own timezone), left-joined with today's attendance session
+-- if one has been opened -- the raw input to the monitor snapshot's
+-- per-class submission cards.
+select
+  s.class_id,
+  c.name as class_name,
+  s.subject_id,
+  sub.name as subject_name,
+  s.teacher_user_id,
+  tu.name as teacher_name,
+  ats.id as session_id,
+  ats.submitted_at
+from schedules s
+join classes c on c.id = s.class_id
+join subjects sub on sub.id = s.subject_id
+join users tu on tu.id = s.teacher_user_id
+join periods sp on sp.id = s.start_period_id
+join periods ep on ep.id = s.end_period_id
+left join attendance_sessions ats on ats.schedule_id = s.id and ats.date = $4
+where s.tenant_id = $1 and s.academic_year_id = $2 and s.day_of_week = $3
+  and sp.starts_at <= $5 and ep.ends_at >= $5
+order by c.name;
+
+-- name: CountDailySummaryStatusesForAttendance :many
+select status_code, count(*)::bigint as total
+from attendance_daily_summary
+where tenant_id = $1 and academic_year_id = $2 and date = $3
+group by status_code;

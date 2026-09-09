@@ -40,3 +40,10 @@ order by date desc, created_at desc;
 select * from substitution_requests
 where tenant_id = $1 and requester_user_id = $2
 order by date desc, created_at desc;
+
+-- name: ListAcceptedSubstitutionsForSubstituteDate :many
+-- Every schedule a teacher is standing in for on one date, accepted only --
+-- the input to the attendance module's "today's sessions" list
+-- (own schedules plus accepted substitutions).
+select * from substitution_requests
+where tenant_id = $1 and substitute_user_id = $2 and date = $3 and status = 'accepted';

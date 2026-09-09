@@ -57,7 +57,7 @@ func (s *Service) CreateSchedule(ctx context.Context, tenantID uuid.UUID, in Sch
 		}
 
 		if !actor.CanManage {
-			if err := s.enforceTeacherWindow(ctx, tenantID, candidate, time.Now()); err != nil {
+			if err := s.enforceTeacherWindow(ctx, tenantID, candidate, s.now()); err != nil {
 				return err
 			}
 		}
@@ -95,10 +95,10 @@ func (s *Service) UpdateSchedule(ctx context.Context, tenantID, id uuid.UUID, in
 		candidate.ID = id
 
 		if !actor.CanManage {
-			if err := s.enforceTeacherWindow(ctx, tenantID, existing, time.Now()); err != nil {
+			if err := s.enforceTeacherWindow(ctx, tenantID, existing, s.now()); err != nil {
 				return err
 			}
-			if err := s.enforceTeacherWindow(ctx, tenantID, candidate, time.Now()); err != nil {
+			if err := s.enforceTeacherWindow(ctx, tenantID, candidate, s.now()); err != nil {
 				return err
 			}
 		}
@@ -126,7 +126,7 @@ func (s *Service) DeleteSchedule(ctx context.Context, tenantID, id uuid.UUID, ac
 			if existing.TeacherUserID != actor.UserID {
 				return domain.ErrTeacherEditForbidden
 			}
-			if err := s.enforceTeacherWindow(ctx, tenantID, existing, time.Now()); err != nil {
+			if err := s.enforceTeacherWindow(ctx, tenantID, existing, s.now()); err != nil {
 				return err
 			}
 		}
@@ -243,7 +243,7 @@ func (s *Service) MutationPolicyFor(ctx context.Context, tenantID uuid.UUID, sch
 	if sched.TeacherUserID != actor.UserID {
 		return MutationPolicy{Reason: domain.ErrTeacherEditForbidden.Error()}
 	}
-	if err := s.enforceTeacherWindow(ctx, tenantID, sched, time.Now()); err != nil {
+	if err := s.enforceTeacherWindow(ctx, tenantID, sched, s.now()); err != nil {
 		return MutationPolicy{Reason: err.Error()}
 	}
 	return MutationPolicy{CanEdit: true, CanDelete: true}
@@ -347,7 +347,7 @@ func (s *Service) enforceTeacherWindow(ctx context.Context, tenantID uuid.UUID, 
 // nextOccurrence finds the next date (today included) whose ISO weekday is
 // dayOfWeek, combined with the period's time-of-day.
 func nextOccurrence(now time.Time, dayOfWeek int16, timeOfDay time.Time) time.Time {
-	nowWeekday := int16(now.Weekday())
+	nowWeekday := int16(now.Weekday()) //nolint:gosec // Weekday is 0..6
 	if nowWeekday == 0 {
 		nowWeekday = 7
 	}
@@ -382,3 +382,6 @@ func mapConstraintError(err error) error {
 	}
 	return err
 }
+
+// now is the single injection point for the clock; tests may override it.
+func (s *Service) now() time.Time { return s.clock.Now() }

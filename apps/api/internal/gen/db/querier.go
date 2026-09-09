@@ -17,6 +17,10 @@ type Querier interface {
 	AddRolePermission(ctx context.Context, arg AddRolePermissionParams) error
 	AssignUserRole(ctx context.Context, arg AssignUserRoleParams) error
 	CancelSubstitutionRequest(ctx context.Context, arg CancelSubstitutionRequestParams) (SubstitutionRequest, error)
+	// The input to "meeting_number" in the session payload: how many prior
+	// meetings this schedule has already had, so meeting_number = count + 1.
+	CountAttendanceSessionsForScheduleBeforeDate(ctx context.Context, arg CountAttendanceSessionsForScheduleBeforeDateParams) (int64, error)
+	CountDailySummaryStatusesForAttendance(ctx context.Context, arg CountDailySummaryStatusesForAttendanceParams) ([]CountDailySummaryStatusesForAttendanceRow, error)
 	// Read by the attendance module to compute a day's expected session count
 	// for a class (attendance/domain.ComputeDailyStatus's Expected input).
 	CountSchedulesForClassDay(ctx context.Context, arg CountSchedulesForClassDayParams) (int64, error)
@@ -56,9 +60,20 @@ type Querier interface {
 	// generated db package.
 	GetClassRefForSchedule(ctx context.Context, arg GetClassRefForScheduleParams) (GetClassRefForScheduleRow, error)
 	GetDutyTypeBySlug(ctx context.Context, arg GetDutyTypeBySlugParams) (DutyType, error)
+	// The class a student is actively enrolled in this academic year, for the
+	// student calendar and monthly summary views, which take a student_user_id
+	// rather than a class_id.
+	GetEnrolledClassForAttendance(ctx context.Context, arg GetEnrolledClassForAttendanceParams) (uuid.UUID, error)
 	GetEntryBySessionStudent(ctx context.Context, arg GetEntryBySessionStudentParams) (AttendanceEntry, error)
+	// The class a teacher is homeroom (wali kelas) duty holder of this
+	// academic year, if any -- duty slug "homeroom", scope_class_id per
+	// docs/analysis/backend-inventory.md section 1.9's global-corrector rule.
+	GetHomeroomClassForAttendance(ctx context.Context, arg GetHomeroomClassForAttendanceParams) (pgtype.UUID, error)
 	GetJournalByID(ctx context.Context, arg GetJournalByIDParams) (ClassJournal, error)
 	GetJournalByUnique(ctx context.Context, arg GetJournalByUniqueParams) (ClassJournal, error)
+	// The previous meeting of this schedule, used to look up its journal for
+	// "previous_journal_topic".
+	GetLatestAttendanceSessionBeforeDate(ctx context.Context, arg GetLatestAttendanceSessionBeforeDateParams) (AttendanceSession, error)
 	GetLatestTenantPolicy(ctx context.Context, arg GetLatestTenantPolicyParams) (TenantPolicy, error)
 	GetPeriodRefForSchedule(ctx context.Context, arg GetPeriodRefForScheduleParams) (Period, error)
 	GetPeriodTemplateRefForDay(ctx context.Context, arg GetPeriodTemplateRefForDayParams) (uuid.UUID, error)
@@ -78,6 +93,7 @@ type Querier interface {
 	GetTenantByID(ctx context.Context, id uuid.UUID) (Tenant, error)
 	GetTenantBySlug(ctx context.Context, slug string) (Tenant, error)
 	GetTenantSettingValue(ctx context.Context, arg GetTenantSettingValueParams) ([]byte, error)
+	GetTenantTimezoneForAttendance(ctx context.Context, id uuid.UUID) (string, error)
 	GetUserByID(ctx context.Context, arg GetUserByIDParams) (User, error)
 	GetUserByUsername(ctx context.Context, arg GetUserByUsernameParams) (User, error)
 	InsertLoginAttempt(ctx context.Context, arg InsertLoginAttemptParams) error
@@ -85,8 +101,23 @@ type Querier interface {
 	IsSchoolDayRef(ctx context.Context, arg IsSchoolDayRefParams) (bool, error)
 	IsSessionActive(ctx context.Context, arg IsSessionActiveParams) (pgtype.Bool, error)
 	ListAcademicYears(ctx context.Context, tenantID uuid.UUID) ([]AcademicYear, error)
+	// Every schedule a teacher is standing in for on one date, accepted only --
+	// the input to the attendance module's "today's sessions" list
+	// (own schedules plus accepted substitutions).
+	ListAcceptedSubstitutionsForSubstituteDate(ctx context.Context, arg ListAcceptedSubstitutionsForSubstituteDateParams) ([]SubstitutionRequest, error)
 	ListActiveDutyAssignmentsForUser(ctx context.Context, arg ListActiveDutyAssignmentsForUserParams) ([]ListActiveDutyAssignmentsForUserRow, error)
 	ListActiveDutyAssignmentsWithPermissions(ctx context.Context, arg ListActiveDutyAssignmentsWithPermissionsParams) ([]ListActiveDutyAssignmentsWithPermissionsRow, error)
+	// cross-module read; replace with academic/identity/school reader
+	// interfaces after merge. Every query in this file reads a table owned by
+	// another module (academic: enrollments/schedules/classes/subjects/periods;
+	// identity: duty_assignments/duty_types; platform: tenants), built in
+	// parallel in other worktrees. Names are suffixed "ForAttendance" to avoid
+	// colliding with those modules' own sqlc queries over the same tables once
+	// all are merged into one generated db package.
+	// Every actively enrolled student of a class, with the display name and
+	// NIS the roster and reports need -- the same shape scheduling's own
+	// cross-module reads use for ClassRef/SubjectRef.
+	ListActiveEnrollmentsForAttendance(ctx context.Context, arg ListActiveEnrollmentsForAttendanceParams) ([]ListActiveEnrollmentsForAttendanceRow, error)
 	ListActiveEnrollmentsRefByClass(ctx context.Context, arg ListActiveEnrollmentsRefByClassParams) ([]ListActiveEnrollmentsRefByClassRow, error)
 	ListActiveSessionsForUser(ctx context.Context, arg ListActiveSessionsForUserParams) ([]Session, error)
 	ListAttendanceDailySummaryForClassDate(ctx context.Context, arg ListAttendanceDailySummaryForClassDateParams) ([]AttendanceDailySummary, error)
@@ -95,6 +126,12 @@ type Querier interface {
 	ListAttendanceSessionsByDateRange(ctx context.Context, arg ListAttendanceSessionsByDateRangeParams) ([]AttendanceSession, error)
 	ListAttendanceSessionsByTeacherDate(ctx context.Context, arg ListAttendanceSessionsByTeacherDateParams) ([]AttendanceSession, error)
 	ListCorrectionsByEntry(ctx context.Context, arg ListCorrectionsByEntryParams) ([]AttendanceCorrection, error)
+	// Every schedule occurrence whose period is currently running (start
+	// period's starts_at through end period's ends_at straddle now_time, in
+	// the tenant's own timezone), left-joined with today's attendance session
+	// if one has been opened -- the raw input to the monitor snapshot's
+	// per-class submission cards.
+	ListCurrentPeriodScheduleCardsForAttendance(ctx context.Context, arg ListCurrentPeriodScheduleCardsForAttendanceParams) ([]ListCurrentPeriodScheduleCardsForAttendanceRow, error)
 	ListEntriesBySession(ctx context.Context, arg ListEntriesBySessionParams) ([]AttendanceEntry, error)
 	// Every status code recorded for one student across the given date's
 	// submitted sessions -- the raw input to attendance/domain.ComputeDailyStatus.

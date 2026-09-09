@@ -26,6 +26,7 @@ type Module struct {
 	// attendance importing scheduling's repository or service directly.
 	AccessChecker  AccessChecker
 	ScheduleReader ScheduleReader
+	JournalService JournalService
 }
 
 // busPublisher adapts the platform-wide event bus to
@@ -51,5 +52,6 @@ func Register(pool *pgxpool.Pool, bus *events.Bus, perms authz.PermissionsProvid
 		Handler:        handler,
 		AccessChecker:  svc,
 		ScheduleReader: service.NewScheduleReaderAdapter(svc),
+		JournalService: service.NewJournalServiceAdapter(svc),
 	}
 }

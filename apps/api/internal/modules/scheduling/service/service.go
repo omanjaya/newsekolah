@@ -8,6 +8,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
+
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -64,6 +66,7 @@ type Repository interface {
 	CancelSubstitution(ctx context.Context, tenantID, id uuid.UUID) (domain.Substitution, error)
 	ListSubstitutionsIncoming(ctx context.Context, tenantID, userID uuid.UUID) ([]domain.Substitution, error)
 	ListSubstitutionsOutgoing(ctx context.Context, tenantID, userID uuid.UUID) ([]domain.Substitution, error)
+	ListAcceptedSubstitutionsForSubstituteDate(ctx context.Context, tenantID, substituteUserID uuid.UUID, date time.Time) ([]domain.Substitution, error)
 
 	CreateJournal(ctx context.Context, j domain.Journal) (domain.Journal, error)
 	UpdateJournal(ctx context.Context, j domain.Journal) (domain.Journal, error)
@@ -88,12 +91,19 @@ type Repository interface {
 }
 
 type Service struct {
-	pool *pgxpool.Pool
-	repo Repository
+	pool  *pgxpool.Pool
+	repo  Repository
+	clock clock.Clock
 }
 
 func New(pool *pgxpool.Pool, repo Repository) *Service {
-	return &Service{pool: pool, repo: repo}
+	return &Service{pool: pool, repo: repo, clock: clock.Real{}}
+}
+
+// WithClock swaps the clock; tests use it to pin "now".
+func (s *Service) WithClock(c clock.Clock) *Service {
+	s.clock = c
+	return s
 }
 
 func (s *Service) withTx(ctx context.Context, tenantID uuid.UUID, fn func(ctx context.Context) error) error {

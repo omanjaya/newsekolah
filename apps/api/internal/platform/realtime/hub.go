@@ -23,7 +23,6 @@ type Hub struct {
 	topics map[string]map[*Client]struct{}
 
 	broadcaster Broadcaster
-	cancelSubs  context.CancelFunc
 }
 
 // Broadcaster fans a published message out to every other API replica.

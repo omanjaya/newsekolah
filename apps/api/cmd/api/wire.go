@@ -60,7 +60,13 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 
 	eventBus := events.NewBus()
 	schedulingModule := scheduling.Register(pool, eventBus, identityModule.Service)
-	attendanceModule := attendance.Register()
+
+	hub := realtime.NewHub(broadcasterFor(redisClient))
+	attendanceModule := attendance.Register(attendance.Dependencies{
+		Pool: pool, Bus: eventBus, Years: schoolModule.Service,
+		Schedules: schedulingModule.ScheduleReader, Access: schedulingModule.AccessChecker, Journals: schedulingModule.JournalService,
+		Perms: identityModule.Service, Hub: hub,
+	})
 
 	doc, err := api.GetSpec()
 	if err != nil {
@@ -104,8 +110,9 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	// generated GET /ws/me and GET /ws/monitor stubs (backed by
 	// attendance's honest-501 strict handler) with the real WebSocket
 	// upgrade -- see the doc comment on mountRealtimeRoutes in ws.go for
-	// why a strict handler can never serve these itself.
-	hub := realtime.NewHub(broadcasterFor(redisClient))
+	// why a strict handler can never serve these itself. hub is the same
+	// instance passed into attendance.Register above, so a socket opened
+	// here is visible to the attendance module's monitor presence count.
 	mountRealtimeRoutes(router, pool, tokenIssuer, hub, cfg.AppOrigins, logger)
 
 	return router, nil

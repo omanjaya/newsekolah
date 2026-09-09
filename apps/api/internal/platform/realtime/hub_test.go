@@ -28,9 +28,12 @@ func TestHubDeliversToSubscriber(t *testing.T) {
 	defer server.Close()
 
 	wsURL := "ws" + strings.TrimPrefix(server.URL, "http")
-	conn, _, err := websocket.DefaultDialer.Dial(wsURL, nil)
+	conn, resp, err := websocket.DefaultDialer.Dial(wsURL, nil) //nolint:bodyclose // closed below
 	require.NoError(t, err)
-	defer conn.Close()
+	if resp != nil && resp.Body != nil {
+		_ = resp.Body.Close()
+	}
+	defer func() { _ = conn.Close() }()
 
 	// Give the server goroutine a moment to register the subscription
 	// before we publish, since Upgrade returns as soon as the handshake
@@ -65,9 +68,12 @@ func TestHubDoesNotDeliverToOtherTopics(t *testing.T) {
 	defer server.Close()
 
 	wsURL := "ws" + strings.TrimPrefix(server.URL, "http")
-	conn, _, err := websocket.DefaultDialer.Dial(wsURL, nil)
+	conn, resp, err := websocket.DefaultDialer.Dial(wsURL, nil) //nolint:bodyclose // closed below
 	require.NoError(t, err)
-	defer conn.Close()
+	if resp != nil && resp.Body != nil {
+		_ = resp.Body.Close()
+	}
+	defer func() { _ = conn.Close() }()
 
 	require.Eventually(t, func() bool {
 		return hub.TopicSize("user:a") == 1
@@ -92,8 +98,11 @@ func TestUnsubscribeOnDisconnect(t *testing.T) {
 	defer server.Close()
 
 	wsURL := "ws" + strings.TrimPrefix(server.URL, "http")
-	conn, _, err := websocket.DefaultDialer.Dial(wsURL, nil)
+	conn, resp, err := websocket.DefaultDialer.Dial(wsURL, nil) //nolint:bodyclose // closed below
 	require.NoError(t, err)
+	if resp != nil && resp.Body != nil {
+		_ = resp.Body.Close()
+	}
 
 	require.Eventually(t, func() bool {
 		return hub.TopicSize("user:a") == 1

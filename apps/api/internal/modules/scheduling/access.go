@@ -40,5 +40,26 @@ type ScheduleRef = service.ScheduleRef
 type ScheduleReader interface {
 	GetSchedule(ctx context.Context, tenantID, scheduleID uuid.UUID) (ScheduleRef, error)
 	ListSchedulesForTeacherDay(ctx context.Context, tenantID, academicYearID, teacherUserID uuid.UUID, dayOfWeek int16) ([]ScheduleRef, error)
+	// ListAcceptedSubstitutionsForSubstituteDate returns the schedule each
+	// accepted substitution for substituteUserID on date covers, so
+	// attendance's "today's sessions" list can merge in a teacher's
+	// accepted substitutions alongside their own schedules.
+	ListAcceptedSubstitutionsForSubstituteDate(ctx context.Context, tenantID, substituteUserID uuid.UUID, date time.Time) ([]ScheduleRef, error)
 	CountSchedulesForClassDay(ctx context.Context, tenantID, academicYearID, classID uuid.UUID, dayOfWeek int16) (int64, error)
+}
+
+// JournalInput and JournalRef are type aliases to their service package
+// counterparts, for the same import-cycle reason ScheduleRef is (see its
+// doc comment above).
+type JournalInput = service.JournalInput
+type JournalRef = service.JournalRef
+
+// JournalService lets the attendance module read and write class journals
+// through scheduling's own validation and teacher/substitute authorship
+// rules (domain/journal.go's CanWrite), instead of duplicating them --
+// attendance's SaveAttendanceEntries upserts the lesson journal alongside
+// attendance entries when the caller supplies one.
+type JournalService interface {
+	UpsertJournal(ctx context.Context, tenantID, teacherUserID, writerUserID uuid.UUID, in JournalInput) (JournalRef, error)
+	GetJournalForLesson(ctx context.Context, tenantID, academicYearID, teacherUserID, classID, subjectID uuid.UUID, lessonDate time.Time) (JournalRef, bool, error)
 }

@@ -362,8 +362,7 @@ paths:
       operationId: wsMonitor
       x-public: true
       security: []
-      summary:
-        Realtime monitor channel (WebSocket upgrade). Authenticated by the same monitor.display_token as GET
+      summary: Realtime monitor channel (WebSocket upgrade). Authenticated by the same monitor.display_token as GET
         /v1/monitor/snapshot, passed as a query parameter since browsers cannot set custom headers before the handshake
         completes.
       parameters:
@@ -384,8 +383,7 @@ paths:
       operationId: wsMe
       x-public: true
       security: []
-      summary:
-        Realtime per-user channel (WebSocket upgrade). Authenticated by the access token, sent either as a bearer
+      summary: Realtime per-user channel (WebSocket upgrade). Authenticated by the access token, sent either as a bearer
         Authorization header (native clients) or as a `bearer.<token>` WebSocket subprotocol (browsers).
       responses:
         "101":
@@ -1095,8 +1093,7 @@ paths:
       operationId: lookupTenants
       x-public: true
       security: []
-      summary:
-        Search schools by name or slug (mobile school picker). Returns nothing in single-tenant mode except the single
+      summary: Search schools by name or slug (mobile school picker). Returns nothing in single-tenant mode except the single
         tenant.
       parameters:
         - name: q
@@ -1189,8 +1186,7 @@ components:
           properties:
             code:
               type: string
-              description:
-                Stable machine code, SCREAMING_SNAKE_CASE (e.g. AUTH_INVALID_CREDENTIALS, AUTH_TOKEN_EXPIRED,
+              description: Stable machine code, SCREAMING_SNAKE_CASE (e.g. AUTH_INVALID_CREDENTIALS, AUTH_TOKEN_EXPIRED,
                 TENANT_NOT_FOUND, VALIDATION_FAILED, RATE_LIMITED, FORBIDDEN, NOT_FOUND).
             message:
               type: string
@@ -2058,8 +2054,7 @@ components:
       name: Idempotency-Key
       in: header
       required: false
-      description:
-        Client-generated key (mobile clients on unstable networks) that makes a POST/PUT safe to retry;
+      description: Client-generated key (mobile clients on unstable networks) that makes a POST/PUT safe to retry;
         docs/08-security.md section 7. The same key replays the first response instead of repeating the write.
       schema:
         type: string
@@ -2075,8 +2070,7 @@ components:
       name: X-Tenant
       in: header
       required: false
-      description:
-        Tenant slug for mobile clients before a token exists. Ignored when the host already resolves a tenant or in
+      description: Tenant slug for mobile clients before a token exists. Ignored when the host already resolves a tenant or in
         single-tenant mode.
       schema:
         type: string

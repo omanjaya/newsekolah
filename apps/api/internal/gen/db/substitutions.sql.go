@@ -190,6 +190,53 @@ func (q *Queries) GetSubstitutionByID(ctx context.Context, arg GetSubstitutionBy
 	return i, err
 }
 
+const listAcceptedSubstitutionsForSubstituteDate = `-- name: ListAcceptedSubstitutionsForSubstituteDate :many
+select id, tenant_id, academic_year_id, schedule_id, date, requester_user_id, substitute_user_id, status, requester_note, response_note, responded_at, created_at from substitution_requests
+where tenant_id = $1 and substitute_user_id = $2 and date = $3 and status = 'accepted'
+`
+
+type ListAcceptedSubstitutionsForSubstituteDateParams struct {
+	TenantID         uuid.UUID   `json:"tenant_id"`
+	SubstituteUserID uuid.UUID   `json:"substitute_user_id"`
+	Date             pgtype.Date `json:"date"`
+}
+
+// Every schedule a teacher is standing in for on one date, accepted only --
+// the input to the attendance module's "today's sessions" list
+// (own schedules plus accepted substitutions).
+func (q *Queries) ListAcceptedSubstitutionsForSubstituteDate(ctx context.Context, arg ListAcceptedSubstitutionsForSubstituteDateParams) ([]SubstitutionRequest, error) {
+	rows, err := q.db.Query(ctx, listAcceptedSubstitutionsForSubstituteDate, arg.TenantID, arg.SubstituteUserID, arg.Date)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []SubstitutionRequest{}
+	for rows.Next() {
+		var i SubstitutionRequest
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.AcademicYearID,
+			&i.ScheduleID,
+			&i.Date,
+			&i.RequesterUserID,
+			&i.SubstituteUserID,
+			&i.Status,
+			&i.RequesterNote,
+			&i.ResponseNote,
+			&i.RespondedAt,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listSubstitutionsIncoming = `-- name: ListSubstitutionsIncoming :many
 select id, tenant_id, academic_year_id, schedule_id, date, requester_user_id, substitute_user_id, status, requester_note, response_note, responded_at, created_at from substitution_requests
 where tenant_id = $1 and substitute_user_id = $2

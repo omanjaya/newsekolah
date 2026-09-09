@@ -77,9 +77,9 @@ func (c *Client) serve() {
 // connection.
 func (c *Client) readPump() {
 	c.conn.SetReadLimit(maxMessageBytes)
-	_ = c.conn.SetReadDeadline(time.Now().Add(pongWait))
+	_ = c.conn.SetReadDeadline(time.Now().Add(pongWait)) //nolint:forbidigo // socket deadlines are wall-clock by definition
 	c.conn.SetPongHandler(func(string) error {
-		return c.conn.SetReadDeadline(time.Now().Add(pongWait))
+		return c.conn.SetReadDeadline(time.Now().Add(pongWait)) //nolint:forbidigo // socket deadline
 	})
 
 	for {
@@ -99,7 +99,7 @@ func (c *Client) writePump(done <-chan struct{}) {
 	for {
 		select {
 		case payload, ok := <-c.outbox:
-			_ = c.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			_ = c.conn.SetWriteDeadline(time.Now().Add(writeWait)) //nolint:forbidigo // socket deadline
 			if !ok {
 				_ = c.conn.WriteMessage(websocket.CloseMessage, []byte{})
 				return

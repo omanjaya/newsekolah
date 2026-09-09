@@ -53,7 +53,7 @@ func ValidateNewSubstitution(requesterUserID, substituteUserID uuid.UUID, schedu
 // day_of_week convention (Monday=1..Sunday=7), matching school_days and
 // schedules.day_of_week.
 func isoWeekday(t time.Time) int16 {
-	w := int16(t.Weekday())
+	w := int16(t.Weekday()) //nolint:gosec // Weekday is 0..6
 	if w == 0 {
 		return 7
 	}

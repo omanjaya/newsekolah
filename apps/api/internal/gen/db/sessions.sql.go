@@ -13,6 +13,26 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countAttendanceSessionsForScheduleBeforeDate = `-- name: CountAttendanceSessionsForScheduleBeforeDate :one
+select count(*)::bigint from attendance_sessions
+where tenant_id = $1 and schedule_id = $2 and date < $3
+`
+
+type CountAttendanceSessionsForScheduleBeforeDateParams struct {
+	TenantID   uuid.UUID   `json:"tenant_id"`
+	ScheduleID uuid.UUID   `json:"schedule_id"`
+	Date       pgtype.Date `json:"date"`
+}
+
+// The input to "meeting_number" in the session payload: how many prior
+// meetings this schedule has already had, so meeting_number = count + 1.
+func (q *Queries) CountAttendanceSessionsForScheduleBeforeDate(ctx context.Context, arg CountAttendanceSessionsForScheduleBeforeDateParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countAttendanceSessionsForScheduleBeforeDate, arg.TenantID, arg.ScheduleID, arg.Date)
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const countSubmittedSessionsByClassDate = `-- name: CountSubmittedSessionsByClassDate :one
 select count(*)::bigint from attendance_sessions
 where tenant_id = $1 and class_id = $2 and date = $3 and submitted_at is not null
@@ -133,6 +153,45 @@ type GetAttendanceSessionByScheduleParams struct {
 
 func (q *Queries) GetAttendanceSessionBySchedule(ctx context.Context, arg GetAttendanceSessionByScheduleParams) (AttendanceSession, error) {
 	row := q.db.QueryRow(ctx, getAttendanceSessionBySchedule, arg.TenantID, arg.ScheduleID, arg.Date)
+	var i AttendanceSession
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.AcademicYearID,
+		&i.ScheduleID,
+		&i.Date,
+		&i.ClassID,
+		&i.SubjectID,
+		&i.TeacherUserID,
+		&i.SubstituteUserID,
+		&i.StartPeriodID,
+		&i.EndPeriodID,
+		&i.Notes,
+		&i.SubmittedAt,
+		&i.SubmittedBy,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getLatestAttendanceSessionBeforeDate = `-- name: GetLatestAttendanceSessionBeforeDate :one
+select id, tenant_id, academic_year_id, schedule_id, date, class_id, subject_id, teacher_user_id, substitute_user_id, start_period_id, end_period_id, notes, submitted_at, submitted_by, created_at, updated_at from attendance_sessions
+where tenant_id = $1 and schedule_id = $2 and date < $3
+order by date desc
+limit 1
+`
+
+type GetLatestAttendanceSessionBeforeDateParams struct {
+	TenantID   uuid.UUID   `json:"tenant_id"`
+	ScheduleID uuid.UUID   `json:"schedule_id"`
+	Date       pgtype.Date `json:"date"`
+}
+
+// The previous meeting of this schedule, used to look up its journal for
+// "previous_journal_topic".
+func (q *Queries) GetLatestAttendanceSessionBeforeDate(ctx context.Context, arg GetLatestAttendanceSessionBeforeDateParams) (AttendanceSession, error) {
+	row := q.db.QueryRow(ctx, getLatestAttendanceSessionBeforeDate, arg.TenantID, arg.ScheduleID, arg.Date)
 	var i AttendanceSession
 	err := row.Scan(
 		&i.ID,
