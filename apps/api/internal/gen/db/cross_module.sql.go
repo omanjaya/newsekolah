@@ -12,6 +12,138 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const disciplineActiveClassID = `-- name: DisciplineActiveClassID :one
+select class_id from enrollments
+where tenant_id = $1 and academic_year_id = $2 and student_user_id = $3 and status = 'active'
+limit 1
+`
+
+type DisciplineActiveClassIDParams struct {
+	TenantID       uuid.UUID `json:"tenant_id"`
+	AcademicYearID uuid.UUID `json:"academic_year_id"`
+	StudentUserID  uuid.UUID `json:"student_user_id"`
+}
+
+func (q *Queries) DisciplineActiveClassID(ctx context.Context, arg DisciplineActiveClassIDParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, disciplineActiveClassID, arg.TenantID, arg.AcademicYearID, arg.StudentUserID)
+	var class_id uuid.UUID
+	err := row.Scan(&class_id)
+	return class_id, err
+}
+
+const disciplineCreatePolicy = `-- name: DisciplineCreatePolicy :exec
+insert into tenant_policies (tenant_id, kind, version, config, effective_from, created_by)
+values ($1, $2, $3, $4, $5, $6)
+on conflict (tenant_id, kind, version) do nothing
+`
+
+type DisciplineCreatePolicyParams struct {
+	TenantID      uuid.UUID   `json:"tenant_id"`
+	Kind          string      `json:"kind"`
+	Version       int32       `json:"version"`
+	Config        []byte      `json:"config"`
+	EffectiveFrom pgtype.Date `json:"effective_from"`
+	CreatedBy     pgtype.UUID `json:"created_by"`
+}
+
+func (q *Queries) DisciplineCreatePolicy(ctx context.Context, arg DisciplineCreatePolicyParams) error {
+	_, err := q.db.Exec(ctx, disciplineCreatePolicy,
+		arg.TenantID,
+		arg.Kind,
+		arg.Version,
+		arg.Config,
+		arg.EffectiveFrom,
+		arg.CreatedBy,
+	)
+	return err
+}
+
+const disciplineGetLatestPolicy = `-- name: DisciplineGetLatestPolicy :one
+select config, version from tenant_policies
+where tenant_id = $1 and kind = $2
+order by version desc
+limit 1
+`
+
+type DisciplineGetLatestPolicyParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	Kind     string    `json:"kind"`
+}
+
+type DisciplineGetLatestPolicyRow struct {
+	Config  []byte `json:"config"`
+	Version int32  `json:"version"`
+}
+
+func (q *Queries) DisciplineGetLatestPolicy(ctx context.Context, arg DisciplineGetLatestPolicyParams) (DisciplineGetLatestPolicyRow, error) {
+	row := q.db.QueryRow(ctx, disciplineGetLatestPolicy, arg.TenantID, arg.Kind)
+	var i DisciplineGetLatestPolicyRow
+	err := row.Scan(&i.Config, &i.Version)
+	return i, err
+}
+
+const disciplineHasActiveDuty = `-- name: DisciplineHasActiveDuty :one
+select exists (
+  select 1 from duty_assignments da
+  join duty_types dt on dt.id = da.duty_type_id
+  where da.tenant_id = $1 and da.academic_year_id = $2 and da.user_id = $3 and dt.slug = $4
+    and da.is_active and dt.is_active and dt.deleted_at is null
+    and da.starts_on <= current_date and (da.ends_on is null or da.ends_on >= current_date)
+    and (dt.scope_kind = 'school' or ($5::uuid is not null and da.scope_class_id = $5::uuid))
+)::bool as has_duty
+`
+
+type DisciplineHasActiveDutyParams struct {
+	TenantID       uuid.UUID   `json:"tenant_id"`
+	AcademicYearID uuid.UUID   `json:"academic_year_id"`
+	UserID         uuid.UUID   `json:"user_id"`
+	Slug           string      `json:"slug"`
+	ClassID        pgtype.UUID `json:"class_id"`
+}
+
+func (q *Queries) DisciplineHasActiveDuty(ctx context.Context, arg DisciplineHasActiveDutyParams) (bool, error) {
+	row := q.db.QueryRow(ctx, disciplineHasActiveDuty,
+		arg.TenantID,
+		arg.AcademicYearID,
+		arg.UserID,
+		arg.Slug,
+		arg.ClassID,
+	)
+	var has_duty bool
+	err := row.Scan(&has_duty)
+	return has_duty, err
+}
+
+const disciplineStudentSnapshot = `-- name: DisciplineStudentSnapshot :one
+select u.name as student_name, coalesce(c.name, '') as class_name, coalesce(sp.guardian_name, '') as guardian_name
+from users u
+left join enrollments e on e.student_user_id = u.id and e.academic_year_id = $3 and e.status = 'active'
+left join classes c on c.id = e.class_id
+left join student_profiles sp on sp.user_id = u.id
+where u.tenant_id = $1 and u.id = $2
+`
+
+type DisciplineStudentSnapshotParams struct {
+	TenantID       uuid.UUID `json:"tenant_id"`
+	ID             uuid.UUID `json:"id"`
+	AcademicYearID uuid.UUID `json:"academic_year_id"`
+}
+
+type DisciplineStudentSnapshotRow struct {
+	StudentName  string `json:"student_name"`
+	ClassName    string `json:"class_name"`
+	GuardianName string `json:"guardian_name"`
+}
+
+// cross-module read: users (identity) and enrollments/classes (academic),
+// for the name and class printed on a warning letter.
+func (q *Queries) DisciplineStudentSnapshot(ctx context.Context, arg DisciplineStudentSnapshotParams) (DisciplineStudentSnapshotRow, error) {
+	row := q.db.QueryRow(ctx, disciplineStudentSnapshot, arg.TenantID, arg.ID, arg.AcademicYearID)
+	var i DisciplineStudentSnapshotRow
+	err := row.Scan(&i.StudentName, &i.ClassName, &i.GuardianName)
+	return i, err
+}
+
 const getActiveEnrollment = `-- name: GetActiveEnrollment :one
 
 select e.student_user_id, e.class_id, c.name as class_name, c.homeroom_teacher_id

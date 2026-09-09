@@ -16,6 +16,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/academic"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/announcements"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance"
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/discipline"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/identity"
 	identityservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/identity/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/notifications"
@@ -27,6 +28,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/authz"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/config"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/crypto"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/events"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/jobs"
@@ -99,6 +101,15 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	})
 	sync.inner = attendanceSyncAdapter{force: attendanceModule.Service.ForceStatus}
 
+	sealer, err := crypto.NewSealer("v1", cfg.EncryptionSecret())
+	if err != nil {
+		return nil, nil, err
+	}
+	disciplineModule := discipline.Register(discipline.Dependencies{
+		Pool: pool, Years: schoolModule.Service, Docs: wiring.DisciplineDocuments{Permits: permitsModule.Service},
+		Sealer: sealer, Bus: eventBus, Clock: clock.Real{},
+	})
+
 	// Background jobs: every module registers its workers on one River
 	// client. With WORKER_INLINE the API process also runs them, so a small
 	// school needs a single process; otherwise cmd/worker runs them and this
@@ -152,6 +163,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		PermitsHandler:       permitsModule.Handler,
 		NotificationsHandler: notificationsModule.Handler,
 		AnnouncementsHandler: announcementsModule.Handler,
+		DisciplineHandler:    disciplineModule.Handler,
 		healthHandler:        &healthHandler{version: version, pool: pool, redis: redisClient},
 	}
 

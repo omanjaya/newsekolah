@@ -191,6 +191,31 @@ type ClassJournal struct {
 	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
 }
 
+type Counseling struct {
+	ID                    uuid.UUID          `json:"id"`
+	TenantID              uuid.UUID          `json:"tenant_id"`
+	AcademicYearID        uuid.UUID          `json:"academic_year_id"`
+	StudentUserID         uuid.UUID          `json:"student_user_id"`
+	CounselorUserID       uuid.UUID          `json:"counselor_user_id"`
+	SessionAt             pgtype.Timestamptz `json:"session_at"`
+	Kind                  string             `json:"kind"`
+	Title                 string             `json:"title"`
+	ContentEncrypted      []byte             `json:"content_encrypted"`
+	ContentKeyID          string             `json:"content_key_id"`
+	FollowUpPlanEncrypted []byte             `json:"follow_up_plan_encrypted"`
+	Visibility            string             `json:"visibility"`
+	CreatedAt             pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt             pgtype.Timestamptz `json:"updated_at"`
+}
+
+type CounselingAttachment struct {
+	ID           uuid.UUID          `json:"id"`
+	TenantID     uuid.UUID          `json:"tenant_id"`
+	CounselingID uuid.UUID          `json:"counseling_id"`
+	AssetID      uuid.UUID          `json:"asset_id"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+}
+
 type DocumentSequence struct {
 	TenantID       uuid.UUID `json:"tenant_id"`
 	Kind           string    `json:"kind"`
@@ -797,6 +822,54 @@ type UserRole struct {
 	TenantID       uuid.UUID   `json:"tenant_id"`
 	IsPrimary      bool        `json:"is_primary"`
 	AcademicYearID pgtype.UUID `json:"academic_year_id"`
+}
+
+type ViolationRecord struct {
+	ID                  uuid.UUID          `json:"id"`
+	TenantID            uuid.UUID          `json:"tenant_id"`
+	AcademicYearID      uuid.UUID          `json:"academic_year_id"`
+	StudentUserID       uuid.UUID          `json:"student_user_id"`
+	ViolationTypeID     uuid.UUID          `json:"violation_type_id"`
+	PointsSnapshot      int32              `json:"points_snapshot"`
+	OccurredOn          pgtype.Date        `json:"occurred_on"`
+	AttendanceSessionID pgtype.UUID        `json:"attendance_session_id"`
+	WorkflowInstanceID  pgtype.UUID        `json:"workflow_instance_id"`
+	ReporterUserID      uuid.UUID          `json:"reporter_user_id"`
+	Notes               string             `json:"notes"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
+	VoidedAt            pgtype.Timestamptz `json:"voided_at"`
+	VoidedBy            pgtype.UUID        `json:"voided_by"`
+	VoidReason          pgtype.Text        `json:"void_reason"`
+}
+
+type ViolationType struct {
+	ID        uuid.UUID          `json:"id"`
+	TenantID  uuid.UUID          `json:"tenant_id"`
+	Code      string             `json:"code"`
+	Name      string             `json:"name"`
+	Points    int32              `json:"points"`
+	Category  string             `json:"category"`
+	IsActive  bool               `json:"is_active"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	DeletedAt pgtype.Timestamptz `json:"deleted_at"`
+}
+
+type WarningLetter struct {
+	ID              uuid.UUID          `json:"id"`
+	TenantID        uuid.UUID          `json:"tenant_id"`
+	AcademicYearID  uuid.UUID          `json:"academic_year_id"`
+	StudentUserID   uuid.UUID          `json:"student_user_id"`
+	Level           int32              `json:"level"`
+	LevelLabel      string             `json:"level_label"`
+	ThresholdPoints int32              `json:"threshold_points"`
+	TotalPoints     int32              `json:"total_points"`
+	LetterNumber    string             `json:"letter_number"`
+	IssuedBy        pgtype.UUID        `json:"issued_by"`
+	IssuedAt        pgtype.Timestamptz `json:"issued_at"`
+	Snapshot        []byte             `json:"snapshot"`
+	DocumentAssetID pgtype.UUID        `json:"document_asset_id"`
 }
 
 type WebauthnCredential struct {

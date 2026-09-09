@@ -37,6 +37,10 @@ type Config struct {
 	// verification codes (docs/08-security.md): a compromise of one key
 	// must not unlock the other, so this is never JWTSigningKey.
 	DocumentSigningKey string
+	// DataEncryptionKey seals fields that must stay unreadable to database
+	// operators (counseling notes). Falls back to DocumentSigningKey so a
+	// single-school deployment needs no extra secret.
+	DataEncryptionKey string
 
 	TrustedProxies []string
 	BodyLimitBytes int64
@@ -112,6 +116,7 @@ func Load() (Config, error) {
 
 		JWTSigningKey:      req("JWT_SIGNING_KEY"),
 		DocumentSigningKey: req("DOCUMENT_SIGNING_KEY"),
+		DataEncryptionKey:  lookup("DATA_ENCRYPTION_KEY"),
 
 		S3Endpoint:  lookup("S3_ENDPOINT"),
 		S3Bucket:    lookup("S3_BUCKET"),
@@ -242,4 +247,12 @@ func splitAndTrim(v string) []string {
 		}
 	}
 	return out
+}
+
+// EncryptionSecret is the key material for field-level encryption.
+func (c Config) EncryptionSecret() string {
+	if c.DataEncryptionKey != "" {
+		return c.DataEncryptionKey
+	}
+	return c.DocumentSigningKey
 }

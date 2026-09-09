@@ -163,6 +163,7 @@ type Querier interface {
 	CreateAsset(ctx context.Context, arg CreateAssetParams) (Asset, error)
 	CreateAttendanceCorrection(ctx context.Context, arg CreateAttendanceCorrectionParams) (AttendanceCorrection, error)
 	CreateClass(ctx context.Context, arg CreateClassParams) (Class, error)
+	CreateCounseling(ctx context.Context, arg CreateCounselingParams) (Counseling, error)
 	CreateDocumentTemplate(ctx context.Context, arg CreateDocumentTemplateParams) (DocumentTemplate, error)
 	CreateDutyAssignment(ctx context.Context, arg CreateDutyAssignmentParams) (DutyAssignment, error)
 	CreateDutyType(ctx context.Context, arg CreateDutyTypeParams) (DutyType, error)
@@ -189,12 +190,16 @@ type Querier interface {
 	CreateTenantPolicy(ctx context.Context, arg CreateTenantPolicyParams) (TenantPolicy, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	CreateUserProfile(ctx context.Context, arg CreateUserProfileParams) error
+	CreateViolationRecord(ctx context.Context, arg CreateViolationRecordParams) (ViolationRecord, error)
+	CreateViolationType(ctx context.Context, arg CreateViolationTypeParams) (ViolationType, error)
+	CreateWarningLetter(ctx context.Context, arg CreateWarningLetterParams) (WarningLetter, error)
 	CreateWorkflowDefinition(ctx context.Context, arg CreateWorkflowDefinitionParams) (WorkflowDefinition, error)
 	CreateWorkflowEvent(ctx context.Context, arg CreateWorkflowEventParams) (WorkflowEvent, error)
 	CreateWorkflowInstance(ctx context.Context, arg CreateWorkflowInstanceParams) (WorkflowInstance, error)
 	DeactivateActiveWorkflowDefinitions(ctx context.Context, arg DeactivateActiveWorkflowDefinitionsParams) error
 	DeactivateAllAcademicYears(ctx context.Context, tenantID uuid.UUID) error
 	DeleteAnnouncement(ctx context.Context, arg DeleteAnnouncementParams) error
+	DeleteCounseling(ctx context.Context, arg DeleteCounselingParams) error
 	DeleteDeliveriesOlderThan(ctx context.Context, arg DeleteDeliveriesOlderThanParams) (int64, error)
 	DeleteDutyAssignment(ctx context.Context, arg DeleteDutyAssignmentParams) error
 	DeleteDutyPermissions(ctx context.Context, arg DeleteDutyPermissionsParams) error
@@ -214,6 +219,14 @@ type Querier interface {
 	DeleteSchedule(ctx context.Context, arg DeleteScheduleParams) error
 	DeleteSchedulesByAcademicYear(ctx context.Context, arg DeleteSchedulesByAcademicYearParams) error
 	DeleteUserRoles(ctx context.Context, arg DeleteUserRolesParams) error
+	DeleteViolationType(ctx context.Context, arg DeleteViolationTypeParams) error
+	DisciplineActiveClassID(ctx context.Context, arg DisciplineActiveClassIDParams) (uuid.UUID, error)
+	DisciplineCreatePolicy(ctx context.Context, arg DisciplineCreatePolicyParams) error
+	DisciplineGetLatestPolicy(ctx context.Context, arg DisciplineGetLatestPolicyParams) (DisciplineGetLatestPolicyRow, error)
+	DisciplineHasActiveDuty(ctx context.Context, arg DisciplineHasActiveDutyParams) (bool, error)
+	// cross-module read: users (identity) and enrollments/classes (academic),
+	// for the name and class printed on a warning letter.
+	DisciplineStudentSnapshot(ctx context.Context, arg DisciplineStudentSnapshotParams) (DisciplineStudentSnapshotRow, error)
 	EmailExists(ctx context.Context, arg EmailExistsParams) (bool, error)
 	EnsureNotificationsPartition(ctx context.Context, targetMonth pgtype.Date) error
 	// Bug fix vs. the old app (docs/02-system-design.md section 6.2 step 4):
@@ -251,6 +264,7 @@ type Querier interface {
 	// own sqlc queries over the same tables once both are merged into one
 	// generated db package.
 	GetClassRefForSchedule(ctx context.Context, arg GetClassRefForScheduleParams) (GetClassRefForScheduleRow, error)
+	GetCounseling(ctx context.Context, arg GetCounselingParams) (Counseling, error)
 	GetDefaultDocumentTemplate(ctx context.Context, arg GetDefaultDocumentTemplateParams) (DocumentTemplate, error)
 	GetDocumentTemplateByID(ctx context.Context, arg GetDocumentTemplateByIDParams) (DocumentTemplate, error)
 	GetDutyAssignmentByID(ctx context.Context, arg GetDutyAssignmentByIDParams) (DutyAssignment, error)
@@ -326,6 +340,9 @@ type Querier interface {
 	GetUserByUsernameOrEmail(ctx context.Context, arg GetUserByUsernameOrEmailParams) (User, error)
 	GetUserName(ctx context.Context, arg GetUserNameParams) (string, error)
 	GetValidPasswordResetByHash(ctx context.Context, arg GetValidPasswordResetByHashParams) (PasswordReset, error)
+	GetViolationRecord(ctx context.Context, arg GetViolationRecordParams) (ViolationRecord, error)
+	GetViolationType(ctx context.Context, arg GetViolationTypeParams) (ViolationType, error)
+	GetWarningLetter(ctx context.Context, arg GetWarningLetterParams) (WarningLetter, error)
 	GetWorkflowDefinitionByID(ctx context.Context, arg GetWorkflowDefinitionByIDParams) (WorkflowDefinition, error)
 	// Used to resolve a stage's approver for a later stage's distinct_from check.
 	GetWorkflowEventByStage(ctx context.Context, arg GetWorkflowEventByStageParams) (WorkflowEvent, error)
@@ -404,6 +421,8 @@ type Querier interface {
 	// the table's primary key is (id, occurred_at) for partitioning.
 	ListAuditLogs(ctx context.Context, arg ListAuditLogsParams) ([]AuditLog, error)
 	ListCorrectionsByEntry(ctx context.Context, arg ListCorrectionsByEntryParams) ([]AttendanceCorrection, error)
+	ListCounselingsByCounselor(ctx context.Context, arg ListCounselingsByCounselorParams) ([]Counseling, error)
+	ListCounselingsForStudent(ctx context.Context, arg ListCounselingsForStudentParams) ([]Counseling, error)
 	// Every schedule occurrence whose period is currently running (start
 	// period's starts_at through end period's ends_at straddle now_time, in
 	// the tenant's own timezone), left-joined with today's attendance session
@@ -449,6 +468,8 @@ type Querier interface {
 	ListSchedulesByClass(ctx context.Context, arg ListSchedulesByClassParams) ([]Schedule, error)
 	ListSchedulesByDay(ctx context.Context, arg ListSchedulesByDayParams) ([]Schedule, error)
 	ListSchedulesByTeacher(ctx context.Context, arg ListSchedulesByTeacherParams) ([]Schedule, error)
+	// Points per student in a class this year, for the homeroom and counselor overview.
+	ListStudentPointTotals(ctx context.Context, arg ListStudentPointTotalsParams) ([]ListStudentPointTotalsRow, error)
 	ListSubstitutionsIncoming(ctx context.Context, arg ListSubstitutionsIncomingParams) ([]SubstitutionRequest, error)
 	ListSubstitutionsOutgoing(ctx context.Context, arg ListSubstitutionsOutgoingParams) ([]SubstitutionRequest, error)
 	ListSystemRoles(ctx context.Context, tenantID uuid.UUID) ([]ListSystemRolesRow, error)
@@ -469,6 +490,12 @@ type Querier interface {
 	// Drives the hourly digest periodic job: every user whose configured
 	// digest hour is the current tenant-local hour.
 	ListUsersDueForDigest(ctx context.Context, arg ListUsersDueForDigestParams) ([]NotificationSetting, error)
+	// The admin list: optional class (via active enrollment) and date range filters.
+	ListViolationRecords(ctx context.Context, arg ListViolationRecordsParams) ([]ListViolationRecordsRow, error)
+	ListViolationRecordsForStudent(ctx context.Context, arg ListViolationRecordsForStudentParams) ([]ListViolationRecordsForStudentRow, error)
+	ListViolationTypes(ctx context.Context, arg ListViolationTypesParams) ([]ViolationType, error)
+	ListWarningLetters(ctx context.Context, arg ListWarningLettersParams) ([]WarningLetter, error)
+	ListWarningLettersForStudent(ctx context.Context, arg ListWarningLettersForStudentParams) ([]WarningLetter, error)
 	ListWorkflowDefinitions(ctx context.Context, tenantID uuid.UUID) ([]WorkflowDefinition, error)
 	ListWorkflowEventsByInstance(ctx context.Context, arg ListWorkflowEventsByInstanceParams) ([]WorkflowEvent, error)
 	ListWorkflowInstancesByClassAndKind(ctx context.Context, arg ListWorkflowInstancesByClassAndKindParams) ([]WorkflowInstance, error)
@@ -513,10 +540,12 @@ type Querier interface {
 	SetUserStatus(ctx context.Context, arg SetUserStatusParams) error
 	SoftDeleteDutyType(ctx context.Context, arg SoftDeleteDutyTypeParams) error
 	SubmitAttendanceSession(ctx context.Context, arg SubmitAttendanceSessionParams) (AttendanceSession, error)
+	SumActivePoints(ctx context.Context, arg SumActivePointsParams) (int32, error)
 	TouchPushDeviceUsed(ctx context.Context, arg TouchPushDeviceUsedParams) error
 	TouchSessionLastSeen(ctx context.Context, arg TouchSessionLastSeenParams) error
 	UpdateAnnouncement(ctx context.Context, arg UpdateAnnouncementParams) (Announcement, error)
 	UpdateAnnouncementStatus(ctx context.Context, arg UpdateAnnouncementStatusParams) (Announcement, error)
+	UpdateCounseling(ctx context.Context, arg UpdateCounselingParams) (Counseling, error)
 	UpdateDocumentTemplate(ctx context.Context, arg UpdateDocumentTemplateParams) (DocumentTemplate, error)
 	UpdateDutyAssignment(ctx context.Context, arg UpdateDutyAssignmentParams) error
 	UpdateDutyType(ctx context.Context, arg UpdateDutyTypeParams) error
@@ -528,6 +557,7 @@ type Querier interface {
 	UpdateUserBasic(ctx context.Context, arg UpdateUserBasicParams) error
 	UpdateUserLastLogin(ctx context.Context, arg UpdateUserLastLoginParams) error
 	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error
+	UpdateViolationType(ctx context.Context, arg UpdateViolationTypeParams) (ViolationType, error)
 	UpsertAttendanceDailySummary(ctx context.Context, arg UpsertAttendanceDailySummaryParams) error
 	UpsertAttendanceEntry(ctx context.Context, arg UpsertAttendanceEntryParams) (AttendanceEntry, error)
 	UpsertNotificationPreference(ctx context.Context, arg UpsertNotificationPreferenceParams) error
@@ -543,6 +573,7 @@ type Querier interface {
 	UsernameExists(ctx context.Context, arg UsernameExistsParams) (bool, error)
 	// cross-module read: users table is owned by the identity module.
 	ValidateUserIDsBelongToTenant(ctx context.Context, arg ValidateUserIDsBelongToTenantParams) ([]uuid.UUID, error)
+	VoidViolationRecord(ctx context.Context, arg VoidViolationRecordParams) (ViolationRecord, error)
 }
 
 var _ Querier = (*Queries)(nil)

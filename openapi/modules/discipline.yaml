@@ -1,0 +1,556 @@
+paths:
+  /v1/discipline/violation-types:
+    get:
+      tags: [discipline]
+      operationId: listViolationTypes
+      x-permission: view_discipline
+      summary: Violation catalog with point values
+      parameters:
+        - { name: include_inactive, in: query, schema: { type: boolean, default: false } }
+      responses:
+        "200":
+          description: Types
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/ViolationType" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: [discipline]
+      operationId: createViolationType
+      x-permission: manage_discipline_catalog
+      summary: Add a violation type
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ViolationTypeWrite" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ViolationType" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /v1/discipline/violation-types/{typeId}:
+    put:
+      tags: [discipline]
+      operationId: updateViolationType
+      x-permission: manage_discipline_catalog
+      summary: Edit a violation type
+      parameters:
+        - { name: typeId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ViolationTypeWrite" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ViolationType" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+    delete:
+      tags: [discipline]
+      operationId: deleteViolationType
+      x-permission: manage_discipline_catalog
+      summary: Retire a violation type (existing records keep their snapshot)
+      parameters:
+        - { name: typeId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "204": { description: Deleted }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /v1/discipline/policy:
+    get:
+      tags: [discipline]
+      operationId: getDisciplinePolicy
+      x-permission: view_discipline
+      summary: Warning-letter ladder (levels and point thresholds)
+      responses:
+        "200":
+          description: Policy
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SPPolicy" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    put:
+      tags: [discipline]
+      operationId: updateDisciplinePolicy
+      x-permission: manage_settings
+      summary: Replace the warning-letter ladder (new policy version)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [levels]
+              properties:
+                levels: { type: array, minItems: 1, items: { $ref: "#/components/schemas/SPLevel" } }
+      responses:
+        "200":
+          description: Policy
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SPPolicy" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /v1/discipline/violations:
+    get:
+      tags: [discipline]
+      operationId: listViolations
+      x-permission: view_discipline
+      summary: Violation records this year, filterable by class and date
+      parameters:
+        - { name: class_id, in: query, schema: { type: string, format: uuid } }
+        - { name: from, in: query, schema: { type: string, format: date } }
+        - { name: to, in: query, schema: { type: string, format: date } }
+        - { name: include_voided, in: query, schema: { type: boolean, default: false } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 200, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        "200":
+          description: Records
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/ViolationRecord" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: [discipline]
+      operationId: recordViolation
+      x-permission: record_violations
+      summary: Record a violation for a student (points snapshotted from the catalog)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [student_user_id, violation_type_id, occurred_on]
+              properties:
+                student_user_id: { type: string, format: uuid }
+                violation_type_id: { type: string, format: uuid }
+                occurred_on: { type: string, format: date }
+                notes: { type: string, maxLength: 1000 }
+                attendance_session_id: { type: string, format: uuid }
+                workflow_instance_id: { type: string, format: uuid }
+      responses:
+        "201":
+          description: Recorded
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ViolationRecordResult" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /v1/discipline/violations/{recordId}/void:
+    post:
+      tags: [discipline]
+      operationId: voidViolation
+      x-permission: record_violations
+      summary: Void a record with a reason (kept for audit, no longer counts)
+      parameters:
+        - { name: recordId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason: { type: string, minLength: 1, maxLength: 500 }
+      responses:
+        "200":
+          description: Voided
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ViolationRecord" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /v1/discipline/students/{studentId}:
+    get:
+      tags: [discipline]
+      operationId: getStudentDiscipline
+      x-permission: view_discipline
+      summary: One student's points, records, letters and levels now due
+      parameters:
+        - { name: studentId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Summary
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StudentDiscipline" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/discipline/point-totals:
+    get:
+      tags: [discipline]
+      operationId: listPointTotals
+      x-permission: view_discipline
+      summary: Students ranked by active points this year
+      parameters:
+        - { name: class_id, in: query, schema: { type: string, format: uuid } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 500, default: 100 } }
+      responses:
+        "200":
+          description: Totals
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/PointTotal" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /v1/discipline/warning-letters:
+    get:
+      tags: [discipline]
+      operationId: listWarningLetters
+      x-permission: view_discipline
+      summary: Issued warning letters this year
+      parameters:
+        - { name: class_id, in: query, schema: { type: string, format: uuid } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 200, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        "200":
+          description: Letters
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/WarningLetter" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: [discipline]
+      operationId: issueWarningLetter
+      x-permission: issue_warning_letters
+      summary: Issue the next due warning-letter level for a student (numbered PDF)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [student_user_id, level]
+              properties:
+                student_user_id: { type: string, format: uuid }
+                level: { type: integer, minimum: 1 }
+      responses:
+        "201":
+          description: Issued
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WarningLetter" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /v1/discipline/warning-letters/{letterId}:
+    get:
+      tags: [discipline]
+      operationId: getWarningLetter
+      x-permission: view_discipline
+      summary: One warning letter
+      parameters:
+        - { name: letterId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Letter
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WarningLetter" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /v1/discipline/warning-letters/{letterId}/document:
+    get:
+      tags: [discipline]
+      operationId: getWarningLetterDocumentUrl
+      x-permission: view_discipline
+      summary: Short-lived download URL for the letter PDF
+      parameters:
+        - { name: letterId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: URL
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [url]
+                properties:
+                  url: { type: string }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /v1/discipline/counselings:
+    get:
+      tags: [discipline]
+      operationId: listMyCounselings
+      x-permission: manage_counseling
+      summary: Counseling notes written by the current counselor
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 200, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        "200":
+          description: Notes
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/Counseling" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: [discipline]
+      operationId: createCounseling
+      x-permission: manage_counseling
+      summary: Write an encrypted counseling note
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CounselingWrite" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Counseling" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/discipline/counselings/{counselingId}:
+    get:
+      tags: [discipline]
+      operationId: getCounseling
+      x-permission: manage_counseling
+      summary: Open one note (visibility enforced server-side)
+      parameters:
+        - { name: counselingId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Note
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Counseling" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: [discipline]
+      operationId: updateCounseling
+      x-permission: manage_counseling
+      summary: Edit a note (author only)
+      parameters:
+        - { name: counselingId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CounselingWrite" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Counseling" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: [discipline]
+      operationId: deleteCounseling
+      x-permission: manage_counseling
+      summary: Delete a note (author only)
+      parameters:
+        - { name: counselingId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "204": { description: Deleted }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /v1/discipline/students/{studentId}/counselings:
+    get:
+      tags: [discipline]
+      operationId: listStudentCounselings
+      x-permission: manage_counseling
+      summary: Notes about one student the caller may read
+      parameters:
+        - { name: studentId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Notes
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/Counseling" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+components:
+  schemas:
+    ViolationType:
+      type: object
+      required: [id, code, name, points, category, is_active]
+      properties:
+        id: { type: string, format: uuid }
+        code: { type: string }
+        name: { type: string }
+        points: { type: integer }
+        category: { type: string }
+        is_active: { type: boolean }
+    ViolationTypeWrite:
+      type: object
+      required: [code, name, points]
+      properties:
+        code: { type: string, minLength: 1, maxLength: 32 }
+        name: { type: string, minLength: 1, maxLength: 160 }
+        points: { type: integer, minimum: 0 }
+        category: { type: string, maxLength: 60 }
+        is_active: { type: boolean, default: true }
+    SPLevel:
+      type: object
+      required: [level, min_points, label]
+      properties:
+        level: { type: integer, minimum: 1 }
+        min_points: { type: integer, minimum: 1 }
+        label: { type: string, minLength: 1, maxLength: 60 }
+    SPPolicy:
+      type: object
+      required: [version, levels]
+      properties:
+        version: { type: integer }
+        levels: { type: array, items: { $ref: "#/components/schemas/SPLevel" } }
+    ViolationRecord:
+      type: object
+      required: [id, student_user_id, violation_type_id, type_name, points, occurred_on, reporter_user_id, notes, created_at, is_voided]
+      properties:
+        id: { type: string, format: uuid }
+        student_user_id: { type: string, format: uuid }
+        violation_type_id: { type: string, format: uuid }
+        type_code: { type: string }
+        type_name: { type: string }
+        type_category: { type: string }
+        points: { type: integer }
+        occurred_on: { type: string, format: date }
+        reporter_user_id: { type: string, format: uuid }
+        notes: { type: string }
+        attendance_session_id: { type: string, format: uuid }
+        workflow_instance_id: { type: string, format: uuid }
+        created_at: { type: string, format: date-time }
+        is_voided: { type: boolean }
+        voided_at: { type: string, format: date-time }
+        void_reason: { type: string }
+    ViolationRecordResult:
+      type: object
+      required: [record, total_points, due_levels]
+      properties:
+        record: { $ref: "#/components/schemas/ViolationRecord" }
+        total_points: { type: integer }
+        due_levels: { type: array, items: { $ref: "#/components/schemas/SPLevel" } }
+    PointTotal:
+      type: object
+      required: [student_user_id, total_points, record_count]
+      properties:
+        student_user_id: { type: string, format: uuid }
+        total_points: { type: integer }
+        record_count: { type: integer }
+        last_occurred_on: { type: string, format: date }
+    WarningLetter:
+      type: object
+      required: [id, student_user_id, level, level_label, threshold_points, total_points, letter_number, issued_at, has_document]
+      properties:
+        id: { type: string, format: uuid }
+        student_user_id: { type: string, format: uuid }
+        level: { type: integer }
+        level_label: { type: string }
+        threshold_points: { type: integer }
+        total_points: { type: integer }
+        letter_number: { type: string }
+        issued_by: { type: string, format: uuid }
+        issued_at: { type: string, format: date-time }
+        has_document: { type: boolean }
+    StudentDiscipline:
+      type: object
+      required: [student_user_id, total_points, records, letters, due_levels, policy]
+      properties:
+        student_user_id: { type: string, format: uuid }
+        total_points: { type: integer }
+        records: { type: array, items: { $ref: "#/components/schemas/ViolationRecord" } }
+        letters: { type: array, items: { $ref: "#/components/schemas/WarningLetter" } }
+        due_levels: { type: array, items: { $ref: "#/components/schemas/SPLevel" } }
+        policy: { $ref: "#/components/schemas/SPPolicy" }
+    CounselingKind:
+      type: string
+      enum: [individual, group, parent, referral]
+    CounselingVisibility:
+      type: string
+      enum: [counselor, bk_team, leadership]
+    CounselingWrite:
+      type: object
+      required: [student_user_id, session_at, kind, title, content]
+      properties:
+        student_user_id: { type: string, format: uuid }
+        session_at: { type: string, format: date-time }
+        kind: { $ref: "#/components/schemas/CounselingKind" }
+        title: { type: string, minLength: 1, maxLength: 160 }
+        content: { type: string, minLength: 1, maxLength: 20000 }
+        follow_up_plan: { type: string, maxLength: 5000 }
+        visibility: { $ref: "#/components/schemas/CounselingVisibility" }
+    Counseling:
+      type: object
+      required: [id, student_user_id, counselor_user_id, session_at, kind, title, content, visibility, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        student_user_id: { type: string, format: uuid }
+        counselor_user_id: { type: string, format: uuid }
+        session_at: { type: string, format: date-time }
+        kind: { $ref: "#/components/schemas/CounselingKind" }
+        title: { type: string }
+        content: { type: string }
+        follow_up_plan: { type: string }
+        visibility: { $ref: "#/components/schemas/CounselingVisibility" }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }

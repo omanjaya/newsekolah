@@ -47,3 +47,5 @@ tags:
     description: Audit log
   - name: permits
     description: Scan tokens, exit permits, late arrivals, leave requests, documents
+  - name: discipline
+    description: Violations, warning letters, counseling

@@ -1,0 +1,122 @@
+package service
+
+import (
+	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"fmt"
+	"time"
+
+	"github.com/google/uuid"
+
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/documents"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/storage"
+)
+
+// IssueDocumentInput describes any numbered, verifiable PDF another module
+// wants issued through the shared document pipeline (templates, sequences,
+// verification codes, issued_documents). Warning letters use it; leave
+// letters keep their own path because they also update the request row.
+type IssueDocumentInput struct {
+	Kind              domain.TemplateKind
+	NumberingTemplate string
+	EntityType        string
+	EntityID          uuid.UUID
+	AcademicYearID    uuid.UUID
+	IssuerUserID      uuid.UUID
+	// ObjectKey is where the PDF lands in the bucket; the caller owns the
+	// naming so its own module directory stays predictable.
+	ObjectKey   string
+	Vars        map[string]any
+	BuiltinHTML string
+}
+
+type IssuedDocumentResult struct {
+	Number           string
+	AssetID          uuid.NullUUID
+	VerificationCode string
+	IssuedAt         time.Time
+	PDF              []byte
+}
+
+// IssueDocument numbers, renders, stores and records one document inside
+// the caller's tenant transaction (WithTenantTx joins an ambient one).
+func (s *Service) IssueDocument(ctx context.Context, tenantID uuid.UUID, in IssueDocumentInput) (IssuedDocumentResult, error) {
+	var out IssuedDocumentResult
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		now := s.clock.Now()
+		seq, err := s.repo.NextSequenceValue(ctx, tenantID, string(in.Kind), in.AcademicYearID)
+		if err != nil {
+			return fmt.Errorf("next document number: %w", err)
+		}
+		number := domain.RenderNumberingTemplate(in.NumberingTemplate, domain.NumberingVars(seq, now))
+		code, codeHash, err := documents.NewVerificationCode(s.cfg.DocumentSigningKey)
+		if err != nil {
+			return err
+		}
+		vars := make(map[string]any, len(in.Vars)+3)
+		for k, v := range in.Vars {
+			vars[k] = v
+		}
+		vars["letter_number"] = number
+		vars["issued_at"] = now.Format("02-01-2006")
+		vars["verification_code"] = code
+
+		rendered, err := s.renderer.Render(ctx, s.templateFor(ctx, tenantID, in.Kind, in.BuiltinHTML), vars)
+		if err != nil {
+			return fmt.Errorf("render %s: %w", in.Kind, err)
+		}
+		sum := sha256.Sum256(rendered.PDF)
+		var assetID uuid.NullUUID
+		if s.storage != nil && len(rendered.PDF) > 0 {
+			if err := s.storage.PutObject(ctx, in.ObjectKey, rendered.PDF, "application/pdf"); err != nil {
+				return fmt.Errorf("store %s: %w", in.Kind, err)
+			}
+			id, err := s.repo.CreateAsset(ctx, tenantID, s.cfg.Bucket, in.ObjectKey, "application/pdf", int64(len(rendered.PDF)), hex.EncodeToString(sum[:]), "document", "private", in.IssuerUserID)
+			if err != nil {
+				return fmt.Errorf("create %s asset: %w", in.Kind, err)
+			}
+			assetID = uuid.NullUUID{UUID: id, Valid: true}
+		}
+		if _, err := s.repo.CreateIssuedDocument(ctx, domain.IssuedDocument{
+			TenantID: tenantID, Kind: string(in.Kind), EntityType: in.EntityType, EntityID: in.EntityID, Number: number,
+			AssetID: assetID, SHA256: hex.EncodeToString(sum[:]), VerificationCodeHash: codeHash,
+			IssuedBy: uuid.NullUUID{UUID: in.IssuerUserID, Valid: true},
+		}); err != nil {
+			return err
+		}
+		out = IssuedDocumentResult{Number: number, AssetID: assetID, VerificationCode: code, IssuedAt: now, PDF: rendered.PDF}
+		return nil
+	})
+	return out, err
+}
+
+// DocumentDownloadURLForAsset presigns any asset this module stored, for
+// callers that keep the asset id on their own rows (warning letters).
+func (s *Service) DocumentDownloadURLForAsset(ctx context.Context, tenantID, assetID uuid.UUID) (string, error) {
+	if s.storage == nil {
+		return "", domain.ErrDocumentNotFound
+	}
+	var objectKey string
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		objectKey, err = s.repo.GetAssetObjectKey(ctx, tenantID, assetID)
+		return err
+	})
+	if err != nil {
+		return "", err
+	}
+	u, err := s.storage.PresignedGetURL(ctx, objectKey, storage.DefaultUploadURLTTL)
+	if err != nil {
+		return "", fmt.Errorf("presign document: %w", err)
+	}
+	return u.String(), nil
+}
+
+func (s *Service) templateFor(ctx context.Context, tenantID uuid.UUID, kind domain.TemplateKind, builtin string) documents.Template {
+	if t, ok, err := s.repo.GetDefaultTemplate(ctx, tenantID, kind); err == nil && ok {
+		return documents.Template{Engine: documents.Engine(t.Engine), Body: t.Body}
+	}
+	return documents.Template{Engine: documents.EngineHTML, Body: builtin}
+}

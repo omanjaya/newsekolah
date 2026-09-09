@@ -47,9 +47,9 @@ type dutySeed struct {
 
 var systemDuties = []dutySeed{
 	{"homeroom", "Wali Kelas", "class", []string{authz.PermReviewLeaveRequests, authz.PermCorrectAttendance}},
-	{"counselor", "Guru BK", "school", []string{authz.PermIssueLeaveLetters, authz.PermViewReports}},
+	{"counselor", "Guru BK", "school", []string{authz.PermIssueLeaveLetters, authz.PermViewReports, authz.PermManageCounseling, authz.PermIssueWarningLetters, authz.PermViewDiscipline, authz.PermRecordViolations}},
 	{"picket", "Guru Piket", "school", []string{authz.PermManageAttendance}},
-	{"leadership", "Wakil Kepala Sekolah", "school", []string{authz.PermReviewLeaveRequests, authz.PermIssueLeaveLetters, authz.PermViewReports}},
+	{"leadership", "Wakil Kepala Sekolah", "school", []string{authz.PermReviewLeaveRequests, authz.PermIssueLeaveLetters, authz.PermViewReports, authz.PermIssueWarningLetters, authz.PermViewDiscipline}},
 	{"security", "Satpam", "school", []string{authz.PermScanExitPermits}},
 	{"librarian", "Petugas Perpustakaan", "school", []string{authz.PermManageLibraryCirculation}},
 }

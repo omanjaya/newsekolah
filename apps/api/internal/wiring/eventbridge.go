@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 
 	attendanceservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance/service"
+	disciplineservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/discipline/service"
 	permitsservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/service"
 	schedulingservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/events"
@@ -117,6 +118,15 @@ func RegisterNotificationBridge(bus *events.Bus, duties DutyLookup, logger *slog
 			Name: events.SubstitutionResponded, Tenant: e.TenantID, Actor: e.SubstituteUserID, Subject: []uuid.UUID{e.RequesterUserID},
 			Payload: map[string]any{"substitution_id": e.SubstitutionID.String(), "accepted": e.Accepted, "summary": summary, "href": "/substitutions"},
 		}, nil)
+	}))
+	bus.Subscribe(disciplineservice.WarningLetterIssued{}.EventName(), b.handle(func(ctx context.Context, evt events.Event) ([]events.Envelope, error) {
+		e := evt.(disciplineservice.WarningLetterIssued)
+		homeroom, err := b.holders(ctx, e.TenantID, "homeroom", e.ClassID)
+		summary := fmt.Sprintf("%s nomor %s telah diterbitkan.", e.LevelLabel, e.LetterNumber)
+		return []events.Envelope{{
+			Name: events.WarningLetterIssued, Tenant: e.TenantID, Actor: e.IssuedBy, Subject: append([]uuid.UUID{e.StudentUserID}, without(homeroom, e.IssuedBy)...),
+			Payload: map[string]any{"letter_id": e.LetterID.String(), "level": e.Level, "summary": summary, "href": "/discipline/letters/" + e.LetterID.String()},
+		}}, err
 	}))
 	bus.Subscribe(attendanceservice.Submitted{}.EventName(), b.handle(func(ctx context.Context, evt events.Event) ([]events.Envelope, error) {
 		e := evt.(attendanceservice.Submitted)
