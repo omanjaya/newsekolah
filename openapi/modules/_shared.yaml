@@ -1,0 +1,77 @@
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  responses:
+    BadRequest:
+      description: Validation failed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unauthorized:
+      description: Missing, expired, or revoked credentials
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Forbidden:
+      description: Authenticated but not allowed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    RateLimited:
+      description: Too many attempts
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+  schemas:
+    Error:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+              description:
+                Stable machine code, SCREAMING_SNAKE_CASE (e.g. AUTH_INVALID_CREDENTIALS, AUTH_TOKEN_EXPIRED,
+                TENANT_NOT_FOUND, VALIDATION_FAILED, RATE_LIMITED, FORBIDDEN, NOT_FOUND).
+            message:
+              type: string
+              description: Human-readable, localized by Accept-Language (default id).
+            details:
+              type: array
+              items:
+                type: object
+                required:
+                  - field
+                  - code
+                properties:
+                  field:
+                    type: string
+                  code:
+                    type: string
+                  message:
+                    type: string
+            request_id:
+              type: string

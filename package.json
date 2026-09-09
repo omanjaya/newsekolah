@@ -13,18 +13,23 @@
     "test": "turbo run test",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "api:gen": "pnpm --filter @newsekolah/api-client generate"
+    "api:gen": "pnpm --filter @newsekolah/api-client generate",
+    "openapi:bundle": "node openapi/bundle.mjs",
+    "openapi:check": "node openapi/bundle.mjs --check"
   },
   "devDependencies": {
     "@commitlint/cli": "^21.2.2",
     "@commitlint/config-conventional": "^21.2.2",
     "lefthook": "^2.1.12",
     "prettier": "^3.6.2",
-    "turbo": "^2.5.6"
+    "turbo": "^2.5.6",
+    "yaml": "^2.9.0"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
-      "lefthook"
+      "lefthook",
+      "esbuild",
+      "msw"
     ]
   }
 }

@@ -4,57 +4,6 @@
  */
 
 export interface paths {
-    "/health": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Liveness and dependency status */
-        get: operations["getHealth"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/tenant/branding": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Public branding for the resolved tenant (login screen, manifest) */
-        get: operations["getTenantBranding"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/tenants/lookup": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Search schools by name or slug (mobile school picker). Returns nothing in single-tenant mode except the single tenant. */
-        get: operations["lookupTenants"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/auth/login": {
         parameters: {
             query?: never;
@@ -178,6 +127,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Liveness and dependency status */
+        get: operations["getHealth"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tenant/branding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public branding for the resolved tenant (login screen, manifest) */
+        get: operations["getTenantBranding"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tenants/lookup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Search schools by name or slug (mobile school picker). Returns nothing in single-tenant mode except the single tenant. */
+        get: operations["lookupTenants"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -230,31 +230,6 @@ export interface components {
             last_seen_at: string;
             is_current: boolean;
         };
-        TenantSummary: {
-            /** Format: uuid */
-            id: string;
-            slug: string;
-            name: string;
-            city?: string;
-        };
-        TenantBranding: {
-            /** Format: uuid */
-            tenant_id: string;
-            slug: string;
-            name: string;
-            short_name?: string;
-            /** @description Platform-wide product name (interim "SION"); use as app title fallback. */
-            product_name?: string;
-            tagline?: string;
-            /** Format: uri */
-            logo_url?: string;
-            /** Format: uri */
-            favicon_url?: string;
-            accent_color: string;
-            /** @enum {string} */
-            locale: "id" | "en";
-            timezone: string;
-        };
         Role: {
             /** Format: uuid */
             id: string;
@@ -297,6 +272,31 @@ export interface components {
                 user_id?: string;
                 name?: string;
             };
+        };
+        TenantSummary: {
+            /** Format: uuid */
+            id: string;
+            slug: string;
+            name: string;
+            city?: string;
+        };
+        TenantBranding: {
+            /** Format: uuid */
+            tenant_id: string;
+            slug: string;
+            name: string;
+            short_name?: string;
+            /** @description Platform-wide product name (interim "SION"); use as app title fallback. */
+            product_name?: string;
+            tagline?: string;
+            /** Format: uri */
+            logo_url?: string;
+            /** Format: uri */
+            favicon_url?: string;
+            accent_color: string;
+            /** @enum {string} */
+            locale: "id" | "en";
+            timezone: string;
         };
     };
     responses: {
@@ -357,88 +357,6 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    getHealth: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** @enum {string} */
-                        status: "ok" | "degraded";
-                        version?: string;
-                        checks: {
-                            [key: string]: "ok" | "fail" | "skipped";
-                        };
-                    };
-                };
-            };
-            /** @description A dependency is down */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    getTenantBranding: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Branding */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TenantBranding"];
-                };
-            };
-            404: components["responses"]["NotFound"];
-        };
-    };
-    lookupTenants: {
-        parameters: {
-            query: {
-                q: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Matches */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        data: components["schemas"]["TenantSummary"][];
-                    };
-                };
-            };
-            400: components["responses"]["BadRequest"];
-        };
-    };
     login: {
         parameters: {
             query?: never;
@@ -614,6 +532,88 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+        };
+    };
+    getHealth: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        status: "ok" | "degraded";
+                        version?: string;
+                        checks: {
+                            [key: string]: "ok" | "fail" | "skipped";
+                        };
+                    };
+                };
+            };
+            /** @description A dependency is down */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getTenantBranding: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Branding */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantBranding"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    lookupTenants: {
+        parameters: {
+            query: {
+                q: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Matches */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["TenantSummary"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
         };
     };
 }

@@ -768,15 +768,6 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	}
 
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/health", wrapper.GetHealth)
-	})
-	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/v1/tenant/branding", wrapper.GetTenantBranding)
-	})
-	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/v1/tenants/lookup", wrapper.LookupTenants)
-	})
-	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/v1/auth/login", wrapper.Login)
 	})
 	r.Group(func(r chi.Router) {
@@ -796,6 +787,15 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Put(options.BaseURL+"/v1/me/password", wrapper.ChangePassword)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/health", wrapper.GetHealth)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/tenant/branding", wrapper.GetTenantBranding)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/tenants/lookup", wrapper.LookupTenants)
 	})
 
 	return r

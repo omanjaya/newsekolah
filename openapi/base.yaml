@@ -1,0 +1,29 @@
+openapi: 3.1.0
+info:
+  title: newsekolah API
+  version: 0.1.0
+  license:
+    name: Proprietary
+    url: https://github.com/omanjaya/newsekolah
+  description: |
+    Contract-first API for the school platform. Every operation declares `x-permission`
+    (a permission code) or `x-public: true`. Errors always use the Error schema with a stable `code`.
+servers:
+  - url: http://localhost:8080
+    description: Local development
+  - url: https://{host}
+    description: Deployed instance (tenant host)
+    variables:
+      host:
+        default: sion.sch.id
+security:
+  - bearerAuth: []
+tags:
+  - name: system
+    description: Liveness and metadata
+  - name: auth
+    description: Login, token refresh, sessions
+  - name: me
+    description: Current user
+  - name: tenant
+    description: School (tenant) discovery and branding

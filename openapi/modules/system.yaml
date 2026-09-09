@@ -1,0 +1,41 @@
+paths:
+  /health:
+    get:
+      tags:
+        - system
+      operationId: getHealth
+      x-public: true
+      security: []
+      summary: Liveness and dependency status
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - status
+                  - checks
+                properties:
+                  status:
+                    type: string
+                    enum:
+                      - ok
+                      - degraded
+                  version:
+                    type: string
+                  checks:
+                    type: object
+                    additionalProperties:
+                      type: string
+                      enum:
+                        - ok
+                        - fail
+                        - skipped
+        "503":
+          description: A dependency is down
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
