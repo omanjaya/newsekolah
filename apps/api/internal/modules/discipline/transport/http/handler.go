@@ -191,6 +191,19 @@ func (h *DisciplineHandler) GetStudentDiscipline(ctx context.Context, request ap
 	}, nil
 }
 
+// GetMyDiscipline is the student's own record; no discipline permission
+// needed because the subject is always the caller.
+func (h *DisciplineHandler) GetMyDiscipline(ctx context.Context, _ api.GetMyDisciplineRequestObject) (api.GetMyDisciplineResponseObject, error) {
+	summary, err := h.service.StudentSummary(ctx, tenantID(ctx), userID(ctx))
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return api.GetMyDiscipline200JSONResponse{
+		StudentUserId: summary.StudentUserID, TotalPoints: summary.TotalPoints, Records: toAPIRecords(summary.Records),
+		Letters: toAPILetters(summary.Letters), DueLevels: toAPILevels(summary.DueLevels), Policy: toAPIPolicy(summary.Policy),
+	}, nil
+}
+
 func (h *DisciplineHandler) ListPointTotals(ctx context.Context, request api.ListPointTotalsRequestObject) (api.ListPointTotalsResponseObject, error) {
 	totals, err := h.service.PointTotals(ctx, tenantID(ctx), nullUUID(request.Params.ClassId), intOr(request.Params.Limit, 100))
 	if err != nil {

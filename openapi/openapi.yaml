@@ -2645,6 +2645,22 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+  /v1/me/discipline:
+    get:
+      tags:
+        - discipline
+      operationId: getMyDiscipline
+      x-permission: authenticated
+      summary: The current student's own points, records and warning letters
+      responses:
+        "200":
+          description: Summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudentDiscipline"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
   /v1/discipline/point-totals:
     get:
       tags:

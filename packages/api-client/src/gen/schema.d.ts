@@ -1272,6 +1272,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me/discipline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The current student's own points, records and warning letters */
+        get: operations["getMyDiscipline"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/discipline/point-totals": {
         parameters: {
             query?: never;
@@ -7385,6 +7402,27 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+        };
+    };
+    getMyDiscipline: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Summary */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentDiscipline"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
         };
     };
     listPointTotals: {

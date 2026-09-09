@@ -1,3 +1,3 @@
-import { HomeScreen } from "@/components/screens/HomeScreen";
+import { ParentHome } from "@/components/screens/ParentHome";
 
-export default HomeScreen;
+export default ParentHome;

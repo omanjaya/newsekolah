@@ -1,6 +1,6 @@
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { router } from "expo-router";
-import { CalendarCheck, ClipboardList, ClockAlert, DoorOpen } from "lucide-react-native";
+import { CalendarCheck, ClipboardList, ClockAlert, DoorOpen, GraduationCap, ShieldCheck } from "lucide-react-native";
 import type { LucideIcon } from "lucide-react-native";
 import { ScreenHeader } from "@/components/ui/ScreenHeader";
 import { Button } from "@/components/ui/Button";
@@ -103,11 +103,13 @@ export function HomeScreen(): React.JSX.Element {
 
         {isStudent ? (
           <Section title={t("home.my_attendance")}>
-            <View className="flex-row gap-2 px-4">
+            <View className="flex-row flex-wrap gap-2 px-4">
               <QuickLink icon={CalendarCheck} label={t("home.view_calendar")} href="/attendance/calendar" />
               <QuickLink icon={DoorOpen} label={t("home.exit_permits")} href="/permits/exit" />
               <QuickLink icon={ClockAlert} label={t("home.late_arrival")} href="/permits/late" />
               <QuickLink icon={ClipboardList} label={t("home.leave_requests")} href="/permits/leave" />
+              <QuickLink icon={GraduationCap} label={t("home.grades")} href="/grades" />
+              <QuickLink icon={ShieldCheck} label={t("home.discipline")} href="/discipline" />
             </View>
           </Section>
         ) : null}

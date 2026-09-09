@@ -1,0 +1,263 @@
+"use client";
+
+import { type components } from "@newsekolah/api-client";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+
+import { useApiClient } from "../../lib/api/client";
+
+export type GradingScale = components["schemas"]["GradingScale"];
+export type GradingScaleWrite = components["schemas"]["GradingScaleWrite"];
+export type AssessmentComponent = components["schemas"]["AssessmentComponent"];
+export type AssessmentComponentKind = components["schemas"]["AssessmentComponentKind"];
+export type AssessmentComponentWrite = components["schemas"]["AssessmentComponentWrite"];
+export type Gradebook = components["schemas"]["Gradebook"];
+export type GradebookStudent = components["schemas"]["GradebookStudent"];
+export type ReportScore = components["schemas"]["ReportScore"];
+export type GradePublication = components["schemas"]["GradePublication"];
+export type GradeRange = components["schemas"]["GradeRange"];
+export type GradeRangeWrite = components["schemas"]["GradeRangeWrite"];
+export type MyGrades = components["schemas"]["MyGrades"];
+export type MySubjectGrade = components["schemas"]["MySubjectGrade"];
+export type MyComponentScore = components["schemas"]["MyComponentScore"];
+export type StarEvent = components["schemas"]["StarEvent"];
+
+/**
+ * Local query keys, kept in this feature per the grading build's scope
+ * (packages/api-client/src/query-keys.ts is another agent's file). Every
+ * key starts with "grading" so a broad invalidate on that prefix reaches
+ * every query below.
+ */
+export const gradingKeys = {
+  scale: () => ["grading", "scale"] as const,
+  gradebook: (classId: string, subjectId: string, termId?: string) =>
+    ["grading", "gradebook", classId, subjectId, termId ?? ""] as const,
+  gradeRanges: () => ["grading", "grade-ranges"] as const,
+  myGrades: (termId?: string) => ["grading", "my-grades", termId ?? ""] as const,
+  starLedger: (studentId: string) => ["grading", "stars", "ledger", studentId] as const,
+  classStarBalances: (classId: string) => ["grading", "stars", "class", classId] as const,
+};
+
+function useInvalidate(prefix: readonly unknown[]) {
+  const queryClient = useQueryClient();
+  return () => {
+    void queryClient.invalidateQueries({ queryKey: prefix });
+  };
+}
+
+// Grading scale (manage_settings).
+
+export function useGradingScaleQuery() {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: gradingKeys.scale(),
+    queryFn: () => client.GET("/v1/grading/scale"),
+  });
+}
+
+export function useUpdateGradingScaleMutation() {
+  const client = useApiClient();
+  const invalidate = useInvalidate(gradingKeys.scale());
+  return useMutation({
+    mutationFn: (body: GradingScaleWrite) => client.PUT("/v1/grading/scale", { body }),
+    onSuccess: invalidate,
+  });
+}
+
+// Gradebook.
+
+export interface GradebookFilter {
+  classId: string;
+  subjectId: string;
+  termId?: string;
+}
+
+export function useGradebookQuery(filter: GradebookFilter) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: gradingKeys.gradebook(filter.classId, filter.subjectId, filter.termId),
+    queryFn: () =>
+      client.GET("/v1/grading/gradebook", {
+        params: {
+          query: {
+            class_id: filter.classId,
+            subject_id: filter.subjectId,
+            ...(filter.termId ? { term_id: filter.termId } : {}),
+          },
+        },
+      }),
+    enabled: filter.classId !== "" && filter.subjectId !== "",
+  });
+}
+
+function useInvalidateGradebook() {
+  return useInvalidate(["grading", "gradebook"]);
+}
+
+export function useCreateComponentMutation() {
+  const client = useApiClient();
+  const invalidate = useInvalidateGradebook();
+  return useMutation({
+    mutationFn: (body: AssessmentComponentWrite) => client.POST("/v1/grading/components", { body }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useUpdateComponentMutation() {
+  const client = useApiClient();
+  const invalidate = useInvalidateGradebook();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: AssessmentComponentWrite }) =>
+      client.PUT("/v1/grading/components/{componentId}", {
+        params: { path: { componentId: id } },
+        body,
+      }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useDeleteComponentMutation() {
+  const client = useApiClient();
+  const invalidate = useInvalidateGradebook();
+  return useMutation({
+    mutationFn: (id: string) =>
+      client.DELETE("/v1/grading/components/{componentId}", {
+        params: { path: { componentId: id } },
+      }),
+    onSuccess: invalidate,
+  });
+}
+
+export interface ScoreEntry {
+  student_user_id: string;
+  score: number;
+}
+
+export function useSaveComponentScoresMutation() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ componentId, entries }: { componentId: string; entries: ScoreEntry[] }) =>
+      client.PUT("/v1/grading/components/{componentId}/scores", {
+        params: { path: { componentId } },
+        body: { entries },
+      }),
+    onSuccess: (sheet) => {
+      queryClient.setQueryData(
+        gradingKeys.gradebook(sheet.class_id, sheet.subject_id, sheet.term_id),
+        sheet,
+      );
+    },
+  });
+}
+
+export function useSetManualReportScoreMutation() {
+  const client = useApiClient();
+  const invalidate = useInvalidateGradebook();
+  return useMutation({
+    mutationFn: (body: {
+      class_id: string;
+      subject_id: string;
+      student_user_id: string;
+      term_id?: string;
+      manual_score?: number | null;
+    }) => client.PUT("/v1/grading/report-scores/manual", { body }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useSetGradePublicationMutation() {
+  const client = useApiClient();
+  const invalidate = useInvalidateGradebook();
+  return useMutation({
+    mutationFn: (body: { class_id: string; subject_id: string; term_id?: string; is_published: boolean }) =>
+      client.PUT("/v1/grading/publications", { body }),
+    onSuccess: invalidate,
+  });
+}
+
+// Grade ranges (manage_settings).
+
+export function useGradeRangesQuery() {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: gradingKeys.gradeRanges(),
+    queryFn: () => client.GET("/v1/grading/grade-ranges"),
+  });
+}
+
+export function useCreateGradeRangeMutation() {
+  const client = useApiClient();
+  const invalidate = useInvalidate(gradingKeys.gradeRanges());
+  return useMutation({
+    mutationFn: (body: GradeRangeWrite) => client.POST("/v1/grading/grade-ranges", { body }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useDeleteGradeRangeMutation() {
+  const client = useApiClient();
+  const invalidate = useInvalidate(gradingKeys.gradeRanges());
+  return useMutation({
+    mutationFn: (id: string) =>
+      client.DELETE("/v1/grading/grade-ranges/{rangeId}", { params: { path: { rangeId: id } } }),
+    onSuccess: invalidate,
+  });
+}
+
+// Student's own grades.
+
+export function useMyGradesQuery(termId?: string) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: gradingKeys.myGrades(termId),
+    queryFn: () =>
+      client.GET("/v1/me/grades", { params: { query: termId ? { term_id: termId } : {} } }),
+  });
+}
+
+// Stars.
+
+export function useGiveStarMutation() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: {
+      student_user_id: string;
+      class_id: string;
+      subject_id?: string;
+      delta: number;
+      note?: string;
+      visible_to_student?: boolean;
+    }) => client.POST("/v1/grading/stars", { body }),
+    onSuccess: (_result, variables) => {
+      void queryClient.invalidateQueries({
+        queryKey: gradingKeys.classStarBalances(variables.class_id),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: gradingKeys.starLedger(variables.student_user_id),
+      });
+    },
+  });
+}
+
+export function useStarLedgerQuery(studentId: string, limit?: number) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: gradingKeys.starLedger(studentId),
+    queryFn: () =>
+      client.GET("/v1/grading/stars/{studentId}", {
+        params: { path: { studentId }, query: limit ? { limit } : {} },
+      }),
+    enabled: studentId !== "",
+  });
+}
+
+export function useClassStarBalancesQuery(classId: string) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: gradingKeys.classStarBalances(classId),
+    queryFn: () =>
+      client.GET("/v1/grading/stars/class/{classId}", { params: { path: { classId } } }),
+    enabled: classId !== "",
+  });
+}
