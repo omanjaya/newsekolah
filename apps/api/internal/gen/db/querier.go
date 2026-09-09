@@ -140,9 +140,18 @@ type Querier interface {
 	ListWorkflowEventsByInstance(ctx context.Context, arg ListWorkflowEventsByInstanceParams) ([]WorkflowEvent, error)
 	ListWorkflowInstancesByClassAndKind(ctx context.Context, arg ListWorkflowInstancesByClassAndKindParams) ([]WorkflowInstance, error)
 	ListWorkflowInstancesBySubject(ctx context.Context, arg ListWorkflowInstancesBySubjectParams) ([]WorkflowInstance, error)
+	// Transaction-scoped advisory lock so two concurrent late-arrival opens
+	// for the same student cannot both read the same
+	// CountWorkflowInstancesForSubjectYear result and mint the same
+	// occurrence_number (docs/analysis/database-inventory.md 1.5: the old
+	// app's per-student late-arrival numbering had exactly this race).
+	LockSubjectForInstanceCounting(ctx context.Context, arg LockSubjectForInstanceCountingParams) error
 	MarkExitPermitExited(ctx context.Context, arg MarkExitPermitExitedParams) (ExitPermit, error)
 	MarkExitPermitIssued(ctx context.Context, arg MarkExitPermitIssuedParams) (ExitPermit, error)
 	MarkLateArrivalCompleted(ctx context.Context, arg MarkLateArrivalCompletedParams) (LateArrival, error)
+	// Shallow-merges extra into the instance's existing payload (jsonb ||),
+	// e.g. attaching a late arrival review's opaque violation_ids list.
+	MergeWorkflowInstancePayload(ctx context.Context, arg MergeWorkflowInstancePayloadParams) (WorkflowInstance, error)
 	// Bug fix vs. the old app (docs/analysis/backend-inventory.md 1.14/1.17):
 	// the issued number comes from this single atomic UPDATE ... RETURNING
 	// (implemented as an upsert since the row may not exist yet), never a
@@ -153,6 +162,7 @@ type Querier interface {
 	RevokeSessionFamily(ctx context.Context, arg RevokeSessionFamilyParams) error
 	SearchTenants(ctx context.Context, name string) ([]Tenant, error)
 	SetDefaultDocumentTemplate(ctx context.Context, arg SetDefaultDocumentTemplateParams) (DocumentTemplate, error)
+	SetExitPermitGateToken(ctx context.Context, arg SetExitPermitGateTokenParams) (ExitPermit, error)
 	TouchSessionLastSeen(ctx context.Context, arg TouchSessionLastSeenParams) error
 	UpdateDocumentTemplate(ctx context.Context, arg UpdateDocumentTemplateParams) (DocumentTemplate, error)
 	UpdateLateArrivalReview(ctx context.Context, arg UpdateLateArrivalReviewParams) (LateArrival, error)

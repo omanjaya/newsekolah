@@ -27,3 +27,5 @@ tags:
     description: Current user
   - name: tenant
     description: School (tenant) discovery and branding
+  - name: permits
+    description: Scan tokens, exit permits, late arrivals, leave requests, documents

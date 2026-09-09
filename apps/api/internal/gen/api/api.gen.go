@@ -60,6 +60,78 @@ func (e ClientKind) Valid() bool {
 	}
 }
 
+// Defines values for DocumentTemplateWriteEngine.
+const (
+	Html DocumentTemplateWriteEngine = "html"
+)
+
+// Valid indicates whether the value is a known member of the DocumentTemplateWriteEngine enum.
+func (e DocumentTemplateWriteEngine) Valid() bool {
+	switch e {
+	case Html:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DocumentTemplateWriteKind.
+const (
+	ClassJournal    DocumentTemplateWriteKind = "class_journal"
+	ClearanceLetter DocumentTemplateWriteKind = "clearance_letter"
+	ItemLabel       DocumentTemplateWriteKind = "item_label"
+	LeaveLetter     DocumentTemplateWriteKind = "leave_letter"
+	MemberCard      DocumentTemplateWriteKind = "member_card"
+	Report          DocumentTemplateWriteKind = "report"
+	WarningLetter   DocumentTemplateWriteKind = "warning_letter"
+)
+
+// Valid indicates whether the value is a known member of the DocumentTemplateWriteKind enum.
+func (e DocumentTemplateWriteKind) Valid() bool {
+	switch e {
+	case ClassJournal:
+		return true
+	case ClearanceLetter:
+		return true
+	case ItemLabel:
+		return true
+	case LeaveLetter:
+		return true
+	case MemberCard:
+		return true
+	case Report:
+		return true
+	case WarningLetter:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LeaveCategory.
+const (
+	Dispensation      LeaveCategory = "dispensation"
+	Other             LeaveCategory = "other"
+	ReligiousCeremony LeaveCategory = "religious_ceremony"
+	Sick              LeaveCategory = "sick"
+)
+
+// Valid indicates whether the value is a known member of the LeaveCategory enum.
+func (e LeaveCategory) Valid() bool {
+	switch e {
+	case Dispensation:
+		return true
+	case Other:
+		return true
+	case ReligiousCeremony:
+		return true
+	case Sick:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for MeDutiesScopeKind.
 const (
 	MeDutiesScopeKindClass   MeDutiesScopeKind = "class"
@@ -105,6 +177,63 @@ func (e MeProfileKind) Valid() bool {
 	}
 }
 
+// Defines values for RequiredAction.
+const (
+	CallParent RequiredAction = "call_parent"
+	None       RequiredAction = "none"
+	SendHome   RequiredAction = "send_home"
+)
+
+// Valid indicates whether the value is a known member of the RequiredAction enum.
+func (e RequiredAction) Valid() bool {
+	switch e {
+	case CallParent:
+		return true
+	case None:
+		return true
+	case SendHome:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ScanPurpose.
+const (
+	ScanPurposeApproveStage       ScanPurpose = "approve_stage"
+	ScanPurposeClassroomEntry     ScanPurpose = "classroom_entry"
+	ScanPurposeGateExit           ScanPurpose = "gate_exit"
+	ScanPurposeKiosk              ScanPurpose = "kiosk"
+	ScanPurposeLateArrival        ScanPurpose = "late_arrival"
+	ScanPurposeLibraryOpname      ScanPurpose = "library_opname"
+	ScanPurposeLibrarySelfService ScanPurpose = "library_self_service"
+	ScanPurposeLibraryVisit       ScanPurpose = "library_visit"
+)
+
+// Valid indicates whether the value is a known member of the ScanPurpose enum.
+func (e ScanPurpose) Valid() bool {
+	switch e {
+	case ScanPurposeApproveStage:
+		return true
+	case ScanPurposeClassroomEntry:
+		return true
+	case ScanPurposeGateExit:
+		return true
+	case ScanPurposeKiosk:
+		return true
+	case ScanPurposeLateArrival:
+		return true
+	case ScanPurposeLibraryOpname:
+		return true
+	case ScanPurposeLibrarySelfService:
+		return true
+	case ScanPurposeLibraryVisit:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for TenantBrandingLocale.
 const (
 	En TenantBrandingLocale = "en"
@@ -117,6 +246,78 @@ func (e TenantBrandingLocale) Valid() bool {
 	case En:
 		return true
 	case Id:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WorkflowKind.
+const (
+	WorkflowKindExitPermit   WorkflowKind = "exit_permit"
+	WorkflowKindLateArrival  WorkflowKind = "late_arrival"
+	WorkflowKindLeaveRequest WorkflowKind = "leave_request"
+)
+
+// Valid indicates whether the value is a known member of the WorkflowKind enum.
+func (e WorkflowKind) Valid() bool {
+	switch e {
+	case WorkflowKindExitPermit:
+		return true
+	case WorkflowKindLateArrival:
+		return true
+	case WorkflowKindLeaveRequest:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WorkflowStageVerification.
+const (
+	Auto   WorkflowStageVerification = "auto"
+	Manual WorkflowStageVerification = "manual"
+	QrScan WorkflowStageVerification = "qr_scan"
+)
+
+// Valid indicates whether the value is a known member of the WorkflowStageVerification enum.
+func (e WorkflowStageVerification) Valid() bool {
+	switch e {
+	case Auto:
+		return true
+	case Manual:
+		return true
+	case QrScan:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WorkflowStatus.
+const (
+	Approved   WorkflowStatus = "approved"
+	Cancelled  WorkflowStatus = "cancelled"
+	Completed  WorkflowStatus = "completed"
+	Expired    WorkflowStatus = "expired"
+	InProgress WorkflowStatus = "in_progress"
+	Rejected   WorkflowStatus = "rejected"
+)
+
+// Valid indicates whether the value is a known member of the WorkflowStatus enum.
+func (e WorkflowStatus) Valid() bool {
+	switch e {
+	case Approved:
+		return true
+	case Cancelled:
+		return true
+	case Completed:
+		return true
+	case Expired:
+		return true
+	case InProgress:
+		return true
+	case Rejected:
 		return true
 	default:
 		return false
@@ -162,6 +363,24 @@ func (e GetHealth200JSONResponseBodyStatus) Valid() bool {
 	}
 }
 
+// Defines values for GetLeaveDocumentUrlParamsKind.
+const (
+	Evidence GetLeaveDocumentUrlParamsKind = "evidence"
+	Letter   GetLeaveDocumentUrlParamsKind = "letter"
+)
+
+// Valid indicates whether the value is a known member of the GetLeaveDocumentUrlParamsKind enum.
+func (e GetLeaveDocumentUrlParamsKind) Valid() bool {
+	switch e {
+	case Evidence:
+		return true
+	case Letter:
+		return true
+	default:
+		return false
+	}
+}
+
 // AuthTokens defines model for AuthTokens.
 type AuthTokens struct {
 	AccessExpiresAt  time.Time  `json:"access_expires_at"`
@@ -180,6 +399,47 @@ type AuthTokensTokenType string
 // ClientKind defines model for ClientKind.
 type ClientKind string
 
+// DocumentTemplate defines model for DocumentTemplate.
+type DocumentTemplate struct {
+	Body      string             `json:"body"`
+	CreatedAt time.Time          `json:"created_at"`
+	Engine    string             `json:"engine"`
+	Id        openapi_types.UUID `json:"id"`
+	IsDefault bool               `json:"is_default"`
+	Kind      string             `json:"kind"`
+	Name      string             `json:"name"`
+	UpdatedAt time.Time          `json:"updated_at"`
+	Variables *[]string          `json:"variables,omitempty"`
+}
+
+// DocumentTemplateWrite defines model for DocumentTemplateWrite.
+type DocumentTemplateWrite struct {
+	Body      string                       `json:"body"`
+	Engine    *DocumentTemplateWriteEngine `json:"engine,omitempty"`
+	IsDefault *bool                        `json:"is_default,omitempty"`
+	Kind      DocumentTemplateWriteKind    `json:"kind"`
+	Name      string                       `json:"name"`
+	Variables *[]string                    `json:"variables,omitempty"`
+}
+
+// DocumentTemplateWriteEngine defines model for DocumentTemplateWrite.Engine.
+type DocumentTemplateWriteEngine string
+
+// DocumentTemplateWriteKind defines model for DocumentTemplateWrite.Kind.
+type DocumentTemplateWriteKind string
+
+// DocumentVerification defines model for DocumentVerification.
+type DocumentVerification struct {
+	ClassName   *string             `json:"class_name,omitempty"`
+	IssuedAt    time.Time           `json:"issued_at"`
+	Kind        string              `json:"kind"`
+	Number      string              `json:"number"`
+	Revoked     bool                `json:"revoked"`
+	StudentName *string             `json:"student_name,omitempty"`
+	ValidFrom   *openapi_types.Date `json:"valid_from,omitempty"`
+	ValidUntil  *openapi_types.Date `json:"valid_until,omitempty"`
+}
+
 // Error defines model for Error.
 type Error struct {
 	Error struct {
@@ -195,6 +455,87 @@ type Error struct {
 		Message   string  `json:"message"`
 		RequestId *string `json:"request_id,omitempty"`
 	} `json:"error"`
+}
+
+// ExitPermitDetail defines model for ExitPermitDetail.
+type ExitPermitDetail struct {
+	ClassName     string             `json:"class_name"`
+	Destination   string             `json:"destination"`
+	EndPeriodId   openapi_types.UUID `json:"end_period_id"`
+	ExitedAt      *time.Time         `json:"exited_at,omitempty"`
+	Instance      WorkflowInstance   `json:"instance"`
+	IssuedAt      *time.Time         `json:"issued_at,omitempty"`
+	StartPeriodId openapi_types.UUID `json:"start_period_id"`
+	StudentName   string             `json:"student_name"`
+}
+
+// IssuedScanToken defines model for IssuedScanToken.
+type IssuedScanToken struct {
+	ContextId        *openapi_types.UUID `json:"context_id,omitempty"`
+	ExpiresAt        time.Time           `json:"expires_at"`
+	ExpiresInSeconds int                 `json:"expires_in_seconds"`
+	Purpose          ScanPurpose         `json:"purpose"`
+	Token            string              `json:"token"`
+}
+
+// LateArrivalDetail defines model for LateArrivalDetail.
+type LateArrivalDetail struct {
+	CompletedAt      *time.Time       `json:"completed_at,omitempty"`
+	HomeroomReported bool             `json:"homeroom_reported"`
+	Instance         WorkflowInstance `json:"instance"`
+	OccurrenceNumber int              `json:"occurrence_number"`
+	Reason           string           `json:"reason"`
+	RequiredAction   RequiredAction   `json:"required_action"`
+}
+
+// LateArrivalSummary defines model for LateArrivalSummary.
+type LateArrivalSummary struct {
+	ClassId           *openapi_types.UUID `json:"class_id,omitempty"`
+	CurrentStageIndex int                 `json:"current_stage_index"`
+	HomeroomReported  *bool               `json:"homeroom_reported,omitempty"`
+	InstanceId        openapi_types.UUID  `json:"instance_id"`
+	OccurrenceNumber  int                 `json:"occurrence_number"`
+	OpenedAt          time.Time           `json:"opened_at"`
+	Reason            string              `json:"reason"`
+	RequiredAction    RequiredAction      `json:"required_action"`
+	Status            WorkflowStatus      `json:"status"`
+	StudentUserId     openapi_types.UUID  `json:"student_user_id"`
+}
+
+// LeaveCategory defines model for LeaveCategory.
+type LeaveCategory string
+
+// LeaveRequestDetail defines model for LeaveRequestDetail.
+type LeaveRequestDetail struct {
+	Category     LeaveCategory      `json:"category"`
+	ClassName    string             `json:"class_name"`
+	EndsOn       openapi_types.Date `json:"ends_on"`
+	GuardianName *string            `json:"guardian_name,omitempty"`
+	HasEvidence  bool               `json:"has_evidence"`
+	HasLetter    bool               `json:"has_letter"`
+	Instance     WorkflowInstance   `json:"instance"`
+	IssuedAt     *time.Time         `json:"issued_at,omitempty"`
+	LetterNumber *string            `json:"letter_number,omitempty"`
+	Reason       string             `json:"reason"`
+	StartsOn     openapi_types.Date `json:"starts_on"`
+	StudentName  string             `json:"student_name"`
+}
+
+// LeaveRequestSummary defines model for LeaveRequestSummary.
+type LeaveRequestSummary struct {
+	Category          LeaveCategory       `json:"category"`
+	ClassId           *openapi_types.UUID `json:"class_id,omitempty"`
+	ClassName         string              `json:"class_name"`
+	CurrentStageIndex int                 `json:"current_stage_index"`
+	EndsOn            openapi_types.Date  `json:"ends_on"`
+	InstanceId        openapi_types.UUID  `json:"instance_id"`
+	LetterNumber      *string             `json:"letter_number,omitempty"`
+	OpenedAt          time.Time           `json:"opened_at"`
+	Reason            *string             `json:"reason,omitempty"`
+	StartsOn          openapi_types.Date  `json:"starts_on"`
+	Status            WorkflowStatus      `json:"status"`
+	StudentName       string              `json:"student_name"`
+	StudentUserId     openapi_types.UUID  `json:"student_user_id"`
 }
 
 // LoginRequest defines model for LoginRequest.
@@ -245,12 +586,23 @@ type MeDutiesScopeKind string
 // MeProfileKind defines model for Me.ProfileKind.
 type MeProfileKind string
 
+// RequiredAction defines model for RequiredAction.
+type RequiredAction string
+
 // Role defines model for Role.
 type Role struct {
 	Id        openapi_types.UUID `json:"id"`
 	IsPrimary bool               `json:"is_primary"`
 	Name      string             `json:"name"`
 	Slug      string             `json:"slug"`
+}
+
+// ScanPurpose defines model for ScanPurpose.
+type ScanPurpose string
+
+// ScanRequest defines model for ScanRequest.
+type ScanRequest struct {
+	Token string `json:"token"`
 }
 
 // Session defines model for Session.
@@ -293,11 +645,72 @@ type TenantSummary struct {
 	Slug string             `json:"slug"`
 }
 
+// WorkflowDefinition defines model for WorkflowDefinition.
+type WorkflowDefinition struct {
+	Config    *map[string]interface{} `json:"config,omitempty"`
+	CreatedAt *time.Time              `json:"created_at,omitempty"`
+	Id        openapi_types.UUID      `json:"id"`
+	IsActive  bool                    `json:"is_active"`
+	Kind      WorkflowKind            `json:"kind"`
+	Stages    []WorkflowStage         `json:"stages"`
+	Version   int                     `json:"version"`
+}
+
+// WorkflowEvent defines model for WorkflowEvent.
+type WorkflowEvent struct {
+	ActorUserId  *openapi_types.UUID `json:"actor_user_id,omitempty"`
+	FromStatus   *string             `json:"from_status,omitempty"`
+	Id           openapi_types.UUID  `json:"id"`
+	Note         *string             `json:"note,omitempty"`
+	OccurredAt   time.Time           `json:"occurred_at"`
+	StageKey     *string             `json:"stage_key,omitempty"`
+	ToStatus     string              `json:"to_status"`
+	Verification string              `json:"verification"`
+}
+
+// WorkflowInstance defines model for WorkflowInstance.
+type WorkflowInstance struct {
+	ClassId           *openapi_types.UUID `json:"class_id,omitempty"`
+	ClosedAt          *time.Time          `json:"closed_at,omitempty"`
+	CurrentStage      *WorkflowStage      `json:"current_stage,omitempty"`
+	CurrentStageIndex int                 `json:"current_stage_index"`
+	Events            *[]WorkflowEvent    `json:"events,omitempty"`
+	Id                openapi_types.UUID  `json:"id"`
+	Kind              WorkflowKind        `json:"kind"`
+	OpenedAt          time.Time           `json:"opened_at"`
+	Stages            []WorkflowStage     `json:"stages"`
+	Status            WorkflowStatus      `json:"status"`
+	SubjectUserId     openapi_types.UUID  `json:"subject_user_id"`
+}
+
+// WorkflowKind defines model for WorkflowKind.
+type WorkflowKind string
+
+// WorkflowStage defines model for WorkflowStage.
+type WorkflowStage struct {
+	// ApproverRule any_teacher, teacher_of_class_now, homeroom_of_student, or duty:<slug>
+	ApproverRule   string                    `json:"approver_rule"`
+	DistinctFrom   *[]string                 `json:"distinct_from,omitempty"`
+	Key            string                    `json:"key"`
+	Label          string                    `json:"label"`
+	LookaheadSlots *int                      `json:"lookahead_slots,omitempty"`
+	Verification   WorkflowStageVerification `json:"verification"`
+}
+
+// WorkflowStageVerification defines model for WorkflowStage.Verification.
+type WorkflowStageVerification string
+
+// WorkflowStatus defines model for WorkflowStatus.
+type WorkflowStatus string
+
 // TenantHeader defines model for TenantHeader.
 type TenantHeader = string
 
 // BadRequest defines model for BadRequest.
 type BadRequest = Error
+
+// Conflict defines model for Conflict.
+type Conflict = Error
 
 // Forbidden defines model for Forbidden.
 type Forbidden = Error
@@ -307,6 +720,9 @@ type NotFound = Error
 
 // RateLimited defines model for RateLimited.
 type RateLimited = Error
+
+// TokenGone defines model for TokenGone.
+type TokenGone = Error
 
 // Unauthorized defines model for Unauthorized.
 type Unauthorized = Error
@@ -329,15 +745,100 @@ type RefreshTokenJSONBody struct {
 	RefreshToken *string `json:"refresh_token,omitempty"`
 }
 
+// UpdateDocumentTemplateJSONBody defines parameters for UpdateDocumentTemplate.
+type UpdateDocumentTemplateJSONBody struct {
+	Body      string    `json:"body"`
+	Name      string    `json:"name"`
+	Variables *[]string `json:"variables,omitempty"`
+}
+
+// VerifyDocumentParams defines parameters for VerifyDocument.
+type VerifyDocumentParams struct {
+	// XTenant Tenant slug for mobile clients before a token exists. Ignored when the host already resolves a tenant or in single-tenant mode.
+	XTenant *TenantHeader `json:"X-Tenant,omitempty"`
+}
+
+// ListMyExitPermitsParams defines parameters for ListMyExitPermits.
+type ListMyExitPermitsParams struct {
+	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// CreateExitPermitJSONBody defines parameters for CreateExitPermit.
+type CreateExitPermitJSONBody struct {
+	Destination   string             `json:"destination"`
+	EndPeriodId   openapi_types.UUID `json:"end_period_id"`
+	StartPeriodId openapi_types.UUID `json:"start_period_id"`
+}
+
+// OpenLateArrivalJSONBody defines parameters for OpenLateArrival.
+type OpenLateArrivalJSONBody struct {
+	Reason *string `json:"reason,omitempty"`
+	Token  string  `json:"token"`
+}
+
+// ReviewLateArrivalJSONBody defines parameters for ReviewLateArrival.
+type ReviewLateArrivalJSONBody struct {
+	HomeroomReported bool                  `json:"homeroom_reported"`
+	Reason           *string               `json:"reason,omitempty"`
+	ViolationIds     *[]openapi_types.UUID `json:"violation_ids,omitempty"`
+}
+
+// ListMyLeaveRequestsParams defines parameters for ListMyLeaveRequests.
+type ListMyLeaveRequestsParams struct {
+	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// SubmitLeaveRequestJSONBody defines parameters for SubmitLeaveRequest.
+type SubmitLeaveRequestJSONBody struct {
+	Category LeaveCategory      `json:"category"`
+	EndsOn   openapi_types.Date `json:"ends_on"`
+	Reason   string             `json:"reason"`
+	StartsOn openapi_types.Date `json:"starts_on"`
+}
+
+// ListLeaveRequestsForReviewParams defines parameters for ListLeaveRequestsForReview.
+type ListLeaveRequestsForReviewParams struct {
+	ClassId *openapi_types.UUID `form:"class_id,omitempty" json:"class_id,omitempty"`
+}
+
+// GetLeaveDocumentUrlParamsKind defines parameters for GetLeaveDocumentUrl.
+type GetLeaveDocumentUrlParamsKind string
+
+// ConfirmLeaveEvidenceJSONBody defines parameters for ConfirmLeaveEvidence.
+type ConfirmLeaveEvidenceJSONBody struct {
+	ObjectKey string `json:"object_key"`
+}
+
+// ReviewLeaveRequestJSONBody defines parameters for ReviewLeaveRequest.
+type ReviewLeaveRequestJSONBody struct {
+	Approve bool    `json:"approve"`
+	Note    *string `json:"note,omitempty"`
+}
+
 // ChangePasswordJSONBody defines parameters for ChangePassword.
 type ChangePasswordJSONBody struct {
 	CurrentPassword string `json:"current_password"`
 	NewPassword     string `json:"new_password"`
 }
 
+// IssueScanTokenJSONBody defines parameters for IssueScanToken.
+type IssueScanTokenJSONBody struct {
+	// ContextId Workflow instance the token approves (required for approve_stage).
+	ContextId *openapi_types.UUID `json:"context_id,omitempty"`
+	Purpose   ScanPurpose         `json:"purpose"`
+}
+
 // LookupTenantsParams defines parameters for LookupTenants.
 type LookupTenantsParams struct {
 	Q string `form:"q" json:"q"`
+}
+
+// ReplaceWorkflowDefinitionJSONBody defines parameters for ReplaceWorkflowDefinition.
+type ReplaceWorkflowDefinitionJSONBody struct {
+	Config *map[string]interface{} `json:"config,omitempty"`
+	Stages []WorkflowStage         `json:"stages"`
 }
 
 // LoginJSONRequestBody defines body for Login for application/json ContentType.
@@ -346,8 +847,50 @@ type LoginJSONRequestBody = LoginRequest
 // RefreshTokenJSONRequestBody defines body for RefreshToken for application/json ContentType.
 type RefreshTokenJSONRequestBody RefreshTokenJSONBody
 
+// ScanClassroomEntryJSONRequestBody defines body for ScanClassroomEntry for application/json ContentType.
+type ScanClassroomEntryJSONRequestBody = ScanRequest
+
+// CreateDocumentTemplateJSONRequestBody defines body for CreateDocumentTemplate for application/json ContentType.
+type CreateDocumentTemplateJSONRequestBody = DocumentTemplateWrite
+
+// UpdateDocumentTemplateJSONRequestBody defines body for UpdateDocumentTemplate for application/json ContentType.
+type UpdateDocumentTemplateJSONRequestBody UpdateDocumentTemplateJSONBody
+
+// CreateExitPermitJSONRequestBody defines body for CreateExitPermit for application/json ContentType.
+type CreateExitPermitJSONRequestBody CreateExitPermitJSONBody
+
+// ScanExitPermitGateJSONRequestBody defines body for ScanExitPermitGate for application/json ContentType.
+type ScanExitPermitGateJSONRequestBody = ScanRequest
+
+// ScanExitPermitStageJSONRequestBody defines body for ScanExitPermitStage for application/json ContentType.
+type ScanExitPermitStageJSONRequestBody = ScanRequest
+
+// OpenLateArrivalJSONRequestBody defines body for OpenLateArrival for application/json ContentType.
+type OpenLateArrivalJSONRequestBody OpenLateArrivalJSONBody
+
+// ReviewLateArrivalJSONRequestBody defines body for ReviewLateArrival for application/json ContentType.
+type ReviewLateArrivalJSONRequestBody ReviewLateArrivalJSONBody
+
+// ScanLateArrivalStageJSONRequestBody defines body for ScanLateArrivalStage for application/json ContentType.
+type ScanLateArrivalStageJSONRequestBody = ScanRequest
+
+// SubmitLeaveRequestJSONRequestBody defines body for SubmitLeaveRequest for application/json ContentType.
+type SubmitLeaveRequestJSONRequestBody SubmitLeaveRequestJSONBody
+
+// ConfirmLeaveEvidenceJSONRequestBody defines body for ConfirmLeaveEvidence for application/json ContentType.
+type ConfirmLeaveEvidenceJSONRequestBody ConfirmLeaveEvidenceJSONBody
+
+// ReviewLeaveRequestJSONRequestBody defines body for ReviewLeaveRequest for application/json ContentType.
+type ReviewLeaveRequestJSONRequestBody ReviewLeaveRequestJSONBody
+
 // ChangePasswordJSONRequestBody defines body for ChangePassword for application/json ContentType.
 type ChangePasswordJSONRequestBody ChangePasswordJSONBody
+
+// IssueScanTokenJSONRequestBody defines body for IssueScanToken for application/json ContentType.
+type IssueScanTokenJSONRequestBody IssueScanTokenJSONBody
+
+// ReplaceWorkflowDefinitionJSONRequestBody defines body for ReplaceWorkflowDefinition for application/json ContentType.
+type ReplaceWorkflowDefinitionJSONRequestBody ReplaceWorkflowDefinitionJSONBody
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
@@ -369,18 +912,111 @@ type ServerInterface interface {
 	// RevokeSession Revoke one of the current user's sessions
 	// (DELETE /v1/auth/sessions/{sessionId})
 	RevokeSession(w http.ResponseWriter, r *http.Request, sessionId openapi_types.UUID)
+	// ScanClassroomEntry Student scans a teacher's classroom-entry token
+	// (POST /v1/classroom-entry/scan)
+	ScanClassroomEntry(w http.ResponseWriter, r *http.Request)
+	// ListDocumentTemplates Document templates of the tenant
+	// (GET /v1/documents/templates)
+	ListDocumentTemplates(w http.ResponseWriter, r *http.Request)
+	// CreateDocumentTemplate Create a document template
+	// (POST /v1/documents/templates)
+	CreateDocumentTemplate(w http.ResponseWriter, r *http.Request)
+	// UpdateDocumentTemplate Update a template body
+	// (PUT /v1/documents/templates/{templateId})
+	UpdateDocumentTemplate(w http.ResponseWriter, r *http.Request, templateId openapi_types.UUID)
+	// SetDefaultDocumentTemplate Make this template the default of its kind
+	// (POST /v1/documents/templates/{templateId}/set-default)
+	SetDefaultDocumentTemplate(w http.ResponseWriter, r *http.Request, templateId openapi_types.UUID)
+	// VerifyDocument Public verification of an issued document by its printed code
+	// (GET /v1/documents/verify/{code})
+	VerifyDocument(w http.ResponseWriter, r *http.Request, code string, params VerifyDocumentParams)
+	// ListMyExitPermits Exit permits of the current student
+	// (GET /v1/exit-permits)
+	ListMyExitPermits(w http.ResponseWriter, r *http.Request, params ListMyExitPermitsParams)
+	// CreateExitPermit Student requests an exit permit for a period range today
+	// (POST /v1/exit-permits)
+	CreateExitPermit(w http.ResponseWriter, r *http.Request)
+	// GetExitPermit Exit permit detail with stage history
+	// (GET /v1/exit-permits/{instanceId})
+	GetExitPermit(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID)
+	// CancelExitPermit Student cancels an in-progress exit permit
+	// (POST /v1/exit-permits/{instanceId}/cancel)
+	CancelExitPermit(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID)
+	// ScanExitPermitGate Security scans the gate QR; the permit is completed
+	// (POST /v1/exit-permits/{instanceId}/gate-scan)
+	ScanExitPermitGate(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID)
+	// IssueExitPermitGateToken Student generates the gate QR after the permit is approved
+	// (POST /v1/exit-permits/{instanceId}/gate-token)
+	IssueExitPermitGateToken(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID)
+	// ScanExitPermitStage Student scans the current approver's token to advance a stage
+	// (POST /v1/exit-permits/{instanceId}/scan)
+	ScanExitPermitStage(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID)
+	// GetCurrentLateArrival The current student's in-progress late arrival, if any
+	// (GET /v1/late-arrivals/current)
+	GetCurrentLateArrival(w http.ResponseWriter, r *http.Request)
+	// OpenLateArrival Late student scans the duty teacher's token to open the flow
+	// (POST /v1/late-arrivals/open)
+	OpenLateArrival(w http.ResponseWriter, r *http.Request)
+	// ListLateArrivalsForReview Open late arrivals awaiting the duty teacher's review
+	// (GET /v1/late-arrivals/review-queue)
+	ListLateArrivalsForReview(w http.ResponseWriter, r *http.Request)
+	// GetLateArrival Late arrival detail with stage history
+	// (GET /v1/late-arrivals/{instanceId})
+	GetLateArrival(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID)
+	// ReviewLateArrival Duty teacher records the review and moves the flow to leadership
+	// (POST /v1/late-arrivals/{instanceId}/review)
+	ReviewLateArrival(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID)
+	// ScanLateArrivalStage Student scans the next approver's token
+	// (POST /v1/late-arrivals/{instanceId}/scan)
+	ScanLateArrivalStage(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID)
+	// ListMyLeaveRequests Leave requests of the current student
+	// (GET /v1/leave-requests)
+	ListMyLeaveRequests(w http.ResponseWriter, r *http.Request, params ListMyLeaveRequestsParams)
+	// SubmitLeaveRequest Student submits a planned leave request
+	// (POST /v1/leave-requests)
+	SubmitLeaveRequest(w http.ResponseWriter, r *http.Request)
+	// ListLeaveRequestsForReview Leave requests awaiting review (optionally for one class)
+	// (GET /v1/leave-requests/review-queue)
+	ListLeaveRequestsForReview(w http.ResponseWriter, r *http.Request, params ListLeaveRequestsForReviewParams)
+	// GetLeaveRequest Leave request detail with stage history
+	// (GET /v1/leave-requests/{instanceId})
+	GetLeaveRequest(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID)
+	// GetLeaveDocumentUrl Short-lived signed URL for the evidence or the issued letter
+	// (GET /v1/leave-requests/{instanceId}/documents/{kind})
+	GetLeaveDocumentUrl(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID, kind GetLeaveDocumentUrlParamsKind)
+	// ConfirmLeaveEvidence Validate and attach the uploaded evidence
+	// (POST /v1/leave-requests/{instanceId}/evidence/confirm)
+	ConfirmLeaveEvidence(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID)
+	// RequestLeaveEvidenceUpload Presigned upload for the evidence image (JPEG or PNG, max 6 MB)
+	// (POST /v1/leave-requests/{instanceId}/evidence/upload-url)
+	RequestLeaveEvidenceUpload(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID)
+	// IssueLeaveLetter Counselor issues the numbered letter and syncs attendance
+	// (POST /v1/leave-requests/{instanceId}/issue)
+	IssueLeaveLetter(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID)
+	// ReviewLeaveRequest Homeroom teacher approves or rejects
+	// (POST /v1/leave-requests/{instanceId}/review)
+	ReviewLeaveRequest(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID)
 	// GetMe Current user, roles, effective permissions, tenant
 	// (GET /v1/me)
 	GetMe(w http.ResponseWriter, r *http.Request)
 	// ChangePassword Change own password; revokes other sessions
 	// (PUT /v1/me/password)
 	ChangePassword(w http.ResponseWriter, r *http.Request)
+	// IssueScanToken Mint a short-lived single-use scan token for a purpose (shown as a QR code)
+	// (POST /v1/scan-tokens)
+	IssueScanToken(w http.ResponseWriter, r *http.Request)
 	// GetTenantBranding Public branding for the resolved tenant (login screen, manifest)
 	// (GET /v1/tenant/branding)
 	GetTenantBranding(w http.ResponseWriter, r *http.Request)
 	// LookupTenants Search schools by name or slug (mobile school picker). Returns nothing in single-tenant mode except the single tenant.
 	// (GET /v1/tenants/lookup)
 	LookupTenants(w http.ResponseWriter, r *http.Request, params LookupTenantsParams)
+	// ListWorkflowDefinitions Workflow definitions (all versions) of the tenant
+	// (GET /v1/workflows/definitions)
+	ListWorkflowDefinitions(w http.ResponseWriter, r *http.Request)
+	// ReplaceWorkflowDefinition Publish a new version of a workflow definition
+	// (PUT /v1/workflows/definitions/{kind})
+	ReplaceWorkflowDefinition(w http.ResponseWriter, r *http.Request, kind WorkflowKind)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
@@ -423,6 +1059,174 @@ func (_ Unimplemented) RevokeSession(w http.ResponseWriter, r *http.Request, ses
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// ScanClassroomEntry Student scans a teacher's classroom-entry token
+// (POST /v1/classroom-entry/scan)
+func (_ Unimplemented) ScanClassroomEntry(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListDocumentTemplates Document templates of the tenant
+// (GET /v1/documents/templates)
+func (_ Unimplemented) ListDocumentTemplates(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CreateDocumentTemplate Create a document template
+// (POST /v1/documents/templates)
+func (_ Unimplemented) CreateDocumentTemplate(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// UpdateDocumentTemplate Update a template body
+// (PUT /v1/documents/templates/{templateId})
+func (_ Unimplemented) UpdateDocumentTemplate(w http.ResponseWriter, r *http.Request, templateId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// SetDefaultDocumentTemplate Make this template the default of its kind
+// (POST /v1/documents/templates/{templateId}/set-default)
+func (_ Unimplemented) SetDefaultDocumentTemplate(w http.ResponseWriter, r *http.Request, templateId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// VerifyDocument Public verification of an issued document by its printed code
+// (GET /v1/documents/verify/{code})
+func (_ Unimplemented) VerifyDocument(w http.ResponseWriter, r *http.Request, code string, params VerifyDocumentParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListMyExitPermits Exit permits of the current student
+// (GET /v1/exit-permits)
+func (_ Unimplemented) ListMyExitPermits(w http.ResponseWriter, r *http.Request, params ListMyExitPermitsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CreateExitPermit Student requests an exit permit for a period range today
+// (POST /v1/exit-permits)
+func (_ Unimplemented) CreateExitPermit(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetExitPermit Exit permit detail with stage history
+// (GET /v1/exit-permits/{instanceId})
+func (_ Unimplemented) GetExitPermit(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CancelExitPermit Student cancels an in-progress exit permit
+// (POST /v1/exit-permits/{instanceId}/cancel)
+func (_ Unimplemented) CancelExitPermit(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ScanExitPermitGate Security scans the gate QR; the permit is completed
+// (POST /v1/exit-permits/{instanceId}/gate-scan)
+func (_ Unimplemented) ScanExitPermitGate(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// IssueExitPermitGateToken Student generates the gate QR after the permit is approved
+// (POST /v1/exit-permits/{instanceId}/gate-token)
+func (_ Unimplemented) IssueExitPermitGateToken(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ScanExitPermitStage Student scans the current approver's token to advance a stage
+// (POST /v1/exit-permits/{instanceId}/scan)
+func (_ Unimplemented) ScanExitPermitStage(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetCurrentLateArrival The current student's in-progress late arrival, if any
+// (GET /v1/late-arrivals/current)
+func (_ Unimplemented) GetCurrentLateArrival(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// OpenLateArrival Late student scans the duty teacher's token to open the flow
+// (POST /v1/late-arrivals/open)
+func (_ Unimplemented) OpenLateArrival(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListLateArrivalsForReview Open late arrivals awaiting the duty teacher's review
+// (GET /v1/late-arrivals/review-queue)
+func (_ Unimplemented) ListLateArrivalsForReview(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetLateArrival Late arrival detail with stage history
+// (GET /v1/late-arrivals/{instanceId})
+func (_ Unimplemented) GetLateArrival(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ReviewLateArrival Duty teacher records the review and moves the flow to leadership
+// (POST /v1/late-arrivals/{instanceId}/review)
+func (_ Unimplemented) ReviewLateArrival(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ScanLateArrivalStage Student scans the next approver's token
+// (POST /v1/late-arrivals/{instanceId}/scan)
+func (_ Unimplemented) ScanLateArrivalStage(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListMyLeaveRequests Leave requests of the current student
+// (GET /v1/leave-requests)
+func (_ Unimplemented) ListMyLeaveRequests(w http.ResponseWriter, r *http.Request, params ListMyLeaveRequestsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// SubmitLeaveRequest Student submits a planned leave request
+// (POST /v1/leave-requests)
+func (_ Unimplemented) SubmitLeaveRequest(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListLeaveRequestsForReview Leave requests awaiting review (optionally for one class)
+// (GET /v1/leave-requests/review-queue)
+func (_ Unimplemented) ListLeaveRequestsForReview(w http.ResponseWriter, r *http.Request, params ListLeaveRequestsForReviewParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetLeaveRequest Leave request detail with stage history
+// (GET /v1/leave-requests/{instanceId})
+func (_ Unimplemented) GetLeaveRequest(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetLeaveDocumentUrl Short-lived signed URL for the evidence or the issued letter
+// (GET /v1/leave-requests/{instanceId}/documents/{kind})
+func (_ Unimplemented) GetLeaveDocumentUrl(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID, kind GetLeaveDocumentUrlParamsKind) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ConfirmLeaveEvidence Validate and attach the uploaded evidence
+// (POST /v1/leave-requests/{instanceId}/evidence/confirm)
+func (_ Unimplemented) ConfirmLeaveEvidence(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// RequestLeaveEvidenceUpload Presigned upload for the evidence image (JPEG or PNG, max 6 MB)
+// (POST /v1/leave-requests/{instanceId}/evidence/upload-url)
+func (_ Unimplemented) RequestLeaveEvidenceUpload(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// IssueLeaveLetter Counselor issues the numbered letter and syncs attendance
+// (POST /v1/leave-requests/{instanceId}/issue)
+func (_ Unimplemented) IssueLeaveLetter(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ReviewLeaveRequest Homeroom teacher approves or rejects
+// (POST /v1/leave-requests/{instanceId}/review)
+func (_ Unimplemented) ReviewLeaveRequest(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // GetMe Current user, roles, effective permissions, tenant
 // (GET /v1/me)
 func (_ Unimplemented) GetMe(w http.ResponseWriter, r *http.Request) {
@@ -435,6 +1239,12 @@ func (_ Unimplemented) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// IssueScanToken Mint a short-lived single-use scan token for a purpose (shown as a QR code)
+// (POST /v1/scan-tokens)
+func (_ Unimplemented) IssueScanToken(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // GetTenantBranding Public branding for the resolved tenant (login screen, manifest)
 // (GET /v1/tenant/branding)
 func (_ Unimplemented) GetTenantBranding(w http.ResponseWriter, r *http.Request) {
@@ -444,6 +1254,18 @@ func (_ Unimplemented) GetTenantBranding(w http.ResponseWriter, r *http.Request)
 // LookupTenants Search schools by name or slug (mobile school picker). Returns nothing in single-tenant mode except the single tenant.
 // (GET /v1/tenants/lookup)
 func (_ Unimplemented) LookupTenants(w http.ResponseWriter, r *http.Request, params LookupTenantsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListWorkflowDefinitions Workflow definitions (all versions) of the tenant
+// (GET /v1/workflows/definitions)
+func (_ Unimplemented) ListWorkflowDefinitions(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ReplaceWorkflowDefinition Publish a new version of a workflow definition
+// (PUT /v1/workflows/definitions/{kind})
+func (_ Unimplemented) ReplaceWorkflowDefinition(w http.ResponseWriter, r *http.Request, kind WorkflowKind) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -579,6 +1401,718 @@ func (siw *ServerInterfaceWrapper) RevokeSession(w http.ResponseWriter, r *http.
 	handler.ServeHTTP(w, r)
 }
 
+// ScanClassroomEntry operation middleware
+func (siw *ServerInterfaceWrapper) ScanClassroomEntry(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ScanClassroomEntry(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListDocumentTemplates operation middleware
+func (siw *ServerInterfaceWrapper) ListDocumentTemplates(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListDocumentTemplates(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateDocumentTemplate operation middleware
+func (siw *ServerInterfaceWrapper) CreateDocumentTemplate(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateDocumentTemplate(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateDocumentTemplate operation middleware
+func (siw *ServerInterfaceWrapper) UpdateDocumentTemplate(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "templateId" -------------
+	var templateId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "templateId", chi.URLParam(r, "templateId"), &templateId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "templateId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateDocumentTemplate(w, r, templateId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SetDefaultDocumentTemplate operation middleware
+func (siw *ServerInterfaceWrapper) SetDefaultDocumentTemplate(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "templateId" -------------
+	var templateId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "templateId", chi.URLParam(r, "templateId"), &templateId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "templateId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetDefaultDocumentTemplate(w, r, templateId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// VerifyDocument operation middleware
+func (siw *ServerInterfaceWrapper) VerifyDocument(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "code" -------------
+	var code string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "code", chi.URLParam(r, "code"), &code, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "code", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params VerifyDocumentParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "X-Tenant" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant")]; found {
+		var XTenant TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant", valueList[0], &XTenant, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant", Err: err})
+			return
+		}
+
+		params.XTenant = &XTenant
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.VerifyDocument(w, r, code, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListMyExitPermits operation middleware
+func (siw *ServerInterfaceWrapper) ListMyExitPermits(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListMyExitPermitsParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "offset"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListMyExitPermits(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateExitPermit operation middleware
+func (siw *ServerInterfaceWrapper) CreateExitPermit(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateExitPermit(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetExitPermit operation middleware
+func (siw *ServerInterfaceWrapper) GetExitPermit(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "instanceId" -------------
+	var instanceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "instanceId", chi.URLParam(r, "instanceId"), &instanceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "instanceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetExitPermit(w, r, instanceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CancelExitPermit operation middleware
+func (siw *ServerInterfaceWrapper) CancelExitPermit(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "instanceId" -------------
+	var instanceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "instanceId", chi.URLParam(r, "instanceId"), &instanceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "instanceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CancelExitPermit(w, r, instanceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ScanExitPermitGate operation middleware
+func (siw *ServerInterfaceWrapper) ScanExitPermitGate(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "instanceId" -------------
+	var instanceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "instanceId", chi.URLParam(r, "instanceId"), &instanceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "instanceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ScanExitPermitGate(w, r, instanceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// IssueExitPermitGateToken operation middleware
+func (siw *ServerInterfaceWrapper) IssueExitPermitGateToken(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "instanceId" -------------
+	var instanceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "instanceId", chi.URLParam(r, "instanceId"), &instanceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "instanceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.IssueExitPermitGateToken(w, r, instanceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ScanExitPermitStage operation middleware
+func (siw *ServerInterfaceWrapper) ScanExitPermitStage(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "instanceId" -------------
+	var instanceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "instanceId", chi.URLParam(r, "instanceId"), &instanceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "instanceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ScanExitPermitStage(w, r, instanceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetCurrentLateArrival operation middleware
+func (siw *ServerInterfaceWrapper) GetCurrentLateArrival(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetCurrentLateArrival(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// OpenLateArrival operation middleware
+func (siw *ServerInterfaceWrapper) OpenLateArrival(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.OpenLateArrival(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListLateArrivalsForReview operation middleware
+func (siw *ServerInterfaceWrapper) ListLateArrivalsForReview(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListLateArrivalsForReview(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetLateArrival operation middleware
+func (siw *ServerInterfaceWrapper) GetLateArrival(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "instanceId" -------------
+	var instanceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "instanceId", chi.URLParam(r, "instanceId"), &instanceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "instanceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetLateArrival(w, r, instanceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ReviewLateArrival operation middleware
+func (siw *ServerInterfaceWrapper) ReviewLateArrival(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "instanceId" -------------
+	var instanceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "instanceId", chi.URLParam(r, "instanceId"), &instanceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "instanceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReviewLateArrival(w, r, instanceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ScanLateArrivalStage operation middleware
+func (siw *ServerInterfaceWrapper) ScanLateArrivalStage(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "instanceId" -------------
+	var instanceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "instanceId", chi.URLParam(r, "instanceId"), &instanceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "instanceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ScanLateArrivalStage(w, r, instanceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListMyLeaveRequests operation middleware
+func (siw *ServerInterfaceWrapper) ListMyLeaveRequests(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListMyLeaveRequestsParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "offset"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListMyLeaveRequests(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SubmitLeaveRequest operation middleware
+func (siw *ServerInterfaceWrapper) SubmitLeaveRequest(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SubmitLeaveRequest(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListLeaveRequestsForReview operation middleware
+func (siw *ServerInterfaceWrapper) ListLeaveRequestsForReview(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListLeaveRequestsForReviewParams
+
+	// ------------- Optional query parameter "class_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "class_id", r.URL.Query(), &params.ClassId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "class_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "class_id", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListLeaveRequestsForReview(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetLeaveRequest operation middleware
+func (siw *ServerInterfaceWrapper) GetLeaveRequest(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "instanceId" -------------
+	var instanceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "instanceId", chi.URLParam(r, "instanceId"), &instanceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "instanceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetLeaveRequest(w, r, instanceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetLeaveDocumentUrl operation middleware
+func (siw *ServerInterfaceWrapper) GetLeaveDocumentUrl(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "instanceId" -------------
+	var instanceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "instanceId", chi.URLParam(r, "instanceId"), &instanceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "instanceId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "kind" -------------
+	var kind GetLeaveDocumentUrlParamsKind
+
+	err = runtime.BindStyledParameterWithOptions("simple", "kind", chi.URLParam(r, "kind"), &kind, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "kind", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetLeaveDocumentUrl(w, r, instanceId, kind)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ConfirmLeaveEvidence operation middleware
+func (siw *ServerInterfaceWrapper) ConfirmLeaveEvidence(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "instanceId" -------------
+	var instanceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "instanceId", chi.URLParam(r, "instanceId"), &instanceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "instanceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ConfirmLeaveEvidence(w, r, instanceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RequestLeaveEvidenceUpload operation middleware
+func (siw *ServerInterfaceWrapper) RequestLeaveEvidenceUpload(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "instanceId" -------------
+	var instanceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "instanceId", chi.URLParam(r, "instanceId"), &instanceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "instanceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RequestLeaveEvidenceUpload(w, r, instanceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// IssueLeaveLetter operation middleware
+func (siw *ServerInterfaceWrapper) IssueLeaveLetter(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "instanceId" -------------
+	var instanceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "instanceId", chi.URLParam(r, "instanceId"), &instanceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "instanceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.IssueLeaveLetter(w, r, instanceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ReviewLeaveRequest operation middleware
+func (siw *ServerInterfaceWrapper) ReviewLeaveRequest(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "instanceId" -------------
+	var instanceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "instanceId", chi.URLParam(r, "instanceId"), &instanceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "instanceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReviewLeaveRequest(w, r, instanceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetMe operation middleware
 func (siw *ServerInterfaceWrapper) GetMe(w http.ResponseWriter, r *http.Request) {
 
@@ -598,6 +2132,20 @@ func (siw *ServerInterfaceWrapper) ChangePassword(w http.ResponseWriter, r *http
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ChangePassword(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// IssueScanToken operation middleware
+func (siw *ServerInterfaceWrapper) IssueScanToken(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.IssueScanToken(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -645,6 +2193,46 @@ func (siw *ServerInterfaceWrapper) LookupTenants(w http.ResponseWriter, r *http.
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.LookupTenants(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListWorkflowDefinitions operation middleware
+func (siw *ServerInterfaceWrapper) ListWorkflowDefinitions(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListWorkflowDefinitions(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ReplaceWorkflowDefinition operation middleware
+func (siw *ServerInterfaceWrapper) ReplaceWorkflowDefinition(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "kind" -------------
+	var kind WorkflowKind
+
+	err = runtime.BindStyledParameterWithOptions("simple", "kind", chi.URLParam(r, "kind"), &kind, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "kind", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReplaceWorkflowDefinition(w, r, kind)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -789,6 +2377,99 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Put(options.BaseURL+"/v1/me/password", wrapper.ChangePassword)
 	})
 	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/scan-tokens", wrapper.IssueScanToken)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/classroom-entry/scan", wrapper.ScanClassroomEntry)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/workflows/definitions", wrapper.ListWorkflowDefinitions)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/v1/workflows/definitions/{kind}", wrapper.ReplaceWorkflowDefinition)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/exit-permits", wrapper.ListMyExitPermits)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/exit-permits", wrapper.CreateExitPermit)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/exit-permits/{instanceId}", wrapper.GetExitPermit)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/exit-permits/{instanceId}/scan", wrapper.ScanExitPermitStage)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/exit-permits/{instanceId}/cancel", wrapper.CancelExitPermit)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/exit-permits/{instanceId}/gate-token", wrapper.IssueExitPermitGateToken)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/exit-permits/{instanceId}/gate-scan", wrapper.ScanExitPermitGate)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/late-arrivals/open", wrapper.OpenLateArrival)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/late-arrivals/current", wrapper.GetCurrentLateArrival)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/late-arrivals/review-queue", wrapper.ListLateArrivalsForReview)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/late-arrivals/{instanceId}", wrapper.GetLateArrival)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/late-arrivals/{instanceId}/review", wrapper.ReviewLateArrival)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/late-arrivals/{instanceId}/scan", wrapper.ScanLateArrivalStage)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/leave-requests", wrapper.ListMyLeaveRequests)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/leave-requests", wrapper.SubmitLeaveRequest)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/leave-requests/review-queue", wrapper.ListLeaveRequestsForReview)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/leave-requests/{instanceId}", wrapper.GetLeaveRequest)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/leave-requests/{instanceId}/evidence/upload-url", wrapper.RequestLeaveEvidenceUpload)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/leave-requests/{instanceId}/evidence/confirm", wrapper.ConfirmLeaveEvidence)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/leave-requests/{instanceId}/review", wrapper.ReviewLeaveRequest)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/leave-requests/{instanceId}/issue", wrapper.IssueLeaveLetter)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/leave-requests/{instanceId}/documents/{kind}", wrapper.GetLeaveDocumentUrl)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/documents/verify/{code}", wrapper.VerifyDocument)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/documents/templates", wrapper.ListDocumentTemplates)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/documents/templates", wrapper.CreateDocumentTemplate)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/v1/documents/templates/{templateId}", wrapper.UpdateDocumentTemplate)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/documents/templates/{templateId}/set-default", wrapper.SetDefaultDocumentTemplate)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/health", wrapper.GetHealth)
 	})
 	r.Group(func(r chi.Router) {
@@ -803,6 +2484,8 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 
 type BadRequestJSONResponse Error
 
+type ConflictJSONResponse Error
+
 type ForbiddenJSONResponse Error
 
 type NotFoundJSONResponse Error
@@ -815,6 +2498,8 @@ type RateLimitedJSONResponse struct {
 
 	Headers RateLimitedResponseHeaders
 }
+
+type TokenGoneJSONResponse Error
 
 type UnauthorizedJSONResponse Error
 
@@ -1113,6 +2798,1832 @@ func (response RevokeSession404JSONResponse) VisitRevokeSessionResponse(w http.R
 	return err
 }
 
+type ScanClassroomEntryRequestObject struct {
+	Body *ScanClassroomEntryJSONRequestBody
+}
+
+type ScanClassroomEntryResponseObject interface {
+	VisitScanClassroomEntryResponse(w http.ResponseWriter) error
+}
+
+type ScanClassroomEntry200JSONResponse struct {
+	ScannedAt     time.Time          `json:"scanned_at"`
+	TeacherUserId openapi_types.UUID `json:"teacher_user_id"`
+}
+
+func (response ScanClassroomEntry200JSONResponse) VisitScanClassroomEntryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ScanClassroomEntry401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ScanClassroomEntry401JSONResponse) VisitScanClassroomEntryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ScanClassroomEntry410JSONResponse struct{ TokenGoneJSONResponse }
+
+func (response ScanClassroomEntry410JSONResponse) VisitScanClassroomEntryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(410)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDocumentTemplatesRequestObject struct {
+}
+
+type ListDocumentTemplatesResponseObject interface {
+	VisitListDocumentTemplatesResponse(w http.ResponseWriter) error
+}
+
+type ListDocumentTemplates200JSONResponse struct {
+	Data []DocumentTemplate `json:"data"`
+}
+
+func (response ListDocumentTemplates200JSONResponse) VisitListDocumentTemplatesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDocumentTemplates401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListDocumentTemplates401JSONResponse) VisitListDocumentTemplatesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDocumentTemplates403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListDocumentTemplates403JSONResponse) VisitListDocumentTemplatesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateDocumentTemplateRequestObject struct {
+	Body *CreateDocumentTemplateJSONRequestBody
+}
+
+type CreateDocumentTemplateResponseObject interface {
+	VisitCreateDocumentTemplateResponse(w http.ResponseWriter) error
+}
+
+type CreateDocumentTemplate201JSONResponse DocumentTemplate
+
+func (response CreateDocumentTemplate201JSONResponse) VisitCreateDocumentTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateDocumentTemplate400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CreateDocumentTemplate400JSONResponse) VisitCreateDocumentTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateDocumentTemplate401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateDocumentTemplate401JSONResponse) VisitCreateDocumentTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateDocumentTemplate403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CreateDocumentTemplate403JSONResponse) VisitCreateDocumentTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDocumentTemplateRequestObject struct {
+	TemplateId openapi_types.UUID `json:"templateId"`
+	Body       *UpdateDocumentTemplateJSONRequestBody
+}
+
+type UpdateDocumentTemplateResponseObject interface {
+	VisitUpdateDocumentTemplateResponse(w http.ResponseWriter) error
+}
+
+type UpdateDocumentTemplate200JSONResponse DocumentTemplate
+
+func (response UpdateDocumentTemplate200JSONResponse) VisitUpdateDocumentTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDocumentTemplate400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response UpdateDocumentTemplate400JSONResponse) VisitUpdateDocumentTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDocumentTemplate401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response UpdateDocumentTemplate401JSONResponse) VisitUpdateDocumentTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDocumentTemplate403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response UpdateDocumentTemplate403JSONResponse) VisitUpdateDocumentTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDocumentTemplate404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response UpdateDocumentTemplate404JSONResponse) VisitUpdateDocumentTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetDefaultDocumentTemplateRequestObject struct {
+	TemplateId openapi_types.UUID `json:"templateId"`
+}
+
+type SetDefaultDocumentTemplateResponseObject interface {
+	VisitSetDefaultDocumentTemplateResponse(w http.ResponseWriter) error
+}
+
+type SetDefaultDocumentTemplate200JSONResponse DocumentTemplate
+
+func (response SetDefaultDocumentTemplate200JSONResponse) VisitSetDefaultDocumentTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetDefaultDocumentTemplate401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response SetDefaultDocumentTemplate401JSONResponse) VisitSetDefaultDocumentTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetDefaultDocumentTemplate403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response SetDefaultDocumentTemplate403JSONResponse) VisitSetDefaultDocumentTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetDefaultDocumentTemplate404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response SetDefaultDocumentTemplate404JSONResponse) VisitSetDefaultDocumentTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VerifyDocumentRequestObject struct {
+	Code   string `json:"code"`
+	Params VerifyDocumentParams
+}
+
+type VerifyDocumentResponseObject interface {
+	VisitVerifyDocumentResponse(w http.ResponseWriter) error
+}
+
+type VerifyDocument200JSONResponse DocumentVerification
+
+func (response VerifyDocument200JSONResponse) VisitVerifyDocumentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VerifyDocument404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response VerifyDocument404JSONResponse) VisitVerifyDocumentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListMyExitPermitsRequestObject struct {
+	Params ListMyExitPermitsParams
+}
+
+type ListMyExitPermitsResponseObject interface {
+	VisitListMyExitPermitsResponse(w http.ResponseWriter) error
+}
+
+type ListMyExitPermits200JSONResponse struct {
+	Data []WorkflowInstance `json:"data"`
+}
+
+func (response ListMyExitPermits200JSONResponse) VisitListMyExitPermitsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListMyExitPermits401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListMyExitPermits401JSONResponse) VisitListMyExitPermitsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateExitPermitRequestObject struct {
+	Body *CreateExitPermitJSONRequestBody
+}
+
+type CreateExitPermitResponseObject interface {
+	VisitCreateExitPermitResponse(w http.ResponseWriter) error
+}
+
+type CreateExitPermit201JSONResponse ExitPermitDetail
+
+func (response CreateExitPermit201JSONResponse) VisitCreateExitPermitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateExitPermit400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CreateExitPermit400JSONResponse) VisitCreateExitPermitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateExitPermit401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateExitPermit401JSONResponse) VisitCreateExitPermitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateExitPermit403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CreateExitPermit403JSONResponse) VisitCreateExitPermitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateExitPermit409JSONResponse struct{ ConflictJSONResponse }
+
+func (response CreateExitPermit409JSONResponse) VisitCreateExitPermitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetExitPermitRequestObject struct {
+	InstanceId openapi_types.UUID `json:"instanceId"`
+}
+
+type GetExitPermitResponseObject interface {
+	VisitGetExitPermitResponse(w http.ResponseWriter) error
+}
+
+type GetExitPermit200JSONResponse ExitPermitDetail
+
+func (response GetExitPermit200JSONResponse) VisitGetExitPermitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetExitPermit401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetExitPermit401JSONResponse) VisitGetExitPermitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetExitPermit404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetExitPermit404JSONResponse) VisitGetExitPermitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelExitPermitRequestObject struct {
+	InstanceId openapi_types.UUID `json:"instanceId"`
+}
+
+type CancelExitPermitResponseObject interface {
+	VisitCancelExitPermitResponse(w http.ResponseWriter) error
+}
+
+type CancelExitPermit200JSONResponse ExitPermitDetail
+
+func (response CancelExitPermit200JSONResponse) VisitCancelExitPermitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelExitPermit401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CancelExitPermit401JSONResponse) VisitCancelExitPermitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelExitPermit403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CancelExitPermit403JSONResponse) VisitCancelExitPermitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelExitPermit404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response CancelExitPermit404JSONResponse) VisitCancelExitPermitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelExitPermit409JSONResponse struct{ ConflictJSONResponse }
+
+func (response CancelExitPermit409JSONResponse) VisitCancelExitPermitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ScanExitPermitGateRequestObject struct {
+	InstanceId openapi_types.UUID `json:"instanceId"`
+	Body       *ScanExitPermitGateJSONRequestBody
+}
+
+type ScanExitPermitGateResponseObject interface {
+	VisitScanExitPermitGateResponse(w http.ResponseWriter) error
+}
+
+type ScanExitPermitGate200JSONResponse ExitPermitDetail
+
+func (response ScanExitPermitGate200JSONResponse) VisitScanExitPermitGateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ScanExitPermitGate401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ScanExitPermitGate401JSONResponse) VisitScanExitPermitGateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ScanExitPermitGate403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ScanExitPermitGate403JSONResponse) VisitScanExitPermitGateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ScanExitPermitGate404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ScanExitPermitGate404JSONResponse) VisitScanExitPermitGateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ScanExitPermitGate409JSONResponse struct{ ConflictJSONResponse }
+
+func (response ScanExitPermitGate409JSONResponse) VisitScanExitPermitGateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ScanExitPermitGate410JSONResponse struct{ TokenGoneJSONResponse }
+
+func (response ScanExitPermitGate410JSONResponse) VisitScanExitPermitGateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(410)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type IssueExitPermitGateTokenRequestObject struct {
+	InstanceId openapi_types.UUID `json:"instanceId"`
+}
+
+type IssueExitPermitGateTokenResponseObject interface {
+	VisitIssueExitPermitGateTokenResponse(w http.ResponseWriter) error
+}
+
+type IssueExitPermitGateToken201JSONResponse IssuedScanToken
+
+func (response IssueExitPermitGateToken201JSONResponse) VisitIssueExitPermitGateTokenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type IssueExitPermitGateToken401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response IssueExitPermitGateToken401JSONResponse) VisitIssueExitPermitGateTokenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type IssueExitPermitGateToken403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response IssueExitPermitGateToken403JSONResponse) VisitIssueExitPermitGateTokenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type IssueExitPermitGateToken404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response IssueExitPermitGateToken404JSONResponse) VisitIssueExitPermitGateTokenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type IssueExitPermitGateToken409JSONResponse struct{ ConflictJSONResponse }
+
+func (response IssueExitPermitGateToken409JSONResponse) VisitIssueExitPermitGateTokenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ScanExitPermitStageRequestObject struct {
+	InstanceId openapi_types.UUID `json:"instanceId"`
+	Body       *ScanExitPermitStageJSONRequestBody
+}
+
+type ScanExitPermitStageResponseObject interface {
+	VisitScanExitPermitStageResponse(w http.ResponseWriter) error
+}
+
+type ScanExitPermitStage200JSONResponse ExitPermitDetail
+
+func (response ScanExitPermitStage200JSONResponse) VisitScanExitPermitStageResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ScanExitPermitStage401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ScanExitPermitStage401JSONResponse) VisitScanExitPermitStageResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ScanExitPermitStage403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ScanExitPermitStage403JSONResponse) VisitScanExitPermitStageResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ScanExitPermitStage404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ScanExitPermitStage404JSONResponse) VisitScanExitPermitStageResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ScanExitPermitStage409JSONResponse struct{ ConflictJSONResponse }
+
+func (response ScanExitPermitStage409JSONResponse) VisitScanExitPermitStageResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ScanExitPermitStage410JSONResponse struct{ TokenGoneJSONResponse }
+
+func (response ScanExitPermitStage410JSONResponse) VisitScanExitPermitStageResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(410)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCurrentLateArrivalRequestObject struct {
+}
+
+type GetCurrentLateArrivalResponseObject interface {
+	VisitGetCurrentLateArrivalResponse(w http.ResponseWriter) error
+}
+
+type GetCurrentLateArrival200JSONResponse LateArrivalDetail
+
+func (response GetCurrentLateArrival200JSONResponse) VisitGetCurrentLateArrivalResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCurrentLateArrival401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetCurrentLateArrival401JSONResponse) VisitGetCurrentLateArrivalResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCurrentLateArrival404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetCurrentLateArrival404JSONResponse) VisitGetCurrentLateArrivalResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OpenLateArrivalRequestObject struct {
+	Body *OpenLateArrivalJSONRequestBody
+}
+
+type OpenLateArrivalResponseObject interface {
+	VisitOpenLateArrivalResponse(w http.ResponseWriter) error
+}
+
+type OpenLateArrival201JSONResponse LateArrivalDetail
+
+func (response OpenLateArrival201JSONResponse) VisitOpenLateArrivalResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OpenLateArrival401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response OpenLateArrival401JSONResponse) VisitOpenLateArrivalResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OpenLateArrival409JSONResponse struct{ ConflictJSONResponse }
+
+func (response OpenLateArrival409JSONResponse) VisitOpenLateArrivalResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OpenLateArrival410JSONResponse struct{ TokenGoneJSONResponse }
+
+func (response OpenLateArrival410JSONResponse) VisitOpenLateArrivalResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(410)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListLateArrivalsForReviewRequestObject struct {
+}
+
+type ListLateArrivalsForReviewResponseObject interface {
+	VisitListLateArrivalsForReviewResponse(w http.ResponseWriter) error
+}
+
+type ListLateArrivalsForReview200JSONResponse struct {
+	Data []LateArrivalSummary `json:"data"`
+}
+
+func (response ListLateArrivalsForReview200JSONResponse) VisitListLateArrivalsForReviewResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListLateArrivalsForReview401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListLateArrivalsForReview401JSONResponse) VisitListLateArrivalsForReviewResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListLateArrivalsForReview403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListLateArrivalsForReview403JSONResponse) VisitListLateArrivalsForReviewResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLateArrivalRequestObject struct {
+	InstanceId openapi_types.UUID `json:"instanceId"`
+}
+
+type GetLateArrivalResponseObject interface {
+	VisitGetLateArrivalResponse(w http.ResponseWriter) error
+}
+
+type GetLateArrival200JSONResponse LateArrivalDetail
+
+func (response GetLateArrival200JSONResponse) VisitGetLateArrivalResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLateArrival401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetLateArrival401JSONResponse) VisitGetLateArrivalResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLateArrival404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetLateArrival404JSONResponse) VisitGetLateArrivalResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReviewLateArrivalRequestObject struct {
+	InstanceId openapi_types.UUID `json:"instanceId"`
+	Body       *ReviewLateArrivalJSONRequestBody
+}
+
+type ReviewLateArrivalResponseObject interface {
+	VisitReviewLateArrivalResponse(w http.ResponseWriter) error
+}
+
+type ReviewLateArrival200JSONResponse LateArrivalDetail
+
+func (response ReviewLateArrival200JSONResponse) VisitReviewLateArrivalResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReviewLateArrival401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ReviewLateArrival401JSONResponse) VisitReviewLateArrivalResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReviewLateArrival403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ReviewLateArrival403JSONResponse) VisitReviewLateArrivalResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReviewLateArrival404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ReviewLateArrival404JSONResponse) VisitReviewLateArrivalResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReviewLateArrival409JSONResponse struct{ ConflictJSONResponse }
+
+func (response ReviewLateArrival409JSONResponse) VisitReviewLateArrivalResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ScanLateArrivalStageRequestObject struct {
+	InstanceId openapi_types.UUID `json:"instanceId"`
+	Body       *ScanLateArrivalStageJSONRequestBody
+}
+
+type ScanLateArrivalStageResponseObject interface {
+	VisitScanLateArrivalStageResponse(w http.ResponseWriter) error
+}
+
+type ScanLateArrivalStage200JSONResponse LateArrivalDetail
+
+func (response ScanLateArrivalStage200JSONResponse) VisitScanLateArrivalStageResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ScanLateArrivalStage401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ScanLateArrivalStage401JSONResponse) VisitScanLateArrivalStageResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ScanLateArrivalStage403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ScanLateArrivalStage403JSONResponse) VisitScanLateArrivalStageResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ScanLateArrivalStage404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ScanLateArrivalStage404JSONResponse) VisitScanLateArrivalStageResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ScanLateArrivalStage409JSONResponse struct{ ConflictJSONResponse }
+
+func (response ScanLateArrivalStage409JSONResponse) VisitScanLateArrivalStageResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ScanLateArrivalStage410JSONResponse struct{ TokenGoneJSONResponse }
+
+func (response ScanLateArrivalStage410JSONResponse) VisitScanLateArrivalStageResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(410)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListMyLeaveRequestsRequestObject struct {
+	Params ListMyLeaveRequestsParams
+}
+
+type ListMyLeaveRequestsResponseObject interface {
+	VisitListMyLeaveRequestsResponse(w http.ResponseWriter) error
+}
+
+type ListMyLeaveRequests200JSONResponse struct {
+	Data []LeaveRequestSummary `json:"data"`
+}
+
+func (response ListMyLeaveRequests200JSONResponse) VisitListMyLeaveRequestsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListMyLeaveRequests401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListMyLeaveRequests401JSONResponse) VisitListMyLeaveRequestsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitLeaveRequestRequestObject struct {
+	Body *SubmitLeaveRequestJSONRequestBody
+}
+
+type SubmitLeaveRequestResponseObject interface {
+	VisitSubmitLeaveRequestResponse(w http.ResponseWriter) error
+}
+
+type SubmitLeaveRequest201JSONResponse LeaveRequestDetail
+
+func (response SubmitLeaveRequest201JSONResponse) VisitSubmitLeaveRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitLeaveRequest400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response SubmitLeaveRequest400JSONResponse) VisitSubmitLeaveRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitLeaveRequest401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response SubmitLeaveRequest401JSONResponse) VisitSubmitLeaveRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitLeaveRequest403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response SubmitLeaveRequest403JSONResponse) VisitSubmitLeaveRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitLeaveRequest409JSONResponse struct{ ConflictJSONResponse }
+
+func (response SubmitLeaveRequest409JSONResponse) VisitSubmitLeaveRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListLeaveRequestsForReviewRequestObject struct {
+	Params ListLeaveRequestsForReviewParams
+}
+
+type ListLeaveRequestsForReviewResponseObject interface {
+	VisitListLeaveRequestsForReviewResponse(w http.ResponseWriter) error
+}
+
+type ListLeaveRequestsForReview200JSONResponse struct {
+	Data []LeaveRequestSummary `json:"data"`
+}
+
+func (response ListLeaveRequestsForReview200JSONResponse) VisitListLeaveRequestsForReviewResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListLeaveRequestsForReview401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListLeaveRequestsForReview401JSONResponse) VisitListLeaveRequestsForReviewResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListLeaveRequestsForReview403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListLeaveRequestsForReview403JSONResponse) VisitListLeaveRequestsForReviewResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLeaveRequestRequestObject struct {
+	InstanceId openapi_types.UUID `json:"instanceId"`
+}
+
+type GetLeaveRequestResponseObject interface {
+	VisitGetLeaveRequestResponse(w http.ResponseWriter) error
+}
+
+type GetLeaveRequest200JSONResponse LeaveRequestDetail
+
+func (response GetLeaveRequest200JSONResponse) VisitGetLeaveRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLeaveRequest401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetLeaveRequest401JSONResponse) VisitGetLeaveRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLeaveRequest404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetLeaveRequest404JSONResponse) VisitGetLeaveRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLeaveDocumentUrlRequestObject struct {
+	InstanceId openapi_types.UUID            `json:"instanceId"`
+	Kind       GetLeaveDocumentUrlParamsKind `json:"kind"`
+}
+
+type GetLeaveDocumentUrlResponseObject interface {
+	VisitGetLeaveDocumentUrlResponse(w http.ResponseWriter) error
+}
+
+type GetLeaveDocumentUrl200JSONResponse struct {
+	ExpiresInSeconds int    `json:"expires_in_seconds"`
+	Url              string `json:"url"`
+}
+
+func (response GetLeaveDocumentUrl200JSONResponse) VisitGetLeaveDocumentUrlResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLeaveDocumentUrl401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetLeaveDocumentUrl401JSONResponse) VisitGetLeaveDocumentUrlResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLeaveDocumentUrl403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetLeaveDocumentUrl403JSONResponse) VisitGetLeaveDocumentUrlResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLeaveDocumentUrl404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetLeaveDocumentUrl404JSONResponse) VisitGetLeaveDocumentUrlResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConfirmLeaveEvidenceRequestObject struct {
+	InstanceId openapi_types.UUID `json:"instanceId"`
+	Body       *ConfirmLeaveEvidenceJSONRequestBody
+}
+
+type ConfirmLeaveEvidenceResponseObject interface {
+	VisitConfirmLeaveEvidenceResponse(w http.ResponseWriter) error
+}
+
+type ConfirmLeaveEvidence204Response struct {
+}
+
+func (response ConfirmLeaveEvidence204Response) VisitConfirmLeaveEvidenceResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type ConfirmLeaveEvidence400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ConfirmLeaveEvidence400JSONResponse) VisitConfirmLeaveEvidenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConfirmLeaveEvidence401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ConfirmLeaveEvidence401JSONResponse) VisitConfirmLeaveEvidenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConfirmLeaveEvidence403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ConfirmLeaveEvidence403JSONResponse) VisitConfirmLeaveEvidenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConfirmLeaveEvidence404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ConfirmLeaveEvidence404JSONResponse) VisitConfirmLeaveEvidenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RequestLeaveEvidenceUploadRequestObject struct {
+	InstanceId openapi_types.UUID `json:"instanceId"`
+}
+
+type RequestLeaveEvidenceUploadResponseObject interface {
+	VisitRequestLeaveEvidenceUploadResponse(w http.ResponseWriter) error
+}
+
+type RequestLeaveEvidenceUpload200JSONResponse struct {
+	ExpiresAt time.Time `json:"expires_at"`
+	ObjectKey string    `json:"object_key"`
+	UploadUrl string    `json:"upload_url"`
+}
+
+func (response RequestLeaveEvidenceUpload200JSONResponse) VisitRequestLeaveEvidenceUploadResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RequestLeaveEvidenceUpload401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response RequestLeaveEvidenceUpload401JSONResponse) VisitRequestLeaveEvidenceUploadResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RequestLeaveEvidenceUpload403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response RequestLeaveEvidenceUpload403JSONResponse) VisitRequestLeaveEvidenceUploadResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RequestLeaveEvidenceUpload404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response RequestLeaveEvidenceUpload404JSONResponse) VisitRequestLeaveEvidenceUploadResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type IssueLeaveLetterRequestObject struct {
+	InstanceId openapi_types.UUID `json:"instanceId"`
+}
+
+type IssueLeaveLetterResponseObject interface {
+	VisitIssueLeaveLetterResponse(w http.ResponseWriter) error
+}
+
+type IssueLeaveLetter200JSONResponse LeaveRequestDetail
+
+func (response IssueLeaveLetter200JSONResponse) VisitIssueLeaveLetterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type IssueLeaveLetter401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response IssueLeaveLetter401JSONResponse) VisitIssueLeaveLetterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type IssueLeaveLetter403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response IssueLeaveLetter403JSONResponse) VisitIssueLeaveLetterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type IssueLeaveLetter404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response IssueLeaveLetter404JSONResponse) VisitIssueLeaveLetterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type IssueLeaveLetter409JSONResponse struct{ ConflictJSONResponse }
+
+func (response IssueLeaveLetter409JSONResponse) VisitIssueLeaveLetterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReviewLeaveRequestRequestObject struct {
+	InstanceId openapi_types.UUID `json:"instanceId"`
+	Body       *ReviewLeaveRequestJSONRequestBody
+}
+
+type ReviewLeaveRequestResponseObject interface {
+	VisitReviewLeaveRequestResponse(w http.ResponseWriter) error
+}
+
+type ReviewLeaveRequest200JSONResponse LeaveRequestDetail
+
+func (response ReviewLeaveRequest200JSONResponse) VisitReviewLeaveRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReviewLeaveRequest401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ReviewLeaveRequest401JSONResponse) VisitReviewLeaveRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReviewLeaveRequest403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ReviewLeaveRequest403JSONResponse) VisitReviewLeaveRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReviewLeaveRequest404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ReviewLeaveRequest404JSONResponse) VisitReviewLeaveRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReviewLeaveRequest409JSONResponse struct{ ConflictJSONResponse }
+
+func (response ReviewLeaveRequest409JSONResponse) VisitReviewLeaveRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetMeRequestObject struct {
 }
 
@@ -1192,6 +4703,70 @@ func (response ChangePassword401JSONResponse) VisitChangePasswordResponse(w http
 	return err
 }
 
+type IssueScanTokenRequestObject struct {
+	Body *IssueScanTokenJSONRequestBody
+}
+
+type IssueScanTokenResponseObject interface {
+	VisitIssueScanTokenResponse(w http.ResponseWriter) error
+}
+
+type IssueScanToken201JSONResponse IssuedScanToken
+
+func (response IssueScanToken201JSONResponse) VisitIssueScanTokenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type IssueScanToken400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response IssueScanToken400JSONResponse) VisitIssueScanTokenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type IssueScanToken401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response IssueScanToken401JSONResponse) VisitIssueScanTokenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type IssueScanToken403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response IssueScanToken403JSONResponse) VisitIssueScanTokenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetTenantBrandingRequestObject struct {
 }
 
@@ -1265,6 +4840,122 @@ func (response LookupTenants400JSONResponse) VisitLookupTenantsResponse(w http.R
 	return err
 }
 
+type ListWorkflowDefinitionsRequestObject struct {
+}
+
+type ListWorkflowDefinitionsResponseObject interface {
+	VisitListWorkflowDefinitionsResponse(w http.ResponseWriter) error
+}
+
+type ListWorkflowDefinitions200JSONResponse struct {
+	Data []WorkflowDefinition `json:"data"`
+}
+
+func (response ListWorkflowDefinitions200JSONResponse) VisitListWorkflowDefinitionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListWorkflowDefinitions401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListWorkflowDefinitions401JSONResponse) VisitListWorkflowDefinitionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListWorkflowDefinitions403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListWorkflowDefinitions403JSONResponse) VisitListWorkflowDefinitionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReplaceWorkflowDefinitionRequestObject struct {
+	Kind WorkflowKind `json:"kind"`
+	Body *ReplaceWorkflowDefinitionJSONRequestBody
+}
+
+type ReplaceWorkflowDefinitionResponseObject interface {
+	VisitReplaceWorkflowDefinitionResponse(w http.ResponseWriter) error
+}
+
+type ReplaceWorkflowDefinition200JSONResponse WorkflowDefinition
+
+func (response ReplaceWorkflowDefinition200JSONResponse) VisitReplaceWorkflowDefinitionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReplaceWorkflowDefinition400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ReplaceWorkflowDefinition400JSONResponse) VisitReplaceWorkflowDefinitionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReplaceWorkflowDefinition401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ReplaceWorkflowDefinition401JSONResponse) VisitReplaceWorkflowDefinitionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReplaceWorkflowDefinition403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ReplaceWorkflowDefinition403JSONResponse) VisitReplaceWorkflowDefinitionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 	// GetHealth Liveness and dependency status
@@ -1285,18 +4976,111 @@ type StrictServerInterface interface {
 	// RevokeSession Revoke one of the current user's sessions
 	// (DELETE /v1/auth/sessions/{sessionId})
 	RevokeSession(ctx context.Context, request RevokeSessionRequestObject) (RevokeSessionResponseObject, error)
+	// ScanClassroomEntry Student scans a teacher's classroom-entry token
+	// (POST /v1/classroom-entry/scan)
+	ScanClassroomEntry(ctx context.Context, request ScanClassroomEntryRequestObject) (ScanClassroomEntryResponseObject, error)
+	// ListDocumentTemplates Document templates of the tenant
+	// (GET /v1/documents/templates)
+	ListDocumentTemplates(ctx context.Context, request ListDocumentTemplatesRequestObject) (ListDocumentTemplatesResponseObject, error)
+	// CreateDocumentTemplate Create a document template
+	// (POST /v1/documents/templates)
+	CreateDocumentTemplate(ctx context.Context, request CreateDocumentTemplateRequestObject) (CreateDocumentTemplateResponseObject, error)
+	// UpdateDocumentTemplate Update a template body
+	// (PUT /v1/documents/templates/{templateId})
+	UpdateDocumentTemplate(ctx context.Context, request UpdateDocumentTemplateRequestObject) (UpdateDocumentTemplateResponseObject, error)
+	// SetDefaultDocumentTemplate Make this template the default of its kind
+	// (POST /v1/documents/templates/{templateId}/set-default)
+	SetDefaultDocumentTemplate(ctx context.Context, request SetDefaultDocumentTemplateRequestObject) (SetDefaultDocumentTemplateResponseObject, error)
+	// VerifyDocument Public verification of an issued document by its printed code
+	// (GET /v1/documents/verify/{code})
+	VerifyDocument(ctx context.Context, request VerifyDocumentRequestObject) (VerifyDocumentResponseObject, error)
+	// ListMyExitPermits Exit permits of the current student
+	// (GET /v1/exit-permits)
+	ListMyExitPermits(ctx context.Context, request ListMyExitPermitsRequestObject) (ListMyExitPermitsResponseObject, error)
+	// CreateExitPermit Student requests an exit permit for a period range today
+	// (POST /v1/exit-permits)
+	CreateExitPermit(ctx context.Context, request CreateExitPermitRequestObject) (CreateExitPermitResponseObject, error)
+	// GetExitPermit Exit permit detail with stage history
+	// (GET /v1/exit-permits/{instanceId})
+	GetExitPermit(ctx context.Context, request GetExitPermitRequestObject) (GetExitPermitResponseObject, error)
+	// CancelExitPermit Student cancels an in-progress exit permit
+	// (POST /v1/exit-permits/{instanceId}/cancel)
+	CancelExitPermit(ctx context.Context, request CancelExitPermitRequestObject) (CancelExitPermitResponseObject, error)
+	// ScanExitPermitGate Security scans the gate QR; the permit is completed
+	// (POST /v1/exit-permits/{instanceId}/gate-scan)
+	ScanExitPermitGate(ctx context.Context, request ScanExitPermitGateRequestObject) (ScanExitPermitGateResponseObject, error)
+	// IssueExitPermitGateToken Student generates the gate QR after the permit is approved
+	// (POST /v1/exit-permits/{instanceId}/gate-token)
+	IssueExitPermitGateToken(ctx context.Context, request IssueExitPermitGateTokenRequestObject) (IssueExitPermitGateTokenResponseObject, error)
+	// ScanExitPermitStage Student scans the current approver's token to advance a stage
+	// (POST /v1/exit-permits/{instanceId}/scan)
+	ScanExitPermitStage(ctx context.Context, request ScanExitPermitStageRequestObject) (ScanExitPermitStageResponseObject, error)
+	// GetCurrentLateArrival The current student's in-progress late arrival, if any
+	// (GET /v1/late-arrivals/current)
+	GetCurrentLateArrival(ctx context.Context, request GetCurrentLateArrivalRequestObject) (GetCurrentLateArrivalResponseObject, error)
+	// OpenLateArrival Late student scans the duty teacher's token to open the flow
+	// (POST /v1/late-arrivals/open)
+	OpenLateArrival(ctx context.Context, request OpenLateArrivalRequestObject) (OpenLateArrivalResponseObject, error)
+	// ListLateArrivalsForReview Open late arrivals awaiting the duty teacher's review
+	// (GET /v1/late-arrivals/review-queue)
+	ListLateArrivalsForReview(ctx context.Context, request ListLateArrivalsForReviewRequestObject) (ListLateArrivalsForReviewResponseObject, error)
+	// GetLateArrival Late arrival detail with stage history
+	// (GET /v1/late-arrivals/{instanceId})
+	GetLateArrival(ctx context.Context, request GetLateArrivalRequestObject) (GetLateArrivalResponseObject, error)
+	// ReviewLateArrival Duty teacher records the review and moves the flow to leadership
+	// (POST /v1/late-arrivals/{instanceId}/review)
+	ReviewLateArrival(ctx context.Context, request ReviewLateArrivalRequestObject) (ReviewLateArrivalResponseObject, error)
+	// ScanLateArrivalStage Student scans the next approver's token
+	// (POST /v1/late-arrivals/{instanceId}/scan)
+	ScanLateArrivalStage(ctx context.Context, request ScanLateArrivalStageRequestObject) (ScanLateArrivalStageResponseObject, error)
+	// ListMyLeaveRequests Leave requests of the current student
+	// (GET /v1/leave-requests)
+	ListMyLeaveRequests(ctx context.Context, request ListMyLeaveRequestsRequestObject) (ListMyLeaveRequestsResponseObject, error)
+	// SubmitLeaveRequest Student submits a planned leave request
+	// (POST /v1/leave-requests)
+	SubmitLeaveRequest(ctx context.Context, request SubmitLeaveRequestRequestObject) (SubmitLeaveRequestResponseObject, error)
+	// ListLeaveRequestsForReview Leave requests awaiting review (optionally for one class)
+	// (GET /v1/leave-requests/review-queue)
+	ListLeaveRequestsForReview(ctx context.Context, request ListLeaveRequestsForReviewRequestObject) (ListLeaveRequestsForReviewResponseObject, error)
+	// GetLeaveRequest Leave request detail with stage history
+	// (GET /v1/leave-requests/{instanceId})
+	GetLeaveRequest(ctx context.Context, request GetLeaveRequestRequestObject) (GetLeaveRequestResponseObject, error)
+	// GetLeaveDocumentUrl Short-lived signed URL for the evidence or the issued letter
+	// (GET /v1/leave-requests/{instanceId}/documents/{kind})
+	GetLeaveDocumentUrl(ctx context.Context, request GetLeaveDocumentUrlRequestObject) (GetLeaveDocumentUrlResponseObject, error)
+	// ConfirmLeaveEvidence Validate and attach the uploaded evidence
+	// (POST /v1/leave-requests/{instanceId}/evidence/confirm)
+	ConfirmLeaveEvidence(ctx context.Context, request ConfirmLeaveEvidenceRequestObject) (ConfirmLeaveEvidenceResponseObject, error)
+	// RequestLeaveEvidenceUpload Presigned upload for the evidence image (JPEG or PNG, max 6 MB)
+	// (POST /v1/leave-requests/{instanceId}/evidence/upload-url)
+	RequestLeaveEvidenceUpload(ctx context.Context, request RequestLeaveEvidenceUploadRequestObject) (RequestLeaveEvidenceUploadResponseObject, error)
+	// IssueLeaveLetter Counselor issues the numbered letter and syncs attendance
+	// (POST /v1/leave-requests/{instanceId}/issue)
+	IssueLeaveLetter(ctx context.Context, request IssueLeaveLetterRequestObject) (IssueLeaveLetterResponseObject, error)
+	// ReviewLeaveRequest Homeroom teacher approves or rejects
+	// (POST /v1/leave-requests/{instanceId}/review)
+	ReviewLeaveRequest(ctx context.Context, request ReviewLeaveRequestRequestObject) (ReviewLeaveRequestResponseObject, error)
 	// GetMe Current user, roles, effective permissions, tenant
 	// (GET /v1/me)
 	GetMe(ctx context.Context, request GetMeRequestObject) (GetMeResponseObject, error)
 	// ChangePassword Change own password; revokes other sessions
 	// (PUT /v1/me/password)
 	ChangePassword(ctx context.Context, request ChangePasswordRequestObject) (ChangePasswordResponseObject, error)
+	// IssueScanToken Mint a short-lived single-use scan token for a purpose (shown as a QR code)
+	// (POST /v1/scan-tokens)
+	IssueScanToken(ctx context.Context, request IssueScanTokenRequestObject) (IssueScanTokenResponseObject, error)
 	// GetTenantBranding Public branding for the resolved tenant (login screen, manifest)
 	// (GET /v1/tenant/branding)
 	GetTenantBranding(ctx context.Context, request GetTenantBrandingRequestObject) (GetTenantBrandingResponseObject, error)
 	// LookupTenants Search schools by name or slug (mobile school picker). Returns nothing in single-tenant mode except the single tenant.
 	// (GET /v1/tenants/lookup)
 	LookupTenants(ctx context.Context, request LookupTenantsRequestObject) (LookupTenantsResponseObject, error)
+	// ListWorkflowDefinitions Workflow definitions (all versions) of the tenant
+	// (GET /v1/workflows/definitions)
+	ListWorkflowDefinitions(ctx context.Context, request ListWorkflowDefinitionsRequestObject) (ListWorkflowDefinitionsResponseObject, error)
+	// ReplaceWorkflowDefinition Publish a new version of a workflow definition
+	// (PUT /v1/workflows/definitions/{kind})
+	ReplaceWorkflowDefinition(ctx context.Context, request ReplaceWorkflowDefinitionRequestObject) (ReplaceWorkflowDefinitionResponseObject, error)
 }
 
 type StrictHandlerFunc func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error)
@@ -1503,6 +5287,804 @@ func (sh *strictHandler) RevokeSession(w http.ResponseWriter, r *http.Request, s
 	}
 }
 
+// ScanClassroomEntry operation middleware
+func (sh *strictHandler) ScanClassroomEntry(w http.ResponseWriter, r *http.Request) {
+	var request ScanClassroomEntryRequestObject
+
+	var body ScanClassroomEntryJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ScanClassroomEntry(ctx, request.(ScanClassroomEntryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ScanClassroomEntry")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ScanClassroomEntryResponseObject); ok {
+		if err := validResponse.VisitScanClassroomEntryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListDocumentTemplates operation middleware
+func (sh *strictHandler) ListDocumentTemplates(w http.ResponseWriter, r *http.Request) {
+	var request ListDocumentTemplatesRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListDocumentTemplates(ctx, request.(ListDocumentTemplatesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListDocumentTemplates")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListDocumentTemplatesResponseObject); ok {
+		if err := validResponse.VisitListDocumentTemplatesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateDocumentTemplate operation middleware
+func (sh *strictHandler) CreateDocumentTemplate(w http.ResponseWriter, r *http.Request) {
+	var request CreateDocumentTemplateRequestObject
+
+	var body CreateDocumentTemplateJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateDocumentTemplate(ctx, request.(CreateDocumentTemplateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateDocumentTemplate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateDocumentTemplateResponseObject); ok {
+		if err := validResponse.VisitCreateDocumentTemplateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateDocumentTemplate operation middleware
+func (sh *strictHandler) UpdateDocumentTemplate(w http.ResponseWriter, r *http.Request, templateId openapi_types.UUID) {
+	var request UpdateDocumentTemplateRequestObject
+
+	request.TemplateId = templateId
+
+	var body UpdateDocumentTemplateJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateDocumentTemplate(ctx, request.(UpdateDocumentTemplateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateDocumentTemplate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateDocumentTemplateResponseObject); ok {
+		if err := validResponse.VisitUpdateDocumentTemplateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SetDefaultDocumentTemplate operation middleware
+func (sh *strictHandler) SetDefaultDocumentTemplate(w http.ResponseWriter, r *http.Request, templateId openapi_types.UUID) {
+	var request SetDefaultDocumentTemplateRequestObject
+
+	request.TemplateId = templateId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SetDefaultDocumentTemplate(ctx, request.(SetDefaultDocumentTemplateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SetDefaultDocumentTemplate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SetDefaultDocumentTemplateResponseObject); ok {
+		if err := validResponse.VisitSetDefaultDocumentTemplateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// VerifyDocument operation middleware
+func (sh *strictHandler) VerifyDocument(w http.ResponseWriter, r *http.Request, code string, params VerifyDocumentParams) {
+	var request VerifyDocumentRequestObject
+
+	request.Code = code
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.VerifyDocument(ctx, request.(VerifyDocumentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "VerifyDocument")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(VerifyDocumentResponseObject); ok {
+		if err := validResponse.VisitVerifyDocumentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListMyExitPermits operation middleware
+func (sh *strictHandler) ListMyExitPermits(w http.ResponseWriter, r *http.Request, params ListMyExitPermitsParams) {
+	var request ListMyExitPermitsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListMyExitPermits(ctx, request.(ListMyExitPermitsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListMyExitPermits")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListMyExitPermitsResponseObject); ok {
+		if err := validResponse.VisitListMyExitPermitsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateExitPermit operation middleware
+func (sh *strictHandler) CreateExitPermit(w http.ResponseWriter, r *http.Request) {
+	var request CreateExitPermitRequestObject
+
+	var body CreateExitPermitJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateExitPermit(ctx, request.(CreateExitPermitRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateExitPermit")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateExitPermitResponseObject); ok {
+		if err := validResponse.VisitCreateExitPermitResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetExitPermit operation middleware
+func (sh *strictHandler) GetExitPermit(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID) {
+	var request GetExitPermitRequestObject
+
+	request.InstanceId = instanceId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetExitPermit(ctx, request.(GetExitPermitRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetExitPermit")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetExitPermitResponseObject); ok {
+		if err := validResponse.VisitGetExitPermitResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CancelExitPermit operation middleware
+func (sh *strictHandler) CancelExitPermit(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID) {
+	var request CancelExitPermitRequestObject
+
+	request.InstanceId = instanceId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CancelExitPermit(ctx, request.(CancelExitPermitRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CancelExitPermit")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CancelExitPermitResponseObject); ok {
+		if err := validResponse.VisitCancelExitPermitResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ScanExitPermitGate operation middleware
+func (sh *strictHandler) ScanExitPermitGate(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID) {
+	var request ScanExitPermitGateRequestObject
+
+	request.InstanceId = instanceId
+
+	var body ScanExitPermitGateJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ScanExitPermitGate(ctx, request.(ScanExitPermitGateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ScanExitPermitGate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ScanExitPermitGateResponseObject); ok {
+		if err := validResponse.VisitScanExitPermitGateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// IssueExitPermitGateToken operation middleware
+func (sh *strictHandler) IssueExitPermitGateToken(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID) {
+	var request IssueExitPermitGateTokenRequestObject
+
+	request.InstanceId = instanceId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.IssueExitPermitGateToken(ctx, request.(IssueExitPermitGateTokenRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "IssueExitPermitGateToken")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(IssueExitPermitGateTokenResponseObject); ok {
+		if err := validResponse.VisitIssueExitPermitGateTokenResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ScanExitPermitStage operation middleware
+func (sh *strictHandler) ScanExitPermitStage(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID) {
+	var request ScanExitPermitStageRequestObject
+
+	request.InstanceId = instanceId
+
+	var body ScanExitPermitStageJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ScanExitPermitStage(ctx, request.(ScanExitPermitStageRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ScanExitPermitStage")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ScanExitPermitStageResponseObject); ok {
+		if err := validResponse.VisitScanExitPermitStageResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetCurrentLateArrival operation middleware
+func (sh *strictHandler) GetCurrentLateArrival(w http.ResponseWriter, r *http.Request) {
+	var request GetCurrentLateArrivalRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetCurrentLateArrival(ctx, request.(GetCurrentLateArrivalRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetCurrentLateArrival")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetCurrentLateArrivalResponseObject); ok {
+		if err := validResponse.VisitGetCurrentLateArrivalResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// OpenLateArrival operation middleware
+func (sh *strictHandler) OpenLateArrival(w http.ResponseWriter, r *http.Request) {
+	var request OpenLateArrivalRequestObject
+
+	var body OpenLateArrivalJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.OpenLateArrival(ctx, request.(OpenLateArrivalRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "OpenLateArrival")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(OpenLateArrivalResponseObject); ok {
+		if err := validResponse.VisitOpenLateArrivalResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListLateArrivalsForReview operation middleware
+func (sh *strictHandler) ListLateArrivalsForReview(w http.ResponseWriter, r *http.Request) {
+	var request ListLateArrivalsForReviewRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListLateArrivalsForReview(ctx, request.(ListLateArrivalsForReviewRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListLateArrivalsForReview")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListLateArrivalsForReviewResponseObject); ok {
+		if err := validResponse.VisitListLateArrivalsForReviewResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetLateArrival operation middleware
+func (sh *strictHandler) GetLateArrival(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID) {
+	var request GetLateArrivalRequestObject
+
+	request.InstanceId = instanceId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetLateArrival(ctx, request.(GetLateArrivalRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetLateArrival")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetLateArrivalResponseObject); ok {
+		if err := validResponse.VisitGetLateArrivalResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ReviewLateArrival operation middleware
+func (sh *strictHandler) ReviewLateArrival(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID) {
+	var request ReviewLateArrivalRequestObject
+
+	request.InstanceId = instanceId
+
+	var body ReviewLateArrivalJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ReviewLateArrival(ctx, request.(ReviewLateArrivalRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ReviewLateArrival")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ReviewLateArrivalResponseObject); ok {
+		if err := validResponse.VisitReviewLateArrivalResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ScanLateArrivalStage operation middleware
+func (sh *strictHandler) ScanLateArrivalStage(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID) {
+	var request ScanLateArrivalStageRequestObject
+
+	request.InstanceId = instanceId
+
+	var body ScanLateArrivalStageJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ScanLateArrivalStage(ctx, request.(ScanLateArrivalStageRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ScanLateArrivalStage")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ScanLateArrivalStageResponseObject); ok {
+		if err := validResponse.VisitScanLateArrivalStageResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListMyLeaveRequests operation middleware
+func (sh *strictHandler) ListMyLeaveRequests(w http.ResponseWriter, r *http.Request, params ListMyLeaveRequestsParams) {
+	var request ListMyLeaveRequestsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListMyLeaveRequests(ctx, request.(ListMyLeaveRequestsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListMyLeaveRequests")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListMyLeaveRequestsResponseObject); ok {
+		if err := validResponse.VisitListMyLeaveRequestsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SubmitLeaveRequest operation middleware
+func (sh *strictHandler) SubmitLeaveRequest(w http.ResponseWriter, r *http.Request) {
+	var request SubmitLeaveRequestRequestObject
+
+	var body SubmitLeaveRequestJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SubmitLeaveRequest(ctx, request.(SubmitLeaveRequestRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SubmitLeaveRequest")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SubmitLeaveRequestResponseObject); ok {
+		if err := validResponse.VisitSubmitLeaveRequestResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListLeaveRequestsForReview operation middleware
+func (sh *strictHandler) ListLeaveRequestsForReview(w http.ResponseWriter, r *http.Request, params ListLeaveRequestsForReviewParams) {
+	var request ListLeaveRequestsForReviewRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListLeaveRequestsForReview(ctx, request.(ListLeaveRequestsForReviewRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListLeaveRequestsForReview")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListLeaveRequestsForReviewResponseObject); ok {
+		if err := validResponse.VisitListLeaveRequestsForReviewResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetLeaveRequest operation middleware
+func (sh *strictHandler) GetLeaveRequest(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID) {
+	var request GetLeaveRequestRequestObject
+
+	request.InstanceId = instanceId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetLeaveRequest(ctx, request.(GetLeaveRequestRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetLeaveRequest")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetLeaveRequestResponseObject); ok {
+		if err := validResponse.VisitGetLeaveRequestResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetLeaveDocumentUrl operation middleware
+func (sh *strictHandler) GetLeaveDocumentUrl(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID, kind GetLeaveDocumentUrlParamsKind) {
+	var request GetLeaveDocumentUrlRequestObject
+
+	request.InstanceId = instanceId
+	request.Kind = kind
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetLeaveDocumentUrl(ctx, request.(GetLeaveDocumentUrlRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetLeaveDocumentUrl")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetLeaveDocumentUrlResponseObject); ok {
+		if err := validResponse.VisitGetLeaveDocumentUrlResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ConfirmLeaveEvidence operation middleware
+func (sh *strictHandler) ConfirmLeaveEvidence(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID) {
+	var request ConfirmLeaveEvidenceRequestObject
+
+	request.InstanceId = instanceId
+
+	var body ConfirmLeaveEvidenceJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ConfirmLeaveEvidence(ctx, request.(ConfirmLeaveEvidenceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ConfirmLeaveEvidence")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ConfirmLeaveEvidenceResponseObject); ok {
+		if err := validResponse.VisitConfirmLeaveEvidenceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RequestLeaveEvidenceUpload operation middleware
+func (sh *strictHandler) RequestLeaveEvidenceUpload(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID) {
+	var request RequestLeaveEvidenceUploadRequestObject
+
+	request.InstanceId = instanceId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RequestLeaveEvidenceUpload(ctx, request.(RequestLeaveEvidenceUploadRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RequestLeaveEvidenceUpload")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RequestLeaveEvidenceUploadResponseObject); ok {
+		if err := validResponse.VisitRequestLeaveEvidenceUploadResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// IssueLeaveLetter operation middleware
+func (sh *strictHandler) IssueLeaveLetter(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID) {
+	var request IssueLeaveLetterRequestObject
+
+	request.InstanceId = instanceId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.IssueLeaveLetter(ctx, request.(IssueLeaveLetterRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "IssueLeaveLetter")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(IssueLeaveLetterResponseObject); ok {
+		if err := validResponse.VisitIssueLeaveLetterResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ReviewLeaveRequest operation middleware
+func (sh *strictHandler) ReviewLeaveRequest(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID) {
+	var request ReviewLeaveRequestRequestObject
+
+	request.InstanceId = instanceId
+
+	var body ReviewLeaveRequestJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ReviewLeaveRequest(ctx, request.(ReviewLeaveRequestRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ReviewLeaveRequest")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ReviewLeaveRequestResponseObject); ok {
+		if err := validResponse.VisitReviewLeaveRequestResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetMe operation middleware
 func (sh *strictHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 	var request GetMeRequestObject
@@ -1551,6 +6133,37 @@ func (sh *strictHandler) ChangePassword(w http.ResponseWriter, r *http.Request) 
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ChangePasswordResponseObject); ok {
 		if err := validResponse.VisitChangePasswordResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// IssueScanToken operation middleware
+func (sh *strictHandler) IssueScanToken(w http.ResponseWriter, r *http.Request) {
+	var request IssueScanTokenRequestObject
+
+	var body IssueScanTokenJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.IssueScanToken(ctx, request.(IssueScanTokenRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "IssueScanToken")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(IssueScanTokenResponseObject); ok {
+		if err := validResponse.VisitIssueScanTokenResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -1608,59 +6221,171 @@ func (sh *strictHandler) LookupTenants(w http.ResponseWriter, r *http.Request, p
 	}
 }
 
+// ListWorkflowDefinitions operation middleware
+func (sh *strictHandler) ListWorkflowDefinitions(w http.ResponseWriter, r *http.Request) {
+	var request ListWorkflowDefinitionsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListWorkflowDefinitions(ctx, request.(ListWorkflowDefinitionsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListWorkflowDefinitions")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListWorkflowDefinitionsResponseObject); ok {
+		if err := validResponse.VisitListWorkflowDefinitionsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ReplaceWorkflowDefinition operation middleware
+func (sh *strictHandler) ReplaceWorkflowDefinition(w http.ResponseWriter, r *http.Request, kind WorkflowKind) {
+	var request ReplaceWorkflowDefinitionRequestObject
+
+	request.Kind = kind
+
+	var body ReplaceWorkflowDefinitionJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ReplaceWorkflowDefinition(ctx, request.(ReplaceWorkflowDefinitionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ReplaceWorkflowDefinition")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ReplaceWorkflowDefinitionResponseObject); ok {
+		if err := validResponse.VisitReplaceWorkflowDefinitionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // Base64 encoded, compressed with deflate, json marshaled OpenAPI spec.
 // Stored as a slice of fixed-width chunks rather than one concatenated
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
+	"7F1tc9s28v8qGN7N1J6hLCfXdnLuK8dxUl9tJ2c77c0k+TMQuZJQkwADgJJ1Hn/3/+CBz6BEybKd5Jo3",
+	"sSQSD7u/XewuFotbL2RJyihQKbyDWy/FHCcggetPV0Axlb8CjoCrzxGIkJNUEka9A/srEnE2QWPGUcJG",
+	"JAYUxkS1hkYwZhwQRpJdA0VwQ4QUe+hkQhmHCM2nQJGcApoyIRGOOeBogTgIFs9AqNdM84wjQpEgdBLD",
+	"wH6XsAj2PN8jahhTMzzfozgB78D7z8AMzPM9EU4hwWrkcpGq34TkhE68u7s73+MgUkYF6Jm+xNEFfMlA",
+	"SPUpZFQC1X/iNI1JiNWUh38KNe/bSrN/5zD2Dry/DUsqDs2vYnjMOeOmqzrdfscxiXSLaIxJDJF353tH",
+	"jI5jEj5C91dTQNzMFYW2V4HmRE4NjwidICGxBLQTZaZ38FEEKdBI9eArlpgHEhxOCYVdNYHXjI9IFAF9",
+	"+BkcZnIKVOqRRWiUSUSZglDM5oaY50y+ZhmNHn4o50yise7qzvcusIRTkhAJj9DzFWMowXSBsJSQpFJ4",
+	"vhUFDegLkHwxOBxLI7ktSSBUwgR0y3e+d6VE9A2j8DjwEyGmVi0QgRIilHj7CG5SwiHyC22QCfWJca1e",
+	"MGVyChylGU+ZAEXw9xRncso4+e9jUPysNU7GEYcZu4YIhRyUdBAcC0+9altTnSm4agIbDctZClwSo3dw",
+	"GIIQgWlRBFiPfcx4ov7yIixhIEkCnt/UYH7+qiajQ8UpBTfmIKYbNZ6/W7ReJ8U7DgKUcqbxwqH791xN",
+	"6qYC8/WtBzRLvIMP3kvAHLj3yfFCJgx2lzHrDDyjy79kiiWqxRpdfAeFa0Ox3ZT9s9GfEEqtkvVkfiNG",
+	"j+QDnsNIrTxMyRumEWckco7+FQuzBKi8giSNsYQ270csWjgZF3JQmm0thgGdECO+rZ9IVGsmy0jkaoGI",
+	"IIIxzmJZaWXEWAyYqt+vLSFaL5p11/FDlkZrz2OGOcGj2FCISEiEs2n7BeYcL1oI0PPTw7WDK8jjG6LX",
+	"Jlujd23QLlA02foHJ8t4m+CbU6ATOfUOnu+rf0tZV9Dfm8ok1sM2oNMfP61kWvHnGMcC/CVMzBuOAc8g",
+	"iEFKbULNMaeETsovwhgLEfzJMk6xGlACyQh4EGKuiKv4E8R4BLF+FDDHNKw0xyFlXDoHnoOmQqBnP+37",
+	"XkJo8fmB4FFHhubUMk7/DpyM7VLSZrQhUKcIECGyNSWgW84yRfsOVa9XIbfgCpmppal7kDNlkAZjzpLW",
+	"KN0iqh7PqCRxj+cbxLeTKOSzJFA5Cxc3zKrcIj+4vw5ZBO1V61Iq6ORWK1IP+ejy6OL48Ozk/E1weX74",
+	"23FwdHh5jHZgb7KHDt9f/RqcnP9+eHryKji6OH51fH51cnh66Ztfrt7+dnweHP/n3cnF8SsfXR2fH55f",
+	"Bedvr4LXb9+fv/KRfvHw6uTtefD68ORUPXRxeHUcnJ6cnVypT6/fXrw8efXq+NxHxWu7zsUzAolJXEe9",
+	"e8qtV8cEYjegEhACT1xvNZhmmvBNHy7u1OWt1nKdBb9mCaYDZd0pVvgoZiGOlfmGRgt0GIaQysEpppMM",
+	"T5T/YfQZIpGbKtaNCUi0eg567OXI2rNoPG+Q5YTiDZHvgCdEvtJcWVspRKC8rEKhOBaEKEiBExYFPddu",
+	"uCHrLrSECqm09SoL6w/Gr8cxm5/kz2+m1YTEXK45qxWKq7nq5wOsE7jddZPAjY78Kvtc/D/Rs78MMb3K",
+	"reOmKFIJN7I/89a3z/N3CA0EhIxGwuXb+V7uLK1gsprMu9Kv6vIpGhTPTey8k9pUnGN0kfMUSzjknMxw",
+	"3ClPLEljWBfhU5YAZywJjBnStTzeRxBYGGacgzJ6WqtzhQscsGBdTpqhZ4DDXB8sG8SFffzQPL1EBmyf",
+	"rjG2e3URawWvLrMkwXzRpfx6Yt8MTQZC4gkEhEZw4ybhmszs239PBrIU6Jroeziea40mM9EXsJfm6YpC",
+	"VS5vPwp14KuuNvPmioG5+bo2JkuqO7GoXJcjLGHCDAxzn4ZDTCaEZSIIgUPCqHL4BAmv1cpARApU5EuD",
+	"jig5/RPdug0Jd6qlSufLGFEf6Z2/yj4AGonA4GKlMT7JMI8Ipt2tTbEIYEYisDquLTTqCeuzbV1DbmAq",
+	"mKEES92dTtnSi31v6m1sYRSsr4C67Lpk4TLbosGaGh86AW8h2a1974fJvmp7OYB7a/V1kL6ual8No+1q",
+	"9XWRdz8V3kn7p9bxFclYXyBWaHw2IbSyTde0O4iN/S+jaCWoqz2xGSkQVQ1FOQN19umu0FXr+RQLMWe8",
+	"1fjzFyvjXIrcjn5erIqQNXhZNFMZjJ9TykXiM3DtUUgygwCHOIKEhMECsGM3+G1CpKzu69q92ikWiDJk",
+	"GkF5I0g1onz6eld9RVuHHFfra/WyedY1VzzDEvMg4/UwVsaJMwKTFYN0B2BEyNLeysk83IzGinDKWJwL",
+	"RSkrTgvFNNFFCt8TcTZZTSP9VG08feI7kFiDaOPNhiQFLhjVofbRYsUOU5Sp9xCmqHyPMIoECEEYbeOo",
+	"e0tiHa3YIkOSCRmEU0wnEFSFu20ydQ4gBa73O5nZDaxP+ng8BiMn5WM6TCnQDmcxoDTORC5KUSYXleeE",
+	"DpH1DYlrgo1J7MCghZzvScDhVJvmQuLxWOsQ3oVGNby6dCx1aVgMrkEZnbHqbZPf8ZJjGjnUZQ+dUFGL",
+	"9j8z/Dp7iuF0MN4lKA1frUJXyqgxHOM4sHT0PQE0CpRr66SpplJLz/Tfzks5yY3ENRDaT28YU8AoD0vD",
+	"So8u0lRjTBW6aFWnPXugUpsNMZYQYBNl8HwPpylnMzBmhud7E/Uz3BBFv5iMOOaLYEZE7bOAeBwI4Gq9",
+	"rnzNUjvUa8LEtZPmapSdJkYRF1u2mv/s9wqbOUlk9Nl2bJtNdpEbFs7G2j3t2AwLrM3ohmSMhQwEAF1r",
+	"zFql40m91WWotcRs7PvWOq+N1cWphgpy5nVQGYQstttTWDkjSsf/398+7A/+eTh4jQfjT7c/3/3dNacx",
+	"npGQ0b62id5FqUmVDXM7IR6zCevbcvc6xlmUhaUf0li9YyxV04M5iQDZZ5F6Fu0o94+TBH30Lk/enn/0",
+	"dn9BmQCEBcJpiiSRMaAxjuMRDq+duz5iyvgyB8itv3xP4knclSNhNH1f601B8b+M9lhuynab2rKGkIKF",
+	"lba7Ydft/BO5uI/cbntNcE0hd2lfwZhQ0rGpzuiY6A5xFOlncPyu8oTkGTia3kTj9V9Njdm1PDemjy+f",
+	"62e9nvU3mSqhgInTdpoBF/UdxTLHrzs/Jn+rOsVibMv4dzyzGrflLDK+RvDB98acJUEZDtkYu0y6sWtj",
+	"zWtvV04guAa3OEm2bMCzRsJID6EpG2y8Xh/+Mn6cVIK099mQiZlYk1a1ONDaMO4fK5zlSepryYvBqUNe",
+	"ehJkE9HeILC4bW2wcXwx08i6R/iwolxWhAqbfVUJ10sHNXMzlVcQaBdOtv0Ik+pmU0achlGdqG3VZhwR",
+	"HvAsdtg8mC4C6zL7yP4RsHFgA5xs7qNiE5ONA+tn6yRi5coffMz29/8RquVT/+W2z3V+fiiLZK3+/r7V",
+	"ZRVD9AMe/Hd/8M/g0+1z/8d9tyFahJcaQUiHUcmu8RRwFIiYGTFN8A1JFGOemail+VC+XJHtpsrMGfqF",
+	"ByLESg0mmGbGHcwkc3CvmeMHiyL25zc41+huGcAuCykqDGsapJxNOOj4nG040ttA6mUwaVI2XUH7+zSE",
+	"ONZ/27xx9+gFhBkncnGpRNMmkerc6MNMET3/9DoXxn/9cZWfcNHGiMmjLlqeSpmaJHZCx6yN1iNGJceh",
+	"HIwJFxIdvjvRedxSZ+dPGYtRam34PXQ8A75AShRM2C2CMMYcBPp8MygDJp8/0h3cDFztKnirx7JRTMID",
+	"pCy3z3tIZ/MJhOM5Xght/quO9bfI6CZzIAUjYXL2PqvGPu99pNqbD4GaIII98qNsQ05AYh0/0K6NJoA4",
+	"GA4nRE6z0V7IkiFLMP0TL/CQwlzANYvx1FjzUsmzV36ryFGxjQ68/b1ne/u5Zscp8Q68f+ivfCVQU82t",
+	"4RRwbFg1Aa35C4qdRN6B9wbkr+aJxtmj5/v7ax1eaKzuUwivRbetXEKXXXvKsyRKIsQ1SVNwZ663pEG0",
+	"pEA3FcGE46ijkbY12hWALtYIMxFHYl7rJMbb31QXP+3/4xHOGhUnn8IFIgJFbE5r8uodfPikljLrknmn",
+	"ZAYUhECYRtV3i3lKPBF64gshIVHzzcXDODaq8eHs2RBncjqM2YQYB4kJ2ZbiP2BUnLfb+Wz+OkBzGH3e",
+	"RRxCIDMjWfY4R37mhiJMkRKQtzReoJCxa6LEnqUQIcnQ57z7zx+pmoWOwatmzFmKshX13YhFiz10Vj/7",
+	"l/c9YtJ2KmrPf7TpHRXx0Jt7JsZcnED84GZa+ciwdkLx7lOREvrS5t9vBRy1fce7OoA1x+4p0Mv6rhwe",
+	"WnUSrn4A7BLk4Ehztg2bz7XjPZ9zBKgFYF4iavkByjvf+9HM0zX8gh7DyslK/cqz1a/UjnWpl57/c/VL",
+	"1cN3y+TznQ3fo9gCLpdH1edqaWSZrIpjC8Pq9xYcfmyz4JRNJhAh83hPth0b+wG52ecjfQKD0AkicgNe",
+	"rs2YuypZL3TuvpZwa+znu3NoR+kQPTb9sx6VHvGum/qFBaHM1xrAa8ywROjmxoV54MpmqW6qGerL7YqD",
+	"cfn+j+NQ3C9VfiABNDLUMrJHqJCAo70+G5Ht48uPp3HOYW4Ven/cXjCpT+puTe1sBNUOfWAG11ghFWIT",
+	"QiXCiMK8tu6tpzGsDIhOq/CUCHkJxY7jFg3DCEvcO56Q7zytOjulG+1johVz2oJuOTQb3jktERvX9Iw+",
+	"wHkfTZI3PLy1f51EdwbFyotzKRal63KStUwWXZVAuQVlTYKiXa9pO1TBvirQ8qnPwnJhD1FtvNgaq3r5",
+	"S+Vhf/3Gj6vfKI7kO5cNRsHF1R9EwfRNGVxsLw/09vJQhxM6l4zLENOj/I1jux/9ECZldZv5ASzKZmYS",
+	"puvGI/MA1sZxwGYDfnUYfTSIOQ12HyQ/62GelpUP6sC8NOE5XarAVCPR0/lBoAaiWquCiT+K3giN7DlT",
+	"MZT2TPHy1aJ5Avkpl43WIfetrR/l7B5LkdXYn08MFTzJ9VORE7Sa3wmmeAKBACkJneiZuNXOkd64bBHz",
+	"YVSP+wR7LyX07MEG4YKAoYrl5SN5mvfBjBkvwihqgmcztHTrh+Ft/qe1VNLMgar3upKBA1Wr7ZWy+fsb",
+	"LNvwutYpp/CElQWWlxR43MBRHwkzCPmqJex+5qWZoF6+DRWQrf/xcOI4FCAHlZocHYYmyFfmmSeXz68F",
+	"f189mM6wDnARUaJJGQR5kQI2RkQKZLe+twEwvU25GN6GLIK7TptQ1ydZ5OS+ZwTdd8LN1k7oBlpF1/78",
+	"Y03Vvnga1NWKtjiQV9h3RKAJ0IxQ2BAeXWFmHRFC1Z1mhRBMkTkRWRoJo4XGTcoJlRAhS2s3fhxhJrgh",
+	"cpA/tcxvOFuUhStEh5b5koF2eS3fY2IyKUraF4rt+U9+dYO/usP/zHckoLk7YOOxgI4eViQN3BtG93B7",
+	"XAddt+P25OzZQtRMcRtZYDSDK5VDHut6rct9mBJiW4u4N6qlVFTNT/urzbr1a6msX6mkyey1qo9sZidu",
+	"zxNrVbP5Nj0x9UaPXcKizKo72mMRK5SehlJ+TP1JZJiGOKYTQJJFuJ8lKbJRQmRQyz8rl/uq/h7e5odv",
+	"rV/XlUhSE7PV5mLZ6ldrLvaBYf7LxpDa3ParKFNkanGZBCWdpIimREhz5HnTIGAnCoYmgazbkzjSv/9v",
+	"AuKoSK77aj2I7eglAwKtlggd5AmIVRX1INibYAmD1TsmJave9HVgtwnAb2535r6wP74h8rvC/H33aqwP",
+	"ZjdrlKGrkIv+ffGL/mD1NhGompnbY+EOMQ0qOeWir8gUySFumdEF5OpCkyepPKHq3p5J2SyQ54DwGx09",
+	"Mb9+36p7AlTxHmq4RHgsgTfAWUkm374qX0eLX9qT1n+p8QdV44fRTNHuL0XeseleDVjkJzh+yLOPJUPY",
+	"0M8cEpjAPcQmVkrbnhQSw8oZ9S7/68g8UimH6D0gmNoVMr8u5+iqHVn6QdQMVR0stwT2ERkjTBdb4xdL",
+	"ly22b1OgTT5tJxE0rwTWjEi5bz7oW071qeNBvcD2Vp/TuwfYHlOrqBnluKyoFl0/p0zrKdSKgpN+YByz",
+	"+dZAymFGYD74kkEGS8P0FfqL14xf6PeeMMXHUfJ1a9Huf2tqPEmyhkJwTS0JhOeY6NuPHOjgORt67+th",
+	"KYFGZnfAiYi+sb668vouYjtf+4J2WsHFg4T7upFgFcWyUw3q96cExTZWz57lnNdYZGeExbrvgET1HJ7V",
+	"5VyWKbM+hbEf17foJT0GJt9vZPRVRT8jDiHjkbBHHdXEzQkONrNut1rK1doemwMrU5I+mCrv4WlXl9S/",
+	"XO1HEYe/fO3VvjaFm7ajfZ9FDvAMBsWG5/LclGpx67+yU+5nsTvqhG/NZC9YtIUMFT3Qcs/94XNULvVO",
+	"fJU+WwsHbFx3fZ0S6N3m0IosmHVqkzfvTepZ6f7J4xbtCxtcxxI1Av4ncllM2olAGKWxPniF4qq8bSF1",
+	"pa7g1whxVHV9NcbRQ+kXxcwe05f9WpXxE8ZPGrq7iJ1Y83uHpaYUjb0fllEwB+d2e+HOtNITd70DKXW9",
+	"/31EUnppvacMpVRx8jCxlG40VHLpb68J7QGPPC/8PX/UuIo77d4eJehutqh7V94h07o/5oGUYN8L6HrV",
+	"GW7eWqGJ3+v6OMeZkovTb+Q8yeWUcTmIyQwiJMhErdDvL06LMmw5U5H9bM8NFJfrPoS85H0OdQVenixJ",
+	"OzQPaKE5LuH37UUiDZI6Sr02gFl5djNz11Gv4VBKHE6/50N4v+OYmGN4NEJYT1cDOktjhiOIUEV9PSio",
+	"TYcDq5K6wuu6iRqu3+v3viWTwa2r16n/sFQsfM+QMthIu5ev1rqp3R7aS9PrhpDEXC3p34YsvONgVb0h",
+	"Q1vbk0Rfffyvd8dvlOZ/d/7GRwm+QT+js5e7DyQhemlZka+oJeI0X3z+h4xnk834ve6jHLGMCogZN/aF",
+	"jQTrO/MKY0MrbrGgoUCVrZA+UNRtWjfOtNXLi+u7CfqUDt02bA8bbO+4oMcWtF+x89nQrnmTT75J2Uu2",
+	"vvddyl/t5nGxU2nZI5RqNxWjxRYCIgksc2zP4CGTE8+cJ/vPYBsbBEeVWmA+0nd0+Qgcl6QJv12Xx9w/",
+	"0mttTGBYvc7NWU3lSN/+9a68RXFL+wa2Mr7jOrlKSROYBz0vk3yxMp7f7LDR/NYcG0OwR/Rr6tDRvSM2",
+	"pyif2i+I62pzAulrn12l5dbAjAgxHdhKmMstp/IgxNZAo167ya8rapSEtmfTUb7YmapVpqxlrn12eLVO",
+	"ae2GNX2N4MqUmbS8yG1VWkB+51sTiHkTT71x1OO0ypUpeF0xBL+BclRnpn6pqEWZ6CSGQSZAb/tbVNjD",
+	"zYYdaEdMldBggTD694Up4r+GrafPTMm8fKwRFaOah6PKbWlda1XjXrUHXLeal0i2uV69YHLrhUFyYhQO",
+	"IAfBYsUke2/ujq5PjUTIAahyASkZg5BVXtglr7M0iPldDGPGrrO0e0tO/2zo0TP14kvfajCNC4uff1V7",
+	"c/Xb1La2K3eGZTjNCxeuqSiWAOcSMA+n9nYOgUYLc58e40jE2QTt2GrT+e0dJLwGvruHLkBmnApEmZzq",
+	"2uA0VwMWaAmLAMFNCKk013/oXy0M99aA29yuPGIYFXe7LU/7ad8F95TFLB03020NE9UZPslqUJgFFd6g",
+	"HRzHyN7UIXY3r3BZcN5bioXKJpzTxL6ANMYhOPjQx7lfuVvW/wav7Xn4G95keN/bwBJCT8yLz1YguPOW",
+	"rccNF7hkz1183t5+nd8v861YY3rZF1NbUN6OXlcEQ/O2aG4qfPXlo36D1IdPCtYC+CwXouaNFKE+7TCD",
+	"mKW2lFx5ldLBcKivKJ0yIQ9e7L/Y17XimkoujdkCotL12LFrjHprt3U10636+s5r1N6cFjfd2FRLT9/x",
+	"LsLpHlGyqWZhidOaQvXunQQk1vq5rMJubtxpD1xf8OJbc9jeBOBX/UPbgK483n79qF6I3j6cgOPRS7M6",
+	"W7rsooiIkOnrtdSQR6XdWxR61LrY1VBuvwu/WgdE+PVTTX4960v4ReG5yryK8gaf7v4/AAD//w==",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

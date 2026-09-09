@@ -10,12 +10,16 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/api"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/identity"
 	identityservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/identity/service"
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/permits"
+	permitsservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/school"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/auth"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/authz"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/config"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/events"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/storage"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/tenant"
 )
 
@@ -54,6 +58,11 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 
 	authenticator := auth.NewAuthenticator(tokenIssuer, sessionCache, identityModule.Service)
 
+	permitsModule := permits.Register(permits.Dependencies{
+		Pool: pool, Years: schoolModule.Service, Bus: events.NewBus(), Storage: storageClientFor(cfg, logger),
+		Clock: clock.Real{}, Config: permitsservice.DefaultConfig([]byte(cfg.DocumentSigningKey), cfg.S3Bucket), Logger: logger,
+	})
+
 	doc, err := api.GetSpec()
 	if err != nil {
 		return nil, err
@@ -64,9 +73,10 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	}
 
 	server := &combinedServer{
-		Handler:       identityModule.Handler,
-		TenantHandler: schoolModule.Handler,
-		healthHandler: &healthHandler{version: version, pool: pool, redis: redisClient},
+		Handler:        identityModule.Handler,
+		TenantHandler:  schoolModule.Handler,
+		PermitsHandler: permitsModule.Handler,
+		healthHandler:  &healthHandler{version: version, pool: pool, redis: redisClient},
 	}
 
 	strict := api.NewStrictHandlerWithOptions(
@@ -111,4 +121,21 @@ func newRedisClient(redisURL string, logger *slog.Logger) *redis.Client {
 		return nil
 	}
 	return redis.NewClient(opts)
+}
+
+// storageClientFor builds the S3 client when configured; permits degrades to
+// "no uploads, no stored PDFs" without it so a dev box needs no MinIO.
+func storageClientFor(cfg config.Config, logger *slog.Logger) permitsservice.Storage {
+	if cfg.S3Endpoint == "" || cfg.S3Bucket == "" {
+		logger.Warn("S3 not configured; uploads and document storage disabled")
+		return nil
+	}
+	client, err := storage.NewClient(storage.Config{
+		Endpoint: cfg.S3Endpoint, Bucket: cfg.S3Bucket, AccessKey: cfg.S3AccessKey, SecretKey: cfg.S3SecretKey, UseSSL: cfg.S3UseSSL,
+	})
+	if err != nil {
+		logger.Warn("S3 client init failed; uploads disabled", "error", err)
+		return nil
+	}
+	return client
 }

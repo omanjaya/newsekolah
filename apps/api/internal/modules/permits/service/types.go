@@ -4,6 +4,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/domain"
 )
 
 // EnrollmentInfo is the slice of a student's active enrollment permits
@@ -43,4 +45,24 @@ type LeaveDocumentInfo struct {
 	Kind      string
 	AssetID   uuid.UUID
 	CreatedAt time.Time
+}
+
+// LateArrivalReviewItem is an open late arrival joined with its workflow state.
+type LateArrivalReviewItem struct {
+	domain.LateArrival
+	SubjectUserID     uuid.UUID
+	ClassID           uuid.NullUUID
+	CurrentStageIndex int
+	Status            domain.Status
+	OpenedAt          time.Time
+}
+
+// LeaveRequestItem is a leave request joined with its workflow state.
+type LeaveRequestItem struct {
+	domain.LeaveRequest
+	SubjectUserID     uuid.UUID
+	ClassID           uuid.NullUUID
+	Status            domain.Status
+	OpenedAt          time.Time
+	CurrentStageIndex int
 }

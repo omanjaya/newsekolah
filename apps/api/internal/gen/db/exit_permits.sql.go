@@ -200,25 +200,50 @@ func (q *Queries) MarkExitPermitExited(ctx context.Context, arg MarkExitPermitEx
 }
 
 const markExitPermitIssued = `-- name: MarkExitPermitIssued :one
-update exit_permits set issued_at = $3, gate_token_id = $4
+update exit_permits set issued_at = $3
 where tenant_id = $1 and instance_id = $2
 returning instance_id, tenant_id, destination, start_period_id, end_period_id, issued_at, gate_token_id, exited_at, security_user_id, student_name_snapshot, class_name_snapshot
 `
 
 type MarkExitPermitIssuedParams struct {
-	TenantID    uuid.UUID          `json:"tenant_id"`
-	InstanceID  uuid.UUID          `json:"instance_id"`
-	IssuedAt    pgtype.Timestamptz `json:"issued_at"`
-	GateTokenID pgtype.UUID        `json:"gate_token_id"`
+	TenantID   uuid.UUID          `json:"tenant_id"`
+	InstanceID uuid.UUID          `json:"instance_id"`
+	IssuedAt   pgtype.Timestamptz `json:"issued_at"`
 }
 
 func (q *Queries) MarkExitPermitIssued(ctx context.Context, arg MarkExitPermitIssuedParams) (ExitPermit, error) {
-	row := q.db.QueryRow(ctx, markExitPermitIssued,
-		arg.TenantID,
-		arg.InstanceID,
-		arg.IssuedAt,
-		arg.GateTokenID,
+	row := q.db.QueryRow(ctx, markExitPermitIssued, arg.TenantID, arg.InstanceID, arg.IssuedAt)
+	var i ExitPermit
+	err := row.Scan(
+		&i.InstanceID,
+		&i.TenantID,
+		&i.Destination,
+		&i.StartPeriodID,
+		&i.EndPeriodID,
+		&i.IssuedAt,
+		&i.GateTokenID,
+		&i.ExitedAt,
+		&i.SecurityUserID,
+		&i.StudentNameSnapshot,
+		&i.ClassNameSnapshot,
 	)
+	return i, err
+}
+
+const setExitPermitGateToken = `-- name: SetExitPermitGateToken :one
+update exit_permits set gate_token_id = $3
+where tenant_id = $1 and instance_id = $2
+returning instance_id, tenant_id, destination, start_period_id, end_period_id, issued_at, gate_token_id, exited_at, security_user_id, student_name_snapshot, class_name_snapshot
+`
+
+type SetExitPermitGateTokenParams struct {
+	TenantID    uuid.UUID   `json:"tenant_id"`
+	InstanceID  uuid.UUID   `json:"instance_id"`
+	GateTokenID pgtype.UUID `json:"gate_token_id"`
+}
+
+func (q *Queries) SetExitPermitGateToken(ctx context.Context, arg SetExitPermitGateTokenParams) (ExitPermit, error) {
+	row := q.db.QueryRow(ctx, setExitPermitGateToken, arg.TenantID, arg.InstanceID, arg.GateTokenID)
 	var i ExitPermit
 	err := row.Scan(
 		&i.InstanceID,

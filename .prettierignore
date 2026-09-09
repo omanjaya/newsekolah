@@ -5,3 +5,4 @@ dist/
 apps/api/
 pnpm-lock.yaml
 **/gen/**
+openapi/openapi.yaml

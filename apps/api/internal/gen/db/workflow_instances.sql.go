@@ -402,3 +402,61 @@ func (q *Queries) ListWorkflowInstancesBySubject(ctx context.Context, arg ListWo
 	}
 	return items, nil
 }
+
+const lockSubjectForInstanceCounting = `-- name: LockSubjectForInstanceCounting :exec
+select pg_advisory_xact_lock(hashtextextended($1::text || ':' || $2::text, 0))
+`
+
+type LockSubjectForInstanceCountingParams struct {
+	Column1 string `json:"column_1"`
+	Column2 string `json:"column_2"`
+}
+
+// Transaction-scoped advisory lock so two concurrent late-arrival opens
+// for the same student cannot both read the same
+// CountWorkflowInstancesForSubjectYear result and mint the same
+// occurrence_number (docs/analysis/database-inventory.md 1.5: the old
+// app's per-student late-arrival numbering had exactly this race).
+func (q *Queries) LockSubjectForInstanceCounting(ctx context.Context, arg LockSubjectForInstanceCountingParams) error {
+	_, err := q.db.Exec(ctx, lockSubjectForInstanceCounting, arg.Column1, arg.Column2)
+	return err
+}
+
+const mergeWorkflowInstancePayload = `-- name: MergeWorkflowInstancePayload :one
+update workflow_instances
+set payload = payload || $3
+where tenant_id = $1 and id = $2
+returning id, tenant_id, academic_year_id, definition_id, kind, subject_user_id, class_id, current_stage_index, status, payload, opened_date, opened_at, closed_at, created_by, created_at, updated_at
+`
+
+type MergeWorkflowInstancePayloadParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	ID       uuid.UUID `json:"id"`
+	Payload  []byte    `json:"payload"`
+}
+
+// Shallow-merges extra into the instance's existing payload (jsonb ||),
+// e.g. attaching a late arrival review's opaque violation_ids list.
+func (q *Queries) MergeWorkflowInstancePayload(ctx context.Context, arg MergeWorkflowInstancePayloadParams) (WorkflowInstance, error) {
+	row := q.db.QueryRow(ctx, mergeWorkflowInstancePayload, arg.TenantID, arg.ID, arg.Payload)
+	var i WorkflowInstance
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.AcademicYearID,
+		&i.DefinitionID,
+		&i.Kind,
+		&i.SubjectUserID,
+		&i.ClassID,
+		&i.CurrentStageIndex,
+		&i.Status,
+		&i.Payload,
+		&i.OpenedDate,
+		&i.OpenedAt,
+		&i.ClosedAt,
+		&i.CreatedBy,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}

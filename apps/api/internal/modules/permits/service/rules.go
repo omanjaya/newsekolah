@@ -25,7 +25,7 @@ type ruleContext struct {
 // (if it passes) stage.DistinctFrom against the recorded approvers of
 // those earlier stage keys. Returns domain.ErrApproverNotEligible or
 // domain.ErrApproverNotDistinct on failure.
-func (s *Service) evaluateApproverRule(ctx context.Context, def domain.Definition, inst domain.Instance, stage domain.Stage, actorUserID uuid.UUID) error {
+func (s *Service) evaluateApproverRule(ctx context.Context, _ domain.Definition, inst domain.Instance, stage domain.Stage, actorUserID uuid.UUID) error {
 	rc := ruleContext{
 		tenantID:       inst.TenantID,
 		academicYearID: inst.AcademicYearID,
@@ -58,17 +58,17 @@ func (s *Service) evaluateApproverRule(ctx context.Context, def domain.Definitio
 // checkApproverRule dispatches on the rule name, matching the vocabulary
 // domain.DefaultStages uses (see domain/approver_rule.go).
 func (s *Service) checkApproverRule(ctx context.Context, rule string, rc ruleContext) (bool, error) {
-	switch {
-	case rule == domain.RuleAnyTeacher:
+	switch rule {
+	case domain.RuleAnyTeacher:
 		return s.repo.IsActiveTeacher(ctx, rc.tenantID, rc.actorUserID)
 
-	case rule == domain.RuleTeacherOfClassNow:
+	case domain.RuleTeacherOfClassNow:
 		if !rc.classID.Valid {
 			return false, nil
 		}
 		return s.schedule.IsTeacherAssignedNowOrNext(ctx, rc.tenantID, rc.actorUserID, rc.classID.UUID, rc.date, rc.lookaheadSlots)
 
-	case rule == domain.RuleHomeroomOfStudent:
+	case domain.RuleHomeroomOfStudent:
 		return s.repo.HasActiveDuty(ctx, rc.tenantID, rc.academicYearID, rc.actorUserID, "homeroom", rc.classID)
 
 	default:

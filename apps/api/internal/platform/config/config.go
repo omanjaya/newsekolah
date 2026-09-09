@@ -45,6 +45,7 @@ type Config struct {
 	S3Bucket    string
 	S3AccessKey string
 	S3SecretKey string
+	S3UseSSL    bool
 
 	SMTPURL string
 
@@ -66,6 +67,8 @@ func (c Config) IsProduction() bool {
 // Load reads and validates configuration from the process environment,
 // resolving `<VAR>_FILE` indirection for secrets (Docker/Kubernetes secrets
 // mounted as files) before falling back to `<VAR>`.
+//
+//nolint:gocyclo // flat list of env lookups, intentionally linear
 func Load() (Config, error) {
 	var errs []string
 	req := func(name string) string {
@@ -93,6 +96,7 @@ func Load() (Config, error) {
 		S3Bucket:    lookup("S3_BUCKET"),
 		S3AccessKey: lookup("S3_ACCESS_KEY"),
 		S3SecretKey: lookup("S3_SECRET_KEY"),
+		S3UseSSL:    lookup("S3_USE_SSL") == "true",
 
 		SMTPURL: lookup("SMTP_URL"),
 

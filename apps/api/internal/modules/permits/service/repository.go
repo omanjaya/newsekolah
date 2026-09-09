@@ -51,6 +51,7 @@ type Repository interface {
 	GetLateArrival(ctx context.Context, tenantID, instanceID uuid.UUID) (domain.LateArrival, bool, error)
 	UpdateLateArrivalReview(ctx context.Context, tenantID, instanceID uuid.UUID, reason string, action domain.RequiredAction, homeroomReported bool) (domain.LateArrival, error)
 	MarkLateArrivalCompleted(ctx context.Context, tenantID, instanceID uuid.UUID, completedAt time.Time) (domain.LateArrival, error)
+	ListLateArrivalsForReview(ctx context.Context, tenantID uuid.UUID) ([]LateArrivalReviewItem, error)
 
 	// Leave requests.
 	CreateLeaveRequest(ctx context.Context, r domain.LeaveRequest) (domain.LeaveRequest, error)
@@ -58,11 +59,14 @@ type Repository interface {
 	IssueLeaveRequest(ctx context.Context, tenantID, instanceID uuid.UUID, letterNumber string, issuedAt time.Time, issuedBy uuid.UUID) (domain.LeaveRequest, error)
 	UpsertLeaveDocument(ctx context.Context, tenantID, leaveRequestID uuid.UUID, kind domain.DocumentKind, assetID, createdBy uuid.UUID) (LeaveDocumentInfo, error)
 	GetLeaveDocument(ctx context.Context, tenantID, leaveRequestID uuid.UUID, kind domain.DocumentKind) (LeaveDocumentInfo, bool, error)
+	ListLeaveRequestsBySubject(ctx context.Context, tenantID, subjectUserID uuid.UUID, limit, offset int) ([]LeaveRequestItem, error)
+	ListLeaveRequestsForReview(ctx context.Context, tenantID uuid.UUID, classID uuid.NullUUID) ([]LeaveRequestItem, error)
 
 	// Scan tokens.
 	CreateScanToken(ctx context.Context, t domain.ScanToken) (domain.ScanToken, error)
 	ConsumeScanToken(ctx context.Context, tenantID uuid.UUID, hash []byte, consumedBy uuid.UUID, now time.Time) (domain.ScanToken, bool, error)
 	DeleteExpiredScanTokens(ctx context.Context, tenantID uuid.UUID, olderThan time.Time) (int64, error)
+	GetScanTokenByHash(ctx context.Context, tenantID uuid.UUID, hash []byte) (domain.ScanToken, bool, error)
 
 	// Documents.
 	GetDefaultTemplate(ctx context.Context, tenantID uuid.UUID, kind domain.TemplateKind) (domain.Template, bool, error)
@@ -74,6 +78,7 @@ type Repository interface {
 	NextSequenceValue(ctx context.Context, tenantID uuid.UUID, kind string, academicYearID uuid.UUID) (int64, error)
 	CreateIssuedDocument(ctx context.Context, d domain.IssuedDocument) (domain.IssuedDocument, error)
 	GetIssuedDocumentByVerificationHash(ctx context.Context, tenantID uuid.UUID, hash []byte) (domain.IssuedDocument, bool, error)
+	GetIssuedDocumentByEntity(ctx context.Context, tenantID uuid.UUID, entityType string, entityID uuid.UUID, kind string) (domain.IssuedDocument, bool, error)
 
 	// Cross-module reads (see queries/cross_module.sql): owned by
 	// identity/academic, read-only here until a reader interface replaces

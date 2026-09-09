@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	identityhttp "github.com/omanjaya/newsekolah/apps/api/internal/modules/identity/transport/http"
+	permitshttp "github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/transport/http"
 	schoolhttp "github.com/omanjaya/newsekolah/apps/api/internal/modules/school/transport/http"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
 )
@@ -14,6 +15,7 @@ import (
 type combinedServer struct {
 	*identityhttp.Handler
 	*schoolhttp.TenantHandler
+	*permitshttp.PermitsHandler
 	*healthHandler
 }
 
