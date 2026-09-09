@@ -7,6 +7,7 @@ sql:
       - "internal/modules/scheduling/queries"
       - "internal/modules/attendance/queries"
       - "internal/modules/academic/queries"
+      - "internal/modules/permits/queries"
     schema: "migrations"
     gen:
       go:

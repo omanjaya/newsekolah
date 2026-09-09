@@ -1,0 +1,907 @@
+paths:
+  /v1/scan-tokens:
+    post:
+      tags: [permits]
+      operationId: issueScanToken
+      x-permission: issue_scan_tokens
+      summary: Mint a short-lived single-use scan token for a purpose (shown as a QR code)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [purpose]
+              properties:
+                purpose: { $ref: "#/components/schemas/ScanPurpose" }
+                context_id:
+                  type: string
+                  format: uuid
+                  description: Workflow instance the token approves (required for approve_stage).
+      responses:
+        "201":
+          description: Token issued
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/IssuedScanToken" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /v1/classroom-entry/scan:
+    post:
+      tags: [permits]
+      operationId: scanClassroomEntry
+      x-permission: authenticated
+      summary: Student scans a teacher's classroom-entry token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ScanRequest" }
+      responses:
+        "200":
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [teacher_user_id, scanned_at]
+                properties:
+                  teacher_user_id: { type: string, format: uuid }
+                  scanned_at: { type: string, format: date-time }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "410": { $ref: "#/components/responses/TokenGone" }
+
+  /v1/workflows/definitions:
+    get:
+      tags: [permits]
+      operationId: listWorkflowDefinitions
+      x-permission: manage_workflows
+      summary: Workflow definitions (all versions) of the tenant
+      responses:
+        "200":
+          description: Definitions
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/WorkflowDefinition" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /v1/workflows/definitions/{kind}:
+    put:
+      tags: [permits]
+      operationId: replaceWorkflowDefinition
+      x-permission: manage_workflows
+      summary: Publish a new version of a workflow definition
+      parameters:
+        - { name: kind, in: path, required: true, schema: { $ref: "#/components/schemas/WorkflowKind" } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [stages]
+              properties:
+                stages:
+                  type: array
+                  minItems: 1
+                  items: { $ref: "#/components/schemas/WorkflowStage" }
+                config: { type: object, additionalProperties: true }
+      responses:
+        "200":
+          description: New active version
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WorkflowDefinition" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /v1/exit-permits:
+    get:
+      tags: [permits]
+      operationId: listMyExitPermits
+      x-permission: authenticated
+      summary: Exit permits of the current student
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 25 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        "200":
+          description: Permits
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/WorkflowInstance" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      tags: [permits]
+      operationId: createExitPermit
+      x-permission: submit_leave_requests
+      summary: Student requests an exit permit for a period range today
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [destination, start_period_id, end_period_id]
+              properties:
+                destination: { type: string, minLength: 1, maxLength: 500 }
+                start_period_id: { type: string, format: uuid }
+                end_period_id: { type: string, format: uuid }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ExitPermitDetail" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /v1/exit-permits/{instanceId}:
+    get:
+      tags: [permits]
+      operationId: getExitPermit
+      x-permission: authenticated
+      summary: Exit permit detail with stage history
+      parameters:
+        - { name: instanceId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Detail
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ExitPermitDetail" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /v1/exit-permits/{instanceId}/scan:
+    post:
+      tags: [permits]
+      operationId: scanExitPermitStage
+      x-permission: authenticated
+      summary: Student scans the current approver's token to advance a stage
+      parameters:
+        - { name: instanceId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ScanRequest" }
+      responses:
+        "200":
+          description: Advanced
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ExitPermitDetail" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "410": { $ref: "#/components/responses/TokenGone" }
+
+  /v1/exit-permits/{instanceId}/cancel:
+    post:
+      tags: [permits]
+      operationId: cancelExitPermit
+      x-permission: authenticated
+      summary: Student cancels an in-progress exit permit
+      parameters:
+        - { name: instanceId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Cancelled
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ExitPermitDetail" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /v1/exit-permits/{instanceId}/gate-token:
+    post:
+      tags: [permits]
+      operationId: issueExitPermitGateToken
+      x-permission: authenticated
+      summary: Student generates the gate QR after the permit is approved
+      parameters:
+        - { name: instanceId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "201":
+          description: Gate token
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/IssuedScanToken" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /v1/exit-permits/{instanceId}/gate-scan:
+    post:
+      tags: [permits]
+      operationId: scanExitPermitGate
+      x-permission: scan_exit_permits
+      summary: Security scans the gate QR; the permit is completed
+      parameters:
+        - { name: instanceId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ScanRequest" }
+      responses:
+        "200":
+          description: Exited
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ExitPermitDetail" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "410": { $ref: "#/components/responses/TokenGone" }
+
+  /v1/late-arrivals/open:
+    post:
+      tags: [permits]
+      operationId: openLateArrival
+      x-permission: authenticated
+      summary: Late student scans the duty teacher's token to open the flow
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token: { type: string }
+                reason: { type: string, maxLength: 500 }
+      responses:
+        "201":
+          description: Opened
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LateArrivalDetail" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "410": { $ref: "#/components/responses/TokenGone" }
+
+  /v1/late-arrivals/current:
+    get:
+      tags: [permits]
+      operationId: getCurrentLateArrival
+      x-permission: authenticated
+      summary: The current student's in-progress late arrival, if any
+      responses:
+        "200":
+          description: Detail
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LateArrivalDetail" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /v1/late-arrivals/review-queue:
+    get:
+      tags: [permits]
+      operationId: listLateArrivalsForReview
+      x-permission: manage_attendance
+      summary: Open late arrivals awaiting the duty teacher's review
+      responses:
+        "200":
+          description: Queue
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/LateArrivalSummary" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /v1/late-arrivals/{instanceId}:
+    get:
+      tags: [permits]
+      operationId: getLateArrival
+      x-permission: authenticated
+      summary: Late arrival detail with stage history
+      parameters:
+        - { name: instanceId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Detail
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LateArrivalDetail" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /v1/late-arrivals/{instanceId}/review:
+    post:
+      tags: [permits]
+      operationId: reviewLateArrival
+      x-permission: manage_attendance
+      summary: Duty teacher records the review and moves the flow to leadership
+      parameters:
+        - { name: instanceId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [homeroom_reported]
+              properties:
+                reason: { type: string, maxLength: 500 }
+                homeroom_reported: { type: boolean }
+                violation_ids:
+                  type: array
+                  items: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Reviewed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LateArrivalDetail" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /v1/late-arrivals/{instanceId}/scan:
+    post:
+      tags: [permits]
+      operationId: scanLateArrivalStage
+      x-permission: authenticated
+      summary: Student scans the next approver's token
+      parameters:
+        - { name: instanceId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ScanRequest" }
+      responses:
+        "200":
+          description: Advanced
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LateArrivalDetail" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "410": { $ref: "#/components/responses/TokenGone" }
+
+  /v1/leave-requests:
+    get:
+      tags: [permits]
+      operationId: listMyLeaveRequests
+      x-permission: authenticated
+      summary: Leave requests of the current student
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 25 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        "200":
+          description: Requests
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/LeaveRequestSummary" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      tags: [permits]
+      operationId: submitLeaveRequest
+      x-permission: submit_leave_requests
+      summary: Student submits a planned leave request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [category, reason, starts_on, ends_on]
+              properties:
+                category: { $ref: "#/components/schemas/LeaveCategory" }
+                reason: { type: string, minLength: 1, maxLength: 500 }
+                starts_on: { type: string, format: date }
+                ends_on: { type: string, format: date }
+      responses:
+        "201":
+          description: Submitted
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LeaveRequestDetail" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /v1/leave-requests/review-queue:
+    get:
+      tags: [permits]
+      operationId: listLeaveRequestsForReview
+      x-permission: review_leave_requests
+      summary: Leave requests awaiting review (optionally for one class)
+      parameters:
+        - { name: class_id, in: query, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Queue
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/LeaveRequestSummary" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /v1/leave-requests/{instanceId}:
+    get:
+      tags: [permits]
+      operationId: getLeaveRequest
+      x-permission: authenticated
+      summary: Leave request detail with stage history
+      parameters:
+        - { name: instanceId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Detail
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LeaveRequestDetail" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /v1/leave-requests/{instanceId}/evidence/upload-url:
+    post:
+      tags: [permits]
+      operationId: requestLeaveEvidenceUpload
+      x-permission: authenticated
+      summary: Presigned upload for the evidence image (JPEG or PNG, max 6 MB)
+      parameters:
+        - { name: instanceId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Upload target
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [upload_url, object_key, expires_at]
+                properties:
+                  upload_url: { type: string, format: uri }
+                  object_key: { type: string }
+                  expires_at: { type: string, format: date-time }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /v1/leave-requests/{instanceId}/evidence/confirm:
+    post:
+      tags: [permits]
+      operationId: confirmLeaveEvidence
+      x-permission: authenticated
+      summary: Validate and attach the uploaded evidence
+      parameters:
+        - { name: instanceId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [object_key]
+              properties:
+                object_key: { type: string }
+      responses:
+        "204": { description: Attached }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /v1/leave-requests/{instanceId}/review:
+    post:
+      tags: [permits]
+      operationId: reviewLeaveRequest
+      x-permission: review_leave_requests
+      summary: Homeroom teacher approves or rejects
+      parameters:
+        - { name: instanceId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [approve]
+              properties:
+                approve: { type: boolean }
+                note: { type: string, maxLength: 500 }
+      responses:
+        "200":
+          description: Reviewed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LeaveRequestDetail" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /v1/leave-requests/{instanceId}/issue:
+    post:
+      tags: [permits]
+      operationId: issueLeaveLetter
+      x-permission: issue_leave_letters
+      summary: Counselor issues the numbered letter and syncs attendance
+      parameters:
+        - { name: instanceId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Issued
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LeaveRequestDetail" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /v1/leave-requests/{instanceId}/documents/{kind}:
+    get:
+      tags: [permits]
+      operationId: getLeaveDocumentUrl
+      x-permission: authenticated
+      summary: Short-lived signed URL for the evidence or the issued letter
+      parameters:
+        - { name: instanceId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: kind, in: path, required: true, schema: { type: string, enum: [evidence, letter] } }
+      responses:
+        "200":
+          description: URL
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [url, expires_in_seconds]
+                properties:
+                  url: { type: string, format: uri }
+                  expires_in_seconds: { type: integer }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /v1/documents/verify/{code}:
+    get:
+      tags: [permits]
+      operationId: verifyDocument
+      x-public: true
+      security: []
+      summary: Public verification of an issued document by its printed code
+      parameters:
+        - $ref: "#/components/parameters/TenantHeader"
+        - { name: code, in: path, required: true, schema: { type: string, minLength: 8, maxLength: 64 } }
+      responses:
+        "200":
+          description: Document is genuine
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DocumentVerification" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /v1/documents/templates:
+    get:
+      tags: [permits]
+      operationId: listDocumentTemplates
+      x-permission: manage_settings
+      summary: Document templates of the tenant
+      responses:
+        "200":
+          description: Templates
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/DocumentTemplate" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: [permits]
+      operationId: createDocumentTemplate
+      x-permission: manage_settings
+      summary: Create a document template
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DocumentTemplateWrite" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DocumentTemplate" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /v1/documents/templates/{templateId}:
+    put:
+      tags: [permits]
+      operationId: updateDocumentTemplate
+      x-permission: manage_settings
+      summary: Update a template body
+      parameters:
+        - { name: templateId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, body]
+              properties:
+                name: { type: string, minLength: 1, maxLength: 150 }
+                body: { type: string, maxLength: 200000 }
+                variables: { type: array, items: { type: string } }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DocumentTemplate" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /v1/documents/templates/{templateId}/set-default:
+    post:
+      tags: [permits]
+      operationId: setDefaultDocumentTemplate
+      x-permission: manage_settings
+      summary: Make this template the default of its kind
+      parameters:
+        - { name: templateId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DocumentTemplate" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+components:
+  responses:
+    TokenGone:
+      description: The scan token is missing, expired, already used, or for another purpose
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+
+  schemas:
+    ScanPurpose:
+      type: string
+      enum: [classroom_entry, late_arrival, approve_stage, gate_exit, library_visit, library_self_service, library_opname, kiosk]
+    WorkflowKind:
+      type: string
+      enum: [exit_permit, late_arrival, leave_request]
+    WorkflowStatus:
+      type: string
+      enum: [in_progress, approved, rejected, completed, cancelled, expired]
+    LeaveCategory:
+      type: string
+      enum: [religious_ceremony, sick, dispensation, other]
+    RequiredAction:
+      type: string
+      enum: [none, call_parent, send_home]
+
+    ScanRequest:
+      type: object
+      required: [token]
+      properties:
+        token: { type: string, minLength: 16, maxLength: 128 }
+
+    IssuedScanToken:
+      type: object
+      required: [token, purpose, expires_at, expires_in_seconds]
+      properties:
+        token: { type: string }
+        purpose: { $ref: "#/components/schemas/ScanPurpose" }
+        context_id: { type: string, format: uuid }
+        expires_at: { type: string, format: date-time }
+        expires_in_seconds: { type: integer }
+
+    WorkflowStage:
+      type: object
+      required: [key, label, approver_rule, verification]
+      properties:
+        key: { type: string, pattern: "^[a-z0-9_]{2,40}$" }
+        label: { type: string, maxLength: 80 }
+        approver_rule:
+          type: string
+          description: "any_teacher, teacher_of_class_now, homeroom_of_student, or duty:<slug>"
+        verification: { type: string, enum: [qr_scan, manual, auto] }
+        distinct_from: { type: array, items: { type: string } }
+        lookahead_slots: { type: integer, minimum: 0, maximum: 10 }
+
+    WorkflowDefinition:
+      type: object
+      required: [id, kind, version, is_active, stages]
+      properties:
+        id: { type: string, format: uuid }
+        kind: { $ref: "#/components/schemas/WorkflowKind" }
+        version: { type: integer }
+        is_active: { type: boolean }
+        stages: { type: array, items: { $ref: "#/components/schemas/WorkflowStage" } }
+        config: { type: object, additionalProperties: true }
+        created_at: { type: string, format: date-time }
+
+    WorkflowEvent:
+      type: object
+      required: [id, to_status, verification, occurred_at]
+      properties:
+        id: { type: string, format: uuid }
+        stage_key: { type: string }
+        from_status: { type: string }
+        to_status: { type: string }
+        actor_user_id: { type: string, format: uuid }
+        verification: { type: string }
+        note: { type: string }
+        occurred_at: { type: string, format: date-time }
+
+    WorkflowInstance:
+      type: object
+      required: [id, kind, status, current_stage_index, subject_user_id, opened_at, stages]
+      properties:
+        id: { type: string, format: uuid }
+        kind: { $ref: "#/components/schemas/WorkflowKind" }
+        status: { $ref: "#/components/schemas/WorkflowStatus" }
+        current_stage_index: { type: integer }
+        current_stage: { $ref: "#/components/schemas/WorkflowStage" }
+        stages: { type: array, items: { $ref: "#/components/schemas/WorkflowStage" } }
+        subject_user_id: { type: string, format: uuid }
+        class_id: { type: string, format: uuid }
+        opened_at: { type: string, format: date-time }
+        closed_at: { type: string, format: date-time }
+        events: { type: array, items: { $ref: "#/components/schemas/WorkflowEvent" } }
+
+    ExitPermitDetail:
+      type: object
+      required: [instance, destination, start_period_id, end_period_id, student_name, class_name]
+      properties:
+        instance: { $ref: "#/components/schemas/WorkflowInstance" }
+        destination: { type: string }
+        start_period_id: { type: string, format: uuid }
+        end_period_id: { type: string, format: uuid }
+        issued_at: { type: string, format: date-time }
+        exited_at: { type: string, format: date-time }
+        student_name: { type: string }
+        class_name: { type: string }
+
+    LateArrivalDetail:
+      type: object
+      required: [instance, reason, occurrence_number, required_action, homeroom_reported]
+      properties:
+        instance: { $ref: "#/components/schemas/WorkflowInstance" }
+        reason: { type: string }
+        occurrence_number: { type: integer }
+        required_action: { $ref: "#/components/schemas/RequiredAction" }
+        homeroom_reported: { type: boolean }
+        completed_at: { type: string, format: date-time }
+
+    LateArrivalSummary:
+      type: object
+      required: [instance_id, student_user_id, status, current_stage_index, reason, occurrence_number, required_action, opened_at]
+      properties:
+        instance_id: { type: string, format: uuid }
+        student_user_id: { type: string, format: uuid }
+        class_id: { type: string, format: uuid }
+        status: { $ref: "#/components/schemas/WorkflowStatus" }
+        current_stage_index: { type: integer }
+        reason: { type: string }
+        occurrence_number: { type: integer }
+        required_action: { $ref: "#/components/schemas/RequiredAction" }
+        homeroom_reported: { type: boolean }
+        opened_at: { type: string, format: date-time }
+
+    LeaveRequestDetail:
+      type: object
+      required: [instance, category, reason, starts_on, ends_on, student_name, class_name, has_evidence, has_letter]
+      properties:
+        instance: { $ref: "#/components/schemas/WorkflowInstance" }
+        category: { $ref: "#/components/schemas/LeaveCategory" }
+        reason: { type: string }
+        starts_on: { type: string, format: date }
+        ends_on: { type: string, format: date }
+        letter_number: { type: string }
+        issued_at: { type: string, format: date-time }
+        student_name: { type: string }
+        class_name: { type: string }
+        guardian_name: { type: string }
+        has_evidence: { type: boolean }
+        has_letter: { type: boolean }
+
+    LeaveRequestSummary:
+      type: object
+      required: [instance_id, student_user_id, status, current_stage_index, category, starts_on, ends_on, student_name, class_name, opened_at]
+      properties:
+        instance_id: { type: string, format: uuid }
+        student_user_id: { type: string, format: uuid }
+        class_id: { type: string, format: uuid }
+        status: { $ref: "#/components/schemas/WorkflowStatus" }
+        current_stage_index: { type: integer }
+        category: { $ref: "#/components/schemas/LeaveCategory" }
+        reason: { type: string }
+        starts_on: { type: string, format: date }
+        ends_on: { type: string, format: date }
+        letter_number: { type: string }
+        student_name: { type: string }
+        class_name: { type: string }
+        opened_at: { type: string, format: date-time }
+
+    DocumentVerification:
+      type: object
+      required: [number, kind, issued_at, revoked]
+      properties:
+        number: { type: string }
+        kind: { type: string }
+        issued_at: { type: string, format: date-time }
+        student_name: { type: string }
+        class_name: { type: string }
+        valid_from: { type: string, format: date }
+        valid_until: { type: string, format: date }
+        revoked: { type: boolean }
+
+    DocumentTemplateWrite:
+      type: object
+      required: [kind, name, body]
+      properties:
+        kind: { type: string, enum: [leave_letter, warning_letter, class_journal, member_card, item_label, clearance_letter, report] }
+        name: { type: string, minLength: 1, maxLength: 150 }
+        engine: { type: string, enum: [html], default: html }
+        body: { type: string, maxLength: 200000 }
+        variables: { type: array, items: { type: string } }
+        is_default: { type: boolean, default: false }
+
+    DocumentTemplate:
+      type: object
+      required: [id, kind, name, engine, body, is_default, created_at, updated_at]
+      properties:
+        id: { type: string, format: uuid }
+        kind: { type: string }
+        name: { type: string }
+        engine: { type: string }
+        body: { type: string }
+        variables: { type: array, items: { type: string } }
+        is_default: { type: boolean }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }

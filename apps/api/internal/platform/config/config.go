@@ -33,6 +33,11 @@ type Config struct {
 	AccessTokenTTL  time.Duration
 	RefreshTokenTTL time.Duration
 
+	// DocumentSigningKey is a dedicated HMAC secret for issued_documents
+	// verification codes (docs/08-security.md): a compromise of one key
+	// must not unlock the other, so this is never JWTSigningKey.
+	DocumentSigningKey string
+
 	TrustedProxies []string
 	BodyLimitBytes int64
 
@@ -40,6 +45,7 @@ type Config struct {
 	S3Bucket    string
 	S3AccessKey string
 	S3SecretKey string
+	S3UseSSL    bool
 
 	SMTPURL string
 
@@ -61,6 +67,8 @@ func (c Config) IsProduction() bool {
 // Load reads and validates configuration from the process environment,
 // resolving `<VAR>_FILE` indirection for secrets (Docker/Kubernetes secrets
 // mounted as files) before falling back to `<VAR>`.
+//
+//nolint:gocyclo // flat list of env lookups, intentionally linear
 func Load() (Config, error) {
 	var errs []string
 	req := func(name string) string {
@@ -81,12 +89,14 @@ func Load() (Config, error) {
 		DatabaseURL: req("DATABASE_URL"),
 		RedisURL:    lookup("REDIS_URL"),
 
-		JWTSigningKey: req("JWT_SIGNING_KEY"),
+		JWTSigningKey:      req("JWT_SIGNING_KEY"),
+		DocumentSigningKey: req("DOCUMENT_SIGNING_KEY"),
 
 		S3Endpoint:  lookup("S3_ENDPOINT"),
 		S3Bucket:    lookup("S3_BUCKET"),
 		S3AccessKey: lookup("S3_ACCESS_KEY"),
 		S3SecretKey: lookup("S3_SECRET_KEY"),
+		S3UseSSL:    lookup("S3_USE_SSL") == "true",
 
 		SMTPURL: lookup("SMTP_URL"),
 
@@ -101,6 +111,10 @@ func Load() (Config, error) {
 
 	if c.TenancyMode != TenancySingle && c.TenancyMode != TenancyMulti {
 		errs = append(errs, "TENANCY_MODE (must be single or multi)")
+	}
+
+	if c.DocumentSigningKey != "" && len(c.DocumentSigningKey) < 32 {
+		errs = append(errs, "DOCUMENT_SIGNING_KEY (must be at least 32 characters)")
 	}
 
 	origins := lookup("APP_ORIGINS")

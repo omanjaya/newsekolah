@@ -45,3 +45,5 @@ tags:
     description: Duty types and assignments
   - name: audit
     description: Audit log
+  - name: permits
+    description: Scan tokens, exit permits, late arrivals, leave requests, documents

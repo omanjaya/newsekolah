@@ -135,10 +135,16 @@ type Querier interface {
 	ActivateAcademicYear(ctx context.Context, arg ActivateAcademicYearParams) error
 	AddDutyPermission(ctx context.Context, arg AddDutyPermissionParams) error
 	AddRolePermission(ctx context.Context, arg AddRolePermissionParams) error
+	AdvanceWorkflowInstanceStage(ctx context.Context, arg AdvanceWorkflowInstanceStageParams) (WorkflowInstance, error)
 	ArchiveUser(ctx context.Context, arg ArchiveUserParams) error
 	AssignUserRole(ctx context.Context, arg AssignUserRoleParams) error
 	CancelSubstitutionRequest(ctx context.Context, arg CancelSubstitutionRequestParams) (SubstitutionRequest, error)
 	ClassExistsInTenant(ctx context.Context, arg ClassExistsInTenantParams) (bool, error)
+	ClearDefaultDocumentTemplate(ctx context.Context, arg ClearDefaultDocumentTemplateParams) error
+	// Bug fix vs. the old app (docs/08-security.md section 7): single atomic
+	// UPDATE guarded by consumed_at IS NULL AND expires_at > now(), so two
+	// concurrent scans of the same token can never both succeed.
+	ConsumeScanToken(ctx context.Context, arg ConsumeScanTokenParams) (ScanToken, error)
 	CountAssignmentsForDutyType(ctx context.Context, arg CountAssignmentsForDutyTypeParams) (int64, error)
 	// The input to "meeting_number" in the session payload: how many prior
 	// meetings this schedule has already had, so meeting_number = count + 1.
@@ -149,17 +155,30 @@ type Querier interface {
 	CountSchedulesForClassDay(ctx context.Context, arg CountSchedulesForClassDayParams) (int64, error)
 	CountSubmittedSessionsByClassDate(ctx context.Context, arg CountSubmittedSessionsByClassDateParams) (int64, error)
 	CountUsersForRole(ctx context.Context, arg CountUsersForRoleParams) (int64, error)
+	CountWorkflowInstancesForSubjectYear(ctx context.Context, arg CountWorkflowInstancesForSubjectYearParams) (int64, error)
 	CreateAcademicYear(ctx context.Context, arg CreateAcademicYearParams) (AcademicYear, error)
 	CreateAsset(ctx context.Context, arg CreateAssetParams) (Asset, error)
 	CreateAttendanceCorrection(ctx context.Context, arg CreateAttendanceCorrectionParams) (AttendanceCorrection, error)
 	CreateClass(ctx context.Context, arg CreateClassParams) (Class, error)
+	CreateDocumentTemplate(ctx context.Context, arg CreateDocumentTemplateParams) (DocumentTemplate, error)
 	CreateDutyAssignment(ctx context.Context, arg CreateDutyAssignmentParams) (DutyAssignment, error)
 	CreateDutyType(ctx context.Context, arg CreateDutyTypeParams) (DutyType, error)
+	CreateExitPermit(ctx context.Context, arg CreateExitPermitParams) (ExitPermit, error)
 	CreateGradeLevel(ctx context.Context, arg CreateGradeLevelParams) (GradeLevel, error)
 	CreateImpersonationSession(ctx context.Context, arg CreateImpersonationSessionParams) (Session, error)
+	CreateIssuedDocument(ctx context.Context, arg CreateIssuedDocumentParams) (IssuedDocument, error)
 	CreateJournal(ctx context.Context, arg CreateJournalParams) (ClassJournal, error)
+	CreateLateArrival(ctx context.Context, arg CreateLateArrivalParams) (LateArrival, error)
+	CreateLeaveDocument(ctx context.Context, arg CreateLeaveDocumentParams) (LeaveDocument, error)
+	CreateLeaveRequest(ctx context.Context, arg CreateLeaveRequestParams) (LeaveRequest, error)
 	CreatePasswordReset(ctx context.Context, arg CreatePasswordResetParams) (PasswordReset, error)
+	// cross-module read/write; the assets table is shared platform
+	// infrastructure (migrations/0001_platform_core.up.sql), not owned by any
+	// single feature module. permits writes here for evidence images it
+	// re-encodes and letters it renders, same as any other module would.
+	CreatePermitsAsset(ctx context.Context, arg CreatePermitsAssetParams) (uuid.UUID, error)
 	CreateRole(ctx context.Context, arg CreateRoleParams) (Role, error)
+	CreateScanToken(ctx context.Context, arg CreateScanTokenParams) (ScanToken, error)
 	CreateSchedule(ctx context.Context, arg CreateScheduleParams) (Schedule, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error)
 	CreateSubstitutionRequest(ctx context.Context, arg CreateSubstitutionRequestParams) (SubstitutionRequest, error)
@@ -167,9 +186,14 @@ type Querier interface {
 	CreateTenantPolicy(ctx context.Context, arg CreateTenantPolicyParams) (TenantPolicy, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	CreateUserProfile(ctx context.Context, arg CreateUserProfileParams) error
+	CreateWorkflowDefinition(ctx context.Context, arg CreateWorkflowDefinitionParams) (WorkflowDefinition, error)
+	CreateWorkflowEvent(ctx context.Context, arg CreateWorkflowEventParams) (WorkflowEvent, error)
+	CreateWorkflowInstance(ctx context.Context, arg CreateWorkflowInstanceParams) (WorkflowInstance, error)
+	DeactivateActiveWorkflowDefinitions(ctx context.Context, arg DeactivateActiveWorkflowDefinitionsParams) error
 	DeactivateAllAcademicYears(ctx context.Context, tenantID uuid.UUID) error
 	DeleteDutyAssignment(ctx context.Context, arg DeleteDutyAssignmentParams) error
 	DeleteDutyPermissions(ctx context.Context, arg DeleteDutyPermissionsParams) error
+	DeleteExpiredScanTokens(ctx context.Context, arg DeleteExpiredScanTokensParams) (int64, error)
 	DeleteJournal(ctx context.Context, arg DeleteJournalParams) error
 	DeleteRole(ctx context.Context, arg DeleteRoleParams) error
 	DeleteRolePermissions(ctx context.Context, arg DeleteRolePermissionsParams) error
@@ -177,14 +201,33 @@ type Querier interface {
 	DeleteSchedulesByAcademicYear(ctx context.Context, arg DeleteSchedulesByAcademicYearParams) error
 	DeleteUserRoles(ctx context.Context, arg DeleteUserRolesParams) error
 	EmailExists(ctx context.Context, arg EmailExistsParams) (bool, error)
+	// Bug fix vs. the old app (docs/02-system-design.md section 6.2 step 4):
+	// any instance still in_progress past its opening day is force-closed so
+	// it never blocks the next day's attendance. openedBefore is the instant
+	// of local midnight for the tenant's timezone, computed by the caller so
+	// this query stays timezone-agnostic.
+	ExpireHangingWorkflowInstances(ctx context.Context, arg ExpireHangingWorkflowInstancesParams) ([]WorkflowInstance, error)
 	GetAcademicYearByID(ctx context.Context, arg GetAcademicYearByIDParams) (AcademicYear, error)
 	GetAcceptedSubstitutionForScheduleDate(ctx context.Context, arg GetAcceptedSubstitutionForScheduleDateParams) (SubstitutionRequest, error)
 	GetActiveAcademicYear(ctx context.Context, tenantID uuid.UUID) (AcademicYear, error)
+	// cross-module read; replace with reader interface after merge.
+	//
+	// academic (classes, enrollments, periods) and identity (users,
+	// teacher_profiles, student_profiles, duty_types, duty_assignments) own
+	// these tables; permits only reads them, read-only, to evaluate approver
+	// rules and snapshot names. Once every module has merged, each query here
+	// should become a call through a narrow exported interface (the same
+	// pattern identity/service.AcademicYearReader already uses for the school
+	// module) instead of permits querying another module's tables directly.
+	GetActiveEnrollment(ctx context.Context, arg GetActiveEnrollmentParams) (GetActiveEnrollmentRow, error)
 	GetActiveSubstitutionForScheduleDate(ctx context.Context, arg GetActiveSubstitutionForScheduleDateParams) (SubstitutionRequest, error)
+	GetActiveWorkflowDefinition(ctx context.Context, arg GetActiveWorkflowDefinitionParams) (WorkflowDefinition, error)
 	GetAssetByID(ctx context.Context, arg GetAssetByIDParams) (Asset, error)
+	GetAssetObjectKey(ctx context.Context, arg GetAssetObjectKeyParams) (string, error)
 	GetAttendanceDailySummary(ctx context.Context, arg GetAttendanceDailySummaryParams) (AttendanceDailySummary, error)
 	GetAttendanceSessionByID(ctx context.Context, arg GetAttendanceSessionByIDParams) (AttendanceSession, error)
 	GetAttendanceSessionBySchedule(ctx context.Context, arg GetAttendanceSessionByScheduleParams) (AttendanceSession, error)
+	GetClassName(ctx context.Context, arg GetClassNameParams) (string, error)
 	// cross-module read; replace with academic reader interface after merge
 	// Every query in this file reads a table owned by the academic module
 	// (migration 0003), which is being built in parallel in its own worktree.
@@ -192,6 +235,8 @@ type Querier interface {
 	// own sqlc queries over the same tables once both are merged into one
 	// generated db package.
 	GetClassRefForSchedule(ctx context.Context, arg GetClassRefForScheduleParams) (GetClassRefForScheduleRow, error)
+	GetDefaultDocumentTemplate(ctx context.Context, arg GetDefaultDocumentTemplateParams) (DocumentTemplate, error)
+	GetDocumentTemplateByID(ctx context.Context, arg GetDocumentTemplateByIDParams) (DocumentTemplate, error)
 	GetDutyAssignmentByID(ctx context.Context, arg GetDutyAssignmentByIDParams) (DutyAssignment, error)
 	GetDutyTypeByID(ctx context.Context, arg GetDutyTypeByIDParams) (DutyType, error)
 	GetDutyTypeBySlug(ctx context.Context, arg GetDutyTypeBySlugParams) (DutyType, error)
@@ -200,16 +245,32 @@ type Querier interface {
 	// rather than a class_id.
 	GetEnrolledClassForAttendance(ctx context.Context, arg GetEnrolledClassForAttendanceParams) (uuid.UUID, error)
 	GetEntryBySessionStudent(ctx context.Context, arg GetEntryBySessionStudentParams) (AttendanceEntry, error)
+	GetExitPermit(ctx context.Context, arg GetExitPermitParams) (ExitPermit, error)
 	// The class a teacher is homeroom (wali kelas) duty holder of this
 	// academic year, if any -- duty slug "homeroom", scope_class_id per
 	// docs/analysis/backend-inventory.md section 1.9's global-corrector rule.
 	GetHomeroomClassForAttendance(ctx context.Context, arg GetHomeroomClassForAttendanceParams) (pgtype.UUID, error)
+	// permits.AttendanceBlocker: a student mid-flow cannot be marked present
+	// for today's attendance until this resolves, per
+	// docs/analysis/backend-inventory.md 1.16 ("selama belum completed siswa
+	// tidak bisa ditandai hadir").
+	GetInProgressLateArrivalToday(ctx context.Context, arg GetInProgressLateArrivalTodayParams) (WorkflowInstance, error)
+	// Any not-yet-terminal instance of this kind for this subject, used to
+	// reject a new submission with a clear 409 before the DB constraint would.
+	GetInProgressWorkflowInstance(ctx context.Context, arg GetInProgressWorkflowInstanceParams) (WorkflowInstance, error)
+	GetIssuedDocumentByEntity(ctx context.Context, arg GetIssuedDocumentByEntityParams) (IssuedDocument, error)
+	GetIssuedDocumentByVerificationHash(ctx context.Context, arg GetIssuedDocumentByVerificationHashParams) (IssuedDocument, error)
 	GetJournalByID(ctx context.Context, arg GetJournalByIDParams) (ClassJournal, error)
 	GetJournalByUnique(ctx context.Context, arg GetJournalByUniqueParams) (ClassJournal, error)
+	GetLateArrival(ctx context.Context, arg GetLateArrivalParams) (LateArrival, error)
 	// The previous meeting of this schedule, used to look up its journal for
 	// "previous_journal_topic".
 	GetLatestAttendanceSessionBeforeDate(ctx context.Context, arg GetLatestAttendanceSessionBeforeDateParams) (AttendanceSession, error)
 	GetLatestTenantPolicy(ctx context.Context, arg GetLatestTenantPolicyParams) (TenantPolicy, error)
+	GetLatestWorkflowDefinitionVersion(ctx context.Context, arg GetLatestWorkflowDefinitionVersionParams) (int32, error)
+	GetLeaveDocument(ctx context.Context, arg GetLeaveDocumentParams) (LeaveDocument, error)
+	GetLeaveRequest(ctx context.Context, arg GetLeaveRequestParams) (LeaveRequest, error)
+	GetPeriod(ctx context.Context, arg GetPeriodParams) (GetPeriodRow, error)
 	GetPeriodRefForSchedule(ctx context.Context, arg GetPeriodRefForScheduleParams) (Period, error)
 	GetPeriodTemplateRefForDay(ctx context.Context, arg GetPeriodTemplateRefForDayParams) (uuid.UUID, error)
 	GetPlatformSetting(ctx context.Context, key string) ([]byte, error)
@@ -218,11 +279,13 @@ type Querier interface {
 	GetPreviousEntryForStudent(ctx context.Context, arg GetPreviousEntryForStudentParams) (string, error)
 	GetRoleByID(ctx context.Context, arg GetRoleByIDParams) (Role, error)
 	GetRoleBySlug(ctx context.Context, arg GetRoleBySlugParams) (Role, error)
+	GetScanTokenByHash(ctx context.Context, arg GetScanTokenByHashParams) (ScanToken, error)
 	GetScheduleByID(ctx context.Context, arg GetScheduleByIDParams) (Schedule, error)
 	GetSessionByID(ctx context.Context, arg GetSessionByIDParams) (Session, error)
 	GetSessionByRefreshHash(ctx context.Context, arg GetSessionByRefreshHashParams) (Session, error)
 	GetSingleTenant(ctx context.Context) (Tenant, error)
 	GetStaffProfile(ctx context.Context, arg GetStaffProfileParams) (StaffProfile, error)
+	GetStudentGuardianName(ctx context.Context, arg GetStudentGuardianNameParams) (string, error)
 	GetStudentProfile(ctx context.Context, arg GetStudentProfileParams) (StudentProfile, error)
 	GetSubjectRefForSchedule(ctx context.Context, arg GetSubjectRefForScheduleParams) (GetSubjectRefForScheduleRow, error)
 	GetSubstitutionByID(ctx context.Context, arg GetSubstitutionByIDParams) (SubstitutionRequest, error)
@@ -237,12 +300,24 @@ type Querier interface {
 	GetUserByID(ctx context.Context, arg GetUserByIDParams) (User, error)
 	GetUserByUsername(ctx context.Context, arg GetUserByUsernameParams) (User, error)
 	GetUserByUsernameOrEmail(ctx context.Context, arg GetUserByUsernameOrEmailParams) (User, error)
+	GetUserName(ctx context.Context, arg GetUserNameParams) (string, error)
 	GetValidPasswordResetByHash(ctx context.Context, arg GetValidPasswordResetByHashParams) (PasswordReset, error)
+	GetWorkflowDefinitionByID(ctx context.Context, arg GetWorkflowDefinitionByIDParams) (WorkflowDefinition, error)
+	// Used to resolve a stage's approver for a later stage's distinct_from check.
+	GetWorkflowEventByStage(ctx context.Context, arg GetWorkflowEventByStageParams) (WorkflowEvent, error)
+	GetWorkflowInstanceByID(ctx context.Context, arg GetWorkflowInstanceByIDParams) (WorkflowInstance, error)
+	GetWorkflowInstanceForUpdate(ctx context.Context, arg GetWorkflowInstanceForUpdateParams) (WorkflowInstance, error)
+	// Evaluates the "duty:<slug>" approver rule: does user_id currently hold
+	// an active duty of this slug, and (for a class-scoped duty) does it cover
+	// class_id (NULL class_id matches only a school-scoped duty).
+	HasActiveDuty(ctx context.Context, arg HasActiveDutyParams) (bool, error)
 	InsertImpersonationAction(ctx context.Context, arg InsertImpersonationActionParams) error
 	InsertLoginAttempt(ctx context.Context, arg InsertLoginAttemptParams) error
+	IsActiveTeacher(ctx context.Context, arg IsActiveTeacherParams) (bool, error)
 	IsActiveTeacherRef(ctx context.Context, arg IsActiveTeacherRefParams) (bool, error)
 	IsSchoolDayRef(ctx context.Context, arg IsSchoolDayRefParams) (bool, error)
 	IsSessionActive(ctx context.Context, arg IsSessionActiveParams) (pgtype.Bool, error)
+	IssueLeaveRequest(ctx context.Context, arg IssueLeaveRequestParams) (LeaveRequest, error)
 	ListAcademicYears(ctx context.Context, tenantID uuid.UUID) ([]AcademicYear, error)
 	// Every schedule a teacher is standing in for on one date, accepted only --
 	// the input to the attendance module's "today's sessions" list
@@ -263,6 +338,10 @@ type Querier interface {
 	ListActiveEnrollmentsForAttendance(ctx context.Context, arg ListActiveEnrollmentsForAttendanceParams) ([]ListActiveEnrollmentsForAttendanceRow, error)
 	ListActiveEnrollmentsRefByClass(ctx context.Context, arg ListActiveEnrollmentsRefByClassParams) ([]ListActiveEnrollmentsRefByClassRow, error)
 	ListActiveSessionsForUser(ctx context.Context, arg ListActiveSessionsForUserParams) ([]Session, error)
+	// tenants carries no RLS policy (see modules/school/repository.go), so
+	// this is safe to run off the pool directly for the platform-wide expiry
+	// and token-cleanup jobs, which must iterate every tenant.
+	ListActiveTenants(ctx context.Context) ([]ListActiveTenantsRow, error)
 	ListAttendanceDailySummaryForClassDate(ctx context.Context, arg ListAttendanceDailySummaryForClassDateParams) ([]AttendanceDailySummary, error)
 	ListAttendanceDailySummaryForStudentMonth(ctx context.Context, arg ListAttendanceDailySummaryForStudentMonthParams) ([]AttendanceDailySummary, error)
 	ListAttendanceSessionsByClassDate(ctx context.Context, arg ListAttendanceSessionsByClassDateParams) ([]AttendanceSession, error)
@@ -279,6 +358,7 @@ type Querier interface {
 	// if one has been opened -- the raw input to the monitor snapshot's
 	// per-class submission cards.
 	ListCurrentPeriodScheduleCardsForAttendance(ctx context.Context, arg ListCurrentPeriodScheduleCardsForAttendanceParams) ([]ListCurrentPeriodScheduleCardsForAttendanceRow, error)
+	ListDocumentTemplates(ctx context.Context, tenantID uuid.UUID) ([]DocumentTemplate, error)
 	ListDutyAssignmentsAdmin(ctx context.Context, arg ListDutyAssignmentsAdminParams) ([]ListDutyAssignmentsAdminRow, error)
 	ListDutyPermissionCodes(ctx context.Context, arg ListDutyPermissionCodesParams) ([]string, error)
 	ListDutyTypes(ctx context.Context, arg ListDutyTypesParams) ([]DutyType, error)
@@ -286,8 +366,13 @@ type Querier interface {
 	// Every status code recorded for one student across the given date's
 	// submitted sessions -- the raw input to attendance/domain.ComputeDailyStatus.
 	ListEntryStatusesForStudentDate(ctx context.Context, arg ListEntryStatusesForStudentDateParams) ([]string, error)
+	ListExitPermitsForReport(ctx context.Context, arg ListExitPermitsForReportParams) ([]ListExitPermitsForReportRow, error)
 	ListJournalsByClass(ctx context.Context, arg ListJournalsByClassParams) ([]ClassJournal, error)
 	ListJournalsByTeacher(ctx context.Context, arg ListJournalsByTeacherParams) ([]ClassJournal, error)
+	ListLateArrivalsForReview(ctx context.Context, tenantID uuid.UUID) ([]ListLateArrivalsForReviewRow, error)
+	ListLeaveDocuments(ctx context.Context, arg ListLeaveDocumentsParams) ([]LeaveDocument, error)
+	ListLeaveRequestsBySubject(ctx context.Context, arg ListLeaveRequestsBySubjectParams) ([]ListLeaveRequestsBySubjectRow, error)
+	ListLeaveRequestsForReview(ctx context.Context, arg ListLeaveRequestsForReviewParams) ([]ListLeaveRequestsForReviewRow, error)
 	ListPeriodsRefByTemplate(ctx context.Context, arg ListPeriodsRefByTemplateParams) ([]Period, error)
 	ListPermissionCodesForDutyTypes(ctx context.Context, dutyTypeIds []uuid.UUID) ([]ListPermissionCodesForDutyTypesRow, error)
 	ListPermissionCodesForRoles(ctx context.Context, roleIds []uuid.UUID) ([]string, error)
@@ -306,7 +391,28 @@ type Querier interface {
 	ListTenantSettingsByPrefix(ctx context.Context, arg ListTenantSettingsByPrefixParams) ([]TenantSetting, error)
 	ListUserRoleSlugs(ctx context.Context, userID uuid.UUID) ([]string, error)
 	ListUsersAdmin(ctx context.Context, arg ListUsersAdminParams) ([]ListUsersAdminRow, error)
+	ListWorkflowDefinitions(ctx context.Context, tenantID uuid.UUID) ([]WorkflowDefinition, error)
+	ListWorkflowEventsByInstance(ctx context.Context, arg ListWorkflowEventsByInstanceParams) ([]WorkflowEvent, error)
+	ListWorkflowInstancesByClassAndKind(ctx context.Context, arg ListWorkflowInstancesByClassAndKindParams) ([]WorkflowInstance, error)
+	ListWorkflowInstancesBySubject(ctx context.Context, arg ListWorkflowInstancesBySubjectParams) ([]WorkflowInstance, error)
+	// Transaction-scoped advisory lock so two concurrent late-arrival opens
+	// for the same student cannot both read the same
+	// CountWorkflowInstancesForSubjectYear result and mint the same
+	// occurrence_number (docs/analysis/database-inventory.md 1.5: the old
+	// app's per-student late-arrival numbering had exactly this race).
+	LockSubjectForInstanceCounting(ctx context.Context, arg LockSubjectForInstanceCountingParams) error
+	MarkExitPermitExited(ctx context.Context, arg MarkExitPermitExitedParams) (ExitPermit, error)
+	MarkExitPermitIssued(ctx context.Context, arg MarkExitPermitIssuedParams) (ExitPermit, error)
+	MarkLateArrivalCompleted(ctx context.Context, arg MarkLateArrivalCompletedParams) (LateArrival, error)
 	MarkPasswordResetUsed(ctx context.Context, arg MarkPasswordResetUsedParams) error
+	// Shallow-merges extra into the instance's existing payload (jsonb ||),
+	// e.g. attaching a late arrival review's opaque violation_ids list.
+	MergeWorkflowInstancePayload(ctx context.Context, arg MergeWorkflowInstancePayloadParams) (WorkflowInstance, error)
+	// Bug fix vs. the old app (docs/analysis/backend-inventory.md 1.14/1.17):
+	// the issued number comes from this single atomic UPDATE ... RETURNING
+	// (implemented as an upsert since the row may not exist yet), never a
+	// COUNT(*) + 1 that two concurrent issuances could both compute.
+	NextDocumentSequenceValue(ctx context.Context, arg NextDocumentSequenceValueParams) (int64, error)
 	// Idempotent open: a second call for the same (schedule_id, date) returns
 	// no row from the INSERT and the caller falls back to GetAttendanceSessionBySchedule.
 	OpenAttendanceSession(ctx context.Context, arg OpenAttendanceSessionParams) (AttendanceSession, error)
@@ -317,14 +423,18 @@ type Querier interface {
 	RevokeSession(ctx context.Context, arg RevokeSessionParams) error
 	RevokeSessionFamily(ctx context.Context, arg RevokeSessionFamilyParams) error
 	SearchTenants(ctx context.Context, name string) ([]Tenant, error)
+	SetDefaultDocumentTemplate(ctx context.Context, arg SetDefaultDocumentTemplateParams) (DocumentTemplate, error)
+	SetExitPermitGateToken(ctx context.Context, arg SetExitPermitGateTokenParams) (ExitPermit, error)
 	SetUserAvatarAsset(ctx context.Context, arg SetUserAvatarAssetParams) error
 	SetUserStatus(ctx context.Context, arg SetUserStatusParams) error
 	SoftDeleteDutyType(ctx context.Context, arg SoftDeleteDutyTypeParams) error
 	SubmitAttendanceSession(ctx context.Context, arg SubmitAttendanceSessionParams) (AttendanceSession, error)
 	TouchSessionLastSeen(ctx context.Context, arg TouchSessionLastSeenParams) error
+	UpdateDocumentTemplate(ctx context.Context, arg UpdateDocumentTemplateParams) (DocumentTemplate, error)
 	UpdateDutyAssignment(ctx context.Context, arg UpdateDutyAssignmentParams) error
 	UpdateDutyType(ctx context.Context, arg UpdateDutyTypeParams) error
 	UpdateJournal(ctx context.Context, arg UpdateJournalParams) (ClassJournal, error)
+	UpdateLateArrivalReview(ctx context.Context, arg UpdateLateArrivalReviewParams) (LateArrival, error)
 	UpdateOwnProfile(ctx context.Context, arg UpdateOwnProfileParams) error
 	UpdateRole(ctx context.Context, arg UpdateRoleParams) error
 	UpdateSchedule(ctx context.Context, arg UpdateScheduleParams) (Schedule, error)

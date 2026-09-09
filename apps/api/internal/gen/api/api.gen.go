@@ -126,6 +126,54 @@ func (e CreateUserRequestLocale) Valid() bool {
 	}
 }
 
+// Defines values for DocumentTemplateWriteEngine.
+const (
+	Html DocumentTemplateWriteEngine = "html"
+)
+
+// Valid indicates whether the value is a known member of the DocumentTemplateWriteEngine enum.
+func (e DocumentTemplateWriteEngine) Valid() bool {
+	switch e {
+	case Html:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DocumentTemplateWriteKind.
+const (
+	ClassJournal    DocumentTemplateWriteKind = "class_journal"
+	ClearanceLetter DocumentTemplateWriteKind = "clearance_letter"
+	ItemLabel       DocumentTemplateWriteKind = "item_label"
+	LeaveLetter     DocumentTemplateWriteKind = "leave_letter"
+	MemberCard      DocumentTemplateWriteKind = "member_card"
+	Report          DocumentTemplateWriteKind = "report"
+	WarningLetter   DocumentTemplateWriteKind = "warning_letter"
+)
+
+// Valid indicates whether the value is a known member of the DocumentTemplateWriteKind enum.
+func (e DocumentTemplateWriteKind) Valid() bool {
+	switch e {
+	case ClassJournal:
+		return true
+	case ClearanceLetter:
+		return true
+	case ItemLabel:
+		return true
+	case LeaveLetter:
+		return true
+	case MemberCard:
+		return true
+	case Report:
+		return true
+	case WarningLetter:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for DutyScopeKind.
 const (
 	DutyScopeKindClass   DutyScopeKind = "class"
@@ -219,6 +267,30 @@ func (e ImportRowAction) Valid() bool {
 	}
 }
 
+// Defines values for LeaveCategory.
+const (
+	Dispensation      LeaveCategory = "dispensation"
+	Other             LeaveCategory = "other"
+	ReligiousCeremony LeaveCategory = "religious_ceremony"
+	Sick              LeaveCategory = "sick"
+)
+
+// Valid indicates whether the value is a known member of the LeaveCategory enum.
+func (e LeaveCategory) Valid() bool {
+	switch e {
+	case Dispensation:
+		return true
+	case Other:
+		return true
+	case ReligiousCeremony:
+		return true
+	case Sick:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for MeDutiesScopeKind.
 const (
 	MeDutiesScopeKindClass   MeDutiesScopeKind = "class"
@@ -266,19 +338,19 @@ func (e MeProfileKind) Valid() bool {
 
 // Defines values for MonitorSessionCardStatus.
 const (
-	InProgress MonitorSessionCardStatus = "in_progress"
-	NotStarted MonitorSessionCardStatus = "not_started"
-	Submitted  MonitorSessionCardStatus = "submitted"
+	MonitorSessionCardStatusInProgress MonitorSessionCardStatus = "in_progress"
+	MonitorSessionCardStatusNotStarted MonitorSessionCardStatus = "not_started"
+	MonitorSessionCardStatusSubmitted  MonitorSessionCardStatus = "submitted"
 )
 
 // Valid indicates whether the value is a known member of the MonitorSessionCardStatus enum.
 func (e MonitorSessionCardStatus) Valid() bool {
 	switch e {
-	case InProgress:
+	case MonitorSessionCardStatusInProgress:
 		return true
-	case NotStarted:
+	case MonitorSessionCardStatusNotStarted:
 		return true
-	case Submitted:
+	case MonitorSessionCardStatusSubmitted:
 		return true
 	default:
 		return false
@@ -330,6 +402,27 @@ func (e PromotionAction) Valid() bool {
 	}
 }
 
+// Defines values for RequiredAction.
+const (
+	CallParent RequiredAction = "call_parent"
+	None       RequiredAction = "none"
+	SendHome   RequiredAction = "send_home"
+)
+
+// Valid indicates whether the value is a known member of the RequiredAction enum.
+func (e RequiredAction) Valid() bool {
+	switch e {
+	case CallParent:
+		return true
+	case None:
+		return true
+	case SendHome:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for SaveAttendanceEntriesRequestMode.
 const (
 	Correction SaveAttendanceEntriesRequestMode = "correction"
@@ -342,6 +435,42 @@ func (e SaveAttendanceEntriesRequestMode) Valid() bool {
 	case Correction:
 		return true
 	case Normal:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ScanPurpose.
+const (
+	ScanPurposeApproveStage       ScanPurpose = "approve_stage"
+	ScanPurposeClassroomEntry     ScanPurpose = "classroom_entry"
+	ScanPurposeGateExit           ScanPurpose = "gate_exit"
+	ScanPurposeKiosk              ScanPurpose = "kiosk"
+	ScanPurposeLateArrival        ScanPurpose = "late_arrival"
+	ScanPurposeLibraryOpname      ScanPurpose = "library_opname"
+	ScanPurposeLibrarySelfService ScanPurpose = "library_self_service"
+	ScanPurposeLibraryVisit       ScanPurpose = "library_visit"
+)
+
+// Valid indicates whether the value is a known member of the ScanPurpose enum.
+func (e ScanPurpose) Valid() bool {
+	switch e {
+	case ScanPurposeApproveStage:
+		return true
+	case ScanPurposeClassroomEntry:
+		return true
+	case ScanPurposeGateExit:
+		return true
+	case ScanPurposeKiosk:
+		return true
+	case ScanPurposeLateArrival:
+		return true
+	case ScanPurposeLibraryOpname:
+		return true
+	case ScanPurposeLibrarySelfService:
+		return true
+	case ScanPurposeLibraryVisit:
 		return true
 	default:
 		return false
@@ -371,22 +500,22 @@ func (e ScheduleSource) Valid() bool {
 
 // Defines values for SubstitutionStatus.
 const (
-	Accepted  SubstitutionStatus = "accepted"
-	Cancelled SubstitutionStatus = "cancelled"
-	Pending   SubstitutionStatus = "pending"
-	Rejected  SubstitutionStatus = "rejected"
+	SubstitutionStatusAccepted  SubstitutionStatus = "accepted"
+	SubstitutionStatusCancelled SubstitutionStatus = "cancelled"
+	SubstitutionStatusPending   SubstitutionStatus = "pending"
+	SubstitutionStatusRejected  SubstitutionStatus = "rejected"
 )
 
 // Valid indicates whether the value is a known member of the SubstitutionStatus enum.
 func (e SubstitutionStatus) Valid() bool {
 	switch e {
-	case Accepted:
+	case SubstitutionStatusAccepted:
 		return true
-	case Cancelled:
+	case SubstitutionStatusCancelled:
 		return true
-	case Pending:
+	case SubstitutionStatusPending:
 		return true
-	case Rejected:
+	case SubstitutionStatusRejected:
 		return true
 	default:
 		return false
@@ -471,6 +600,78 @@ func (e UserWriteFieldsLocale) Valid() bool {
 	}
 }
 
+// Defines values for WorkflowKind.
+const (
+	WorkflowKindExitPermit   WorkflowKind = "exit_permit"
+	WorkflowKindLateArrival  WorkflowKind = "late_arrival"
+	WorkflowKindLeaveRequest WorkflowKind = "leave_request"
+)
+
+// Valid indicates whether the value is a known member of the WorkflowKind enum.
+func (e WorkflowKind) Valid() bool {
+	switch e {
+	case WorkflowKindExitPermit:
+		return true
+	case WorkflowKindLateArrival:
+		return true
+	case WorkflowKindLeaveRequest:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WorkflowStageVerification.
+const (
+	Auto   WorkflowStageVerification = "auto"
+	Manual WorkflowStageVerification = "manual"
+	QrScan WorkflowStageVerification = "qr_scan"
+)
+
+// Valid indicates whether the value is a known member of the WorkflowStageVerification enum.
+func (e WorkflowStageVerification) Valid() bool {
+	switch e {
+	case Auto:
+		return true
+	case Manual:
+		return true
+	case QrScan:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WorkflowStatus.
+const (
+	WorkflowStatusApproved   WorkflowStatus = "approved"
+	WorkflowStatusCancelled  WorkflowStatus = "cancelled"
+	WorkflowStatusCompleted  WorkflowStatus = "completed"
+	WorkflowStatusExpired    WorkflowStatus = "expired"
+	WorkflowStatusInProgress WorkflowStatus = "in_progress"
+	WorkflowStatusRejected   WorkflowStatus = "rejected"
+)
+
+// Valid indicates whether the value is a known member of the WorkflowStatus enum.
+func (e WorkflowStatus) Valid() bool {
+	switch e {
+	case WorkflowStatusApproved:
+		return true
+	case WorkflowStatusCancelled:
+		return true
+	case WorkflowStatusCompleted:
+		return true
+	case WorkflowStatusExpired:
+		return true
+	case WorkflowStatusInProgress:
+		return true
+	case WorkflowStatusRejected:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for GetHealth200JSONResponseBodyChecks.
 const (
 	GetHealth200JSONResponseBodyChecksFail    GetHealth200JSONResponseBodyChecks = "fail"
@@ -522,6 +723,24 @@ func (e ExportJournalsParamsFormat) Valid() bool {
 	case Docx:
 		return true
 	case Xlsx:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GetLeaveDocumentUrlParamsKind.
+const (
+	Evidence GetLeaveDocumentUrlParamsKind = "evidence"
+	Letter   GetLeaveDocumentUrlParamsKind = "letter"
+)
+
+// Valid indicates whether the value is a known member of the GetLeaveDocumentUrlParamsKind enum.
+func (e GetLeaveDocumentUrlParamsKind) Valid() bool {
+	switch e {
+	case Evidence:
+		return true
+	case Letter:
 		return true
 	default:
 		return false
@@ -843,6 +1062,47 @@ type CreateUserRequest struct {
 // CreateUserRequestLocale defines model for CreateUserRequest.Locale.
 type CreateUserRequestLocale string
 
+// DocumentTemplate defines model for DocumentTemplate.
+type DocumentTemplate struct {
+	Body      string             `json:"body"`
+	CreatedAt time.Time          `json:"created_at"`
+	Engine    string             `json:"engine"`
+	Id        openapi_types.UUID `json:"id"`
+	IsDefault bool               `json:"is_default"`
+	Kind      string             `json:"kind"`
+	Name      string             `json:"name"`
+	UpdatedAt time.Time          `json:"updated_at"`
+	Variables *[]string          `json:"variables,omitempty"`
+}
+
+// DocumentTemplateWrite defines model for DocumentTemplateWrite.
+type DocumentTemplateWrite struct {
+	Body      string                       `json:"body"`
+	Engine    *DocumentTemplateWriteEngine `json:"engine,omitempty"`
+	IsDefault *bool                        `json:"is_default,omitempty"`
+	Kind      DocumentTemplateWriteKind    `json:"kind"`
+	Name      string                       `json:"name"`
+	Variables *[]string                    `json:"variables,omitempty"`
+}
+
+// DocumentTemplateWriteEngine defines model for DocumentTemplateWrite.Engine.
+type DocumentTemplateWriteEngine string
+
+// DocumentTemplateWriteKind defines model for DocumentTemplateWrite.Kind.
+type DocumentTemplateWriteKind string
+
+// DocumentVerification defines model for DocumentVerification.
+type DocumentVerification struct {
+	ClassName   *string             `json:"class_name,omitempty"`
+	IssuedAt    time.Time           `json:"issued_at"`
+	Kind        string              `json:"kind"`
+	Number      string              `json:"number"`
+	Revoked     bool                `json:"revoked"`
+	StudentName *string             `json:"student_name,omitempty"`
+	ValidFrom   *openapi_types.Date `json:"valid_from,omitempty"`
+	ValidUntil  *openapi_types.Date `json:"valid_until,omitempty"`
+}
+
 // DutyAssignment defines model for DutyAssignment.
 type DutyAssignment struct {
 	AcademicYearId openapi_types.UUID  `json:"academic_year_id"`
@@ -926,6 +1186,18 @@ type Error struct {
 	} `json:"error"`
 }
 
+// ExitPermitDetail defines model for ExitPermitDetail.
+type ExitPermitDetail struct {
+	ClassName     string             `json:"class_name"`
+	Destination   string             `json:"destination"`
+	EndPeriodId   openapi_types.UUID `json:"end_period_id"`
+	ExitedAt      *time.Time         `json:"exited_at,omitempty"`
+	Instance      WorkflowInstance   `json:"instance"`
+	IssuedAt      *time.Time         `json:"issued_at,omitempty"`
+	StartPeriodId openapi_types.UUID `json:"start_period_id"`
+	StudentName   string             `json:"student_name"`
+}
+
 // GradeLevel defines model for GradeLevel.
 type GradeLevel struct {
 	Code     string             `json:"code"`
@@ -963,6 +1235,15 @@ type ImportRowResultList struct {
 	Data []ImportRowResult `json:"data"`
 }
 
+// IssuedScanToken defines model for IssuedScanToken.
+type IssuedScanToken struct {
+	ContextId        *openapi_types.UUID `json:"context_id,omitempty"`
+	ExpiresAt        time.Time           `json:"expires_at"`
+	ExpiresInSeconds int                 `json:"expires_in_seconds"`
+	Purpose          ScanPurpose         `json:"purpose"`
+	Token            string              `json:"token"`
+}
+
 // Journal defines model for Journal.
 type Journal struct {
 	AcademicYearId  openapi_types.UUID `json:"academic_year_id"`
@@ -988,6 +1269,66 @@ type JournalWriteRequest struct {
 	Reflection     *string            `json:"reflection,omitempty"`
 	SubjectId      openapi_types.UUID `json:"subject_id"`
 	Topic          string             `json:"topic"`
+}
+
+// LateArrivalDetail defines model for LateArrivalDetail.
+type LateArrivalDetail struct {
+	CompletedAt      *time.Time       `json:"completed_at,omitempty"`
+	HomeroomReported bool             `json:"homeroom_reported"`
+	Instance         WorkflowInstance `json:"instance"`
+	OccurrenceNumber int              `json:"occurrence_number"`
+	Reason           string           `json:"reason"`
+	RequiredAction   RequiredAction   `json:"required_action"`
+}
+
+// LateArrivalSummary defines model for LateArrivalSummary.
+type LateArrivalSummary struct {
+	ClassId           *openapi_types.UUID `json:"class_id,omitempty"`
+	CurrentStageIndex int                 `json:"current_stage_index"`
+	HomeroomReported  *bool               `json:"homeroom_reported,omitempty"`
+	InstanceId        openapi_types.UUID  `json:"instance_id"`
+	OccurrenceNumber  int                 `json:"occurrence_number"`
+	OpenedAt          time.Time           `json:"opened_at"`
+	Reason            string              `json:"reason"`
+	RequiredAction    RequiredAction      `json:"required_action"`
+	Status            WorkflowStatus      `json:"status"`
+	StudentUserId     openapi_types.UUID  `json:"student_user_id"`
+}
+
+// LeaveCategory defines model for LeaveCategory.
+type LeaveCategory string
+
+// LeaveRequestDetail defines model for LeaveRequestDetail.
+type LeaveRequestDetail struct {
+	Category     LeaveCategory      `json:"category"`
+	ClassName    string             `json:"class_name"`
+	EndsOn       openapi_types.Date `json:"ends_on"`
+	GuardianName *string            `json:"guardian_name,omitempty"`
+	HasEvidence  bool               `json:"has_evidence"`
+	HasLetter    bool               `json:"has_letter"`
+	Instance     WorkflowInstance   `json:"instance"`
+	IssuedAt     *time.Time         `json:"issued_at,omitempty"`
+	LetterNumber *string            `json:"letter_number,omitempty"`
+	Reason       string             `json:"reason"`
+	StartsOn     openapi_types.Date `json:"starts_on"`
+	StudentName  string             `json:"student_name"`
+}
+
+// LeaveRequestSummary defines model for LeaveRequestSummary.
+type LeaveRequestSummary struct {
+	Category          LeaveCategory       `json:"category"`
+	ClassId           *openapi_types.UUID `json:"class_id,omitempty"`
+	ClassName         string              `json:"class_name"`
+	CurrentStageIndex int                 `json:"current_stage_index"`
+	EndsOn            openapi_types.Date  `json:"ends_on"`
+	InstanceId        openapi_types.UUID  `json:"instance_id"`
+	LetterNumber      *string             `json:"letter_number,omitempty"`
+	OpenedAt          time.Time           `json:"opened_at"`
+	Reason            *string             `json:"reason,omitempty"`
+	StartsOn          openapi_types.Date  `json:"starts_on"`
+	Status            WorkflowStatus      `json:"status"`
+	StudentName       string              `json:"student_name"`
+	StudentUserId     openapi_types.UUID  `json:"student_user_id"`
 }
 
 // LoginRequest defines model for LoginRequest.
@@ -1170,6 +1511,9 @@ type PromotionRequest struct {
 	ToYearId   openapi_types.UUID   `json:"to_year_id"`
 }
 
+// RequiredAction defines model for RequiredAction.
+type RequiredAction string
+
 // Role defines model for Role.
 type Role struct {
 	Id        openapi_types.UUID `json:"id"`
@@ -1232,6 +1576,14 @@ type SaveAttendanceEntriesRequest struct {
 
 // SaveAttendanceEntriesRequestMode defines model for SaveAttendanceEntriesRequest.Mode.
 type SaveAttendanceEntriesRequestMode string
+
+// ScanPurpose defines model for ScanPurpose.
+type ScanPurpose string
+
+// ScanRequest defines model for ScanRequest.
+type ScanRequest struct {
+	Token string `json:"token"`
+}
 
 // Schedule defines model for Schedule.
 type Schedule struct {
@@ -1546,6 +1898,64 @@ type WeekdayAssignment struct {
 	TemplateId openapi_types.UUID `json:"template_id"`
 }
 
+// WorkflowDefinition defines model for WorkflowDefinition.
+type WorkflowDefinition struct {
+	Config    *map[string]interface{} `json:"config,omitempty"`
+	CreatedAt *time.Time              `json:"created_at,omitempty"`
+	Id        openapi_types.UUID      `json:"id"`
+	IsActive  bool                    `json:"is_active"`
+	Kind      WorkflowKind            `json:"kind"`
+	Stages    []WorkflowStage         `json:"stages"`
+	Version   int                     `json:"version"`
+}
+
+// WorkflowEvent defines model for WorkflowEvent.
+type WorkflowEvent struct {
+	ActorUserId  *openapi_types.UUID `json:"actor_user_id,omitempty"`
+	FromStatus   *string             `json:"from_status,omitempty"`
+	Id           openapi_types.UUID  `json:"id"`
+	Note         *string             `json:"note,omitempty"`
+	OccurredAt   time.Time           `json:"occurred_at"`
+	StageKey     *string             `json:"stage_key,omitempty"`
+	ToStatus     string              `json:"to_status"`
+	Verification string              `json:"verification"`
+}
+
+// WorkflowInstance defines model for WorkflowInstance.
+type WorkflowInstance struct {
+	ClassId           *openapi_types.UUID `json:"class_id,omitempty"`
+	ClosedAt          *time.Time          `json:"closed_at,omitempty"`
+	CurrentStage      *WorkflowStage      `json:"current_stage,omitempty"`
+	CurrentStageIndex int                 `json:"current_stage_index"`
+	Events            *[]WorkflowEvent    `json:"events,omitempty"`
+	Id                openapi_types.UUID  `json:"id"`
+	Kind              WorkflowKind        `json:"kind"`
+	OpenedAt          time.Time           `json:"opened_at"`
+	Stages            []WorkflowStage     `json:"stages"`
+	Status            WorkflowStatus      `json:"status"`
+	SubjectUserId     openapi_types.UUID  `json:"subject_user_id"`
+}
+
+// WorkflowKind defines model for WorkflowKind.
+type WorkflowKind string
+
+// WorkflowStage defines model for WorkflowStage.
+type WorkflowStage struct {
+	// ApproverRule any_teacher, teacher_of_class_now, homeroom_of_student, or duty:<slug>
+	ApproverRule   string                    `json:"approver_rule"`
+	DistinctFrom   *[]string                 `json:"distinct_from,omitempty"`
+	Key            string                    `json:"key"`
+	Label          string                    `json:"label"`
+	LookaheadSlots *int                      `json:"lookahead_slots,omitempty"`
+	Verification   WorkflowStageVerification `json:"verification"`
+}
+
+// WorkflowStageVerification defines model for WorkflowStage.Verification.
+type WorkflowStageVerification string
+
+// WorkflowStatus defines model for WorkflowStatus.
+type WorkflowStatus string
+
 // ClassIdParam defines model for ClassIdParam.
 type ClassIdParam = openapi_types.UUID
 
@@ -1596,6 +2006,9 @@ type RateLimited = Error
 
 // ScheduleConflict defines model for ScheduleConflict.
 type ScheduleConflict = Error
+
+// TokenGone defines model for TokenGone.
+type TokenGone = Error
 
 // Unauthorized defines model for Unauthorized.
 type Unauthorized = Error
@@ -1790,6 +2203,19 @@ type RefreshTokenJSONBody struct {
 	RefreshToken *string `json:"refresh_token,omitempty"`
 }
 
+// UpdateDocumentTemplateJSONBody defines parameters for UpdateDocumentTemplate.
+type UpdateDocumentTemplateJSONBody struct {
+	Body      string    `json:"body"`
+	Name      string    `json:"name"`
+	Variables *[]string `json:"variables,omitempty"`
+}
+
+// VerifyDocumentParams defines parameters for VerifyDocument.
+type VerifyDocumentParams struct {
+	// XTenant Tenant slug for mobile clients before a token exists. Ignored when the host already resolves a tenant or in single-tenant mode.
+	XTenant *TenantHeader `json:"X-Tenant,omitempty"`
+}
+
 // ListDutyTypesParams defines parameters for ListDutyTypes.
 type ListDutyTypesParams struct {
 	IncludeInactive *bool `form:"include_inactive,omitempty" json:"include_inactive,omitempty"`
@@ -1815,6 +2241,19 @@ type UpdateDutyAssignmentJSONBody struct {
 	IsActive bool                `json:"is_active"`
 }
 
+// ListMyExitPermitsParams defines parameters for ListMyExitPermits.
+type ListMyExitPermitsParams struct {
+	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// CreateExitPermitJSONBody defines parameters for CreateExitPermit.
+type CreateExitPermitJSONBody struct {
+	Destination   string             `json:"destination"`
+	EndPeriodId   openapi_types.UUID `json:"end_period_id"`
+	StartPeriodId openapi_types.UUID `json:"start_period_id"`
+}
+
 // ListJournalsParams defines parameters for ListJournals.
 type ListJournalsParams struct {
 	AcademicYearId openapi_types.UUID  `form:"academic_year_id" json:"academic_year_id"`
@@ -1830,6 +2269,52 @@ type ExportJournalsParams struct {
 
 // ExportJournalsParamsFormat defines parameters for ExportJournals.
 type ExportJournalsParamsFormat string
+
+// OpenLateArrivalJSONBody defines parameters for OpenLateArrival.
+type OpenLateArrivalJSONBody struct {
+	Reason *string `json:"reason,omitempty"`
+	Token  string  `json:"token"`
+}
+
+// ReviewLateArrivalJSONBody defines parameters for ReviewLateArrival.
+type ReviewLateArrivalJSONBody struct {
+	HomeroomReported bool                  `json:"homeroom_reported"`
+	Reason           *string               `json:"reason,omitempty"`
+	ViolationIds     *[]openapi_types.UUID `json:"violation_ids,omitempty"`
+}
+
+// ListMyLeaveRequestsParams defines parameters for ListMyLeaveRequests.
+type ListMyLeaveRequestsParams struct {
+	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// SubmitLeaveRequestJSONBody defines parameters for SubmitLeaveRequest.
+type SubmitLeaveRequestJSONBody struct {
+	Category LeaveCategory      `json:"category"`
+	EndsOn   openapi_types.Date `json:"ends_on"`
+	Reason   string             `json:"reason"`
+	StartsOn openapi_types.Date `json:"starts_on"`
+}
+
+// ListLeaveRequestsForReviewParams defines parameters for ListLeaveRequestsForReview.
+type ListLeaveRequestsForReviewParams struct {
+	ClassId *openapi_types.UUID `form:"class_id,omitempty" json:"class_id,omitempty"`
+}
+
+// GetLeaveDocumentUrlParamsKind defines parameters for GetLeaveDocumentUrl.
+type GetLeaveDocumentUrlParamsKind string
+
+// ConfirmLeaveEvidenceJSONBody defines parameters for ConfirmLeaveEvidence.
+type ConfirmLeaveEvidenceJSONBody struct {
+	ObjectKey string `json:"object_key"`
+}
+
+// ReviewLeaveRequestJSONBody defines parameters for ReviewLeaveRequest.
+type ReviewLeaveRequestJSONBody struct {
+	Approve bool    `json:"approve"`
+	Note    *string `json:"note,omitempty"`
+}
 
 // ConfirmAvatarUploadJSONBody defines parameters for ConfirmAvatarUpload.
 type ConfirmAvatarUploadJSONBody struct {
@@ -1857,6 +2342,13 @@ type UpdateMyProfileJSONBodyLocale string
 type GetMonitorSnapshotParams struct {
 	// XMonitorToken The tenant's configured monitor.display_token setting.
 	XMonitorToken MonitorTokenHeader `json:"X-Monitor-Token"`
+}
+
+// IssueScanTokenJSONBody defines parameters for IssueScanToken.
+type IssueScanTokenJSONBody struct {
+	// ContextId Workflow instance the token approves (required for approve_stage).
+	ContextId *openapi_types.UUID `json:"context_id,omitempty"`
+	Purpose   ScanPurpose         `json:"purpose"`
 }
 
 // ListSchedulesParams defines parameters for ListSchedules.
@@ -1914,6 +2406,12 @@ type ListUsersParams struct {
 // ImpersonateUserJSONBody defines parameters for ImpersonateUser.
 type ImpersonateUserJSONBody struct {
 	Client *ClientKind `json:"client,omitempty"`
+}
+
+// ReplaceWorkflowDefinitionJSONBody defines parameters for ReplaceWorkflowDefinition.
+type ReplaceWorkflowDefinitionJSONBody struct {
+	Config *map[string]interface{} `json:"config,omitempty"`
+	Stages []WorkflowStage         `json:"stages"`
 }
 
 // WsMonitorParams defines parameters for WsMonitor.
@@ -2038,6 +2536,15 @@ type RequestPasswordResetJSONRequestBody RequestPasswordResetJSONBody
 // RefreshTokenJSONRequestBody defines body for RefreshToken for application/json ContentType.
 type RefreshTokenJSONRequestBody RefreshTokenJSONBody
 
+// ScanClassroomEntryJSONRequestBody defines body for ScanClassroomEntry for application/json ContentType.
+type ScanClassroomEntryJSONRequestBody = ScanRequest
+
+// CreateDocumentTemplateJSONRequestBody defines body for CreateDocumentTemplate for application/json ContentType.
+type CreateDocumentTemplateJSONRequestBody = DocumentTemplateWrite
+
+// UpdateDocumentTemplateJSONRequestBody defines body for UpdateDocumentTemplate for application/json ContentType.
+type UpdateDocumentTemplateJSONRequestBody UpdateDocumentTemplateJSONBody
+
 // CreateDutyTypeJSONRequestBody defines body for CreateDutyType for application/json ContentType.
 type CreateDutyTypeJSONRequestBody = DutyTypeWrite
 
@@ -2053,8 +2560,35 @@ type CreateDutyAssignmentJSONRequestBody = DutyAssignmentWrite
 // UpdateDutyAssignmentJSONRequestBody defines body for UpdateDutyAssignment for application/json ContentType.
 type UpdateDutyAssignmentJSONRequestBody UpdateDutyAssignmentJSONBody
 
+// CreateExitPermitJSONRequestBody defines body for CreateExitPermit for application/json ContentType.
+type CreateExitPermitJSONRequestBody CreateExitPermitJSONBody
+
+// ScanExitPermitGateJSONRequestBody defines body for ScanExitPermitGate for application/json ContentType.
+type ScanExitPermitGateJSONRequestBody = ScanRequest
+
+// ScanExitPermitStageJSONRequestBody defines body for ScanExitPermitStage for application/json ContentType.
+type ScanExitPermitStageJSONRequestBody = ScanRequest
+
 // UpsertJournalJSONRequestBody defines body for UpsertJournal for application/json ContentType.
 type UpsertJournalJSONRequestBody = JournalWriteRequest
+
+// OpenLateArrivalJSONRequestBody defines body for OpenLateArrival for application/json ContentType.
+type OpenLateArrivalJSONRequestBody OpenLateArrivalJSONBody
+
+// ReviewLateArrivalJSONRequestBody defines body for ReviewLateArrival for application/json ContentType.
+type ReviewLateArrivalJSONRequestBody ReviewLateArrivalJSONBody
+
+// ScanLateArrivalStageJSONRequestBody defines body for ScanLateArrivalStage for application/json ContentType.
+type ScanLateArrivalStageJSONRequestBody = ScanRequest
+
+// SubmitLeaveRequestJSONRequestBody defines body for SubmitLeaveRequest for application/json ContentType.
+type SubmitLeaveRequestJSONRequestBody SubmitLeaveRequestJSONBody
+
+// ConfirmLeaveEvidenceJSONRequestBody defines body for ConfirmLeaveEvidence for application/json ContentType.
+type ConfirmLeaveEvidenceJSONRequestBody ConfirmLeaveEvidenceJSONBody
+
+// ReviewLeaveRequestJSONRequestBody defines body for ReviewLeaveRequest for application/json ContentType.
+type ReviewLeaveRequestJSONRequestBody ReviewLeaveRequestJSONBody
 
 // ConfirmAvatarUploadJSONRequestBody defines body for ConfirmAvatarUpload for application/json ContentType.
 type ConfirmAvatarUploadJSONRequestBody ConfirmAvatarUploadJSONBody
@@ -2073,6 +2607,9 @@ type UpdateRoleJSONRequestBody = RoleWrite
 
 // ReplaceRolePermissionsJSONRequestBody defines body for ReplaceRolePermissions for application/json ContentType.
 type ReplaceRolePermissionsJSONRequestBody = PermissionCodes
+
+// IssueScanTokenJSONRequestBody defines body for IssueScanToken for application/json ContentType.
+type IssueScanTokenJSONRequestBody IssueScanTokenJSONBody
 
 // CreateScheduleJSONRequestBody defines body for CreateSchedule for application/json ContentType.
 type CreateScheduleJSONRequestBody = ScheduleWriteRequest
@@ -2100,6 +2637,9 @@ type UpdateUserJSONRequestBody = UpdateUserRequest
 
 // ImpersonateUserJSONRequestBody defines body for ImpersonateUser for application/json ContentType.
 type ImpersonateUserJSONRequestBody ImpersonateUserJSONBody
+
+// ReplaceWorkflowDefinitionJSONRequestBody defines body for ReplaceWorkflowDefinition for application/json ContentType.
+type ReplaceWorkflowDefinitionJSONRequestBody ReplaceWorkflowDefinitionJSONBody
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
@@ -2367,6 +2907,24 @@ type ServerInterface interface {
 	// RevokeSession Revoke one of the current user's sessions
 	// (DELETE /v1/auth/sessions/{sessionId})
 	RevokeSession(w http.ResponseWriter, r *http.Request, sessionId openapi_types.UUID)
+	// ScanClassroomEntry Student scans a teacher's classroom-entry token
+	// (POST /v1/classroom-entry/scan)
+	ScanClassroomEntry(w http.ResponseWriter, r *http.Request)
+	// ListDocumentTemplates Document templates of the tenant
+	// (GET /v1/documents/templates)
+	ListDocumentTemplates(w http.ResponseWriter, r *http.Request)
+	// CreateDocumentTemplate Create a document template
+	// (POST /v1/documents/templates)
+	CreateDocumentTemplate(w http.ResponseWriter, r *http.Request)
+	// UpdateDocumentTemplate Update a template body
+	// (PUT /v1/documents/templates/{templateId})
+	UpdateDocumentTemplate(w http.ResponseWriter, r *http.Request, templateId openapi_types.UUID)
+	// SetDefaultDocumentTemplate Make this template the default of its kind
+	// (POST /v1/documents/templates/{templateId}/set-default)
+	SetDefaultDocumentTemplate(w http.ResponseWriter, r *http.Request, templateId openapi_types.UUID)
+	// VerifyDocument Public verification of an issued document by its printed code
+	// (GET /v1/documents/verify/{code})
+	VerifyDocument(w http.ResponseWriter, r *http.Request, code string, params VerifyDocumentParams)
 	// ListDutyTypes Duty types with their granted permissions
 	// (GET /v1/duties)
 	ListDutyTypes(w http.ResponseWriter, r *http.Request, params ListDutyTypesParams)
@@ -2394,6 +2952,27 @@ type ServerInterface interface {
 	// UpdateDutyAssignment Activate, deactivate or end a duty assignment
 	// (PUT /v1/duty-assignments/{assignmentId})
 	UpdateDutyAssignment(w http.ResponseWriter, r *http.Request, assignmentId openapi_types.UUID)
+	// ListMyExitPermits Exit permits of the current student
+	// (GET /v1/exit-permits)
+	ListMyExitPermits(w http.ResponseWriter, r *http.Request, params ListMyExitPermitsParams)
+	// CreateExitPermit Student requests an exit permit for a period range today
+	// (POST /v1/exit-permits)
+	CreateExitPermit(w http.ResponseWriter, r *http.Request)
+	// GetExitPermit Exit permit detail with stage history
+	// (GET /v1/exit-permits/{instanceId})
+	GetExitPermit(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID)
+	// CancelExitPermit Student cancels an in-progress exit permit
+	// (POST /v1/exit-permits/{instanceId}/cancel)
+	CancelExitPermit(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID)
+	// ScanExitPermitGate Security scans the gate QR; the permit is completed
+	// (POST /v1/exit-permits/{instanceId}/gate-scan)
+	ScanExitPermitGate(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID)
+	// IssueExitPermitGateToken Student generates the gate QR after the permit is approved
+	// (POST /v1/exit-permits/{instanceId}/gate-token)
+	IssueExitPermitGateToken(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID)
+	// ScanExitPermitStage Student scans the current approver's token to advance a stage
+	// (POST /v1/exit-permits/{instanceId}/scan)
+	ScanExitPermitStage(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID)
 	// ListJournals My own journals for an academic year, or (class_id given, requires view_journals_all) every journal for a class
 	// (GET /v1/journals)
 	ListJournals(w http.ResponseWriter, r *http.Request, params ListJournalsParams)
@@ -2409,6 +2988,51 @@ type ServerInterface interface {
 	// GetJournal One journal
 	// (GET /v1/journals/{journalId})
 	GetJournal(w http.ResponseWriter, r *http.Request, journalId openapi_types.UUID)
+	// GetCurrentLateArrival The current student's in-progress late arrival, if any
+	// (GET /v1/late-arrivals/current)
+	GetCurrentLateArrival(w http.ResponseWriter, r *http.Request)
+	// OpenLateArrival Late student scans the duty teacher's token to open the flow
+	// (POST /v1/late-arrivals/open)
+	OpenLateArrival(w http.ResponseWriter, r *http.Request)
+	// ListLateArrivalsForReview Open late arrivals awaiting the duty teacher's review
+	// (GET /v1/late-arrivals/review-queue)
+	ListLateArrivalsForReview(w http.ResponseWriter, r *http.Request)
+	// GetLateArrival Late arrival detail with stage history
+	// (GET /v1/late-arrivals/{instanceId})
+	GetLateArrival(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID)
+	// ReviewLateArrival Duty teacher records the review and moves the flow to leadership
+	// (POST /v1/late-arrivals/{instanceId}/review)
+	ReviewLateArrival(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID)
+	// ScanLateArrivalStage Student scans the next approver's token
+	// (POST /v1/late-arrivals/{instanceId}/scan)
+	ScanLateArrivalStage(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID)
+	// ListMyLeaveRequests Leave requests of the current student
+	// (GET /v1/leave-requests)
+	ListMyLeaveRequests(w http.ResponseWriter, r *http.Request, params ListMyLeaveRequestsParams)
+	// SubmitLeaveRequest Student submits a planned leave request
+	// (POST /v1/leave-requests)
+	SubmitLeaveRequest(w http.ResponseWriter, r *http.Request)
+	// ListLeaveRequestsForReview Leave requests awaiting review (optionally for one class)
+	// (GET /v1/leave-requests/review-queue)
+	ListLeaveRequestsForReview(w http.ResponseWriter, r *http.Request, params ListLeaveRequestsForReviewParams)
+	// GetLeaveRequest Leave request detail with stage history
+	// (GET /v1/leave-requests/{instanceId})
+	GetLeaveRequest(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID)
+	// GetLeaveDocumentUrl Short-lived signed URL for the evidence or the issued letter
+	// (GET /v1/leave-requests/{instanceId}/documents/{kind})
+	GetLeaveDocumentUrl(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID, kind GetLeaveDocumentUrlParamsKind)
+	// ConfirmLeaveEvidence Validate and attach the uploaded evidence
+	// (POST /v1/leave-requests/{instanceId}/evidence/confirm)
+	ConfirmLeaveEvidence(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID)
+	// RequestLeaveEvidenceUpload Presigned upload for the evidence image (JPEG or PNG, max 6 MB)
+	// (POST /v1/leave-requests/{instanceId}/evidence/upload-url)
+	RequestLeaveEvidenceUpload(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID)
+	// IssueLeaveLetter Counselor issues the numbered letter and syncs attendance
+	// (POST /v1/leave-requests/{instanceId}/issue)
+	IssueLeaveLetter(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID)
+	// ReviewLeaveRequest Homeroom teacher approves or rejects
+	// (POST /v1/leave-requests/{instanceId}/review)
+	ReviewLeaveRequest(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID)
 	// GetMe Current user, roles, effective permissions, tenant
 	// (GET /v1/me)
 	GetMe(w http.ResponseWriter, r *http.Request)
@@ -2448,6 +3072,9 @@ type ServerInterface interface {
 	// ReplaceRolePermissions Replace the permission set of a role (super_admin always keeps all)
 	// (PUT /v1/roles/{roleId}/permissions)
 	ReplaceRolePermissions(w http.ResponseWriter, r *http.Request, roleId openapi_types.UUID)
+	// IssueScanToken Mint a short-lived single-use scan token for a purpose (shown as a QR code)
+	// (POST /v1/scan-tokens)
+	IssueScanToken(w http.ResponseWriter, r *http.Request)
 	// ListSchedules Grid of schedules for a class, a teacher, or one day, merged into contiguous blocks
 	// (GET /v1/schedules)
 	ListSchedules(w http.ResponseWriter, r *http.Request, params ListSchedulesParams)
@@ -2511,6 +3138,12 @@ type ServerInterface interface {
 	// RestoreUser Restore an archived user
 	// (POST /v1/users/{userId}/restore)
 	RestoreUser(w http.ResponseWriter, r *http.Request, userId openapi_types.UUID)
+	// ListWorkflowDefinitions Workflow definitions (all versions) of the tenant
+	// (GET /v1/workflows/definitions)
+	ListWorkflowDefinitions(w http.ResponseWriter, r *http.Request)
+	// ReplaceWorkflowDefinition Publish a new version of a workflow definition
+	// (PUT /v1/workflows/definitions/{kind})
+	ReplaceWorkflowDefinition(w http.ResponseWriter, r *http.Request, kind WorkflowKind)
 	// WsMe Realtime per-user channel (WebSocket upgrade). Authenticated by the access token, sent either as a bearer Authorization header (native clients) or as a `bearer.<token>` WebSocket subprotocol (browsers).
 	// (GET /ws/me)
 	WsMe(w http.ResponseWriter, r *http.Request)
@@ -3051,6 +3684,42 @@ func (_ Unimplemented) RevokeSession(w http.ResponseWriter, r *http.Request, ses
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// ScanClassroomEntry Student scans a teacher's classroom-entry token
+// (POST /v1/classroom-entry/scan)
+func (_ Unimplemented) ScanClassroomEntry(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListDocumentTemplates Document templates of the tenant
+// (GET /v1/documents/templates)
+func (_ Unimplemented) ListDocumentTemplates(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CreateDocumentTemplate Create a document template
+// (POST /v1/documents/templates)
+func (_ Unimplemented) CreateDocumentTemplate(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// UpdateDocumentTemplate Update a template body
+// (PUT /v1/documents/templates/{templateId})
+func (_ Unimplemented) UpdateDocumentTemplate(w http.ResponseWriter, r *http.Request, templateId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// SetDefaultDocumentTemplate Make this template the default of its kind
+// (POST /v1/documents/templates/{templateId}/set-default)
+func (_ Unimplemented) SetDefaultDocumentTemplate(w http.ResponseWriter, r *http.Request, templateId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// VerifyDocument Public verification of an issued document by its printed code
+// (GET /v1/documents/verify/{code})
+func (_ Unimplemented) VerifyDocument(w http.ResponseWriter, r *http.Request, code string, params VerifyDocumentParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // ListDutyTypes Duty types with their granted permissions
 // (GET /v1/duties)
 func (_ Unimplemented) ListDutyTypes(w http.ResponseWriter, r *http.Request, params ListDutyTypesParams) {
@@ -3105,6 +3774,48 @@ func (_ Unimplemented) UpdateDutyAssignment(w http.ResponseWriter, r *http.Reque
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// ListMyExitPermits Exit permits of the current student
+// (GET /v1/exit-permits)
+func (_ Unimplemented) ListMyExitPermits(w http.ResponseWriter, r *http.Request, params ListMyExitPermitsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CreateExitPermit Student requests an exit permit for a period range today
+// (POST /v1/exit-permits)
+func (_ Unimplemented) CreateExitPermit(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetExitPermit Exit permit detail with stage history
+// (GET /v1/exit-permits/{instanceId})
+func (_ Unimplemented) GetExitPermit(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CancelExitPermit Student cancels an in-progress exit permit
+// (POST /v1/exit-permits/{instanceId}/cancel)
+func (_ Unimplemented) CancelExitPermit(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ScanExitPermitGate Security scans the gate QR; the permit is completed
+// (POST /v1/exit-permits/{instanceId}/gate-scan)
+func (_ Unimplemented) ScanExitPermitGate(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// IssueExitPermitGateToken Student generates the gate QR after the permit is approved
+// (POST /v1/exit-permits/{instanceId}/gate-token)
+func (_ Unimplemented) IssueExitPermitGateToken(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ScanExitPermitStage Student scans the current approver's token to advance a stage
+// (POST /v1/exit-permits/{instanceId}/scan)
+func (_ Unimplemented) ScanExitPermitStage(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // ListJournals My own journals for an academic year, or (class_id given, requires view_journals_all) every journal for a class
 // (GET /v1/journals)
 func (_ Unimplemented) ListJournals(w http.ResponseWriter, r *http.Request, params ListJournalsParams) {
@@ -3132,6 +3843,96 @@ func (_ Unimplemented) DeleteJournal(w http.ResponseWriter, r *http.Request, jou
 // GetJournal One journal
 // (GET /v1/journals/{journalId})
 func (_ Unimplemented) GetJournal(w http.ResponseWriter, r *http.Request, journalId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetCurrentLateArrival The current student's in-progress late arrival, if any
+// (GET /v1/late-arrivals/current)
+func (_ Unimplemented) GetCurrentLateArrival(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// OpenLateArrival Late student scans the duty teacher's token to open the flow
+// (POST /v1/late-arrivals/open)
+func (_ Unimplemented) OpenLateArrival(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListLateArrivalsForReview Open late arrivals awaiting the duty teacher's review
+// (GET /v1/late-arrivals/review-queue)
+func (_ Unimplemented) ListLateArrivalsForReview(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetLateArrival Late arrival detail with stage history
+// (GET /v1/late-arrivals/{instanceId})
+func (_ Unimplemented) GetLateArrival(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ReviewLateArrival Duty teacher records the review and moves the flow to leadership
+// (POST /v1/late-arrivals/{instanceId}/review)
+func (_ Unimplemented) ReviewLateArrival(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ScanLateArrivalStage Student scans the next approver's token
+// (POST /v1/late-arrivals/{instanceId}/scan)
+func (_ Unimplemented) ScanLateArrivalStage(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListMyLeaveRequests Leave requests of the current student
+// (GET /v1/leave-requests)
+func (_ Unimplemented) ListMyLeaveRequests(w http.ResponseWriter, r *http.Request, params ListMyLeaveRequestsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// SubmitLeaveRequest Student submits a planned leave request
+// (POST /v1/leave-requests)
+func (_ Unimplemented) SubmitLeaveRequest(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListLeaveRequestsForReview Leave requests awaiting review (optionally for one class)
+// (GET /v1/leave-requests/review-queue)
+func (_ Unimplemented) ListLeaveRequestsForReview(w http.ResponseWriter, r *http.Request, params ListLeaveRequestsForReviewParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetLeaveRequest Leave request detail with stage history
+// (GET /v1/leave-requests/{instanceId})
+func (_ Unimplemented) GetLeaveRequest(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetLeaveDocumentUrl Short-lived signed URL for the evidence or the issued letter
+// (GET /v1/leave-requests/{instanceId}/documents/{kind})
+func (_ Unimplemented) GetLeaveDocumentUrl(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID, kind GetLeaveDocumentUrlParamsKind) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ConfirmLeaveEvidence Validate and attach the uploaded evidence
+// (POST /v1/leave-requests/{instanceId}/evidence/confirm)
+func (_ Unimplemented) ConfirmLeaveEvidence(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// RequestLeaveEvidenceUpload Presigned upload for the evidence image (JPEG or PNG, max 6 MB)
+// (POST /v1/leave-requests/{instanceId}/evidence/upload-url)
+func (_ Unimplemented) RequestLeaveEvidenceUpload(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// IssueLeaveLetter Counselor issues the numbered letter and syncs attendance
+// (POST /v1/leave-requests/{instanceId}/issue)
+func (_ Unimplemented) IssueLeaveLetter(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ReviewLeaveRequest Homeroom teacher approves or rejects
+// (POST /v1/leave-requests/{instanceId}/review)
+func (_ Unimplemented) ReviewLeaveRequest(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -3210,6 +4011,12 @@ func (_ Unimplemented) UpdateRole(w http.ResponseWriter, r *http.Request, roleId
 // ReplaceRolePermissions Replace the permission set of a role (super_admin always keeps all)
 // (PUT /v1/roles/{roleId}/permissions)
 func (_ Unimplemented) ReplaceRolePermissions(w http.ResponseWriter, r *http.Request, roleId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// IssueScanToken Mint a short-lived single-use scan token for a purpose (shown as a QR code)
+// (POST /v1/scan-tokens)
+func (_ Unimplemented) IssueScanToken(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -3336,6 +4143,18 @@ func (_ Unimplemented) AdminResetPassword(w http.ResponseWriter, r *http.Request
 // RestoreUser Restore an archived user
 // (POST /v1/users/{userId}/restore)
 func (_ Unimplemented) RestoreUser(w http.ResponseWriter, r *http.Request, userId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListWorkflowDefinitions Workflow definitions (all versions) of the tenant
+// (GET /v1/workflows/definitions)
+func (_ Unimplemented) ListWorkflowDefinitions(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ReplaceWorkflowDefinition Publish a new version of a workflow definition
+// (PUT /v1/workflows/definitions/{kind})
+func (_ Unimplemented) ReplaceWorkflowDefinition(w http.ResponseWriter, r *http.Request, kind WorkflowKind) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -5982,6 +6801,150 @@ func (siw *ServerInterfaceWrapper) RevokeSession(w http.ResponseWriter, r *http.
 	handler.ServeHTTP(w, r)
 }
 
+// ScanClassroomEntry operation middleware
+func (siw *ServerInterfaceWrapper) ScanClassroomEntry(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ScanClassroomEntry(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListDocumentTemplates operation middleware
+func (siw *ServerInterfaceWrapper) ListDocumentTemplates(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListDocumentTemplates(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateDocumentTemplate operation middleware
+func (siw *ServerInterfaceWrapper) CreateDocumentTemplate(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateDocumentTemplate(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateDocumentTemplate operation middleware
+func (siw *ServerInterfaceWrapper) UpdateDocumentTemplate(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "templateId" -------------
+	var templateId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "templateId", chi.URLParam(r, "templateId"), &templateId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "templateId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateDocumentTemplate(w, r, templateId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SetDefaultDocumentTemplate operation middleware
+func (siw *ServerInterfaceWrapper) SetDefaultDocumentTemplate(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "templateId" -------------
+	var templateId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "templateId", chi.URLParam(r, "templateId"), &templateId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "templateId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetDefaultDocumentTemplate(w, r, templateId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// VerifyDocument operation middleware
+func (siw *ServerInterfaceWrapper) VerifyDocument(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "code" -------------
+	var code string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "code", chi.URLParam(r, "code"), &code, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "code", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params VerifyDocumentParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "X-Tenant" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant")]; found {
+		var XTenant TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant", valueList[0], &XTenant, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant", Err: err})
+			return
+		}
+
+		params.XTenant = &XTenant
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.VerifyDocument(w, r, code, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListDutyTypes operation middleware
 func (siw *ServerInterfaceWrapper) ListDutyTypes(w http.ResponseWriter, r *http.Request) {
 
@@ -6232,6 +7195,196 @@ func (siw *ServerInterfaceWrapper) UpdateDutyAssignment(w http.ResponseWriter, r
 	handler.ServeHTTP(w, r)
 }
 
+// ListMyExitPermits operation middleware
+func (siw *ServerInterfaceWrapper) ListMyExitPermits(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListMyExitPermitsParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "offset"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListMyExitPermits(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateExitPermit operation middleware
+func (siw *ServerInterfaceWrapper) CreateExitPermit(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateExitPermit(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetExitPermit operation middleware
+func (siw *ServerInterfaceWrapper) GetExitPermit(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "instanceId" -------------
+	var instanceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "instanceId", chi.URLParam(r, "instanceId"), &instanceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "instanceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetExitPermit(w, r, instanceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CancelExitPermit operation middleware
+func (siw *ServerInterfaceWrapper) CancelExitPermit(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "instanceId" -------------
+	var instanceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "instanceId", chi.URLParam(r, "instanceId"), &instanceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "instanceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CancelExitPermit(w, r, instanceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ScanExitPermitGate operation middleware
+func (siw *ServerInterfaceWrapper) ScanExitPermitGate(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "instanceId" -------------
+	var instanceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "instanceId", chi.URLParam(r, "instanceId"), &instanceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "instanceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ScanExitPermitGate(w, r, instanceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// IssueExitPermitGateToken operation middleware
+func (siw *ServerInterfaceWrapper) IssueExitPermitGateToken(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "instanceId" -------------
+	var instanceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "instanceId", chi.URLParam(r, "instanceId"), &instanceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "instanceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.IssueExitPermitGateToken(w, r, instanceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ScanExitPermitStage operation middleware
+func (siw *ServerInterfaceWrapper) ScanExitPermitStage(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "instanceId" -------------
+	var instanceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "instanceId", chi.URLParam(r, "instanceId"), &instanceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "instanceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ScanExitPermitStage(w, r, instanceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListJournals operation middleware
 func (siw *ServerInterfaceWrapper) ListJournals(w http.ResponseWriter, r *http.Request) {
 
@@ -6394,6 +7547,384 @@ func (siw *ServerInterfaceWrapper) GetJournal(w http.ResponseWriter, r *http.Req
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetJournal(w, r, journalId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetCurrentLateArrival operation middleware
+func (siw *ServerInterfaceWrapper) GetCurrentLateArrival(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetCurrentLateArrival(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// OpenLateArrival operation middleware
+func (siw *ServerInterfaceWrapper) OpenLateArrival(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.OpenLateArrival(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListLateArrivalsForReview operation middleware
+func (siw *ServerInterfaceWrapper) ListLateArrivalsForReview(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListLateArrivalsForReview(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetLateArrival operation middleware
+func (siw *ServerInterfaceWrapper) GetLateArrival(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "instanceId" -------------
+	var instanceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "instanceId", chi.URLParam(r, "instanceId"), &instanceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "instanceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetLateArrival(w, r, instanceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ReviewLateArrival operation middleware
+func (siw *ServerInterfaceWrapper) ReviewLateArrival(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "instanceId" -------------
+	var instanceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "instanceId", chi.URLParam(r, "instanceId"), &instanceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "instanceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReviewLateArrival(w, r, instanceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ScanLateArrivalStage operation middleware
+func (siw *ServerInterfaceWrapper) ScanLateArrivalStage(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "instanceId" -------------
+	var instanceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "instanceId", chi.URLParam(r, "instanceId"), &instanceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "instanceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ScanLateArrivalStage(w, r, instanceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListMyLeaveRequests operation middleware
+func (siw *ServerInterfaceWrapper) ListMyLeaveRequests(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListMyLeaveRequestsParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "offset"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListMyLeaveRequests(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SubmitLeaveRequest operation middleware
+func (siw *ServerInterfaceWrapper) SubmitLeaveRequest(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SubmitLeaveRequest(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListLeaveRequestsForReview operation middleware
+func (siw *ServerInterfaceWrapper) ListLeaveRequestsForReview(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListLeaveRequestsForReviewParams
+
+	// ------------- Optional query parameter "class_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "class_id", r.URL.Query(), &params.ClassId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "class_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "class_id", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListLeaveRequestsForReview(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetLeaveRequest operation middleware
+func (siw *ServerInterfaceWrapper) GetLeaveRequest(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "instanceId" -------------
+	var instanceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "instanceId", chi.URLParam(r, "instanceId"), &instanceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "instanceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetLeaveRequest(w, r, instanceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetLeaveDocumentUrl operation middleware
+func (siw *ServerInterfaceWrapper) GetLeaveDocumentUrl(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "instanceId" -------------
+	var instanceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "instanceId", chi.URLParam(r, "instanceId"), &instanceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "instanceId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "kind" -------------
+	var kind GetLeaveDocumentUrlParamsKind
+
+	err = runtime.BindStyledParameterWithOptions("simple", "kind", chi.URLParam(r, "kind"), &kind, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "kind", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetLeaveDocumentUrl(w, r, instanceId, kind)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ConfirmLeaveEvidence operation middleware
+func (siw *ServerInterfaceWrapper) ConfirmLeaveEvidence(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "instanceId" -------------
+	var instanceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "instanceId", chi.URLParam(r, "instanceId"), &instanceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "instanceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ConfirmLeaveEvidence(w, r, instanceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RequestLeaveEvidenceUpload operation middleware
+func (siw *ServerInterfaceWrapper) RequestLeaveEvidenceUpload(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "instanceId" -------------
+	var instanceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "instanceId", chi.URLParam(r, "instanceId"), &instanceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "instanceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RequestLeaveEvidenceUpload(w, r, instanceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// IssueLeaveLetter operation middleware
+func (siw *ServerInterfaceWrapper) IssueLeaveLetter(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "instanceId" -------------
+	var instanceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "instanceId", chi.URLParam(r, "instanceId"), &instanceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "instanceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.IssueLeaveLetter(w, r, instanceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ReviewLeaveRequest operation middleware
+func (siw *ServerInterfaceWrapper) ReviewLeaveRequest(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "instanceId" -------------
+	var instanceId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "instanceId", chi.URLParam(r, "instanceId"), &instanceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "instanceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReviewLeaveRequest(w, r, instanceId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -6643,6 +8174,20 @@ func (siw *ServerInterfaceWrapper) ReplaceRolePermissions(w http.ResponseWriter,
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ReplaceRolePermissions(w, r, roleId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// IssueScanToken operation middleware
+func (siw *ServerInterfaceWrapper) IssueScanToken(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.IssueScanToken(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -7271,6 +8816,46 @@ func (siw *ServerInterfaceWrapper) RestoreUser(w http.ResponseWriter, r *http.Re
 	handler.ServeHTTP(w, r)
 }
 
+// ListWorkflowDefinitions operation middleware
+func (siw *ServerInterfaceWrapper) ListWorkflowDefinitions(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListWorkflowDefinitions(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ReplaceWorkflowDefinition operation middleware
+func (siw *ServerInterfaceWrapper) ReplaceWorkflowDefinition(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "kind" -------------
+	var kind WorkflowKind
+
+	err = runtime.BindStyledParameterWithOptions("simple", "kind", chi.URLParam(r, "kind"), &kind, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "kind", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReplaceWorkflowDefinition(w, r, kind)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // WsMe operation middleware
 func (siw *ServerInterfaceWrapper) WsMe(w http.ResponseWriter, r *http.Request) {
 
@@ -7789,6 +9374,99 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Put(options.BaseURL+"/v1/me/password", wrapper.ChangePassword)
 	})
 	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/scan-tokens", wrapper.IssueScanToken)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/classroom-entry/scan", wrapper.ScanClassroomEntry)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/workflows/definitions", wrapper.ListWorkflowDefinitions)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/v1/workflows/definitions/{kind}", wrapper.ReplaceWorkflowDefinition)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/exit-permits", wrapper.ListMyExitPermits)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/exit-permits", wrapper.CreateExitPermit)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/exit-permits/{instanceId}", wrapper.GetExitPermit)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/exit-permits/{instanceId}/scan", wrapper.ScanExitPermitStage)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/exit-permits/{instanceId}/cancel", wrapper.CancelExitPermit)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/exit-permits/{instanceId}/gate-token", wrapper.IssueExitPermitGateToken)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/exit-permits/{instanceId}/gate-scan", wrapper.ScanExitPermitGate)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/late-arrivals/open", wrapper.OpenLateArrival)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/late-arrivals/current", wrapper.GetCurrentLateArrival)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/late-arrivals/review-queue", wrapper.ListLateArrivalsForReview)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/late-arrivals/{instanceId}", wrapper.GetLateArrival)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/late-arrivals/{instanceId}/review", wrapper.ReviewLateArrival)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/late-arrivals/{instanceId}/scan", wrapper.ScanLateArrivalStage)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/leave-requests", wrapper.ListMyLeaveRequests)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/leave-requests", wrapper.SubmitLeaveRequest)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/leave-requests/review-queue", wrapper.ListLeaveRequestsForReview)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/leave-requests/{instanceId}", wrapper.GetLeaveRequest)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/leave-requests/{instanceId}/evidence/upload-url", wrapper.RequestLeaveEvidenceUpload)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/leave-requests/{instanceId}/evidence/confirm", wrapper.ConfirmLeaveEvidence)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/leave-requests/{instanceId}/review", wrapper.ReviewLeaveRequest)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/leave-requests/{instanceId}/issue", wrapper.IssueLeaveLetter)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/leave-requests/{instanceId}/documents/{kind}", wrapper.GetLeaveDocumentUrl)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/documents/verify/{code}", wrapper.VerifyDocument)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/documents/templates", wrapper.ListDocumentTemplates)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/documents/templates", wrapper.CreateDocumentTemplate)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/v1/documents/templates/{templateId}", wrapper.UpdateDocumentTemplate)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/documents/templates/{templateId}/set-default", wrapper.SetDefaultDocumentTemplate)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/v1/schedules", wrapper.ListSchedules)
 	})
 	r.Group(func(r chi.Router) {
@@ -7867,6 +9545,8 @@ type RateLimitedJSONResponse struct {
 }
 
 type ScheduleConflictJSONResponse Error
+
+type TokenGoneJSONResponse Error
 
 type UnauthorizedJSONResponse Error
 
@@ -12168,6 +13848,354 @@ func (response RevokeSession404JSONResponse) VisitRevokeSessionResponse(w http.R
 	return err
 }
 
+type ScanClassroomEntryRequestObject struct {
+	Body *ScanClassroomEntryJSONRequestBody
+}
+
+type ScanClassroomEntryResponseObject interface {
+	VisitScanClassroomEntryResponse(w http.ResponseWriter) error
+}
+
+type ScanClassroomEntry200JSONResponse struct {
+	ScannedAt     time.Time          `json:"scanned_at"`
+	TeacherUserId openapi_types.UUID `json:"teacher_user_id"`
+}
+
+func (response ScanClassroomEntry200JSONResponse) VisitScanClassroomEntryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ScanClassroomEntry401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ScanClassroomEntry401JSONResponse) VisitScanClassroomEntryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ScanClassroomEntry410JSONResponse struct{ TokenGoneJSONResponse }
+
+func (response ScanClassroomEntry410JSONResponse) VisitScanClassroomEntryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(410)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDocumentTemplatesRequestObject struct {
+}
+
+type ListDocumentTemplatesResponseObject interface {
+	VisitListDocumentTemplatesResponse(w http.ResponseWriter) error
+}
+
+type ListDocumentTemplates200JSONResponse struct {
+	Data []DocumentTemplate `json:"data"`
+}
+
+func (response ListDocumentTemplates200JSONResponse) VisitListDocumentTemplatesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDocumentTemplates401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListDocumentTemplates401JSONResponse) VisitListDocumentTemplatesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDocumentTemplates403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListDocumentTemplates403JSONResponse) VisitListDocumentTemplatesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateDocumentTemplateRequestObject struct {
+	Body *CreateDocumentTemplateJSONRequestBody
+}
+
+type CreateDocumentTemplateResponseObject interface {
+	VisitCreateDocumentTemplateResponse(w http.ResponseWriter) error
+}
+
+type CreateDocumentTemplate201JSONResponse DocumentTemplate
+
+func (response CreateDocumentTemplate201JSONResponse) VisitCreateDocumentTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateDocumentTemplate400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CreateDocumentTemplate400JSONResponse) VisitCreateDocumentTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateDocumentTemplate401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateDocumentTemplate401JSONResponse) VisitCreateDocumentTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateDocumentTemplate403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CreateDocumentTemplate403JSONResponse) VisitCreateDocumentTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDocumentTemplateRequestObject struct {
+	TemplateId openapi_types.UUID `json:"templateId"`
+	Body       *UpdateDocumentTemplateJSONRequestBody
+}
+
+type UpdateDocumentTemplateResponseObject interface {
+	VisitUpdateDocumentTemplateResponse(w http.ResponseWriter) error
+}
+
+type UpdateDocumentTemplate200JSONResponse DocumentTemplate
+
+func (response UpdateDocumentTemplate200JSONResponse) VisitUpdateDocumentTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDocumentTemplate400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response UpdateDocumentTemplate400JSONResponse) VisitUpdateDocumentTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDocumentTemplate401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response UpdateDocumentTemplate401JSONResponse) VisitUpdateDocumentTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDocumentTemplate403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response UpdateDocumentTemplate403JSONResponse) VisitUpdateDocumentTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDocumentTemplate404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response UpdateDocumentTemplate404JSONResponse) VisitUpdateDocumentTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetDefaultDocumentTemplateRequestObject struct {
+	TemplateId openapi_types.UUID `json:"templateId"`
+}
+
+type SetDefaultDocumentTemplateResponseObject interface {
+	VisitSetDefaultDocumentTemplateResponse(w http.ResponseWriter) error
+}
+
+type SetDefaultDocumentTemplate200JSONResponse DocumentTemplate
+
+func (response SetDefaultDocumentTemplate200JSONResponse) VisitSetDefaultDocumentTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetDefaultDocumentTemplate401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response SetDefaultDocumentTemplate401JSONResponse) VisitSetDefaultDocumentTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetDefaultDocumentTemplate403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response SetDefaultDocumentTemplate403JSONResponse) VisitSetDefaultDocumentTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetDefaultDocumentTemplate404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response SetDefaultDocumentTemplate404JSONResponse) VisitSetDefaultDocumentTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VerifyDocumentRequestObject struct {
+	Code   string `json:"code"`
+	Params VerifyDocumentParams
+}
+
+type VerifyDocumentResponseObject interface {
+	VisitVerifyDocumentResponse(w http.ResponseWriter) error
+}
+
+type VerifyDocument200JSONResponse DocumentVerification
+
+func (response VerifyDocument200JSONResponse) VisitVerifyDocumentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VerifyDocument404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response VerifyDocument404JSONResponse) VisitVerifyDocumentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListDutyTypesRequestObject struct {
 	Params ListDutyTypesParams
 }
@@ -12823,6 +14851,514 @@ func (response UpdateDutyAssignment404JSONResponse) VisitUpdateDutyAssignmentRes
 	return err
 }
 
+type ListMyExitPermitsRequestObject struct {
+	Params ListMyExitPermitsParams
+}
+
+type ListMyExitPermitsResponseObject interface {
+	VisitListMyExitPermitsResponse(w http.ResponseWriter) error
+}
+
+type ListMyExitPermits200JSONResponse struct {
+	Data []WorkflowInstance `json:"data"`
+}
+
+func (response ListMyExitPermits200JSONResponse) VisitListMyExitPermitsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListMyExitPermits401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListMyExitPermits401JSONResponse) VisitListMyExitPermitsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateExitPermitRequestObject struct {
+	Body *CreateExitPermitJSONRequestBody
+}
+
+type CreateExitPermitResponseObject interface {
+	VisitCreateExitPermitResponse(w http.ResponseWriter) error
+}
+
+type CreateExitPermit201JSONResponse ExitPermitDetail
+
+func (response CreateExitPermit201JSONResponse) VisitCreateExitPermitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateExitPermit400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CreateExitPermit400JSONResponse) VisitCreateExitPermitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateExitPermit401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateExitPermit401JSONResponse) VisitCreateExitPermitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateExitPermit403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CreateExitPermit403JSONResponse) VisitCreateExitPermitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateExitPermit409JSONResponse struct{ ConflictJSONResponse }
+
+func (response CreateExitPermit409JSONResponse) VisitCreateExitPermitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetExitPermitRequestObject struct {
+	InstanceId openapi_types.UUID `json:"instanceId"`
+}
+
+type GetExitPermitResponseObject interface {
+	VisitGetExitPermitResponse(w http.ResponseWriter) error
+}
+
+type GetExitPermit200JSONResponse ExitPermitDetail
+
+func (response GetExitPermit200JSONResponse) VisitGetExitPermitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetExitPermit401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetExitPermit401JSONResponse) VisitGetExitPermitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetExitPermit404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetExitPermit404JSONResponse) VisitGetExitPermitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelExitPermitRequestObject struct {
+	InstanceId openapi_types.UUID `json:"instanceId"`
+}
+
+type CancelExitPermitResponseObject interface {
+	VisitCancelExitPermitResponse(w http.ResponseWriter) error
+}
+
+type CancelExitPermit200JSONResponse ExitPermitDetail
+
+func (response CancelExitPermit200JSONResponse) VisitCancelExitPermitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelExitPermit401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CancelExitPermit401JSONResponse) VisitCancelExitPermitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelExitPermit403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CancelExitPermit403JSONResponse) VisitCancelExitPermitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelExitPermit404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response CancelExitPermit404JSONResponse) VisitCancelExitPermitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelExitPermit409JSONResponse struct{ ConflictJSONResponse }
+
+func (response CancelExitPermit409JSONResponse) VisitCancelExitPermitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ScanExitPermitGateRequestObject struct {
+	InstanceId openapi_types.UUID `json:"instanceId"`
+	Body       *ScanExitPermitGateJSONRequestBody
+}
+
+type ScanExitPermitGateResponseObject interface {
+	VisitScanExitPermitGateResponse(w http.ResponseWriter) error
+}
+
+type ScanExitPermitGate200JSONResponse ExitPermitDetail
+
+func (response ScanExitPermitGate200JSONResponse) VisitScanExitPermitGateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ScanExitPermitGate401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ScanExitPermitGate401JSONResponse) VisitScanExitPermitGateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ScanExitPermitGate403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ScanExitPermitGate403JSONResponse) VisitScanExitPermitGateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ScanExitPermitGate404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ScanExitPermitGate404JSONResponse) VisitScanExitPermitGateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ScanExitPermitGate409JSONResponse struct{ ConflictJSONResponse }
+
+func (response ScanExitPermitGate409JSONResponse) VisitScanExitPermitGateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ScanExitPermitGate410JSONResponse struct{ TokenGoneJSONResponse }
+
+func (response ScanExitPermitGate410JSONResponse) VisitScanExitPermitGateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(410)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type IssueExitPermitGateTokenRequestObject struct {
+	InstanceId openapi_types.UUID `json:"instanceId"`
+}
+
+type IssueExitPermitGateTokenResponseObject interface {
+	VisitIssueExitPermitGateTokenResponse(w http.ResponseWriter) error
+}
+
+type IssueExitPermitGateToken201JSONResponse IssuedScanToken
+
+func (response IssueExitPermitGateToken201JSONResponse) VisitIssueExitPermitGateTokenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type IssueExitPermitGateToken401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response IssueExitPermitGateToken401JSONResponse) VisitIssueExitPermitGateTokenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type IssueExitPermitGateToken403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response IssueExitPermitGateToken403JSONResponse) VisitIssueExitPermitGateTokenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type IssueExitPermitGateToken404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response IssueExitPermitGateToken404JSONResponse) VisitIssueExitPermitGateTokenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type IssueExitPermitGateToken409JSONResponse struct{ ConflictJSONResponse }
+
+func (response IssueExitPermitGateToken409JSONResponse) VisitIssueExitPermitGateTokenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ScanExitPermitStageRequestObject struct {
+	InstanceId openapi_types.UUID `json:"instanceId"`
+	Body       *ScanExitPermitStageJSONRequestBody
+}
+
+type ScanExitPermitStageResponseObject interface {
+	VisitScanExitPermitStageResponse(w http.ResponseWriter) error
+}
+
+type ScanExitPermitStage200JSONResponse ExitPermitDetail
+
+func (response ScanExitPermitStage200JSONResponse) VisitScanExitPermitStageResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ScanExitPermitStage401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ScanExitPermitStage401JSONResponse) VisitScanExitPermitStageResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ScanExitPermitStage403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ScanExitPermitStage403JSONResponse) VisitScanExitPermitStageResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ScanExitPermitStage404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ScanExitPermitStage404JSONResponse) VisitScanExitPermitStageResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ScanExitPermitStage409JSONResponse struct{ ConflictJSONResponse }
+
+func (response ScanExitPermitStage409JSONResponse) VisitScanExitPermitStageResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ScanExitPermitStage410JSONResponse struct{ TokenGoneJSONResponse }
+
+func (response ScanExitPermitStage410JSONResponse) VisitScanExitPermitStageResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(410)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListJournalsRequestObject struct {
 	Params ListJournalsParams
 }
@@ -13049,6 +15585,976 @@ func (response GetJournal404JSONResponse) VisitGetJournalResponse(w http.Respons
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCurrentLateArrivalRequestObject struct {
+}
+
+type GetCurrentLateArrivalResponseObject interface {
+	VisitGetCurrentLateArrivalResponse(w http.ResponseWriter) error
+}
+
+type GetCurrentLateArrival200JSONResponse LateArrivalDetail
+
+func (response GetCurrentLateArrival200JSONResponse) VisitGetCurrentLateArrivalResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCurrentLateArrival401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetCurrentLateArrival401JSONResponse) VisitGetCurrentLateArrivalResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCurrentLateArrival404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetCurrentLateArrival404JSONResponse) VisitGetCurrentLateArrivalResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OpenLateArrivalRequestObject struct {
+	Body *OpenLateArrivalJSONRequestBody
+}
+
+type OpenLateArrivalResponseObject interface {
+	VisitOpenLateArrivalResponse(w http.ResponseWriter) error
+}
+
+type OpenLateArrival201JSONResponse LateArrivalDetail
+
+func (response OpenLateArrival201JSONResponse) VisitOpenLateArrivalResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OpenLateArrival401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response OpenLateArrival401JSONResponse) VisitOpenLateArrivalResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OpenLateArrival409JSONResponse struct{ ConflictJSONResponse }
+
+func (response OpenLateArrival409JSONResponse) VisitOpenLateArrivalResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OpenLateArrival410JSONResponse struct{ TokenGoneJSONResponse }
+
+func (response OpenLateArrival410JSONResponse) VisitOpenLateArrivalResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(410)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListLateArrivalsForReviewRequestObject struct {
+}
+
+type ListLateArrivalsForReviewResponseObject interface {
+	VisitListLateArrivalsForReviewResponse(w http.ResponseWriter) error
+}
+
+type ListLateArrivalsForReview200JSONResponse struct {
+	Data []LateArrivalSummary `json:"data"`
+}
+
+func (response ListLateArrivalsForReview200JSONResponse) VisitListLateArrivalsForReviewResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListLateArrivalsForReview401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListLateArrivalsForReview401JSONResponse) VisitListLateArrivalsForReviewResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListLateArrivalsForReview403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListLateArrivalsForReview403JSONResponse) VisitListLateArrivalsForReviewResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLateArrivalRequestObject struct {
+	InstanceId openapi_types.UUID `json:"instanceId"`
+}
+
+type GetLateArrivalResponseObject interface {
+	VisitGetLateArrivalResponse(w http.ResponseWriter) error
+}
+
+type GetLateArrival200JSONResponse LateArrivalDetail
+
+func (response GetLateArrival200JSONResponse) VisitGetLateArrivalResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLateArrival401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetLateArrival401JSONResponse) VisitGetLateArrivalResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLateArrival404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetLateArrival404JSONResponse) VisitGetLateArrivalResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReviewLateArrivalRequestObject struct {
+	InstanceId openapi_types.UUID `json:"instanceId"`
+	Body       *ReviewLateArrivalJSONRequestBody
+}
+
+type ReviewLateArrivalResponseObject interface {
+	VisitReviewLateArrivalResponse(w http.ResponseWriter) error
+}
+
+type ReviewLateArrival200JSONResponse LateArrivalDetail
+
+func (response ReviewLateArrival200JSONResponse) VisitReviewLateArrivalResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReviewLateArrival401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ReviewLateArrival401JSONResponse) VisitReviewLateArrivalResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReviewLateArrival403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ReviewLateArrival403JSONResponse) VisitReviewLateArrivalResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReviewLateArrival404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ReviewLateArrival404JSONResponse) VisitReviewLateArrivalResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReviewLateArrival409JSONResponse struct{ ConflictJSONResponse }
+
+func (response ReviewLateArrival409JSONResponse) VisitReviewLateArrivalResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ScanLateArrivalStageRequestObject struct {
+	InstanceId openapi_types.UUID `json:"instanceId"`
+	Body       *ScanLateArrivalStageJSONRequestBody
+}
+
+type ScanLateArrivalStageResponseObject interface {
+	VisitScanLateArrivalStageResponse(w http.ResponseWriter) error
+}
+
+type ScanLateArrivalStage200JSONResponse LateArrivalDetail
+
+func (response ScanLateArrivalStage200JSONResponse) VisitScanLateArrivalStageResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ScanLateArrivalStage401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ScanLateArrivalStage401JSONResponse) VisitScanLateArrivalStageResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ScanLateArrivalStage403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ScanLateArrivalStage403JSONResponse) VisitScanLateArrivalStageResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ScanLateArrivalStage404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ScanLateArrivalStage404JSONResponse) VisitScanLateArrivalStageResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ScanLateArrivalStage409JSONResponse struct{ ConflictJSONResponse }
+
+func (response ScanLateArrivalStage409JSONResponse) VisitScanLateArrivalStageResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ScanLateArrivalStage410JSONResponse struct{ TokenGoneJSONResponse }
+
+func (response ScanLateArrivalStage410JSONResponse) VisitScanLateArrivalStageResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(410)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListMyLeaveRequestsRequestObject struct {
+	Params ListMyLeaveRequestsParams
+}
+
+type ListMyLeaveRequestsResponseObject interface {
+	VisitListMyLeaveRequestsResponse(w http.ResponseWriter) error
+}
+
+type ListMyLeaveRequests200JSONResponse struct {
+	Data []LeaveRequestSummary `json:"data"`
+}
+
+func (response ListMyLeaveRequests200JSONResponse) VisitListMyLeaveRequestsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListMyLeaveRequests401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListMyLeaveRequests401JSONResponse) VisitListMyLeaveRequestsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitLeaveRequestRequestObject struct {
+	Body *SubmitLeaveRequestJSONRequestBody
+}
+
+type SubmitLeaveRequestResponseObject interface {
+	VisitSubmitLeaveRequestResponse(w http.ResponseWriter) error
+}
+
+type SubmitLeaveRequest201JSONResponse LeaveRequestDetail
+
+func (response SubmitLeaveRequest201JSONResponse) VisitSubmitLeaveRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitLeaveRequest400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response SubmitLeaveRequest400JSONResponse) VisitSubmitLeaveRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitLeaveRequest401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response SubmitLeaveRequest401JSONResponse) VisitSubmitLeaveRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitLeaveRequest403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response SubmitLeaveRequest403JSONResponse) VisitSubmitLeaveRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitLeaveRequest409JSONResponse struct{ ConflictJSONResponse }
+
+func (response SubmitLeaveRequest409JSONResponse) VisitSubmitLeaveRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListLeaveRequestsForReviewRequestObject struct {
+	Params ListLeaveRequestsForReviewParams
+}
+
+type ListLeaveRequestsForReviewResponseObject interface {
+	VisitListLeaveRequestsForReviewResponse(w http.ResponseWriter) error
+}
+
+type ListLeaveRequestsForReview200JSONResponse struct {
+	Data []LeaveRequestSummary `json:"data"`
+}
+
+func (response ListLeaveRequestsForReview200JSONResponse) VisitListLeaveRequestsForReviewResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListLeaveRequestsForReview401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListLeaveRequestsForReview401JSONResponse) VisitListLeaveRequestsForReviewResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListLeaveRequestsForReview403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListLeaveRequestsForReview403JSONResponse) VisitListLeaveRequestsForReviewResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLeaveRequestRequestObject struct {
+	InstanceId openapi_types.UUID `json:"instanceId"`
+}
+
+type GetLeaveRequestResponseObject interface {
+	VisitGetLeaveRequestResponse(w http.ResponseWriter) error
+}
+
+type GetLeaveRequest200JSONResponse LeaveRequestDetail
+
+func (response GetLeaveRequest200JSONResponse) VisitGetLeaveRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLeaveRequest401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetLeaveRequest401JSONResponse) VisitGetLeaveRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLeaveRequest404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetLeaveRequest404JSONResponse) VisitGetLeaveRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLeaveDocumentUrlRequestObject struct {
+	InstanceId openapi_types.UUID            `json:"instanceId"`
+	Kind       GetLeaveDocumentUrlParamsKind `json:"kind"`
+}
+
+type GetLeaveDocumentUrlResponseObject interface {
+	VisitGetLeaveDocumentUrlResponse(w http.ResponseWriter) error
+}
+
+type GetLeaveDocumentUrl200JSONResponse struct {
+	ExpiresInSeconds int    `json:"expires_in_seconds"`
+	Url              string `json:"url"`
+}
+
+func (response GetLeaveDocumentUrl200JSONResponse) VisitGetLeaveDocumentUrlResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLeaveDocumentUrl401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetLeaveDocumentUrl401JSONResponse) VisitGetLeaveDocumentUrlResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLeaveDocumentUrl403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetLeaveDocumentUrl403JSONResponse) VisitGetLeaveDocumentUrlResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLeaveDocumentUrl404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetLeaveDocumentUrl404JSONResponse) VisitGetLeaveDocumentUrlResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConfirmLeaveEvidenceRequestObject struct {
+	InstanceId openapi_types.UUID `json:"instanceId"`
+	Body       *ConfirmLeaveEvidenceJSONRequestBody
+}
+
+type ConfirmLeaveEvidenceResponseObject interface {
+	VisitConfirmLeaveEvidenceResponse(w http.ResponseWriter) error
+}
+
+type ConfirmLeaveEvidence204Response struct {
+}
+
+func (response ConfirmLeaveEvidence204Response) VisitConfirmLeaveEvidenceResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type ConfirmLeaveEvidence400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ConfirmLeaveEvidence400JSONResponse) VisitConfirmLeaveEvidenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConfirmLeaveEvidence401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ConfirmLeaveEvidence401JSONResponse) VisitConfirmLeaveEvidenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConfirmLeaveEvidence403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ConfirmLeaveEvidence403JSONResponse) VisitConfirmLeaveEvidenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConfirmLeaveEvidence404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ConfirmLeaveEvidence404JSONResponse) VisitConfirmLeaveEvidenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RequestLeaveEvidenceUploadRequestObject struct {
+	InstanceId openapi_types.UUID `json:"instanceId"`
+}
+
+type RequestLeaveEvidenceUploadResponseObject interface {
+	VisitRequestLeaveEvidenceUploadResponse(w http.ResponseWriter) error
+}
+
+type RequestLeaveEvidenceUpload200JSONResponse struct {
+	ExpiresAt time.Time `json:"expires_at"`
+	ObjectKey string    `json:"object_key"`
+	UploadUrl string    `json:"upload_url"`
+}
+
+func (response RequestLeaveEvidenceUpload200JSONResponse) VisitRequestLeaveEvidenceUploadResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RequestLeaveEvidenceUpload401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response RequestLeaveEvidenceUpload401JSONResponse) VisitRequestLeaveEvidenceUploadResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RequestLeaveEvidenceUpload403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response RequestLeaveEvidenceUpload403JSONResponse) VisitRequestLeaveEvidenceUploadResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RequestLeaveEvidenceUpload404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response RequestLeaveEvidenceUpload404JSONResponse) VisitRequestLeaveEvidenceUploadResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type IssueLeaveLetterRequestObject struct {
+	InstanceId openapi_types.UUID `json:"instanceId"`
+}
+
+type IssueLeaveLetterResponseObject interface {
+	VisitIssueLeaveLetterResponse(w http.ResponseWriter) error
+}
+
+type IssueLeaveLetter200JSONResponse LeaveRequestDetail
+
+func (response IssueLeaveLetter200JSONResponse) VisitIssueLeaveLetterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type IssueLeaveLetter401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response IssueLeaveLetter401JSONResponse) VisitIssueLeaveLetterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type IssueLeaveLetter403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response IssueLeaveLetter403JSONResponse) VisitIssueLeaveLetterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type IssueLeaveLetter404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response IssueLeaveLetter404JSONResponse) VisitIssueLeaveLetterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type IssueLeaveLetter409JSONResponse struct{ ConflictJSONResponse }
+
+func (response IssueLeaveLetter409JSONResponse) VisitIssueLeaveLetterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReviewLeaveRequestRequestObject struct {
+	InstanceId openapi_types.UUID `json:"instanceId"`
+	Body       *ReviewLeaveRequestJSONRequestBody
+}
+
+type ReviewLeaveRequestResponseObject interface {
+	VisitReviewLeaveRequestResponse(w http.ResponseWriter) error
+}
+
+type ReviewLeaveRequest200JSONResponse LeaveRequestDetail
+
+func (response ReviewLeaveRequest200JSONResponse) VisitReviewLeaveRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReviewLeaveRequest401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ReviewLeaveRequest401JSONResponse) VisitReviewLeaveRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReviewLeaveRequest403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ReviewLeaveRequest403JSONResponse) VisitReviewLeaveRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReviewLeaveRequest404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ReviewLeaveRequest404JSONResponse) VisitReviewLeaveRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReviewLeaveRequest409JSONResponse struct{ ConflictJSONResponse }
+
+func (response ReviewLeaveRequest409JSONResponse) VisitReviewLeaveRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -13798,6 +17304,70 @@ func (response ReplaceRolePermissions404JSONResponse) VisitReplaceRolePermission
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type IssueScanTokenRequestObject struct {
+	Body *IssueScanTokenJSONRequestBody
+}
+
+type IssueScanTokenResponseObject interface {
+	VisitIssueScanTokenResponse(w http.ResponseWriter) error
+}
+
+type IssueScanToken201JSONResponse IssuedScanToken
+
+func (response IssueScanToken201JSONResponse) VisitIssueScanTokenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type IssueScanToken400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response IssueScanToken400JSONResponse) VisitIssueScanTokenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type IssueScanToken401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response IssueScanToken401JSONResponse) VisitIssueScanTokenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type IssueScanToken403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response IssueScanToken403JSONResponse) VisitIssueScanTokenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -15037,6 +18607,122 @@ func (response RestoreUser404JSONResponse) VisitRestoreUserResponse(w http.Respo
 	return err
 }
 
+type ListWorkflowDefinitionsRequestObject struct {
+}
+
+type ListWorkflowDefinitionsResponseObject interface {
+	VisitListWorkflowDefinitionsResponse(w http.ResponseWriter) error
+}
+
+type ListWorkflowDefinitions200JSONResponse struct {
+	Data []WorkflowDefinition `json:"data"`
+}
+
+func (response ListWorkflowDefinitions200JSONResponse) VisitListWorkflowDefinitionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListWorkflowDefinitions401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListWorkflowDefinitions401JSONResponse) VisitListWorkflowDefinitionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListWorkflowDefinitions403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListWorkflowDefinitions403JSONResponse) VisitListWorkflowDefinitionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReplaceWorkflowDefinitionRequestObject struct {
+	Kind WorkflowKind `json:"kind"`
+	Body *ReplaceWorkflowDefinitionJSONRequestBody
+}
+
+type ReplaceWorkflowDefinitionResponseObject interface {
+	VisitReplaceWorkflowDefinitionResponse(w http.ResponseWriter) error
+}
+
+type ReplaceWorkflowDefinition200JSONResponse WorkflowDefinition
+
+func (response ReplaceWorkflowDefinition200JSONResponse) VisitReplaceWorkflowDefinitionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReplaceWorkflowDefinition400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ReplaceWorkflowDefinition400JSONResponse) VisitReplaceWorkflowDefinitionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReplaceWorkflowDefinition401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ReplaceWorkflowDefinition401JSONResponse) VisitReplaceWorkflowDefinitionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReplaceWorkflowDefinition403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ReplaceWorkflowDefinition403JSONResponse) VisitReplaceWorkflowDefinitionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type WsMeRequestObject struct {
 }
 
@@ -15362,6 +19048,24 @@ type StrictServerInterface interface {
 	// RevokeSession Revoke one of the current user's sessions
 	// (DELETE /v1/auth/sessions/{sessionId})
 	RevokeSession(ctx context.Context, request RevokeSessionRequestObject) (RevokeSessionResponseObject, error)
+	// ScanClassroomEntry Student scans a teacher's classroom-entry token
+	// (POST /v1/classroom-entry/scan)
+	ScanClassroomEntry(ctx context.Context, request ScanClassroomEntryRequestObject) (ScanClassroomEntryResponseObject, error)
+	// ListDocumentTemplates Document templates of the tenant
+	// (GET /v1/documents/templates)
+	ListDocumentTemplates(ctx context.Context, request ListDocumentTemplatesRequestObject) (ListDocumentTemplatesResponseObject, error)
+	// CreateDocumentTemplate Create a document template
+	// (POST /v1/documents/templates)
+	CreateDocumentTemplate(ctx context.Context, request CreateDocumentTemplateRequestObject) (CreateDocumentTemplateResponseObject, error)
+	// UpdateDocumentTemplate Update a template body
+	// (PUT /v1/documents/templates/{templateId})
+	UpdateDocumentTemplate(ctx context.Context, request UpdateDocumentTemplateRequestObject) (UpdateDocumentTemplateResponseObject, error)
+	// SetDefaultDocumentTemplate Make this template the default of its kind
+	// (POST /v1/documents/templates/{templateId}/set-default)
+	SetDefaultDocumentTemplate(ctx context.Context, request SetDefaultDocumentTemplateRequestObject) (SetDefaultDocumentTemplateResponseObject, error)
+	// VerifyDocument Public verification of an issued document by its printed code
+	// (GET /v1/documents/verify/{code})
+	VerifyDocument(ctx context.Context, request VerifyDocumentRequestObject) (VerifyDocumentResponseObject, error)
 	// ListDutyTypes Duty types with their granted permissions
 	// (GET /v1/duties)
 	ListDutyTypes(ctx context.Context, request ListDutyTypesRequestObject) (ListDutyTypesResponseObject, error)
@@ -15389,6 +19093,27 @@ type StrictServerInterface interface {
 	// UpdateDutyAssignment Activate, deactivate or end a duty assignment
 	// (PUT /v1/duty-assignments/{assignmentId})
 	UpdateDutyAssignment(ctx context.Context, request UpdateDutyAssignmentRequestObject) (UpdateDutyAssignmentResponseObject, error)
+	// ListMyExitPermits Exit permits of the current student
+	// (GET /v1/exit-permits)
+	ListMyExitPermits(ctx context.Context, request ListMyExitPermitsRequestObject) (ListMyExitPermitsResponseObject, error)
+	// CreateExitPermit Student requests an exit permit for a period range today
+	// (POST /v1/exit-permits)
+	CreateExitPermit(ctx context.Context, request CreateExitPermitRequestObject) (CreateExitPermitResponseObject, error)
+	// GetExitPermit Exit permit detail with stage history
+	// (GET /v1/exit-permits/{instanceId})
+	GetExitPermit(ctx context.Context, request GetExitPermitRequestObject) (GetExitPermitResponseObject, error)
+	// CancelExitPermit Student cancels an in-progress exit permit
+	// (POST /v1/exit-permits/{instanceId}/cancel)
+	CancelExitPermit(ctx context.Context, request CancelExitPermitRequestObject) (CancelExitPermitResponseObject, error)
+	// ScanExitPermitGate Security scans the gate QR; the permit is completed
+	// (POST /v1/exit-permits/{instanceId}/gate-scan)
+	ScanExitPermitGate(ctx context.Context, request ScanExitPermitGateRequestObject) (ScanExitPermitGateResponseObject, error)
+	// IssueExitPermitGateToken Student generates the gate QR after the permit is approved
+	// (POST /v1/exit-permits/{instanceId}/gate-token)
+	IssueExitPermitGateToken(ctx context.Context, request IssueExitPermitGateTokenRequestObject) (IssueExitPermitGateTokenResponseObject, error)
+	// ScanExitPermitStage Student scans the current approver's token to advance a stage
+	// (POST /v1/exit-permits/{instanceId}/scan)
+	ScanExitPermitStage(ctx context.Context, request ScanExitPermitStageRequestObject) (ScanExitPermitStageResponseObject, error)
 	// ListJournals My own journals for an academic year, or (class_id given, requires view_journals_all) every journal for a class
 	// (GET /v1/journals)
 	ListJournals(ctx context.Context, request ListJournalsRequestObject) (ListJournalsResponseObject, error)
@@ -15404,6 +19129,51 @@ type StrictServerInterface interface {
 	// GetJournal One journal
 	// (GET /v1/journals/{journalId})
 	GetJournal(ctx context.Context, request GetJournalRequestObject) (GetJournalResponseObject, error)
+	// GetCurrentLateArrival The current student's in-progress late arrival, if any
+	// (GET /v1/late-arrivals/current)
+	GetCurrentLateArrival(ctx context.Context, request GetCurrentLateArrivalRequestObject) (GetCurrentLateArrivalResponseObject, error)
+	// OpenLateArrival Late student scans the duty teacher's token to open the flow
+	// (POST /v1/late-arrivals/open)
+	OpenLateArrival(ctx context.Context, request OpenLateArrivalRequestObject) (OpenLateArrivalResponseObject, error)
+	// ListLateArrivalsForReview Open late arrivals awaiting the duty teacher's review
+	// (GET /v1/late-arrivals/review-queue)
+	ListLateArrivalsForReview(ctx context.Context, request ListLateArrivalsForReviewRequestObject) (ListLateArrivalsForReviewResponseObject, error)
+	// GetLateArrival Late arrival detail with stage history
+	// (GET /v1/late-arrivals/{instanceId})
+	GetLateArrival(ctx context.Context, request GetLateArrivalRequestObject) (GetLateArrivalResponseObject, error)
+	// ReviewLateArrival Duty teacher records the review and moves the flow to leadership
+	// (POST /v1/late-arrivals/{instanceId}/review)
+	ReviewLateArrival(ctx context.Context, request ReviewLateArrivalRequestObject) (ReviewLateArrivalResponseObject, error)
+	// ScanLateArrivalStage Student scans the next approver's token
+	// (POST /v1/late-arrivals/{instanceId}/scan)
+	ScanLateArrivalStage(ctx context.Context, request ScanLateArrivalStageRequestObject) (ScanLateArrivalStageResponseObject, error)
+	// ListMyLeaveRequests Leave requests of the current student
+	// (GET /v1/leave-requests)
+	ListMyLeaveRequests(ctx context.Context, request ListMyLeaveRequestsRequestObject) (ListMyLeaveRequestsResponseObject, error)
+	// SubmitLeaveRequest Student submits a planned leave request
+	// (POST /v1/leave-requests)
+	SubmitLeaveRequest(ctx context.Context, request SubmitLeaveRequestRequestObject) (SubmitLeaveRequestResponseObject, error)
+	// ListLeaveRequestsForReview Leave requests awaiting review (optionally for one class)
+	// (GET /v1/leave-requests/review-queue)
+	ListLeaveRequestsForReview(ctx context.Context, request ListLeaveRequestsForReviewRequestObject) (ListLeaveRequestsForReviewResponseObject, error)
+	// GetLeaveRequest Leave request detail with stage history
+	// (GET /v1/leave-requests/{instanceId})
+	GetLeaveRequest(ctx context.Context, request GetLeaveRequestRequestObject) (GetLeaveRequestResponseObject, error)
+	// GetLeaveDocumentUrl Short-lived signed URL for the evidence or the issued letter
+	// (GET /v1/leave-requests/{instanceId}/documents/{kind})
+	GetLeaveDocumentUrl(ctx context.Context, request GetLeaveDocumentUrlRequestObject) (GetLeaveDocumentUrlResponseObject, error)
+	// ConfirmLeaveEvidence Validate and attach the uploaded evidence
+	// (POST /v1/leave-requests/{instanceId}/evidence/confirm)
+	ConfirmLeaveEvidence(ctx context.Context, request ConfirmLeaveEvidenceRequestObject) (ConfirmLeaveEvidenceResponseObject, error)
+	// RequestLeaveEvidenceUpload Presigned upload for the evidence image (JPEG or PNG, max 6 MB)
+	// (POST /v1/leave-requests/{instanceId}/evidence/upload-url)
+	RequestLeaveEvidenceUpload(ctx context.Context, request RequestLeaveEvidenceUploadRequestObject) (RequestLeaveEvidenceUploadResponseObject, error)
+	// IssueLeaveLetter Counselor issues the numbered letter and syncs attendance
+	// (POST /v1/leave-requests/{instanceId}/issue)
+	IssueLeaveLetter(ctx context.Context, request IssueLeaveLetterRequestObject) (IssueLeaveLetterResponseObject, error)
+	// ReviewLeaveRequest Homeroom teacher approves or rejects
+	// (POST /v1/leave-requests/{instanceId}/review)
+	ReviewLeaveRequest(ctx context.Context, request ReviewLeaveRequestRequestObject) (ReviewLeaveRequestResponseObject, error)
 	// GetMe Current user, roles, effective permissions, tenant
 	// (GET /v1/me)
 	GetMe(ctx context.Context, request GetMeRequestObject) (GetMeResponseObject, error)
@@ -15443,6 +19213,9 @@ type StrictServerInterface interface {
 	// ReplaceRolePermissions Replace the permission set of a role (super_admin always keeps all)
 	// (PUT /v1/roles/{roleId}/permissions)
 	ReplaceRolePermissions(ctx context.Context, request ReplaceRolePermissionsRequestObject) (ReplaceRolePermissionsResponseObject, error)
+	// IssueScanToken Mint a short-lived single-use scan token for a purpose (shown as a QR code)
+	// (POST /v1/scan-tokens)
+	IssueScanToken(ctx context.Context, request IssueScanTokenRequestObject) (IssueScanTokenResponseObject, error)
 	// ListSchedules Grid of schedules for a class, a teacher, or one day, merged into contiguous blocks
 	// (GET /v1/schedules)
 	ListSchedules(ctx context.Context, request ListSchedulesRequestObject) (ListSchedulesResponseObject, error)
@@ -15506,6 +19279,12 @@ type StrictServerInterface interface {
 	// RestoreUser Restore an archived user
 	// (POST /v1/users/{userId}/restore)
 	RestoreUser(ctx context.Context, request RestoreUserRequestObject) (RestoreUserResponseObject, error)
+	// ListWorkflowDefinitions Workflow definitions (all versions) of the tenant
+	// (GET /v1/workflows/definitions)
+	ListWorkflowDefinitions(ctx context.Context, request ListWorkflowDefinitionsRequestObject) (ListWorkflowDefinitionsResponseObject, error)
+	// ReplaceWorkflowDefinition Publish a new version of a workflow definition
+	// (PUT /v1/workflows/definitions/{kind})
+	ReplaceWorkflowDefinition(ctx context.Context, request ReplaceWorkflowDefinitionRequestObject) (ReplaceWorkflowDefinitionResponseObject, error)
 	// WsMe Realtime per-user channel (WebSocket upgrade). Authenticated by the access token, sent either as a bearer Authorization header (native clients) or as a `bearer.<token>` WebSocket subprotocol (browsers).
 	// (GET /ws/me)
 	WsMe(ctx context.Context, request WsMeRequestObject) (WsMeResponseObject, error)
@@ -18081,6 +21860,178 @@ func (sh *strictHandler) RevokeSession(w http.ResponseWriter, r *http.Request, s
 	}
 }
 
+// ScanClassroomEntry operation middleware
+func (sh *strictHandler) ScanClassroomEntry(w http.ResponseWriter, r *http.Request) {
+	var request ScanClassroomEntryRequestObject
+
+	var body ScanClassroomEntryJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ScanClassroomEntry(ctx, request.(ScanClassroomEntryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ScanClassroomEntry")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ScanClassroomEntryResponseObject); ok {
+		if err := validResponse.VisitScanClassroomEntryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListDocumentTemplates operation middleware
+func (sh *strictHandler) ListDocumentTemplates(w http.ResponseWriter, r *http.Request) {
+	var request ListDocumentTemplatesRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListDocumentTemplates(ctx, request.(ListDocumentTemplatesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListDocumentTemplates")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListDocumentTemplatesResponseObject); ok {
+		if err := validResponse.VisitListDocumentTemplatesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateDocumentTemplate operation middleware
+func (sh *strictHandler) CreateDocumentTemplate(w http.ResponseWriter, r *http.Request) {
+	var request CreateDocumentTemplateRequestObject
+
+	var body CreateDocumentTemplateJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateDocumentTemplate(ctx, request.(CreateDocumentTemplateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateDocumentTemplate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateDocumentTemplateResponseObject); ok {
+		if err := validResponse.VisitCreateDocumentTemplateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateDocumentTemplate operation middleware
+func (sh *strictHandler) UpdateDocumentTemplate(w http.ResponseWriter, r *http.Request, templateId openapi_types.UUID) {
+	var request UpdateDocumentTemplateRequestObject
+
+	request.TemplateId = templateId
+
+	var body UpdateDocumentTemplateJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateDocumentTemplate(ctx, request.(UpdateDocumentTemplateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateDocumentTemplate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateDocumentTemplateResponseObject); ok {
+		if err := validResponse.VisitUpdateDocumentTemplateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SetDefaultDocumentTemplate operation middleware
+func (sh *strictHandler) SetDefaultDocumentTemplate(w http.ResponseWriter, r *http.Request, templateId openapi_types.UUID) {
+	var request SetDefaultDocumentTemplateRequestObject
+
+	request.TemplateId = templateId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SetDefaultDocumentTemplate(ctx, request.(SetDefaultDocumentTemplateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SetDefaultDocumentTemplate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SetDefaultDocumentTemplateResponseObject); ok {
+		if err := validResponse.VisitSetDefaultDocumentTemplateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// VerifyDocument operation middleware
+func (sh *strictHandler) VerifyDocument(w http.ResponseWriter, r *http.Request, code string, params VerifyDocumentParams) {
+	var request VerifyDocumentRequestObject
+
+	request.Code = code
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.VerifyDocument(ctx, request.(VerifyDocumentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "VerifyDocument")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(VerifyDocumentResponseObject); ok {
+		if err := validResponse.VisitVerifyDocumentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListDutyTypes operation middleware
 func (sh *strictHandler) ListDutyTypes(w http.ResponseWriter, r *http.Request, params ListDutyTypesParams) {
 	var request ListDutyTypesRequestObject
@@ -18346,6 +22297,207 @@ func (sh *strictHandler) UpdateDutyAssignment(w http.ResponseWriter, r *http.Req
 	}
 }
 
+// ListMyExitPermits operation middleware
+func (sh *strictHandler) ListMyExitPermits(w http.ResponseWriter, r *http.Request, params ListMyExitPermitsParams) {
+	var request ListMyExitPermitsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListMyExitPermits(ctx, request.(ListMyExitPermitsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListMyExitPermits")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListMyExitPermitsResponseObject); ok {
+		if err := validResponse.VisitListMyExitPermitsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateExitPermit operation middleware
+func (sh *strictHandler) CreateExitPermit(w http.ResponseWriter, r *http.Request) {
+	var request CreateExitPermitRequestObject
+
+	var body CreateExitPermitJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateExitPermit(ctx, request.(CreateExitPermitRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateExitPermit")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateExitPermitResponseObject); ok {
+		if err := validResponse.VisitCreateExitPermitResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetExitPermit operation middleware
+func (sh *strictHandler) GetExitPermit(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID) {
+	var request GetExitPermitRequestObject
+
+	request.InstanceId = instanceId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetExitPermit(ctx, request.(GetExitPermitRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetExitPermit")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetExitPermitResponseObject); ok {
+		if err := validResponse.VisitGetExitPermitResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CancelExitPermit operation middleware
+func (sh *strictHandler) CancelExitPermit(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID) {
+	var request CancelExitPermitRequestObject
+
+	request.InstanceId = instanceId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CancelExitPermit(ctx, request.(CancelExitPermitRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CancelExitPermit")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CancelExitPermitResponseObject); ok {
+		if err := validResponse.VisitCancelExitPermitResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ScanExitPermitGate operation middleware
+func (sh *strictHandler) ScanExitPermitGate(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID) {
+	var request ScanExitPermitGateRequestObject
+
+	request.InstanceId = instanceId
+
+	var body ScanExitPermitGateJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ScanExitPermitGate(ctx, request.(ScanExitPermitGateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ScanExitPermitGate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ScanExitPermitGateResponseObject); ok {
+		if err := validResponse.VisitScanExitPermitGateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// IssueExitPermitGateToken operation middleware
+func (sh *strictHandler) IssueExitPermitGateToken(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID) {
+	var request IssueExitPermitGateTokenRequestObject
+
+	request.InstanceId = instanceId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.IssueExitPermitGateToken(ctx, request.(IssueExitPermitGateTokenRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "IssueExitPermitGateToken")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(IssueExitPermitGateTokenResponseObject); ok {
+		if err := validResponse.VisitIssueExitPermitGateTokenResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ScanExitPermitStage operation middleware
+func (sh *strictHandler) ScanExitPermitStage(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID) {
+	var request ScanExitPermitStageRequestObject
+
+	request.InstanceId = instanceId
+
+	var body ScanExitPermitStageJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ScanExitPermitStage(ctx, request.(ScanExitPermitStageRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ScanExitPermitStage")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ScanExitPermitStageResponseObject); ok {
+		if err := validResponse.VisitScanExitPermitStageResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListJournals operation middleware
 func (sh *strictHandler) ListJournals(w http.ResponseWriter, r *http.Request, params ListJournalsParams) {
 	var request ListJournalsRequestObject
@@ -18474,6 +22626,431 @@ func (sh *strictHandler) GetJournal(w http.ResponseWriter, r *http.Request, jour
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetJournalResponseObject); ok {
 		if err := validResponse.VisitGetJournalResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetCurrentLateArrival operation middleware
+func (sh *strictHandler) GetCurrentLateArrival(w http.ResponseWriter, r *http.Request) {
+	var request GetCurrentLateArrivalRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetCurrentLateArrival(ctx, request.(GetCurrentLateArrivalRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetCurrentLateArrival")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetCurrentLateArrivalResponseObject); ok {
+		if err := validResponse.VisitGetCurrentLateArrivalResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// OpenLateArrival operation middleware
+func (sh *strictHandler) OpenLateArrival(w http.ResponseWriter, r *http.Request) {
+	var request OpenLateArrivalRequestObject
+
+	var body OpenLateArrivalJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.OpenLateArrival(ctx, request.(OpenLateArrivalRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "OpenLateArrival")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(OpenLateArrivalResponseObject); ok {
+		if err := validResponse.VisitOpenLateArrivalResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListLateArrivalsForReview operation middleware
+func (sh *strictHandler) ListLateArrivalsForReview(w http.ResponseWriter, r *http.Request) {
+	var request ListLateArrivalsForReviewRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListLateArrivalsForReview(ctx, request.(ListLateArrivalsForReviewRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListLateArrivalsForReview")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListLateArrivalsForReviewResponseObject); ok {
+		if err := validResponse.VisitListLateArrivalsForReviewResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetLateArrival operation middleware
+func (sh *strictHandler) GetLateArrival(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID) {
+	var request GetLateArrivalRequestObject
+
+	request.InstanceId = instanceId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetLateArrival(ctx, request.(GetLateArrivalRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetLateArrival")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetLateArrivalResponseObject); ok {
+		if err := validResponse.VisitGetLateArrivalResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ReviewLateArrival operation middleware
+func (sh *strictHandler) ReviewLateArrival(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID) {
+	var request ReviewLateArrivalRequestObject
+
+	request.InstanceId = instanceId
+
+	var body ReviewLateArrivalJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ReviewLateArrival(ctx, request.(ReviewLateArrivalRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ReviewLateArrival")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ReviewLateArrivalResponseObject); ok {
+		if err := validResponse.VisitReviewLateArrivalResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ScanLateArrivalStage operation middleware
+func (sh *strictHandler) ScanLateArrivalStage(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID) {
+	var request ScanLateArrivalStageRequestObject
+
+	request.InstanceId = instanceId
+
+	var body ScanLateArrivalStageJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ScanLateArrivalStage(ctx, request.(ScanLateArrivalStageRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ScanLateArrivalStage")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ScanLateArrivalStageResponseObject); ok {
+		if err := validResponse.VisitScanLateArrivalStageResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListMyLeaveRequests operation middleware
+func (sh *strictHandler) ListMyLeaveRequests(w http.ResponseWriter, r *http.Request, params ListMyLeaveRequestsParams) {
+	var request ListMyLeaveRequestsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListMyLeaveRequests(ctx, request.(ListMyLeaveRequestsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListMyLeaveRequests")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListMyLeaveRequestsResponseObject); ok {
+		if err := validResponse.VisitListMyLeaveRequestsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SubmitLeaveRequest operation middleware
+func (sh *strictHandler) SubmitLeaveRequest(w http.ResponseWriter, r *http.Request) {
+	var request SubmitLeaveRequestRequestObject
+
+	var body SubmitLeaveRequestJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SubmitLeaveRequest(ctx, request.(SubmitLeaveRequestRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SubmitLeaveRequest")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SubmitLeaveRequestResponseObject); ok {
+		if err := validResponse.VisitSubmitLeaveRequestResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListLeaveRequestsForReview operation middleware
+func (sh *strictHandler) ListLeaveRequestsForReview(w http.ResponseWriter, r *http.Request, params ListLeaveRequestsForReviewParams) {
+	var request ListLeaveRequestsForReviewRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListLeaveRequestsForReview(ctx, request.(ListLeaveRequestsForReviewRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListLeaveRequestsForReview")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListLeaveRequestsForReviewResponseObject); ok {
+		if err := validResponse.VisitListLeaveRequestsForReviewResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetLeaveRequest operation middleware
+func (sh *strictHandler) GetLeaveRequest(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID) {
+	var request GetLeaveRequestRequestObject
+
+	request.InstanceId = instanceId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetLeaveRequest(ctx, request.(GetLeaveRequestRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetLeaveRequest")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetLeaveRequestResponseObject); ok {
+		if err := validResponse.VisitGetLeaveRequestResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetLeaveDocumentUrl operation middleware
+func (sh *strictHandler) GetLeaveDocumentUrl(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID, kind GetLeaveDocumentUrlParamsKind) {
+	var request GetLeaveDocumentUrlRequestObject
+
+	request.InstanceId = instanceId
+	request.Kind = kind
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetLeaveDocumentUrl(ctx, request.(GetLeaveDocumentUrlRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetLeaveDocumentUrl")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetLeaveDocumentUrlResponseObject); ok {
+		if err := validResponse.VisitGetLeaveDocumentUrlResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ConfirmLeaveEvidence operation middleware
+func (sh *strictHandler) ConfirmLeaveEvidence(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID) {
+	var request ConfirmLeaveEvidenceRequestObject
+
+	request.InstanceId = instanceId
+
+	var body ConfirmLeaveEvidenceJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ConfirmLeaveEvidence(ctx, request.(ConfirmLeaveEvidenceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ConfirmLeaveEvidence")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ConfirmLeaveEvidenceResponseObject); ok {
+		if err := validResponse.VisitConfirmLeaveEvidenceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RequestLeaveEvidenceUpload operation middleware
+func (sh *strictHandler) RequestLeaveEvidenceUpload(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID) {
+	var request RequestLeaveEvidenceUploadRequestObject
+
+	request.InstanceId = instanceId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RequestLeaveEvidenceUpload(ctx, request.(RequestLeaveEvidenceUploadRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RequestLeaveEvidenceUpload")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RequestLeaveEvidenceUploadResponseObject); ok {
+		if err := validResponse.VisitRequestLeaveEvidenceUploadResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// IssueLeaveLetter operation middleware
+func (sh *strictHandler) IssueLeaveLetter(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID) {
+	var request IssueLeaveLetterRequestObject
+
+	request.InstanceId = instanceId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.IssueLeaveLetter(ctx, request.(IssueLeaveLetterRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "IssueLeaveLetter")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(IssueLeaveLetterResponseObject); ok {
+		if err := validResponse.VisitIssueLeaveLetterResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ReviewLeaveRequest operation middleware
+func (sh *strictHandler) ReviewLeaveRequest(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID) {
+	var request ReviewLeaveRequestRequestObject
+
+	request.InstanceId = instanceId
+
+	var body ReviewLeaveRequestJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ReviewLeaveRequest(ctx, request.(ReviewLeaveRequestRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ReviewLeaveRequest")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ReviewLeaveRequestResponseObject); ok {
+		if err := validResponse.VisitReviewLeaveRequestResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -18836,6 +23413,37 @@ func (sh *strictHandler) ReplaceRolePermissions(w http.ResponseWriter, r *http.R
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ReplaceRolePermissionsResponseObject); ok {
 		if err := validResponse.VisitReplaceRolePermissionsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// IssueScanToken operation middleware
+func (sh *strictHandler) IssueScanToken(w http.ResponseWriter, r *http.Request) {
+	var request IssueScanTokenRequestObject
+
+	var body IssueScanTokenJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.IssueScanToken(ctx, request.(IssueScanTokenRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "IssueScanToken")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(IssueScanTokenResponseObject); ok {
+		if err := validResponse.VisitIssueScanTokenResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -19443,6 +24051,63 @@ func (sh *strictHandler) RestoreUser(w http.ResponseWriter, r *http.Request, use
 	}
 }
 
+// ListWorkflowDefinitions operation middleware
+func (sh *strictHandler) ListWorkflowDefinitions(w http.ResponseWriter, r *http.Request) {
+	var request ListWorkflowDefinitionsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListWorkflowDefinitions(ctx, request.(ListWorkflowDefinitionsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListWorkflowDefinitions")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListWorkflowDefinitionsResponseObject); ok {
+		if err := validResponse.VisitListWorkflowDefinitionsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ReplaceWorkflowDefinition operation middleware
+func (sh *strictHandler) ReplaceWorkflowDefinition(w http.ResponseWriter, r *http.Request, kind WorkflowKind) {
+	var request ReplaceWorkflowDefinitionRequestObject
+
+	request.Kind = kind
+
+	var body ReplaceWorkflowDefinitionJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ReplaceWorkflowDefinition(ctx, request.(ReplaceWorkflowDefinitionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ReplaceWorkflowDefinition")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ReplaceWorkflowDefinitionResponseObject); ok {
+		if err := validResponse.VisitReplaceWorkflowDefinitionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // WsMe operation middleware
 func (sh *strictHandler) WsMe(w http.ResponseWriter, r *http.Request) {
 	var request WsMeRequestObject
@@ -19498,245 +24163,299 @@ func (sh *strictHandler) WsMonitor(w http.ResponseWriter, r *http.Request, param
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
-	"JCAShWxZhH5A5OTj+4//PwAA//8=",
+	"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",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

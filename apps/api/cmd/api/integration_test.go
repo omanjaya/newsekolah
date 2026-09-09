@@ -67,13 +67,14 @@ func startTestPostgres(t *testing.T) (string, *pgxpool.Pool) {
 
 func testConfig(dsn string) config.Config {
 	return config.Config{
-		AppEnv:          "test",
-		TenancyMode:     config.TenancySingle,
-		DatabaseURL:     dsn,
-		JWTSigningKey:   testJWTSigningKey,
-		AccessTokenTTL:  15 * time.Minute,
-		RefreshTokenTTL: 720 * time.Hour,
-		BodyLimitBytes:  1 << 20,
+		AppEnv:             "test",
+		TenancyMode:        config.TenancySingle,
+		DatabaseURL:        dsn,
+		JWTSigningKey:      testJWTSigningKey,
+		DocumentSigningKey: "test-document-signing-key-at-least-32-chars",
+		AccessTokenTTL:     15 * time.Minute,
+		RefreshTokenTTL:    720 * time.Hour,
+		BodyLimitBytes:     1 << 20,
 	}
 }
 

@@ -8,6 +8,7 @@
 package storage
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -142,6 +143,37 @@ func (c *Client) DownloadBounded(ctx context.Context, objectKey string, maxBytes
 func (c *Client) RemoveObject(ctx context.Context, objectKey string) error {
 	if err := c.mc.RemoveObject(ctx, c.bucket, objectKey, minio.RemoveObjectOptions{}); err != nil {
 		return fmt.Errorf("remove %s: %w", objectKey, err)
+	}
+	return nil
+}
+
+// GetObject downloads an object's full content server-side. Used by
+// modules/permits' evidence-confirmation step, which must decode, re-sniff
+// and re-encode an image a client already PUT directly to the presigned
+// URL (docs/08-security.md section 6: EXIF stripped, type sniffed from
+// content, not the client-declared filename).
+func (c *Client) GetObject(ctx context.Context, objectKey string) ([]byte, error) {
+	obj, err := c.mc.GetObject(ctx, c.bucket, objectKey, minio.GetObjectOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("get object %s: %w", objectKey, err)
+	}
+	defer func() { _ = obj.Close() }()
+
+	data, err := io.ReadAll(obj)
+	if err != nil {
+		return nil, fmt.Errorf("read object %s: %w", objectKey, err)
+	}
+	return data, nil
+}
+
+// PutObject uploads content server-side, overwriting objectKey. Used to
+// write back a re-encoded evidence image and to store rendered documents
+// (letters) the API generates itself rather than a client uploading.
+func (c *Client) PutObject(ctx context.Context, objectKey string, content []byte, contentType string) error {
+	_, err := c.mc.PutObject(ctx, c.bucket, objectKey, bytes.NewReader(content), int64(len(content)),
+		minio.PutObjectOptions{ContentType: contentType})
+	if err != nil {
+		return fmt.Errorf("put object %s: %w", objectKey, err)
 	}
 	return nil
 }

@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
+
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/identity/domain"
@@ -118,7 +120,7 @@ func (s *Service) refresh(ctx context.Context, tenantID uuid.UUID, refreshToken 
 		// It runs in its own, independent transaction (a separate pooled
 		// connection) so it commits even though the outer one will not.
 		familyID := session.FamilyID
-		_ = s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		_ = s.withTx(database.Detach(ctx), tenantID, func(ctx context.Context) error {
 			return s.repo.RevokeSessionFamily(ctx, tenantID, familyID, "reuse_detected")
 		})
 		return AuthResult{}, domain.ErrRefreshReuseDetected

@@ -39,6 +39,14 @@ func NewPool(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
 // WithPlatformTx for the current call chain. Repositories call this instead
 // of accepting a pool directly, so a repository never opens its own
 // transaction (only services do).
+// Detach returns a context without the ambient transaction, so a nested
+// WithTenantTx opens an independent transaction that commits even when the
+// caller's transaction rolls back (security bookkeeping such as revoking a
+// session family on refresh-token reuse relies on this).
+func Detach(ctx context.Context) context.Context {
+	return context.WithValue(ctx, txKey, nil)
+}
+
 func TxFromContext(ctx context.Context) (pgx.Tx, bool) {
 	tx, ok := ctx.Value(txKey).(pgx.Tx)
 	return tx, ok
@@ -71,6 +79,12 @@ func WithPlatformTx(ctx context.Context, pool *pgxpool.Pool, fn func(ctx context
 }
 
 func withTx(ctx context.Context, pool *pgxpool.Pool, fn func(ctx context.Context, tx pgx.Tx) error) (err error) {
+	// A service calling another service inside its own transaction must
+	// share it: nested calls join the ambient transaction instead of opening
+	// a second one that could not see uncommitted rows.
+	if existing, ok := TxFromContext(ctx); ok {
+		return fn(ctx, existing)
+	}
 	tx, err := pool.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("begin transaction: %w", err)

@@ -165,6 +165,28 @@ type ClassJournal struct {
 	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
 }
 
+type DocumentSequence struct {
+	TenantID       uuid.UUID `json:"tenant_id"`
+	Kind           string    `json:"kind"`
+	AcademicYearID uuid.UUID `json:"academic_year_id"`
+	NextValue      int64     `json:"next_value"`
+}
+
+type DocumentTemplate struct {
+	ID        uuid.UUID          `json:"id"`
+	TenantID  uuid.UUID          `json:"tenant_id"`
+	Kind      string             `json:"kind"`
+	Name      string             `json:"name"`
+	Engine    string             `json:"engine"`
+	Body      string             `json:"body"`
+	Variables []byte             `json:"variables"`
+	IsDefault bool               `json:"is_default"`
+	CreatedBy pgtype.UUID        `json:"created_by"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	DeletedAt pgtype.Timestamptz `json:"deleted_at"`
+}
+
 type DutyAssignment struct {
 	ID             uuid.UUID          `json:"id"`
 	TenantID       uuid.UUID          `json:"tenant_id"`
@@ -209,6 +231,20 @@ type Enrollment struct {
 	CreatedAt      pgtype.Timestamptz `json:"created_at"`
 }
 
+type ExitPermit struct {
+	InstanceID          uuid.UUID          `json:"instance_id"`
+	TenantID            uuid.UUID          `json:"tenant_id"`
+	Destination         string             `json:"destination"`
+	StartPeriodID       uuid.UUID          `json:"start_period_id"`
+	EndPeriodID         uuid.UUID          `json:"end_period_id"`
+	IssuedAt            pgtype.Timestamptz `json:"issued_at"`
+	GateTokenID         pgtype.UUID        `json:"gate_token_id"`
+	ExitedAt            pgtype.Timestamptz `json:"exited_at"`
+	SecurityUserID      pgtype.UUID        `json:"security_user_id"`
+	StudentNameSnapshot string             `json:"student_name_snapshot"`
+	ClassNameSnapshot   string             `json:"class_name_snapshot"`
+}
+
 type FeatureFlag struct {
 	TenantID uuid.UUID `json:"tenant_id"`
 	Module   string    `json:"module"`
@@ -231,6 +267,57 @@ type ImpersonationAction struct {
 	Method     string             `json:"method"`
 	Path       string             `json:"path"`
 	OccurredAt pgtype.Timestamptz `json:"occurred_at"`
+}
+
+type IssuedDocument struct {
+	ID                   uuid.UUID          `json:"id"`
+	TenantID             uuid.UUID          `json:"tenant_id"`
+	Kind                 string             `json:"kind"`
+	EntityType           string             `json:"entity_type"`
+	EntityID             uuid.UUID          `json:"entity_id"`
+	Number               string             `json:"number"`
+	AssetID              pgtype.UUID        `json:"asset_id"`
+	Sha256               string             `json:"sha256"`
+	VerificationCodeHash []byte             `json:"verification_code_hash"`
+	IssuedBy             pgtype.UUID        `json:"issued_by"`
+	IssuedAt             pgtype.Timestamptz `json:"issued_at"`
+	RevokedAt            pgtype.Timestamptz `json:"revoked_at"`
+}
+
+type LateArrival struct {
+	InstanceID       uuid.UUID          `json:"instance_id"`
+	TenantID         uuid.UUID          `json:"tenant_id"`
+	Reason           string             `json:"reason"`
+	OccurrenceNumber int32              `json:"occurrence_number"`
+	RequiredAction   string             `json:"required_action"`
+	HomeroomReported bool               `json:"homeroom_reported"`
+	CompletedAt      pgtype.Timestamptz `json:"completed_at"`
+}
+
+type LeaveDocument struct {
+	ID             uuid.UUID          `json:"id"`
+	TenantID       uuid.UUID          `json:"tenant_id"`
+	LeaveRequestID uuid.UUID          `json:"leave_request_id"`
+	Kind           string             `json:"kind"`
+	AssetID        uuid.UUID          `json:"asset_id"`
+	CreatedBy      pgtype.UUID        `json:"created_by"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+}
+
+type LeaveRequest struct {
+	InstanceID           uuid.UUID          `json:"instance_id"`
+	TenantID             uuid.UUID          `json:"tenant_id"`
+	Category             string             `json:"category"`
+	Reason               string             `json:"reason"`
+	StartsOn             pgtype.Date        `json:"starts_on"`
+	EndsOn               pgtype.Date        `json:"ends_on"`
+	LetterNumber         pgtype.Text        `json:"letter_number"`
+	IssuedAt             pgtype.Timestamptz `json:"issued_at"`
+	IssuedBy             pgtype.UUID        `json:"issued_by"`
+	ParentApprovedAt     pgtype.Timestamptz `json:"parent_approved_at"`
+	StudentNameSnapshot  string             `json:"student_name_snapshot"`
+	ClassNameSnapshot    string             `json:"class_name_snapshot"`
+	GuardianNameSnapshot pgtype.Text        `json:"guardian_name_snapshot"`
 }
 
 type LoginAttempt struct {
@@ -350,6 +437,19 @@ type Room struct {
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 	DeletedAt pgtype.Timestamptz `json:"deleted_at"`
+}
+
+type ScanToken struct {
+	ID               uuid.UUID          `json:"id"`
+	TenantID         uuid.UUID          `json:"tenant_id"`
+	Purpose          string             `json:"purpose"`
+	ContextID        pgtype.UUID        `json:"context_id"`
+	IssuedByUserID   uuid.UUID          `json:"issued_by_user_id"`
+	TokenHash        []byte             `json:"token_hash"`
+	ExpiresAt        pgtype.Timestamptz `json:"expires_at"`
+	ConsumedAt       pgtype.Timestamptz `json:"consumed_at"`
+	ConsumedByUserID pgtype.UUID        `json:"consumed_by_user_id"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
 }
 
 type Schedule struct {
@@ -604,4 +704,49 @@ type WebauthnCredential struct {
 	Name         pgtype.Text        `json:"name"`
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 	LastUsedAt   pgtype.Timestamptz `json:"last_used_at"`
+}
+
+type WorkflowDefinition struct {
+	ID        uuid.UUID          `json:"id"`
+	TenantID  uuid.UUID          `json:"tenant_id"`
+	Kind      string             `json:"kind"`
+	Version   int32              `json:"version"`
+	IsActive  bool               `json:"is_active"`
+	Stages    []byte             `json:"stages"`
+	Config    []byte             `json:"config"`
+	CreatedBy pgtype.UUID        `json:"created_by"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
+type WorkflowEvent struct {
+	ID           uuid.UUID          `json:"id"`
+	TenantID     uuid.UUID          `json:"tenant_id"`
+	InstanceID   uuid.UUID          `json:"instance_id"`
+	StageKey     pgtype.Text        `json:"stage_key"`
+	FromStatus   string             `json:"from_status"`
+	ToStatus     string             `json:"to_status"`
+	ActorUserID  pgtype.UUID        `json:"actor_user_id"`
+	Verification string             `json:"verification"`
+	ScanTokenID  pgtype.UUID        `json:"scan_token_id"`
+	Note         pgtype.Text        `json:"note"`
+	OccurredAt   pgtype.Timestamptz `json:"occurred_at"`
+}
+
+type WorkflowInstance struct {
+	ID                uuid.UUID          `json:"id"`
+	TenantID          uuid.UUID          `json:"tenant_id"`
+	AcademicYearID    uuid.UUID          `json:"academic_year_id"`
+	DefinitionID      uuid.UUID          `json:"definition_id"`
+	Kind              string             `json:"kind"`
+	SubjectUserID     uuid.UUID          `json:"subject_user_id"`
+	ClassID           pgtype.UUID        `json:"class_id"`
+	CurrentStageIndex int32              `json:"current_stage_index"`
+	Status            string             `json:"status"`
+	Payload           []byte             `json:"payload"`
+	OpenedDate        pgtype.Date        `json:"opened_date"`
+	OpenedAt          pgtype.Timestamptz `json:"opened_at"`
+	ClosedAt          pgtype.Timestamptz `json:"closed_at"`
+	CreatedBy         pgtype.UUID        `json:"created_by"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt         pgtype.Timestamptz `json:"updated_at"`
 }
