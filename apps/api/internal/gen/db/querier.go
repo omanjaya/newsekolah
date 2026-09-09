@@ -459,6 +459,11 @@ type Querier interface {
 	ListUnreadNotificationsSince(ctx context.Context, arg ListUnreadNotificationsSinceParams) ([]Notification, error)
 	// cross-module read: roles/user_roles tables are owned by the identity module.
 	ListUserIDsByRoleSlugs(ctx context.Context, arg ListUserIDsByRoleSlugsParams) ([]uuid.UUID, error)
+	// Who currently holds a duty in the active academic year: every holder of
+	// a school-scoped duty, or the holders scoped to class_id when it is given.
+	// Used by the wiring layer to address notifications (homeroom of a class,
+	// security staff at the gate).
+	ListUserIDsWithActiveDuty(ctx context.Context, arg ListUserIDsWithActiveDutyParams) ([]uuid.UUID, error)
 	ListUserRoleSlugs(ctx context.Context, userID uuid.UUID) ([]string, error)
 	ListUsersAdmin(ctx context.Context, arg ListUsersAdminParams) ([]ListUsersAdminRow, error)
 	// Drives the hourly digest periodic job: every user whose configured

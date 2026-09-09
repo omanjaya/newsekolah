@@ -76,6 +76,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	authenticator := auth.NewAuthenticator(tokenIssuer, sessionCache, identityModule.Service)
 
 	eventBus := events.NewBus()
+	wiring.RegisterNotificationBridge(eventBus, identityModule.Service, logger)
 	schedulingModule := scheduling.Register(pool, eventBus, identityModule.Service)
 
 	hub := realtime.NewHub(broadcasterFor(redisClient))

@@ -244,3 +244,13 @@ func toDomainSession(row db.Session) domain.Session {
 		ExpiresAt: pdatabase.TimeOrZero(row.ExpiresAt),
 	}
 }
+
+func (r *Repository) ListUserIDsWithActiveDuty(ctx context.Context, tenantID uuid.UUID, slug string, classID uuid.NullUUID) ([]uuid.UUID, error) {
+	ids, err := r.queries(ctx).ListUserIDsWithActiveDuty(ctx, db.ListUserIDsWithActiveDutyParams{
+		TenantID: tenantID, Slug: slug, ClassID: pdatabase.NullUUID(classID),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("list users with duty %s: %w", slug, err)
+	}
+	return ids, nil
+}

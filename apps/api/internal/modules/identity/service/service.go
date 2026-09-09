@@ -50,6 +50,7 @@ type AuthRepository interface {
 	ListRolesForUser(ctx context.Context, tenantID, userID uuid.UUID) ([]domain.Role, error)
 	ListPermissionCodesForRoles(ctx context.Context, roleIDs []uuid.UUID) ([]string, error)
 	ListActiveDuties(ctx context.Context, tenantID, userID, academicYearID uuid.UUID) ([]authz.Duty, error)
+	ListUserIDsWithActiveDuty(ctx context.Context, tenantID uuid.UUID, slug string, classID uuid.NullUUID) ([]uuid.UUID, error)
 
 	CreateSession(ctx context.Context, s NewSession) (domain.Session, error)
 	GetSessionByRefreshHash(ctx context.Context, tenantID uuid.UUID, hash []byte) (domain.Session, error)
@@ -194,4 +195,18 @@ func (s *Service) loadPrincipal(ctx context.Context, tenantID, userID uuid.UUID)
 	}
 
 	return principal, nil
+}
+
+// UsersWithDuty returns who currently holds the duty slug in the active
+// academic year: every holder of a school-scoped duty, or the holders
+// scoped to classID for a class-scoped one. The wiring layer uses it to
+// address notifications without reading identity's tables directly.
+func (s *Service) UsersWithDuty(ctx context.Context, tenantID uuid.UUID, slug string, classID uuid.NullUUID) ([]uuid.UUID, error) {
+	var ids []uuid.UUID
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		ids, err = s.repo.ListUserIDsWithActiveDuty(ctx, tenantID, slug, classID)
+		return err
+	})
+	return ids, err
 }

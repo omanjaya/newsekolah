@@ -220,3 +220,51 @@ func (q *Queries) ListPermissionCodesForDutyTypes(ctx context.Context, dutyTypeI
 	}
 	return items, nil
 }
+
+const listUserIDsWithActiveDuty = `-- name: ListUserIDsWithActiveDuty :many
+select distinct da.user_id
+from duty_assignments da
+join duty_types dt on dt.id = da.duty_type_id
+join academic_years ay on ay.id = da.academic_year_id and ay.is_active
+where da.tenant_id = $1
+  and dt.slug = $2
+  and da.is_active
+  and dt.is_active
+  and dt.deleted_at is null
+  and da.starts_on <= current_date
+  and (da.ends_on is null or da.ends_on >= current_date)
+  and (
+    dt.scope_kind = 'school'
+    or ($3::uuid is not null and da.scope_class_id = $3::uuid)
+  )
+`
+
+type ListUserIDsWithActiveDutyParams struct {
+	TenantID uuid.UUID   `json:"tenant_id"`
+	Slug     string      `json:"slug"`
+	ClassID  pgtype.UUID `json:"class_id"`
+}
+
+// Who currently holds a duty in the active academic year: every holder of
+// a school-scoped duty, or the holders scoped to class_id when it is given.
+// Used by the wiring layer to address notifications (homeroom of a class,
+// security staff at the gate).
+func (q *Queries) ListUserIDsWithActiveDuty(ctx context.Context, arg ListUserIDsWithActiveDutyParams) ([]uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, listUserIDsWithActiveDuty, arg.TenantID, arg.Slug, arg.ClassID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []uuid.UUID{}
+	for rows.Next() {
+		var user_id uuid.UUID
+		if err := rows.Scan(&user_id); err != nil {
+			return nil, err
+		}
+		items = append(items, user_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
