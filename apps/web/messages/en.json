@@ -230,6 +230,180 @@
     },
     "duty": {
       "navLabel": "Duty desk"
+    },
+    "common": {
+      "weekdays": {
+        "1": "Monday",
+        "2": "Tuesday",
+        "3": "Wednesday",
+        "4": "Thursday",
+        "5": "Friday",
+        "6": "Saturday",
+        "7": "Sunday"
+      },
+      "weekdaysShort": {
+        "1": "Mon",
+        "2": "Tue",
+        "3": "Wed",
+        "4": "Thu",
+        "5": "Fri",
+        "6": "Sat",
+        "7": "Sun"
+      }
+    },
+    "schedule": {
+      "eyebrow": "Academic",
+      "title": "Timetable",
+      "byClass": "By class",
+      "byTeacher": "By teacher",
+      "pickClass": "Pick a class",
+      "pickTeacher": "Pick a teacher",
+      "periodColumn": "Period",
+      "addBlock": "Add block",
+      "addHere": "Add",
+      "deleteBlock": "Delete",
+      "deleted": "Schedule deleted",
+      "deleteConfirmTitle": "Delete schedule",
+      "deleteConfirmBody": "This block will be removed. Attendance sessions already recorded are kept.",
+      "noPeriodsTitle": "Periods not set up yet",
+      "noPeriodsBody": "Set up the period template under School Data before building a timetable.",
+      "unknownTeacher": "Unknown teacher",
+      "unknownClass": "Unknown class",
+      "unknownSubject": "Unknown subject",
+      "form": {
+        "class": "Class",
+        "subject": "Subject",
+        "teacher": "Teacher",
+        "day": "Day",
+        "start": "Start period",
+        "end": "End period",
+        "pick": "Pick",
+        "requiredError": "All fields are required.",
+        "rangeError": "End period must be the same as or after the start period.",
+        "created": "Schedule added",
+        "cancel": "Cancel",
+        "save": "Save"
+      }
+    },
+    "attendance": {
+      "eyebrow": "Academic",
+      "title": "Attendance",
+      "todayTitle": "Today's sessions",
+      "todayEmptyTitle": "No teaching sessions today",
+      "todayEmptyBody": "Sessions appear here from your timetable and accepted substitute requests.",
+      "substituteBadge": "Substitute",
+      "statusSubmitted": "Saved",
+      "statusPending": "Not filled",
+      "fillAttendance": "Take attendance",
+      "openSubmitted": "Open",
+      "unknownClass": "Class",
+      "unknownSubject": "",
+      "calendar": {
+        "prevMonth": "Previous month",
+        "nextMonth": "Next month",
+        "dayTitle": "{submitted} of {expected} sessions recorded",
+        "codes": {
+          "H": "Present",
+          "S": "Sick",
+          "I": "Excused",
+          "D": "Dispensation",
+          "A": "Absent",
+          "INCOMPLETE": "Incomplete",
+          "MIXED": "Mixed",
+          "NONE": "No sessions"
+        }
+      },
+      "session": {
+        "eyebrow": "Meeting {meeting}",
+        "title": "Attendance",
+        "back": "Attendance",
+        "correctionMode": "Correction mode",
+        "searchPlaceholder": "Search student",
+        "onlyNotPresent": "Only not present",
+        "blocked": "Locked",
+        "noMatch": "No matching students.",
+        "notePlaceholder": "Note",
+        "noteFor": "Note for {name}",
+        "source": {
+          "leave": "Filled from a leave letter",
+          "permit": "Filled from an exit permit",
+          "system": "Filled by the system"
+        },
+        "journalTitle": "Teaching journal",
+        "previousTopic": "Previous meeting topic",
+        "journalTopic": "Topic",
+        "journalActivities": "Activities",
+        "journalReflection": "Reflection",
+        "saveHint": "Every student counts as present unless changed.",
+        "save": "Save attendance",
+        "saveCorrection": "Save correction",
+        "reasonPlaceholder": "Correction reason (required)",
+        "reasonRequired": "Enter the correction reason.",
+        "saved": "Attendance saved",
+        "loadError": "The session could not be loaded."
+      }
+    },
+    "homeroom": {
+      "eyebrow": "Academic",
+      "title": "Homeroom",
+      "titleWithClass": "Homeroom {className}",
+      "dateLabel": "Date",
+      "columns": {
+        "name": "Name",
+        "status": "Daily status",
+        "sessions": "Sessions recorded"
+      },
+      "codes": {
+        "H": "Present",
+        "S": "Sick",
+        "I": "Excused",
+        "D": "Dispensation",
+        "A": "Absent",
+        "INCOMPLETE": "Incomplete",
+        "MIXED": "Mixed",
+        "NONE": "No sessions"
+      },
+      "noHomeroomTitle": "You are not a homeroom teacher yet",
+      "noHomeroomBody": "This page shows the daily summary of the class you supervise.",
+      "emptyTitle": "No students yet",
+      "emptyBody": "Students enrolled in this class will show up here."
+    },
+    "substitutions": {
+      "eyebrow": "Academic",
+      "title": "Substitute teachers",
+      "request": "Request a substitute",
+      "incoming": "Incoming",
+      "outgoing": "Outgoing",
+      "emptyTitle": "No requests yet",
+      "emptyIncomingBody": "Requests from colleagues to cover your schedule show up here.",
+      "emptyOutgoingBody": "Requests you sent to colleagues show up here.",
+      "fromTeacher": "From",
+      "toTeacher": "To",
+      "responseNote": "Note",
+      "unknownTeacher": "Teacher",
+      "accept": "Accept",
+      "reject": "Decline",
+      "cancel": "Cancel",
+      "accepted": "Request accepted. The session is now in your attendance list.",
+      "rejected": "Request declined",
+      "cancelled": "Request cancelled",
+      "status": {
+        "pending": "Pending",
+        "accepted": "Accepted",
+        "rejected": "Declined",
+        "cancelled": "Cancelled"
+      },
+      "form": {
+        "schedule": "Schedule to cover",
+        "date": "Date",
+        "substitute": "Substitute teacher",
+        "note": "Note",
+        "pick": "Pick",
+        "requiredError": "Schedule, date and substitute are required.",
+        "sent": "Request sent",
+        "cancel": "Cancel",
+        "send": "Send request"
+      }
     }
   }
 }

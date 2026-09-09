@@ -1556,6 +1556,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/directory/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Names of active users for pickers (schedules, substitutes, audiences); no contact details */
+        get: operations["listDirectoryUsers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/auth/login": {
         parameters: {
             query?: never;
@@ -3110,6 +3127,13 @@ export interface components {
         PresenceSnapshot: {
             count: number;
             keys: string[];
+        };
+        DirectoryUser: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            username: string;
+            profile_kind?: components["schemas"]["ProfileKind"];
         };
         /** @enum {string} */
         UserStatus: "active" | "inactive" | "invited";
@@ -7159,6 +7183,33 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+        };
+    };
+    listDirectoryUsers: {
+        parameters: {
+            query?: {
+                profile_kind?: components["schemas"]["ProfileKind"];
+                q?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Directory entries */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["DirectoryUser"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
         };
     };
     login: {

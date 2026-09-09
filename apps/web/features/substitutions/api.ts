@@ -1,0 +1,60 @@
+"use client";
+
+import { queryKeys, type components } from "@newsekolah/api-client";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+
+import { useApiClient } from "../../lib/api/client";
+
+export type Substitution = components["schemas"]["Substitution"];
+export type SubstitutionCreate = components["schemas"]["SubstitutionCreateRequest"];
+export type Direction = "incoming" | "outgoing";
+
+export function useSubstitutionsQuery(direction: Direction) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: queryKeys.substitutions(direction),
+    queryFn: () => client.GET("/v1/substitutions", { params: { query: { direction } } }),
+  });
+}
+
+function useInvalidateSubstitutions() {
+  const queryClient = useQueryClient();
+  return () => {
+    void queryClient.invalidateQueries({ queryKey: ["substitutions"] });
+    void queryClient.invalidateQueries({ queryKey: queryKeys.attendanceToday() });
+  };
+}
+
+export function useCreateSubstitutionMutation() {
+  const client = useApiClient();
+  const invalidate = useInvalidateSubstitutions();
+  return useMutation({
+    mutationFn: (body: SubstitutionCreate) => client.POST("/v1/substitutions", { body }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useRespondSubstitutionMutation() {
+  const client = useApiClient();
+  const invalidate = useInvalidateSubstitutions();
+  return useMutation({
+    mutationFn: ({ id, accept, note }: { id: string; accept: boolean; note?: string }) =>
+      client.POST("/v1/substitutions/{substitutionId}/respond", {
+        params: { path: { substitutionId: id } },
+        body: { accept, ...(note ? { note } : {}) },
+      }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useCancelSubstitutionMutation() {
+  const client = useApiClient();
+  const invalidate = useInvalidateSubstitutions();
+  return useMutation({
+    mutationFn: (id: string) =>
+      client.POST("/v1/substitutions/{substitutionId}/cancel", {
+        params: { path: { substitutionId: id } },
+      }),
+    onSuccess: invalidate,
+  });
+}

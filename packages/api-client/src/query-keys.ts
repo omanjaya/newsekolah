@@ -30,6 +30,8 @@ export const queryKeys = {
     ["academic", "unassigned", yearId, search] as const,
 
   users: (params: Record<string, string | boolean | undefined>) => ["users", params] as const,
+  directory: (profileKind: string) => ["directory", profileKind] as const,
+  schoolDays: (yearId: string) => ["academic", "school-days", yearId] as const,
   user: (id: string) => ["users", "detail", id] as const,
   roles: () => ["roles"] as const,
   permissions: () => ["permissions"] as const,

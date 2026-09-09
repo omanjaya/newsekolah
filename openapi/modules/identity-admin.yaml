@@ -655,8 +655,46 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
 
+  /v1/directory/users:
+    get:
+      tags: [users]
+      operationId: listDirectoryUsers
+      x-permission: authenticated
+      summary: Names of active users for pickers (schedules, substitutes, audiences); no contact details
+      parameters:
+        - name: profile_kind
+          in: query
+          schema: { $ref: "#/components/schemas/ProfileKind" }
+        - name: q
+          in: query
+          schema: { type: string, maxLength: 80 }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 500, default: 200 }
+      responses:
+        "200":
+          description: Directory entries
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/DirectoryUser" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
 components:
   schemas:
+    DirectoryUser:
+      type: object
+      required: [id, name, username]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        username: { type: string }
+        profile_kind: { $ref: "#/components/schemas/ProfileKind" }
     UserStatus:
       type: string
       enum: [active, inactive, invited]

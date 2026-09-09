@@ -230,6 +230,180 @@
     },
     "duty": {
       "navLabel": "Piket"
+    },
+    "common": {
+      "weekdays": {
+        "1": "Senin",
+        "2": "Selasa",
+        "3": "Rabu",
+        "4": "Kamis",
+        "5": "Jumat",
+        "6": "Sabtu",
+        "7": "Minggu"
+      },
+      "weekdaysShort": {
+        "1": "Sen",
+        "2": "Sel",
+        "3": "Rab",
+        "4": "Kam",
+        "5": "Jum",
+        "6": "Sab",
+        "7": "Min"
+      }
+    },
+    "schedule": {
+      "eyebrow": "Akademik",
+      "title": "Jadwal pelajaran",
+      "byClass": "Per kelas",
+      "byTeacher": "Per guru",
+      "pickClass": "Pilih kelas",
+      "pickTeacher": "Pilih guru",
+      "periodColumn": "Jam",
+      "addBlock": "Tambah jadwal",
+      "addHere": "Tambah",
+      "deleteBlock": "Hapus",
+      "deleted": "Jadwal dihapus",
+      "deleteConfirmTitle": "Hapus jadwal",
+      "deleteConfirmBody": "Blok jadwal ini akan dihapus. Sesi presensi yang sudah tercatat tetap tersimpan.",
+      "noPeriodsTitle": "Jam pelajaran belum diatur",
+      "noPeriodsBody": "Atur template jam pelajaran di Data Sekolah sebelum menyusun jadwal.",
+      "unknownTeacher": "Guru tidak dikenal",
+      "unknownClass": "Kelas tidak dikenal",
+      "unknownSubject": "Mapel tidak dikenal",
+      "form": {
+        "class": "Kelas",
+        "subject": "Mata pelajaran",
+        "teacher": "Guru",
+        "day": "Hari",
+        "start": "Jam mulai",
+        "end": "Jam selesai",
+        "pick": "Pilih",
+        "requiredError": "Semua kolom wajib diisi.",
+        "rangeError": "Jam selesai harus sama atau setelah jam mulai.",
+        "created": "Jadwal ditambahkan",
+        "cancel": "Batal",
+        "save": "Simpan"
+      }
+    },
+    "attendance": {
+      "eyebrow": "Akademik",
+      "title": "Presensi",
+      "todayTitle": "Sesi hari ini",
+      "todayEmptyTitle": "Tidak ada sesi mengajar hari ini",
+      "todayEmptyBody": "Sesi muncul di sini sesuai jadwal Anda dan permintaan guru pengganti yang diterima.",
+      "substituteBadge": "Pengganti",
+      "statusSubmitted": "Tersimpan",
+      "statusPending": "Belum diisi",
+      "fillAttendance": "Isi presensi",
+      "openSubmitted": "Buka",
+      "unknownClass": "Kelas",
+      "unknownSubject": "",
+      "calendar": {
+        "prevMonth": "Bulan sebelumnya",
+        "nextMonth": "Bulan berikutnya",
+        "dayTitle": "{submitted} dari {expected} sesi tercatat",
+        "codes": {
+          "H": "Hadir",
+          "S": "Sakit",
+          "I": "Izin",
+          "D": "Dispensasi",
+          "A": "Alpha",
+          "INCOMPLETE": "Belum lengkap",
+          "MIXED": "Campuran",
+          "NONE": "Tidak ada jadwal"
+        }
+      },
+      "session": {
+        "eyebrow": "Pertemuan ke-{meeting}",
+        "title": "Presensi",
+        "back": "Presensi",
+        "correctionMode": "Mode koreksi",
+        "searchPlaceholder": "Cari nama siswa",
+        "onlyNotPresent": "Hanya yang tidak hadir",
+        "blocked": "Terkunci",
+        "noMatch": "Tidak ada siswa yang cocok.",
+        "notePlaceholder": "Catatan",
+        "noteFor": "Catatan untuk {name}",
+        "source": {
+          "leave": "Diisi otomatis dari surat izin",
+          "permit": "Diisi otomatis dari izin keluar",
+          "system": "Diisi sistem"
+        },
+        "journalTitle": "Jurnal mengajar",
+        "previousTopic": "Topik pertemuan sebelumnya",
+        "journalTopic": "Topik",
+        "journalActivities": "Kegiatan",
+        "journalReflection": "Refleksi",
+        "saveHint": "Semua siswa dianggap hadir kecuali diubah.",
+        "save": "Simpan presensi",
+        "saveCorrection": "Simpan koreksi",
+        "reasonPlaceholder": "Alasan koreksi (wajib)",
+        "reasonRequired": "Isi alasan koreksi.",
+        "saved": "Presensi tersimpan",
+        "loadError": "Sesi tidak bisa dimuat."
+      }
+    },
+    "homeroom": {
+      "eyebrow": "Akademik",
+      "title": "Kelas binaan",
+      "titleWithClass": "Kelas binaan {className}",
+      "dateLabel": "Tanggal",
+      "columns": {
+        "name": "Nama",
+        "status": "Status harian",
+        "sessions": "Sesi tercatat"
+      },
+      "codes": {
+        "H": "Hadir",
+        "S": "Sakit",
+        "I": "Izin",
+        "D": "Dispensasi",
+        "A": "Alpha",
+        "INCOMPLETE": "Belum lengkap",
+        "MIXED": "Campuran",
+        "NONE": "Tidak ada jadwal"
+      },
+      "noHomeroomTitle": "Anda belum menjadi wali kelas",
+      "noHomeroomBody": "Halaman ini menampilkan rekap harian kelas yang Anda bina.",
+      "emptyTitle": "Belum ada siswa",
+      "emptyBody": "Siswa yang terdaftar di kelas ini akan tampil di sini."
+    },
+    "substitutions": {
+      "eyebrow": "Akademik",
+      "title": "Guru pengganti",
+      "request": "Minta pengganti",
+      "incoming": "Masuk",
+      "outgoing": "Keluar",
+      "emptyTitle": "Belum ada permintaan",
+      "emptyIncomingBody": "Permintaan dari rekan guru untuk menggantikan jadwal Anda tampil di sini.",
+      "emptyOutgoingBody": "Permintaan yang Anda kirim ke rekan guru tampil di sini.",
+      "fromTeacher": "Dari",
+      "toTeacher": "Kepada",
+      "responseNote": "Catatan",
+      "unknownTeacher": "Guru",
+      "accept": "Terima",
+      "reject": "Tolak",
+      "cancel": "Batalkan",
+      "accepted": "Permintaan diterima. Sesi masuk ke daftar presensi Anda.",
+      "rejected": "Permintaan ditolak",
+      "cancelled": "Permintaan dibatalkan",
+      "status": {
+        "pending": "Menunggu",
+        "accepted": "Diterima",
+        "rejected": "Ditolak",
+        "cancelled": "Dibatalkan"
+      },
+      "form": {
+        "schedule": "Jadwal yang digantikan",
+        "date": "Tanggal",
+        "substitute": "Guru pengganti",
+        "note": "Catatan",
+        "pick": "Pilih",
+        "requiredError": "Jadwal, tanggal, dan guru pengganti wajib diisi.",
+        "sent": "Permintaan terkirim",
+        "cancel": "Batal",
+        "send": "Kirim permintaan"
+      }
     }
   }
 }
