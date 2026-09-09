@@ -1,1 +1,54 @@
-{}
+{
+  "navLabel": "Sessions and Security",
+  "eyebrow": "Settings",
+  "title": "Two-factor authentication",
+  "description": "Add a code from an authenticator app as a second layer at sign-in, alongside your password.",
+  "status": {
+    "title": "Status",
+    "enabledBadge": "On",
+    "disabledBadge": "Off",
+    "enabledBody": "A code from your authenticator app is required at every sign-in, alongside your password.",
+    "disabledBody": "Not enabled yet. Once enabled, sign-in requires a code from your authenticator app in addition to your password.",
+    "recoveryCodesRemaining": "{count} recovery codes remaining",
+    "recoveryCodesLow": "Recovery codes are running low. Generate new ones before the last one is used.",
+    "enableAction": "Enable two-factor authentication",
+    "disableAction": "Turn off two-factor authentication",
+    "regenerateAction": "Regenerate recovery codes"
+  },
+  "enroll": {
+    "dialogTitle": "Enable two-factor authentication",
+    "scanStepBody": "Scan this code with an authenticator app such as Google Authenticator or Authy.",
+    "manualEntryLabel": "Or enter this key manually",
+    "codeLabel": "Code from the app",
+    "confirm": "Confirm"
+  },
+  "disable": {
+    "dialogTitle": "Turn off two-factor authentication",
+    "dialogBody": "Enter a current code to turn off two-factor authentication on this account.",
+    "codeLabel": "Code or recovery code",
+    "confirm": "Turn off"
+  },
+  "regenerate": {
+    "dialogTitle": "Regenerate recovery codes",
+    "dialogBody": "The old recovery codes stop working once this is done. Enter a current code to continue.",
+    "codeLabel": "Code from the app",
+    "confirm": "Regenerate"
+  },
+  "recoveryCodes": {
+    "dialogTitle": "Save your recovery codes",
+    "dialogBody": "Each code works once and is shown only now. Save them somewhere safe; they let you sign in if you lose access to your authenticator app.",
+    "copyAll": "Copy all",
+    "copied": "Codes copied",
+    "copyFailed": "Codes could not be copied automatically, copy them manually",
+    "done": "Saved"
+  },
+  "toasts": {
+    "enabled": "Two-factor authentication is on",
+    "disabled": "Two-factor authentication is off"
+  },
+  "login": {
+    "otpLabel": "Verification code",
+    "otpBody": "This account uses two-factor authentication. Enter a code from your authenticator app or one of your recovery codes.",
+    "submit": "Sign in with code"
+  }
+}

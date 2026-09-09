@@ -1,1 +1,112 @@
-{}
+{
+  "navLabel": "Onboarding",
+  "eyebrow": "School settings",
+  "title": "School onboarding",
+  "progress": {
+    "stepsLabel": "{done} of {total} required steps done",
+    "ready": "The school is ready for daily operation.",
+    "notReady": "The school is not ready yet. Finish the remaining required steps below.",
+    "activeYear": "Active academic year: {label}"
+  },
+  "levels": {
+    "sd": "Elementary",
+    "smp": "Junior high",
+    "sma": "Senior high",
+    "smk": "Vocational",
+    "other": "Other"
+  },
+  "locales": {
+    "id": "Indonesian",
+    "en": "English"
+  },
+  "profile": {
+    "title": "School profile",
+    "body": "The school's name, education level, timezone, and default language.",
+    "name": "School name",
+    "educationLevel": "Education level",
+    "timezone": "Timezone",
+    "language": "Default language",
+    "pick": "Choose",
+    "requiredError": "School name and education level are required.",
+    "save": "Save profile",
+    "saved": "School profile saved."
+  },
+  "checklist": {
+    "title": "Data completeness",
+    "optional": "Optional",
+    "done": "Done",
+    "notDone": "Not done",
+    "openStep": "Open"
+  },
+  "steps": {
+    "profile": {
+      "label": "School profile",
+      "description": "The school's name, education level, timezone, and default language."
+    },
+    "academic_year": {
+      "label": "Academic year",
+      "description": "The active academic year with its start and end dates.",
+      "count": "{count} academic year"
+    },
+    "grade_levels": {
+      "label": "Grade levels",
+      "description": "The grade levels (e.g. grade 1 through 6) that classes are grouped under.",
+      "count": "{count} grade levels"
+    },
+    "classes": {
+      "label": "Classes",
+      "description": "The class groups students are enrolled in.",
+      "count": "{count} classes"
+    },
+    "periods": {
+      "label": "Lesson periods",
+      "description": "The daily lesson-period schedule used for timetabling and attendance.",
+      "count": "{count} lesson periods"
+    },
+    "subjects": {
+      "label": "Subjects",
+      "description": "The subjects taught at the school.",
+      "count": "{count} subjects"
+    },
+    "teachers": {
+      "label": "Teachers",
+      "description": "Teacher accounts that record attendance, grades, and journals.",
+      "count": "{count} teachers"
+    },
+    "students": {
+      "label": "Students",
+      "description": "Student accounts that take part in attendance and lessons.",
+      "count": "{count} students"
+    },
+    "enrollments": {
+      "label": "Student enrollment",
+      "description": "Students who have been placed in their classes.",
+      "count": "{count} enrollments"
+    },
+    "teaching_assignments": {
+      "label": "Teaching assignments",
+      "description": "Teachers assigned to teach a subject in a class.",
+      "count": "{count} assignments"
+    },
+    "schedules": {
+      "label": "Timetable",
+      "description": "The weekly timetable that determines each class's attendance sessions.",
+      "count": "{count} timetable entries"
+    },
+    "duties": {
+      "label": "Duty roster",
+      "description": "The daily duty-teacher assignments.",
+      "count": "{count} duty assignments"
+    }
+  },
+  "template": {
+    "title": "Apply a grade-level template",
+    "body": "Creates the standard grade levels for the selected level. Existing grade levels are not duplicated.",
+    "templateLabel": "Level",
+    "action": "Apply grade-level template",
+    "confirmTitle": "Apply grade-level template",
+    "confirmBody": "This creates the standard grade levels for the selected level. Existing grade levels are not duplicated.",
+    "confirm": "Apply template",
+    "success": "Grade levels from the template were saved."
+  }
+}

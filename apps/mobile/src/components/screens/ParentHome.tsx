@@ -1,19 +1,30 @@
 import { ScrollView, Text, View } from "react-native";
 import { router } from "expo-router";
+import { Users } from "lucide-react-native";
 import { ScreenHeader } from "@/components/ui/ScreenHeader";
 import { Button } from "@/components/ui/Button";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { Avatar } from "@/components/ui/Avatar";
+import { ListRow } from "@/components/ui/ListRow";
 import { AnnouncementsList } from "@/components/screens/AnnouncementsList";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import { useUnreadCount } from "@/lib/api/hooks";
-import { t } from "@/i18n/t";
+import { useMyChildren, useUnreadCount, type LinkedChild } from "@/lib/api/hooks";
+import { t, type MobileMessageKey } from "@/i18n/t";
 
-/** Parent home: no parent-child link endpoint exists yet, so this shows the
- * parent's own identity and notifications plus the shared announcement
- * feed, and says plainly that per-child data is still to come -- it never
- * fabricates a child roster (docs/10-mobile-strategy.md). */
+function relationLabel(relation: LinkedChild["relation"]): string {
+  return t(`children.relation.${relation}` as MobileMessageKey);
+}
+
+/** Parent home: lists every linked child as a tappable row leading to
+ * /children/[studentId], above the shared announcement feed. When the
+ * school has not linked any child yet, this says so plainly rather than
+ * fabricating a roster (docs/10-mobile-strategy.md). */
 export function ParentHome(): React.JSX.Element {
   const { me } = useAuth();
   const unread = useUnreadCount();
+  const children = useMyChildren();
+  const rows = children.data?.data ?? [];
 
   return (
     <View className="flex-1 bg-bg dark:bg-bg-dark">
@@ -27,10 +38,42 @@ export function ParentHome(): React.JSX.Element {
           </Text>
         </View>
 
-        <View className="gap-2 px-4 pt-4">
-          <View className="rounded-input border border-line bg-surface p-3 dark:border-line-dark dark:bg-surface-dark">
-            <Text className="text-sm text-ink/80 dark:text-ink-dark/80">{t("home.parent_pending_link")}</Text>
-          </View>
+        <View className="gap-2 pt-4">
+          <Text className="px-4 text-md font-medium text-ink dark:text-ink-dark">{t("home.children")}</Text>
+          {children.isLoading ? (
+            <View className="gap-2 px-4">
+              <Skeleton height={56} />
+              <Skeleton height={56} />
+            </View>
+          ) : rows.length === 0 ? (
+            <EmptyState
+              icon={Users}
+              title={t("children.no_children_title")}
+              description={t("children.no_children_description")}
+            />
+          ) : (
+            <View className="gap-2 px-4">
+              {rows.map((child) => (
+                <View
+                  key={child.student_user_id}
+                  className="rounded-input border border-line bg-surface dark:border-line-dark dark:bg-surface-dark"
+                >
+                  <ListRow
+                    title={child.student_name}
+                    subtitle={child.class_name ?? relationLabel(child.relation)}
+                    leading={<Avatar name={child.student_name} size={36} />}
+                    showChevron
+                    onPress={() =>
+                      router.push({
+                        pathname: "/children/[studentId]",
+                        params: { studentId: child.student_user_id, name: child.student_name },
+                      })
+                    }
+                  />
+                </View>
+              ))}
+            </View>
+          )}
         </View>
 
         <View className="gap-2 pt-4">

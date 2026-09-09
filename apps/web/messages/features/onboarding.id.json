@@ -1,1 +1,112 @@
-{}
+{
+  "navLabel": "Onboarding",
+  "eyebrow": "Pengaturan sekolah",
+  "title": "Onboarding sekolah",
+  "progress": {
+    "stepsLabel": "{done} dari {total} langkah wajib selesai",
+    "ready": "Sekolah siap dipakai untuk operasional harian.",
+    "notReady": "Sekolah belum siap dipakai. Selesaikan langkah wajib yang tersisa di bawah.",
+    "activeYear": "Tahun ajaran aktif: {label}"
+  },
+  "levels": {
+    "sd": "SD",
+    "smp": "SMP",
+    "sma": "SMA",
+    "smk": "SMK",
+    "other": "Lainnya"
+  },
+  "locales": {
+    "id": "Bahasa Indonesia",
+    "en": "English"
+  },
+  "profile": {
+    "title": "Profil sekolah",
+    "body": "Nama, jenjang, zona waktu, dan bahasa default sekolah.",
+    "name": "Nama sekolah",
+    "educationLevel": "Jenjang",
+    "timezone": "Zona waktu",
+    "language": "Bahasa default",
+    "pick": "Pilih",
+    "requiredError": "Nama sekolah dan jenjang wajib diisi.",
+    "save": "Simpan profil",
+    "saved": "Profil sekolah tersimpan."
+  },
+  "checklist": {
+    "title": "Kelengkapan data",
+    "optional": "Opsional",
+    "done": "Selesai",
+    "notDone": "Belum",
+    "openStep": "Buka"
+  },
+  "steps": {
+    "profile": {
+      "label": "Profil sekolah",
+      "description": "Nama, jenjang, zona waktu, dan bahasa default sekolah."
+    },
+    "academic_year": {
+      "label": "Tahun ajaran",
+      "description": "Tahun ajaran aktif dengan tanggal mulai dan selesai.",
+      "count": "{count} tahun ajaran"
+    },
+    "grade_levels": {
+      "label": "Jenjang kelas",
+      "description": "Daftar jenjang (misalnya kelas 1 sampai 6) yang menjadi dasar pembagian kelas.",
+      "count": "{count} jenjang"
+    },
+    "classes": {
+      "label": "Kelas",
+      "description": "Rombongan belajar tempat siswa terdaftar.",
+      "count": "{count} kelas"
+    },
+    "periods": {
+      "label": "Jam pelajaran",
+      "description": "Jadwal jam pelajaran harian yang dipakai penjadwalan dan presensi.",
+      "count": "{count} jam pelajaran"
+    },
+    "subjects": {
+      "label": "Mata pelajaran",
+      "description": "Daftar mata pelajaran yang diajarkan di sekolah.",
+      "count": "{count} mata pelajaran"
+    },
+    "teachers": {
+      "label": "Guru",
+      "description": "Akun guru yang mengisi presensi, nilai, dan jurnal.",
+      "count": "{count} guru"
+    },
+    "students": {
+      "label": "Siswa",
+      "description": "Akun siswa yang mengikuti presensi dan pembelajaran.",
+      "count": "{count} siswa"
+    },
+    "enrollments": {
+      "label": "Pendaftaran siswa ke kelas",
+      "description": "Siswa yang sudah ditempatkan ke kelasnya masing-masing.",
+      "count": "{count} pendaftaran"
+    },
+    "teaching_assignments": {
+      "label": "Penugasan mengajar",
+      "description": "Guru yang ditugaskan mengajar mata pelajaran di suatu kelas.",
+      "count": "{count} penugasan"
+    },
+    "schedules": {
+      "label": "Jadwal pelajaran",
+      "description": "Jadwal mingguan yang menentukan sesi presensi setiap kelas.",
+      "count": "{count} jadwal"
+    },
+    "duties": {
+      "label": "Tugas piket",
+      "description": "Penugasan guru piket harian.",
+      "count": "{count} tugas piket"
+    }
+  },
+  "template": {
+    "title": "Gunakan template jenjang",
+    "body": "Membuat jenjang kelas standar untuk tingkat yang dipilih. Jenjang yang sudah ada tidak diduplikasi.",
+    "templateLabel": "Jenjang",
+    "action": "Gunakan template jenjang",
+    "confirmTitle": "Gunakan template jenjang",
+    "confirmBody": "Ini membuat jenjang kelas standar untuk tingkat yang dipilih. Jenjang yang sudah ada tidak diduplikasi.",
+    "confirm": "Gunakan template",
+    "success": "Jenjang kelas dari template tersimpan."
+  }
+}

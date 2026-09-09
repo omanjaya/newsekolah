@@ -1,1 +1,54 @@
-{}
+{
+  "navLabel": "Sesi dan Keamanan",
+  "eyebrow": "Pengaturan",
+  "title": "Verifikasi dua langkah",
+  "description": "Tambahkan kode dari aplikasi autentikator sebagai lapisan kedua saat masuk, selain kata sandi.",
+  "status": {
+    "title": "Status",
+    "enabledBadge": "Aktif",
+    "disabledBadge": "Tidak aktif",
+    "enabledBody": "Kode dari aplikasi autentikator diminta setiap masuk, selain kata sandi.",
+    "disabledBody": "Belum aktif. Setelah diaktifkan, masuk memerlukan kode dari aplikasi autentikator selain kata sandi.",
+    "recoveryCodesRemaining": "{count} kode pemulihan tersisa",
+    "recoveryCodesLow": "Kode pemulihan hampir habis. Buat ulang sebelum kode terakhir terpakai.",
+    "enableAction": "Aktifkan verifikasi dua langkah",
+    "disableAction": "Matikan verifikasi dua langkah",
+    "regenerateAction": "Buat ulang kode pemulihan"
+  },
+  "enroll": {
+    "dialogTitle": "Aktifkan verifikasi dua langkah",
+    "scanStepBody": "Pindai kode ini dengan aplikasi autentikator seperti Google Authenticator atau Authy.",
+    "manualEntryLabel": "Atau masukkan kunci ini secara manual",
+    "codeLabel": "Kode dari aplikasi",
+    "confirm": "Konfirmasi"
+  },
+  "disable": {
+    "dialogTitle": "Matikan verifikasi dua langkah",
+    "dialogBody": "Masukkan kode saat ini untuk mematikan verifikasi dua langkah pada akun ini.",
+    "codeLabel": "Kode atau kode pemulihan",
+    "confirm": "Matikan"
+  },
+  "regenerate": {
+    "dialogTitle": "Buat ulang kode pemulihan",
+    "dialogBody": "Kode pemulihan lama tidak berlaku lagi setelah ini. Masukkan kode saat ini untuk melanjutkan.",
+    "codeLabel": "Kode dari aplikasi",
+    "confirm": "Buat ulang"
+  },
+  "recoveryCodes": {
+    "dialogTitle": "Simpan kode pemulihan",
+    "dialogBody": "Setiap kode hanya berlaku sekali dan hanya ditampilkan sekarang. Simpan di tempat aman, kode ini dipakai bila kehilangan akses ke aplikasi autentikator.",
+    "copyAll": "Salin semua",
+    "copied": "Kode disalin",
+    "copyFailed": "Kode tidak dapat disalin otomatis, salin secara manual",
+    "done": "Sudah disimpan"
+  },
+  "toasts": {
+    "enabled": "Verifikasi dua langkah aktif",
+    "disabled": "Verifikasi dua langkah dimatikan"
+  },
+  "login": {
+    "otpLabel": "Kode verifikasi",
+    "otpBody": "Akun ini memakai verifikasi dua langkah. Masukkan kode dari aplikasi autentikator atau salah satu kode pemulihan.",
+    "submit": "Masuk dengan kode"
+  }
+}

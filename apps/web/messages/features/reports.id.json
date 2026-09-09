@@ -1,1 +1,40 @@
-{}
+{
+  "navLabel": "Pusat Laporan",
+  "eyebrow": "Data Sekolah",
+  "title": "Pusat Laporan",
+  "description": "Unduh laporan sebagai berkas Excel. Hanya laporan yang boleh dijalankan akun ini yang ditampilkan.",
+  "emptyTitle": "Tidak ada laporan yang bisa diunduh",
+  "emptyBody": "Akun ini belum memiliki akses ke laporan apa pun. Hubungi admin sekolah bila akses ini diperlukan.",
+  "download": "Unduh",
+  "arguments": {
+    "class": "Kelas",
+    "classPlaceholder": "Pilih kelas",
+    "subject": "Mata pelajaran",
+    "subjectPlaceholder": "Pilih mata pelajaran",
+    "date": "Tanggal",
+    "term": "Semester",
+    "termPlaceholder": "Pilih semester"
+  },
+  "kinds": {
+    "attendance.daily": {
+      "label": "Presensi harian",
+      "description": "Rekap kehadiran siswa satu kelas pada tanggal yang dipilih."
+    },
+    "discipline.points": {
+      "label": "Poin pelanggaran",
+      "description": "Rekap poin pelanggaran siswa, per kelas bila dipilih."
+    },
+    "discipline.warning_letters": {
+      "label": "Surat peringatan",
+      "description": "Daftar surat peringatan yang sudah diterbitkan, per kelas bila dipilih."
+    },
+    "grading.report_scores": {
+      "label": "Nilai rapor",
+      "description": "Rekap nilai rapor siswa untuk satu kelas dan mata pelajaran."
+    },
+    "permits.leave_requests": {
+      "label": "Pengajuan izin",
+      "description": "Daftar pengajuan izin siswa, per kelas bila dipilih."
+    }
+  }
+}

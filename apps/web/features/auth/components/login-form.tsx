@@ -18,6 +18,7 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
@@ -32,11 +33,18 @@ function safeNextPath(next: string | null): string {
 export function LoginForm(): ReactElement {
   const t = useTranslations("auth.login");
   const tLogin = useTranslations("app.login");
+  const tSecurity = useTranslations("app.security");
   const locale = useLocale() as Locale;
   const router = useRouter();
   const searchParams = useSearchParams();
   const loginMutation = useLoginMutation();
   const apiErrorMessage = useApiErrorMessage();
+
+  // Set once the API rejects a login attempt with MFA_REQUIRED, so the same
+  // username and password can be resubmitted with an added `otp` field
+  // (docs/08-security.md section 2: TOTP as a second factor at sign-in).
+  const [otpRequired, setOtpRequired] = useState(false);
+  const [otp, setOtp] = useState("");
 
   const form = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
@@ -45,10 +53,15 @@ export function LoginForm(): ReactElement {
 
   async function onSubmit(values: LoginInput) {
     form.clearErrors("root");
+    const payload: LoginInput & { otp?: string } = otpRequired ? { ...values, otp } : values;
     try {
-      await loginMutation.mutateAsync(values);
+      await loginMutation.mutateAsync(payload);
       router.replace(safeNextPath(searchParams.get("next")));
     } catch (error) {
+      if (error instanceof ApiError && error.code === "MFA_REQUIRED") {
+        setOtpRequired(true);
+        return;
+      }
       const message =
         error instanceof ApiError ? apiErrorMessage(error.code) : tLogin("genericError");
       form.setError("root", { message });
@@ -100,8 +113,29 @@ export function LoginForm(): ReactElement {
           </FormItem>
         )}
       />
+      {otpRequired && (
+        <div className="flex flex-col gap-2">
+          <label htmlFor="login-otp" className="text-[13px] font-medium text-fg">
+            {tSecurity("login.otpLabel")}
+          </label>
+          <p className="text-[13px] text-fg-muted">{tSecurity("login.otpBody")}</p>
+          <Input
+            id="login-otp"
+            autoComplete="one-time-code"
+            inputMode="numeric"
+            value={otp}
+            onChange={(event) => {
+              setOtp(event.target.value);
+            }}
+          />
+        </div>
+      )}
       <Button type="submit" loading={loginMutation.isPending} className="mt-2">
-        {loginMutation.isPending ? t("submitting") : t("submit")}
+        {loginMutation.isPending
+          ? t("submitting")
+          : otpRequired
+            ? tSecurity("login.submit")
+            : t("submit")}
       </Button>
     </Form>
   );

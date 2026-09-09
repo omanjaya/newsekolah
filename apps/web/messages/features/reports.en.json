@@ -1,1 +1,40 @@
-{}
+{
+  "navLabel": "Report Centre",
+  "eyebrow": "School Data",
+  "title": "Report Centre",
+  "description": "Download reports as Excel files. Only reports this account may run are listed.",
+  "emptyTitle": "No reports available to download",
+  "emptyBody": "This account has no access to any report. Contact the school admin if access is needed.",
+  "download": "Download",
+  "arguments": {
+    "class": "Class",
+    "classPlaceholder": "Select a class",
+    "subject": "Subject",
+    "subjectPlaceholder": "Select a subject",
+    "date": "Date",
+    "term": "Term",
+    "termPlaceholder": "Select a term"
+  },
+  "kinds": {
+    "attendance.daily": {
+      "label": "Daily attendance",
+      "description": "Attendance summary for one class on the selected date."
+    },
+    "discipline.points": {
+      "label": "Discipline points",
+      "description": "Discipline point summary, per class if selected."
+    },
+    "discipline.warning_letters": {
+      "label": "Warning letters",
+      "description": "Warning letters issued so far, per class if selected."
+    },
+    "grading.report_scores": {
+      "label": "Report card scores",
+      "description": "Score summary for one class and subject."
+    },
+    "permits.leave_requests": {
+      "label": "Leave requests",
+      "description": "Student leave requests, per class if selected."
+    }
+  }
+}
