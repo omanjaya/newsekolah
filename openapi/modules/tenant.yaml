@@ -80,6 +80,114 @@ paths:
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/tenant/onboarding/level-templates:
+    get:
+      tags: [tenant]
+      operationId: listLevelTemplates
+      x-permission: manage_settings
+      summary: The SD/SMP/SMA/SMK starting points the onboarding wizard's first step can apply
+      responses:
+        "200":
+          description: Templates
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/LevelTemplateSummary" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/tenant/onboarding/level-templates/apply:
+    post:
+      tags: [tenant]
+      operationId: applyLevelTemplate
+      x-permission: manage_settings
+      summary:
+        Create every grade level, subject, and bell-schedule period a template defines that the tenant does not
+        already have. Safe to call more than once, or with more than one level, since existing rows are skipped.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [template]
+              properties:
+                template: { type: string, enum: [sd, smp, sma, smk] }
+      responses:
+        "200":
+          description: What was created and what already existed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LevelTemplateReport" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/tenant/onboarding/dapodik/preview:
+    post:
+      tags: [tenant]
+      operationId: previewDapodikImport
+      x-permission: manage_settings
+      summary:
+        Parse an uploaded Dapodik student-export CSV and report, per row, what it would do -- create, update
+        (matched by NISN), or an error -- without writing anything
+      requestBody:
+        required: true
+        content:
+          text/csv:
+            schema: { type: string, format: binary }
+      responses:
+        "200":
+          description: Row-by-row preview
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DapodikImportReport" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/tenant/onboarding/dapodik/commit:
+    post:
+      tags: [tenant]
+      operationId: commitDapodikImport
+      x-permission: manage_settings
+      summary:
+        Re-parse the same CSV and apply every row that is not an error. Re-running with the same file is safe --
+        rows already matched by NISN become updates, not duplicate students.
+      requestBody:
+        required: true
+        content:
+          text/csv:
+            schema: { type: string, format: binary }
+      responses:
+        "200":
+          description: Row-by-row result
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DapodikImportReport" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /v1/tenant/onboarding/seed-sample-data:
+    post:
+      tags: [tenant]
+      operationId: seedSampleData
+      x-permission: manage_settings
+      summary:
+        Fill a brand-new tenant with a demo academic year, an SMA level template, and one demo class. Refused once
+        the tenant has any real data (an academic year, grade level, class, subject, or student).
+      responses:
+        "200":
+          description: What was created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SeedSampleDataReport" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
 
 components:
   schemas:
@@ -164,3 +272,62 @@ components:
             - en
         timezone:
           type: string
+    LevelTemplateSummary:
+      type: object
+      required: [key, name, grade_level_count, subject_count, period_count]
+      properties:
+        key: { type: string, enum: [sd, smp, sma, smk] }
+        name: { type: string }
+        grade_level_count: { type: integer }
+        subject_count: { type: integer }
+        period_count: { type: integer }
+    LevelTemplateItemStatus:
+      type: string
+      enum: [created, skipped]
+    LevelTemplateItem:
+      type: object
+      required: [kind, code, name, status]
+      properties:
+        kind: { type: string, enum: [grade_level, subject, period] }
+        code: { type: string }
+        name: { type: string }
+        status: { $ref: "#/components/schemas/LevelTemplateItemStatus" }
+    LevelTemplateReport:
+      type: object
+      required: [template, items, created, skipped]
+      properties:
+        template: { type: string, enum: [sd, smp, sma, smk] }
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/LevelTemplateItem" }
+        created: { type: integer }
+        skipped: { type: integer }
+    DapodikImportAction:
+      type: string
+      enum: [create, update, error]
+    DapodikImportRow:
+      type: object
+      required: [row_number, action]
+      properties:
+        row_number: { type: integer }
+        name: { type: string }
+        nisn: { type: string }
+        class_name: { type: string }
+        action: { $ref: "#/components/schemas/DapodikImportAction" }
+        errors:
+          type: array
+          items: { type: string }
+    DapodikImportReport:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/DapodikImportRow" }
+    SeedSampleDataReport:
+      type: object
+      required: [academic_year_label, class_name, template]
+      properties:
+        academic_year_label: { type: string }
+        class_name: { type: string }
+        template: { $ref: "#/components/schemas/LevelTemplateReport" }

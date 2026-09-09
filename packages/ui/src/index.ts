@@ -63,6 +63,7 @@ export {
   DropdownMenuTrigger,
 } from "./components/dropdown-menu.js";
 export { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from "./components/popover.js";
+export { Progress, type ProgressProps } from "./components/progress.js";
 export { Kbd } from "./components/kbd.js";
 export {
   CommandPalette,

@@ -234,6 +234,17 @@ type CounselingAttachment struct {
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 }
 
+type DapodikImportBatch struct {
+	ID           uuid.UUID          `json:"id"`
+	TenantID     uuid.UUID          `json:"tenant_id"`
+	RowCount     int32              `json:"row_count"`
+	CreatedCount int32              `json:"created_count"`
+	UpdatedCount int32              `json:"updated_count"`
+	ErrorCount   int32              `json:"error_count"`
+	CreatedBy    uuid.UUID          `json:"created_by"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+}
+
 type DocumentSequence struct {
 	TenantID       uuid.UUID `json:"tenant_id"`
 	Kind           string    `json:"kind"`

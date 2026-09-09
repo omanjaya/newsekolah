@@ -166,6 +166,7 @@ type Querier interface {
 	CreateClass(ctx context.Context, arg CreateClassParams) (Class, error)
 	CreateComponent(ctx context.Context, arg CreateComponentParams) (AssessmentComponent, error)
 	CreateCounseling(ctx context.Context, arg CreateCounselingParams) (Counseling, error)
+	CreateDapodikImportBatch(ctx context.Context, arg CreateDapodikImportBatchParams) (DapodikImportBatch, error)
 	CreateDocumentTemplate(ctx context.Context, arg CreateDocumentTemplateParams) (DocumentTemplate, error)
 	CreateDutyAssignment(ctx context.Context, arg CreateDutyAssignmentParams) (DutyAssignment, error)
 	CreateDutyType(ctx context.Context, arg CreateDutyTypeParams) (DutyType, error)
@@ -506,6 +507,12 @@ type Querier interface {
 	ListSchedulesByTeacher(ctx context.Context, arg ListSchedulesByTeacherParams) ([]Schedule, error)
 	ListStarBalancesForClass(ctx context.Context, arg ListStarBalancesForClassParams) ([]ListStarBalancesForClassRow, error)
 	ListStarEventsForStudent(ctx context.Context, arg ListStarEventsForStudentParams) ([]StarEvent, error)
+	// Every non-blank NISN this tenant already has, with the user_id it
+	// belongs to. The Dapodik importer uses this single round trip to decide,
+	// for every row in the uploaded file, whether it is a new student
+	// (create) or one already on file (update) -- matching student_profiles'
+	// own unique(tenant_id, nisn) constraint.
+	ListStudentNISNs(ctx context.Context, tenantID uuid.UUID) ([]ListStudentNISNsRow, error)
 	// Points per student in a class this year, for the homeroom and counselor overview.
 	ListStudentPointTotals(ctx context.Context, arg ListStudentPointTotalsParams) ([]ListStudentPointTotalsRow, error)
 	ListSubstitutionsIncoming(ctx context.Context, arg ListSubstitutionsIncomingParams) ([]SubstitutionRequest, error)

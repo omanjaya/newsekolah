@@ -7,7 +7,7 @@ import type { ReactElement } from "react";
 import { useSetupChecklistQuery } from "../api";
 
 import { ChecklistSection } from "./checklist-section";
-import { GradeLevelTemplateAction } from "./grade-level-template";
+import { OnboardingWizard } from "./onboarding-wizard";
 import { SchoolProfileSection } from "./school-profile-form";
 
 /**
@@ -20,7 +20,6 @@ export function SetupView(): ReactElement {
   const t = useTranslations("app.onboarding");
   const checklist = useSetupChecklistQuery();
   const data = checklist.data;
-  const gradeLevelsDone = data?.steps.find((step) => step.key === "grade_levels")?.done ?? false;
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
@@ -39,7 +38,7 @@ export function SetupView(): ReactElement {
 
       <SchoolProfileSection />
 
-      {!checklist.isLoading && !gradeLevelsDone && <GradeLevelTemplateAction />}
+      {!checklist.isLoading && !data?.ready_to_operate && <OnboardingWizard />}
 
       <ChecklistSection checklist={data} isLoading={checklist.isLoading} />
     </div>

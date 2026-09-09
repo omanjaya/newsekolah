@@ -13,6 +13,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/school/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/tenant"
 )
@@ -34,16 +35,42 @@ type Repository interface {
 	DeactivateAllAcademicYears(ctx context.Context, tenantID uuid.UUID) error
 	ActivateAcademicYear(ctx context.Context, tenantID, id uuid.UUID) error
 	ListAcademicYears(ctx context.Context, tenantID uuid.UUID) ([]domain.AcademicYear, error)
+
+	// ListStudentNISNs backs the Dapodik import's idempotency check.
+	ListStudentNISNs(ctx context.Context, tenantID uuid.UUID) (map[string]uuid.UUID, error)
+	RecordDapodikImportBatch(ctx context.Context, tenantID uuid.UUID, rowCount, createdCount, updatedCount, errorCount int, createdBy uuid.UUID) error
 }
 
 type Service struct {
 	pool *pgxpool.Pool
 	repo Repository
 	mode tenant.Mode
+
+	// academic, identity, and clk back the onboarding wizard (level
+	// templates, Dapodik import): grade levels/subjects/periods/classes
+	// live in the academic module, student accounts in identity. school is
+	// constructed before those modules in cmd/api's wiring order (they
+	// both depend on school for the active academic year), so these are
+	// nil until SetOnboardingDependencies runs afterwards. Every use of
+	// them checks for nil and returns domain.ErrOnboardingUnavailable
+	// rather than panicking, so a misconfigured deployment fails as a
+	// clean 500 instead of a crash.
+	academic AcademicPort
+	identity IdentityPort
+	clk      clock.Clock
 }
 
 func New(pool *pgxpool.Pool, repo Repository, mode tenant.Mode) *Service {
 	return &Service{pool: pool, repo: repo, mode: mode}
+}
+
+// SetOnboardingDependencies wires the academic and identity collaborators
+// the level-template and Dapodik-import use cases need. cmd/api calls this
+// once, right after building the academic and identity modules.
+func (s *Service) SetOnboardingDependencies(academic AcademicPort, identity IdentityPort, clk clock.Clock) {
+	s.academic = academic
+	s.identity = identity
+	s.clk = clk
 }
 
 // withTx opens the tenant-scoped transaction for one use case, per
