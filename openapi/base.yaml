@@ -27,3 +27,11 @@ tags:
     description: Current user
   - name: tenant
     description: School (tenant) discovery and branding
+  - name: scheduling
+    description: Teaching schedules and substitutions
+  - name: journals
+    description: Class journals
+  - name: attendance
+    description: Teacher-recorded attendance, student calendar, reports
+  - name: monitor
+    description: Public display and realtime channels

@@ -1,0 +1,384 @@
+package service
+
+import (
+	"context"
+	"errors"
+	"strings"
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
+
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling/domain"
+)
+
+// Actor describes who is calling a mutating schedule operation: whether
+// they hold manage_schedules (an admin, who may set any source and touch
+// any teacher's schedule) or are a teacher acting on their own schedule
+// under the self-service deadline.
+type Actor struct {
+	UserID    uuid.UUID
+	CanManage bool
+}
+
+// ScheduleInput is what a caller supplies to create or update a schedule;
+// Source and TeacherUserID are only honoured for a CanManage actor -- a
+// teacher's own request always becomes source=teacher for themselves,
+// regardless of what they pass.
+type ScheduleInput struct {
+	AcademicYearID uuid.UUID
+	TermID         uuid.NullUUID
+	ClassID        uuid.UUID
+	SubjectID      uuid.UUID
+	TeacherUserID  uuid.UUID
+	RoomID         uuid.NullUUID
+	DayOfWeek      int16
+	StartPeriodID  uuid.UUID
+	EndPeriodID    uuid.UUID
+	Source         domain.Source
+	Notes          string
+}
+
+const settingTeacherEditDeadline = "schedule.teacher_edit_deadline"
+
+// defaultTeacherEditDeadline applies when the tenant has not configured
+// schedule.teacher_edit_deadline: a full day's notice.
+const defaultTeacherEditDeadline = 24 * time.Hour
+
+func (s *Service) CreateSchedule(ctx context.Context, tenantID uuid.UUID, in ScheduleInput, actor Actor) (domain.Schedule, error) {
+	in = applyActor(in, actor)
+
+	var created domain.Schedule
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		candidate, err := s.resolveCandidate(ctx, tenantID, in)
+		if err != nil {
+			return err
+		}
+
+		if !actor.CanManage {
+			if err := s.enforceTeacherWindow(ctx, tenantID, candidate, time.Now()); err != nil {
+				return err
+			}
+		}
+
+		if err := s.checkConflict(ctx, tenantID, candidate, uuid.Nil); err != nil {
+			return err
+		}
+
+		created, err = s.repo.CreateSchedule(ctx, candidate)
+		if err != nil {
+			return mapConstraintError(err)
+		}
+		return nil
+	})
+	return created, err
+}
+
+func (s *Service) UpdateSchedule(ctx context.Context, tenantID, id uuid.UUID, in ScheduleInput, actor Actor) (domain.Schedule, error) {
+	in = applyActor(in, actor)
+
+	var updated domain.Schedule
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		existing, err := s.repo.GetScheduleByID(ctx, tenantID, id)
+		if err != nil {
+			return domain.ErrScheduleNotFound
+		}
+		if !actor.CanManage && existing.TeacherUserID != actor.UserID {
+			return domain.ErrTeacherEditForbidden
+		}
+
+		candidate, err := s.resolveCandidate(ctx, tenantID, in)
+		if err != nil {
+			return err
+		}
+		candidate.ID = id
+
+		if !actor.CanManage {
+			if err := s.enforceTeacherWindow(ctx, tenantID, existing, time.Now()); err != nil {
+				return err
+			}
+			if err := s.enforceTeacherWindow(ctx, tenantID, candidate, time.Now()); err != nil {
+				return err
+			}
+		}
+
+		if err := s.checkConflict(ctx, tenantID, candidate, id); err != nil {
+			return err
+		}
+
+		updated, err = s.repo.UpdateSchedule(ctx, candidate)
+		if err != nil {
+			return mapConstraintError(err)
+		}
+		return nil
+	})
+	return updated, err
+}
+
+func (s *Service) DeleteSchedule(ctx context.Context, tenantID, id uuid.UUID, actor Actor) error {
+	return s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		existing, err := s.repo.GetScheduleByID(ctx, tenantID, id)
+		if err != nil {
+			return domain.ErrScheduleNotFound
+		}
+		if !actor.CanManage {
+			if existing.TeacherUserID != actor.UserID {
+				return domain.ErrTeacherEditForbidden
+			}
+			if err := s.enforceTeacherWindow(ctx, tenantID, existing, time.Now()); err != nil {
+				return err
+			}
+		}
+		return s.repo.DeleteSchedule(ctx, tenantID, id)
+	})
+}
+
+// ClearAcademicYear deletes every schedule for one academic year (admin
+// bulk clear), typically before a bulk import.
+func (s *Service) ClearAcademicYear(ctx context.Context, tenantID, academicYearID uuid.UUID) error {
+	return s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		return s.repo.DeleteSchedulesByAcademicYear(ctx, tenantID, academicYearID)
+	})
+}
+
+// BulkImport creates every schedule in inputs inside one transaction,
+// stopping at the first conflict or validation error so a partially valid
+// spreadsheet never leaves half its rows applied.
+func (s *Service) BulkImport(ctx context.Context, tenantID uuid.UUID, inputs []ScheduleInput) ([]domain.Schedule, error) {
+	var created []domain.Schedule
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		for _, in := range inputs {
+			candidate, err := s.resolveCandidate(ctx, tenantID, in)
+			if err != nil {
+				return err
+			}
+			if err := s.checkConflict(ctx, tenantID, candidate, uuid.Nil); err != nil {
+				return err
+			}
+			row, err := s.repo.CreateSchedule(ctx, candidate)
+			if err != nil {
+				return mapConstraintError(err)
+			}
+			created = append(created, row)
+		}
+		return nil
+	})
+	return created, err
+}
+
+// GetSchedule returns one schedule.
+func (s *Service) GetSchedule(ctx context.Context, tenantID, id uuid.UUID) (domain.Schedule, error) {
+	var out domain.Schedule
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		out, err = s.repo.GetScheduleByID(ctx, tenantID, id)
+		if err != nil {
+			return domain.ErrScheduleNotFound
+		}
+		return nil
+	})
+	return out, err
+}
+
+// ListByClass returns a class's schedules merged into contiguous blocks
+// for display, per docs/analysis/backend-inventory.md section 1.8.
+func (s *Service) ListByClass(ctx context.Context, tenantID, academicYearID, classID uuid.UUID) ([]domain.Block, error) {
+	var schedules []domain.Schedule
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		schedules, err = s.repo.ListSchedulesByClass(ctx, tenantID, academicYearID, classID)
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+	return domain.MergeContiguous(schedules), nil
+}
+
+// ListByTeacher returns a teacher's own schedules merged into contiguous
+// blocks.
+func (s *Service) ListByTeacher(ctx context.Context, tenantID, academicYearID, teacherID uuid.UUID) ([]domain.Block, error) {
+	var schedules []domain.Schedule
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		schedules, err = s.repo.ListSchedulesByTeacher(ctx, tenantID, academicYearID, teacherID)
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+	return domain.MergeContiguous(schedules), nil
+}
+
+// ListByDay returns one day's schedules across every class, merged into
+// contiguous blocks (the "per day" grid view).
+func (s *Service) ListByDay(ctx context.Context, tenantID, academicYearID uuid.UUID, dayOfWeek int16) ([]domain.Block, error) {
+	var schedules []domain.Schedule
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		schedules, err = s.repo.ListSchedulesByDay(ctx, tenantID, academicYearID, dayOfWeek)
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+	return domain.MergeContiguous(schedules), nil
+}
+
+// MutationPolicy tells a caller (for one schedule) whether they may edit
+// or delete it right now, so the transport layer can include it in list
+// responses without the client re-deriving the teacher-edit-deadline math
+// itself.
+type MutationPolicy struct {
+	CanEdit   bool
+	CanDelete bool
+	Reason    string
+}
+
+func (s *Service) MutationPolicyFor(ctx context.Context, tenantID uuid.UUID, sched domain.Schedule, actor Actor) MutationPolicy {
+	if actor.CanManage {
+		return MutationPolicy{CanEdit: true, CanDelete: true}
+	}
+	if sched.TeacherUserID != actor.UserID {
+		return MutationPolicy{Reason: domain.ErrTeacherEditForbidden.Error()}
+	}
+	if err := s.enforceTeacherWindow(ctx, tenantID, sched, time.Now()); err != nil {
+		return MutationPolicy{Reason: err.Error()}
+	}
+	return MutationPolicy{CanEdit: true, CanDelete: true}
+}
+
+func applyActor(in ScheduleInput, actor Actor) ScheduleInput {
+	if !actor.CanManage {
+		in.Source = domain.SourceTeacher
+		in.TeacherUserID = actor.UserID
+	} else if in.Source == "" {
+		in.Source = domain.SourceAdmin
+	}
+	return in
+}
+
+// resolveCandidate validates in against academic reference data (periods,
+// school days, teaching assignment) and builds the domain.Schedule ready
+// for conflict checking and persistence.
+func (s *Service) resolveCandidate(ctx context.Context, tenantID uuid.UUID, in ScheduleInput) (domain.Schedule, error) {
+	startPeriod, err := s.repo.GetPeriodRef(ctx, tenantID, in.StartPeriodID)
+	if err != nil {
+		return domain.Schedule{}, domain.ErrPeriodNotFound
+	}
+	endPeriod, err := s.repo.GetPeriodRef(ctx, tenantID, in.EndPeriodID)
+	if err != nil {
+		return domain.Schedule{}, domain.ErrPeriodNotFound
+	}
+	if endPeriod.TemplateID != startPeriod.TemplateID {
+		return domain.Schedule{}, domain.ErrInvalidPeriodRange
+	}
+	if err := domain.ValidatePeriodRange(startPeriod.Sequence, endPeriod.Sequence); err != nil {
+		return domain.Schedule{}, err
+	}
+
+	schoolDay, err := s.repo.IsSchoolDay(ctx, tenantID, in.AcademicYearID, in.DayOfWeek)
+	if err != nil || !schoolDay {
+		return domain.Schedule{}, domain.ErrDayNotSchoolDay
+	}
+
+	if _, err := s.repo.GetClassRef(ctx, tenantID, in.ClassID); err != nil {
+		return domain.Schedule{}, domain.ErrScheduleNotFound
+	}
+	if _, err := s.repo.GetSubjectRef(ctx, tenantID, in.SubjectID); err != nil {
+		return domain.Schedule{}, domain.ErrScheduleNotFound
+	}
+
+	ok, err := s.repo.HasTeachingAssignment(ctx, tenantID, in.AcademicYearID, in.TeacherUserID, in.SubjectID, in.ClassID)
+	if err != nil || !ok {
+		return domain.Schedule{}, domain.ErrTeacherNotAssigned
+	}
+
+	return domain.Schedule{
+		TenantID:       tenantID,
+		AcademicYearID: in.AcademicYearID,
+		TermID:         in.TermID,
+		ClassID:        in.ClassID,
+		SubjectID:      in.SubjectID,
+		TeacherUserID:  in.TeacherUserID,
+		RoomID:         in.RoomID,
+		DayOfWeek:      in.DayOfWeek,
+		StartPeriodID:  in.StartPeriodID,
+		EndPeriodID:    in.EndPeriodID,
+		StartSeq:       startPeriod.Sequence,
+		EndSeq:         endPeriod.Sequence,
+		Source:         in.Source,
+		Notes:          in.Notes,
+	}, nil
+}
+
+func (s *Service) checkConflict(ctx context.Context, tenantID uuid.UUID, candidate domain.Schedule, selfID uuid.UUID) error {
+	existing, err := s.repo.ListSchedulesByDay(ctx, tenantID, candidate.AcademicYearID, candidate.DayOfWeek)
+	if err != nil {
+		return err
+	}
+	return domain.DetectConflict(existing, candidate, selfID)
+}
+
+// enforceTeacherWindow resolves the concrete next occurrence of sched's
+// day-of-week and start period, in the tenant's timezone, and checks it
+// against schedule.teacher_edit_deadline.
+func (s *Service) enforceTeacherWindow(ctx context.Context, tenantID uuid.UUID, sched domain.Schedule, now time.Time) error {
+	deadline := defaultTeacherEditDeadline
+	if raw, ok, err := s.repo.GetTenantSettingValue(ctx, tenantID, settingTeacherEditDeadline); err == nil && ok {
+		if d, err := time.ParseDuration(raw); err == nil {
+			deadline = d
+		}
+	}
+
+	period, err := s.repo.GetPeriodRef(ctx, tenantID, sched.StartPeriodID)
+	if err != nil {
+		return domain.ErrPeriodNotFound
+	}
+
+	occursAt := nextOccurrence(now, sched.DayOfWeek, period.StartsAt)
+	if !domain.TeacherEditAllowed(now, occursAt, deadline) {
+		return domain.ErrTeacherEditDeadline
+	}
+	return nil
+}
+
+// nextOccurrence finds the next date (today included) whose ISO weekday is
+// dayOfWeek, combined with the period's time-of-day.
+func nextOccurrence(now time.Time, dayOfWeek int16, timeOfDay time.Time) time.Time {
+	nowWeekday := int16(now.Weekday())
+	if nowWeekday == 0 {
+		nowWeekday = 7
+	}
+	daysAhead := int(dayOfWeek - nowWeekday)
+	if daysAhead < 0 {
+		daysAhead += 7
+	}
+	next := now.AddDate(0, 0, daysAhead)
+	y, m, d := next.Date()
+	return time.Date(y, m, d, timeOfDay.Hour(), timeOfDay.Minute(), timeOfDay.Second(), 0, now.Location())
+}
+
+// mapConstraintError translates a Postgres exclusion-constraint violation
+// (the schedules table's two GiST constraints -- see migration
+// 0030_schedules.up.sql) into the same domain errors the pre-check in
+// checkConflict would have returned, closing the race the domain-level
+// check alone cannot: two concurrent requests can both pass the
+// application-level check and only the database enforces the second one
+// atomically.
+const pgExclusionViolation = "23P01"
+
+func mapConstraintError(err error) error {
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) && pgErr.Code == pgExclusionViolation {
+		if strings.Contains(pgErr.ConstraintName, "teacher_user_id") {
+			return domain.ErrConflictTeacher
+		}
+		return domain.ErrConflictClass
+	}
+	if errors.Is(err, pgx.ErrNoRows) {
+		return domain.ErrScheduleNotFound
+	}
+	return err
+}

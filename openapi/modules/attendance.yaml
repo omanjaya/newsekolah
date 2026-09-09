@@ -1,0 +1,444 @@
+paths:
+  /v1/attendance/me/today:
+    get:
+      tags: [attendance]
+      operationId: listMyAttendanceToday
+      x-permission: view_attendance
+      summary: Today's sessions for the current teacher (own schedules plus accepted substitutions)
+      responses:
+        "200":
+          description: Sessions
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/AttendanceSessionSummary" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /v1/attendance/sessions:
+    post:
+      tags: [attendance]
+      operationId: openAttendanceSession
+      x-permission: manage_attendance
+      summary: Open (idempotently) the session for a schedule occurrence and return its full recording payload
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [schedule_id, date]
+              properties:
+                schedule_id: { type: string, format: uuid }
+                date: { type: string, format: date }
+      responses:
+        "200":
+          description: Session payload
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AttendanceSessionDetail" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/attendance/sessions/{sessionId}:
+    parameters:
+      - name: sessionId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      tags: [attendance]
+      operationId: getAttendanceSession
+      x-permission: view_attendance
+      summary: One session's full recording payload
+      responses:
+        "200":
+          description: Session payload
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AttendanceSessionDetail" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /v1/attendance/sessions/{sessionId}/entries:
+    parameters:
+      - name: sessionId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    put:
+      tags: [attendance]
+      operationId: saveAttendanceEntries
+      x-permission: manage_attendance
+      summary: Save a batch of student statuses and the lesson journal for a session
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKeyHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SaveAttendanceEntriesRequest" }
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AttendanceSessionDetail" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409":
+          description: The save or correction window for this session has closed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+  /v1/attendance/me/calendar:
+    get:
+      tags: [attendance]
+      operationId: getMyAttendanceCalendar
+      x-permission: authenticated
+      summary: The current student's daily status for one month
+      parameters:
+        - name: month
+          in: query
+          required: true
+          description: "YYYY-MM"
+          schema: { type: string, pattern: "^[0-9]{4}-[0-9]{2}$" }
+      responses:
+        "200":
+          description: Calendar
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/AttendanceCalendarDay" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+  /v1/attendance/homeroom:
+    get:
+      tags: [attendance]
+      operationId: getHomeroomAttendance
+      x-permission: view_attendance
+      summary: One day's daily status for every student in the caller's homeroom class
+      parameters:
+        - name: date
+          in: query
+          required: true
+          schema: { type: string, format: date }
+      responses:
+        "200":
+          description: Homeroom roster with daily status
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/AttendanceRosterEntry" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/attendance/reports/daily:
+    get:
+      tags: [attendance]
+      operationId: getDailyAttendanceReport
+      x-permission: view_reports
+      summary: One class's expected vs. submitted sessions and per-student status for one day
+      parameters:
+        - name: date
+          in: query
+          required: true
+          schema: { type: string, format: date }
+        - name: class_id
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Report
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AttendanceDailyReport" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+  /v1/attendance/reports/daily/export:
+    get:
+      tags: [attendance]
+      operationId: exportDailyAttendanceReport
+      x-permission: view_reports
+      summary: The daily report as an XLSX file
+      parameters:
+        - name: date
+          in: query
+          required: true
+          schema: { type: string, format: date }
+        - name: class_id
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: XLSX file
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: { type: string, format: binary }
+        "400": { $ref: "#/components/responses/BadRequest" }
+  /v1/attendance/reports/monthly:
+    get:
+      tags: [attendance]
+      operationId: getMonthlyAttendanceSummary
+      x-permission: view_reports
+      summary: One student's daily statuses for one month
+      parameters:
+        - name: student_id
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+        - name: month
+          in: query
+          required: true
+          description: "YYYY-MM"
+          schema: { type: string, pattern: "^[0-9]{4}-[0-9]{2}$" }
+      responses:
+        "200":
+          description: Summary
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, totals]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/AttendanceCalendarDay" }
+                  totals:
+                    type: object
+                    additionalProperties: { type: integer }
+        "400": { $ref: "#/components/responses/BadRequest" }
+  /v1/monitor/snapshot:
+    get:
+      tags: [monitor]
+      operationId: getMonitorSnapshot
+      x-public: true
+      security: []
+      summary: Public monitor-display snapshot, gated by the tenant's monitor.display_token setting
+      parameters:
+        - $ref: "#/components/parameters/MonitorTokenHeader"
+      responses:
+        "200":
+          description: Snapshot
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MonitorSnapshot" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /v1/monitor/presence:
+    get:
+      tags: [monitor]
+      operationId: getMonitorPresence
+      x-permission: view_monitor_presence
+      summary: Who currently has a realtime socket open, by role
+      responses:
+        "200":
+          description: Presence
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PresenceSnapshot" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /ws/monitor:
+    get:
+      tags: [monitor]
+      operationId: wsMonitor
+      x-public: true
+      security: []
+      summary:
+        Realtime monitor channel (WebSocket upgrade). Authenticated by the same monitor.display_token as
+        GET /v1/monitor/snapshot, passed as a query parameter since browsers cannot set custom headers before the
+        handshake completes.
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        "101":
+          description: Switching Protocols
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /ws/me:
+    get:
+      tags: [monitor]
+      operationId: wsMe
+      x-public: true
+      security: []
+      summary:
+        Realtime per-user channel (WebSocket upgrade). Authenticated by the access token, sent either as a bearer
+        Authorization header (native clients) or as a `bearer.<token>` WebSocket subprotocol (browsers).
+      responses:
+        "101":
+          description: Switching Protocols
+        "401": { $ref: "#/components/responses/Unauthorized" }
+components:
+  parameters:
+    MonitorTokenHeader:
+      name: X-Monitor-Token
+      in: header
+      required: true
+      description: The tenant's configured monitor.display_token setting.
+      schema: { type: string }
+  schemas:
+    AttendanceStatusDef:
+      type: object
+      required: [code, label, color, counts_as_present]
+      properties:
+        code: { type: string }
+        label: { type: string }
+        color: { type: string }
+        counts_as_present: { type: boolean }
+    AttendanceSessionSummary:
+      type: object
+      required:
+        - id
+        - schedule_id
+        - date
+        - class_id
+        - subject_id
+        - teacher_user_id
+        - start_period_id
+        - end_period_id
+        - is_substitute
+      properties:
+        id: { type: string, format: uuid }
+        schedule_id: { type: string, format: uuid }
+        date: { type: string, format: date }
+        class_id: { type: string, format: uuid }
+        subject_id: { type: string, format: uuid }
+        teacher_user_id: { type: string, format: uuid }
+        substitute_user_id: { type: string, format: uuid }
+        start_period_id: { type: string, format: uuid }
+        end_period_id: { type: string, format: uuid }
+        is_substitute: { type: boolean }
+        submitted_at: { type: string, format: date-time }
+    AttendanceRosterItem:
+      type: object
+      required: [student_user_id, name]
+      properties:
+        student_user_id: { type: string, format: uuid }
+        name: { type: string }
+        previous_status: { type: string }
+        current_status: { type: string }
+        source: { type: string, enum: [teacher, leave, permit, system] }
+        notes: { type: string }
+        blocked: { type: boolean }
+        blocked_reason: { type: string }
+    AttendanceSessionDetail:
+      allOf:
+        - $ref: "#/components/schemas/AttendanceSessionSummary"
+        - type: object
+          required: [meeting_number, statuses, roster]
+          properties:
+            meeting_number: { type: integer }
+            previous_journal_topic: { type: string }
+            statuses:
+              type: array
+              items: { $ref: "#/components/schemas/AttendanceStatusDef" }
+            roster:
+              type: array
+              items: { $ref: "#/components/schemas/AttendanceRosterItem" }
+            journal_topic: { type: string }
+            journal_activities: { type: string }
+            journal_reflection: { type: string }
+    SaveAttendanceEntriesRequest:
+      type: object
+      required: [entries]
+      properties:
+        mode: { type: string, enum: [normal, correction], default: normal }
+        reason: { type: string, maxLength: 500, description: Required when mode is correction. }
+        entries:
+          type: array
+          items:
+            type: object
+            required: [student_user_id, status_code]
+            properties:
+              student_user_id: { type: string, format: uuid }
+              status_code: { type: string }
+              notes: { type: string, maxLength: 300 }
+        journal:
+          type: object
+          required: [topic, activities]
+          properties:
+            topic: { type: string, maxLength: 300 }
+            activities: { type: string }
+            reflection: { type: string }
+    AttendanceCalendarDay:
+      type: object
+      required: [date, status_code, expected_sessions, submitted_sessions, complete]
+      properties:
+        date: { type: string, format: date }
+        status_code: { type: string }
+        expected_sessions: { type: integer }
+        submitted_sessions: { type: integer }
+        complete: { type: boolean }
+        sessions:
+          type: array
+          items:
+            type: object
+            required: [schedule_id, subject_id]
+            properties:
+              schedule_id: { type: string, format: uuid }
+              subject_id: { type: string, format: uuid }
+              status_code: { type: string }
+    AttendanceRosterEntry:
+      type: object
+      required:
+        [student_user_id, name, status_code, expected_sessions, submitted_sessions, complete]
+      properties:
+        student_user_id: { type: string, format: uuid }
+        name: { type: string }
+        status_code: { type: string }
+        expected_sessions: { type: integer }
+        submitted_sessions: { type: integer }
+        complete: { type: boolean }
+    AttendanceDailyReport:
+      type: object
+      required:
+        [class_id, date, expected_sessions, submitted_sessions, complete, students, status_counts]
+      properties:
+        class_id: { type: string, format: uuid }
+        date: { type: string, format: date }
+        expected_sessions: { type: integer }
+        submitted_sessions: { type: integer }
+        complete: { type: boolean }
+        students:
+          type: array
+          items: { $ref: "#/components/schemas/AttendanceRosterEntry" }
+        status_counts:
+          type: object
+          additionalProperties: { type: integer }
+    MonitorSessionCard:
+      type: object
+      required: [class_name, subject_name, teacher_name, status]
+      properties:
+        class_name: { type: string }
+        subject_name: { type: string }
+        teacher_name: { type: string }
+        status: { type: string, enum: [not_started, in_progress, submitted] }
+    MonitorSnapshot:
+      type: object
+      required: [generated_at, status_counts, sessions]
+      properties:
+        generated_at: { type: string, format: date-time }
+        status_counts:
+          type: object
+          additionalProperties: { type: integer }
+        sessions:
+          type: array
+          items: { $ref: "#/components/schemas/MonitorSessionCard" }
+    PresenceSnapshot:
+      type: object
+      required: [count, keys]
+      properties:
+        count: { type: integer }
+        keys:
+          type: array
+          items: { type: string }

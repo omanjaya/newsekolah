@@ -8,14 +8,18 @@ import (
 	"github.com/redis/go-redis/v9"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/api"
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/identity"
 	identityservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/identity/service"
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/school"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/auth"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/authz"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/config"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/events"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/realtime"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/tenant"
 )
 
@@ -54,6 +58,10 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 
 	authenticator := auth.NewAuthenticator(tokenIssuer, sessionCache, identityModule.Service)
 
+	eventBus := events.NewBus()
+	schedulingModule := scheduling.Register(pool, eventBus, identityModule.Service)
+	attendanceModule := attendance.Register()
+
 	doc, err := api.GetSpec()
 	if err != nil {
 		return nil, err
@@ -64,9 +72,11 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	}
 
 	server := &combinedServer{
-		Handler:       identityModule.Handler,
-		TenantHandler: schoolModule.Handler,
-		healthHandler: &healthHandler{version: version, pool: pool, redis: redisClient},
+		Handler:           identityModule.Handler,
+		TenantHandler:     schoolModule.Handler,
+		SchedulingHandler: schedulingModule.Handler,
+		AttendanceHandler: attendanceModule.Handler,
+		healthHandler:     &healthHandler{version: version, pool: pool, redis: redisClient},
 	}
 
 	strict := api.NewStrictHandlerWithOptions(
@@ -90,7 +100,22 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 
 	api.HandlerFromMux(strict, router)
 
+	// Mounted after HandlerFromMux so these two routes replace its
+	// generated GET /ws/me and GET /ws/monitor stubs (backed by
+	// attendance's honest-501 strict handler) with the real WebSocket
+	// upgrade -- see the doc comment on mountRealtimeRoutes in ws.go for
+	// why a strict handler can never serve these itself.
+	hub := realtime.NewHub(broadcasterFor(redisClient))
+	mountRealtimeRoutes(router, pool, tokenIssuer, hub, cfg.AppOrigins, logger)
+
 	return router, nil
+}
+
+func broadcasterFor(redisClient *redis.Client) realtime.Broadcaster {
+	if redisClient == nil {
+		return nil
+	}
+	return realtime.NewRedisBroadcaster(redisClient)
 }
 
 func kvStoreFor(redisClient *redis.Client) auth.KVStore {

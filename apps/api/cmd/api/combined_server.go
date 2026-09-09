@@ -3,7 +3,9 @@ package main
 import (
 	"net/http"
 
+	attendancehttp "github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance/transport/http"
 	identityhttp "github.com/omanjaya/newsekolah/apps/api/internal/modules/identity/transport/http"
+	schedulinghttp "github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling/transport/http"
 	schoolhttp "github.com/omanjaya/newsekolah/apps/api/internal/modules/school/transport/http"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
 )
@@ -14,6 +16,8 @@ import (
 type combinedServer struct {
 	*identityhttp.Handler
 	*schoolhttp.TenantHandler
+	*schedulinghttp.SchedulingHandler
+	*attendancehttp.AttendanceHandler
 	*healthHandler
 }
 

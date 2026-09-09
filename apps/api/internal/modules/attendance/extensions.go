@@ -1,0 +1,52 @@
+// Package attendance wires the module's repository, service, and HTTP
+// transport together, and declares the two extension points the
+// not-yet-merged permits module will implement: Blocker (an unfinished
+// late-arrival workflow should stop a student from being marked present)
+// and Overrider (an issued leave letter or exit permit forces a student's
+// status for a date). Both default to a no-op so attendance is fully
+// functional before permits exists, per docs/03-layered-architecture.md
+// section 1's "Interface yang diekspor modul" pattern.
+package attendance
+
+import (
+	"context"
+	"time"
+
+	"github.com/google/uuid"
+
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance/domain"
+)
+
+// Blocker reports whether studentUserID has an unresolved workflow (e.g. a
+// late-arrival still pending duty-teacher review) that should prevent
+// recording a normal attendance status for date, mirroring the old
+// system's "siswa dengan terlambat belum selesai dilewati" rule
+// (docs/analysis/backend-inventory.md section 1.9).
+type Blocker interface {
+	IsBlocked(ctx context.Context, tenantID, studentUserID uuid.UUID, date time.Time) (blocked bool, reason string, err error)
+}
+
+// NoOpBlocker never blocks anyone; it is the default until permits is
+// merged and wired in.
+type NoOpBlocker struct{}
+
+func (NoOpBlocker) IsBlocked(context.Context, uuid.UUID, uuid.UUID, time.Time) (bool, string, error) {
+	return false, "", nil
+}
+
+// Overrider reports a status that must take precedence over whatever a
+// teacher records, because a higher-priority workflow already decided the
+// student's status for that date (an issued leave letter, an exited exit
+// permit), mirroring docs/analysis/backend-inventory.md section 1.9's "surat
+// izin issued menimpa status menjadi S/D/I".
+type Overrider interface {
+	Override(ctx context.Context, tenantID, studentUserID uuid.UUID, date time.Time) (statusCode string, source domain.EntrySource, ok bool, err error)
+}
+
+// NoOpOverrider never overrides anything; it is the default until permits
+// is merged and wired in.
+type NoOpOverrider struct{}
+
+func (NoOpOverrider) Override(context.Context, uuid.UUID, uuid.UUID, time.Time) (string, domain.EntrySource, bool, error) {
+	return "", "", false, nil
+}

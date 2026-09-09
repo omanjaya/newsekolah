@@ -28,7 +28,370 @@ tags:
     description: Current user
   - name: tenant
     description: School (tenant) discovery and branding
+  - name: scheduling
+    description: Teaching schedules and substitutions
+  - name: journals
+    description: Class journals
+  - name: attendance
+    description: Teacher-recorded attendance, student calendar, reports
+  - name: monitor
+    description: Public display and realtime channels
 paths:
+  /v1/attendance/me/today:
+    get:
+      tags:
+        - attendance
+      operationId: listMyAttendanceToday
+      x-permission: view_attendance
+      summary: Today's sessions for the current teacher (own schedules plus accepted substitutions)
+      responses:
+        "200":
+          description: Sessions
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AttendanceSessionSummary"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /v1/attendance/sessions:
+    post:
+      tags:
+        - attendance
+      operationId: openAttendanceSession
+      x-permission: manage_attendance
+      summary: Open (idempotently) the session for a schedule occurrence and return its full recording payload
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - schedule_id
+                - date
+              properties:
+                schedule_id:
+                  type: string
+                  format: uuid
+                date:
+                  type: string
+                  format: date
+      responses:
+        "200":
+          description: Session payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AttendanceSessionDetail"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/attendance/sessions/{sessionId}:
+    parameters:
+      - name: sessionId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags:
+        - attendance
+      operationId: getAttendanceSession
+      x-permission: view_attendance
+      summary: One session's full recording payload
+      responses:
+        "200":
+          description: Session payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AttendanceSessionDetail"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/attendance/sessions/{sessionId}/entries:
+    parameters:
+      - name: sessionId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    put:
+      tags:
+        - attendance
+      operationId: saveAttendanceEntries
+      x-permission: manage_attendance
+      summary: Save a batch of student statuses and the lesson journal for a session
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKeyHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveAttendanceEntriesRequest"
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AttendanceSessionDetail"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          description: The save or correction window for this session has closed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/attendance/me/calendar:
+    get:
+      tags:
+        - attendance
+      operationId: getMyAttendanceCalendar
+      x-permission: authenticated
+      summary: The current student's daily status for one month
+      parameters:
+        - name: month
+          in: query
+          required: true
+          description: YYYY-MM
+          schema:
+            type: string
+            pattern: ^[0-9]{4}-[0-9]{2}$
+      responses:
+        "200":
+          description: Calendar
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AttendanceCalendarDay"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /v1/attendance/homeroom:
+    get:
+      tags:
+        - attendance
+      operationId: getHomeroomAttendance
+      x-permission: view_attendance
+      summary: One day's daily status for every student in the caller's homeroom class
+      parameters:
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Homeroom roster with daily status
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AttendanceRosterEntry"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/attendance/reports/daily:
+    get:
+      tags:
+        - attendance
+      operationId: getDailyAttendanceReport
+      x-permission: view_reports
+      summary: One class's expected vs. submitted sessions and per-student status for one day
+      parameters:
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: class_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AttendanceDailyReport"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /v1/attendance/reports/daily/export:
+    get:
+      tags:
+        - attendance
+      operationId: exportDailyAttendanceReport
+      x-permission: view_reports
+      summary: The daily report as an XLSX file
+      parameters:
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: class_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: XLSX file
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /v1/attendance/reports/monthly:
+    get:
+      tags:
+        - attendance
+      operationId: getMonthlyAttendanceSummary
+      x-permission: view_reports
+      summary: One student's daily statuses for one month
+      parameters:
+        - name: student_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: month
+          in: query
+          required: true
+          description: YYYY-MM
+          schema:
+            type: string
+            pattern: ^[0-9]{4}-[0-9]{2}$
+      responses:
+        "200":
+          description: Summary
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                  - totals
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AttendanceCalendarDay"
+                  totals:
+                    type: object
+                    additionalProperties:
+                      type: integer
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /v1/monitor/snapshot:
+    get:
+      tags:
+        - monitor
+      operationId: getMonitorSnapshot
+      x-public: true
+      security: []
+      summary: Public monitor-display snapshot, gated by the tenant's monitor.display_token setting
+      parameters:
+        - $ref: "#/components/parameters/MonitorTokenHeader"
+      responses:
+        "200":
+          description: Snapshot
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MonitorSnapshot"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /v1/monitor/presence:
+    get:
+      tags:
+        - monitor
+      operationId: getMonitorPresence
+      x-permission: view_monitor_presence
+      summary: Who currently has a realtime socket open, by role
+      responses:
+        "200":
+          description: Presence
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PresenceSnapshot"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /ws/monitor:
+    get:
+      tags:
+        - monitor
+      operationId: wsMonitor
+      x-public: true
+      security: []
+      summary:
+        Realtime monitor channel (WebSocket upgrade). Authenticated by the same monitor.display_token as GET
+        /v1/monitor/snapshot, passed as a query parameter since browsers cannot set custom headers before the handshake
+        completes.
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "101":
+          description: Switching Protocols
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /ws/me:
+    get:
+      tags:
+        - monitor
+      operationId: wsMe
+      x-public: true
+      security: []
+      summary:
+        Realtime per-user channel (WebSocket upgrade). Authenticated by the access token, sent either as a bearer
+        Authorization header (native clients) or as a `bearer.<token>` WebSocket subprotocol (browsers).
+      responses:
+        "101":
+          description: Switching Protocols
+        "401":
+          $ref: "#/components/responses/Unauthorized"
   /v1/auth/login:
     post:
       tags:
@@ -207,6 +570,467 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
+  /v1/schedules:
+    get:
+      tags:
+        - scheduling
+      operationId: listSchedules
+      x-permission: view_schedules
+      summary: Grid of schedules for a class, a teacher, or one day, merged into contiguous blocks
+      parameters:
+        - name: academic_year_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: class_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: teacher_user_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: day_of_week
+          in: query
+          description: 1 (Monday) through 7 (Sunday)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 7
+      responses:
+        "200":
+          description: Schedule blocks
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ScheduleBlock"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags:
+        - scheduling
+      operationId: createSchedule
+      x-permission: view_schedules
+      summary: Create a schedule (admin for any teacher, or a teacher for themselves within the edit deadline)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScheduleWriteRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Schedule"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/ScheduleConflict"
+  /v1/schedules/bulk-import:
+    post:
+      tags:
+        - scheduling
+      operationId: bulkImportSchedules
+      x-permission: manage_schedules
+      summary: Create many schedules atomically (typically after clearing the academic year)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - schedules
+              properties:
+                schedules:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/ScheduleWriteRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Schedule"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          $ref: "#/components/responses/ScheduleConflict"
+  /v1/schedules/clear:
+    post:
+      tags:
+        - scheduling
+      operationId: clearSchedules
+      x-permission: manage_schedules
+      summary: Delete every schedule for one academic year
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - academic_year_id
+              properties:
+                academic_year_id:
+                  type: string
+                  format: uuid
+      responses:
+        "204":
+          description: Cleared
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /v1/schedules/{scheduleId}:
+    parameters:
+      - name: scheduleId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags:
+        - scheduling
+      operationId: getSchedule
+      x-permission: view_schedules
+      summary: One schedule
+      responses:
+        "200":
+          description: Schedule
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Schedule"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      tags:
+        - scheduling
+      operationId: updateSchedule
+      x-permission: view_schedules
+      summary: Update a schedule (admin, or the owning teacher within the edit deadline)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScheduleWriteRequest"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Schedule"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/ScheduleConflict"
+    delete:
+      tags:
+        - scheduling
+      operationId: deleteSchedule
+      x-permission: view_schedules
+      summary: Delete a schedule (admin, or the owning teacher within the edit deadline)
+      responses:
+        "204":
+          description: Deleted
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/substitutions:
+    get:
+      tags:
+        - scheduling
+      operationId: listSubstitutions
+      x-permission: view_schedules
+      summary: Substitution requests directed at me (incoming) or made by me (outgoing)
+      parameters:
+        - name: direction
+          in: query
+          required: true
+          schema:
+            type: string
+            enum:
+              - incoming
+              - outgoing
+      responses:
+        "200":
+          description: Substitution requests
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Substitution"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+    post:
+      tags:
+        - scheduling
+      operationId: createSubstitution
+      x-permission: view_schedules
+      summary: Request a substitute for one dated occurrence of my own schedule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubstitutionCreateRequest"
+      responses:
+        "201":
+          description: Requested
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Substitution"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/substitutions/{substitutionId}/respond:
+    parameters:
+      - name: substitutionId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags:
+        - scheduling
+      operationId: respondSubstitution
+      x-permission: view_schedules
+      summary: Accept or reject a substitution request addressed to me
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - accept
+              properties:
+                accept:
+                  type: boolean
+                note:
+                  type: string
+                  maxLength: 500
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Substitution"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/substitutions/{substitutionId}/cancel:
+    parameters:
+      - name: substitutionId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags:
+        - scheduling
+      operationId: cancelSubstitution
+      x-permission: view_schedules
+      summary: Cancel a substitution request I made
+      responses:
+        "200":
+          description: Cancelled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Substitution"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/journals:
+    get:
+      tags:
+        - journals
+      operationId: listJournals
+      x-permission: authenticated
+      summary: My own journals for an academic year, or (class_id given, requires view_journals_all) every journal for a class
+      parameters:
+        - name: academic_year_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: class_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Journals
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Journal"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags:
+        - journals
+      operationId: upsertJournal
+      x-permission: authenticated
+      summary: Create or update the journal for a class/subject/date (unique per day)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JournalWriteRequest"
+      responses:
+        "200":
+          description: Created or updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Journal"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/journals/export:
+    get:
+      tags:
+        - journals
+      operationId: exportJournals
+      x-permission: authenticated
+      summary: Export journals as XLSX or DOCX
+      parameters:
+        - name: academic_year_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: class_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: format
+          in: query
+          required: true
+          schema:
+            type: string
+            enum:
+              - xlsx
+              - docx
+      responses:
+        "200":
+          description: File
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+            application/vnd.openxmlformats-officedocument.wordprocessingml.document:
+              schema:
+                type: string
+                format: binary
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/journals/{journalId}:
+    parameters:
+      - name: journalId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags:
+        - journals
+      operationId: getJournal
+      x-permission: authenticated
+      summary: One journal
+      responses:
+        "200":
+          description: Journal
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Journal"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags:
+        - journals
+      operationId: deleteJournal
+      x-permission: authenticated
+      summary: Delete a journal (its own teacher/writer only)
+      responses:
+        "204":
+          description: Deleted
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /health:
     get:
       tags:
@@ -339,6 +1163,18 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/Error"
+    ScheduleConflict:
+      description: The class or the teacher already has an overlapping schedule
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Conflict:
+      description: The request conflicts with existing state
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
   schemas:
     Error:
       type: object
@@ -375,6 +1211,306 @@ components:
                     type: string
             request_id:
               type: string
+    AttendanceStatusDef:
+      type: object
+      required:
+        - code
+        - label
+        - color
+        - counts_as_present
+      properties:
+        code:
+          type: string
+        label:
+          type: string
+        color:
+          type: string
+        counts_as_present:
+          type: boolean
+    AttendanceSessionSummary:
+      type: object
+      required:
+        - id
+        - schedule_id
+        - date
+        - class_id
+        - subject_id
+        - teacher_user_id
+        - start_period_id
+        - end_period_id
+        - is_substitute
+      properties:
+        id:
+          type: string
+          format: uuid
+        schedule_id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        class_id:
+          type: string
+          format: uuid
+        subject_id:
+          type: string
+          format: uuid
+        teacher_user_id:
+          type: string
+          format: uuid
+        substitute_user_id:
+          type: string
+          format: uuid
+        start_period_id:
+          type: string
+          format: uuid
+        end_period_id:
+          type: string
+          format: uuid
+        is_substitute:
+          type: boolean
+        submitted_at:
+          type: string
+          format: date-time
+    AttendanceRosterItem:
+      type: object
+      required:
+        - student_user_id
+        - name
+      properties:
+        student_user_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        previous_status:
+          type: string
+        current_status:
+          type: string
+        source:
+          type: string
+          enum:
+            - teacher
+            - leave
+            - permit
+            - system
+        notes:
+          type: string
+        blocked:
+          type: boolean
+        blocked_reason:
+          type: string
+    AttendanceSessionDetail:
+      allOf:
+        - $ref: "#/components/schemas/AttendanceSessionSummary"
+        - type: object
+          required:
+            - meeting_number
+            - statuses
+            - roster
+          properties:
+            meeting_number:
+              type: integer
+            previous_journal_topic:
+              type: string
+            statuses:
+              type: array
+              items:
+                $ref: "#/components/schemas/AttendanceStatusDef"
+            roster:
+              type: array
+              items:
+                $ref: "#/components/schemas/AttendanceRosterItem"
+            journal_topic:
+              type: string
+            journal_activities:
+              type: string
+            journal_reflection:
+              type: string
+    SaveAttendanceEntriesRequest:
+      type: object
+      required:
+        - entries
+      properties:
+        mode:
+          type: string
+          enum:
+            - normal
+            - correction
+          default: normal
+        reason:
+          type: string
+          maxLength: 500
+          description: Required when mode is correction.
+        entries:
+          type: array
+          items:
+            type: object
+            required:
+              - student_user_id
+              - status_code
+            properties:
+              student_user_id:
+                type: string
+                format: uuid
+              status_code:
+                type: string
+              notes:
+                type: string
+                maxLength: 300
+        journal:
+          type: object
+          required:
+            - topic
+            - activities
+          properties:
+            topic:
+              type: string
+              maxLength: 300
+            activities:
+              type: string
+            reflection:
+              type: string
+    AttendanceCalendarDay:
+      type: object
+      required:
+        - date
+        - status_code
+        - expected_sessions
+        - submitted_sessions
+        - complete
+      properties:
+        date:
+          type: string
+          format: date
+        status_code:
+          type: string
+        expected_sessions:
+          type: integer
+        submitted_sessions:
+          type: integer
+        complete:
+          type: boolean
+        sessions:
+          type: array
+          items:
+            type: object
+            required:
+              - schedule_id
+              - subject_id
+            properties:
+              schedule_id:
+                type: string
+                format: uuid
+              subject_id:
+                type: string
+                format: uuid
+              status_code:
+                type: string
+    AttendanceRosterEntry:
+      type: object
+      required:
+        - student_user_id
+        - name
+        - status_code
+        - expected_sessions
+        - submitted_sessions
+        - complete
+      properties:
+        student_user_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        status_code:
+          type: string
+        expected_sessions:
+          type: integer
+        submitted_sessions:
+          type: integer
+        complete:
+          type: boolean
+    AttendanceDailyReport:
+      type: object
+      required:
+        - class_id
+        - date
+        - expected_sessions
+        - submitted_sessions
+        - complete
+        - students
+        - status_counts
+      properties:
+        class_id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        expected_sessions:
+          type: integer
+        submitted_sessions:
+          type: integer
+        complete:
+          type: boolean
+        students:
+          type: array
+          items:
+            $ref: "#/components/schemas/AttendanceRosterEntry"
+        status_counts:
+          type: object
+          additionalProperties:
+            type: integer
+    MonitorSessionCard:
+      type: object
+      required:
+        - class_name
+        - subject_name
+        - teacher_name
+        - status
+      properties:
+        class_name:
+          type: string
+        subject_name:
+          type: string
+        teacher_name:
+          type: string
+        status:
+          type: string
+          enum:
+            - not_started
+            - in_progress
+            - submitted
+    MonitorSnapshot:
+      type: object
+      required:
+        - generated_at
+        - status_counts
+        - sessions
+      properties:
+        generated_at:
+          type: string
+          format: date-time
+        status_counts:
+          type: object
+          additionalProperties:
+            type: integer
+        sessions:
+          type: array
+          items:
+            $ref: "#/components/schemas/MonitorSessionCard"
+    PresenceSnapshot:
+      type: object
+      required:
+        - count
+        - keys
+      properties:
+        count:
+          type: integer
+        keys:
+          type: array
+          items:
+            type: string
     ClientKind:
       type: string
       enum:
@@ -559,6 +1695,308 @@ components:
               format: uuid
             name:
               type: string
+    ScheduleSource:
+      type: string
+      enum:
+        - admin
+        - teacher
+        - import
+    MutationPolicy:
+      type: object
+      required:
+        - can_edit
+        - can_delete
+      properties:
+        can_edit:
+          type: boolean
+        can_delete:
+          type: boolean
+        reason:
+          type: string
+    Schedule:
+      type: object
+      required:
+        - id
+        - academic_year_id
+        - class_id
+        - subject_id
+        - teacher_user_id
+        - day_of_week
+        - start_period_id
+        - end_period_id
+        - source
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        academic_year_id:
+          type: string
+          format: uuid
+        term_id:
+          type: string
+          format: uuid
+        class_id:
+          type: string
+          format: uuid
+        subject_id:
+          type: string
+          format: uuid
+        teacher_user_id:
+          type: string
+          format: uuid
+        room_id:
+          type: string
+          format: uuid
+        day_of_week:
+          type: integer
+          minimum: 1
+          maximum: 7
+        start_period_id:
+          type: string
+          format: uuid
+        end_period_id:
+          type: string
+          format: uuid
+        source:
+          $ref: "#/components/schemas/ScheduleSource"
+        notes:
+          type: string
+        mutation_policy:
+          $ref: "#/components/schemas/MutationPolicy"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    ScheduleBlock:
+      type: object
+      required:
+        - schedule_ids
+        - class_id
+        - subject_id
+        - teacher_user_id
+        - day_of_week
+        - start_seq
+        - end_seq
+        - source
+      properties:
+        schedule_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+        class_id:
+          type: string
+          format: uuid
+        subject_id:
+          type: string
+          format: uuid
+        teacher_user_id:
+          type: string
+          format: uuid
+        room_id:
+          type: string
+          format: uuid
+        day_of_week:
+          type: integer
+        start_seq:
+          type: integer
+        end_seq:
+          type: integer
+        source:
+          $ref: "#/components/schemas/ScheduleSource"
+    ScheduleWriteRequest:
+      type: object
+      required:
+        - academic_year_id
+        - class_id
+        - subject_id
+        - teacher_user_id
+        - day_of_week
+        - start_period_id
+        - end_period_id
+      properties:
+        academic_year_id:
+          type: string
+          format: uuid
+        term_id:
+          type: string
+          format: uuid
+        class_id:
+          type: string
+          format: uuid
+        subject_id:
+          type: string
+          format: uuid
+        teacher_user_id:
+          type: string
+          format: uuid
+        room_id:
+          type: string
+          format: uuid
+        day_of_week:
+          type: integer
+          minimum: 1
+          maximum: 7
+        start_period_id:
+          type: string
+          format: uuid
+        end_period_id:
+          type: string
+          format: uuid
+        source:
+          $ref: "#/components/schemas/ScheduleSource"
+        notes:
+          type: string
+          maxLength: 500
+    SubstitutionStatus:
+      type: string
+      enum:
+        - pending
+        - accepted
+        - rejected
+        - cancelled
+    Substitution:
+      type: object
+      required:
+        - id
+        - academic_year_id
+        - schedule_id
+        - date
+        - requester_user_id
+        - substitute_user_id
+        - status
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        academic_year_id:
+          type: string
+          format: uuid
+        schedule_id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        requester_user_id:
+          type: string
+          format: uuid
+        substitute_user_id:
+          type: string
+          format: uuid
+        status:
+          $ref: "#/components/schemas/SubstitutionStatus"
+        requester_note:
+          type: string
+        response_note:
+          type: string
+        responded_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+    SubstitutionCreateRequest:
+      type: object
+      required:
+        - schedule_id
+        - date
+        - substitute_user_id
+      properties:
+        schedule_id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        substitute_user_id:
+          type: string
+          format: uuid
+        note:
+          type: string
+          maxLength: 500
+    Journal:
+      type: object
+      required:
+        - id
+        - academic_year_id
+        - teacher_user_id
+        - written_by_user_id
+        - class_id
+        - subject_id
+        - lesson_date
+        - topic
+        - activities
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        academic_year_id:
+          type: string
+          format: uuid
+        teacher_user_id:
+          type: string
+          format: uuid
+        written_by_user_id:
+          type: string
+          format: uuid
+        class_id:
+          type: string
+          format: uuid
+        subject_id:
+          type: string
+          format: uuid
+        lesson_date:
+          type: string
+          format: date
+        topic:
+          type: string
+        activities:
+          type: string
+        reflection:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    JournalWriteRequest:
+      type: object
+      required:
+        - academic_year_id
+        - class_id
+        - subject_id
+        - lesson_date
+        - topic
+        - activities
+      properties:
+        academic_year_id:
+          type: string
+          format: uuid
+        class_id:
+          type: string
+          format: uuid
+        subject_id:
+          type: string
+          format: uuid
+        lesson_date:
+          type: string
+          format: date
+        topic:
+          type: string
+          maxLength: 300
+        activities:
+          type: string
+        reflection:
+          type: string
     TenantSummary:
       type: object
       required:
@@ -616,6 +2054,23 @@ components:
         timezone:
           type: string
   parameters:
+    IdempotencyKeyHeader:
+      name: Idempotency-Key
+      in: header
+      required: false
+      description:
+        Client-generated key (mobile clients on unstable networks) that makes a POST/PUT safe to retry;
+        docs/08-security.md section 7. The same key replays the first response instead of repeating the write.
+      schema:
+        type: string
+        maxLength: 100
+    MonitorTokenHeader:
+      name: X-Monitor-Token
+      in: header
+      required: true
+      description: The tenant's configured monitor.display_token setting.
+      schema:
+        type: string
     TenantHeader:
       name: X-Tenant
       in: header
