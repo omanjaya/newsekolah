@@ -35,3 +35,5 @@ tags:
     description: Teacher-recorded attendance, student calendar, reports
   - name: monitor
     description: Public display and realtime channels
+  - name: academic
+    description: Academic years, terms, calendar, grade structure, classes, enrollments, subjects, periods, teaching assignments

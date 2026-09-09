@@ -5,6 +5,11 @@ components:
       scheme: bearer
       bearerFormat: JWT
   responses:
+    Conflict:
+      description: The request conflicts with existing state (duplicate, dependents, or state machine)
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
     BadRequest:
       description: Validation failed
       content:

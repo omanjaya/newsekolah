@@ -12,6 +12,257 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const academicActivateYear = `-- name: AcademicActivateYear :exec
+update academic_years set is_active = true, updated_at = now() where tenant_id = $1 and id = $2
+`
+
+type AcademicActivateYearParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	ID       uuid.UUID `json:"id"`
+}
+
+func (q *Queries) AcademicActivateYear(ctx context.Context, arg AcademicActivateYearParams) error {
+	_, err := q.db.Exec(ctx, academicActivateYear, arg.TenantID, arg.ID)
+	return err
+}
+
+const academicArchiveYear = `-- name: AcademicArchiveYear :exec
+update academic_years
+set archived_at = now(), is_active = false, updated_at = now()
+where tenant_id = $1 and id = $2
+`
+
+type AcademicArchiveYearParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	ID       uuid.UUID `json:"id"`
+}
+
+func (q *Queries) AcademicArchiveYear(ctx context.Context, arg AcademicArchiveYearParams) error {
+	_, err := q.db.Exec(ctx, academicArchiveYear, arg.TenantID, arg.ID)
+	return err
+}
+
+const academicCountClassesForYear = `-- name: AcademicCountClassesForYear :one
+select count(*) from classes where tenant_id = $1 and academic_year_id = $2 and deleted_at is null
+`
+
+type AcademicCountClassesForYearParams struct {
+	TenantID       uuid.UUID `json:"tenant_id"`
+	AcademicYearID uuid.UUID `json:"academic_year_id"`
+}
+
+func (q *Queries) AcademicCountClassesForYear(ctx context.Context, arg AcademicCountClassesForYearParams) (int64, error) {
+	row := q.db.QueryRow(ctx, academicCountClassesForYear, arg.TenantID, arg.AcademicYearID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const academicCountEnrollmentsForYear = `-- name: AcademicCountEnrollmentsForYear :one
+select count(*) from enrollments where tenant_id = $1 and academic_year_id = $2
+`
+
+type AcademicCountEnrollmentsForYearParams struct {
+	TenantID       uuid.UUID `json:"tenant_id"`
+	AcademicYearID uuid.UUID `json:"academic_year_id"`
+}
+
+func (q *Queries) AcademicCountEnrollmentsForYear(ctx context.Context, arg AcademicCountEnrollmentsForYearParams) (int64, error) {
+	row := q.db.QueryRow(ctx, academicCountEnrollmentsForYear, arg.TenantID, arg.AcademicYearID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const academicCreateYear = `-- name: AcademicCreateYear :one
+insert into academic_years (tenant_id, label, starts_on, ends_on, is_active)
+values ($1, $2, $3, $4, false)
+returning id, tenant_id, label, starts_on, ends_on, is_active, created_at, updated_at, archived_at
+`
+
+type AcademicCreateYearParams struct {
+	TenantID uuid.UUID   `json:"tenant_id"`
+	Label    string      `json:"label"`
+	StartsOn pgtype.Date `json:"starts_on"`
+	EndsOn   pgtype.Date `json:"ends_on"`
+}
+
+func (q *Queries) AcademicCreateYear(ctx context.Context, arg AcademicCreateYearParams) (AcademicYear, error) {
+	row := q.db.QueryRow(ctx, academicCreateYear,
+		arg.TenantID,
+		arg.Label,
+		arg.StartsOn,
+		arg.EndsOn,
+	)
+	var i AcademicYear
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.Label,
+		&i.StartsOn,
+		&i.EndsOn,
+		&i.IsActive,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.ArchivedAt,
+	)
+	return i, err
+}
+
+const academicDeactivateAllYears = `-- name: AcademicDeactivateAllYears :exec
+update academic_years set is_active = false, updated_at = now() where tenant_id = $1 and is_active
+`
+
+func (q *Queries) AcademicDeactivateAllYears(ctx context.Context, tenantID uuid.UUID) error {
+	_, err := q.db.Exec(ctx, academicDeactivateAllYears, tenantID)
+	return err
+}
+
+const academicGetActiveYear = `-- name: AcademicGetActiveYear :one
+select id, tenant_id, label, starts_on, ends_on, is_active, created_at, updated_at, archived_at from academic_years where tenant_id = $1 and is_active limit 1
+`
+
+func (q *Queries) AcademicGetActiveYear(ctx context.Context, tenantID uuid.UUID) (AcademicYear, error) {
+	row := q.db.QueryRow(ctx, academicGetActiveYear, tenantID)
+	var i AcademicYear
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.Label,
+		&i.StartsOn,
+		&i.EndsOn,
+		&i.IsActive,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.ArchivedAt,
+	)
+	return i, err
+}
+
+const academicGetYearByID = `-- name: AcademicGetYearByID :one
+select id, tenant_id, label, starts_on, ends_on, is_active, created_at, updated_at, archived_at from academic_years where tenant_id = $1 and id = $2
+`
+
+type AcademicGetYearByIDParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	ID       uuid.UUID `json:"id"`
+}
+
+func (q *Queries) AcademicGetYearByID(ctx context.Context, arg AcademicGetYearByIDParams) (AcademicYear, error) {
+	row := q.db.QueryRow(ctx, academicGetYearByID, arg.TenantID, arg.ID)
+	var i AcademicYear
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.Label,
+		&i.StartsOn,
+		&i.EndsOn,
+		&i.IsActive,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.ArchivedAt,
+	)
+	return i, err
+}
+
+const academicListYears = `-- name: AcademicListYears :many
+select academic_years.id, academic_years.tenant_id, academic_years.label, academic_years.starts_on, academic_years.ends_on, academic_years.is_active, academic_years.created_at, academic_years.updated_at, academic_years.archived_at, count(*) over () as total_count
+from academic_years
+where tenant_id = $1
+  and ($4::text is null or label ilike '%' || $4 || '%')
+  and (coalesce($5, false) or archived_at is null)
+order by starts_on desc
+limit $2 offset $3
+`
+
+type AcademicListYearsParams struct {
+	TenantID        uuid.UUID   `json:"tenant_id"`
+	Limit           int32       `json:"limit"`
+	Offset          int32       `json:"offset"`
+	Search          pgtype.Text `json:"search"`
+	IncludeArchived interface{} `json:"include_archived"`
+}
+
+type AcademicListYearsRow struct {
+	AcademicYear AcademicYear `json:"academic_year"`
+	TotalCount   int64        `json:"total_count"`
+}
+
+func (q *Queries) AcademicListYears(ctx context.Context, arg AcademicListYearsParams) ([]AcademicListYearsRow, error) {
+	rows, err := q.db.Query(ctx, academicListYears,
+		arg.TenantID,
+		arg.Limit,
+		arg.Offset,
+		arg.Search,
+		arg.IncludeArchived,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []AcademicListYearsRow{}
+	for rows.Next() {
+		var i AcademicListYearsRow
+		if err := rows.Scan(
+			&i.AcademicYear.ID,
+			&i.AcademicYear.TenantID,
+			&i.AcademicYear.Label,
+			&i.AcademicYear.StartsOn,
+			&i.AcademicYear.EndsOn,
+			&i.AcademicYear.IsActive,
+			&i.AcademicYear.CreatedAt,
+			&i.AcademicYear.UpdatedAt,
+			&i.AcademicYear.ArchivedAt,
+			&i.TotalCount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const academicUpdateYear = `-- name: AcademicUpdateYear :one
+update academic_years
+set label = $3, starts_on = $4, ends_on = $5, updated_at = now()
+where tenant_id = $1 and id = $2 and archived_at is null
+returning id, tenant_id, label, starts_on, ends_on, is_active, created_at, updated_at, archived_at
+`
+
+type AcademicUpdateYearParams struct {
+	TenantID uuid.UUID   `json:"tenant_id"`
+	ID       uuid.UUID   `json:"id"`
+	Label    string      `json:"label"`
+	StartsOn pgtype.Date `json:"starts_on"`
+	EndsOn   pgtype.Date `json:"ends_on"`
+}
+
+func (q *Queries) AcademicUpdateYear(ctx context.Context, arg AcademicUpdateYearParams) (AcademicYear, error) {
+	row := q.db.QueryRow(ctx, academicUpdateYear,
+		arg.TenantID,
+		arg.ID,
+		arg.Label,
+		arg.StartsOn,
+		arg.EndsOn,
+	)
+	var i AcademicYear
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.Label,
+		&i.StartsOn,
+		&i.EndsOn,
+		&i.IsActive,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.ArchivedAt,
+	)
+	return i, err
+}
+
 const activateAcademicYear = `-- name: ActivateAcademicYear :exec
 update academic_years set is_active = true, updated_at = now() where tenant_id = $1 and id = $2
 `
@@ -29,7 +280,7 @@ func (q *Queries) ActivateAcademicYear(ctx context.Context, arg ActivateAcademic
 const createAcademicYear = `-- name: CreateAcademicYear :one
 insert into academic_years (tenant_id, label, starts_on, ends_on, is_active)
 values ($1, $2, $3, $4, $5)
-returning id, tenant_id, label, starts_on, ends_on, is_active, created_at, updated_at
+returning id, tenant_id, label, starts_on, ends_on, is_active, created_at, updated_at, archived_at
 `
 
 type CreateAcademicYearParams struct {
@@ -58,6 +309,7 @@ func (q *Queries) CreateAcademicYear(ctx context.Context, arg CreateAcademicYear
 		&i.IsActive,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ArchivedAt,
 	)
 	return i, err
 }
@@ -72,7 +324,7 @@ func (q *Queries) DeactivateAllAcademicYears(ctx context.Context, tenantID uuid.
 }
 
 const getAcademicYearByID = `-- name: GetAcademicYearByID :one
-select id, tenant_id, label, starts_on, ends_on, is_active, created_at, updated_at from academic_years where tenant_id = $1 and id = $2
+select id, tenant_id, label, starts_on, ends_on, is_active, created_at, updated_at, archived_at from academic_years where tenant_id = $1 and id = $2
 `
 
 type GetAcademicYearByIDParams struct {
@@ -92,12 +344,13 @@ func (q *Queries) GetAcademicYearByID(ctx context.Context, arg GetAcademicYearBy
 		&i.IsActive,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ArchivedAt,
 	)
 	return i, err
 }
 
 const getActiveAcademicYear = `-- name: GetActiveAcademicYear :one
-select id, tenant_id, label, starts_on, ends_on, is_active, created_at, updated_at from academic_years where tenant_id = $1 and is_active limit 1
+select id, tenant_id, label, starts_on, ends_on, is_active, created_at, updated_at, archived_at from academic_years where tenant_id = $1 and is_active limit 1
 `
 
 func (q *Queries) GetActiveAcademicYear(ctx context.Context, tenantID uuid.UUID) (AcademicYear, error) {
@@ -112,12 +365,13 @@ func (q *Queries) GetActiveAcademicYear(ctx context.Context, tenantID uuid.UUID)
 		&i.IsActive,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ArchivedAt,
 	)
 	return i, err
 }
 
 const listAcademicYears = `-- name: ListAcademicYears :many
-select id, tenant_id, label, starts_on, ends_on, is_active, created_at, updated_at from academic_years where tenant_id = $1 order by starts_on desc
+select id, tenant_id, label, starts_on, ends_on, is_active, created_at, updated_at, archived_at from academic_years where tenant_id = $1 order by starts_on desc
 `
 
 func (q *Queries) ListAcademicYears(ctx context.Context, tenantID uuid.UUID) ([]AcademicYear, error) {
@@ -138,6 +392,7 @@ func (q *Queries) ListAcademicYears(ctx context.Context, tenantID uuid.UUID) ([]
 			&i.IsActive,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.ArchivedAt,
 		); err != nil {
 			return nil, err
 		}

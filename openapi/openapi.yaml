@@ -36,7 +36,1650 @@ tags:
     description: Teacher-recorded attendance, student calendar, reports
   - name: monitor
     description: Public display and realtime channels
+  - name: academic
+    description: Academic years, terms, calendar, grade structure, classes, enrollments, subjects, periods, teaching assignments
 paths:
+  /v1/academic/years:
+    get:
+      tags:
+        - academic
+      operationId: listAcademicYears
+      x-permission: view_academic_data
+      summary: List academic years
+      parameters:
+        - $ref: "#/components/parameters/SearchParam"
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+        - name: include_archived
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: Academic years
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AcademicYearList"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags:
+        - academic
+      operationId: createAcademicYear
+      x-permission: manage_academic_years
+      summary: Create an academic year (and seed its terms from the calendar.terms policy)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AcademicYearInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AcademicYear"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/academic/years/{yearId}:
+    parameters:
+      - $ref: "#/components/parameters/YearIdParam"
+    get:
+      tags:
+        - academic
+      operationId: getAcademicYear
+      x-permission: view_academic_data
+      summary: Get one academic year
+      responses:
+        "200":
+          description: Academic year
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AcademicYear"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      tags:
+        - academic
+      operationId: updateAcademicYear
+      x-permission: manage_academic_years
+      summary: Update an academic year's label and period
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AcademicYearInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AcademicYear"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/academic/years/{yearId}/activate:
+    parameters:
+      - $ref: "#/components/parameters/YearIdParam"
+    post:
+      tags:
+        - academic
+      operationId: activateAcademicYear
+      x-permission: manage_academic_years
+      summary: Activate this year; deactivates every other year for the tenant (transactional, exactly one active)
+      responses:
+        "204":
+          description: Activated
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: The year is archived and cannot be reactivated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/academic/years/{yearId}/archive:
+    parameters:
+      - $ref: "#/components/parameters/YearIdParam"
+    post:
+      tags:
+        - academic
+      operationId: archiveAcademicYear
+      x-permission: manage_academic_years
+      summary: Archive this year (must not be the active year)
+      responses:
+        "204":
+          description: Archived
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/academic/years/{yearId}/terms:
+    parameters:
+      - $ref: "#/components/parameters/YearIdParam"
+    get:
+      tags:
+        - academic
+      operationId: listTerms
+      x-permission: view_academic_data
+      summary: List terms for an academic year
+      responses:
+        "200":
+          description: Terms
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Term"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags:
+        - academic
+      operationId: createTerm
+      x-permission: manage_academic_years
+      summary: Add a term to an academic year
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TermInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Term"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/academic/terms/{termId}:
+    parameters:
+      - name: termId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    put:
+      tags:
+        - academic
+      operationId: updateTerm
+      x-permission: manage_academic_years
+      summary: Update a term
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TermUpdateInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Term"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags:
+        - academic
+      operationId: deleteTerm
+      x-permission: manage_academic_years
+      summary: Delete a term
+      responses:
+        "204":
+          description: Deleted
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/academic/terms/{termId}/activate:
+    parameters:
+      - name: termId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags:
+        - academic
+      operationId: activateTerm
+      x-permission: manage_academic_years
+      summary: Activate this term; deactivates every other term in the same academic year
+      responses:
+        "204":
+          description: Activated
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/academic/years/{yearId}/calendar-events:
+    parameters:
+      - $ref: "#/components/parameters/YearIdParam"
+    get:
+      tags:
+        - academic
+      operationId: listCalendarEvents
+      x-permission: view_academic_data
+      summary: List calendar events for an academic year
+      parameters:
+        - name: kind
+          in: query
+          schema:
+            $ref: "#/components/schemas/CalendarEventKind"
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+      responses:
+        "200":
+          description: Calendar events
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CalendarEventList"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags:
+        - academic
+      operationId: createCalendarEvent
+      x-permission: manage_academic_years
+      summary: Add a calendar event (holiday, exam, event, no_school)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CalendarEventInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CalendarEvent"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/academic/calendar-events/{eventId}:
+    parameters:
+      - name: eventId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    put:
+      tags:
+        - academic
+      operationId: updateCalendarEvent
+      x-permission: manage_academic_years
+      summary: Update a calendar event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CalendarEventInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CalendarEvent"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags:
+        - academic
+      operationId: deleteCalendarEvent
+      x-permission: manage_academic_years
+      summary: Delete a calendar event
+      responses:
+        "204":
+          description: Deleted
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/academic/years/{yearId}/school-days:
+    parameters:
+      - $ref: "#/components/parameters/YearIdParam"
+    get:
+      tags:
+        - academic
+      operationId: listSchoolDays
+      x-permission: view_academic_data
+      summary: List which weekdays are school days for this academic year
+      responses:
+        "200":
+          description: School days
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/SchoolDay"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/academic/years/{yearId}/school-days/{dayOfWeek}:
+    parameters:
+      - $ref: "#/components/parameters/YearIdParam"
+      - $ref: "#/components/parameters/DayOfWeekParam"
+    put:
+      tags:
+        - academic
+      operationId: setSchoolDay
+      x-permission: manage_academic_years
+      summary: Mark one weekday as a school day or not, for this academic year
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - is_active
+              properties:
+                is_active:
+                  type: boolean
+      responses:
+        "204":
+          description: Saved
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/academic/grade-levels:
+    get:
+      tags:
+        - academic
+      operationId: listGradeLevels
+      x-permission: view_academic_data
+      summary: List grade levels
+      responses:
+        "200":
+          description: Grade levels
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/GradeLevel"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags:
+        - academic
+      operationId: createGradeLevel
+      x-permission: manage_master_data
+      summary: Create a grade level
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GradeLevelInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GradeLevel"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/academic/grade-levels/apply-template:
+    post:
+      tags:
+        - academic
+      operationId: applyGradeLevelTemplate
+      x-permission: manage_master_data
+      summary: Create the standard grade levels for an education level (SD 1-6, SMP 7-9, SMA/SMK X-XII); existing codes are
+        skipped
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - template
+              properties:
+                template:
+                  $ref: "#/components/schemas/GradeLevelTemplate"
+      responses:
+        "200":
+          description: Grade levels created (existing codes were skipped, not duplicated)
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/GradeLevel"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/academic/grade-levels/{gradeLevelId}:
+    parameters:
+      - name: gradeLevelId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    put:
+      tags:
+        - academic
+      operationId: updateGradeLevel
+      x-permission: manage_master_data
+      summary: Update a grade level
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GradeLevelInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GradeLevel"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags:
+        - academic
+      operationId: deleteGradeLevel
+      x-permission: manage_master_data
+      summary: Delete a grade level (fails if any class still references it)
+      responses:
+        "204":
+          description: Deleted
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/academic/tracks:
+    get:
+      tags:
+        - academic
+      operationId: listTracks
+      x-permission: view_academic_data
+      summary: List tracks (majors)
+      responses:
+        "200":
+          description: Tracks
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Track"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags:
+        - academic
+      operationId: createTrack
+      x-permission: manage_master_data
+      summary: Create a track
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TrackInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Track"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/academic/tracks/{trackId}:
+    parameters:
+      - name: trackId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    put:
+      tags:
+        - academic
+      operationId: updateTrack
+      x-permission: manage_master_data
+      summary: Update a track
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TrackInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Track"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags:
+        - academic
+      operationId: deleteTrack
+      x-permission: manage_master_data
+      summary: Delete a track (fails if any class still references it)
+      responses:
+        "204":
+          description: Deleted
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/academic/classes:
+    get:
+      tags:
+        - academic
+      operationId: listClasses
+      x-permission: view_academic_data
+      summary: List classes in an academic year
+      parameters:
+        - $ref: "#/components/parameters/YearIdQueryParam"
+        - $ref: "#/components/parameters/SearchParam"
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+        - name: grade_level_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Classes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClassList"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags:
+        - academic
+      operationId: createClass
+      x-permission: manage_master_data
+      summary: Create a class
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClassInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Class"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/academic/classes/{classId}:
+    parameters:
+      - $ref: "#/components/parameters/ClassIdParam"
+    get:
+      tags:
+        - academic
+      operationId: getClass
+      x-permission: view_academic_data
+      summary: Get one class
+      responses:
+        "200":
+          description: Class
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Class"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      tags:
+        - academic
+      operationId: updateClass
+      x-permission: manage_master_data
+      summary: Update a class
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClassInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Class"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    delete:
+      tags:
+        - academic
+      operationId: deleteClass
+      x-permission: manage_master_data
+      summary: Delete a class (fails if it has active enrollments or teaching assignments)
+      responses:
+        "204":
+          description: Deleted
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/academic/classes/{classId}/enrollments:
+    parameters:
+      - $ref: "#/components/parameters/ClassIdParam"
+    get:
+      tags:
+        - academic
+      operationId: listClassEnrollments
+      x-permission: view_academic_data
+      summary: List active enrollments for a class
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+      responses:
+        "200":
+          description: Enrollments
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnrollmentList"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags:
+        - academic
+      operationId: assignStudent
+      x-permission: manage_enrollments
+      summary: Assign one student to this class (must have no active enrollment this year)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssignStudentInput"
+      responses:
+        "201":
+          description: Enrolled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Enrollment"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/academic/classes/{classId}/enrollments/bulk:
+    parameters:
+      - $ref: "#/components/parameters/ClassIdParam"
+    post:
+      tags:
+        - academic
+      operationId: bulkAssignStudents
+      x-permission: manage_enrollments
+      summary: Assign several students to this class; a student who already has an active enrollment this year is skipped, not
+        failed
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BulkAssignInput"
+      responses:
+        "200":
+          description: Assignment result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BulkAssignResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/academic/enrollments/{enrollmentId}/move:
+    parameters:
+      - name: enrollmentId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags:
+        - academic
+      operationId: moveStudent
+      x-permission: manage_enrollments
+      summary: Move the enrolled student to a different class; closes the old enrollment row (moved) and opens a new one,
+        preserving history
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MoveStudentInput"
+      responses:
+        "201":
+          description: New enrollment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Enrollment"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/academic/years/{yearId}/unassigned-students:
+    parameters:
+      - $ref: "#/components/parameters/YearIdParam"
+    get:
+      tags:
+        - academic
+      operationId: listUnassignedStudents
+      x-permission: view_academic_data
+      summary: List students with no active enrollment in this academic year
+      parameters:
+        - $ref: "#/components/parameters/SearchParam"
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+      responses:
+        "200":
+          description: Unassigned students
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudentSummaryList"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/academic/promotion/preview:
+    post:
+      tags:
+        - academic
+      operationId: previewPromotion
+      x-permission: manage_enrollments
+      summary: Compute (without writing) how every actively-enrolled student in from_year_id would promote into to_year_id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PromotionRequest"
+      responses:
+        "200":
+          description: Promotion plan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PromotionPlan"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/academic/promotion/commit:
+    post:
+      tags:
+        - academic
+      operationId: commitPromotion
+      x-permission: manage_enrollments
+      summary: Apply the promotion plan (re-computed server-side from the same inputs); items with no resolvable target class
+        are skipped, not partially applied
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PromotionCommitRequest"
+      responses:
+        "200":
+          description: Promotion result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PromotionCommitResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/academic/enrollments/import/template:
+    get:
+      tags:
+        - academic
+      operationId: downloadEnrollmentImportTemplate
+      x-permission: view_academic_data
+      summary: Download the xlsx template for the class-assignment import
+      responses:
+        "200":
+          description: Workbook
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/academic/enrollments/import/preview:
+    post:
+      tags:
+        - academic
+      operationId: previewEnrollmentImport
+      x-permission: manage_enrollments
+      summary: Parse an uploaded workbook and report what each row would do, matching students by NIS or username, without
+        writing anything
+      parameters:
+        - $ref: "#/components/parameters/YearIdQueryParam"
+      requestBody:
+        required: true
+        content:
+          application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+            schema:
+              type: string
+              format: binary
+      responses:
+        "200":
+          description: Row-by-row preview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportRowResultList"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/academic/enrollments/import/commit:
+    post:
+      tags:
+        - academic
+      operationId: commitEnrollmentImport
+      x-permission: manage_enrollments
+      summary: Re-parse the same workbook and apply every row that isn't an error (assign or move)
+      parameters:
+        - $ref: "#/components/parameters/YearIdQueryParam"
+      requestBody:
+        required: true
+        content:
+          application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+            schema:
+              type: string
+              format: binary
+      responses:
+        "200":
+          description: Row-by-row result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportRowResultList"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/academic/subjects:
+    get:
+      tags:
+        - academic
+      operationId: listSubjects
+      x-permission: view_academic_data
+      summary: List subjects
+      parameters:
+        - $ref: "#/components/parameters/SearchParam"
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+      responses:
+        "200":
+          description: Subjects
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubjectList"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags:
+        - academic
+      operationId: createSubject
+      x-permission: manage_master_data
+      summary: Create a subject
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubjectInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Subject"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/academic/subjects/{subjectId}:
+    parameters:
+      - name: subjectId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    put:
+      tags:
+        - academic
+      operationId: updateSubject
+      x-permission: manage_master_data
+      summary: Update a subject
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubjectInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Subject"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    delete:
+      tags:
+        - academic
+      operationId: deleteSubject
+      x-permission: manage_master_data
+      summary: Delete a subject (fails if it has offerings or teaching assignments)
+      responses:
+        "204":
+          description: Deleted
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/academic/years/{yearId}/subject-offerings:
+    parameters:
+      - $ref: "#/components/parameters/YearIdParam"
+    get:
+      tags:
+        - academic
+      operationId: listSubjectOfferings
+      x-permission: view_academic_data
+      summary: List subject offerings for an academic year
+      responses:
+        "200":
+          description: Subject offerings
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/SubjectOffering"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags:
+        - academic
+      operationId: createSubjectOffering
+      x-permission: manage_master_data
+      summary: Offer a subject for an academic year (optionally scoped to one grade level)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubjectOfferingInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubjectOffering"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/academic/subject-offerings/{offeringId}:
+    parameters:
+      - name: offeringId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    put:
+      tags:
+        - academic
+      operationId: updateSubjectOffering
+      x-permission: manage_master_data
+      summary: Update a subject offering
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubjectOfferingUpdateInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubjectOffering"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags:
+        - academic
+      operationId: deleteSubjectOffering
+      x-permission: manage_master_data
+      summary: Remove a subject offering
+      responses:
+        "204":
+          description: Deleted
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/academic/rooms:
+    get:
+      tags:
+        - academic
+      operationId: listRooms
+      x-permission: view_academic_data
+      summary: List rooms
+      parameters:
+        - $ref: "#/components/parameters/SearchParam"
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+      responses:
+        "200":
+          description: Rooms
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoomList"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags:
+        - academic
+      operationId: createRoom
+      x-permission: manage_master_data
+      summary: Create a room
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoomInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Room"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/academic/rooms/{roomId}:
+    parameters:
+      - name: roomId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    put:
+      tags:
+        - academic
+      operationId: updateRoom
+      x-permission: manage_master_data
+      summary: Update a room
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoomInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Room"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    delete:
+      tags:
+        - academic
+      operationId: deleteRoom
+      x-permission: manage_master_data
+      summary: Delete a room (fails if any class still references it)
+      responses:
+        "204":
+          description: Deleted
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/academic/period-templates:
+    get:
+      tags:
+        - academic
+      operationId: listPeriodTemplates
+      x-permission: view_academic_data
+      summary: List period templates
+      responses:
+        "200":
+          description: Period templates
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/PeriodTemplate"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags:
+        - academic
+      operationId: createPeriodTemplate
+      x-permission: manage_master_data
+      summary: Create a period template
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PeriodTemplateInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PeriodTemplate"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/academic/period-templates/{templateId}:
+    parameters:
+      - $ref: "#/components/parameters/TemplateIdParam"
+    put:
+      tags:
+        - academic
+      operationId: updatePeriodTemplate
+      x-permission: manage_master_data
+      summary: Update a period template
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PeriodTemplateInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PeriodTemplate"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags:
+        - academic
+      operationId: deletePeriodTemplate
+      x-permission: manage_master_data
+      summary: Delete a period template (fails if any weekday still points to it)
+      responses:
+        "204":
+          description: Deleted
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/academic/period-templates/{templateId}/periods:
+    parameters:
+      - $ref: "#/components/parameters/TemplateIdParam"
+    get:
+      tags:
+        - academic
+      operationId: listPeriods
+      x-permission: view_academic_data
+      summary: List periods in a template
+      responses:
+        "200":
+          description: Periods
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Period"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags:
+        - academic
+      operationId: createPeriod
+      x-permission: manage_master_data
+      summary: Add a period to a template
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PeriodInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Period"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/academic/periods/{periodId}:
+    parameters:
+      - name: periodId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    put:
+      tags:
+        - academic
+      operationId: updatePeriod
+      x-permission: manage_master_data
+      summary: Update a period
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PeriodInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Period"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    delete:
+      tags:
+        - academic
+      operationId: deletePeriod
+      x-permission: manage_master_data
+      summary: Delete a period
+      responses:
+        "204":
+          description: Deleted
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/academic/years/{yearId}/weekday-assignments:
+    parameters:
+      - $ref: "#/components/parameters/YearIdParam"
+    get:
+      tags:
+        - academic
+      operationId: listWeekdayAssignments
+      x-permission: view_academic_data
+      summary: List which period template is in effect on each weekday for this academic year
+      responses:
+        "200":
+          description: Weekday assignments
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/WeekdayAssignment"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/academic/years/{yearId}/weekday-assignments/{dayOfWeek}:
+    parameters:
+      - $ref: "#/components/parameters/YearIdParam"
+      - $ref: "#/components/parameters/DayOfWeekParam"
+    put:
+      tags:
+        - academic
+      operationId: setWeekdayAssignment
+      x-permission: manage_master_data
+      summary: Assign the period template in effect on one weekday
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - template_id
+              properties:
+                template_id:
+                  type: string
+                  format: uuid
+      responses:
+        "204":
+          description: Saved
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/academic/periods/today:
+    get:
+      tags:
+        - academic
+      operationId: getPeriodToday
+      x-permission: view_academic_data
+      summary: The period in session right now, in the tenant's timezone, or 404 when none is
+      parameters:
+        - $ref: "#/components/parameters/YearIdQueryParam"
+      responses:
+        "200":
+          description: Current period
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Period"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/academic/teaching-assignments:
+    get:
+      tags:
+        - academic
+      operationId: listTeachingAssignments
+      x-permission: view_academic_data
+      summary: List teaching assignments for an academic year
+      parameters:
+        - $ref: "#/components/parameters/YearIdQueryParam"
+        - name: teacher_user_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: class_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+      responses:
+        "200":
+          description: Teaching assignments
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeachingAssignmentList"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags:
+        - academic
+      operationId: createTeachingAssignment
+      x-permission: manage_teaching_assignments
+      summary: Assign a teacher to teach a subject in a class
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TeachingAssignmentInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeachingAssignment"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/academic/teaching-assignments/sync:
+    post:
+      tags:
+        - academic
+      operationId: syncTeacherAssignments
+      x-permission: manage_teaching_assignments
+      summary: Replace all of a teacher's assignments for an academic year with exactly the given (subject, class) pairs
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SyncTeacherAssignmentsInput"
+      responses:
+        "200":
+          description: The teacher's assignments after the sync
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/TeachingAssignment"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/academic/teaching-assignments/{assignmentId}:
+    parameters:
+      - name: assignmentId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    put:
+      tags:
+        - academic
+      operationId: updateTeachingAssignment
+      x-permission: manage_teaching_assignments
+      summary: Activate or deactivate a teaching assignment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - is_active
+              properties:
+                is_active:
+                  type: boolean
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeachingAssignment"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags:
+        - academic
+      operationId: deleteTeachingAssignment
+      x-permission: manage_teaching_assignments
+      summary: Remove a teaching assignment
+      responses:
+        "204":
+          description: Deleted
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /v1/attendance/me/today:
     get:
       tags:
@@ -1126,6 +2769,12 @@ components:
       scheme: bearer
       bearerFormat: JWT
   responses:
+    Conflict:
+      description: The request conflicts with existing state (duplicate, dependents, or state machine)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
     BadRequest:
       description: Validation failed
       content:
@@ -1166,12 +2815,6 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/Error"
-    Conflict:
-      description: The request conflicts with existing state
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/Error"
   schemas:
     Error:
       type: object
@@ -1207,6 +2850,919 @@ components:
                     type: string
             request_id:
               type: string
+    PageMeta:
+      type: object
+      required:
+        - total
+        - page
+        - page_size
+      properties:
+        total:
+          type: integer
+        page:
+          type: integer
+        page_size:
+          type: integer
+    AcademicYear:
+      type: object
+      required:
+        - id
+        - label
+        - starts_on
+        - ends_on
+        - is_active
+      properties:
+        id:
+          type: string
+          format: uuid
+        label:
+          type: string
+        starts_on:
+          type: string
+          format: date
+        ends_on:
+          type: string
+          format: date
+        is_active:
+          type: boolean
+        archived_at:
+          type: string
+          format: date-time
+    AcademicYearInput:
+      type: object
+      required:
+        - label
+        - starts_on
+        - ends_on
+      properties:
+        label:
+          type: string
+          minLength: 1
+          maxLength: 20
+        starts_on:
+          type: string
+          format: date
+        ends_on:
+          type: string
+          format: date
+    AcademicYearList:
+      type: object
+      required:
+        - data
+        - page
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/AcademicYear"
+        page:
+          $ref: "#/components/schemas/PageMeta"
+    Term:
+      type: object
+      required:
+        - id
+        - academic_year_id
+        - name
+        - sequence
+        - starts_on
+        - ends_on
+        - is_active
+      properties:
+        id:
+          type: string
+          format: uuid
+        academic_year_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        sequence:
+          type: integer
+        starts_on:
+          type: string
+          format: date
+        ends_on:
+          type: string
+          format: date
+        is_active:
+          type: boolean
+    TermInput:
+      type: object
+      required:
+        - name
+        - sequence
+        - starts_on
+        - ends_on
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 50
+        sequence:
+          type: integer
+          minimum: 1
+        starts_on:
+          type: string
+          format: date
+        ends_on:
+          type: string
+          format: date
+    TermUpdateInput:
+      type: object
+      required:
+        - name
+        - starts_on
+        - ends_on
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 50
+        starts_on:
+          type: string
+          format: date
+        ends_on:
+          type: string
+          format: date
+    CalendarEventKind:
+      type: string
+      enum:
+        - holiday
+        - exam
+        - event
+        - no_school
+    CalendarEvent:
+      type: object
+      required:
+        - id
+        - academic_year_id
+        - date
+        - kind
+        - name
+      properties:
+        id:
+          type: string
+          format: uuid
+        academic_year_id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        kind:
+          $ref: "#/components/schemas/CalendarEventKind"
+        name:
+          type: string
+    CalendarEventInput:
+      type: object
+      required:
+        - date
+        - kind
+        - name
+      properties:
+        date:
+          type: string
+          format: date
+        kind:
+          $ref: "#/components/schemas/CalendarEventKind"
+        name:
+          type: string
+          minLength: 1
+          maxLength: 150
+    CalendarEventList:
+      type: object
+      required:
+        - data
+        - page
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/CalendarEvent"
+        page:
+          $ref: "#/components/schemas/PageMeta"
+    SchoolDay:
+      type: object
+      required:
+        - day_of_week
+        - is_active
+      properties:
+        day_of_week:
+          type: integer
+        is_active:
+          type: boolean
+    GradeLevelTemplate:
+      type: string
+      enum:
+        - sd
+        - smp
+        - sma
+        - smk
+    GradeLevel:
+      type: object
+      required:
+        - id
+        - code
+        - name
+        - sequence
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+        sequence:
+          type: integer
+    GradeLevelInput:
+      type: object
+      required:
+        - code
+        - name
+        - sequence
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 20
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        sequence:
+          type: integer
+          minimum: 1
+    Track:
+      type: object
+      required:
+        - id
+        - code
+        - name
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+    TrackInput:
+      type: object
+      required:
+        - code
+        - name
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 20
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+    Class:
+      type: object
+      required:
+        - id
+        - academic_year_id
+        - grade_level_id
+        - name
+      properties:
+        id:
+          type: string
+          format: uuid
+        academic_year_id:
+          type: string
+          format: uuid
+        grade_level_id:
+          type: string
+          format: uuid
+        track_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        room_id:
+          type: string
+          format: uuid
+        capacity:
+          type: integer
+        homeroom_teacher_id:
+          type: string
+          format: uuid
+    ClassInput:
+      type: object
+      required:
+        - academic_year_id
+        - grade_level_id
+        - name
+      properties:
+        academic_year_id:
+          type: string
+          format: uuid
+        grade_level_id:
+          type: string
+          format: uuid
+        track_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        room_id:
+          type: string
+          format: uuid
+        capacity:
+          type: integer
+          minimum: 0
+        homeroom_teacher_id:
+          type: string
+          format: uuid
+    ClassList:
+      type: object
+      required:
+        - data
+        - page
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Class"
+        page:
+          $ref: "#/components/schemas/PageMeta"
+    EnrollmentStatus:
+      type: string
+      enum:
+        - active
+        - moved
+        - graduated
+        - left
+    Enrollment:
+      type: object
+      required:
+        - id
+        - academic_year_id
+        - student_user_id
+        - class_id
+        - status
+        - joined_on
+      properties:
+        id:
+          type: string
+          format: uuid
+        academic_year_id:
+          type: string
+          format: uuid
+        student_user_id:
+          type: string
+          format: uuid
+        class_id:
+          type: string
+          format: uuid
+        status:
+          $ref: "#/components/schemas/EnrollmentStatus"
+        joined_on:
+          type: string
+          format: date
+        left_on:
+          type: string
+          format: date
+    EnrollmentList:
+      type: object
+      required:
+        - data
+        - page
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Enrollment"
+        page:
+          $ref: "#/components/schemas/PageMeta"
+    AssignStudentInput:
+      type: object
+      required:
+        - student_user_id
+        - joined_on
+      properties:
+        student_user_id:
+          type: string
+          format: uuid
+        joined_on:
+          type: string
+          format: date
+    BulkAssignInput:
+      type: object
+      required:
+        - student_user_ids
+        - joined_on
+      properties:
+        student_user_ids:
+          type: array
+          minItems: 1
+          maxItems: 200
+          items:
+            type: string
+            format: uuid
+        joined_on:
+          type: string
+          format: date
+    BulkAssignResult:
+      type: object
+      required:
+        - assigned
+        - skipped
+      properties:
+        assigned:
+          type: array
+          items:
+            $ref: "#/components/schemas/Enrollment"
+        skipped:
+          type: array
+          description: Student IDs that already had an active enrollment this year
+          items:
+            type: string
+            format: uuid
+    MoveStudentInput:
+      type: object
+      required:
+        - to_class_id
+        - effective_on
+      properties:
+        to_class_id:
+          type: string
+          format: uuid
+        effective_on:
+          type: string
+          format: date
+    StudentSummary:
+      type: object
+      required:
+        - id
+        - name
+        - username
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        username:
+          type: string
+    StudentSummaryList:
+      type: object
+      required:
+        - data
+        - page
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/StudentSummary"
+        page:
+          $ref: "#/components/schemas/PageMeta"
+    PromotionAction:
+      type: string
+      enum:
+        - promote
+        - retain
+        - graduate
+    PromotionOverride:
+      type: object
+      required:
+        - student_user_id
+        - action
+      properties:
+        student_user_id:
+          type: string
+          format: uuid
+        action:
+          $ref: "#/components/schemas/PromotionAction"
+        target_class_id:
+          type: string
+          format: uuid
+    PromotionRequest:
+      type: object
+      required:
+        - from_year_id
+        - to_year_id
+      properties:
+        from_year_id:
+          type: string
+          format: uuid
+        to_year_id:
+          type: string
+          format: uuid
+        overrides:
+          type: array
+          items:
+            $ref: "#/components/schemas/PromotionOverride"
+    PromotionCommitRequest:
+      allOf:
+        - $ref: "#/components/schemas/PromotionRequest"
+        - type: object
+          required:
+            - effective_on
+          properties:
+            effective_on:
+              type: string
+              format: date
+    PromotionPlanItem:
+      type: object
+      required:
+        - student_user_id
+        - from_class_id
+        - action
+        - unresolved
+      properties:
+        student_user_id:
+          type: string
+          format: uuid
+        from_class_id:
+          type: string
+          format: uuid
+        action:
+          $ref: "#/components/schemas/PromotionAction"
+        target_class_id:
+          type: string
+          format: uuid
+        unresolved:
+          type: boolean
+          description: True when action is promote/retain but no target class could be resolved
+    PromotionPlan:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/PromotionPlanItem"
+    PromotionCommitResult:
+      type: object
+      required:
+        - applied
+        - skipped
+      properties:
+        applied:
+          type: array
+          items:
+            $ref: "#/components/schemas/PromotionPlanItem"
+        skipped:
+          type: array
+          items:
+            $ref: "#/components/schemas/PromotionPlanItem"
+    ImportRowAction:
+      type: string
+      enum:
+        - assign
+        - move
+        - unchanged
+        - error
+    ImportRowResult:
+      type: object
+      required:
+        - row_number
+        - action
+      properties:
+        row_number:
+          type: integer
+        nis:
+          type: string
+        username:
+          type: string
+        class_name:
+          type: string
+        student_name:
+          type: string
+        action:
+          $ref: "#/components/schemas/ImportRowAction"
+        message:
+          type: string
+    ImportRowResultList:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/ImportRowResult"
+    Subject:
+      type: object
+      required:
+        - id
+        - code
+        - name
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+    SubjectInput:
+      type: object
+      required:
+        - code
+        - name
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 20
+        name:
+          type: string
+          minLength: 1
+          maxLength: 150
+    SubjectList:
+      type: object
+      required:
+        - data
+        - page
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Subject"
+        page:
+          $ref: "#/components/schemas/PageMeta"
+    SubjectOffering:
+      type: object
+      required:
+        - id
+        - academic_year_id
+        - subject_id
+        - hours_per_week
+      properties:
+        id:
+          type: string
+          format: uuid
+        academic_year_id:
+          type: string
+          format: uuid
+        subject_id:
+          type: string
+          format: uuid
+        grade_level_id:
+          type: string
+          format: uuid
+        hours_per_week:
+          type: integer
+    SubjectOfferingInput:
+      type: object
+      required:
+        - subject_id
+        - hours_per_week
+      properties:
+        subject_id:
+          type: string
+          format: uuid
+        grade_level_id:
+          type: string
+          format: uuid
+        hours_per_week:
+          type: integer
+          minimum: 1
+    SubjectOfferingUpdateInput:
+      type: object
+      required:
+        - hours_per_week
+      properties:
+        grade_level_id:
+          type: string
+          format: uuid
+        hours_per_week:
+          type: integer
+          minimum: 1
+    Room:
+      type: object
+      required:
+        - id
+        - code
+        - name
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+        capacity:
+          type: integer
+    RoomInput:
+      type: object
+      required:
+        - code
+        - name
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 20
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        capacity:
+          type: integer
+          minimum: 0
+    RoomList:
+      type: object
+      required:
+        - data
+        - page
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Room"
+        page:
+          $ref: "#/components/schemas/PageMeta"
+    PeriodTemplate:
+      type: object
+      required:
+        - id
+        - name
+        - is_default
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        is_default:
+          type: boolean
+    PeriodTemplateInput:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        is_default:
+          type: boolean
+          default: false
+    Period:
+      type: object
+      required:
+        - id
+        - template_id
+        - name
+        - sequence
+        - starts_at
+        - ends_at
+        - is_break
+      properties:
+        id:
+          type: string
+          format: uuid
+        template_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        sequence:
+          type: integer
+        starts_at:
+          type: string
+          pattern: ^([01]\d|2[0-3]):[0-5]\d$
+          example: 07:00
+        ends_at:
+          type: string
+          pattern: ^([01]\d|2[0-3]):[0-5]\d$
+          example: 07:45
+        is_break:
+          type: boolean
+    PeriodInput:
+      type: object
+      required:
+        - name
+        - sequence
+        - starts_at
+        - ends_at
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 50
+        sequence:
+          type: integer
+          minimum: 1
+        starts_at:
+          type: string
+          pattern: ^([01]\d|2[0-3]):[0-5]\d$
+        ends_at:
+          type: string
+          pattern: ^([01]\d|2[0-3]):[0-5]\d$
+        is_break:
+          type: boolean
+          default: false
+    WeekdayAssignment:
+      type: object
+      required:
+        - day_of_week
+        - template_id
+      properties:
+        day_of_week:
+          type: integer
+        template_id:
+          type: string
+          format: uuid
+    TeachingAssignment:
+      type: object
+      required:
+        - id
+        - academic_year_id
+        - teacher_user_id
+        - subject_id
+        - class_id
+        - is_active
+      properties:
+        id:
+          type: string
+          format: uuid
+        academic_year_id:
+          type: string
+          format: uuid
+        teacher_user_id:
+          type: string
+          format: uuid
+        subject_id:
+          type: string
+          format: uuid
+        class_id:
+          type: string
+          format: uuid
+        is_active:
+          type: boolean
+    TeachingAssignmentInput:
+      type: object
+      required:
+        - academic_year_id
+        - teacher_user_id
+        - subject_id
+        - class_id
+      properties:
+        academic_year_id:
+          type: string
+          format: uuid
+        teacher_user_id:
+          type: string
+          format: uuid
+        subject_id:
+          type: string
+          format: uuid
+        class_id:
+          type: string
+          format: uuid
+    TeachingAssignmentList:
+      type: object
+      required:
+        - data
+        - page
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/TeachingAssignment"
+        page:
+          $ref: "#/components/schemas/PageMeta"
+    SubjectClassPair:
+      type: object
+      required:
+        - subject_id
+        - class_id
+      properties:
+        subject_id:
+          type: string
+          format: uuid
+        class_id:
+          type: string
+          format: uuid
+    SyncTeacherAssignmentsInput:
+      type: object
+      required:
+        - academic_year_id
+        - teacher_user_id
+        - pairs
+      properties:
+        academic_year_id:
+          type: string
+          format: uuid
+        teacher_user_id:
+          type: string
+          format: uuid
+        pairs:
+          type: array
+          items:
+            $ref: "#/components/schemas/SubjectClassPair"
     AttendanceStatusDef:
       type: object
       required:
@@ -2059,6 +4615,64 @@ components:
       schema:
         type: string
         maxLength: 100
+    YearIdParam:
+      name: yearId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    YearIdQueryParam:
+      name: academic_year_id
+      in: query
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ClassIdParam:
+      name: classId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    TemplateIdParam:
+      name: templateId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    DayOfWeekParam:
+      name: dayOfWeek
+      in: path
+      required: true
+      description: ISO-8601 weekday, 1 (Monday) to 7 (Sunday)
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 7
+    SearchParam:
+      name: search
+      in: query
+      schema:
+        type: string
+        maxLength: 150
+    PageParam:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PageSizeParam:
+      name: page_size
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 200
+        default: 20
     MonitorTokenHeader:
       name: X-Monitor-Token
       in: header
