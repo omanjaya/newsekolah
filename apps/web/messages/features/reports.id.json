@@ -16,23 +16,23 @@
     "termPlaceholder": "Pilih semester"
   },
   "kinds": {
-    "attendance.daily": {
+    "attendance_daily": {
       "label": "Presensi harian",
       "description": "Rekap kehadiran siswa satu kelas pada tanggal yang dipilih."
     },
-    "discipline.points": {
+    "discipline_points": {
       "label": "Poin pelanggaran",
       "description": "Rekap poin pelanggaran siswa, per kelas bila dipilih."
     },
-    "discipline.warning_letters": {
+    "discipline_warning_letters": {
       "label": "Surat peringatan",
       "description": "Daftar surat peringatan yang sudah diterbitkan, per kelas bila dipilih."
     },
-    "grading.report_scores": {
+    "grading_report_scores": {
       "label": "Nilai rapor",
       "description": "Rekap nilai rapor siswa untuk satu kelas dan mata pelajaran."
     },
-    "permits.leave_requests": {
+    "permits_leave_requests": {
       "label": "Pengajuan izin",
       "description": "Daftar pengajuan izin siswa, per kelas bila dipilih."
     }

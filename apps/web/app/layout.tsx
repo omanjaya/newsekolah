@@ -46,7 +46,15 @@ export default async function RootLayout({
       <head>
         {/* Sets data-theme before paint from localStorage, so a forced light/dark
             choice never flashes the system theme first (see lib/theme/theme-script.ts). */}
-        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: getThemeBootstrapScript() }} />
+        {/* React never reflects `nonce` onto the client vnode, so the
+            server HTML and the client tree differ on this one attribute.
+            Suppressing the warning here is the documented way to keep a
+            nonce-carrying inline script under a strict CSP. */}
+        <script
+          nonce={nonce}
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{ __html: getThemeBootstrapScript() }}
+        />
       </head>
       <body>
         <NextIntlClientProvider locale={locale} messages={messages}>

@@ -1,4 +1,4 @@
-import { Slot } from "@radix-ui/react-slot";
+import { Slot, Slottable } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 import { Loader2 } from "lucide-react";
 import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
@@ -61,7 +61,10 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
           </span>
         )
       )}
-      {children}
+      {/* Slottable marks the caller's element as the one Slot merges into,
+          so `asChild` still works while the icon and spinner sit beside it.
+          Without it Radix rejects the two top-level children. */}
+      <Slottable>{children}</Slottable>
     </Comp>
   );
 });

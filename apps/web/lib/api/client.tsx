@@ -42,6 +42,7 @@ export function ApiClientProvider({
         credentials: "include",
         clientHeader: "web/0.1.0",
         getAccessToken,
+        onAccessToken: setAccessToken,
         getLocale: () => locale,
         onUnauthorized: () => {
           setAccessToken(null);

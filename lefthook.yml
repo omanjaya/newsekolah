@@ -10,7 +10,7 @@ pre-commit:
     eslint:
       glob: "*.{ts,tsx}"
       exclude: "reference/**"
-      run: pnpm exec eslint {staged_files}
+      run: node scripts/eslint-staged.mjs {staged_files}
 
     gofmt:
       root: "apps/api/"

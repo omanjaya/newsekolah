@@ -40,11 +40,15 @@ export function ReportsView(): ReactElement {
         <ul className="flex flex-col gap-2">
           {items.map((report) => {
             const isSelected = selectedKind === report.kind;
-            const label = t.has(`kinds.${report.kind}.label`)
-              ? t(`kinds.${report.kind}.label`)
+            // Report kinds are dotted slugs ("attendance.daily"), but a
+            // next-intl key cannot contain a dot: it is the namespace
+            // separator. The catalog uses underscores instead.
+            const kindKey = report.kind.replaceAll(".", "_");
+            const label = t.has(`kinds.${kindKey}.label`)
+              ? t(`kinds.${kindKey}.label`)
               : report.kind;
-            const description = t.has(`kinds.${report.kind}.description`)
-              ? t(`kinds.${report.kind}.description`)
+            const description = t.has(`kinds.${kindKey}.description`)
+              ? t(`kinds.${kindKey}.description`)
               : undefined;
             return (
               <li key={report.kind} className="rounded-sm border border-border bg-surface">

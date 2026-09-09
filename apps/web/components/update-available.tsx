@@ -15,6 +15,9 @@ export function UpdateAvailable(): ReactElement | null {
   const [registration, setRegistration] = useState<ServiceWorkerRegistration | null>(null);
 
   useEffect(() => {
+    // Serwist only emits sw.js for production builds, so registering it in
+    // dev just makes the browser log a failed script fetch on every reload.
+    if (process.env.NODE_ENV === "development") return;
     if (!("serviceWorker" in navigator)) return;
 
     let cancelled = false;

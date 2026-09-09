@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
@@ -35,5 +35,17 @@ describe("Button", () => {
   it("has no accessibility violations", async () => {
     const { container } = render(<Button>Simpan presensi</Button>);
     await expectNoAxeViolations(container);
+  });
+
+  it("renders as the child element when asChild is set, keeping the icon slot", () => {
+    render(
+      <Button asChild icon={<span data-testid="icon" />}>
+        <a href="/somewhere">Buka</a>
+      </Button>,
+    );
+
+    const link = screen.getByRole("link", { name: /buka/i });
+    expect(link).toHaveAttribute("href", "/somewhere");
+    expect(within(link).getByTestId("icon")).toBeInTheDocument();
   });
 });

@@ -1,11 +1,10 @@
 "use client";
 
-import { EmptyState } from "@newsekolah/ui";
+import { Button, EmptyState } from "@newsekolah/ui";
 import { Compass } from "lucide-react";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-
-import { LinkButton } from "../components/link-button";
 
 export default function NotFound(): ReactElement {
   const t = useTranslations("app.notFound");
@@ -17,9 +16,9 @@ export default function NotFound(): ReactElement {
         title={t("title")}
         description={t("body")}
         action={
-          <LinkButton href="/dashboard" variant="primary">
-            {t("backHome")}
-          </LinkButton>
+          <Button asChild>
+            <Link href="/dashboard">{t("backHome")}</Link>
+          </Button>
         }
       />
     </div>

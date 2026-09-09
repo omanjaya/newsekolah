@@ -18,6 +18,13 @@ export interface CreateApiClientOptions {
   getAccessToken: () => string | null | Promise<string | null>;
   /** Called once a 401 could not be resolved by a token refresh. */
   onUnauthorized?: () => void;
+  /**
+   * Called with every access token the client obtains by refreshing, so the
+   * app can keep its own in-memory copy in step. Without it the app's
+   * `getAccessToken` keeps returning null after a refresh and every request
+   * pays for its own 401-and-retry.
+   */
+  onAccessToken?: (accessToken: string) => void;
   /** Sent as `X-Tenant` for mobile clients before a session exists; ignored once the host resolves a tenant. */
   tenantSlug?: string;
   /** `"include"` for web (cookie-based refresh), `"omit"` for mobile. Defaults to `"same-origin"`. */
@@ -145,8 +152,11 @@ export function createApiClient(options: CreateApiClientOptions): NewsekolahApiC
   // Single-flight: concurrent 401s share one refresh call instead of each
   // firing its own /v1/auth/refresh request.
   let refreshInFlight: Promise<string | null> | null = null;
+  // The most recent token this client refreshed, used when the app's own
+  // getAccessToken has not caught up yet.
+  let lastRefreshed: string | null = null;
 
-  async function refreshAccessToken(): Promise<string | null> {
+  async function refreshAccessToken(notifyOnFailure = true): Promise<string | null> {
     refreshInFlight ??= (async () => {
       const refreshToken = await tokenStore.getRefreshToken();
       const response = await fetch(`${options.baseUrl}/v1/auth/refresh`, {
@@ -157,7 +167,9 @@ export function createApiClient(options: CreateApiClientOptions): NewsekolahApiC
       });
       if (!response.ok) {
         await tokenStore.clear();
-        options.onUnauthorized?.();
+        if (notifyOnFailure) {
+          options.onUnauthorized?.();
+        }
         return null;
       }
       const data = (await response.json()) as { access_token: string; refresh_token?: string };
@@ -165,6 +177,11 @@ export function createApiClient(options: CreateApiClientOptions): NewsekolahApiC
         accessToken: data.access_token,
         refreshToken: data.refresh_token,
       });
+      // Remember it here too: the web app keeps the access token in a
+      // module variable this package cannot see, so a client that only
+      // wrote to the token store would refresh on every single request.
+      lastRefreshed = data.access_token;
+      options.onAccessToken?.(data.access_token);
       return data.access_token;
     })();
     try {
@@ -174,9 +191,51 @@ export function createApiClient(options: CreateApiClientOptions): NewsekolahApiC
     }
   }
 
+  // A page load starts with no access token in memory: the session lives
+  // only in the refresh cookie (web) or the secure store (mobile). Without
+  // this, every query on the first screen fires unauthenticated, collects a
+  // 401 and retries. One boot refresh up front replaces that burst.
+  // A failure here means "no session yet", not "session lost", so it must
+  // not call onUnauthorized: a public page (document verification) would
+  // otherwise be bounced to the login screen.
+  // Held as a promise rather than a boolean so the second and third request
+  // of a page load wait for the same boot refresh instead of racing past it
+  // with no token and each collecting its own 401.
+  let bootRefresh: Promise<unknown> | null = null;
+
+  async function hasSomethingToRefresh(): Promise<boolean> {
+    // Web keeps the refresh token in an httpOnly cookie this code cannot
+    // read, so the only way to find out is to ask the server. Mobile holds
+    // it in the token store, and with nothing there the call is pointless.
+    if (tokenStore === cookieTokenStore) {
+      return true;
+    }
+    return (await tokenStore.getRefreshToken()) !== null;
+  }
+
+  async function ensureBootRefresh(url: string): Promise<void> {
+    if (url.includes("/v1/auth/")) {
+      return;
+    }
+    bootRefresh ??= (async () => {
+      if (!(await hasSomethingToRefresh())) {
+        return;
+      }
+      await refreshAccessToken(false);
+    })();
+    await bootRefresh;
+  }
+
+  async function currentToken(): Promise<string | null> {
+    return (await options.getAccessToken()) ?? lastRefreshed;
+  }
+
   const middleware: Middleware = {
     async onRequest({ request }) {
-      const token = await options.getAccessToken();
+      if (!(await currentToken())) {
+        await ensureBootRefresh(request.url);
+      }
+      const token = await currentToken();
       if (token) {
         request.headers.set("Authorization", `Bearer ${token}`);
       }

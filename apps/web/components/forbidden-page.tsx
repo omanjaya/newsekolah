@@ -1,11 +1,10 @@
 "use client";
 
-import { EmptyState } from "@newsekolah/ui";
+import { Button, EmptyState } from "@newsekolah/ui";
 import { ShieldAlert } from "lucide-react";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-
-import { LinkButton } from "./link-button";
 
 /** RouteGuard renders this in place (no navigation) when `me` lacks the page's required permission. */
 export function ForbiddenPage(): ReactElement {
@@ -17,7 +16,11 @@ export function ForbiddenPage(): ReactElement {
         icon={<ShieldAlert aria-hidden="true" />}
         title={t("title")}
         description={t("body")}
-        action={<LinkButton href="/dashboard">{t("backHome")}</LinkButton>}
+        action={
+          <Button asChild variant="secondary">
+            <Link href="/dashboard">{t("backHome")}</Link>
+          </Button>
+        }
       />
     </div>
   );

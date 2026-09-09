@@ -16,23 +16,23 @@
     "termPlaceholder": "Select a term"
   },
   "kinds": {
-    "attendance.daily": {
+    "attendance_daily": {
       "label": "Daily attendance",
       "description": "Attendance summary for one class on the selected date."
     },
-    "discipline.points": {
+    "discipline_points": {
       "label": "Discipline points",
       "description": "Discipline point summary, per class if selected."
     },
-    "discipline.warning_letters": {
+    "discipline_warning_letters": {
       "label": "Warning letters",
       "description": "Warning letters issued so far, per class if selected."
     },
-    "grading.report_scores": {
+    "grading_report_scores": {
       "label": "Report card scores",
       "description": "Score summary for one class and subject."
     },
-    "permits.leave_requests": {
+    "permits_leave_requests": {
       "label": "Leave requests",
       "description": "Student leave requests, per class if selected."
     }
