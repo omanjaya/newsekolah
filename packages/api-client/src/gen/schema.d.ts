@@ -2405,6 +2405,419 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/library/policy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Circulation policy (loan days, limits, renewal, fine per day) */
+        get: operations["getLibraryPolicy"];
+        /** Replace the circulation policy (new policy version) */
+        put: operations["updateLibraryPolicy"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/titles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Catalogue search */
+        get: operations["listLibraryTitles"];
+        put?: never;
+        /** Add a title to the catalogue */
+        post: operations["createLibraryTitle"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/titles/{titleId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One title with its copy availability */
+        get: operations["getLibraryTitle"];
+        /** Edit a title's bibliographic details */
+        put: operations["updateLibraryTitle"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/titles/{titleId}/copies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Physical copies of a title, with barcode and condition */
+        get: operations["listLibraryCopies"];
+        put?: never;
+        /** Register a new physical copy under a title */
+        post: operations["createLibraryCopy"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/copies/{copyId}/label": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Printable spine/barcode label for one copy, rendered server-side as a PDF */
+        get: operations["printLibraryCopyLabel"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/members/{userId}/card": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Printable membership card for a member, rendered server-side as a PDF */
+        get: operations["printLibraryMemberCard"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/titles/{titleId}/reservations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A title's reservation queue, in service order */
+        get: operations["listTitleReservationQueue"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/loans/borrow": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Borrow a copy by scanning its barcode at the loan desk */
+        post: operations["borrowLibraryLoan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/loans/{loanId}/return": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Return a copy, computing any overdue fine */
+        post: operations["returnLibraryLoan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/loans/{loanId}/renew": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Renew a loan (refused if overdue, at its renewal limit, or the title has a waiting reservation) */
+        post: operations["renewLibraryLoan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/loans/{loanId}/lost": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Close a loan as lost, charging a replacement cost instead of a per-day fine */
+        post: operations["markLibraryLoanLost"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/loans/overdue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Active loans past their due date */
+        get: operations["listOverdueLibraryLoans"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/members/{userId}/loans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One member's loan history */
+        get: operations["listMemberLoanHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/members/{userId}/reservations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One member's reservations */
+        get: operations["listMemberReservations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/reservations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reserve a title whose copies are all currently out */
+        post: operations["createLibraryReservation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/reservations/{reservationId}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel a waiting or ready reservation */
+        post: operations["cancelLibraryReservation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/stocktakes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Stocktake (opname) sessions */
+        get: operations["listLibraryStocktakes"];
+        put?: never;
+        /** Start a stocktake session */
+        post: operations["startLibraryStocktake"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/stocktakes/{stocktakeId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One stocktake session */
+        get: operations["getLibraryStocktake"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/stocktakes/{stocktakeId}/scans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Record one scanned barcode in an open stocktake session */
+        post: operations["scanLibraryStocktake"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/stocktakes/{stocktakeId}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Close a stocktake session and report missing and unexpected copies */
+        post: operations["closeLibraryStocktake"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/reports/loans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Loans started within a period */
+        get: operations["getLibraryLoansReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/reports/overdue-members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Members with overdue loans and the fine each would carry today */
+        get: operations["getLibraryOverdueMembersReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/reports/most-borrowed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Most-borrowed titles within a period */
+        get: operations["getLibraryMostBorrowedReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/opac/titles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public catalogue search (OPAC), no session required */
+        get: operations["searchOpacTitles"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/notifications": {
         parameters: {
             query?: never;
@@ -4870,6 +5283,158 @@ export interface components {
                 user_id?: string;
                 name?: string;
             };
+        };
+        LibraryPolicy: {
+            version: number;
+            loan_days: number;
+            max_active_loans: number;
+            max_renewals: number;
+            renewal_days: number;
+            fine_per_day: number;
+            reservation_hold_days: number;
+        };
+        LibraryPolicyWrite: {
+            loan_days: number;
+            max_active_loans: number;
+            max_renewals: number;
+            renewal_days: number;
+            fine_per_day: number;
+            reservation_hold_days: number;
+        };
+        LibraryTitle: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            subtitle?: string;
+            author: string;
+            publisher: string;
+            publish_year?: number;
+            isbn: string;
+            classification: string;
+            language: string;
+            /** Format: uuid */
+            cover_asset_id?: string;
+            total_copies: number;
+            available_copies: number;
+        };
+        LibraryTitleWrite: {
+            title: string;
+            subtitle?: string;
+            author?: string;
+            publisher?: string;
+            publish_year?: number;
+            isbn?: string;
+            classification?: string;
+            language?: string;
+            /** Format: uuid */
+            cover_asset_id?: string;
+        };
+        /** @enum {string} */
+        LibraryCopyCondition: "good" | "fair" | "damaged" | "lost";
+        /** @enum {string} */
+        LibraryCopyStatus: "available" | "on_loan" | "reserved" | "withdrawn";
+        LibraryCopy: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            title_id: string;
+            barcode: string;
+            condition: components["schemas"]["LibraryCopyCondition"];
+            status: components["schemas"]["LibraryCopyStatus"];
+            /** Format: date */
+            acquired_on?: string;
+            notes?: string;
+        };
+        LibraryCopyWrite: {
+            barcode: string;
+            condition?: components["schemas"]["LibraryCopyCondition"];
+            /** Format: date */
+            acquired_on?: string;
+            notes?: string;
+        };
+        /** @enum {string} */
+        LibraryLoanStatus: "active" | "returned" | "lost";
+        LibraryLoan: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            copy_id: string;
+            /** Format: uuid */
+            title_id: string;
+            /** Format: uuid */
+            member_user_id: string;
+            /** Format: date-time */
+            borrowed_at: string;
+            /** Format: date */
+            due_on: string;
+            /** Format: date-time */
+            returned_at?: string;
+            renewal_count: number;
+            status: components["schemas"]["LibraryLoanStatus"];
+            fine_amount: number;
+            /** Format: date-time */
+            fine_paid_at?: string;
+        };
+        /** @enum {string} */
+        LibraryReservationStatus: "waiting" | "ready" | "fulfilled" | "cancelled" | "expired";
+        LibraryReservation: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            title_id: string;
+            /** Format: uuid */
+            member_user_id: string;
+            status: components["schemas"]["LibraryReservationStatus"];
+            /** Format: date-time */
+            requested_at: string;
+            /** Format: date-time */
+            ready_at?: string;
+            /** Format: date-time */
+            expires_at?: string;
+            /** @description 1-based queue position, present only while waiting */
+            position?: number;
+        };
+        /** @enum {string} */
+        LibraryStocktakeStatus: "open" | "closed";
+        LibraryStocktake: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            /** Format: date */
+            started_on: string;
+            /** Format: date */
+            ended_on?: string;
+            /** Format: uuid */
+            coordinator_user_id: string;
+            status: components["schemas"]["LibraryStocktakeStatus"];
+            notes?: string;
+        };
+        LibraryStocktakeScan: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            stocktake_id: string;
+            /** Format: uuid */
+            copy_id: string;
+            barcode: string;
+            /** Format: date-time */
+            scanned_at: string;
+        };
+        LibraryStocktakeResult: {
+            expected_count: number;
+            scanned_count: number;
+            missing: components["schemas"]["LibraryCopy"][];
+            unexpected: string[];
+        };
+        LibraryOverdueMember: {
+            /** Format: uuid */
+            member_user_id: string;
+            loan_count: number;
+            total_fine: number;
+        };
+        LibraryMostBorrowedTitle: {
+            title: components["schemas"]["LibraryTitle"];
+            loan_count: number;
         };
         /** @enum {string} */
         NotificationChannel: "inapp" | "push" | "whatsapp" | "email";
@@ -10511,6 +11076,820 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+        };
+    };
+    getLibraryPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Policy */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryPolicy"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    updateLibraryPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LibraryPolicyWrite"];
+            };
+        };
+        responses: {
+            /** @description Policy */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryPolicy"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    listLibraryTitles: {
+        parameters: {
+            query?: {
+                search?: string;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Titles */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["LibraryTitle"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createLibraryTitle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LibraryTitleWrite"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryTitle"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    getLibraryTitle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                titleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Title */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryTitle"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateLibraryTitle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                titleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LibraryTitleWrite"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryTitle"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listLibraryCopies: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                titleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Copies */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["LibraryCopy"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createLibraryCopy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                titleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LibraryCopyWrite"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryCopy"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    printLibraryCopyLabel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                copyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Label PDF */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": string;
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    printLibraryMemberCard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Card PDF */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": string;
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listTitleReservationQueue: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                titleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Queue */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["LibraryReservation"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    borrowLibraryLoan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    barcode: string;
+                    /** Format: uuid */
+                    member_user_id: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Borrowed */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryLoan"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    returnLibraryLoan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                loanId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    condition?: components["schemas"]["LibraryCopyCondition"];
+                };
+            };
+        };
+        responses: {
+            /** @description Returned */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryLoan"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    renewLibraryLoan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                loanId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Renewed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryLoan"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    markLibraryLoanLost: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                loanId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    replacement_cost: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Closed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryLoan"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listOverdueLibraryLoans: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Overdue loans */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["LibraryLoan"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    listMemberLoanHistory: {
+        parameters: {
+            query?: {
+                include_returned?: boolean;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Loans */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["LibraryLoan"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    listMemberReservations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Reservations */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["LibraryReservation"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createLibraryReservation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    title_id: string;
+                    /** Format: uuid */
+                    member_user_id: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Reserved */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryReservation"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    cancelLibraryReservation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reservationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cancelled */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryReservation"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listLibraryStocktakes: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sessions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["LibraryStocktake"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    startLibraryStocktake: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name: string;
+                    notes?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Started */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryStocktake"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    getLibraryStocktake: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                stocktakeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Session */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryStocktake"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    scanLibraryStocktake: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                stocktakeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    barcode: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Scanned */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryStocktakeScan"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    closeLibraryStocktake: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                stocktakeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    notes?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Closed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryStocktakeResult"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getLibraryLoansReport: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Loans */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["LibraryLoan"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    getLibraryOverdueMembersReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Members */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["LibraryOverdueMember"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    getLibraryMostBorrowedReport: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Titles */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["LibraryMostBorrowedTitle"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    searchOpacTitles: {
+        parameters: {
+            query?: {
+                search?: string;
+                limit?: number;
+                offset?: number;
+            };
+            header?: {
+                /** @description Tenant slug for mobile clients before a token exists. Ignored when the host already resolves a tenant or in single-tenant mode. */
+                "X-Tenant"?: components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Titles */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["LibraryTitle"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
         };
     };
     listNotifications: {

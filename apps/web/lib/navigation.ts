@@ -42,6 +42,7 @@ export interface NavItem {
 const GROUP = {
   academic: "nav.academic.label",
   discipline: "nav.discipline.label",
+  library: "nav.library.label",
   permits: "nav.permits.label",
   communication: "nav.communication.label",
   schoolData: "nav.schoolData.label",
@@ -132,6 +133,30 @@ export const navigation: NavItem[] = [
     icon: domainIcons.violation,
     permission: "manage_counseling",
     group: GROUP.discipline,
+  },
+  {
+    key: "library-catalogue",
+    labelKey: "nav.library.items.catalog",
+    href: "/library/catalogue",
+    icon: domainIcons.library,
+    permission: "view_library",
+    group: GROUP.library,
+  },
+  {
+    key: "library-desk",
+    labelKey: "nav.library.items.circulation",
+    href: "/library/desk",
+    icon: domainIcons.library,
+    permission: "manage_library_circulation",
+    group: GROUP.library,
+  },
+  {
+    key: "library-stocktake",
+    labelKey: "nav.library.items.stockOpname",
+    href: "/library/stocktake",
+    icon: domainIcons.library,
+    permission: "manage_library_catalog",
+    group: GROUP.library,
   },
   {
     key: "leave-requests",

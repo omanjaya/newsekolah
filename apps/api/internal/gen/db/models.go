@@ -430,6 +430,103 @@ type LeaveRequest struct {
 	GuardianNameSnapshot pgtype.Text        `json:"guardian_name_snapshot"`
 }
 
+type LibraryCopy struct {
+	ID         uuid.UUID          `json:"id"`
+	TenantID   uuid.UUID          `json:"tenant_id"`
+	TitleID    uuid.UUID          `json:"title_id"`
+	Barcode    string             `json:"barcode"`
+	Condition  string             `json:"condition"`
+	Status     string             `json:"status"`
+	AcquiredOn pgtype.Date        `json:"acquired_on"`
+	Notes      string             `json:"notes"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
+}
+
+type LibraryLoan struct {
+	ID           uuid.UUID          `json:"id"`
+	TenantID     uuid.UUID          `json:"tenant_id"`
+	CopyID       uuid.UUID          `json:"copy_id"`
+	TitleID      uuid.UUID          `json:"title_id"`
+	MemberUserID uuid.UUID          `json:"member_user_id"`
+	CheckedOutBy uuid.UUID          `json:"checked_out_by"`
+	BorrowedAt   pgtype.Timestamptz `json:"borrowed_at"`
+	DueOn        pgtype.Date        `json:"due_on"`
+	ReturnedAt   pgtype.Timestamptz `json:"returned_at"`
+	CheckedInBy  pgtype.UUID        `json:"checked_in_by"`
+	RenewalCount int32              `json:"renewal_count"`
+	Status       string             `json:"status"`
+	FineAmount   int32              `json:"fine_amount"`
+	FinePaidAt   pgtype.Timestamptz `json:"fine_paid_at"`
+	ActiveCopyID pgtype.UUID        `json:"active_copy_id"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+}
+
+type LibraryPolicy struct {
+	TenantID      uuid.UUID          `json:"tenant_id"`
+	Version       int32              `json:"version"`
+	Config        []byte             `json:"config"`
+	EffectiveFrom pgtype.Date        `json:"effective_from"`
+	CreatedBy     pgtype.UUID        `json:"created_by"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+}
+
+type LibraryReservation struct {
+	ID              uuid.UUID          `json:"id"`
+	TenantID        uuid.UUID          `json:"tenant_id"`
+	TitleID         uuid.UUID          `json:"title_id"`
+	MemberUserID    uuid.UUID          `json:"member_user_id"`
+	Status          string             `json:"status"`
+	RequestedAt     pgtype.Timestamptz `json:"requested_at"`
+	ReadyAt         pgtype.Timestamptz `json:"ready_at"`
+	ExpiresAt       pgtype.Timestamptz `json:"expires_at"`
+	FulfilledLoanID pgtype.UUID        `json:"fulfilled_loan_id"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+}
+
+type LibraryStocktake struct {
+	ID                uuid.UUID          `json:"id"`
+	TenantID          uuid.UUID          `json:"tenant_id"`
+	Name              string             `json:"name"`
+	StartedOn         pgtype.Date        `json:"started_on"`
+	EndedOn           pgtype.Date        `json:"ended_on"`
+	CoordinatorUserID uuid.UUID          `json:"coordinator_user_id"`
+	Status            string             `json:"status"`
+	Notes             string             `json:"notes"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt         pgtype.Timestamptz `json:"updated_at"`
+}
+
+type LibraryStocktakeScan struct {
+	ID              uuid.UUID          `json:"id"`
+	TenantID        uuid.UUID          `json:"tenant_id"`
+	StocktakeID     uuid.UUID          `json:"stocktake_id"`
+	CopyID          uuid.UUID          `json:"copy_id"`
+	Barcode         string             `json:"barcode"`
+	ScannedAt       pgtype.Timestamptz `json:"scanned_at"`
+	ScannedByUserID uuid.UUID          `json:"scanned_by_user_id"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+}
+
+type LibraryTitle struct {
+	ID             uuid.UUID          `json:"id"`
+	TenantID       uuid.UUID          `json:"tenant_id"`
+	Title          string             `json:"title"`
+	Subtitle       string             `json:"subtitle"`
+	Author         string             `json:"author"`
+	Publisher      string             `json:"publisher"`
+	PublishYear    pgtype.Int4        `json:"publish_year"`
+	Isbn           string             `json:"isbn"`
+	Classification string             `json:"classification"`
+	Language       string             `json:"language"`
+	CoverAssetID   pgtype.UUID        `json:"cover_asset_id"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+	DeletedAt      pgtype.Timestamptz `json:"deleted_at"`
+}
+
 type LoginAttempt struct {
 	ID         uuid.UUID          `json:"id"`
 	TenantID   uuid.UUID          `json:"tenant_id"`

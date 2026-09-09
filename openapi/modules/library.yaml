@@ -1,0 +1,865 @@
+paths:
+  /v1/library/policy:
+    get:
+      tags: [library]
+      operationId: getLibraryPolicy
+      x-permission: view_library
+      summary: Circulation policy (loan days, limits, renewal, fine per day)
+      responses:
+        "200":
+          description: Policy
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LibraryPolicy" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    put:
+      tags: [library]
+      operationId: updateLibraryPolicy
+      x-permission: manage_library_settings
+      summary: Replace the circulation policy (new policy version)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LibraryPolicyWrite" }
+      responses:
+        "200":
+          description: Policy
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LibraryPolicy" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /v1/library/titles:
+    get:
+      tags: [library]
+      operationId: listLibraryTitles
+      x-permission: view_library
+      summary: Catalogue search
+      parameters:
+        - { name: search, in: query, schema: { type: string, maxLength: 200 } }
+        - {
+            name: limit,
+            in: query,
+            schema: { type: integer, minimum: 1, maximum: 200, default: 50 },
+          }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        "200":
+          description: Titles
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/LibraryTitle" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: [library]
+      operationId: createLibraryTitle
+      x-permission: manage_library_catalog
+      summary: Add a title to the catalogue
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LibraryTitleWrite" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LibraryTitle" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /v1/library/titles/{titleId}:
+    get:
+      tags: [library]
+      operationId: getLibraryTitle
+      x-permission: view_library
+      summary: One title with its copy availability
+      parameters:
+        - { name: titleId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Title
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LibraryTitle" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: [library]
+      operationId: updateLibraryTitle
+      x-permission: manage_library_catalog
+      summary: Edit a title's bibliographic details
+      parameters:
+        - { name: titleId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LibraryTitleWrite" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LibraryTitle" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /v1/library/titles/{titleId}/copies:
+    get:
+      tags: [library]
+      operationId: listLibraryCopies
+      x-permission: view_library
+      summary: Physical copies of a title, with barcode and condition
+      parameters:
+        - { name: titleId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Copies
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/LibraryCopy" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: [library]
+      operationId: createLibraryCopy
+      x-permission: manage_library_catalog
+      summary: Register a new physical copy under a title
+      parameters:
+        - { name: titleId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LibraryCopyWrite" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LibraryCopy" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /v1/library/copies/{copyId}/label:
+    get:
+      tags: [library]
+      operationId: printLibraryCopyLabel
+      x-permission: manage_library_catalog
+      summary: Printable spine/barcode label for one copy, rendered server-side as a PDF
+      parameters:
+        - { name: copyId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Label PDF
+          content:
+            application/pdf:
+              schema: { type: string, format: binary }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /v1/library/members/{userId}/card:
+    get:
+      tags: [library]
+      operationId: printLibraryMemberCard
+      x-permission: manage_library_members
+      summary: Printable membership card for a member, rendered server-side as a PDF
+      parameters:
+        - { name: userId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Card PDF
+          content:
+            application/pdf:
+              schema: { type: string, format: binary }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /v1/library/titles/{titleId}/reservations:
+    get:
+      tags: [library]
+      operationId: listTitleReservationQueue
+      x-permission: view_library
+      summary: A title's reservation queue, in service order
+      parameters:
+        - { name: titleId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Queue
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/LibraryReservation" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /v1/library/loans/borrow:
+    post:
+      tags: [library]
+      operationId: borrowLibraryLoan
+      x-permission: manage_library_circulation
+      summary: Borrow a copy by scanning its barcode at the loan desk
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [barcode, member_user_id]
+              properties:
+                barcode: { type: string, minLength: 1, maxLength: 64 }
+                member_user_id: { type: string, format: uuid }
+      responses:
+        "201":
+          description: Borrowed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LibraryLoan" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /v1/library/loans/{loanId}/return:
+    post:
+      tags: [library]
+      operationId: returnLibraryLoan
+      x-permission: manage_library_circulation
+      summary: Return a copy, computing any overdue fine
+      parameters:
+        - { name: loanId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                condition: { $ref: "#/components/schemas/LibraryCopyCondition" }
+      responses:
+        "200":
+          description: Returned
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LibraryLoan" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /v1/library/loans/{loanId}/renew:
+    post:
+      tags: [library]
+      operationId: renewLibraryLoan
+      x-permission: manage_library_circulation
+      summary: Renew a loan (refused if overdue, at its renewal limit, or the title has a waiting reservation)
+      parameters:
+        - { name: loanId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Renewed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LibraryLoan" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /v1/library/loans/{loanId}/lost:
+    post:
+      tags: [library]
+      operationId: markLibraryLoanLost
+      x-permission: manage_library_circulation
+      summary: Close a loan as lost, charging a replacement cost instead of a per-day fine
+      parameters:
+        - { name: loanId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [replacement_cost]
+              properties:
+                replacement_cost: { type: integer, minimum: 0 }
+      responses:
+        "200":
+          description: Closed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LibraryLoan" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /v1/library/loans/overdue:
+    get:
+      tags: [library]
+      operationId: listOverdueLibraryLoans
+      x-permission: view_library
+      summary: Active loans past their due date
+      responses:
+        "200":
+          description: Overdue loans
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/LibraryLoan" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /v1/library/members/{userId}/loans:
+    get:
+      tags: [library]
+      operationId: listMemberLoanHistory
+      x-permission: view_library
+      summary: One member's loan history
+      parameters:
+        - { name: userId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: include_returned, in: query, schema: { type: boolean, default: true } }
+        - {
+            name: limit,
+            in: query,
+            schema: { type: integer, minimum: 1, maximum: 200, default: 50 },
+          }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        "200":
+          description: Loans
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/LibraryLoan" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /v1/library/members/{userId}/reservations:
+    get:
+      tags: [library]
+      operationId: listMemberReservations
+      x-permission: view_library
+      summary: One member's reservations
+      parameters:
+        - { name: userId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Reservations
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/LibraryReservation" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /v1/library/reservations:
+    post:
+      tags: [library]
+      operationId: createLibraryReservation
+      x-permission: manage_library_circulation
+      summary: Reserve a title whose copies are all currently out
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title_id, member_user_id]
+              properties:
+                title_id: { type: string, format: uuid }
+                member_user_id: { type: string, format: uuid }
+      responses:
+        "201":
+          description: Reserved
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LibraryReservation" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /v1/library/reservations/{reservationId}/cancel:
+    post:
+      tags: [library]
+      operationId: cancelLibraryReservation
+      x-permission: manage_library_circulation
+      summary: Cancel a waiting or ready reservation
+      parameters:
+        - { name: reservationId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Cancelled
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LibraryReservation" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /v1/library/stocktakes:
+    get:
+      tags: [library]
+      operationId: listLibraryStocktakes
+      x-permission: view_library
+      summary: Stocktake (opname) sessions
+      parameters:
+        - {
+            name: limit,
+            in: query,
+            schema: { type: integer, minimum: 1, maximum: 100, default: 20 },
+          }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        "200":
+          description: Sessions
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/LibraryStocktake" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: [library]
+      operationId: startLibraryStocktake
+      x-permission: manage_library_catalog
+      summary: Start a stocktake session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string, minLength: 1, maxLength: 160 }
+                notes: { type: string, maxLength: 500 }
+      responses:
+        "201":
+          description: Started
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LibraryStocktake" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /v1/library/stocktakes/{stocktakeId}:
+    get:
+      tags: [library]
+      operationId: getLibraryStocktake
+      x-permission: view_library
+      summary: One stocktake session
+      parameters:
+        - { name: stocktakeId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Session
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LibraryStocktake" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /v1/library/stocktakes/{stocktakeId}/scans:
+    post:
+      tags: [library]
+      operationId: scanLibraryStocktake
+      x-permission: manage_library_catalog
+      summary: Record one scanned barcode in an open stocktake session
+      parameters:
+        - { name: stocktakeId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [barcode]
+              properties:
+                barcode: { type: string, minLength: 1, maxLength: 64 }
+      responses:
+        "201":
+          description: Scanned
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LibraryStocktakeScan" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /v1/library/stocktakes/{stocktakeId}/close:
+    post:
+      tags: [library]
+      operationId: closeLibraryStocktake
+      x-permission: manage_library_catalog
+      summary: Close a stocktake session and report missing and unexpected copies
+      parameters:
+        - { name: stocktakeId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                notes: { type: string, maxLength: 500 }
+      responses:
+        "200":
+          description: Closed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LibraryStocktakeResult" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /v1/library/reports/loans:
+    get:
+      tags: [library]
+      operationId: getLibraryLoansReport
+      x-permission: view_library_reports
+      summary: Loans started within a period
+      parameters:
+        - { name: from, in: query, required: true, schema: { type: string, format: date } }
+        - { name: to, in: query, required: true, schema: { type: string, format: date } }
+      responses:
+        "200":
+          description: Loans
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/LibraryLoan" } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /v1/library/reports/overdue-members:
+    get:
+      tags: [library]
+      operationId: getLibraryOverdueMembersReport
+      x-permission: view_library_reports
+      summary: Members with overdue loans and the fine each would carry today
+      responses:
+        "200":
+          description: Members
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    { type: array, items: { $ref: "#/components/schemas/LibraryOverdueMember" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /v1/library/reports/most-borrowed:
+    get:
+      tags: [library]
+      operationId: getLibraryMostBorrowedReport
+      x-permission: view_library_reports
+      summary: Most-borrowed titles within a period
+      parameters:
+        - { name: from, in: query, required: true, schema: { type: string, format: date } }
+        - { name: to, in: query, required: true, schema: { type: string, format: date } }
+        - {
+            name: limit,
+            in: query,
+            schema: { type: integer, minimum: 1, maximum: 100, default: 20 },
+          }
+      responses:
+        "200":
+          description: Titles
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    {
+                      type: array,
+                      items: { $ref: "#/components/schemas/LibraryMostBorrowedTitle" },
+                    }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /v1/opac/titles:
+    get:
+      tags: [library]
+      operationId: searchOpacTitles
+      x-public: true
+      security: []
+      summary: Public catalogue search (OPAC), no session required
+      parameters:
+        - $ref: "#/components/parameters/TenantHeader"
+        - { name: search, in: query, schema: { type: string, maxLength: 200 } }
+        - {
+            name: limit,
+            in: query,
+            schema: { type: integer, minimum: 1, maximum: 100, default: 20 },
+          }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        "200":
+          description: Titles
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/LibraryTitle" } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+
+components:
+  schemas:
+    LibraryPolicy:
+      type: object
+      required:
+        [
+          version,
+          loan_days,
+          max_active_loans,
+          max_renewals,
+          renewal_days,
+          fine_per_day,
+          reservation_hold_days,
+        ]
+      properties:
+        version: { type: integer }
+        loan_days: { type: integer }
+        max_active_loans: { type: integer }
+        max_renewals: { type: integer }
+        renewal_days: { type: integer }
+        fine_per_day: { type: integer }
+        reservation_hold_days: { type: integer }
+    LibraryPolicyWrite:
+      type: object
+      required:
+        [
+          loan_days,
+          max_active_loans,
+          max_renewals,
+          renewal_days,
+          fine_per_day,
+          reservation_hold_days,
+        ]
+      properties:
+        loan_days: { type: integer, minimum: 1 }
+        max_active_loans: { type: integer, minimum: 1 }
+        max_renewals: { type: integer, minimum: 0 }
+        renewal_days: { type: integer, minimum: 1 }
+        fine_per_day: { type: integer, minimum: 0 }
+        reservation_hold_days: { type: integer, minimum: 1 }
+
+    LibraryTitle:
+      type: object
+      required:
+        [
+          id,
+          title,
+          author,
+          publisher,
+          isbn,
+          classification,
+          language,
+          total_copies,
+          available_copies,
+        ]
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        subtitle: { type: string }
+        author: { type: string }
+        publisher: { type: string }
+        publish_year: { type: integer }
+        isbn: { type: string }
+        classification: { type: string }
+        language: { type: string }
+        cover_asset_id: { type: string, format: uuid }
+        total_copies: { type: integer }
+        available_copies: { type: integer }
+    LibraryTitleWrite:
+      type: object
+      required: [title]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 300 }
+        subtitle: { type: string, maxLength: 300 }
+        author: { type: string, maxLength: 200 }
+        publisher: { type: string, maxLength: 200 }
+        publish_year: { type: integer, minimum: 1000, maximum: 3000 }
+        isbn: { type: string, maxLength: 32 }
+        classification: { type: string, maxLength: 60 }
+        language: { type: string, maxLength: 10 }
+        cover_asset_id: { type: string, format: uuid }
+
+    LibraryCopyCondition:
+      type: string
+      enum: [good, fair, damaged, lost]
+    LibraryCopyStatus:
+      type: string
+      enum: [available, on_loan, reserved, withdrawn]
+    LibraryCopy:
+      type: object
+      required: [id, title_id, barcode, condition, status]
+      properties:
+        id: { type: string, format: uuid }
+        title_id: { type: string, format: uuid }
+        barcode: { type: string }
+        condition: { $ref: "#/components/schemas/LibraryCopyCondition" }
+        status: { $ref: "#/components/schemas/LibraryCopyStatus" }
+        acquired_on: { type: string, format: date }
+        notes: { type: string }
+    LibraryCopyWrite:
+      type: object
+      required: [barcode]
+      properties:
+        barcode: { type: string, minLength: 1, maxLength: 64 }
+        condition: { $ref: "#/components/schemas/LibraryCopyCondition" }
+        acquired_on: { type: string, format: date }
+        notes: { type: string, maxLength: 500 }
+
+    LibraryLoanStatus:
+      type: string
+      enum: [active, returned, lost]
+    LibraryLoan:
+      type: object
+      required:
+        [
+          id,
+          copy_id,
+          title_id,
+          member_user_id,
+          borrowed_at,
+          due_on,
+          renewal_count,
+          status,
+          fine_amount,
+        ]
+      properties:
+        id: { type: string, format: uuid }
+        copy_id: { type: string, format: uuid }
+        title_id: { type: string, format: uuid }
+        member_user_id: { type: string, format: uuid }
+        borrowed_at: { type: string, format: date-time }
+        due_on: { type: string, format: date }
+        returned_at: { type: string, format: date-time }
+        renewal_count: { type: integer }
+        status: { $ref: "#/components/schemas/LibraryLoanStatus" }
+        fine_amount: { type: integer }
+        fine_paid_at: { type: string, format: date-time }
+
+    LibraryReservationStatus:
+      type: string
+      enum: [waiting, ready, fulfilled, cancelled, expired]
+    LibraryReservation:
+      type: object
+      required: [id, title_id, member_user_id, status, requested_at]
+      properties:
+        id: { type: string, format: uuid }
+        title_id: { type: string, format: uuid }
+        member_user_id: { type: string, format: uuid }
+        status: { $ref: "#/components/schemas/LibraryReservationStatus" }
+        requested_at: { type: string, format: date-time }
+        ready_at: { type: string, format: date-time }
+        expires_at: { type: string, format: date-time }
+        position:
+          { type: integer, description: "1-based queue position, present only while waiting" }
+
+    LibraryStocktakeStatus:
+      type: string
+      enum: [open, closed]
+    LibraryStocktake:
+      type: object
+      required: [id, name, started_on, coordinator_user_id, status]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        started_on: { type: string, format: date }
+        ended_on: { type: string, format: date }
+        coordinator_user_id: { type: string, format: uuid }
+        status: { $ref: "#/components/schemas/LibraryStocktakeStatus" }
+        notes: { type: string }
+    LibraryStocktakeScan:
+      type: object
+      required: [id, stocktake_id, copy_id, barcode, scanned_at]
+      properties:
+        id: { type: string, format: uuid }
+        stocktake_id: { type: string, format: uuid }
+        copy_id: { type: string, format: uuid }
+        barcode: { type: string }
+        scanned_at: { type: string, format: date-time }
+    LibraryStocktakeResult:
+      type: object
+      required: [expected_count, scanned_count, missing, unexpected]
+      properties:
+        expected_count: { type: integer }
+        scanned_count: { type: integer }
+        missing: { type: array, items: { $ref: "#/components/schemas/LibraryCopy" } }
+        unexpected: { type: array, items: { type: string } }
+
+    LibraryOverdueMember:
+      type: object
+      required: [member_user_id, loan_count, total_fine]
+      properties:
+        member_user_id: { type: string, format: uuid }
+        loan_count: { type: integer }
+        total_fine: { type: integer }
+    LibraryMostBorrowedTitle:
+      type: object
+      required: [title, loan_count]
+      properties:
+        title: { $ref: "#/components/schemas/LibraryTitle" }
+        loan_count: { type: integer }

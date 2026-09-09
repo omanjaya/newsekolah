@@ -525,6 +525,120 @@ func (e LevelTemplateSummaryKey) Valid() bool {
 	}
 }
 
+// Defines values for LibraryCopyCondition.
+const (
+	LibraryCopyConditionDamaged LibraryCopyCondition = "damaged"
+	LibraryCopyConditionFair    LibraryCopyCondition = "fair"
+	LibraryCopyConditionGood    LibraryCopyCondition = "good"
+	LibraryCopyConditionLost    LibraryCopyCondition = "lost"
+)
+
+// Valid indicates whether the value is a known member of the LibraryCopyCondition enum.
+func (e LibraryCopyCondition) Valid() bool {
+	switch e {
+	case LibraryCopyConditionDamaged:
+		return true
+	case LibraryCopyConditionFair:
+		return true
+	case LibraryCopyConditionGood:
+		return true
+	case LibraryCopyConditionLost:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LibraryCopyStatus.
+const (
+	Available LibraryCopyStatus = "available"
+	OnLoan    LibraryCopyStatus = "on_loan"
+	Reserved  LibraryCopyStatus = "reserved"
+	Withdrawn LibraryCopyStatus = "withdrawn"
+)
+
+// Valid indicates whether the value is a known member of the LibraryCopyStatus enum.
+func (e LibraryCopyStatus) Valid() bool {
+	switch e {
+	case Available:
+		return true
+	case OnLoan:
+		return true
+	case Reserved:
+		return true
+	case Withdrawn:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LibraryLoanStatus.
+const (
+	LibraryLoanStatusActive   LibraryLoanStatus = "active"
+	LibraryLoanStatusLost     LibraryLoanStatus = "lost"
+	LibraryLoanStatusReturned LibraryLoanStatus = "returned"
+)
+
+// Valid indicates whether the value is a known member of the LibraryLoanStatus enum.
+func (e LibraryLoanStatus) Valid() bool {
+	switch e {
+	case LibraryLoanStatusActive:
+		return true
+	case LibraryLoanStatusLost:
+		return true
+	case LibraryLoanStatusReturned:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LibraryReservationStatus.
+const (
+	LibraryReservationStatusCancelled LibraryReservationStatus = "cancelled"
+	LibraryReservationStatusExpired   LibraryReservationStatus = "expired"
+	LibraryReservationStatusFulfilled LibraryReservationStatus = "fulfilled"
+	LibraryReservationStatusReady     LibraryReservationStatus = "ready"
+	LibraryReservationStatusWaiting   LibraryReservationStatus = "waiting"
+)
+
+// Valid indicates whether the value is a known member of the LibraryReservationStatus enum.
+func (e LibraryReservationStatus) Valid() bool {
+	switch e {
+	case LibraryReservationStatusCancelled:
+		return true
+	case LibraryReservationStatusExpired:
+		return true
+	case LibraryReservationStatusFulfilled:
+		return true
+	case LibraryReservationStatusReady:
+		return true
+	case LibraryReservationStatusWaiting:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LibraryStocktakeStatus.
+const (
+	Closed LibraryStocktakeStatus = "closed"
+	Open   LibraryStocktakeStatus = "open"
+)
+
+// Valid indicates whether the value is a known member of the LibraryStocktakeStatus enum.
+func (e LibraryStocktakeStatus) Valid() bool {
+	switch e {
+	case Closed:
+		return true
+	case Open:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for MeDutiesScopeKind.
 const (
 	MeDutiesScopeKindClass   MeDutiesScopeKind = "class"
@@ -2168,6 +2282,160 @@ type LevelTemplateSummary struct {
 // LevelTemplateSummaryKey defines model for LevelTemplateSummary.Key.
 type LevelTemplateSummaryKey string
 
+// LibraryCopy defines model for LibraryCopy.
+type LibraryCopy struct {
+	AcquiredOn *openapi_types.Date  `json:"acquired_on,omitempty"`
+	Barcode    string               `json:"barcode"`
+	Condition  LibraryCopyCondition `json:"condition"`
+	Id         openapi_types.UUID   `json:"id"`
+	Notes      *string              `json:"notes,omitempty"`
+	Status     LibraryCopyStatus    `json:"status"`
+	TitleId    openapi_types.UUID   `json:"title_id"`
+}
+
+// LibraryCopyCondition defines model for LibraryCopyCondition.
+type LibraryCopyCondition string
+
+// LibraryCopyStatus defines model for LibraryCopyStatus.
+type LibraryCopyStatus string
+
+// LibraryCopyWrite defines model for LibraryCopyWrite.
+type LibraryCopyWrite struct {
+	AcquiredOn *openapi_types.Date   `json:"acquired_on,omitempty"`
+	Barcode    string                `json:"barcode"`
+	Condition  *LibraryCopyCondition `json:"condition,omitempty"`
+	Notes      *string               `json:"notes,omitempty"`
+}
+
+// LibraryLoan defines model for LibraryLoan.
+type LibraryLoan struct {
+	BorrowedAt   time.Time          `json:"borrowed_at"`
+	CopyId       openapi_types.UUID `json:"copy_id"`
+	DueOn        openapi_types.Date `json:"due_on"`
+	FineAmount   int                `json:"fine_amount"`
+	FinePaidAt   *time.Time         `json:"fine_paid_at,omitempty"`
+	Id           openapi_types.UUID `json:"id"`
+	MemberUserId openapi_types.UUID `json:"member_user_id"`
+	RenewalCount int                `json:"renewal_count"`
+	ReturnedAt   *time.Time         `json:"returned_at,omitempty"`
+	Status       LibraryLoanStatus  `json:"status"`
+	TitleId      openapi_types.UUID `json:"title_id"`
+}
+
+// LibraryLoanStatus defines model for LibraryLoanStatus.
+type LibraryLoanStatus string
+
+// LibraryMostBorrowedTitle defines model for LibraryMostBorrowedTitle.
+type LibraryMostBorrowedTitle struct {
+	LoanCount int          `json:"loan_count"`
+	Title     LibraryTitle `json:"title"`
+}
+
+// LibraryOverdueMember defines model for LibraryOverdueMember.
+type LibraryOverdueMember struct {
+	LoanCount    int                `json:"loan_count"`
+	MemberUserId openapi_types.UUID `json:"member_user_id"`
+	TotalFine    int                `json:"total_fine"`
+}
+
+// LibraryPolicy defines model for LibraryPolicy.
+type LibraryPolicy struct {
+	FinePerDay          int `json:"fine_per_day"`
+	LoanDays            int `json:"loan_days"`
+	MaxActiveLoans      int `json:"max_active_loans"`
+	MaxRenewals         int `json:"max_renewals"`
+	RenewalDays         int `json:"renewal_days"`
+	ReservationHoldDays int `json:"reservation_hold_days"`
+	Version             int `json:"version"`
+}
+
+// LibraryPolicyWrite defines model for LibraryPolicyWrite.
+type LibraryPolicyWrite struct {
+	FinePerDay          int `json:"fine_per_day"`
+	LoanDays            int `json:"loan_days"`
+	MaxActiveLoans      int `json:"max_active_loans"`
+	MaxRenewals         int `json:"max_renewals"`
+	RenewalDays         int `json:"renewal_days"`
+	ReservationHoldDays int `json:"reservation_hold_days"`
+}
+
+// LibraryReservation defines model for LibraryReservation.
+type LibraryReservation struct {
+	ExpiresAt    *time.Time         `json:"expires_at,omitempty"`
+	Id           openapi_types.UUID `json:"id"`
+	MemberUserId openapi_types.UUID `json:"member_user_id"`
+
+	// Position 1-based queue position, present only while waiting
+	Position    *int                     `json:"position,omitempty"`
+	ReadyAt     *time.Time               `json:"ready_at,omitempty"`
+	RequestedAt time.Time                `json:"requested_at"`
+	Status      LibraryReservationStatus `json:"status"`
+	TitleId     openapi_types.UUID       `json:"title_id"`
+}
+
+// LibraryReservationStatus defines model for LibraryReservationStatus.
+type LibraryReservationStatus string
+
+// LibraryStocktake defines model for LibraryStocktake.
+type LibraryStocktake struct {
+	CoordinatorUserId openapi_types.UUID     `json:"coordinator_user_id"`
+	EndedOn           *openapi_types.Date    `json:"ended_on,omitempty"`
+	Id                openapi_types.UUID     `json:"id"`
+	Name              string                 `json:"name"`
+	Notes             *string                `json:"notes,omitempty"`
+	StartedOn         openapi_types.Date     `json:"started_on"`
+	Status            LibraryStocktakeStatus `json:"status"`
+}
+
+// LibraryStocktakeResult defines model for LibraryStocktakeResult.
+type LibraryStocktakeResult struct {
+	ExpectedCount int           `json:"expected_count"`
+	Missing       []LibraryCopy `json:"missing"`
+	ScannedCount  int           `json:"scanned_count"`
+	Unexpected    []string      `json:"unexpected"`
+}
+
+// LibraryStocktakeScan defines model for LibraryStocktakeScan.
+type LibraryStocktakeScan struct {
+	Barcode     string             `json:"barcode"`
+	CopyId      openapi_types.UUID `json:"copy_id"`
+	Id          openapi_types.UUID `json:"id"`
+	ScannedAt   time.Time          `json:"scanned_at"`
+	StocktakeId openapi_types.UUID `json:"stocktake_id"`
+}
+
+// LibraryStocktakeStatus defines model for LibraryStocktakeStatus.
+type LibraryStocktakeStatus string
+
+// LibraryTitle defines model for LibraryTitle.
+type LibraryTitle struct {
+	Author          string              `json:"author"`
+	AvailableCopies int                 `json:"available_copies"`
+	Classification  string              `json:"classification"`
+	CoverAssetId    *openapi_types.UUID `json:"cover_asset_id,omitempty"`
+	Id              openapi_types.UUID  `json:"id"`
+	Isbn            string              `json:"isbn"`
+	Language        string              `json:"language"`
+	PublishYear     *int                `json:"publish_year,omitempty"`
+	Publisher       string              `json:"publisher"`
+	Subtitle        *string             `json:"subtitle,omitempty"`
+	Title           string              `json:"title"`
+	TotalCopies     int                 `json:"total_copies"`
+}
+
+// LibraryTitleWrite defines model for LibraryTitleWrite.
+type LibraryTitleWrite struct {
+	Author         *string             `json:"author,omitempty"`
+	Classification *string             `json:"classification,omitempty"`
+	CoverAssetId   *openapi_types.UUID `json:"cover_asset_id,omitempty"`
+	Isbn           *string             `json:"isbn,omitempty"`
+	Language       *string             `json:"language,omitempty"`
+	PublishYear    *int                `json:"publish_year,omitempty"`
+	Publisher      *string             `json:"publisher,omitempty"`
+	Subtitle       *string             `json:"subtitle,omitempty"`
+	Title          string              `json:"title"`
+}
+
 // LinkedChild defines model for LinkedChild.
 type LinkedChild struct {
 	CanApproveLeave bool                `json:"can_approve_leave"`
@@ -3788,6 +4056,77 @@ type ReviewLeaveRequestJSONBody struct {
 	Note    *string `json:"note,omitempty"`
 }
 
+// BorrowLibraryLoanJSONBody defines parameters for BorrowLibraryLoan.
+type BorrowLibraryLoanJSONBody struct {
+	Barcode      string             `json:"barcode"`
+	MemberUserId openapi_types.UUID `json:"member_user_id"`
+}
+
+// MarkLibraryLoanLostJSONBody defines parameters for MarkLibraryLoanLost.
+type MarkLibraryLoanLostJSONBody struct {
+	ReplacementCost int `json:"replacement_cost"`
+}
+
+// ReturnLibraryLoanJSONBody defines parameters for ReturnLibraryLoan.
+type ReturnLibraryLoanJSONBody struct {
+	Condition *LibraryCopyCondition `json:"condition,omitempty"`
+}
+
+// ListMemberLoanHistoryParams defines parameters for ListMemberLoanHistory.
+type ListMemberLoanHistoryParams struct {
+	IncludeReturned *bool `form:"include_returned,omitempty" json:"include_returned,omitempty"`
+	Limit           *int  `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset          *int  `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// GetLibraryLoansReportParams defines parameters for GetLibraryLoansReport.
+type GetLibraryLoansReportParams struct {
+	From openapi_types.Date `form:"from" json:"from"`
+	To   openapi_types.Date `form:"to" json:"to"`
+}
+
+// GetLibraryMostBorrowedReportParams defines parameters for GetLibraryMostBorrowedReport.
+type GetLibraryMostBorrowedReportParams struct {
+	From  openapi_types.Date `form:"from" json:"from"`
+	To    openapi_types.Date `form:"to" json:"to"`
+	Limit *int               `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// CreateLibraryReservationJSONBody defines parameters for CreateLibraryReservation.
+type CreateLibraryReservationJSONBody struct {
+	MemberUserId openapi_types.UUID `json:"member_user_id"`
+	TitleId      openapi_types.UUID `json:"title_id"`
+}
+
+// ListLibraryStocktakesParams defines parameters for ListLibraryStocktakes.
+type ListLibraryStocktakesParams struct {
+	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// StartLibraryStocktakeJSONBody defines parameters for StartLibraryStocktake.
+type StartLibraryStocktakeJSONBody struct {
+	Name  string  `json:"name"`
+	Notes *string `json:"notes,omitempty"`
+}
+
+// CloseLibraryStocktakeJSONBody defines parameters for CloseLibraryStocktake.
+type CloseLibraryStocktakeJSONBody struct {
+	Notes *string `json:"notes,omitempty"`
+}
+
+// ScanLibraryStocktakeJSONBody defines parameters for ScanLibraryStocktake.
+type ScanLibraryStocktakeJSONBody struct {
+	Barcode string `json:"barcode"`
+}
+
+// ListLibraryTitlesParams defines parameters for ListLibraryTitles.
+type ListLibraryTitlesParams struct {
+	Search *string `form:"search,omitempty" json:"search,omitempty"`
+	Limit  *int    `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int    `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
 // ConfirmAvatarUploadJSONBody defines parameters for ConfirmAvatarUpload.
 type ConfirmAvatarUploadJSONBody struct {
 	ObjectKey string `json:"object_key"`
@@ -3832,6 +4171,16 @@ type ListNotificationsParams struct {
 	UnreadOnly *bool   `form:"unread_only,omitempty" json:"unread_only,omitempty"`
 	Cursor     *string `form:"cursor,omitempty" json:"cursor,omitempty"`
 	Limit      *int    `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// SearchOpacTitlesParams defines parameters for SearchOpacTitles.
+type SearchOpacTitlesParams struct {
+	Search *string `form:"search,omitempty" json:"search,omitempty"`
+	Limit  *int    `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int    `form:"offset,omitempty" json:"offset,omitempty"`
+
+	// XTenant Tenant slug for mobile clients before a token exists. Ignored when the host already resolves a tenant or in single-tenant mode.
+	XTenant *TenantHeader `json:"X-Tenant,omitempty"`
 }
 
 // UpdatePlatformTenantDomainJSONBody defines parameters for UpdatePlatformTenantDomain.
@@ -4192,6 +4541,39 @@ type ConfirmLeaveEvidenceJSONRequestBody ConfirmLeaveEvidenceJSONBody
 
 // ReviewLeaveRequestJSONRequestBody defines body for ReviewLeaveRequest for application/json ContentType.
 type ReviewLeaveRequestJSONRequestBody ReviewLeaveRequestJSONBody
+
+// BorrowLibraryLoanJSONRequestBody defines body for BorrowLibraryLoan for application/json ContentType.
+type BorrowLibraryLoanJSONRequestBody BorrowLibraryLoanJSONBody
+
+// MarkLibraryLoanLostJSONRequestBody defines body for MarkLibraryLoanLost for application/json ContentType.
+type MarkLibraryLoanLostJSONRequestBody MarkLibraryLoanLostJSONBody
+
+// ReturnLibraryLoanJSONRequestBody defines body for ReturnLibraryLoan for application/json ContentType.
+type ReturnLibraryLoanJSONRequestBody ReturnLibraryLoanJSONBody
+
+// UpdateLibraryPolicyJSONRequestBody defines body for UpdateLibraryPolicy for application/json ContentType.
+type UpdateLibraryPolicyJSONRequestBody = LibraryPolicyWrite
+
+// CreateLibraryReservationJSONRequestBody defines body for CreateLibraryReservation for application/json ContentType.
+type CreateLibraryReservationJSONRequestBody CreateLibraryReservationJSONBody
+
+// StartLibraryStocktakeJSONRequestBody defines body for StartLibraryStocktake for application/json ContentType.
+type StartLibraryStocktakeJSONRequestBody StartLibraryStocktakeJSONBody
+
+// CloseLibraryStocktakeJSONRequestBody defines body for CloseLibraryStocktake for application/json ContentType.
+type CloseLibraryStocktakeJSONRequestBody CloseLibraryStocktakeJSONBody
+
+// ScanLibraryStocktakeJSONRequestBody defines body for ScanLibraryStocktake for application/json ContentType.
+type ScanLibraryStocktakeJSONRequestBody ScanLibraryStocktakeJSONBody
+
+// CreateLibraryTitleJSONRequestBody defines body for CreateLibraryTitle for application/json ContentType.
+type CreateLibraryTitleJSONRequestBody = LibraryTitleWrite
+
+// UpdateLibraryTitleJSONRequestBody defines body for UpdateLibraryTitle for application/json ContentType.
+type UpdateLibraryTitleJSONRequestBody = LibraryTitleWrite
+
+// CreateLibraryCopyJSONRequestBody defines body for CreateLibraryCopy for application/json ContentType.
+type CreateLibraryCopyJSONRequestBody = LibraryCopyWrite
 
 // ConfirmAvatarUploadJSONRequestBody defines body for ConfirmAvatarUpload for application/json ContentType.
 type ConfirmAvatarUploadJSONRequestBody ConfirmAvatarUploadJSONBody
@@ -4834,6 +5216,90 @@ type ServerInterface interface {
 	// ReviewLeaveRequest Homeroom teacher approves or rejects
 	// (POST /v1/leave-requests/{instanceId}/review)
 	ReviewLeaveRequest(w http.ResponseWriter, r *http.Request, instanceId openapi_types.UUID)
+	// PrintLibraryCopyLabel Printable spine/barcode label for one copy, rendered server-side as a PDF
+	// (GET /v1/library/copies/{copyId}/label)
+	PrintLibraryCopyLabel(w http.ResponseWriter, r *http.Request, copyId openapi_types.UUID)
+	// BorrowLibraryLoan Borrow a copy by scanning its barcode at the loan desk
+	// (POST /v1/library/loans/borrow)
+	BorrowLibraryLoan(w http.ResponseWriter, r *http.Request)
+	// ListOverdueLibraryLoans Active loans past their due date
+	// (GET /v1/library/loans/overdue)
+	ListOverdueLibraryLoans(w http.ResponseWriter, r *http.Request)
+	// MarkLibraryLoanLost Close a loan as lost, charging a replacement cost instead of a per-day fine
+	// (POST /v1/library/loans/{loanId}/lost)
+	MarkLibraryLoanLost(w http.ResponseWriter, r *http.Request, loanId openapi_types.UUID)
+	// RenewLibraryLoan Renew a loan (refused if overdue, at its renewal limit, or the title has a waiting reservation)
+	// (POST /v1/library/loans/{loanId}/renew)
+	RenewLibraryLoan(w http.ResponseWriter, r *http.Request, loanId openapi_types.UUID)
+	// ReturnLibraryLoan Return a copy, computing any overdue fine
+	// (POST /v1/library/loans/{loanId}/return)
+	ReturnLibraryLoan(w http.ResponseWriter, r *http.Request, loanId openapi_types.UUID)
+	// PrintLibraryMemberCard Printable membership card for a member, rendered server-side as a PDF
+	// (GET /v1/library/members/{userId}/card)
+	PrintLibraryMemberCard(w http.ResponseWriter, r *http.Request, userId openapi_types.UUID)
+	// ListMemberLoanHistory One member's loan history
+	// (GET /v1/library/members/{userId}/loans)
+	ListMemberLoanHistory(w http.ResponseWriter, r *http.Request, userId openapi_types.UUID, params ListMemberLoanHistoryParams)
+	// ListMemberReservations One member's reservations
+	// (GET /v1/library/members/{userId}/reservations)
+	ListMemberReservations(w http.ResponseWriter, r *http.Request, userId openapi_types.UUID)
+	// GetLibraryPolicy Circulation policy (loan days, limits, renewal, fine per day)
+	// (GET /v1/library/policy)
+	GetLibraryPolicy(w http.ResponseWriter, r *http.Request)
+	// UpdateLibraryPolicy Replace the circulation policy (new policy version)
+	// (PUT /v1/library/policy)
+	UpdateLibraryPolicy(w http.ResponseWriter, r *http.Request)
+	// GetLibraryLoansReport Loans started within a period
+	// (GET /v1/library/reports/loans)
+	GetLibraryLoansReport(w http.ResponseWriter, r *http.Request, params GetLibraryLoansReportParams)
+	// GetLibraryMostBorrowedReport Most-borrowed titles within a period
+	// (GET /v1/library/reports/most-borrowed)
+	GetLibraryMostBorrowedReport(w http.ResponseWriter, r *http.Request, params GetLibraryMostBorrowedReportParams)
+	// GetLibraryOverdueMembersReport Members with overdue loans and the fine each would carry today
+	// (GET /v1/library/reports/overdue-members)
+	GetLibraryOverdueMembersReport(w http.ResponseWriter, r *http.Request)
+	// CreateLibraryReservation Reserve a title whose copies are all currently out
+	// (POST /v1/library/reservations)
+	CreateLibraryReservation(w http.ResponseWriter, r *http.Request)
+	// CancelLibraryReservation Cancel a waiting or ready reservation
+	// (POST /v1/library/reservations/{reservationId}/cancel)
+	CancelLibraryReservation(w http.ResponseWriter, r *http.Request, reservationId openapi_types.UUID)
+	// ListLibraryStocktakes Stocktake (opname) sessions
+	// (GET /v1/library/stocktakes)
+	ListLibraryStocktakes(w http.ResponseWriter, r *http.Request, params ListLibraryStocktakesParams)
+	// StartLibraryStocktake Start a stocktake session
+	// (POST /v1/library/stocktakes)
+	StartLibraryStocktake(w http.ResponseWriter, r *http.Request)
+	// GetLibraryStocktake One stocktake session
+	// (GET /v1/library/stocktakes/{stocktakeId})
+	GetLibraryStocktake(w http.ResponseWriter, r *http.Request, stocktakeId openapi_types.UUID)
+	// CloseLibraryStocktake Close a stocktake session and report missing and unexpected copies
+	// (POST /v1/library/stocktakes/{stocktakeId}/close)
+	CloseLibraryStocktake(w http.ResponseWriter, r *http.Request, stocktakeId openapi_types.UUID)
+	// ScanLibraryStocktake Record one scanned barcode in an open stocktake session
+	// (POST /v1/library/stocktakes/{stocktakeId}/scans)
+	ScanLibraryStocktake(w http.ResponseWriter, r *http.Request, stocktakeId openapi_types.UUID)
+	// ListLibraryTitles Catalogue search
+	// (GET /v1/library/titles)
+	ListLibraryTitles(w http.ResponseWriter, r *http.Request, params ListLibraryTitlesParams)
+	// CreateLibraryTitle Add a title to the catalogue
+	// (POST /v1/library/titles)
+	CreateLibraryTitle(w http.ResponseWriter, r *http.Request)
+	// GetLibraryTitle One title with its copy availability
+	// (GET /v1/library/titles/{titleId})
+	GetLibraryTitle(w http.ResponseWriter, r *http.Request, titleId openapi_types.UUID)
+	// UpdateLibraryTitle Edit a title's bibliographic details
+	// (PUT /v1/library/titles/{titleId})
+	UpdateLibraryTitle(w http.ResponseWriter, r *http.Request, titleId openapi_types.UUID)
+	// ListLibraryCopies Physical copies of a title, with barcode and condition
+	// (GET /v1/library/titles/{titleId}/copies)
+	ListLibraryCopies(w http.ResponseWriter, r *http.Request, titleId openapi_types.UUID)
+	// CreateLibraryCopy Register a new physical copy under a title
+	// (POST /v1/library/titles/{titleId}/copies)
+	CreateLibraryCopy(w http.ResponseWriter, r *http.Request, titleId openapi_types.UUID)
+	// ListTitleReservationQueue A title's reservation queue, in service order
+	// (GET /v1/library/titles/{titleId}/reservations)
+	ListTitleReservationQueue(w http.ResponseWriter, r *http.Request, titleId openapi_types.UUID)
 	// GetMe Current user, roles, effective permissions, tenant
 	// (GET /v1/me)
 	GetMe(w http.ResponseWriter, r *http.Request)
@@ -4909,6 +5375,9 @@ type ServerInterface interface {
 	// MarkNotificationRead Mark one notification as read
 	// (PUT /v1/notifications/{notificationId}/read)
 	MarkNotificationRead(w http.ResponseWriter, r *http.Request, notificationId openapi_types.UUID)
+	// SearchOpacTitles Public catalogue search (OPAC), no session required
+	// (GET /v1/opac/titles)
+	SearchOpacTitles(w http.ResponseWriter, r *http.Request, params SearchOpacTitlesParams)
 	// ListPermissions Permission catalog grouped by area
 	// (GET /v1/permissions)
 	ListPermissions(w http.ResponseWriter, r *http.Request)
@@ -6193,6 +6662,174 @@ func (_ Unimplemented) ReviewLeaveRequest(w http.ResponseWriter, r *http.Request
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// PrintLibraryCopyLabel Printable spine/barcode label for one copy, rendered server-side as a PDF
+// (GET /v1/library/copies/{copyId}/label)
+func (_ Unimplemented) PrintLibraryCopyLabel(w http.ResponseWriter, r *http.Request, copyId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// BorrowLibraryLoan Borrow a copy by scanning its barcode at the loan desk
+// (POST /v1/library/loans/borrow)
+func (_ Unimplemented) BorrowLibraryLoan(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListOverdueLibraryLoans Active loans past their due date
+// (GET /v1/library/loans/overdue)
+func (_ Unimplemented) ListOverdueLibraryLoans(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// MarkLibraryLoanLost Close a loan as lost, charging a replacement cost instead of a per-day fine
+// (POST /v1/library/loans/{loanId}/lost)
+func (_ Unimplemented) MarkLibraryLoanLost(w http.ResponseWriter, r *http.Request, loanId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// RenewLibraryLoan Renew a loan (refused if overdue, at its renewal limit, or the title has a waiting reservation)
+// (POST /v1/library/loans/{loanId}/renew)
+func (_ Unimplemented) RenewLibraryLoan(w http.ResponseWriter, r *http.Request, loanId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ReturnLibraryLoan Return a copy, computing any overdue fine
+// (POST /v1/library/loans/{loanId}/return)
+func (_ Unimplemented) ReturnLibraryLoan(w http.ResponseWriter, r *http.Request, loanId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// PrintLibraryMemberCard Printable membership card for a member, rendered server-side as a PDF
+// (GET /v1/library/members/{userId}/card)
+func (_ Unimplemented) PrintLibraryMemberCard(w http.ResponseWriter, r *http.Request, userId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListMemberLoanHistory One member's loan history
+// (GET /v1/library/members/{userId}/loans)
+func (_ Unimplemented) ListMemberLoanHistory(w http.ResponseWriter, r *http.Request, userId openapi_types.UUID, params ListMemberLoanHistoryParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListMemberReservations One member's reservations
+// (GET /v1/library/members/{userId}/reservations)
+func (_ Unimplemented) ListMemberReservations(w http.ResponseWriter, r *http.Request, userId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetLibraryPolicy Circulation policy (loan days, limits, renewal, fine per day)
+// (GET /v1/library/policy)
+func (_ Unimplemented) GetLibraryPolicy(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// UpdateLibraryPolicy Replace the circulation policy (new policy version)
+// (PUT /v1/library/policy)
+func (_ Unimplemented) UpdateLibraryPolicy(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetLibraryLoansReport Loans started within a period
+// (GET /v1/library/reports/loans)
+func (_ Unimplemented) GetLibraryLoansReport(w http.ResponseWriter, r *http.Request, params GetLibraryLoansReportParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetLibraryMostBorrowedReport Most-borrowed titles within a period
+// (GET /v1/library/reports/most-borrowed)
+func (_ Unimplemented) GetLibraryMostBorrowedReport(w http.ResponseWriter, r *http.Request, params GetLibraryMostBorrowedReportParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetLibraryOverdueMembersReport Members with overdue loans and the fine each would carry today
+// (GET /v1/library/reports/overdue-members)
+func (_ Unimplemented) GetLibraryOverdueMembersReport(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CreateLibraryReservation Reserve a title whose copies are all currently out
+// (POST /v1/library/reservations)
+func (_ Unimplemented) CreateLibraryReservation(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CancelLibraryReservation Cancel a waiting or ready reservation
+// (POST /v1/library/reservations/{reservationId}/cancel)
+func (_ Unimplemented) CancelLibraryReservation(w http.ResponseWriter, r *http.Request, reservationId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListLibraryStocktakes Stocktake (opname) sessions
+// (GET /v1/library/stocktakes)
+func (_ Unimplemented) ListLibraryStocktakes(w http.ResponseWriter, r *http.Request, params ListLibraryStocktakesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// StartLibraryStocktake Start a stocktake session
+// (POST /v1/library/stocktakes)
+func (_ Unimplemented) StartLibraryStocktake(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetLibraryStocktake One stocktake session
+// (GET /v1/library/stocktakes/{stocktakeId})
+func (_ Unimplemented) GetLibraryStocktake(w http.ResponseWriter, r *http.Request, stocktakeId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CloseLibraryStocktake Close a stocktake session and report missing and unexpected copies
+// (POST /v1/library/stocktakes/{stocktakeId}/close)
+func (_ Unimplemented) CloseLibraryStocktake(w http.ResponseWriter, r *http.Request, stocktakeId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ScanLibraryStocktake Record one scanned barcode in an open stocktake session
+// (POST /v1/library/stocktakes/{stocktakeId}/scans)
+func (_ Unimplemented) ScanLibraryStocktake(w http.ResponseWriter, r *http.Request, stocktakeId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListLibraryTitles Catalogue search
+// (GET /v1/library/titles)
+func (_ Unimplemented) ListLibraryTitles(w http.ResponseWriter, r *http.Request, params ListLibraryTitlesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CreateLibraryTitle Add a title to the catalogue
+// (POST /v1/library/titles)
+func (_ Unimplemented) CreateLibraryTitle(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetLibraryTitle One title with its copy availability
+// (GET /v1/library/titles/{titleId})
+func (_ Unimplemented) GetLibraryTitle(w http.ResponseWriter, r *http.Request, titleId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// UpdateLibraryTitle Edit a title's bibliographic details
+// (PUT /v1/library/titles/{titleId})
+func (_ Unimplemented) UpdateLibraryTitle(w http.ResponseWriter, r *http.Request, titleId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListLibraryCopies Physical copies of a title, with barcode and condition
+// (GET /v1/library/titles/{titleId}/copies)
+func (_ Unimplemented) ListLibraryCopies(w http.ResponseWriter, r *http.Request, titleId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CreateLibraryCopy Register a new physical copy under a title
+// (POST /v1/library/titles/{titleId}/copies)
+func (_ Unimplemented) CreateLibraryCopy(w http.ResponseWriter, r *http.Request, titleId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListTitleReservationQueue A title's reservation queue, in service order
+// (GET /v1/library/titles/{titleId}/reservations)
+func (_ Unimplemented) ListTitleReservationQueue(w http.ResponseWriter, r *http.Request, titleId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // GetMe Current user, roles, effective permissions, tenant
 // (GET /v1/me)
 func (_ Unimplemented) GetMe(w http.ResponseWriter, r *http.Request) {
@@ -6340,6 +6977,12 @@ func (_ Unimplemented) GetUnreadNotificationCount(w http.ResponseWriter, r *http
 // MarkNotificationRead Mark one notification as read
 // (PUT /v1/notifications/{notificationId}/read)
 func (_ Unimplemented) MarkNotificationRead(w http.ResponseWriter, r *http.Request, notificationId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// SearchOpacTitles Public catalogue search (OPAC), no session required
+// (GET /v1/opac/titles)
+func (_ Unimplemented) SearchOpacTitles(w http.ResponseWriter, r *http.Request, params SearchOpacTitlesParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -11882,6 +12525,786 @@ func (siw *ServerInterfaceWrapper) ReviewLeaveRequest(w http.ResponseWriter, r *
 	handler.ServeHTTP(w, r)
 }
 
+// PrintLibraryCopyLabel operation middleware
+func (siw *ServerInterfaceWrapper) PrintLibraryCopyLabel(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "copyId" -------------
+	var copyId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "copyId", chi.URLParam(r, "copyId"), &copyId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "copyId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PrintLibraryCopyLabel(w, r, copyId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// BorrowLibraryLoan operation middleware
+func (siw *ServerInterfaceWrapper) BorrowLibraryLoan(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.BorrowLibraryLoan(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListOverdueLibraryLoans operation middleware
+func (siw *ServerInterfaceWrapper) ListOverdueLibraryLoans(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListOverdueLibraryLoans(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// MarkLibraryLoanLost operation middleware
+func (siw *ServerInterfaceWrapper) MarkLibraryLoanLost(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "loanId" -------------
+	var loanId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "loanId", chi.URLParam(r, "loanId"), &loanId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "loanId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.MarkLibraryLoanLost(w, r, loanId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RenewLibraryLoan operation middleware
+func (siw *ServerInterfaceWrapper) RenewLibraryLoan(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "loanId" -------------
+	var loanId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "loanId", chi.URLParam(r, "loanId"), &loanId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "loanId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RenewLibraryLoan(w, r, loanId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ReturnLibraryLoan operation middleware
+func (siw *ServerInterfaceWrapper) ReturnLibraryLoan(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "loanId" -------------
+	var loanId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "loanId", chi.URLParam(r, "loanId"), &loanId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "loanId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReturnLibraryLoan(w, r, loanId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PrintLibraryMemberCard operation middleware
+func (siw *ServerInterfaceWrapper) PrintLibraryMemberCard(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "userId" -------------
+	var userId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "userId", chi.URLParam(r, "userId"), &userId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "userId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PrintLibraryMemberCard(w, r, userId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListMemberLoanHistory operation middleware
+func (siw *ServerInterfaceWrapper) ListMemberLoanHistory(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "userId" -------------
+	var userId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "userId", chi.URLParam(r, "userId"), &userId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "userId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListMemberLoanHistoryParams
+
+	// ------------- Optional query parameter "include_returned" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "include_returned", r.URL.Query(), &params.IncludeReturned, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "include_returned"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "include_returned", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "offset"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListMemberLoanHistory(w, r, userId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListMemberReservations operation middleware
+func (siw *ServerInterfaceWrapper) ListMemberReservations(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "userId" -------------
+	var userId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "userId", chi.URLParam(r, "userId"), &userId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "userId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListMemberReservations(w, r, userId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetLibraryPolicy operation middleware
+func (siw *ServerInterfaceWrapper) GetLibraryPolicy(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetLibraryPolicy(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateLibraryPolicy operation middleware
+func (siw *ServerInterfaceWrapper) UpdateLibraryPolicy(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateLibraryPolicy(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetLibraryLoansReport operation middleware
+func (siw *ServerInterfaceWrapper) GetLibraryLoansReport(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetLibraryLoansReportParams
+
+	// ------------- Required query parameter "from" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "from", r.URL.Query(), &params.From, runtime.BindQueryParameterOptions{Type: "string", Format: "date"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "from"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "from", Err: err})
+		}
+		return
+	}
+
+	// ------------- Required query parameter "to" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "to", r.URL.Query(), &params.To, runtime.BindQueryParameterOptions{Type: "string", Format: "date"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "to"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "to", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetLibraryLoansReport(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetLibraryMostBorrowedReport operation middleware
+func (siw *ServerInterfaceWrapper) GetLibraryMostBorrowedReport(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetLibraryMostBorrowedReportParams
+
+	// ------------- Required query parameter "from" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "from", r.URL.Query(), &params.From, runtime.BindQueryParameterOptions{Type: "string", Format: "date"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "from"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "from", Err: err})
+		}
+		return
+	}
+
+	// ------------- Required query parameter "to" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "to", r.URL.Query(), &params.To, runtime.BindQueryParameterOptions{Type: "string", Format: "date"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "to"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "to", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetLibraryMostBorrowedReport(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetLibraryOverdueMembersReport operation middleware
+func (siw *ServerInterfaceWrapper) GetLibraryOverdueMembersReport(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetLibraryOverdueMembersReport(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateLibraryReservation operation middleware
+func (siw *ServerInterfaceWrapper) CreateLibraryReservation(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateLibraryReservation(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CancelLibraryReservation operation middleware
+func (siw *ServerInterfaceWrapper) CancelLibraryReservation(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "reservationId" -------------
+	var reservationId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "reservationId", chi.URLParam(r, "reservationId"), &reservationId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "reservationId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CancelLibraryReservation(w, r, reservationId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListLibraryStocktakes operation middleware
+func (siw *ServerInterfaceWrapper) ListLibraryStocktakes(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListLibraryStocktakesParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "offset"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListLibraryStocktakes(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// StartLibraryStocktake operation middleware
+func (siw *ServerInterfaceWrapper) StartLibraryStocktake(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.StartLibraryStocktake(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetLibraryStocktake operation middleware
+func (siw *ServerInterfaceWrapper) GetLibraryStocktake(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "stocktakeId" -------------
+	var stocktakeId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "stocktakeId", chi.URLParam(r, "stocktakeId"), &stocktakeId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "stocktakeId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetLibraryStocktake(w, r, stocktakeId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CloseLibraryStocktake operation middleware
+func (siw *ServerInterfaceWrapper) CloseLibraryStocktake(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "stocktakeId" -------------
+	var stocktakeId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "stocktakeId", chi.URLParam(r, "stocktakeId"), &stocktakeId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "stocktakeId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CloseLibraryStocktake(w, r, stocktakeId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ScanLibraryStocktake operation middleware
+func (siw *ServerInterfaceWrapper) ScanLibraryStocktake(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "stocktakeId" -------------
+	var stocktakeId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "stocktakeId", chi.URLParam(r, "stocktakeId"), &stocktakeId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "stocktakeId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ScanLibraryStocktake(w, r, stocktakeId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListLibraryTitles operation middleware
+func (siw *ServerInterfaceWrapper) ListLibraryTitles(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListLibraryTitlesParams
+
+	// ------------- Optional query parameter "search" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "search", r.URL.Query(), &params.Search, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "search"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "search", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "offset"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListLibraryTitles(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateLibraryTitle operation middleware
+func (siw *ServerInterfaceWrapper) CreateLibraryTitle(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateLibraryTitle(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetLibraryTitle operation middleware
+func (siw *ServerInterfaceWrapper) GetLibraryTitle(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "titleId" -------------
+	var titleId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "titleId", chi.URLParam(r, "titleId"), &titleId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "titleId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetLibraryTitle(w, r, titleId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateLibraryTitle operation middleware
+func (siw *ServerInterfaceWrapper) UpdateLibraryTitle(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "titleId" -------------
+	var titleId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "titleId", chi.URLParam(r, "titleId"), &titleId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "titleId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateLibraryTitle(w, r, titleId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListLibraryCopies operation middleware
+func (siw *ServerInterfaceWrapper) ListLibraryCopies(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "titleId" -------------
+	var titleId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "titleId", chi.URLParam(r, "titleId"), &titleId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "titleId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListLibraryCopies(w, r, titleId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateLibraryCopy operation middleware
+func (siw *ServerInterfaceWrapper) CreateLibraryCopy(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "titleId" -------------
+	var titleId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "titleId", chi.URLParam(r, "titleId"), &titleId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "titleId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateLibraryCopy(w, r, titleId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListTitleReservationQueue operation middleware
+func (siw *ServerInterfaceWrapper) ListTitleReservationQueue(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "titleId" -------------
+	var titleId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "titleId", chi.URLParam(r, "titleId"), &titleId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "titleId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListTitleReservationQueue(w, r, titleId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetMe operation middleware
 func (siw *ServerInterfaceWrapper) GetMe(w http.ResponseWriter, r *http.Request) {
 
@@ -12361,6 +13784,86 @@ func (siw *ServerInterfaceWrapper) MarkNotificationRead(w http.ResponseWriter, r
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.MarkNotificationRead(w, r, notificationId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SearchOpacTitles operation middleware
+func (siw *ServerInterfaceWrapper) SearchOpacTitles(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params SearchOpacTitlesParams
+
+	// ------------- Optional query parameter "search" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "search", r.URL.Query(), &params.Search, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "search"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "search", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "offset"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "X-Tenant" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Tenant")]; found {
+		var XTenant TenantHeader
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Tenant", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Tenant", valueList[0], &XTenant, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Tenant", Err: err})
+			return
+		}
+
+		params.XTenant = &XTenant
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SearchOpacTitles(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -14687,6 +16190,93 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Put(options.BaseURL+"/v1/me/password", wrapper.ChangePassword)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/library/policy", wrapper.GetLibraryPolicy)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/v1/library/policy", wrapper.UpdateLibraryPolicy)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/library/titles", wrapper.ListLibraryTitles)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/library/titles", wrapper.CreateLibraryTitle)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/library/titles/{titleId}", wrapper.GetLibraryTitle)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/v1/library/titles/{titleId}", wrapper.UpdateLibraryTitle)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/library/titles/{titleId}/copies", wrapper.ListLibraryCopies)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/library/titles/{titleId}/copies", wrapper.CreateLibraryCopy)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/library/copies/{copyId}/label", wrapper.PrintLibraryCopyLabel)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/library/members/{userId}/card", wrapper.PrintLibraryMemberCard)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/library/titles/{titleId}/reservations", wrapper.ListTitleReservationQueue)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/library/loans/borrow", wrapper.BorrowLibraryLoan)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/library/loans/{loanId}/return", wrapper.ReturnLibraryLoan)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/library/loans/{loanId}/renew", wrapper.RenewLibraryLoan)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/library/loans/{loanId}/lost", wrapper.MarkLibraryLoanLost)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/library/loans/overdue", wrapper.ListOverdueLibraryLoans)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/library/members/{userId}/loans", wrapper.ListMemberLoanHistory)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/library/members/{userId}/reservations", wrapper.ListMemberReservations)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/library/reservations", wrapper.CreateLibraryReservation)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/library/reservations/{reservationId}/cancel", wrapper.CancelLibraryReservation)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/library/stocktakes", wrapper.ListLibraryStocktakes)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/library/stocktakes", wrapper.StartLibraryStocktake)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/library/stocktakes/{stocktakeId}", wrapper.GetLibraryStocktake)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/library/stocktakes/{stocktakeId}/scans", wrapper.ScanLibraryStocktake)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/library/stocktakes/{stocktakeId}/close", wrapper.CloseLibraryStocktake)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/library/reports/loans", wrapper.GetLibraryLoansReport)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/library/reports/overdue-members", wrapper.GetLibraryOverdueMembersReport)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/library/reports/most-borrowed", wrapper.GetLibraryMostBorrowedReport)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/opac/titles", wrapper.SearchOpacTitles)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/v1/notifications", wrapper.ListNotifications)
@@ -25125,6 +26715,1918 @@ func (response ReviewLeaveRequest409JSONResponse) VisitReviewLeaveRequestRespons
 	return err
 }
 
+type PrintLibraryCopyLabelRequestObject struct {
+	CopyId openapi_types.UUID `json:"copyId"`
+}
+
+type PrintLibraryCopyLabelResponseObject interface {
+	VisitPrintLibraryCopyLabelResponse(w http.ResponseWriter) error
+}
+
+type PrintLibraryCopyLabel200ApplicationpdfResponse struct {
+	Body          io.Reader
+	ContentLength int64
+}
+
+func (response PrintLibraryCopyLabel200ApplicationpdfResponse) VisitPrintLibraryCopyLabelResponse(w http.ResponseWriter) error {
+
+	w.Header().Set("Content-Type", "application/pdf")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type PrintLibraryCopyLabel401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response PrintLibraryCopyLabel401JSONResponse) VisitPrintLibraryCopyLabelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PrintLibraryCopyLabel403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response PrintLibraryCopyLabel403JSONResponse) VisitPrintLibraryCopyLabelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PrintLibraryCopyLabel404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response PrintLibraryCopyLabel404JSONResponse) VisitPrintLibraryCopyLabelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BorrowLibraryLoanRequestObject struct {
+	Body *BorrowLibraryLoanJSONRequestBody
+}
+
+type BorrowLibraryLoanResponseObject interface {
+	VisitBorrowLibraryLoanResponse(w http.ResponseWriter) error
+}
+
+type BorrowLibraryLoan201JSONResponse LibraryLoan
+
+func (response BorrowLibraryLoan201JSONResponse) VisitBorrowLibraryLoanResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BorrowLibraryLoan400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response BorrowLibraryLoan400JSONResponse) VisitBorrowLibraryLoanResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BorrowLibraryLoan401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response BorrowLibraryLoan401JSONResponse) VisitBorrowLibraryLoanResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BorrowLibraryLoan403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response BorrowLibraryLoan403JSONResponse) VisitBorrowLibraryLoanResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BorrowLibraryLoan404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response BorrowLibraryLoan404JSONResponse) VisitBorrowLibraryLoanResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BorrowLibraryLoan409JSONResponse struct{ ConflictJSONResponse }
+
+func (response BorrowLibraryLoan409JSONResponse) VisitBorrowLibraryLoanResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListOverdueLibraryLoansRequestObject struct {
+}
+
+type ListOverdueLibraryLoansResponseObject interface {
+	VisitListOverdueLibraryLoansResponse(w http.ResponseWriter) error
+}
+
+type ListOverdueLibraryLoans200JSONResponse struct {
+	Data []LibraryLoan `json:"data"`
+}
+
+func (response ListOverdueLibraryLoans200JSONResponse) VisitListOverdueLibraryLoansResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListOverdueLibraryLoans401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListOverdueLibraryLoans401JSONResponse) VisitListOverdueLibraryLoansResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListOverdueLibraryLoans403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListOverdueLibraryLoans403JSONResponse) VisitListOverdueLibraryLoansResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type MarkLibraryLoanLostRequestObject struct {
+	LoanId openapi_types.UUID `json:"loanId"`
+	Body   *MarkLibraryLoanLostJSONRequestBody
+}
+
+type MarkLibraryLoanLostResponseObject interface {
+	VisitMarkLibraryLoanLostResponse(w http.ResponseWriter) error
+}
+
+type MarkLibraryLoanLost200JSONResponse LibraryLoan
+
+func (response MarkLibraryLoanLost200JSONResponse) VisitMarkLibraryLoanLostResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type MarkLibraryLoanLost400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response MarkLibraryLoanLost400JSONResponse) VisitMarkLibraryLoanLostResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type MarkLibraryLoanLost401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response MarkLibraryLoanLost401JSONResponse) VisitMarkLibraryLoanLostResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type MarkLibraryLoanLost403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response MarkLibraryLoanLost403JSONResponse) VisitMarkLibraryLoanLostResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type MarkLibraryLoanLost404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response MarkLibraryLoanLost404JSONResponse) VisitMarkLibraryLoanLostResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type MarkLibraryLoanLost409JSONResponse struct{ ConflictJSONResponse }
+
+func (response MarkLibraryLoanLost409JSONResponse) VisitMarkLibraryLoanLostResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RenewLibraryLoanRequestObject struct {
+	LoanId openapi_types.UUID `json:"loanId"`
+}
+
+type RenewLibraryLoanResponseObject interface {
+	VisitRenewLibraryLoanResponse(w http.ResponseWriter) error
+}
+
+type RenewLibraryLoan200JSONResponse LibraryLoan
+
+func (response RenewLibraryLoan200JSONResponse) VisitRenewLibraryLoanResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RenewLibraryLoan401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response RenewLibraryLoan401JSONResponse) VisitRenewLibraryLoanResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RenewLibraryLoan403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response RenewLibraryLoan403JSONResponse) VisitRenewLibraryLoanResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RenewLibraryLoan404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response RenewLibraryLoan404JSONResponse) VisitRenewLibraryLoanResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RenewLibraryLoan409JSONResponse struct{ ConflictJSONResponse }
+
+func (response RenewLibraryLoan409JSONResponse) VisitRenewLibraryLoanResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReturnLibraryLoanRequestObject struct {
+	LoanId openapi_types.UUID `json:"loanId"`
+	Body   *ReturnLibraryLoanJSONRequestBody
+}
+
+type ReturnLibraryLoanResponseObject interface {
+	VisitReturnLibraryLoanResponse(w http.ResponseWriter) error
+}
+
+type ReturnLibraryLoan200JSONResponse LibraryLoan
+
+func (response ReturnLibraryLoan200JSONResponse) VisitReturnLibraryLoanResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReturnLibraryLoan401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ReturnLibraryLoan401JSONResponse) VisitReturnLibraryLoanResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReturnLibraryLoan403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ReturnLibraryLoan403JSONResponse) VisitReturnLibraryLoanResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReturnLibraryLoan404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ReturnLibraryLoan404JSONResponse) VisitReturnLibraryLoanResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReturnLibraryLoan409JSONResponse struct{ ConflictJSONResponse }
+
+func (response ReturnLibraryLoan409JSONResponse) VisitReturnLibraryLoanResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PrintLibraryMemberCardRequestObject struct {
+	UserId openapi_types.UUID `json:"userId"`
+}
+
+type PrintLibraryMemberCardResponseObject interface {
+	VisitPrintLibraryMemberCardResponse(w http.ResponseWriter) error
+}
+
+type PrintLibraryMemberCard200ApplicationpdfResponse struct {
+	Body          io.Reader
+	ContentLength int64
+}
+
+func (response PrintLibraryMemberCard200ApplicationpdfResponse) VisitPrintLibraryMemberCardResponse(w http.ResponseWriter) error {
+
+	w.Header().Set("Content-Type", "application/pdf")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type PrintLibraryMemberCard401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response PrintLibraryMemberCard401JSONResponse) VisitPrintLibraryMemberCardResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PrintLibraryMemberCard403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response PrintLibraryMemberCard403JSONResponse) VisitPrintLibraryMemberCardResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PrintLibraryMemberCard404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response PrintLibraryMemberCard404JSONResponse) VisitPrintLibraryMemberCardResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListMemberLoanHistoryRequestObject struct {
+	UserId openapi_types.UUID `json:"userId"`
+	Params ListMemberLoanHistoryParams
+}
+
+type ListMemberLoanHistoryResponseObject interface {
+	VisitListMemberLoanHistoryResponse(w http.ResponseWriter) error
+}
+
+type ListMemberLoanHistory200JSONResponse struct {
+	Data []LibraryLoan `json:"data"`
+}
+
+func (response ListMemberLoanHistory200JSONResponse) VisitListMemberLoanHistoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListMemberLoanHistory401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListMemberLoanHistory401JSONResponse) VisitListMemberLoanHistoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListMemberLoanHistory403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListMemberLoanHistory403JSONResponse) VisitListMemberLoanHistoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListMemberReservationsRequestObject struct {
+	UserId openapi_types.UUID `json:"userId"`
+}
+
+type ListMemberReservationsResponseObject interface {
+	VisitListMemberReservationsResponse(w http.ResponseWriter) error
+}
+
+type ListMemberReservations200JSONResponse struct {
+	Data []LibraryReservation `json:"data"`
+}
+
+func (response ListMemberReservations200JSONResponse) VisitListMemberReservationsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListMemberReservations401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListMemberReservations401JSONResponse) VisitListMemberReservationsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListMemberReservations403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListMemberReservations403JSONResponse) VisitListMemberReservationsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLibraryPolicyRequestObject struct {
+}
+
+type GetLibraryPolicyResponseObject interface {
+	VisitGetLibraryPolicyResponse(w http.ResponseWriter) error
+}
+
+type GetLibraryPolicy200JSONResponse LibraryPolicy
+
+func (response GetLibraryPolicy200JSONResponse) VisitGetLibraryPolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLibraryPolicy401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetLibraryPolicy401JSONResponse) VisitGetLibraryPolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLibraryPolicy403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetLibraryPolicy403JSONResponse) VisitGetLibraryPolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateLibraryPolicyRequestObject struct {
+	Body *UpdateLibraryPolicyJSONRequestBody
+}
+
+type UpdateLibraryPolicyResponseObject interface {
+	VisitUpdateLibraryPolicyResponse(w http.ResponseWriter) error
+}
+
+type UpdateLibraryPolicy200JSONResponse LibraryPolicy
+
+func (response UpdateLibraryPolicy200JSONResponse) VisitUpdateLibraryPolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateLibraryPolicy400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response UpdateLibraryPolicy400JSONResponse) VisitUpdateLibraryPolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateLibraryPolicy401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response UpdateLibraryPolicy401JSONResponse) VisitUpdateLibraryPolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateLibraryPolicy403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response UpdateLibraryPolicy403JSONResponse) VisitUpdateLibraryPolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLibraryLoansReportRequestObject struct {
+	Params GetLibraryLoansReportParams
+}
+
+type GetLibraryLoansReportResponseObject interface {
+	VisitGetLibraryLoansReportResponse(w http.ResponseWriter) error
+}
+
+type GetLibraryLoansReport200JSONResponse struct {
+	Data []LibraryLoan `json:"data"`
+}
+
+func (response GetLibraryLoansReport200JSONResponse) VisitGetLibraryLoansReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLibraryLoansReport400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetLibraryLoansReport400JSONResponse) VisitGetLibraryLoansReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLibraryLoansReport401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetLibraryLoansReport401JSONResponse) VisitGetLibraryLoansReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLibraryLoansReport403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetLibraryLoansReport403JSONResponse) VisitGetLibraryLoansReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLibraryMostBorrowedReportRequestObject struct {
+	Params GetLibraryMostBorrowedReportParams
+}
+
+type GetLibraryMostBorrowedReportResponseObject interface {
+	VisitGetLibraryMostBorrowedReportResponse(w http.ResponseWriter) error
+}
+
+type GetLibraryMostBorrowedReport200JSONResponse struct {
+	Data []LibraryMostBorrowedTitle `json:"data"`
+}
+
+func (response GetLibraryMostBorrowedReport200JSONResponse) VisitGetLibraryMostBorrowedReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLibraryMostBorrowedReport400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetLibraryMostBorrowedReport400JSONResponse) VisitGetLibraryMostBorrowedReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLibraryMostBorrowedReport401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetLibraryMostBorrowedReport401JSONResponse) VisitGetLibraryMostBorrowedReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLibraryMostBorrowedReport403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetLibraryMostBorrowedReport403JSONResponse) VisitGetLibraryMostBorrowedReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLibraryOverdueMembersReportRequestObject struct {
+}
+
+type GetLibraryOverdueMembersReportResponseObject interface {
+	VisitGetLibraryOverdueMembersReportResponse(w http.ResponseWriter) error
+}
+
+type GetLibraryOverdueMembersReport200JSONResponse struct {
+	Data []LibraryOverdueMember `json:"data"`
+}
+
+func (response GetLibraryOverdueMembersReport200JSONResponse) VisitGetLibraryOverdueMembersReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLibraryOverdueMembersReport401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetLibraryOverdueMembersReport401JSONResponse) VisitGetLibraryOverdueMembersReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLibraryOverdueMembersReport403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetLibraryOverdueMembersReport403JSONResponse) VisitGetLibraryOverdueMembersReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateLibraryReservationRequestObject struct {
+	Body *CreateLibraryReservationJSONRequestBody
+}
+
+type CreateLibraryReservationResponseObject interface {
+	VisitCreateLibraryReservationResponse(w http.ResponseWriter) error
+}
+
+type CreateLibraryReservation201JSONResponse LibraryReservation
+
+func (response CreateLibraryReservation201JSONResponse) VisitCreateLibraryReservationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateLibraryReservation400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CreateLibraryReservation400JSONResponse) VisitCreateLibraryReservationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateLibraryReservation401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateLibraryReservation401JSONResponse) VisitCreateLibraryReservationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateLibraryReservation403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CreateLibraryReservation403JSONResponse) VisitCreateLibraryReservationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateLibraryReservation404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response CreateLibraryReservation404JSONResponse) VisitCreateLibraryReservationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateLibraryReservation409JSONResponse struct{ ConflictJSONResponse }
+
+func (response CreateLibraryReservation409JSONResponse) VisitCreateLibraryReservationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelLibraryReservationRequestObject struct {
+	ReservationId openapi_types.UUID `json:"reservationId"`
+}
+
+type CancelLibraryReservationResponseObject interface {
+	VisitCancelLibraryReservationResponse(w http.ResponseWriter) error
+}
+
+type CancelLibraryReservation200JSONResponse LibraryReservation
+
+func (response CancelLibraryReservation200JSONResponse) VisitCancelLibraryReservationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelLibraryReservation401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CancelLibraryReservation401JSONResponse) VisitCancelLibraryReservationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelLibraryReservation403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CancelLibraryReservation403JSONResponse) VisitCancelLibraryReservationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelLibraryReservation404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response CancelLibraryReservation404JSONResponse) VisitCancelLibraryReservationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelLibraryReservation409JSONResponse struct{ ConflictJSONResponse }
+
+func (response CancelLibraryReservation409JSONResponse) VisitCancelLibraryReservationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListLibraryStocktakesRequestObject struct {
+	Params ListLibraryStocktakesParams
+}
+
+type ListLibraryStocktakesResponseObject interface {
+	VisitListLibraryStocktakesResponse(w http.ResponseWriter) error
+}
+
+type ListLibraryStocktakes200JSONResponse struct {
+	Data []LibraryStocktake `json:"data"`
+}
+
+func (response ListLibraryStocktakes200JSONResponse) VisitListLibraryStocktakesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListLibraryStocktakes401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListLibraryStocktakes401JSONResponse) VisitListLibraryStocktakesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListLibraryStocktakes403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListLibraryStocktakes403JSONResponse) VisitListLibraryStocktakesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartLibraryStocktakeRequestObject struct {
+	Body *StartLibraryStocktakeJSONRequestBody
+}
+
+type StartLibraryStocktakeResponseObject interface {
+	VisitStartLibraryStocktakeResponse(w http.ResponseWriter) error
+}
+
+type StartLibraryStocktake201JSONResponse LibraryStocktake
+
+func (response StartLibraryStocktake201JSONResponse) VisitStartLibraryStocktakeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartLibraryStocktake400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response StartLibraryStocktake400JSONResponse) VisitStartLibraryStocktakeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartLibraryStocktake401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response StartLibraryStocktake401JSONResponse) VisitStartLibraryStocktakeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartLibraryStocktake403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response StartLibraryStocktake403JSONResponse) VisitStartLibraryStocktakeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLibraryStocktakeRequestObject struct {
+	StocktakeId openapi_types.UUID `json:"stocktakeId"`
+}
+
+type GetLibraryStocktakeResponseObject interface {
+	VisitGetLibraryStocktakeResponse(w http.ResponseWriter) error
+}
+
+type GetLibraryStocktake200JSONResponse LibraryStocktake
+
+func (response GetLibraryStocktake200JSONResponse) VisitGetLibraryStocktakeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLibraryStocktake401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetLibraryStocktake401JSONResponse) VisitGetLibraryStocktakeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLibraryStocktake403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetLibraryStocktake403JSONResponse) VisitGetLibraryStocktakeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLibraryStocktake404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetLibraryStocktake404JSONResponse) VisitGetLibraryStocktakeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CloseLibraryStocktakeRequestObject struct {
+	StocktakeId openapi_types.UUID `json:"stocktakeId"`
+	Body        *CloseLibraryStocktakeJSONRequestBody
+}
+
+type CloseLibraryStocktakeResponseObject interface {
+	VisitCloseLibraryStocktakeResponse(w http.ResponseWriter) error
+}
+
+type CloseLibraryStocktake200JSONResponse LibraryStocktakeResult
+
+func (response CloseLibraryStocktake200JSONResponse) VisitCloseLibraryStocktakeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CloseLibraryStocktake401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CloseLibraryStocktake401JSONResponse) VisitCloseLibraryStocktakeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CloseLibraryStocktake403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CloseLibraryStocktake403JSONResponse) VisitCloseLibraryStocktakeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CloseLibraryStocktake404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response CloseLibraryStocktake404JSONResponse) VisitCloseLibraryStocktakeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CloseLibraryStocktake409JSONResponse struct{ ConflictJSONResponse }
+
+func (response CloseLibraryStocktake409JSONResponse) VisitCloseLibraryStocktakeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ScanLibraryStocktakeRequestObject struct {
+	StocktakeId openapi_types.UUID `json:"stocktakeId"`
+	Body        *ScanLibraryStocktakeJSONRequestBody
+}
+
+type ScanLibraryStocktakeResponseObject interface {
+	VisitScanLibraryStocktakeResponse(w http.ResponseWriter) error
+}
+
+type ScanLibraryStocktake201JSONResponse LibraryStocktakeScan
+
+func (response ScanLibraryStocktake201JSONResponse) VisitScanLibraryStocktakeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ScanLibraryStocktake400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ScanLibraryStocktake400JSONResponse) VisitScanLibraryStocktakeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ScanLibraryStocktake401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ScanLibraryStocktake401JSONResponse) VisitScanLibraryStocktakeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ScanLibraryStocktake403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ScanLibraryStocktake403JSONResponse) VisitScanLibraryStocktakeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ScanLibraryStocktake404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ScanLibraryStocktake404JSONResponse) VisitScanLibraryStocktakeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ScanLibraryStocktake409JSONResponse struct{ ConflictJSONResponse }
+
+func (response ScanLibraryStocktake409JSONResponse) VisitScanLibraryStocktakeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListLibraryTitlesRequestObject struct {
+	Params ListLibraryTitlesParams
+}
+
+type ListLibraryTitlesResponseObject interface {
+	VisitListLibraryTitlesResponse(w http.ResponseWriter) error
+}
+
+type ListLibraryTitles200JSONResponse struct {
+	Data []LibraryTitle `json:"data"`
+}
+
+func (response ListLibraryTitles200JSONResponse) VisitListLibraryTitlesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListLibraryTitles401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListLibraryTitles401JSONResponse) VisitListLibraryTitlesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListLibraryTitles403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListLibraryTitles403JSONResponse) VisitListLibraryTitlesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateLibraryTitleRequestObject struct {
+	Body *CreateLibraryTitleJSONRequestBody
+}
+
+type CreateLibraryTitleResponseObject interface {
+	VisitCreateLibraryTitleResponse(w http.ResponseWriter) error
+}
+
+type CreateLibraryTitle201JSONResponse LibraryTitle
+
+func (response CreateLibraryTitle201JSONResponse) VisitCreateLibraryTitleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateLibraryTitle400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CreateLibraryTitle400JSONResponse) VisitCreateLibraryTitleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateLibraryTitle401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateLibraryTitle401JSONResponse) VisitCreateLibraryTitleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateLibraryTitle403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CreateLibraryTitle403JSONResponse) VisitCreateLibraryTitleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLibraryTitleRequestObject struct {
+	TitleId openapi_types.UUID `json:"titleId"`
+}
+
+type GetLibraryTitleResponseObject interface {
+	VisitGetLibraryTitleResponse(w http.ResponseWriter) error
+}
+
+type GetLibraryTitle200JSONResponse LibraryTitle
+
+func (response GetLibraryTitle200JSONResponse) VisitGetLibraryTitleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLibraryTitle401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetLibraryTitle401JSONResponse) VisitGetLibraryTitleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLibraryTitle403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetLibraryTitle403JSONResponse) VisitGetLibraryTitleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetLibraryTitle404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetLibraryTitle404JSONResponse) VisitGetLibraryTitleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateLibraryTitleRequestObject struct {
+	TitleId openapi_types.UUID `json:"titleId"`
+	Body    *UpdateLibraryTitleJSONRequestBody
+}
+
+type UpdateLibraryTitleResponseObject interface {
+	VisitUpdateLibraryTitleResponse(w http.ResponseWriter) error
+}
+
+type UpdateLibraryTitle200JSONResponse LibraryTitle
+
+func (response UpdateLibraryTitle200JSONResponse) VisitUpdateLibraryTitleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateLibraryTitle400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response UpdateLibraryTitle400JSONResponse) VisitUpdateLibraryTitleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateLibraryTitle401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response UpdateLibraryTitle401JSONResponse) VisitUpdateLibraryTitleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateLibraryTitle403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response UpdateLibraryTitle403JSONResponse) VisitUpdateLibraryTitleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateLibraryTitle404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response UpdateLibraryTitle404JSONResponse) VisitUpdateLibraryTitleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListLibraryCopiesRequestObject struct {
+	TitleId openapi_types.UUID `json:"titleId"`
+}
+
+type ListLibraryCopiesResponseObject interface {
+	VisitListLibraryCopiesResponse(w http.ResponseWriter) error
+}
+
+type ListLibraryCopies200JSONResponse struct {
+	Data []LibraryCopy `json:"data"`
+}
+
+func (response ListLibraryCopies200JSONResponse) VisitListLibraryCopiesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListLibraryCopies401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListLibraryCopies401JSONResponse) VisitListLibraryCopiesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListLibraryCopies403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListLibraryCopies403JSONResponse) VisitListLibraryCopiesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateLibraryCopyRequestObject struct {
+	TitleId openapi_types.UUID `json:"titleId"`
+	Body    *CreateLibraryCopyJSONRequestBody
+}
+
+type CreateLibraryCopyResponseObject interface {
+	VisitCreateLibraryCopyResponse(w http.ResponseWriter) error
+}
+
+type CreateLibraryCopy201JSONResponse LibraryCopy
+
+func (response CreateLibraryCopy201JSONResponse) VisitCreateLibraryCopyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateLibraryCopy400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CreateLibraryCopy400JSONResponse) VisitCreateLibraryCopyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateLibraryCopy401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateLibraryCopy401JSONResponse) VisitCreateLibraryCopyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateLibraryCopy403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CreateLibraryCopy403JSONResponse) VisitCreateLibraryCopyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateLibraryCopy404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response CreateLibraryCopy404JSONResponse) VisitCreateLibraryCopyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateLibraryCopy409JSONResponse struct{ ConflictJSONResponse }
+
+func (response CreateLibraryCopy409JSONResponse) VisitCreateLibraryCopyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListTitleReservationQueueRequestObject struct {
+	TitleId openapi_types.UUID `json:"titleId"`
+}
+
+type ListTitleReservationQueueResponseObject interface {
+	VisitListTitleReservationQueueResponse(w http.ResponseWriter) error
+}
+
+type ListTitleReservationQueue200JSONResponse struct {
+	Data []LibraryReservation `json:"data"`
+}
+
+func (response ListTitleReservationQueue200JSONResponse) VisitListTitleReservationQueueResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListTitleReservationQueue401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListTitleReservationQueue401JSONResponse) VisitListTitleReservationQueueResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListTitleReservationQueue403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListTitleReservationQueue403JSONResponse) VisitListTitleReservationQueueResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetMeRequestObject struct {
 }
 
@@ -26178,6 +29680,44 @@ func (response MarkNotificationRead404JSONResponse) VisitMarkNotificationReadRes
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SearchOpacTitlesRequestObject struct {
+	Params SearchOpacTitlesParams
+}
+
+type SearchOpacTitlesResponseObject interface {
+	VisitSearchOpacTitlesResponse(w http.ResponseWriter) error
+}
+
+type SearchOpacTitles200JSONResponse struct {
+	Data []LibraryTitle `json:"data"`
+}
+
+func (response SearchOpacTitles200JSONResponse) VisitSearchOpacTitlesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SearchOpacTitles400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response SearchOpacTitles400JSONResponse) VisitSearchOpacTitlesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -30781,6 +34321,90 @@ type StrictServerInterface interface {
 	// ReviewLeaveRequest Homeroom teacher approves or rejects
 	// (POST /v1/leave-requests/{instanceId}/review)
 	ReviewLeaveRequest(ctx context.Context, request ReviewLeaveRequestRequestObject) (ReviewLeaveRequestResponseObject, error)
+	// PrintLibraryCopyLabel Printable spine/barcode label for one copy, rendered server-side as a PDF
+	// (GET /v1/library/copies/{copyId}/label)
+	PrintLibraryCopyLabel(ctx context.Context, request PrintLibraryCopyLabelRequestObject) (PrintLibraryCopyLabelResponseObject, error)
+	// BorrowLibraryLoan Borrow a copy by scanning its barcode at the loan desk
+	// (POST /v1/library/loans/borrow)
+	BorrowLibraryLoan(ctx context.Context, request BorrowLibraryLoanRequestObject) (BorrowLibraryLoanResponseObject, error)
+	// ListOverdueLibraryLoans Active loans past their due date
+	// (GET /v1/library/loans/overdue)
+	ListOverdueLibraryLoans(ctx context.Context, request ListOverdueLibraryLoansRequestObject) (ListOverdueLibraryLoansResponseObject, error)
+	// MarkLibraryLoanLost Close a loan as lost, charging a replacement cost instead of a per-day fine
+	// (POST /v1/library/loans/{loanId}/lost)
+	MarkLibraryLoanLost(ctx context.Context, request MarkLibraryLoanLostRequestObject) (MarkLibraryLoanLostResponseObject, error)
+	// RenewLibraryLoan Renew a loan (refused if overdue, at its renewal limit, or the title has a waiting reservation)
+	// (POST /v1/library/loans/{loanId}/renew)
+	RenewLibraryLoan(ctx context.Context, request RenewLibraryLoanRequestObject) (RenewLibraryLoanResponseObject, error)
+	// ReturnLibraryLoan Return a copy, computing any overdue fine
+	// (POST /v1/library/loans/{loanId}/return)
+	ReturnLibraryLoan(ctx context.Context, request ReturnLibraryLoanRequestObject) (ReturnLibraryLoanResponseObject, error)
+	// PrintLibraryMemberCard Printable membership card for a member, rendered server-side as a PDF
+	// (GET /v1/library/members/{userId}/card)
+	PrintLibraryMemberCard(ctx context.Context, request PrintLibraryMemberCardRequestObject) (PrintLibraryMemberCardResponseObject, error)
+	// ListMemberLoanHistory One member's loan history
+	// (GET /v1/library/members/{userId}/loans)
+	ListMemberLoanHistory(ctx context.Context, request ListMemberLoanHistoryRequestObject) (ListMemberLoanHistoryResponseObject, error)
+	// ListMemberReservations One member's reservations
+	// (GET /v1/library/members/{userId}/reservations)
+	ListMemberReservations(ctx context.Context, request ListMemberReservationsRequestObject) (ListMemberReservationsResponseObject, error)
+	// GetLibraryPolicy Circulation policy (loan days, limits, renewal, fine per day)
+	// (GET /v1/library/policy)
+	GetLibraryPolicy(ctx context.Context, request GetLibraryPolicyRequestObject) (GetLibraryPolicyResponseObject, error)
+	// UpdateLibraryPolicy Replace the circulation policy (new policy version)
+	// (PUT /v1/library/policy)
+	UpdateLibraryPolicy(ctx context.Context, request UpdateLibraryPolicyRequestObject) (UpdateLibraryPolicyResponseObject, error)
+	// GetLibraryLoansReport Loans started within a period
+	// (GET /v1/library/reports/loans)
+	GetLibraryLoansReport(ctx context.Context, request GetLibraryLoansReportRequestObject) (GetLibraryLoansReportResponseObject, error)
+	// GetLibraryMostBorrowedReport Most-borrowed titles within a period
+	// (GET /v1/library/reports/most-borrowed)
+	GetLibraryMostBorrowedReport(ctx context.Context, request GetLibraryMostBorrowedReportRequestObject) (GetLibraryMostBorrowedReportResponseObject, error)
+	// GetLibraryOverdueMembersReport Members with overdue loans and the fine each would carry today
+	// (GET /v1/library/reports/overdue-members)
+	GetLibraryOverdueMembersReport(ctx context.Context, request GetLibraryOverdueMembersReportRequestObject) (GetLibraryOverdueMembersReportResponseObject, error)
+	// CreateLibraryReservation Reserve a title whose copies are all currently out
+	// (POST /v1/library/reservations)
+	CreateLibraryReservation(ctx context.Context, request CreateLibraryReservationRequestObject) (CreateLibraryReservationResponseObject, error)
+	// CancelLibraryReservation Cancel a waiting or ready reservation
+	// (POST /v1/library/reservations/{reservationId}/cancel)
+	CancelLibraryReservation(ctx context.Context, request CancelLibraryReservationRequestObject) (CancelLibraryReservationResponseObject, error)
+	// ListLibraryStocktakes Stocktake (opname) sessions
+	// (GET /v1/library/stocktakes)
+	ListLibraryStocktakes(ctx context.Context, request ListLibraryStocktakesRequestObject) (ListLibraryStocktakesResponseObject, error)
+	// StartLibraryStocktake Start a stocktake session
+	// (POST /v1/library/stocktakes)
+	StartLibraryStocktake(ctx context.Context, request StartLibraryStocktakeRequestObject) (StartLibraryStocktakeResponseObject, error)
+	// GetLibraryStocktake One stocktake session
+	// (GET /v1/library/stocktakes/{stocktakeId})
+	GetLibraryStocktake(ctx context.Context, request GetLibraryStocktakeRequestObject) (GetLibraryStocktakeResponseObject, error)
+	// CloseLibraryStocktake Close a stocktake session and report missing and unexpected copies
+	// (POST /v1/library/stocktakes/{stocktakeId}/close)
+	CloseLibraryStocktake(ctx context.Context, request CloseLibraryStocktakeRequestObject) (CloseLibraryStocktakeResponseObject, error)
+	// ScanLibraryStocktake Record one scanned barcode in an open stocktake session
+	// (POST /v1/library/stocktakes/{stocktakeId}/scans)
+	ScanLibraryStocktake(ctx context.Context, request ScanLibraryStocktakeRequestObject) (ScanLibraryStocktakeResponseObject, error)
+	// ListLibraryTitles Catalogue search
+	// (GET /v1/library/titles)
+	ListLibraryTitles(ctx context.Context, request ListLibraryTitlesRequestObject) (ListLibraryTitlesResponseObject, error)
+	// CreateLibraryTitle Add a title to the catalogue
+	// (POST /v1/library/titles)
+	CreateLibraryTitle(ctx context.Context, request CreateLibraryTitleRequestObject) (CreateLibraryTitleResponseObject, error)
+	// GetLibraryTitle One title with its copy availability
+	// (GET /v1/library/titles/{titleId})
+	GetLibraryTitle(ctx context.Context, request GetLibraryTitleRequestObject) (GetLibraryTitleResponseObject, error)
+	// UpdateLibraryTitle Edit a title's bibliographic details
+	// (PUT /v1/library/titles/{titleId})
+	UpdateLibraryTitle(ctx context.Context, request UpdateLibraryTitleRequestObject) (UpdateLibraryTitleResponseObject, error)
+	// ListLibraryCopies Physical copies of a title, with barcode and condition
+	// (GET /v1/library/titles/{titleId}/copies)
+	ListLibraryCopies(ctx context.Context, request ListLibraryCopiesRequestObject) (ListLibraryCopiesResponseObject, error)
+	// CreateLibraryCopy Register a new physical copy under a title
+	// (POST /v1/library/titles/{titleId}/copies)
+	CreateLibraryCopy(ctx context.Context, request CreateLibraryCopyRequestObject) (CreateLibraryCopyResponseObject, error)
+	// ListTitleReservationQueue A title's reservation queue, in service order
+	// (GET /v1/library/titles/{titleId}/reservations)
+	ListTitleReservationQueue(ctx context.Context, request ListTitleReservationQueueRequestObject) (ListTitleReservationQueueResponseObject, error)
 	// GetMe Current user, roles, effective permissions, tenant
 	// (GET /v1/me)
 	GetMe(ctx context.Context, request GetMeRequestObject) (GetMeResponseObject, error)
@@ -30856,6 +34480,9 @@ type StrictServerInterface interface {
 	// MarkNotificationRead Mark one notification as read
 	// (PUT /v1/notifications/{notificationId}/read)
 	MarkNotificationRead(ctx context.Context, request MarkNotificationReadRequestObject) (MarkNotificationReadResponseObject, error)
+	// SearchOpacTitles Public catalogue search (OPAC), no session required
+	// (GET /v1/opac/titles)
+	SearchOpacTitles(ctx context.Context, request SearchOpacTitlesRequestObject) (SearchOpacTitlesResponseObject, error)
 	// ListPermissions Permission catalog grouped by area
 	// (GET /v1/permissions)
 	ListPermissions(ctx context.Context, request ListPermissionsRequestObject) (ListPermissionsResponseObject, error)
@@ -36229,6 +39856,802 @@ func (sh *strictHandler) ReviewLeaveRequest(w http.ResponseWriter, r *http.Reque
 	}
 }
 
+// PrintLibraryCopyLabel operation middleware
+func (sh *strictHandler) PrintLibraryCopyLabel(w http.ResponseWriter, r *http.Request, copyId openapi_types.UUID) {
+	var request PrintLibraryCopyLabelRequestObject
+
+	request.CopyId = copyId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PrintLibraryCopyLabel(ctx, request.(PrintLibraryCopyLabelRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PrintLibraryCopyLabel")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PrintLibraryCopyLabelResponseObject); ok {
+		if err := validResponse.VisitPrintLibraryCopyLabelResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// BorrowLibraryLoan operation middleware
+func (sh *strictHandler) BorrowLibraryLoan(w http.ResponseWriter, r *http.Request) {
+	var request BorrowLibraryLoanRequestObject
+
+	var body BorrowLibraryLoanJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.BorrowLibraryLoan(ctx, request.(BorrowLibraryLoanRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "BorrowLibraryLoan")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(BorrowLibraryLoanResponseObject); ok {
+		if err := validResponse.VisitBorrowLibraryLoanResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListOverdueLibraryLoans operation middleware
+func (sh *strictHandler) ListOverdueLibraryLoans(w http.ResponseWriter, r *http.Request) {
+	var request ListOverdueLibraryLoansRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListOverdueLibraryLoans(ctx, request.(ListOverdueLibraryLoansRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListOverdueLibraryLoans")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListOverdueLibraryLoansResponseObject); ok {
+		if err := validResponse.VisitListOverdueLibraryLoansResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// MarkLibraryLoanLost operation middleware
+func (sh *strictHandler) MarkLibraryLoanLost(w http.ResponseWriter, r *http.Request, loanId openapi_types.UUID) {
+	var request MarkLibraryLoanLostRequestObject
+
+	request.LoanId = loanId
+
+	var body MarkLibraryLoanLostJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.MarkLibraryLoanLost(ctx, request.(MarkLibraryLoanLostRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "MarkLibraryLoanLost")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(MarkLibraryLoanLostResponseObject); ok {
+		if err := validResponse.VisitMarkLibraryLoanLostResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RenewLibraryLoan operation middleware
+func (sh *strictHandler) RenewLibraryLoan(w http.ResponseWriter, r *http.Request, loanId openapi_types.UUID) {
+	var request RenewLibraryLoanRequestObject
+
+	request.LoanId = loanId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RenewLibraryLoan(ctx, request.(RenewLibraryLoanRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RenewLibraryLoan")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RenewLibraryLoanResponseObject); ok {
+		if err := validResponse.VisitRenewLibraryLoanResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ReturnLibraryLoan operation middleware
+func (sh *strictHandler) ReturnLibraryLoan(w http.ResponseWriter, r *http.Request, loanId openapi_types.UUID) {
+	var request ReturnLibraryLoanRequestObject
+
+	request.LoanId = loanId
+
+	var body ReturnLibraryLoanJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		if !errors.Is(err, io.EOF) {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+			return
+		}
+	} else {
+		request.Body = &body
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ReturnLibraryLoan(ctx, request.(ReturnLibraryLoanRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ReturnLibraryLoan")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ReturnLibraryLoanResponseObject); ok {
+		if err := validResponse.VisitReturnLibraryLoanResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PrintLibraryMemberCard operation middleware
+func (sh *strictHandler) PrintLibraryMemberCard(w http.ResponseWriter, r *http.Request, userId openapi_types.UUID) {
+	var request PrintLibraryMemberCardRequestObject
+
+	request.UserId = userId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PrintLibraryMemberCard(ctx, request.(PrintLibraryMemberCardRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PrintLibraryMemberCard")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PrintLibraryMemberCardResponseObject); ok {
+		if err := validResponse.VisitPrintLibraryMemberCardResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListMemberLoanHistory operation middleware
+func (sh *strictHandler) ListMemberLoanHistory(w http.ResponseWriter, r *http.Request, userId openapi_types.UUID, params ListMemberLoanHistoryParams) {
+	var request ListMemberLoanHistoryRequestObject
+
+	request.UserId = userId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListMemberLoanHistory(ctx, request.(ListMemberLoanHistoryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListMemberLoanHistory")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListMemberLoanHistoryResponseObject); ok {
+		if err := validResponse.VisitListMemberLoanHistoryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListMemberReservations operation middleware
+func (sh *strictHandler) ListMemberReservations(w http.ResponseWriter, r *http.Request, userId openapi_types.UUID) {
+	var request ListMemberReservationsRequestObject
+
+	request.UserId = userId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListMemberReservations(ctx, request.(ListMemberReservationsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListMemberReservations")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListMemberReservationsResponseObject); ok {
+		if err := validResponse.VisitListMemberReservationsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetLibraryPolicy operation middleware
+func (sh *strictHandler) GetLibraryPolicy(w http.ResponseWriter, r *http.Request) {
+	var request GetLibraryPolicyRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetLibraryPolicy(ctx, request.(GetLibraryPolicyRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetLibraryPolicy")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetLibraryPolicyResponseObject); ok {
+		if err := validResponse.VisitGetLibraryPolicyResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateLibraryPolicy operation middleware
+func (sh *strictHandler) UpdateLibraryPolicy(w http.ResponseWriter, r *http.Request) {
+	var request UpdateLibraryPolicyRequestObject
+
+	var body UpdateLibraryPolicyJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateLibraryPolicy(ctx, request.(UpdateLibraryPolicyRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateLibraryPolicy")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateLibraryPolicyResponseObject); ok {
+		if err := validResponse.VisitUpdateLibraryPolicyResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetLibraryLoansReport operation middleware
+func (sh *strictHandler) GetLibraryLoansReport(w http.ResponseWriter, r *http.Request, params GetLibraryLoansReportParams) {
+	var request GetLibraryLoansReportRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetLibraryLoansReport(ctx, request.(GetLibraryLoansReportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetLibraryLoansReport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetLibraryLoansReportResponseObject); ok {
+		if err := validResponse.VisitGetLibraryLoansReportResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetLibraryMostBorrowedReport operation middleware
+func (sh *strictHandler) GetLibraryMostBorrowedReport(w http.ResponseWriter, r *http.Request, params GetLibraryMostBorrowedReportParams) {
+	var request GetLibraryMostBorrowedReportRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetLibraryMostBorrowedReport(ctx, request.(GetLibraryMostBorrowedReportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetLibraryMostBorrowedReport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetLibraryMostBorrowedReportResponseObject); ok {
+		if err := validResponse.VisitGetLibraryMostBorrowedReportResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetLibraryOverdueMembersReport operation middleware
+func (sh *strictHandler) GetLibraryOverdueMembersReport(w http.ResponseWriter, r *http.Request) {
+	var request GetLibraryOverdueMembersReportRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetLibraryOverdueMembersReport(ctx, request.(GetLibraryOverdueMembersReportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetLibraryOverdueMembersReport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetLibraryOverdueMembersReportResponseObject); ok {
+		if err := validResponse.VisitGetLibraryOverdueMembersReportResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateLibraryReservation operation middleware
+func (sh *strictHandler) CreateLibraryReservation(w http.ResponseWriter, r *http.Request) {
+	var request CreateLibraryReservationRequestObject
+
+	var body CreateLibraryReservationJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateLibraryReservation(ctx, request.(CreateLibraryReservationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateLibraryReservation")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateLibraryReservationResponseObject); ok {
+		if err := validResponse.VisitCreateLibraryReservationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CancelLibraryReservation operation middleware
+func (sh *strictHandler) CancelLibraryReservation(w http.ResponseWriter, r *http.Request, reservationId openapi_types.UUID) {
+	var request CancelLibraryReservationRequestObject
+
+	request.ReservationId = reservationId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CancelLibraryReservation(ctx, request.(CancelLibraryReservationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CancelLibraryReservation")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CancelLibraryReservationResponseObject); ok {
+		if err := validResponse.VisitCancelLibraryReservationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListLibraryStocktakes operation middleware
+func (sh *strictHandler) ListLibraryStocktakes(w http.ResponseWriter, r *http.Request, params ListLibraryStocktakesParams) {
+	var request ListLibraryStocktakesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListLibraryStocktakes(ctx, request.(ListLibraryStocktakesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListLibraryStocktakes")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListLibraryStocktakesResponseObject); ok {
+		if err := validResponse.VisitListLibraryStocktakesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// StartLibraryStocktake operation middleware
+func (sh *strictHandler) StartLibraryStocktake(w http.ResponseWriter, r *http.Request) {
+	var request StartLibraryStocktakeRequestObject
+
+	var body StartLibraryStocktakeJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.StartLibraryStocktake(ctx, request.(StartLibraryStocktakeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "StartLibraryStocktake")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(StartLibraryStocktakeResponseObject); ok {
+		if err := validResponse.VisitStartLibraryStocktakeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetLibraryStocktake operation middleware
+func (sh *strictHandler) GetLibraryStocktake(w http.ResponseWriter, r *http.Request, stocktakeId openapi_types.UUID) {
+	var request GetLibraryStocktakeRequestObject
+
+	request.StocktakeId = stocktakeId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetLibraryStocktake(ctx, request.(GetLibraryStocktakeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetLibraryStocktake")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetLibraryStocktakeResponseObject); ok {
+		if err := validResponse.VisitGetLibraryStocktakeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CloseLibraryStocktake operation middleware
+func (sh *strictHandler) CloseLibraryStocktake(w http.ResponseWriter, r *http.Request, stocktakeId openapi_types.UUID) {
+	var request CloseLibraryStocktakeRequestObject
+
+	request.StocktakeId = stocktakeId
+
+	var body CloseLibraryStocktakeJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		if !errors.Is(err, io.EOF) {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+			return
+		}
+	} else {
+		request.Body = &body
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CloseLibraryStocktake(ctx, request.(CloseLibraryStocktakeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CloseLibraryStocktake")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CloseLibraryStocktakeResponseObject); ok {
+		if err := validResponse.VisitCloseLibraryStocktakeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ScanLibraryStocktake operation middleware
+func (sh *strictHandler) ScanLibraryStocktake(w http.ResponseWriter, r *http.Request, stocktakeId openapi_types.UUID) {
+	var request ScanLibraryStocktakeRequestObject
+
+	request.StocktakeId = stocktakeId
+
+	var body ScanLibraryStocktakeJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ScanLibraryStocktake(ctx, request.(ScanLibraryStocktakeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ScanLibraryStocktake")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ScanLibraryStocktakeResponseObject); ok {
+		if err := validResponse.VisitScanLibraryStocktakeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListLibraryTitles operation middleware
+func (sh *strictHandler) ListLibraryTitles(w http.ResponseWriter, r *http.Request, params ListLibraryTitlesParams) {
+	var request ListLibraryTitlesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListLibraryTitles(ctx, request.(ListLibraryTitlesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListLibraryTitles")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListLibraryTitlesResponseObject); ok {
+		if err := validResponse.VisitListLibraryTitlesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateLibraryTitle operation middleware
+func (sh *strictHandler) CreateLibraryTitle(w http.ResponseWriter, r *http.Request) {
+	var request CreateLibraryTitleRequestObject
+
+	var body CreateLibraryTitleJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateLibraryTitle(ctx, request.(CreateLibraryTitleRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateLibraryTitle")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateLibraryTitleResponseObject); ok {
+		if err := validResponse.VisitCreateLibraryTitleResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetLibraryTitle operation middleware
+func (sh *strictHandler) GetLibraryTitle(w http.ResponseWriter, r *http.Request, titleId openapi_types.UUID) {
+	var request GetLibraryTitleRequestObject
+
+	request.TitleId = titleId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetLibraryTitle(ctx, request.(GetLibraryTitleRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetLibraryTitle")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetLibraryTitleResponseObject); ok {
+		if err := validResponse.VisitGetLibraryTitleResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateLibraryTitle operation middleware
+func (sh *strictHandler) UpdateLibraryTitle(w http.ResponseWriter, r *http.Request, titleId openapi_types.UUID) {
+	var request UpdateLibraryTitleRequestObject
+
+	request.TitleId = titleId
+
+	var body UpdateLibraryTitleJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateLibraryTitle(ctx, request.(UpdateLibraryTitleRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateLibraryTitle")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateLibraryTitleResponseObject); ok {
+		if err := validResponse.VisitUpdateLibraryTitleResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListLibraryCopies operation middleware
+func (sh *strictHandler) ListLibraryCopies(w http.ResponseWriter, r *http.Request, titleId openapi_types.UUID) {
+	var request ListLibraryCopiesRequestObject
+
+	request.TitleId = titleId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListLibraryCopies(ctx, request.(ListLibraryCopiesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListLibraryCopies")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListLibraryCopiesResponseObject); ok {
+		if err := validResponse.VisitListLibraryCopiesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateLibraryCopy operation middleware
+func (sh *strictHandler) CreateLibraryCopy(w http.ResponseWriter, r *http.Request, titleId openapi_types.UUID) {
+	var request CreateLibraryCopyRequestObject
+
+	request.TitleId = titleId
+
+	var body CreateLibraryCopyJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateLibraryCopy(ctx, request.(CreateLibraryCopyRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateLibraryCopy")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateLibraryCopyResponseObject); ok {
+		if err := validResponse.VisitCreateLibraryCopyResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListTitleReservationQueue operation middleware
+func (sh *strictHandler) ListTitleReservationQueue(w http.ResponseWriter, r *http.Request, titleId openapi_types.UUID) {
+	var request ListTitleReservationQueueRequestObject
+
+	request.TitleId = titleId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListTitleReservationQueue(ctx, request.(ListTitleReservationQueueRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListTitleReservationQueue")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListTitleReservationQueueResponseObject); ok {
+		if err := validResponse.VisitListTitleReservationQueueResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetMe operation middleware
 func (sh *strictHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 	var request GetMeRequestObject
@@ -36890,6 +41313,32 @@ func (sh *strictHandler) MarkNotificationRead(w http.ResponseWriter, r *http.Req
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(MarkNotificationReadResponseObject); ok {
 		if err := validResponse.VisitMarkNotificationReadResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SearchOpacTitles operation middleware
+func (sh *strictHandler) SearchOpacTitles(w http.ResponseWriter, r *http.Request, params SearchOpacTitlesParams) {
+	var request SearchOpacTitlesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SearchOpacTitles(ctx, request.(SearchOpacTitlesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SearchOpacTitles")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SearchOpacTitlesResponseObject); ok {
+		if err := validResponse.VisitSearchOpacTitlesResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -38751,479 +43200,523 @@ func (sh *strictHandler) WsMonitor(w http.ResponseWriter, r *http.Request, param
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
+	"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",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

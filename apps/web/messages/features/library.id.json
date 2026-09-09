@@ -1,0 +1,185 @@
+{
+  "nav": {
+    "catalogue": "Katalog",
+    "desk": "Meja sirkulasi",
+    "stocktake": "Opname"
+  },
+  "catalogue": {
+    "eyebrow": "Perpustakaan",
+    "title": "Katalog",
+    "searchPlaceholder": "Cari judul, penulis, atau ISBN",
+    "addTitle": "Tambah judul",
+    "columns": {
+      "title": "Judul",
+      "author": "Penulis",
+      "classification": "Klasifikasi",
+      "copies": "Eksemplar",
+      "actions": "Aksi"
+    },
+    "copiesAvailable": "{available} dari {total} tersedia",
+    "emptyTitle": "Belum ada judul di katalog",
+    "emptyBody": "Judul yang ditambahkan akan muncul di sini.",
+    "viewCopies": "Lihat eksemplar",
+    "form": {
+      "title": "Judul",
+      "subtitle": "Subjudul",
+      "author": "Penulis",
+      "publisher": "Penerbit",
+      "publishYear": "Tahun terbit",
+      "isbn": "ISBN",
+      "classification": "Klasifikasi",
+      "save": "Simpan",
+      "saved": "Judul disimpan"
+    }
+  },
+  "copies": {
+    "title": "Eksemplar",
+    "addCopy": "Tambah eksemplar",
+    "columns": {
+      "barcode": "Barcode",
+      "condition": "Kondisi",
+      "status": "Status",
+      "actions": "Aksi"
+    },
+    "condition": {
+      "good": "Baik",
+      "fair": "Cukup",
+      "damaged": "Rusak",
+      "lost": "Hilang"
+    },
+    "status": {
+      "available": "Tersedia",
+      "on_loan": "Dipinjam",
+      "reserved": "Dipesan",
+      "withdrawn": "Ditarik"
+    },
+    "printLabel": "Cetak label",
+    "form": {
+      "barcode": "Barcode",
+      "condition": "Kondisi",
+      "notes": "Catatan",
+      "save": "Simpan",
+      "saved": "Eksemplar ditambahkan"
+    },
+    "emptyTitle": "Belum ada eksemplar",
+    "emptyBody": "Tambahkan eksemplar fisik dengan barcode masing-masing."
+  },
+  "desk": {
+    "eyebrow": "Perpustakaan",
+    "title": "Meja sirkulasi",
+    "borrow": {
+      "heading": "Pinjam",
+      "barcode": "Barcode eksemplar",
+      "memberId": "ID anggota",
+      "submit": "Pinjamkan",
+      "success": "Peminjaman berhasil dicatat"
+    },
+    "overdue": {
+      "heading": "Terlambat",
+      "columns": {
+        "member": "Anggota",
+        "dueOn": "Jatuh tempo",
+        "actions": "Aksi"
+      },
+      "emptyTitle": "Tidak ada yang terlambat",
+      "emptyBody": "Semua peminjaman aktif masih dalam batas waktu."
+    },
+    "return": "Kembalikan",
+    "renew": "Perpanjang",
+    "returned": "Pengembalian dicatat",
+    "renewed": "Peminjaman diperpanjang"
+  },
+  "memberHistory": {
+    "title": "Riwayat peminjaman",
+    "columns": {
+      "title": "Judul",
+      "borrowedAt": "Tanggal pinjam",
+      "dueOn": "Jatuh tempo",
+      "status": "Status",
+      "fine": "Denda"
+    },
+    "status": {
+      "active": "Dipinjam",
+      "returned": "Dikembalikan",
+      "lost": "Hilang"
+    },
+    "reservationsHeading": "Reservasi",
+    "printCard": "Cetak kartu anggota",
+    "emptyTitle": "Belum ada riwayat peminjaman"
+  },
+  "stocktake": {
+    "eyebrow": "Perpustakaan",
+    "title": "Opname",
+    "startNew": "Mulai sesi baru",
+    "form": {
+      "name": "Nama sesi",
+      "notes": "Catatan",
+      "start": "Mulai"
+    },
+    "columns": {
+      "name": "Nama",
+      "startedOn": "Dimulai",
+      "status": "Status",
+      "actions": "Aksi"
+    },
+    "status": {
+      "open": "Berjalan",
+      "closed": "Selesai"
+    },
+    "emptyTitle": "Belum ada sesi opname",
+    "scan": {
+      "heading": "Pindai barcode",
+      "placeholder": "Pindai atau ketik barcode",
+      "submit": "Catat"
+    },
+    "close": "Tutup sesi",
+    "result": {
+      "heading": "Hasil opname",
+      "expected": "Diharapkan",
+      "scanned": "Terpindai",
+      "missing": "Hilang",
+      "unexpected": "Tidak terduga"
+    }
+  },
+  "reports": {
+    "overdueMembers": {
+      "title": "Anggota terlambat",
+      "columns": {
+        "member": "Anggota",
+        "loanCount": "Jumlah pinjaman",
+        "fine": "Denda"
+      }
+    },
+    "mostBorrowed": {
+      "title": "Judul paling sering dipinjam",
+      "columns": {
+        "title": "Judul",
+        "loanCount": "Jumlah peminjaman"
+      }
+    }
+  },
+  "opac": {
+    "title": "Katalog Perpustakaan",
+    "searchPlaceholder": "Cari judul, penulis, atau ISBN",
+    "columns": {
+      "title": "Judul",
+      "author": "Penulis",
+      "availability": "Ketersediaan"
+    },
+    "available": "Tersedia",
+    "unavailable": "Sedang dipinjam semua",
+    "emptyTitle": "Tidak ditemukan",
+    "emptyBody": "Coba kata kunci lain."
+  },
+  "policy": {
+    "title": "Kebijakan peminjaman",
+    "loanDays": "Lama pinjam (hari)",
+    "maxActiveLoans": "Batas pinjaman aktif",
+    "maxRenewals": "Batas perpanjangan",
+    "renewalDays": "Tambahan hari saat perpanjangan",
+    "finePerDay": "Denda per hari (Rp)",
+    "reservationHoldDays": "Batas hari tahan reservasi",
+    "save": "Simpan",
+    "saved": "Kebijakan disimpan"
+  }
+}

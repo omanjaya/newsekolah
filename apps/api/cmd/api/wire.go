@@ -21,6 +21,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/grading"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/identity"
 	identityservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/identity/service"
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/library"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/notifications"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/permits"
 	permitsservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/service"
@@ -187,6 +188,10 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	jobInserter.client = riverClient
 	bg := &background{jobs: riverClient, runWorkers: cfg.WorkerInline, logger: logger}
 
+	libraryModule := library.Register(library.Dependencies{
+		Pool: pool, Members: wiring.LibraryMembers{Svc: identityModule.Service}, Clock: clock.Real{},
+	})
+
 	familyModule := family.Register(family.Dependencies{
 		Links:      identityModule.Service,
 		Attendance: wiring.FamilyAttendance{Svc: attendanceModule.Service},
@@ -216,6 +221,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		ReportsHandler:       reportsModule.Handler,
 		FamilyHandler:        familyModule.Handler,
 		PlatformHandler:      platformModule.Handler,
+		LibraryHandler:       libraryModule.Handler,
 		healthHandler:        &healthHandler{version: version, pool: pool, redis: redisClient},
 	}
 
