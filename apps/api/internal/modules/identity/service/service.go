@@ -36,6 +36,8 @@ type Repository interface {
 	PasswordResetRepository
 	ProfileRepository
 	AuditRepository
+	SSORepository
+	PasskeyRepository
 }
 
 // AuthRepository is login, session, and effective-permission lookup: the
@@ -116,6 +118,18 @@ type Config struct {
 	// AvatarMaxBytes caps an uploaded avatar's size (docs/08-security.md
 	// section 6: 2 MB for avatars).
 	AvatarMaxBytes int64
+	// PasskeyRPID is the WebAuthn Relying Party ID: the effective domain a
+	// registered credential is bound to (e.g. "smansa.sch.id" or, in
+	// multi-tenant mode, the shared base domain so a credential registered
+	// on one tenant subdomain still verifies there). It is never taken
+	// from a request; the client-supplied origin is only ever checked
+	// against PasskeyRPOrigins, never used to set this.
+	PasskeyRPID string
+	// PasskeyRPOrigins are the exact origins (scheme + host [+ port]) a
+	// WebAuthn ceremony is allowed to have happened on.
+	PasskeyRPOrigins []string
+	// PasskeyRPDisplayName is shown by the browser's passkey UI.
+	PasskeyRPDisplayName string
 }
 
 // Extras groups the dependencies added by the admin features around the
@@ -129,24 +143,54 @@ type Extras struct {
 	// feature is off and every MFA call returns ErrMfaNotAvailable.
 	MfaRepo   MfaRepository
 	MfaSealer Sealer
+	// SSOSealer encrypts a tenant's Google client secret at rest. nil
+	// means Google SSO administration is off (ErrSSONotConfigured). In
+	// practice this is the same *crypto.Sealer instance as MfaSealer --
+	// one platform key seals every secret identity stores -- but the
+	// field is kept separate so a deployment could rotate them on
+	// different schedules.
+	SSOSealer Sealer
+	// GoogleVerifier checks a Google ID token's signature and claims. nil
+	// disables the Google SSO login endpoint even if a tenant has
+	// configured a client id.
+	GoogleVerifier GoogleIDTokenVerifier
+	// Ceremony stores the in-progress state of a WebAuthn registration or
+	// login between its Begin and Finish calls. nil disables passkeys
+	// entirely.
+	Ceremony CeremonyStore
+}
+
+// CeremonyStore is the narrow key-value contract passkey ceremonies need
+// to bridge a Begin call and its matching Finish call. It is satisfied
+// structurally by *platform/auth.RedisStore and *platform/auth.MemoryStore.
+type CeremonyStore interface {
+	Get(ctx context.Context, key string) (string, bool, error)
+	Set(ctx context.Context, key, value string, ttl time.Duration) error
+	Del(ctx context.Context, key string) error
 }
 
 type Service struct {
-	pool       *pgxpool.Pool
-	repo       Repository
-	years      AcademicYearReader
-	limiter    RateLimiter
-	tokens     TokenIssuer
-	clock      clock.Clock
-	cfg        Config
-	newRefresh func() (token string, hash []byte, err error)
-	extras     Extras
-	mfaRepo    MfaRepository
-	mfaSealer  Sealer
+	pool           *pgxpool.Pool
+	repo           Repository
+	years          AcademicYearReader
+	limiter        RateLimiter
+	tokens         TokenIssuer
+	clock          clock.Clock
+	cfg            Config
+	newRefresh     func() (token string, hash []byte, err error)
+	extras         Extras
+	mfaRepo        MfaRepository
+	mfaSealer      Sealer
+	googleVerifier GoogleIDTokenVerifier
+	ceremony       CeremonyStore
 }
 
 func New(pool *pgxpool.Pool, repo Repository, years AcademicYearReader, limiter RateLimiter, tokens TokenIssuer, clk clock.Clock, cfg Config, newRefresh func() (string, []byte, error), extras Extras) *Service {
-	return &Service{pool: pool, repo: repo, years: years, limiter: limiter, tokens: tokens, clock: clk, cfg: cfg, newRefresh: newRefresh, extras: extras, mfaRepo: extras.MfaRepo, mfaSealer: extras.MfaSealer}
+	return &Service{
+		pool: pool, repo: repo, years: years, limiter: limiter, tokens: tokens, clock: clk, cfg: cfg, newRefresh: newRefresh,
+		extras: extras, mfaRepo: extras.MfaRepo, mfaSealer: extras.MfaSealer,
+		googleVerifier: extras.GoogleVerifier, ceremony: extras.Ceremony,
+	}
 }
 
 // withTx opens the tenant-scoped transaction for one use case, per

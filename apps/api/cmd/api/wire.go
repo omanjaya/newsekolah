@@ -69,17 +69,28 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		return nil, nil, err
 	}
 	identityModule := identity.Register(identity.Dependencies{
-		Pool:         pool,
-		Years:        schoolModule.Service,
-		Limiter:      rateLimiter,
-		Tokens:       tokenIssuer,
-		Clock:        clock.Real{},
-		Config:       identityservice.Config{RefreshTokenTTL: cfg.RefreshTokenTTL},
+		Pool:    pool,
+		Years:   schoolModule.Service,
+		Limiter: rateLimiter,
+		Tokens:  tokenIssuer,
+		Clock:   clock.Real{},
+		Config: identityservice.Config{
+			RefreshTokenTTL: cfg.RefreshTokenTTL,
+			// RPID is the base domain rather than a single tenant's
+			// subdomain so a passkey registered on one tenant's
+			// subdomain still verifies there in multi-tenant mode; it
+			// stays empty (passkeys off) when BASE_DOMAIN is not set,
+			// same as single-tenant dev without it configured.
+			PasskeyRPID:          cfg.BaseDomain,
+			PasskeyRPOrigins:     cfg.AppOrigins,
+			PasskeyRPDisplayName: "newsekolah",
+		},
 		Branding:     schoolModule.Handler,
 		SessionCache: sessionCache,
 		IsProduction: cfg.IsProduction(),
 		Email:        senders.Email,
 		MfaSealer:    sealer,
+		Ceremony:     store,
 	})
 
 	academicModule := academic.Register(pool, clock.Real{})

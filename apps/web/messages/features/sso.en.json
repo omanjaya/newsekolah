@@ -1,0 +1,29 @@
+{
+  "navLabel": "Sign in with Google",
+  "eyebrow": "Settings",
+  "title": "Sign in with Google",
+  "description": "Let staff and teachers sign in with the school's Google Workspace account, in addition to a username and password.",
+  "statusTitle": "Status",
+  "statusOn": "On",
+  "statusOff": "Off",
+  "statusBody": "While on, a \"Sign in with Google\" button appears on the login page for this school.",
+  "enabledToggleLabel": "Enable sign in with Google",
+  "neverConfigured": "Never configured yet. Fill in the client id, client secret, and Google Workspace domain below to enable it.",
+  "clientIdLabel": "Client ID",
+  "clientIdPlaceholder": "xxxxxxxxxx.apps.googleusercontent.com",
+  "clientSecretLabel": "Client secret",
+  "clientSecretUnchangedPlaceholder": "Unchanged",
+  "clientSecretHint": "Leave blank to keep the currently stored client secret.",
+  "hostedDomainLabel": "Google Workspace domain",
+  "hostedDomainPlaceholder": "school.sch.id",
+  "hostedDomainHint": "Only Google accounts on this domain can be used to sign in.",
+  "saveAction": "Save",
+  "removeAction": "Remove configuration",
+  "removeDialogTitle": "Remove Google SSO configuration",
+  "removeDialogBody": "The \"Sign in with Google\" button disappears from the login page until this is set up again.",
+  "validationRequired": "Client ID and Google Workspace domain are required",
+  "toasts": {
+    "saved": "Google SSO configuration saved",
+    "removed": "Google SSO configuration removed"
+  }
+}

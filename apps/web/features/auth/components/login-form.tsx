@@ -23,7 +23,11 @@ import { useForm } from "react-hook-form";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { translateFormMessage } from "../../../lib/i18n/translate-message";
-import { useLoginMutation } from "../api";
+import { isPasskeySupported } from "../../../lib/webauthn";
+import { useGoogleSSOAvailabilityQuery, useLoginMutation } from "../api";
+
+import { GoogleSignInButton } from "./google-sign-in-button";
+import { PasskeyLoginButton } from "./passkey-login-button";
 
 /** A safe post-login redirect target: same-origin path only, never an external URL from the query string. */
 function safeNextPath(next: string | null): string {
@@ -39,6 +43,7 @@ export function LoginForm(): ReactElement {
   const searchParams = useSearchParams();
   const loginMutation = useLoginMutation();
   const apiErrorMessage = useApiErrorMessage();
+  const googleSSO = useGoogleSSOAvailabilityQuery();
 
   // Set once the API rejects a login attempt with MFA_REQUIRED, so the same
   // username and password can be resubmitted with an added `otp` field
@@ -137,6 +142,42 @@ export function LoginForm(): ReactElement {
             ? tSecurity("login.submit")
             : t("submit")}
       </Button>
+
+      {!otpRequired && (googleSSO.data?.enabled === true || isPasskeySupported()) && (
+        <div className="flex flex-col items-center gap-3">
+          <div className="flex w-full items-center gap-3 text-[13px] text-fg-muted">
+            <span className="h-px flex-1 bg-border" aria-hidden="true" />
+            {t("orDivider")}
+            <span className="h-px flex-1 bg-border" aria-hidden="true" />
+          </div>
+          <div className="flex flex-col items-stretch gap-2 self-stretch">
+            {googleSSO.data?.enabled && googleSSO.data.client_id && (
+              <GoogleSignInButton
+                clientId={googleSSO.data.client_id}
+                locale={locale}
+                onSuccess={() => {
+                  router.replace(safeNextPath(searchParams.get("next")));
+                }}
+                onError={(message) => {
+                  form.setError("root", { message });
+                }}
+              />
+            )}
+            <PasskeyLoginButton
+              username={form.watch("username")}
+              onSuccess={() => {
+                router.replace(safeNextPath(searchParams.get("next")));
+              }}
+              onError={(message) => {
+                form.setError("root", { message });
+              }}
+              onUsernameRequired={() => {
+                form.setError("username", { message: t("passkeyUsernameRequired") });
+              }}
+            />
+          </div>
+        </div>
+      )}
     </Form>
   );
 }

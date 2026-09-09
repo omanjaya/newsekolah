@@ -57,4 +57,16 @@ var (
 
 	// Import
 	ErrImportFileInvalid = errors.New("import file is unreadable or does not match the template")
+
+	// Google Workspace SSO
+	ErrSSONotConfigured        = errors.New("google sso is not configured for this school")
+	ErrSSOAccountNotFound      = errors.New("no active account matches this google account's email")
+	ErrSSOInvalidToken         = errors.New("google id token is invalid")
+	ErrSSOClientSecretRequired = errors.New("client secret is required to configure google sso")
+
+	// Passkeys (WebAuthn)
+	ErrPasskeyNotConfigured   = errors.New("passkeys are not configured on this server")
+	ErrPasskeyNotFound        = errors.New("passkey not found")
+	ErrPasskeyChallenge       = errors.New("passkey ceremony expired or was not found")
+	ErrPasskeyInvalidResponse = errors.New("passkey response is invalid")
 )

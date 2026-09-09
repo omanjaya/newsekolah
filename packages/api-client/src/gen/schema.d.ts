@@ -2388,6 +2388,141 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/auth/sso/google": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Whether Google sign-in should be offered on the login screen
+         * @description Public and unauthenticated on purpose: the login screen calls this before anyone has signed in to
+         *     decide whether to render the "Sign in with Google" button. It returns the OAuth client id (not a
+         *     secret; Google Identity Services needs it in the browser) but never the client secret.
+         */
+        get: operations["getGoogleSSOAvailability"];
+        put?: never;
+        /**
+         * Sign in with a verified Google ID token
+         * @description Verifies the ID token's signature against Google's published keys, then its issuer, audience, expiry,
+         *     and (when the tenant restricts it) hosted domain. The token's email must match an existing active
+         *     user of this tenant; identity never creates an account from this flow. On success this issues the
+         *     same session and token pair as `POST /v1/auth/login`.
+         */
+        post: operations["loginWithGoogle"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/settings/sso/google": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read this school's Google Workspace SSO configuration */
+        get: operations["getGoogleSSOConfig"];
+        /** Create or replace this school's Google Workspace SSO configuration */
+        put: operations["setGoogleSSOConfig"];
+        post?: never;
+        /** Remove this school's Google Workspace SSO configuration */
+        delete: operations["deleteGoogleSSOConfig"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/passkeys/login/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start a passkey sign-in ceremony for one account */
+        post: operations["beginPasskeyLogin"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/passkeys/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Complete a passkey sign-in ceremony */
+        post: operations["finishPasskeyLogin"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/passkeys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the current user's registered passkeys */
+        get: operations["listPasskeys"];
+        put?: never;
+        /** Complete a passkey registration ceremony */
+        post: operations["finishPasskeyRegistration"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/passkeys/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start a passkey registration ceremony for the current user */
+        post: operations["beginPasskeyRegistration"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/passkeys/{passkeyId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove one of the current user's passkeys */
+        delete: operations["deletePasskey"];
+        options?: never;
+        head?: never;
+        /** Rename one of the current user's passkeys */
+        patch: operations["renamePasskey"];
+        trace?: never;
+    };
     "/v1/me/password": {
         parameters: {
             query?: never;
@@ -4870,6 +5005,41 @@ export interface components {
                 user_id?: string;
                 name?: string;
             };
+        };
+        GoogleSSOConfig: {
+            /** @description False when this school has never saved a configuration. */
+            configured: boolean;
+            client_id?: string;
+            hosted_domain?: string;
+            enabled: boolean;
+        };
+        GoogleSSOConfigInput: {
+            client_id: string;
+            /** @description Required the first time a school configures Google SSO. Omit or send empty to keep the currently stored secret unchanged. */
+            client_secret?: string;
+            /** @description The Google Workspace domain (the "hd" claim) an ID token must carry to be accepted. */
+            hosted_domain: string;
+            enabled: boolean;
+        };
+        PasskeyCeremony: {
+            /** @description Echo this back in the matching finish call. */
+            ceremony_id: string;
+            /**
+             * @description The WebAuthn options object, shaped for `PublicKeyCredential.parseCreationOptionsFromJSON()`
+             *     (registration) or `.parseRequestOptionsFromJSON()` (login).
+             */
+            public_key: {
+                [key: string]: unknown;
+            };
+        };
+        Passkey: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            last_used_at?: string;
         };
         /** @enum {string} */
         NotificationChannel: "inapp" | "push" | "whatsapp" | "email";
@@ -10484,6 +10654,345 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
+        };
+    };
+    getGoogleSSOAvailability: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant slug for mobile clients before a token exists. Ignored when the host already resolves a tenant or in single-tenant mode. */
+                "X-Tenant"?: components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Availability */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        enabled: boolean;
+                        /** @description Present only when enabled. */
+                        client_id?: string;
+                    };
+                };
+            };
+        };
+    };
+    loginWithGoogle: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant slug for mobile clients before a token exists. Ignored when the host already resolves a tenant or in single-tenant mode. */
+                "X-Tenant"?: components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description The Google ID token (JWT) produced by Google Identity Services on the client. */
+                    id_token: string;
+                    client: components["schemas"]["ClientKind"];
+                    device_id?: string;
+                    device_name?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Authenticated */
+            200: {
+                headers: {
+                    /** @description `refresh_token` cookie for web clients */
+                    "Set-Cookie"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthTokens"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getGoogleSSOConfig: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current configuration, or configured=false when none exists yet */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoogleSSOConfig"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    setGoogleSSOConfig: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GoogleSSOConfigInput"];
+            };
+        };
+        responses: {
+            /** @description Saved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoogleSSOConfig"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    deleteGoogleSSOConfig: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Removed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    beginPasskeyLogin: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant slug for mobile clients before a token exists. Ignored when the host already resolves a tenant or in single-tenant mode. */
+                "X-Tenant"?: components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    username: string;
+                };
+            };
+        };
+        responses: {
+            /** @description WebAuthn credential request options */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasskeyCeremony"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    finishPasskeyLogin: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant slug for mobile clients before a token exists. Ignored when the host already resolves a tenant or in single-tenant mode. */
+                "X-Tenant"?: components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    ceremony_id: string;
+                    /** @description The JSON produced by the browser's `PublicKeyCredential.toJSON()` after `navigator.credentials.get()`. */
+                    credential: {
+                        [key: string]: unknown;
+                    };
+                    client: components["schemas"]["ClientKind"];
+                    device_id?: string;
+                    device_name?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Authenticated */
+            200: {
+                headers: {
+                    /** @description `refresh_token` cookie for web clients */
+                    "Set-Cookie"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthTokens"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    listPasskeys: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Passkeys */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Passkey"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    finishPasskeyRegistration: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    ceremony_id: string;
+                    /** @description The JSON produced by the browser's `PublicKeyCredential.toJSON()` after `navigator.credentials.create()`. */
+                    credential: {
+                        [key: string]: unknown;
+                    };
+                    /** @description Label the user picks for this passkey (e.g. "MacBook", "Yubikey"). */
+                    name: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Registered */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Passkey"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    beginPasskeyRegistration: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description WebAuthn credential creation options */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasskeyCeremony"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    deletePasskey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                passkeyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Removed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    renamePasskey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                passkeyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Renamed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Passkey"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
         };
     };
     changePassword: {

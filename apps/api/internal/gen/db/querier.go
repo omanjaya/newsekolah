@@ -228,6 +228,7 @@ type Querier interface {
 	DeleteDutyPermissions(ctx context.Context, arg DeleteDutyPermissionsParams) error
 	DeleteExpiredOrFailedPushDevices(ctx context.Context, arg DeleteExpiredOrFailedPushDevicesParams) (int64, error)
 	DeleteExpiredScanTokens(ctx context.Context, arg DeleteExpiredScanTokensParams) (int64, error)
+	DeleteGoogleSSOConfig(ctx context.Context, tenantID uuid.UUID) error
 	DeleteGradeRange(ctx context.Context, arg DeleteGradeRangeParams) error
 	DeleteJournal(ctx context.Context, arg DeleteJournalParams) error
 	DeleteMfaTotp(ctx context.Context, arg DeleteMfaTotpParams) error
@@ -246,6 +247,7 @@ type Querier interface {
 	DeleteSchedulesByAcademicYear(ctx context.Context, arg DeleteSchedulesByAcademicYearParams) error
 	DeleteUserRoles(ctx context.Context, arg DeleteUserRolesParams) error
 	DeleteViolationType(ctx context.Context, arg DeleteViolationTypeParams) error
+	DeleteWebAuthnCredential(ctx context.Context, arg DeleteWebAuthnCredentialParams) error
 	DisciplineActiveClassID(ctx context.Context, arg DisciplineActiveClassIDParams) (uuid.UUID, error)
 	DisciplineCreatePolicy(ctx context.Context, arg DisciplineCreatePolicyParams) error
 	DisciplineGetLatestPolicy(ctx context.Context, arg DisciplineGetLatestPolicyParams) (DisciplineGetLatestPolicyRow, error)
@@ -303,6 +305,7 @@ type Querier interface {
 	GetEnrolledClassForAttendance(ctx context.Context, arg GetEnrolledClassForAttendanceParams) (uuid.UUID, error)
 	GetEntryBySessionStudent(ctx context.Context, arg GetEntryBySessionStudentParams) (AttendanceEntry, error)
 	GetExitPermit(ctx context.Context, arg GetExitPermitParams) (ExitPermit, error)
+	GetGoogleSSOConfig(ctx context.Context, tenantID uuid.UUID) (SsoGoogleConfig, error)
 	// The class a teacher is homeroom (wali kelas) duty holder of this
 	// academic year, if any -- duty slug "homeroom", scope_class_id per
 	// docs/analysis/backend-inventory.md section 1.9's global-corrector rule.
@@ -374,6 +377,7 @@ type Querier interface {
 	GetViolationRecord(ctx context.Context, arg GetViolationRecordParams) (ViolationRecord, error)
 	GetViolationType(ctx context.Context, arg GetViolationTypeParams) (ViolationType, error)
 	GetWarningLetter(ctx context.Context, arg GetWarningLetterParams) (WarningLetter, error)
+	GetWebAuthnCredential(ctx context.Context, arg GetWebAuthnCredentialParams) (WebauthnCredential, error)
 	GetWorkflowDefinitionByID(ctx context.Context, arg GetWorkflowDefinitionByIDParams) (WorkflowDefinition, error)
 	// Used to resolve a stage's approver for a later stage's distinct_from check.
 	GetWorkflowEventByStage(ctx context.Context, arg GetWorkflowEventByStageParams) (WorkflowEvent, error)
@@ -401,6 +405,7 @@ type Querier interface {
 	InsertMessageDelivery(ctx context.Context, arg InsertMessageDeliveryParams) (MessageDelivery, error)
 	InsertNotification(ctx context.Context, arg InsertNotificationParams) (Notification, error)
 	InsertStarEvent(ctx context.Context, arg InsertStarEventParams) (StarEvent, error)
+	InsertWebAuthnCredential(ctx context.Context, arg InsertWebAuthnCredentialParams) (WebauthnCredential, error)
 	IsActiveTeacher(ctx context.Context, arg IsActiveTeacherParams) (bool, error)
 	IsActiveTeacherRef(ctx context.Context, arg IsActiveTeacherRefParams) (bool, error)
 	IsParentOfStudent(ctx context.Context, arg IsParentOfStudentParams) (bool, error)
@@ -576,6 +581,7 @@ type Querier interface {
 	ListViolationTypes(ctx context.Context, arg ListViolationTypesParams) ([]ViolationType, error)
 	ListWarningLetters(ctx context.Context, arg ListWarningLettersParams) ([]WarningLetter, error)
 	ListWarningLettersForStudent(ctx context.Context, arg ListWarningLettersForStudentParams) ([]WarningLetter, error)
+	ListWebAuthnCredentials(ctx context.Context, arg ListWebAuthnCredentialsParams) ([]WebauthnCredential, error)
 	ListWorkflowDefinitions(ctx context.Context, tenantID uuid.UUID) ([]WorkflowDefinition, error)
 	ListWorkflowEventsByInstance(ctx context.Context, arg ListWorkflowEventsByInstanceParams) ([]WorkflowEvent, error)
 	ListWorkflowInstancesByClassAndKind(ctx context.Context, arg ListWorkflowInstancesByClassAndKindParams) ([]WorkflowInstance, error)
@@ -621,6 +627,7 @@ type Querier interface {
 	PlatformUpdateTenantStatus(ctx context.Context, arg PlatformUpdateTenantStatusParams) (Tenant, error)
 	PlatformUpsertFeatureFlag(ctx context.Context, arg PlatformUpsertFeatureFlagParams) (FeatureFlag, error)
 	RecordDeliveryAttempt(ctx context.Context, arg RecordDeliveryAttemptParams) error
+	RenameWebAuthnCredential(ctx context.Context, arg RenameWebAuthnCredentialParams) (WebauthnCredential, error)
 	RespondSubstitutionRequest(ctx context.Context, arg RespondSubstitutionRequestParams) (SubstitutionRequest, error)
 	RestoreUser(ctx context.Context, arg RestoreUserParams) error
 	RevokeOtherUserSessions(ctx context.Context, arg RevokeOtherUserSessionsParams) error
@@ -664,8 +671,10 @@ type Querier interface {
 	UpdateUserLastLogin(ctx context.Context, arg UpdateUserLastLoginParams) error
 	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error
 	UpdateViolationType(ctx context.Context, arg UpdateViolationTypeParams) (ViolationType, error)
+	UpdateWebAuthnCredentialUsage(ctx context.Context, arg UpdateWebAuthnCredentialUsageParams) error
 	UpsertAttendanceDailySummary(ctx context.Context, arg UpsertAttendanceDailySummaryParams) error
 	UpsertAttendanceEntry(ctx context.Context, arg UpsertAttendanceEntryParams) (AttendanceEntry, error)
+	UpsertGoogleSSOConfig(ctx context.Context, arg UpsertGoogleSSOConfigParams) (SsoGoogleConfig, error)
 	UpsertGrade(ctx context.Context, arg UpsertGradeParams) (Grade, error)
 	UpsertMfaTotp(ctx context.Context, arg UpsertMfaTotpParams) (MfaTotp, error)
 	UpsertNotificationPreference(ctx context.Context, arg UpsertNotificationPreferenceParams) error

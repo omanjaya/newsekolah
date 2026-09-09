@@ -7,6 +7,11 @@ export type MessageKey =
   | "auth.changePassword.submit"
   | "auth.changePassword.success"
   | "auth.changePassword.title"
+  | "auth.login.backToPassword"
+  | "auth.login.googleButton"
+  | "auth.login.orDivider"
+  | "auth.login.passkeyButton"
+  | "auth.login.passkeyUsernameRequired"
   | "auth.login.passwordLabel"
   | "auth.login.submit"
   | "auth.login.submitting"
@@ -64,7 +69,15 @@ export type MessageKey =
   | "errors.FORBIDDEN"
   | "errors.NETWORK"
   | "errors.NOT_FOUND"
+  | "errors.PASSKEY_CHALLENGE_EXPIRED"
+  | "errors.PASSKEY_INVALID_RESPONSE"
+  | "errors.PASSKEY_NOT_CONFIGURED"
+  | "errors.PASSKEY_NOT_FOUND"
   | "errors.RATE_LIMITED"
+  | "errors.SSO_ACCOUNT_NOT_FOUND"
+  | "errors.SSO_CLIENT_SECRET_REQUIRED"
+  | "errors.SSO_INVALID_TOKEN"
+  | "errors.SSO_NOT_CONFIGURED"
   | "errors.TENANT_NOT_FOUND"
   | "errors.UNKNOWN"
   | "errors.VALIDATION_FAILED"
@@ -143,6 +156,11 @@ export const MESSAGE_KEYS: readonly MessageKey[] = [
   "auth.changePassword.submit",
   "auth.changePassword.success",
   "auth.changePassword.title",
+  "auth.login.backToPassword",
+  "auth.login.googleButton",
+  "auth.login.orDivider",
+  "auth.login.passkeyButton",
+  "auth.login.passkeyUsernameRequired",
   "auth.login.passwordLabel",
   "auth.login.submit",
   "auth.login.submitting",
@@ -200,7 +218,15 @@ export const MESSAGE_KEYS: readonly MessageKey[] = [
   "errors.FORBIDDEN",
   "errors.NETWORK",
   "errors.NOT_FOUND",
+  "errors.PASSKEY_CHALLENGE_EXPIRED",
+  "errors.PASSKEY_INVALID_RESPONSE",
+  "errors.PASSKEY_NOT_CONFIGURED",
+  "errors.PASSKEY_NOT_FOUND",
   "errors.RATE_LIMITED",
+  "errors.SSO_ACCOUNT_NOT_FOUND",
+  "errors.SSO_CLIENT_SECRET_REQUIRED",
+  "errors.SSO_INVALID_TOKEN",
+  "errors.SSO_NOT_CONFIGURED",
   "errors.TENANT_NOT_FOUND",
   "errors.UNKNOWN",
   "errors.VALIDATION_FAILED",

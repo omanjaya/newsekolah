@@ -50,5 +50,27 @@
     "otpLabel": "Kode verifikasi",
     "otpBody": "Akun ini memakai verifikasi dua langkah. Masukkan kode dari aplikasi autentikator atau salah satu kode pemulihan.",
     "submit": "Masuk dengan kode"
+  },
+  "passkeys": {
+    "title": "Passkey",
+    "description": "Masuk tanpa kata sandi memakai sidik jari, wajah, atau kunci keamanan perangkat ini.",
+    "emptyTitle": "Belum ada passkey",
+    "emptyBody": "Tambahkan passkey untuk masuk tanpa kata sandi dari perangkat ini.",
+    "addAction": "Tambah passkey",
+    "renameAction": "Ubah nama",
+    "removeAction": "Hapus",
+    "addDialogTitle": "Tambah passkey",
+    "addDialogBody": "Beri nama agar mudah dikenali, lalu ikuti permintaan perangkat untuk membuat passkey.",
+    "namePlaceholder": "Contoh: Laptop kerja",
+    "addConfirm": "Buat passkey",
+    "renameDialogTitle": "Ubah nama passkey",
+    "renameConfirm": "Simpan",
+    "removeDialogTitle": "Hapus passkey",
+    "removeDialogBody": "Passkey \"{name}\" tidak akan bisa dipakai lagi untuk masuk.",
+    "toasts": {
+      "added": "Passkey ditambahkan",
+      "renamed": "Nama passkey diperbarui",
+      "removed": "Passkey dihapus"
+    }
   }
 }

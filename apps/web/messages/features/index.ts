@@ -23,6 +23,8 @@ import reportsEn from "./reports.en.json";
 import reportsId from "./reports.id.json";
 import securityEn from "./security.en.json";
 import securityId from "./security.id.json";
+import ssoEn from "./sso.en.json";
+import ssoId from "./sso.id.json";
 
 registerFeatureMessages({ namespace: "calendar", id: calendarId, en: calendarEn });
 registerFeatureMessages({ namespace: "discipline", id: disciplineId, en: disciplineEn });
@@ -32,4 +34,5 @@ registerFeatureMessages({ namespace: "reports", id: reportsId, en: reportsEn });
 registerFeatureMessages({ namespace: "onboarding", id: onboardingId, en: onboardingEn });
 registerFeatureMessages({ namespace: "promotion", id: promotionId, en: promotionEn });
 registerFeatureMessages({ namespace: "security", id: securityId, en: securityEn });
+registerFeatureMessages({ namespace: "sso", id: ssoId, en: ssoEn });
 registerFeatureMessages({ namespace: "platform", id: platformId, en: platformEn });

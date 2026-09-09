@@ -268,6 +268,14 @@ export const navigation: NavItem[] = [
     group: GROUP.settings,
   },
   {
+    key: "settings-sso",
+    labelKey: "app.sso.navLabel",
+    href: "/settings/sso",
+    icon: ShieldCheck,
+    permission: "manage_settings",
+    group: GROUP.settings,
+  },
+  {
     key: "settings-audit",
     labelKey: "app.audit.navLabel",
     href: "/settings/audit-logs",

@@ -1,0 +1,29 @@
+{
+  "navLabel": "Masuk dengan Google",
+  "eyebrow": "Pengaturan",
+  "title": "Masuk dengan Google",
+  "description": "Izinkan staf dan guru masuk memakai akun Google Workspace sekolah, selain dengan username dan kata sandi.",
+  "statusTitle": "Status",
+  "statusOn": "Aktif",
+  "statusOff": "Tidak aktif",
+  "statusBody": "Saat aktif, tombol \"Masuk dengan Google\" muncul di halaman masuk untuk sekolah ini.",
+  "enabledToggleLabel": "Aktifkan masuk dengan Google",
+  "neverConfigured": "Belum pernah diatur. Isi client id, client secret, dan domain Google Workspace di bawah untuk mengaktifkan.",
+  "clientIdLabel": "Client ID",
+  "clientIdPlaceholder": "xxxxxxxxxx.apps.googleusercontent.com",
+  "clientSecretLabel": "Client secret",
+  "clientSecretUnchangedPlaceholder": "Tidak diubah",
+  "clientSecretHint": "Kosongkan untuk mempertahankan client secret yang sudah tersimpan.",
+  "hostedDomainLabel": "Domain Google Workspace",
+  "hostedDomainPlaceholder": "sekolah.sch.id",
+  "hostedDomainHint": "Hanya akun Google dengan domain ini yang bisa dipakai masuk.",
+  "saveAction": "Simpan",
+  "removeAction": "Hapus konfigurasi",
+  "removeDialogTitle": "Hapus konfigurasi Google SSO",
+  "removeDialogBody": "Tombol \"Masuk dengan Google\" akan hilang dari halaman masuk sampai diatur ulang.",
+  "validationRequired": "Client ID dan domain Google Workspace wajib diisi",
+  "toasts": {
+    "saved": "Konfigurasi Google SSO disimpan",
+    "removed": "Konfigurasi Google SSO dihapus"
+  }
+}
