@@ -9,7 +9,9 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"net/url"
 	"time"
 
@@ -49,6 +51,10 @@ func NewClient(cfg Config) (*Client, error) {
 	return &Client{mc: mc, bucket: cfg.Bucket}, nil
 }
 
+// Bucket returns the configured bucket name, for callers that need to
+// record where an object lives (e.g. the assets table).
+func (c *Client) Bucket() string { return c.bucket }
+
 // EnsureBucket creates the configured bucket if it does not already exist.
 // Safe to call on every startup.
 func (c *Client) EnsureBucket(ctx context.Context) error {
@@ -83,4 +89,59 @@ func (c *Client) PresignedGetURL(ctx context.Context, objectKey string, ttl time
 		return nil, fmt.Errorf("presign get %s: %w", objectKey, err)
 	}
 	return u, nil
+}
+
+// ObjectInfo is the subset of minio.ObjectInfo callers that only need size
+// actually use.
+type ObjectInfo struct {
+	SizeBytes int64
+}
+
+// StatObject returns metadata for an already-uploaded object, so a confirm
+// step can check its size without downloading it, per docs/08-security.md
+// section 6.
+func (c *Client) StatObject(ctx context.Context, objectKey string) (ObjectInfo, error) {
+	info, err := c.mc.StatObject(ctx, c.bucket, objectKey, minio.StatObjectOptions{})
+	if err != nil {
+		return ObjectInfo{}, fmt.Errorf("stat %s: %w", objectKey, err)
+	}
+	return ObjectInfo{SizeBytes: info.Size}, nil
+}
+
+// ErrTooLarge is returned by DownloadBounded when the object has more than
+// maxBytes: the confirm step treats this the same as an explicit size
+// check, without ever pulling an oversized file fully into memory.
+var ErrTooLarge = errors.New("storage: object exceeds the requested byte limit")
+
+// DownloadBounded reads at most maxBytes+1 of an object and returns exactly
+// what was read, or ErrTooLarge if the object has more than maxBytes. This
+// lets a confirm step both sniff the real content type (from the magic
+// bytes at the start) and hash the exact bytes it validated, rather than
+// trusting a client-supplied Content-Type or size (docs/08-security.md
+// section 6). Intended for small uploads (avatars, up to a few MB); it is
+// not a general-purpose download method.
+func (c *Client) DownloadBounded(ctx context.Context, objectKey string, maxBytes int64) ([]byte, error) {
+	obj, err := c.mc.GetObject(ctx, c.bucket, objectKey, minio.GetObjectOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("get %s: %w", objectKey, err)
+	}
+	defer func() { _ = obj.Close() }()
+
+	data, err := io.ReadAll(io.LimitReader(obj, maxBytes+1))
+	if err != nil {
+		return nil, fmt.Errorf("read %s: %w", objectKey, err)
+	}
+	if int64(len(data)) > maxBytes {
+		return nil, ErrTooLarge
+	}
+	return data, nil
+}
+
+// RemoveObject deletes an object, used to discard an avatar upload that
+// fails the confirm step's validation (wrong type, too large).
+func (c *Client) RemoveObject(ctx context.Context, objectKey string) error {
+	if err := c.mc.RemoveObject(ctx, c.bucket, objectKey, minio.RemoveObjectOptions{}); err != nil {
+		return fmt.Errorf("remove %s: %w", objectKey, err)
+	}
+	return nil
 }

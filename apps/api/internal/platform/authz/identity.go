@@ -19,6 +19,11 @@ type Identity struct {
 	SessionID     uuid.UUID
 	Roles         []string
 	Err           error
+
+	// ActorUserID is set only during an impersonation session: the real
+	// admin identified by the access token's `act` claim, as opposed to
+	// UserID, which is the impersonated user the session belongs to.
+	ActorUserID uuid.NullUUID
 }
 
 type identityCtxKey struct{}

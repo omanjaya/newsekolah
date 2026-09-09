@@ -101,6 +101,15 @@ func (h *Handler) toAPIMe(ctx context.Context, tenantID uuid.UUID, me service.Me
 		result.Tenant = branded
 	}
 
+	if me.ImpersonatedBy != nil {
+		userID := me.ImpersonatedBy.UserID
+		name := me.ImpersonatedBy.Name
+		result.ImpersonatedBy = &struct {
+			Name   *string    `json:"name,omitempty"`
+			UserId *uuid.UUID `json:"user_id,omitempty"`
+		}{Name: &name, UserId: &userID}
+	}
+
 	if me.ActiveAcademicYear != nil {
 		result.ActiveAcademicYear = &struct {
 			Id    uuid.UUID `json:"id"`

@@ -15,13 +15,32 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/authz"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/notify"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/storage"
 )
 
 // Repository is identity's data-access boundary. The concrete
 // implementation lives in repository/ and is backed by sqlc; this
 // interface is declared here (the consumer), not there, per the layering
-// rule that a repository interface belongs to its service.
+// rule that a repository interface belongs to its service. It is composed
+// of one embedded interface per feature area (auth below, administration
+// features in their own files) so each stays small enough to read on its
+// own; repository.Repository implements all of them on one struct.
 type Repository interface {
+	AuthRepository
+	UsersAdminRepository
+	RolesRepository
+	DutiesRepository
+	ImpersonationRepository
+	PasswordResetRepository
+	ProfileRepository
+	AuditRepository
+}
+
+// AuthRepository is login, session, and effective-permission lookup: the
+// original Phase 0 surface of identity, unchanged by the admin features
+// added around it.
+type AuthRepository interface {
 	GetUserByUsername(ctx context.Context, tenantID uuid.UUID, username string) (domain.User, error)
 	GetUserByID(ctx context.Context, tenantID, userID uuid.UUID) (domain.User, error)
 	UpdateUserPassword(ctx context.Context, tenantID, userID uuid.UUID, passwordHash string) error
@@ -76,10 +95,34 @@ type RateLimiter interface {
 // signature structurally.
 type TokenIssuer interface {
 	IssueAccessToken(userID, tenantID, sessionID uuid.UUID, roles []string, now time.Time) (string, time.Time, error)
+	// IssueImpersonationAccessToken matches
+	// platform/auth.TokenIssuer's method of the same name structurally.
+	IssueImpersonationAccessToken(actorID, userID, tenantID, sessionID uuid.UUID, roles []string, now time.Time) (string, time.Time, error)
+}
+
+// IPRateLimiter matches platform/auth.IPRateLimiter's Allow signature
+// structurally.
+type IPRateLimiter interface {
+	Allow(ctx context.Context, ip string) (bool, error)
 }
 
 type Config struct {
 	RefreshTokenTTL time.Duration
+	// WebBaseURL prefixes the link sent in a password reset email, e.g.
+	// "https://smansa.sch.id" -> ".../reset-password?token=...".
+	WebBaseURL string
+	// AvatarMaxBytes caps an uploaded avatar's size (docs/08-security.md
+	// section 6: 2 MB for avatars).
+	AvatarMaxBytes int64
+}
+
+// Extras groups the dependencies added by the admin features around the
+// original Phase 0 constructor args, so New's signature does not keep
+// growing one positional parameter at a time.
+type Extras struct {
+	ResetLimiter IPRateLimiter
+	Email        notify.EmailSender
+	Storage      *storage.Client // nil when S3 is not configured; avatar upload then returns ErrUploadNotConfigured
 }
 
 type Service struct {
@@ -91,10 +134,11 @@ type Service struct {
 	clock      clock.Clock
 	cfg        Config
 	newRefresh func() (token string, hash []byte, err error)
+	extras     Extras
 }
 
-func New(pool *pgxpool.Pool, repo Repository, years AcademicYearReader, limiter RateLimiter, tokens TokenIssuer, clk clock.Clock, cfg Config, newRefresh func() (string, []byte, error)) *Service {
-	return &Service{pool: pool, repo: repo, years: years, limiter: limiter, tokens: tokens, clock: clk, cfg: cfg, newRefresh: newRefresh}
+func New(pool *pgxpool.Pool, repo Repository, years AcademicYearReader, limiter RateLimiter, tokens TokenIssuer, clk clock.Clock, cfg Config, newRefresh func() (string, []byte, error), extras Extras) *Service {
+	return &Service{pool: pool, repo: repo, years: years, limiter: limiter, tokens: tokens, clock: clk, cfg: cfg, newRefresh: newRefresh, extras: extras}
 }
 
 // withTx opens the tenant-scoped transaction for one use case, per

@@ -13,4 +13,43 @@ var (
 	ErrSessionRevoked       = errors.New("session revoked")
 	ErrRefreshReuseDetected = errors.New("refresh token reuse detected")
 	ErrRateLimited          = errors.New("rate limited")
+
+	// Users admin
+	ErrUserAlreadyExists    = errors.New("username, email, nis, or nip already in use")
+	ErrCannotArchiveSelf    = errors.New("cannot archive own account")
+	ErrOnlySuperAdminGrants = errors.New("only a super admin can grant the super admin role")
+	ErrNoPrimaryRole        = errors.New("exactly one role must be marked primary")
+	ErrInvalidProfileKind   = errors.New("invalid profile kind")
+
+	// Roles and permissions
+	ErrRoleNotFound        = errors.New("role not found")
+	ErrInvalidRoleSlug     = errors.New("role slug must be 2-50 lowercase letters, digits, or underscores")
+	ErrRoleSystemImmutable = errors.New("system role slug and name cannot be changed")
+	ErrRoleInUse           = errors.New("role is still assigned to one or more users")
+	ErrUnknownPermission   = errors.New("unknown permission code")
+
+	// Duties
+	ErrDutyTypeNotFound       = errors.New("duty type not found")
+	ErrDutyTypeInUse          = errors.New("duty type has one or more assignments")
+	ErrDutyAssignmentNotFound = errors.New("duty assignment not found")
+	ErrInvalidScopeKind       = errors.New("invalid scope kind")
+	ErrScopeTargetNotFound    = errors.New("scope target (class or student) not found")
+
+	// Impersonation
+	ErrCannotImpersonateSelf       = errors.New("cannot impersonate own account")
+	ErrCannotImpersonateSuperAdmin = errors.New("cannot impersonate a super admin")
+	ErrCannotImpersonateInactive   = errors.New("cannot impersonate an inactive user")
+	ErrNotImpersonating            = errors.New("current session is not an impersonation session")
+
+	// Password reset
+	ErrPasswordResetTokenInvalid = errors.New("password reset token is invalid, used, or expired")
+
+	// Avatar / upload
+	ErrUploadNotConfigured   = errors.New("file storage is not configured")
+	ErrUploadInvalidFileType = errors.New("unsupported file type")
+	ErrUploadFileTooLarge    = errors.New("file exceeds the allowed size")
+	ErrUploadObjectNotOwned  = errors.New("uploaded object does not belong to this tenant/user")
+
+	// Import
+	ErrImportFileInvalid = errors.New("import file is unreadable or does not match the template")
 )

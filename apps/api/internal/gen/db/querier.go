@@ -15,12 +15,18 @@ type Querier interface {
 	ActivateAcademicYear(ctx context.Context, arg ActivateAcademicYearParams) error
 	AddDutyPermission(ctx context.Context, arg AddDutyPermissionParams) error
 	AddRolePermission(ctx context.Context, arg AddRolePermissionParams) error
+	ArchiveUser(ctx context.Context, arg ArchiveUserParams) error
 	AssignUserRole(ctx context.Context, arg AssignUserRoleParams) error
+	ClassExistsInTenant(ctx context.Context, arg ClassExistsInTenantParams) (bool, error)
+	CountAssignmentsForDutyType(ctx context.Context, arg CountAssignmentsForDutyTypeParams) (int64, error)
+	CountUsersForRole(ctx context.Context, arg CountUsersForRoleParams) (int64, error)
 	CreateAcademicYear(ctx context.Context, arg CreateAcademicYearParams) (AcademicYear, error)
+	CreateAsset(ctx context.Context, arg CreateAssetParams) (Asset, error)
 	CreateClass(ctx context.Context, arg CreateClassParams) (Class, error)
 	CreateDutyAssignment(ctx context.Context, arg CreateDutyAssignmentParams) (DutyAssignment, error)
 	CreateDutyType(ctx context.Context, arg CreateDutyTypeParams) (DutyType, error)
 	CreateGradeLevel(ctx context.Context, arg CreateGradeLevelParams) (GradeLevel, error)
+	CreateImpersonationSession(ctx context.Context, arg CreateImpersonationSessionParams) (Session, error)
 	CreatePasswordReset(ctx context.Context, arg CreatePasswordResetParams) (PasswordReset, error)
 	CreateRole(ctx context.Context, arg CreateRoleParams) (Role, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error)
@@ -28,38 +34,84 @@ type Querier interface {
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	CreateUserProfile(ctx context.Context, arg CreateUserProfileParams) error
 	DeactivateAllAcademicYears(ctx context.Context, tenantID uuid.UUID) error
+	DeleteDutyAssignment(ctx context.Context, arg DeleteDutyAssignmentParams) error
+	DeleteDutyPermissions(ctx context.Context, arg DeleteDutyPermissionsParams) error
+	DeleteRole(ctx context.Context, arg DeleteRoleParams) error
+	DeleteRolePermissions(ctx context.Context, arg DeleteRolePermissionsParams) error
+	DeleteUserRoles(ctx context.Context, arg DeleteUserRolesParams) error
+	EmailExists(ctx context.Context, arg EmailExistsParams) (bool, error)
 	GetAcademicYearByID(ctx context.Context, arg GetAcademicYearByIDParams) (AcademicYear, error)
 	GetActiveAcademicYear(ctx context.Context, tenantID uuid.UUID) (AcademicYear, error)
+	GetAssetByID(ctx context.Context, arg GetAssetByIDParams) (Asset, error)
+	GetDutyAssignmentByID(ctx context.Context, arg GetDutyAssignmentByIDParams) (DutyAssignment, error)
+	GetDutyTypeByID(ctx context.Context, arg GetDutyTypeByIDParams) (DutyType, error)
 	GetDutyTypeBySlug(ctx context.Context, arg GetDutyTypeBySlugParams) (DutyType, error)
 	GetPlatformSetting(ctx context.Context, key string) ([]byte, error)
+	GetRoleByID(ctx context.Context, arg GetRoleByIDParams) (Role, error)
 	GetRoleBySlug(ctx context.Context, arg GetRoleBySlugParams) (Role, error)
 	GetSessionByID(ctx context.Context, arg GetSessionByIDParams) (Session, error)
 	GetSessionByRefreshHash(ctx context.Context, arg GetSessionByRefreshHashParams) (Session, error)
 	GetSingleTenant(ctx context.Context) (Tenant, error)
+	GetStaffProfile(ctx context.Context, arg GetStaffProfileParams) (StaffProfile, error)
+	GetStudentProfile(ctx context.Context, arg GetStudentProfileParams) (StudentProfile, error)
+	GetTeacherProfile(ctx context.Context, arg GetTeacherProfileParams) (TeacherProfile, error)
 	GetTenantByDomain(ctx context.Context, primaryDomain pgtype.Text) (Tenant, error)
 	GetTenantByID(ctx context.Context, id uuid.UUID) (Tenant, error)
 	GetTenantBySlug(ctx context.Context, slug string) (Tenant, error)
+	GetUserAdminByID(ctx context.Context, arg GetUserAdminByIDParams) (GetUserAdminByIDRow, error)
 	GetUserByID(ctx context.Context, arg GetUserByIDParams) (User, error)
 	GetUserByUsername(ctx context.Context, arg GetUserByUsernameParams) (User, error)
+	GetUserByUsernameOrEmail(ctx context.Context, arg GetUserByUsernameOrEmailParams) (User, error)
+	GetValidPasswordResetByHash(ctx context.Context, arg GetValidPasswordResetByHashParams) (PasswordReset, error)
+	InsertImpersonationAction(ctx context.Context, arg InsertImpersonationActionParams) error
 	InsertLoginAttempt(ctx context.Context, arg InsertLoginAttemptParams) error
 	IsSessionActive(ctx context.Context, arg IsSessionActiveParams) (pgtype.Bool, error)
 	ListAcademicYears(ctx context.Context, tenantID uuid.UUID) ([]AcademicYear, error)
 	ListActiveDutyAssignmentsForUser(ctx context.Context, arg ListActiveDutyAssignmentsForUserParams) ([]ListActiveDutyAssignmentsForUserRow, error)
 	ListActiveDutyAssignmentsWithPermissions(ctx context.Context, arg ListActiveDutyAssignmentsWithPermissionsParams) ([]ListActiveDutyAssignmentsWithPermissionsRow, error)
 	ListActiveSessionsForUser(ctx context.Context, arg ListActiveSessionsForUserParams) ([]Session, error)
+	// Ordered by id descending: audit_logs.id is a uuidv7 (time-sortable), so
+	// this gives newest-first without needing a second sort key even though
+	// the table's primary key is (id, occurred_at) for partitioning.
+	ListAuditLogs(ctx context.Context, arg ListAuditLogsParams) ([]AuditLog, error)
+	ListDutyAssignmentsAdmin(ctx context.Context, arg ListDutyAssignmentsAdminParams) ([]ListDutyAssignmentsAdminRow, error)
+	ListDutyPermissionCodes(ctx context.Context, arg ListDutyPermissionCodesParams) ([]string, error)
+	ListDutyTypes(ctx context.Context, arg ListDutyTypesParams) ([]DutyType, error)
 	ListPermissionCodesForDutyTypes(ctx context.Context, dutyTypeIds []uuid.UUID) ([]ListPermissionCodesForDutyTypesRow, error)
 	ListPermissionCodesForRoles(ctx context.Context, roleIds []uuid.UUID) ([]string, error)
+	ListPermissionsCatalog(ctx context.Context) ([]Permission, error)
+	ListRolePermissionCodes(ctx context.Context, arg ListRolePermissionCodesParams) ([]string, error)
+	ListRolesByTenant(ctx context.Context, tenantID uuid.UUID) ([]Role, error)
 	ListRolesForUser(ctx context.Context, userID uuid.UUID) ([]ListRolesForUserRow, error)
 	ListTenantSettingsByPrefix(ctx context.Context, arg ListTenantSettingsByPrefixParams) ([]TenantSetting, error)
+	ListUserRoleSlugs(ctx context.Context, userID uuid.UUID) ([]string, error)
+	ListUsersAdmin(ctx context.Context, arg ListUsersAdminParams) ([]ListUsersAdminRow, error)
+	MarkPasswordResetUsed(ctx context.Context, arg MarkPasswordResetUsedParams) error
+	PermissionExists(ctx context.Context, code string) (bool, error)
+	RestoreUser(ctx context.Context, arg RestoreUserParams) error
 	RevokeOtherUserSessions(ctx context.Context, arg RevokeOtherUserSessionsParams) error
 	RevokeSession(ctx context.Context, arg RevokeSessionParams) error
 	RevokeSessionFamily(ctx context.Context, arg RevokeSessionFamilyParams) error
 	SearchTenants(ctx context.Context, name string) ([]Tenant, error)
+	SetUserAvatarAsset(ctx context.Context, arg SetUserAvatarAssetParams) error
+	SetUserStatus(ctx context.Context, arg SetUserStatusParams) error
+	SoftDeleteDutyType(ctx context.Context, arg SoftDeleteDutyTypeParams) error
 	TouchSessionLastSeen(ctx context.Context, arg TouchSessionLastSeenParams) error
+	UpdateDutyAssignment(ctx context.Context, arg UpdateDutyAssignmentParams) error
+	UpdateDutyType(ctx context.Context, arg UpdateDutyTypeParams) error
+	UpdateOwnProfile(ctx context.Context, arg UpdateOwnProfileParams) error
+	UpdateRole(ctx context.Context, arg UpdateRoleParams) error
+	UpdateUserBasic(ctx context.Context, arg UpdateUserBasicParams) error
 	UpdateUserLastLogin(ctx context.Context, arg UpdateUserLastLoginParams) error
 	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) error
 	UpsertPermission(ctx context.Context, arg UpsertPermissionParams) error
+	UpsertStaffProfile(ctx context.Context, arg UpsertStaffProfileParams) error
+	UpsertStudentProfile(ctx context.Context, arg UpsertStudentProfileParams) error
+	UpsertTeacherProfile(ctx context.Context, arg UpsertTeacherProfileParams) error
 	UpsertTenantSetting(ctx context.Context, arg UpsertTenantSettingParams) error
+	UpsertUserProfile(ctx context.Context, arg UpsertUserProfileParams) error
+	UserExistsInTenant(ctx context.Context, arg UserExistsInTenantParams) (bool, error)
+	UsernameExists(ctx context.Context, arg UsernameExistsParams) (bool, error)
 }
 
 var _ Querier = (*Queries)(nil)

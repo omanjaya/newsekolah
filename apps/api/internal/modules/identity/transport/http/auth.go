@@ -165,7 +165,12 @@ func (h *Handler) GetMe(ctx context.Context, _ api.GetMeRequestObject) (api.GetM
 	tenantID := tenantIDFromContext(ctx)
 	userID, _ := httpx.UserIDFromContext(ctx)
 
-	me, err := h.service.Me(ctx, tenantID, userID)
+	var actorID uuid.NullUUID
+	if id, ok := httpx.ActorIDFromContext(ctx); ok {
+		actorID = uuid.NullUUID{UUID: id, Valid: true}
+	}
+
+	me, err := h.service.Me(ctx, tenantID, userID, actorID)
 	if err != nil {
 		return nil, mapAuthError(err)
 	}
