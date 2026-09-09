@@ -108,6 +108,14 @@ export function ProfileScreen(): React.JSX.Element {
           ))}
         </View>
 
+        <View className="border-t border-line dark:border-line-dark">
+          <ListRow
+            title={t("profile.privacy_policy")}
+            showChevron
+            onPress={() => router.push("/privacy")}
+          />
+        </View>
+
         <View className="px-4 py-6">
           <Button
             label={tShared("common.actions.logout")}

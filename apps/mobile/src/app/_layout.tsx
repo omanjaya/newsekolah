@@ -10,6 +10,7 @@ import { Platform } from "react-native";
 import { AuthProvider, useAuth } from "@/lib/auth/AuthProvider";
 import { ToastHost } from "@/components/ui/Toast";
 import { accentVars } from "@/theme/accent";
+import { useOfflineSyncLoop } from "@/lib/offline/sync";
 
 // One shared query client for the whole app; screens define their own query
 // keys under features/*/keys.ts once that layer exists.
@@ -19,6 +20,11 @@ const queryClient = new QueryClient({
 
 function AccentRoot({ children }: { children: React.ReactNode }): React.JSX.Element {
   const { me } = useAuth();
+  // Attendance taken offline queues locally (see lib/offline/queue.ts) and
+  // needs a foreground/interval flush loop to leave the queue -- this is
+  // the one place that loop is mounted so it runs exactly once per app
+  // instance, before role changes.
+  useOfflineSyncLoop();
   // DESIGN.md: Inter on web/Android, the iOS system font (San Francisco) on
   // iOS -- so the Inter files are only loaded when they will actually render.
   const [fontsLoaded] = useFonts(

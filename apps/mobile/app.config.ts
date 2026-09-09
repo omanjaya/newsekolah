@@ -29,9 +29,15 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ios: {
     supportsTablet: false,
     bundleIdentifier: "id.newsekolah.mobile",
+    // App Store rejects an icon with an alpha channel; icon.png (used for
+    // Android's adaptive foreground and the splash mark, both of which
+    // composite fine with transparency) keeps its alpha, so iOS gets its
+    // own flattened, fully opaque copy instead of reusing it directly.
+    icon: "./assets/images/icon-ios.png",
     infoPlist: {
       CFBundleDisplayName: "SION",
-      NSCameraUsageDescription: "Kamera dipakai untuk memindai kode QR presensi dan gerbang.",
+      NSCameraUsageDescription:
+        "Kamera dipakai untuk memindai kode QR presensi, gerbang, dan izin keluar.",
       NSFaceIDUsageDescription: "Face ID dipakai untuk membuka akses tersimpan lebih cepat.",
     },
   },
@@ -41,7 +47,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       backgroundColor: "#F7F6F3",
       foregroundImage: "./assets/images/icon.png",
     },
-    permissions: ["CAMERA", "USE_BIOMETRIC", "USE_FINGERPRINT"],
+    // POST_NOTIFICATIONS (Android 13+) is added automatically by the
+    // expo-notifications plugin below; listed here anyway so the manifest
+    // reads as a complete, deliberate list rather than an implicit one.
+    permissions: ["CAMERA", "USE_BIOMETRIC", "USE_FINGERPRINT", "POST_NOTIFICATIONS"],
   },
   plugins: [
     "expo-router",
@@ -54,18 +63,36 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         backgroundColor: "#F7F6F3",
         image: "./assets/images/icon.png",
         imageWidth: 120,
+        dark: {
+          backgroundColor: "#141414",
+          image: "./assets/images/icon.png",
+          imageWidth: 120,
+        },
       },
     ],
     [
       "expo-camera",
       {
-        cameraPermission: "Kamera dipakai untuk memindai kode QR presensi dan gerbang.",
+        cameraPermission:
+          "Kamera dipakai untuk memindai kode QR presensi, gerbang, dan izin keluar.",
       },
     ],
     [
       "expo-local-authentication",
       {
         faceIDPermission: "Face ID dipakai untuk membuka akses tersimpan lebih cepat.",
+      },
+    ],
+    [
+      "expo-notifications",
+      {
+        // Notifications tell a person about permits, attendance
+        // corrections, and school announcements (see src/app/privacy.tsx
+        // for the in-app explanation shown before the OS permission
+        // prompt, since neither platform lets an app supply custom copy
+        // inside that prompt itself).
+        icon: "./assets/images/icon.png",
+        color: "#1F3A5F",
       },
     ],
   ],
