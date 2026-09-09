@@ -1,15 +1,14 @@
-// Temporary: replace with @newsekolah/api-client once published in the workspace
-// (the retry/backoff policy here should eventually be shared with web's
-// offline story, if web ever needs one).
-//
 // SQLite-backed queue for mutations made while offline (teacher attendance,
 // library scan opname -- see docs/10-mobile-strategy.md section 3). Each
 // mutation keeps one Idempotency-Key for its whole lifetime so a retry after
-// a flaky network never double-applies on the server.
+// a flaky network never double-applies on the server. The retry/backoff
+// policy here is mobile-only; @newsekolah/api-client has no offline queue of
+// its own, this just sends queued mutations through its client via
+// rawMutate (see lib/api/client.ts).
 
 import * as SQLite from "expo-sqlite";
 import * as Crypto from "expo-crypto";
-import { request } from "@/lib/api";
+import { rawMutate } from "@/lib/api/client";
 
 const DB_NAME = "newsekolah-offline.db";
 const MAX_BACKOFF_MS = 5 * 60 * 1000;
@@ -171,11 +170,7 @@ export class MutationQueue {
 
     for (const mutation of due) {
       try {
-        await request(mutation.path, {
-          method: mutation.method,
-          body: mutation.body,
-          idempotencyKey: mutation.idempotencyKey,
-        });
+        await rawMutate(mutation.method, mutation.path, mutation.body, mutation.idempotencyKey);
         await this.remove(mutation.id);
         sent += 1;
       } catch (error) {

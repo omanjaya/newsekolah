@@ -1,19 +1,8 @@
 {
-  "common.save": "Simpan",
-  "common.cancel": "Batal",
-  "common.retry": "Coba lagi",
-  "common.loading": "Memuat",
-  "common.logout": "Keluar",
-  "common.close": "Tutup",
-
   "school_picker.title": "Pilih sekolah",
   "school_picker.search_placeholder": "Cari nama atau kode sekolah",
   "school_picker.empty": "Sekolah tidak ditemukan. Periksa ejaan atau tanya admin sekolah untuk kode yang benar.",
 
-  "login.title": "Masuk",
-  "login.username_label": "Nama pengguna",
-  "login.password_label": "Kata sandi",
-  "login.submit": "Masuk",
   "login.server_link": "Ganti alamat server",
   "login.error_invalid_credentials": "Nama pengguna atau kata sandi salah. Periksa kembali lalu coba lagi.",
   "login.error_generic": "Masuk belum berhasil. Periksa koneksi lalu coba lagi.",
@@ -23,19 +12,12 @@
   "server_setup.save": "Simpan alamat",
   "server_setup.reset": "Pakai alamat bawaan",
 
-  "change_password.title": "Ganti kata sandi",
   "change_password.description": "Kata sandi perlu diganti sebelum melanjutkan.",
-  "change_password.current_label": "Kata sandi saat ini",
-  "change_password.new_label": "Kata sandi baru",
-  "change_password.submit": "Simpan kata sandi baru",
 
   "home.title": "Beranda",
   "notifications.title": "Notifikasi",
   "notifications.empty": "Belum ada notifikasi.",
   "profile.title": "Profil",
-  "profile.sessions_title": "Sesi aktif",
-  "profile.sessions_current": "Perangkat ini",
-  "profile.sessions_revoke": "Cabut akses",
   "profile.switch_role": "Ganti peran",
   "profile.role.student": "Siswa",
   "profile.role.teacher": "Guru",
@@ -47,6 +29,5 @@
   "qr.title": "Kode QR",
 
   "empty_state.default_action": "Muat ulang",
-  "error.generic_title": "Terjadi kesalahan",
   "error.generic_action": "Periksa koneksi lalu coba lagi."
 }

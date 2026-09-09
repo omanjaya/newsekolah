@@ -1,17 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, FlatList, View } from "react-native";
 import { router } from "expo-router";
-import { useQuery } from "@tanstack/react-query";
+import { useTenantLookup } from "@newsekolah/api-client/react";
 import { School } from "lucide-react-native";
 import { ScreenHeader } from "@/components/ui/ScreenHeader";
 import { Input } from "@/components/ui/Input";
 import { ListRow } from "@/components/ui/ListRow";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { getTenantBranding, lookupTenants } from "@/lib/api";
+import { getApiClient } from "@/lib/api/client";
 import { setTenantSlug } from "@/lib/tenant/tenant-store";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { t } from "@/i18n/t";
-import type { TenantSummary } from "@/lib/api-types";
+import type { TenantSummary } from "@/lib/api/types";
 
 /** Single-tenant deployments resolve the tenant from the host, so
  * GET /v1/tenant/branding succeeds with no X-Tenant header. When it does, we
@@ -31,7 +31,7 @@ export default function SchoolPicker(): React.JSX.Element {
     cancelledRef.current = false;
     void (async () => {
       try {
-        const branding = await getTenantBranding();
+        const branding = await getApiClient().GET("/v1/tenant/branding");
         if (cancelledRef.current) return;
         await setTenantSlug(branding.slug);
         router.replace("/(auth)/login");
@@ -44,11 +44,10 @@ export default function SchoolPicker(): React.JSX.Element {
     };
   }, []);
 
-  const { data, isFetching } = useQuery({
-    queryKey: ["tenant-lookup", debouncedQuery],
-    queryFn: () => lookupTenants(debouncedQuery),
-    enabled: searchEnabled,
-  });
+  // useTenantLookup already gates on its own 2-character minimum; query can
+  // only be non-empty once autoChecking has finished (the search Input below
+  // is not rendered before then), so that minimum is the only gate needed.
+  const { data, isFetching } = useTenantLookup(getApiClient(), debouncedQuery);
 
   async function choose(tenant: TenantSummary): Promise<void> {
     await setTenantSlug(tenant.slug);

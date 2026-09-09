@@ -1,5 +1,7 @@
-// Temporary: replace with @newsekolah/api-client once published in the workspace
-// (device identity may end up generated server-side or via a shared package).
+// Device identity is a mobile-only concern -- @newsekolah/api-client has no
+// notion of it, it only accepts `device_id`/`device_name` as opaque strings
+// on LoginRequest -- so this stays a local helper rather than something the
+// shared package can own.
 
 import * as SecureStore from "expo-secure-store";
 import * as Crypto from "expo-crypto";

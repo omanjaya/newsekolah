@@ -1,17 +1,17 @@
 import { ScrollView, Text, View } from "react-native";
 import { router } from "expo-router";
-import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import { useSessions, useRevokeSession } from "@newsekolah/api-client/react";
 import { Smartphone } from "lucide-react-native";
 import { ScreenHeader } from "@/components/ui/ScreenHeader";
 import { Avatar } from "@/components/ui/Avatar";
 import { ListRow } from "@/components/ui/ListRow";
 import { Button } from "@/components/ui/Button";
-import { listSessions, revokeSession } from "@/lib/api";
+import { getApiClient } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { resolveTabGroups } from "@/lib/auth/roles";
 import { showToast } from "@/components/ui/Toast";
-import { t } from "@/i18n/t";
-import type { ProfileKind } from "@/lib/api-types";
+import { t, tShared } from "@/i18n/t";
+import type { ProfileKind } from "@/lib/api/types";
 
 const HOME_ROUTE_BY_GROUP: Record<ProfileKind, string> = {
   student: "/(student)/home",
@@ -32,22 +32,22 @@ const GROUP_LABEL_KEY: Record<
 
 export function ProfileScreen(): React.JSX.Element {
   const { me, activeTabGroup, setActiveTabGroup, availableTabGroups, signOut } = useAuth();
-  const queryClient = useQueryClient();
+  const client = getApiClient();
 
-  const sessionsQuery = useQuery({ queryKey: ["sessions"], queryFn: listSessions });
-  const revokeMutation = useMutation({
-    mutationFn: revokeSession,
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["sessions"] });
-    },
-    onError: () => showToast(t("error.generic_title"), "error"),
-  });
+  const sessionsQuery = useSessions(client);
+  const revokeMutation = useRevokeSession(client);
 
   if (!me) return <View className="flex-1 bg-bg dark:bg-bg-dark" />;
 
   function switchTo(group: ProfileKind): void {
     setActiveTabGroup(group);
     router.replace(HOME_ROUTE_BY_GROUP[group]);
+  }
+
+  function revoke(sessionId: string): void {
+    revokeMutation.mutate(sessionId, {
+      onError: () => showToast(tShared("common.states.error"), "error"),
+    });
   }
 
   return (
@@ -84,7 +84,7 @@ export function ProfileScreen(): React.JSX.Element {
         <View className="border-t border-line dark:border-line-dark">
           <View className="px-4 py-3">
             <Text className="text-sm font-medium text-ink dark:text-ink-dark">
-              {t("profile.sessions_title")}
+              {tShared("auth.sessions.title")}
             </Text>
           </View>
           {(sessionsQuery.data?.data ?? []).map((session) => (
@@ -92,13 +92,15 @@ export function ProfileScreen(): React.JSX.Element {
               key={session.id}
               leading={<Smartphone size={20} strokeWidth={1.75} color="#8A8A8A" />}
               title={session.device_name ?? session.client}
-              subtitle={session.is_current ? t("profile.sessions_current") : session.last_seen_at}
+              subtitle={
+                session.is_current ? tShared("auth.sessions.currentDevice") : session.last_seen_at
+              }
               trailing={
                 session.is_current ? undefined : (
                   <Button
-                    label={t("profile.sessions_revoke")}
+                    label={tShared("auth.sessions.revoke")}
                     variant="ghost"
-                    onPress={() => revokeMutation.mutate(session.id)}
+                    onPress={() => revoke(session.id)}
                   />
                 )
               }
@@ -108,7 +110,7 @@ export function ProfileScreen(): React.JSX.Element {
 
         <View className="px-4 py-6">
           <Button
-            label={t("common.logout")}
+            label={tShared("common.actions.logout")}
             variant="destructive"
             onPress={() => {
               void signOut().then(() => router.replace("/"));

@@ -10,6 +10,14 @@ const defaultTenant = env.EXPO_PUBLIC_DEFAULT_TENANT ?? "";
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
+  // `name` and `slug` are internal identifiers (EAS project/update matching,
+  // dev client labeling) and stay "newsekolah"-based alongside the hardcoded
+  // bundle ids below -- they are not the product name a user sees. The
+  // on-device home screen label is set separately via
+  // `ios.infoPlist.CFBundleDisplayName` to "SION": an interim product name,
+  // not the final per-tenant branding (branding.name/short_name from
+  // GET /v1/tenant/branding, shown inside the app itself, e.g. the login
+  // screen) which this static config has no way to know at build time.
   name: "newsekolah",
   slug: "newsekolah",
   scheme: "newsekolah",
@@ -22,6 +30,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     supportsTablet: false,
     bundleIdentifier: "id.newsekolah.mobile",
     infoPlist: {
+      CFBundleDisplayName: "SION",
       NSCameraUsageDescription: "Kamera dipakai untuk memindai kode QR presensi dan gerbang.",
       NSFaceIDUsageDescription: "Face ID dipakai untuk membuka akses tersimpan lebih cepat.",
     },

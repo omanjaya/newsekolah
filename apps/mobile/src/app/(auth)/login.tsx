@@ -1,13 +1,17 @@
 import { useState } from "react";
 import { Image, Pressable, ScrollView, Text, View } from "react-native";
 import { router } from "expo-router";
-import { useQuery } from "@tanstack/react-query";
 import { KeyboardAvoidingView, Platform } from "react-native";
+import { useTenantBranding } from "@newsekolah/api-client/react";
+import { ApiError } from "@newsekolah/api-client";
+import { loginSchema } from "@newsekolah/schemas";
+import type { MessageKey } from "@newsekolah/i18n";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/lib/auth/AuthProvider";
-import { getTenantBranding, ApiError } from "@/lib/api";
-import { t } from "@/i18n/t";
+import { getApiClient } from "@/lib/api/client";
+import { getTenantSlug } from "@/lib/tenant/tenant-store";
+import { t, tShared } from "@/i18n/t";
 
 export default function Login(): React.JSX.Element {
   const { signIn } = useAuth();
@@ -16,13 +20,28 @@ export default function Login(): React.JSX.Element {
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const { data: branding } = useQuery({
-    queryKey: ["tenant-branding"],
-    queryFn: getTenantBranding,
-  });
+  const client = getApiClient();
+  const { data: branding } = useTenantBranding(client, getTenantSlug() ?? undefined);
 
   async function handleSubmit(): Promise<void> {
     setErrorMessage(null);
+
+    // client is fixed by platform, not user input, but loginSchema requires
+    // it -- @newsekolah/schemas validates the request shape as a whole, not
+    // just the fields this form collects.
+    const validation = loginSchema.safeParse({
+      username: username.trim(),
+      password,
+      client: Platform.OS === "ios" ? "ios" : "android",
+    });
+    if (!validation.success) {
+      const [firstIssue] = validation.error.issues;
+      setErrorMessage(
+        firstIssue ? tShared(firstIssue.message as MessageKey) : t("login.error_generic"),
+      );
+      return;
+    }
+
     setSubmitting(true);
     try {
       await signIn(username.trim(), password);
@@ -59,13 +78,13 @@ export default function Login(): React.JSX.Element {
               />
             ) : null}
             <Text className="text-xl font-medium text-ink dark:text-ink-dark">
-              {branding?.name ?? t("login.title")}
+              {branding?.name ?? tShared("auth.login.title")}
             </Text>
           </View>
 
           <View className="gap-4">
             <Input
-              label={t("login.username_label")}
+              label={tShared("auth.login.usernameLabel")}
               value={username}
               onChangeText={setUsername}
               autoCapitalize="none"
@@ -73,7 +92,7 @@ export default function Login(): React.JSX.Element {
               textContentType="username"
             />
             <Input
-              label={t("login.password_label")}
+              label={tShared("auth.login.passwordLabel")}
               value={password}
               onChangeText={setPassword}
               secureTextEntry
@@ -83,7 +102,7 @@ export default function Login(): React.JSX.Element {
               <Text className="text-sm text-status-absent">{errorMessage}</Text>
             ) : null}
             <Button
-              label={t("login.submit")}
+              label={tShared("auth.login.submit")}
               onPress={() => void handleSubmit()}
               disabled={!canSubmit}
               loading={submitting}

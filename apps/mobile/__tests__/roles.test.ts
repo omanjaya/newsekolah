@@ -1,5 +1,5 @@
 import { resolveDefaultTabGroup, resolveTabGroups, hasMultipleTabGroups } from "@/lib/auth/roles";
-import type { Role } from "@/lib/api-types";
+import type { Role } from "@/lib/api/types";
 
 function role(slug: string, isPrimary = false): Role {
   return { id: slug, slug, name: slug, is_primary: isPrimary };

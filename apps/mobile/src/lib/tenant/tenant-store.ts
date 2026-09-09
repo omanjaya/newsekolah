@@ -1,8 +1,7 @@
-// Temporary: replace with @newsekolah/api-client once published in the workspace.
-//
-// Holds the two things the api client needs before a session exists: which
-// school (X-Tenant) and which server (base URL override for self-hosted
-// schools reached from the login screen's "Ganti alamat server" link).
+// Holds the two things @newsekolah/api-client needs before a session exists:
+// which school (X-Tenant) and which server (base URL override for
+// self-hosted schools reached from the login screen's "Ganti alamat server"
+// link). src/lib/api/client.ts reads both of these to build the client.
 
 import * as SecureStore from "expo-secure-store";
 import Constants from "expo-constants";

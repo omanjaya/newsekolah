@@ -1,23 +1,14 @@
-// Temporary: replace with @newsekolah/api-client once published in the workspace
-// for the parts of this that are really a generated auth hook.
-
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { PropsWithChildren } from "react";
+import { Platform } from "react-native";
 import * as SecureStore from "expo-secure-store";
-import * as api from "@/lib/api";
-import type { ClientKind, Me } from "@/lib/api-types";
+import { getApiClient, setOnUnauthorized } from "@/lib/api/client";
+import type { ClientKind, Me, ProfileKind } from "@/lib/api/types";
 import { loadTenantConfig } from "@/lib/tenant/tenant-store";
-import {
-  loadStoredTokens,
-  persistTokens,
-  clearTokens,
-  wireApiAuth,
-} from "@/lib/auth/session-store";
+import { loadStoredTokens, secureTokenStore } from "@/lib/auth/token-store";
 import { getStableDeviceId, getDeviceName } from "@/lib/auth/device";
 import { isBiometricUnlockAvailable, unlockWithBiometrics } from "@/lib/auth/biometric";
 import { resolveDefaultTabGroup, resolveTabGroups } from "@/lib/auth/roles";
-import type { ProfileKind } from "@/lib/api-types";
-import { Platform } from "react-native";
 
 const BIOMETRIC_PREF_KEY = "newsekolah.biometric_unlock_enabled";
 
@@ -60,7 +51,9 @@ export function AuthProvider({ children }: PropsWithChildren): React.JSX.Element
   }, []);
 
   useEffect(() => {
-    wireApiAuth(handleSessionExpired);
+    // The api client calls this when a 401 survives its own refresh attempt
+    // (see @newsekolah/api-client's onUnauthorized, wired in lib/api/client.ts).
+    setOnUnauthorized(handleSessionExpired);
 
     void (async () => {
       await loadTenantConfig();
@@ -85,9 +78,9 @@ export function AuthProvider({ children }: PropsWithChildren): React.JSX.Element
       }
 
       try {
-        finishSignIn(await api.getMe());
+        finishSignIn(await getApiClient().GET("/v1/me"));
       } catch {
-        await clearTokens();
+        await secureTokenStore.clear();
         setStatus("signed-out");
       }
     })();
@@ -97,14 +90,19 @@ export function AuthProvider({ children }: PropsWithChildren): React.JSX.Element
     async (username: string, password: string) => {
       const deviceId = await getStableDeviceId();
       const client: ClientKind = Platform.OS === "ios" ? "ios" : "android";
-      const tokens = await api.login({
-        username,
-        password,
-        client,
-        device_id: deviceId,
-        device_name: getDeviceName(),
+      const tokens = await getApiClient().POST("/v1/auth/login", {
+        body: {
+          username,
+          password,
+          client,
+          device_id: deviceId,
+          device_name: getDeviceName(),
+        },
       });
-      await persistTokens(tokens);
+      await secureTokenStore.setTokens({
+        accessToken: tokens.access_token,
+        refreshToken: tokens.refresh_token,
+      });
       finishSignIn(tokens.user);
     },
     [finishSignIn],
@@ -112,12 +110,12 @@ export function AuthProvider({ children }: PropsWithChildren): React.JSX.Element
 
   const signOut = useCallback(async () => {
     try {
-      await api.logout();
+      await getApiClient().POST("/v1/auth/logout");
     } catch {
       // Best-effort: proceed with local sign-out even if the network call fails,
       // the device is being wiped from the user's perspective either way.
     }
-    await clearTokens();
+    await secureTokenStore.clear();
     handleSessionExpired();
   }, [handleSessionExpired]);
 
@@ -125,17 +123,17 @@ export function AuthProvider({ children }: PropsWithChildren): React.JSX.Element
     const success = await unlockWithBiometrics();
     if (!success) return false;
     try {
-      finishSignIn(await api.getMe());
+      finishSignIn(await getApiClient().GET("/v1/me"));
       return true;
     } catch {
-      await clearTokens();
+      await secureTokenStore.clear();
       setStatus("signed-out");
       return false;
     }
   }, [finishSignIn]);
 
   const refreshMe = useCallback(async () => {
-    const nextMe = await api.getMe();
+    const nextMe = await getApiClient().GET("/v1/me");
     setMe(nextMe);
   }, []);
 

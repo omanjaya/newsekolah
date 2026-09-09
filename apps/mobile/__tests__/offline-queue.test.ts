@@ -1,7 +1,7 @@
 import { MutationQueue, computeBackoffMs, type QueueDatabase } from "@/lib/offline/queue";
-import { request } from "@/lib/api";
+import { rawMutate } from "@/lib/api/client";
 
-jest.mock("@/lib/api", () => ({ request: jest.fn() }));
+jest.mock("@/lib/api/client", () => ({ rawMutate: jest.fn() }));
 
 let uuidCounter = 0;
 jest.mock("expo-crypto", () => ({
@@ -101,7 +101,7 @@ describe("offline mutation queue", () => {
 
   it("removes a mutation from the queue once it sends successfully", async () => {
     const queue = new MutationQueue(createFakeDatabase());
-    (request as jest.Mock).mockResolvedValueOnce({ ok: true });
+    (rawMutate as jest.Mock).mockResolvedValueOnce({ ok: true });
 
     await queue.enqueue("POST", "/v1/attendance", { status: "present" });
     const result = await queue.flush(() => Promise.resolve(true));
@@ -112,7 +112,7 @@ describe("offline mutation queue", () => {
 
   it("reuses the same idempotency key when a failed mutation is retried", async () => {
     const queue = new MutationQueue(createFakeDatabase());
-    (request as jest.Mock).mockRejectedValueOnce(new Error("network down"));
+    (rawMutate as jest.Mock).mockRejectedValueOnce(new Error("network down"));
 
     const enqueued = await queue.enqueue("POST", "/v1/attendance", { status: "present" });
     await queue.flush(() => Promise.resolve(true));
@@ -122,11 +122,13 @@ describe("offline mutation queue", () => {
     expect(pending?.attempts).toBe(1);
     expect(pending?.nextAttemptAt).toBeGreaterThan(Date.now());
 
-    const [, callOptions] = (request as jest.Mock).mock.calls[0] as [
+    const [, , , idempotencyKey] = (rawMutate as jest.Mock).mock.calls[0] as [
       string,
-      { idempotencyKey: string },
+      string,
+      unknown,
+      string,
     ];
-    expect(callOptions.idempotencyKey).toBe(enqueued.idempotencyKey);
+    expect(idempotencyKey).toBe(enqueued.idempotencyKey);
   });
 
   it("never sends when the online check reports offline", async () => {
@@ -136,7 +138,7 @@ describe("offline mutation queue", () => {
     const result = await queue.flush(() => Promise.resolve(false));
 
     expect(result).toEqual({ sent: 0, failed: 0 });
-    expect(request).not.toHaveBeenCalled();
+    expect(rawMutate).not.toHaveBeenCalled();
   });
 
   it("computes an exponential backoff capped at 5 minutes", () => {

@@ -1,7 +1,3 @@
-// Temporary: replace with @newsekolah/api-client once published in the workspace
-// (device registration should post through the generated client once the
-// `push_devices` endpoint in docs/10-mobile-strategy.md exists).
-//
 // Registration helper only: requests permission and returns an Expo push
 // token. Nothing calls this yet -- no screen wires it to a "send to server"
 // step, since that endpoint does not exist in openapi/openapi.yaml yet.

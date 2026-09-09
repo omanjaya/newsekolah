@@ -1,13 +1,11 @@
-// Temporary: replace with @newsekolah/api-client once published in the workspace
-// (this mapping should eventually live wherever Me.roles -> tab group is
-// defined once, shared with web).
-//
 // Me carries a single `profile_kind` plus a list of granted `roles`. A user
 // can hold roles that belong to more than one tab group (e.g. a teacher who
 // is also a parent), so the app derives every group the account can switch
-// into rather than trusting profile_kind alone.
+// into rather than trusting profile_kind alone. This mapping is mobile-only
+// for now (web has no tab groups); @newsekolah/api-client only provides the
+// `Me`/`Role` shapes, not this derivation.
 
-import type { Me, ProfileKind, Role } from "@/lib/api-types";
+import type { Me, ProfileKind, Role } from "@/lib/api/types";
 
 export const TAB_GROUP_KINDS: readonly ProfileKind[] = ["student", "teacher", "staff", "parent"];
 

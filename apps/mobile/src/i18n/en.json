@@ -1,19 +1,8 @@
 {
-  "common.save": "Save",
-  "common.cancel": "Cancel",
-  "common.retry": "Retry",
-  "common.loading": "Loading",
-  "common.logout": "Log out",
-  "common.close": "Close",
-
   "school_picker.title": "Choose your school",
   "school_picker.search_placeholder": "Search by school name or code",
   "school_picker.empty": "No school found. Check the spelling or ask your school admin for the right code.",
 
-  "login.title": "Sign in",
-  "login.username_label": "Username",
-  "login.password_label": "Password",
-  "login.submit": "Sign in",
   "login.server_link": "Change server address",
   "login.error_invalid_credentials": "Username or password is wrong. Check and try again.",
   "login.error_generic": "Sign in did not go through. Check your connection and try again.",
@@ -23,19 +12,12 @@
   "server_setup.save": "Save address",
   "server_setup.reset": "Use default address",
 
-  "change_password.title": "Change password",
   "change_password.description": "Your password needs to be changed before you continue.",
-  "change_password.current_label": "Current password",
-  "change_password.new_label": "New password",
-  "change_password.submit": "Save new password",
 
   "home.title": "Home",
   "notifications.title": "Notifications",
   "notifications.empty": "No notifications yet.",
   "profile.title": "Profile",
-  "profile.sessions_title": "Active sessions",
-  "profile.sessions_current": "This device",
-  "profile.sessions_revoke": "Revoke access",
   "profile.switch_role": "Switch role",
   "profile.role.student": "Student",
   "profile.role.teacher": "Teacher",
@@ -47,6 +29,5 @@
   "qr.title": "QR code",
 
   "empty_state.default_action": "Reload",
-  "error.generic_title": "Something went wrong",
   "error.generic_action": "Check your connection and try again."
 }

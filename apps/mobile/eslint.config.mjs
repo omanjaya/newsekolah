@@ -1,6 +1,6 @@
-// ESLint 9 flat config. Kept local to apps/mobile (not @newsekolah/config yet --
-// see the "Temporary" notes in src/lib -- so other agents' in-progress packages
-// stay untouched).
+// ESLint 9 flat config. Kept local to apps/mobile (not @newsekolah/config yet):
+// this app's rules (React Native/Expo file layout, no-emoji) do not match that
+// package's web-oriented presets.
 import js from "@eslint/js";
 import tseslint from "typescript-eslint";
 import reactHooks from "eslint-plugin-react-hooks";
