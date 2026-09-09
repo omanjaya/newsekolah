@@ -32,7 +32,7 @@ func (q *Queries) DeleteDeliveriesOlderThan(ctx context.Context, arg DeleteDeliv
 const insertMessageDelivery = `-- name: InsertMessageDelivery :one
 insert into message_deliveries (tenant_id, notification_id, notification_created_at, channel, provider, target, status)
 values ($1, $2, $3, $4, $5, $6, 'pending')
-returning id, tenant_id, notification_id, notification_created_at, channel, provider, target, status, provider_message_id, error, attempts, sent_at, created_at
+returning id, tenant_id, notification_id, notification_created_at, channel, provider, target, status, provider_message_id, error, attempts, sent_at, created_at, template_id, payload, delivered_at, read_at
 `
 
 type InsertMessageDeliveryParams struct {
@@ -68,6 +68,10 @@ func (q *Queries) InsertMessageDelivery(ctx context.Context, arg InsertMessageDe
 		&i.Attempts,
 		&i.SentAt,
 		&i.CreatedAt,
+		&i.TemplateID,
+		&i.Payload,
+		&i.DeliveredAt,
+		&i.ReadAt,
 	)
 	return i, err
 }

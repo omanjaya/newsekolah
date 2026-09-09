@@ -462,6 +462,10 @@ type MessageDelivery struct {
 	Attempts              int32              `json:"attempts"`
 	SentAt                pgtype.Timestamptz `json:"sent_at"`
 	CreatedAt             pgtype.Timestamptz `json:"created_at"`
+	TemplateID            pgtype.UUID        `json:"template_id"`
+	Payload               string             `json:"payload"`
+	DeliveredAt           pgtype.Timestamptz `json:"delivered_at"`
+	ReadAt                pgtype.Timestamptz `json:"read_at"`
 }
 
 type MfaTotp struct {
@@ -1030,6 +1034,33 @@ type WebauthnCredential struct {
 	Name         pgtype.Text        `json:"name"`
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 	LastUsedAt   pgtype.Timestamptz `json:"last_used_at"`
+}
+
+type WhatsappProviderConfig struct {
+	TenantID                    uuid.UUID          `json:"tenant_id"`
+	Provider                    string             `json:"provider"`
+	PhoneNumberID               string             `json:"phone_number_id"`
+	AccessTokenEncrypted        []byte             `json:"access_token_encrypted"`
+	AccessTokenKeyID            string             `json:"access_token_key_id"`
+	GatewayUrl                  string             `json:"gateway_url"`
+	GatewayHeaderName           string             `json:"gateway_header_name"`
+	GatewayHeaderValueEncrypted []byte             `json:"gateway_header_value_encrypted"`
+	GatewayHeaderKeyID          string             `json:"gateway_header_key_id"`
+	IsActive                    bool               `json:"is_active"`
+	CreatedAt                   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                   pgtype.Timestamptz `json:"updated_at"`
+}
+
+type WhatsappTemplate struct {
+	ID               uuid.UUID          `json:"id"`
+	TenantID         uuid.UUID          `json:"tenant_id"`
+	Name             string             `json:"name"`
+	Locale           string             `json:"locale"`
+	MetaTemplateName string             `json:"meta_template_name"`
+	Body             string             `json:"body"`
+	Placeholders     []byte             `json:"placeholders"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
 }
 
 type WorkflowDefinition struct {

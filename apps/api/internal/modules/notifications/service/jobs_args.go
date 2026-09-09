@@ -45,6 +45,14 @@ type DeliverWhatsAppArgs struct {
 	DeliveryID            uuid.UUID
 	ToPhone               string
 	Message               string
+	// TemplateID, MetaTemplateName and Locale identify which approved Meta
+	// template this message renders (see domain.WhatsAppTemplate). Zero
+	// values mean "no specific template": the worker falls back to the
+	// module's default template name/locale, matching this module's
+	// pre-template behavior.
+	TemplateID       uuid.NullUUID
+	MetaTemplateName string
+	Locale           string
 }
 
 func (DeliverWhatsAppArgs) Kind() string { return "notifications.deliver_whatsapp" }

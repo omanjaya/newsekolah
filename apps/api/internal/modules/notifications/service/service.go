@@ -12,6 +12,7 @@ import (
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/notifications/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/crypto"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
 )
 
@@ -54,6 +55,29 @@ type Repository interface {
 
 	ListActiveTenants(ctx context.Context) ([]TenantRef, error)
 	TenantTimezone(ctx context.Context, tenantID uuid.UUID) (string, error)
+
+	WhatsAppRepository
+}
+
+// WhatsAppRepository is the WhatsApp provider/template/delivery-log slice
+// of Repository, named separately so service/whatsapp.go can document it
+// next to the use cases that call it.
+type WhatsAppRepository interface {
+	UpsertWhatsAppProviderConfig(ctx context.Context, cfg WhatsAppProviderConfigRow) error
+	GetWhatsAppProviderConfig(ctx context.Context, tenantID uuid.UUID) (EncryptedWhatsAppProviderConfig, error)
+	GetWhatsAppProviderConfigByPhoneNumberID(ctx context.Context, phoneNumberID string) (EncryptedWhatsAppProviderConfig, error)
+
+	CreateWhatsAppTemplate(ctx context.Context, tenantID uuid.UUID, tmpl domain.WhatsAppTemplate) (domain.WhatsAppTemplate, error)
+	UpdateWhatsAppTemplate(ctx context.Context, tenantID, id uuid.UUID, tmpl domain.WhatsAppTemplate) (domain.WhatsAppTemplate, error)
+	DeleteWhatsAppTemplate(ctx context.Context, tenantID, id uuid.UUID) error
+	GetWhatsAppTemplate(ctx context.Context, tenantID, id uuid.UUID) (domain.WhatsAppTemplate, error)
+	GetWhatsAppTemplateByName(ctx context.Context, tenantID uuid.UUID, name string) (domain.WhatsAppTemplate, error)
+	ListWhatsAppTemplates(ctx context.Context, tenantID uuid.UUID) ([]domain.WhatsAppTemplate, error)
+
+	SetDeliveryTemplateAndPayload(ctx context.Context, tenantID, deliveryID uuid.UUID, templateID uuid.NullUUID, payload string) error
+	GetWhatsAppDelivery(ctx context.Context, tenantID, id uuid.UUID) (WhatsAppDelivery, error)
+	ListWhatsAppDeliveries(ctx context.Context, tenantID uuid.UUID, status string, cursor Cursor, limit int) ([]WhatsAppDelivery, error)
+	UpdateWhatsAppDeliveryReceipt(ctx context.Context, tenantID uuid.UUID, providerMessageID, status string, at time.Time) (bool, error)
 }
 
 // TenantRef is the minimal tenant identity the digest/retention jobs need.
@@ -87,6 +111,12 @@ type Service struct {
 	realtime RealtimePublisher
 	clock    clock.Clock
 	contacts ContactReader
+
+	// WhatsApp secrets, set by SetWhatsAppSecrets after construction (see
+	// that method's comment for why).
+	waSealer      *crypto.Sealer
+	waAppSecret   string
+	waVerifyToken string
 }
 
 func New(pool *pgxpool.Pool, repo Repository, jobs JobInserter, realtime RealtimePublisher, clk clock.Clock, contacts ContactReader) *Service {

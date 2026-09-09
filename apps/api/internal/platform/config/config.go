@@ -56,6 +56,13 @@ type Config struct {
 	WhatsAppProvider string
 	WhatsAppToken    string
 	WhatsAppPhoneID  string
+	// WhatsAppAppSecret verifies the X-Hub-Signature-256 header on the
+	// inbound WhatsApp status webhook. WhatsAppWebhookVerifyToken answers
+	// Meta's GET verification handshake when first registering the webhook
+	// URL. Both are optional: a deployment that never sets them cannot use
+	// the webhook, but per-tenant WhatsApp sending still works.
+	WhatsAppAppSecret          string
+	WhatsAppWebhookVerifyToken string
 
 	VAPIDPublicKey  string
 	VAPIDPrivateKey string
@@ -126,9 +133,11 @@ func Load() (Config, error) {
 
 		SMTPURL: lookup("SMTP_URL"),
 
-		WhatsAppProvider: orDefault(lookup("WHATSAPP_PROVIDER"), "noop"),
-		WhatsAppToken:    lookup("WHATSAPP_TOKEN"),
-		WhatsAppPhoneID:  lookup("WHATSAPP_PHONE_ID"),
+		WhatsAppProvider:           orDefault(lookup("WHATSAPP_PROVIDER"), "noop"),
+		WhatsAppToken:              lookup("WHATSAPP_TOKEN"),
+		WhatsAppPhoneID:            lookup("WHATSAPP_PHONE_ID"),
+		WhatsAppAppSecret:          lookup("WHATSAPP_APP_SECRET"),
+		WhatsAppWebhookVerifyToken: lookup("WHATSAPP_WEBHOOK_VERIFY_TOKEN"),
 
 		VAPIDPublicKey:  lookup("VAPID_PUBLIC_KEY"),
 		VAPIDPrivateKey: lookup("VAPID_PRIVATE_KEY"),

@@ -2546,6 +2546,138 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/whatsapp/provider-config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The tenant's WhatsApp gateway configuration (never the secret itself) */
+        get: operations["getWhatsAppProviderConfig"];
+        /**
+         * Configure the tenant's WhatsApp gateway (Meta Cloud API or a local gateway)
+         * @description Leaving access_token (provider=meta) or gateway_header_value (provider=gateway) empty keeps the
+         *     previously saved secret -- the web client never re-displays a saved token, so it cannot resubmit it.
+         */
+        put: operations["setWhatsAppProviderConfig"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/whatsapp/templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The tenant's WhatsApp message templates */
+        get: operations["listWhatsAppTemplates"];
+        put?: never;
+        /** Create a WhatsApp message template */
+        post: operations["createWhatsAppTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/whatsapp/templates/{templateId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update a WhatsApp message template */
+        put: operations["updateWhatsAppTemplate"];
+        post?: never;
+        /** Delete a WhatsApp message template */
+        delete: operations["deleteWhatsAppTemplate"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/whatsapp/templates/{templateId}/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Render a template against sample variables, without sending anything */
+        post: operations["previewWhatsAppTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/whatsapp/deliveries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The WhatsApp delivery log, newest first */
+        get: operations["listWhatsAppDeliveries"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/whatsapp/deliveries/{deliveryId}/resend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Re-send a WhatsApp message, recording a new delivery log entry */
+        post: operations["resendWhatsAppDelivery"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/whatsapp/webhook": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Meta's webhook verification handshake (hub.challenge echo) */
+        get: operations["verifyWhatsAppWebhook"];
+        put?: never;
+        /**
+         * Inbound WhatsApp delivery status updates (delivered, read)
+         * @description Meta sends this as application/json, but the body is declared here as application/octet-stream (raw
+         *     bytes) on purpose: the signature must be verified over the exact bytes received, before any JSON
+         *     decoding, and the generated server only hands over a raw io.Reader for a non-JSON content type.
+         */
+        post: operations["receiveWhatsAppWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/scan-tokens": {
         parameters: {
             query?: never;
@@ -4937,6 +5069,95 @@ export interface components {
             device_name: string;
         };
         /** @enum {string} */
+        WhatsAppProviderKind: "meta" | "gateway";
+        WhatsAppProviderInput: {
+            provider: components["schemas"]["WhatsAppProviderKind"];
+            /** @description Meta Cloud API phone number id (provider=meta). */
+            phone_number_id?: string;
+            /** @description Meta Cloud API access token (provider=meta). Empty keeps the previously saved token. */
+            access_token?: string;
+            /** @description URL the local gateway exposes for sending (provider=gateway). */
+            gateway_url?: string;
+            /** @description Auth header name the gateway expects (provider=gateway). */
+            gateway_header_name?: string;
+            /** @description Auth header value (provider=gateway). Empty keeps the previously saved value. */
+            gateway_header_value?: string;
+            is_active?: boolean;
+        };
+        WhatsAppProviderStatus: {
+            provider: components["schemas"]["WhatsAppProviderKind"];
+            phone_number_id?: string;
+            /** @description Whether an access token is stored, without revealing it. */
+            has_access_token: boolean;
+            gateway_url?: string;
+            gateway_header_name?: string;
+            /** @description Whether a gateway header value is stored, without revealing it. */
+            has_gateway_header: boolean;
+            is_active: boolean;
+            /** Format: date-time */
+            updated_at?: string;
+        };
+        WhatsAppTemplateInput: {
+            name: string;
+            /** @description BCP-47 locale code, e.g. "id" or "en". */
+            locale: string;
+            /** @description The template name already approved in the tenant's WhatsApp Business Manager. */
+            meta_template_name: string;
+            /** @description Template body with {{placeholder}} variables. */
+            body: string;
+        };
+        WhatsAppTemplate: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            locale: string;
+            meta_template_name: string;
+            body: string;
+            placeholders: string[];
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        WhatsAppTemplatePreviewInput: {
+            variables?: {
+                [key: string]: string;
+            };
+        };
+        WhatsAppTemplatePreview: {
+            rendered: string;
+            missing_variables?: string[];
+        };
+        /** @enum {string} */
+        WhatsAppDeliveryStatus: "pending" | "sent" | "failed" | "delivered" | "read";
+        WhatsAppDelivery: {
+            /** Format: uuid */
+            id: string;
+            /** @description Recipient phone number. */
+            target: string;
+            provider: string;
+            /** Format: uuid */
+            template_id?: string;
+            status: components["schemas"]["WhatsAppDeliveryStatus"];
+            provider_message_id?: string;
+            error?: string;
+            attempts: number;
+            /** Format: date-time */
+            sent_at?: string;
+            /** Format: date-time */
+            delivered_at?: string;
+            /** Format: date-time */
+            read_at?: string;
+            /** Format: date-time */
+            created_at: string;
+        };
+        WhatsAppDeliveryPage: {
+            data: components["schemas"]["WhatsAppDelivery"][];
+            page: {
+                next_cursor: string;
+            };
+        };
+        /** @enum {string} */
         ScanPurpose: "classroom_entry" | "late_arrival" | "approve_stage" | "gate_exit" | "library_visit" | "library_self_service" | "library_opname" | "kiosk";
         /** @enum {string} */
         WorkflowKind: "exit_permit" | "late_arrival" | "leave_request";
@@ -5577,6 +5798,7 @@ export interface components {
         MonitorTokenHeader: string;
         /** @description Tenant slug for mobile clients before a token exists. Ignored when the host already resolves a tenant or in single-tenant mode. */
         TenantHeader: string;
+        WhatsAppTemplateId: string;
     };
     requestBodies: never;
     headers: never;
@@ -10814,6 +11036,297 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+        };
+    };
+    getWhatsAppProviderConfig: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Configuration status */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WhatsAppProviderStatus"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    setWhatsAppProviderConfig: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WhatsAppProviderInput"];
+            };
+        };
+        responses: {
+            /** @description Saved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WhatsAppProviderStatus"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    listWhatsAppTemplates: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Templates */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["WhatsAppTemplate"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createWhatsAppTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WhatsAppTemplateInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WhatsAppTemplate"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    updateWhatsAppTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                templateId: components["parameters"]["WhatsAppTemplateId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WhatsAppTemplateInput"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WhatsAppTemplate"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteWhatsAppTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                templateId: components["parameters"]["WhatsAppTemplateId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    previewWhatsAppTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                templateId: components["parameters"]["WhatsAppTemplateId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WhatsAppTemplatePreviewInput"];
+            };
+        };
+        responses: {
+            /** @description Rendered preview */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WhatsAppTemplatePreview"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listWhatsAppDeliveries: {
+        parameters: {
+            query?: {
+                /** @description Filter to one delivery status; omitted or empty returns every status. */
+                status?: components["schemas"]["WhatsAppDeliveryStatus"];
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deliveries */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WhatsAppDeliveryPage"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    resendWhatsAppDelivery: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                deliveryId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description New delivery queued */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WhatsAppDelivery"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    verifyWhatsAppWebhook: {
+        parameters: {
+            query: {
+                "hub.mode": string;
+                "hub.verify_token": string;
+                "hub.challenge": string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Challenge echoed back */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/plain": string;
+                };
+            };
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    receiveWhatsAppWebhook: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Hub-Signature-256": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/octet-stream": string;
+            };
+        };
+        responses: {
+            /** @description Processed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Invalid signature */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     issueScanToken: {

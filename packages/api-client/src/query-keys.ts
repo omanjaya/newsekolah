@@ -15,6 +15,11 @@ export const queryKeys = {
   notificationSettings: () => ["notifications", "settings"] as const,
   pushDevices: () => ["notifications", "push-devices"] as const,
 
+  whatsAppProviderConfig: () => ["whatsapp", "provider-config"] as const,
+  whatsAppTemplates: () => ["whatsapp", "templates"] as const,
+  whatsAppDeliveries: (status: string, cursor: string) =>
+    ["whatsapp", "deliveries", status, cursor] as const,
+
   myAnnouncements: () => ["announcements", "me"] as const,
   announcements: (status: string, cursor: string) =>
     ["announcements", "admin", status, cursor] as const,

@@ -13,6 +13,8 @@ import disciplineEn from "./discipline.en.json";
 import disciplineId from "./discipline.id.json";
 import gradingEn from "./grading.en.json";
 import gradingId from "./grading.id.json";
+import messagingEn from "./messaging.en.json";
+import messagingId from "./messaging.id.json";
 import onboardingEn from "./onboarding.en.json";
 import onboardingId from "./onboarding.id.json";
 import platformEn from "./platform.en.json";
@@ -33,3 +35,4 @@ registerFeatureMessages({ namespace: "onboarding", id: onboardingId, en: onboard
 registerFeatureMessages({ namespace: "promotion", id: promotionId, en: promotionEn });
 registerFeatureMessages({ namespace: "security", id: securityId, en: securityEn });
 registerFeatureMessages({ namespace: "platform", id: platformId, en: platformEn });
+registerFeatureMessages({ namespace: "messaging", id: messagingId, en: messagingEn });

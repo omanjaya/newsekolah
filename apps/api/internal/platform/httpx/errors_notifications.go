@@ -12,4 +12,9 @@ var (
 	ErrAnnouncementNotFound      = NewError(http.StatusNotFound, "ANNOUNCEMENT_NOT_FOUND")
 	ErrAnnouncementInvalidState  = NewError(http.StatusConflict, "ANNOUNCEMENT_INVALID_STATUS")
 	ErrAnnouncementAudienceEmpty = NewError(http.StatusBadRequest, "ANNOUNCEMENT_AUDIENCE_EMPTY")
+
+	ErrWhatsAppTemplateNotFound = NewError(http.StatusNotFound, "WHATSAPP_TEMPLATE_NOT_FOUND")
+	ErrWhatsAppTemplateExists   = NewError(http.StatusConflict, "WHATSAPP_TEMPLATE_EXISTS")
+	ErrWhatsAppProviderNotFound = NewError(http.StatusNotFound, "WHATSAPP_PROVIDER_NOT_FOUND")
+	ErrWhatsAppDeliveryNotFound = NewError(http.StatusNotFound, "WHATSAPP_DELIVERY_NOT_FOUND")
 )
