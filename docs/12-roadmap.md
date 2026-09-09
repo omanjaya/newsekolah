@@ -61,40 +61,67 @@ Modul PRD yang belum dibangun, diurutkan menurut permintaan yang paling mungkin:
 
 ## Risiko dan mitigasi
 
-| Risiko | Mitigasi |
-|---|---|
-| Scope besar untuk satu orang | Fase 1 dulu sampai satu sekolah pindah; fitur lain menunggu |
+| Risiko                               | Mitigasi                                                                                                  |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------------- |
+| Scope besar untuk satu orang         | Fase 1 dulu sampai satu sekolah pindah; fitur lain menunggu                                               |
 | Workflow terkonfigurasi terlalu umum | Definisi default identik SION; UI konfigurasi baru dibuat di Fase 3 setelah kebutuhan sekolah kedua jelas |
-| Migrasi data lama gagal sebagian | ETL idempoten dengan laporan selisih; jalankan paralel (SION tetap hidup) dua minggu |
-| Review App Store | Aplikasi native penuh (bukan wrapper), kebijakan privasi, akun demo untuk reviewer |
-| Ketergantungan WhatsApp resmi mahal | Adapter agar sekolah memilih gateway; email dan push sebagai default |
-| Kinerja RLS | Index `(tenant_id, ...)`, `SET LOCAL`, uji beban 500 tenant sintetis di Fase 3 |
+| Migrasi data lama gagal sebagian     | ETL idempoten dengan laporan selisih; jalankan paralel (SION tetap hidup) dua minggu                      |
+| Review App Store                     | Aplikasi native penuh (bukan wrapper), kebijakan privasi, akun demo untuk reviewer                        |
+| Ketergantungan WhatsApp resmi mahal  | Adapter agar sekolah memilih gateway; email dan push sebagai default                                      |
+| Kinerja RLS                          | Index `(tenant_id, ...)`, `SET LOCAL`, uji beban 500 tenant sintetis di Fase 3                            |
 
 ## Keputusan pemilik produk (9 September 2026)
 
-| Topik | Keputusan | Konsekuensi teknis |
-|---|---|---|
-| Model bisnis | Bukan SaaS dulu; satu sekolah per instalasi, tetapi siap SaaS | `TENANCY_MODE=single` default; skema tetap `tenant_id` + RLS; konsol platform ditunda ke Fase 3 tetapi tidak ada keputusan desain yang menutup jalan ke multi |
-| WhatsApp | Disiapkan | Antarmuka `notify.WhatsAppSender` dengan provider `noop` default; adapter Meta Cloud API dan gateway lokal ditambahkan saat dibutuhkan |
-| Aplikasi SwiftUI `nouschool` | Ditunda, tetap disiapkan | Kontrak API sama (bearer, refresh token di body untuk `client: ios`, kode error stabil); tidak ada perubahan yang memutus klien native |
-| Nama produk | Sementara tetap **SION**; kandidat lain di bawah untuk nanti | Kode memakai nama netral `newsekolah`; "SION" hanya muncul sebagai default branding platform (`platform_settings.product_name`) dan nama aplikasi mobile/web, sehingga ganti nama = ubah satu setting + nama app |
-| Sekolah pilot, jenjang rilis pertama | Belum diputuskan | Asumsi SMA dulu; template jenjang lain menyusul |
+| Topik                                | Keputusan                                                     | Konsekuensi teknis                                                                                                                                                                                               |
+| ------------------------------------ | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Model bisnis                         | Bukan SaaS dulu; satu sekolah per instalasi, tetapi siap SaaS | `TENANCY_MODE=single` default; skema tetap `tenant_id` + RLS; konsol platform ditunda ke Fase 3 tetapi tidak ada keputusan desain yang menutup jalan ke multi                                                    |
+| WhatsApp                             | Disiapkan                                                     | Antarmuka `notify.WhatsAppSender` dengan provider `noop` default; adapter Meta Cloud API dan gateway lokal ditambahkan saat dibutuhkan                                                                           |
+| Aplikasi SwiftUI `nouschool`         | Ditunda, tetap disiapkan                                      | Kontrak API sama (bearer, refresh token di body untuk `client: ios`, kode error stabil); tidak ada perubahan yang memutus klien native                                                                           |
+| Nama produk                          | Sementara tetap **SION**; kandidat lain di bawah untuk nanti  | Kode memakai nama netral `newsekolah`; "SION" hanya muncul sebagai default branding platform (`platform_settings.product_name`) dan nama aplikasi mobile/web, sehingga ganti nama = ubah satu setting + nama app |
+| Sekolah pilot, jenjang rilis pertama | Belum diputuskan                                              | Asumsi SMA dulu; template jenjang lain menyusul                                                                                                                                                                  |
 
 ### Kandidat nama produk
 
-| Nama | Arti dan alasan | Catatan |
-|---|---|---|
-| Wiyata | Sanskerta/Jawa: pendidikan, pengajaran; pendek, mudah dieja, netral daerah | Cek ketersediaan `wiyata.id` dan merek |
-| Widya | Pengetahuan; hangat dan formal | Dipakai beberapa yayasan, cek merek |
-| Aksara | Huruf, ilmu tulis; modern dan mudah diingat | Ada produk lain bernama serupa di ranah berbeda |
-| Lentera | Penerang; cocok untuk citra sekolah yang membimbing | Agak generik |
-| NouSchool | Konsisten dengan brand Nouma dan bundle iOS yang sudah ada | Terdengar asing untuk sekolah negeri |
-| Sekolahku | Langsung dan jelas | Sulit dibedakan, kemungkinan sudah dipakai |
+| Nama      | Arti dan alasan                                                            | Catatan                                         |
+| --------- | -------------------------------------------------------------------------- | ----------------------------------------------- |
+| Wiyata    | Sanskerta/Jawa: pendidikan, pengajaran; pendek, mudah dieja, netral daerah | Cek ketersediaan `wiyata.id` dan merek          |
+| Widya     | Pengetahuan; hangat dan formal                                             | Dipakai beberapa yayasan, cek merek             |
+| Aksara    | Huruf, ilmu tulis; modern dan mudah diingat                                | Ada produk lain bernama serupa di ranah berbeda |
+| Lentera   | Penerang; cocok untuk citra sekolah yang membimbing                        | Agak generik                                    |
+| NouSchool | Konsisten dengan brand Nouma dan bundle iOS yang sudah ada                 | Terdengar asing untuk sekolah negeri            |
+| Sekolahku | Langsung dan jelas                                                         | Sulit dibedakan, kemungkinan sudah dipakai      |
 
 Rekomendasi bila nanti diganti: Wiyata (utama) atau NouSchool bila ingin satu payung merek dengan Nouma.
+
+## Status implementasi (10 September 2026)
+
+Dikerjakan di luar urutan fase karena saling bergantung; yang sudah berjalan
+ujung ke ujung di lingkungan pengembangan:
+
+| Bagian                                             | Status                                               |
+| -------------------------------------------------- | ---------------------------------------------------- |
+| Fase 0 fondasi                                     | Selesai                                              |
+| Identitas, peran, tugas tambahan, audit            | Selesai, termasuk 2FA TOTP dan kode pemulihan        |
+| Akademik, jadwal, guru pengganti                   | Selesai                                              |
+| Presensi guru dan kalender siswa                   | Selesai                                              |
+| Perizinan (izin keluar, terlambat, izin terencana) | Selesai, surat PDF bernomor dengan verifikasi publik |
+| Notifikasi dan pengumuman                          | Selesai, kanal in-app, push, email, WhatsApp         |
+| Kesiswaan (pelanggaran, SP, konseling)             | Selesai, konseling terenkripsi AES-GCM               |
+| Penilaian (komponen, rapor, publikasi, bintang)    | Selesai                                              |
+| Pusat laporan (ekspor XLSX)                        | Selesai, ekspor terjadwal belum                      |
+| Onboarding: checklist dan profil sekolah           | Selesai; wizard import Dapodik belum                 |
+| Orang tua: tautan anak dan tampilan per anak       | Selesai di web dan mobile                            |
+| Perpustakaan                                       | Belum (Fase 4)                                       |
+| Konsol platform multi-sekolah                      | Belum (Fase 3)                                       |
+| Rilis store iOS dan Android                        | Belum (Fase 4)                                       |
+
+Lingkungan pengembangan berjalan penuh lewat `pnpm dev:docker` dengan hot
+reload untuk API dan web; lihat `infra/docker/README.dev.md`.
 
 ## Backlog teknis (ditemukan saat implementasi)
 
 - `@newsekolah/api-client`: `createApiClient` menerima `baseUrl`/`tenantSlug` sebagai nilai tetap; ubah menjadi getter agar mobile tidak perlu membangun ulang klien saat ganti sekolah/server.
 - `@newsekolah/ui-tokens`: `dist/tokens.ts` masih TypeScript mentah; terbitkan juga `dist/tokens.js` + `.d.ts` agar bisa di-`require` dari konfigurasi Tailwind tanpa transpiler.
-- `apps/api/cmd/seed`: belum idempoten (gagal bila tenant `sma-contoh` sudah ada); ubah menjadi upsert.
+- ~~`apps/api/cmd/seed`: belum idempoten~~ selesai: seed sekarang upsert dan mengisi data operasional (jadwal, presensi, katalog pelanggaran, komponen penilaian, tautan orang tua).
+- `apps/web`: unggah bukti izin dan berkas lain memakai presigned URL; belum ada indikator progres unggah.
+- Import Dapodik dan ETL dari MySQL SION belum dikerjakan (Fase 3).
