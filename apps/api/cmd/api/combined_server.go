@@ -9,6 +9,7 @@ import (
 	announcementshttp "github.com/omanjaya/newsekolah/apps/api/internal/modules/announcements/transport/http"
 	attendancehttp "github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance/transport/http"
 	disciplinehttp "github.com/omanjaya/newsekolah/apps/api/internal/modules/discipline/transport/http"
+	familyhttp "github.com/omanjaya/newsekolah/apps/api/internal/modules/family/transport/http"
 	gradinghttp "github.com/omanjaya/newsekolah/apps/api/internal/modules/grading/transport/http"
 	identityhttp "github.com/omanjaya/newsekolah/apps/api/internal/modules/identity/transport/http"
 	notificationshttp "github.com/omanjaya/newsekolah/apps/api/internal/modules/notifications/transport/http"
@@ -34,6 +35,7 @@ type combinedServer struct {
 	*disciplinehttp.DisciplineHandler
 	*gradinghttp.GradingHandler
 	*reportshttp.ReportsHandler
+	*familyhttp.FamilyHandler
 	*healthHandler
 }
 

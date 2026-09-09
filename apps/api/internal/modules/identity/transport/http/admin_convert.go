@@ -18,6 +18,7 @@ import (
 // anything not listed falls through to mapAuthError.
 var adminErrorMap = map[error]error{
 	domain.ErrUserNotFound:                httpx.ErrNotFound,
+	domain.ErrInvalidRelation:             httpx.ErrValidation.WithDetails(httpx.ErrorDetail{Field: "relation", Code: "INVALID"}),
 	domain.ErrMfaNotAvailable:             httpx.ErrMfaNotAvailable,
 	domain.ErrMfaNotEnrolled:              httpx.ErrMfaNotEnrolled,
 	domain.ErrMfaInvalidCode:              httpx.ErrMfaInvalidCode,

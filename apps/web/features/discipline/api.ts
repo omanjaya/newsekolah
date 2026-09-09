@@ -104,8 +104,7 @@ export function useUpdateDisciplinePolicyMutation() {
   const client = useApiClient();
   const invalidate = useInvalidateDiscipline();
   return useMutation({
-    mutationFn: (levels: SPLevel[]) =>
-      client.PUT("/v1/discipline/policy", { body: { levels } }),
+    mutationFn: (levels: SPLevel[]) => client.PUT("/v1/discipline/policy", { body: { levels } }),
     onSuccess: invalidate,
   });
 }
@@ -113,21 +112,16 @@ export function useUpdateDisciplinePolicyMutation() {
 // Violation records (point ledger).
 
 export interface ViolationFilters {
-  classId?: string;
-  from?: string;
-  to?: string;
+  classId: string;
+  from: string;
+  to: string;
   includeVoided: boolean;
 }
 
 export function useViolationsQuery(filters: ViolationFilters) {
   const client = useApiClient();
   return useQuery({
-    queryKey: keys.violations({
-      classId: filters.classId ?? "",
-      from: filters.from ?? "",
-      to: filters.to ?? "",
-      includeVoided: filters.includeVoided,
-    }),
+    queryKey: keys.violations(filters),
     queryFn: () =>
       client.GET("/v1/discipline/violations", {
         params: {
@@ -188,7 +182,7 @@ export function usePointTotalsQuery(classId?: string) {
     queryKey: keys.pointTotals(classId ?? ""),
     queryFn: () =>
       client.GET("/v1/discipline/point-totals", {
-        params: { query: { class_id: classId || undefined, limit: 200 } },
+        params: { query: { class_id: classId, limit: 200 } },
       }),
   });
 }
@@ -199,8 +193,18 @@ export function useWarningLettersQuery(classId?: string) {
     queryKey: keys.warningLetters(classId ?? ""),
     queryFn: () =>
       client.GET("/v1/discipline/warning-letters", {
-        params: { query: { class_id: classId || undefined, limit: 100 } },
+        params: { query: { class_id: classId, limit: 100 } },
       }),
+  });
+}
+
+export function useIssueWarningLetterMutation() {
+  const client = useApiClient();
+  const invalidate = useInvalidateDiscipline();
+  return useMutation({
+    mutationFn: (body: { student_user_id: string; level: number }) =>
+      client.POST("/v1/discipline/warning-letters", { body }),
+    onSuccess: invalidate,
   });
 }
 
@@ -243,8 +247,7 @@ export function useMyCounselingsQuery() {
   const client = useApiClient();
   return useQuery({
     queryKey: keys.myCounselings(),
-    queryFn: () =>
-      client.GET("/v1/discipline/counselings", { params: { query: { limit: 100 } } }),
+    queryFn: () => client.GET("/v1/discipline/counselings", { params: { query: { limit: 100 } } }),
   });
 }
 

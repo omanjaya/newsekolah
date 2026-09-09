@@ -5,13 +5,12 @@ import { Button, Dialog, DialogContent, Textarea, cn, useToast } from "@newsekol
 import { Minus, Plus, Star } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useGiveStarMutation } from "../api";
 
 export interface StarDialogProps {
-  open: boolean;
   onOpenChange: (open: boolean) => void;
   studentId: string;
   studentName: string;
@@ -23,10 +22,11 @@ export interface StarDialogProps {
 /**
  * Records one +1 or -1 star event for a student, with an optional note.
  * The balance shown here is the class roster's cached balance, refreshed
- * by useGiveStarMutation's invalidation once the entry is saved.
+ * by useGiveStarMutation's invalidation once the entry is saved. The
+ * caller mounts this only while a student is targeted, so each open
+ * starts from a fresh instance with the form reset.
  */
 export function StarDialog({
-  open,
   onOpenChange,
   studentId,
   studentName,
@@ -40,12 +40,6 @@ export function StarDialog({
   const giveStar = useGiveStarMutation();
   const [delta, setDelta] = useState<1 | -1>(1);
   const [note, setNote] = useState("");
-
-  useEffect(() => {
-    if (!open) return;
-    setDelta(1);
-    setNote("");
-  }, [open]);
 
   async function submit() {
     try {
@@ -66,7 +60,7 @@ export function StarDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open onOpenChange={onOpenChange}>
       <DialogContent title={t("title", { name: studentName })}>
         <form
           className="flex flex-col gap-4"

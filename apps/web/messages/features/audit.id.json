@@ -1,1 +1,45 @@
-{}
+{
+  "navLabel": "Jejak audit",
+  "eyebrow": "Pengaturan",
+  "title": "Jejak audit",
+  "description": "Riwayat perubahan yang dilakukan pengguna di sistem ini, terbaru di atas.",
+  "system": "Sistem",
+  "actingAs": "meniru {name}",
+  "filters": {
+    "actor": "Pelaku",
+    "actorAll": "Semua pengguna",
+    "entityType": "Jenis entitas",
+    "entityTypePlaceholder": "mis. user, class",
+    "from": "Dari tanggal",
+    "to": "Sampai tanggal",
+    "reset": "Reset filter"
+  },
+  "columns": {
+    "when": "Waktu",
+    "actor": "Pelaku",
+    "action": "Aksi",
+    "entity": "Entitas",
+    "ip": "Alamat IP"
+  },
+  "pagePrev": "Sebelumnya",
+  "pageNext": "Berikutnya",
+  "emptyTitle": "Belum ada aktivitas tercatat",
+  "emptyBody": "Jejak audit akan terisi begitu ada perubahan yang dilakukan pengguna.",
+  "detail": {
+    "title": "Detail perubahan",
+    "before": "Sebelum",
+    "after": "Sesudah",
+    "noValue": "Tidak ada data",
+    "requestId": "ID permintaan"
+  },
+  "impersonationNote": "Sesi ini sedang meniru pengguna lain. Lihat detail dan hentikan di halaman profil.",
+  "impersonationLink": "Buka profil",
+  "accountSecurity": {
+    "title": "Keamanan akun",
+    "activeSessions": "Sesi aktif",
+    "lastLogin": "Sesi ini dimulai",
+    "lastLoginUnknown": "Tidak diketahui",
+    "resetLinkLabel": "Tautan reset kata sandi",
+    "resetLinkBody": "Admin sekolah hanya bisa membuat tautan set kata sandi baru, bukan melihat kata sandi Anda. Tautan itu berlaku sekali pakai dan kedaluwarsa dalam 30 menit."
+  }
+}

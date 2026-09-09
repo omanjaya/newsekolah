@@ -1,1 +1,208 @@
-{}
+{
+  "violations": {
+    "eyebrow": "Discipline",
+    "title": "Violations",
+    "tabs": {
+      "ledger": "Point ledger",
+      "catalog": "Violation catalog",
+      "policy": "Warning-letter policy"
+    },
+    "filters": {
+      "class": "Class",
+      "classAll": "All classes",
+      "from": "From date",
+      "to": "To date",
+      "includeVoided": "Show voided"
+    },
+    "record": "Record violation",
+    "void": "Void",
+    "voided": "Violation record voided",
+    "columns": {
+      "student": "Student",
+      "type": "Violation type",
+      "points": "Points",
+      "date": "Date",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "status": {
+      "active": "Active",
+      "voided": "Voided"
+    },
+    "emptyTitle": "No violation records yet",
+    "emptyBody": "This year's violation records will appear here.",
+    "unknownStudent": "Unknown student",
+    "dueLevelTitle": "Warning-letter threshold reached",
+    "dueLevelBody": "{student} reached {level} at the {points}-point threshold.",
+    "issueNow": "Issue letter now",
+    "dismiss": "Not now",
+    "form": {
+      "title": "Record violation",
+      "student": "Student",
+      "studentPlaceholder": "Choose a student",
+      "type": "Violation type",
+      "typePlaceholder": "Choose a violation type",
+      "typePoints": "{name} ({points} points)",
+      "date": "Date it happened",
+      "notes": "Notes",
+      "notesPlaceholder": "Short description of what happened (optional)",
+      "cancel": "Cancel",
+      "submit": "Save",
+      "recorded": "Violation recorded"
+    },
+    "voidDialog": {
+      "title": "Void violation record",
+      "body": "The {points}-point record for {student} stays on file for audit but no longer counts.",
+      "reason": "Reason for voiding",
+      "confirm": "Void record"
+    }
+  },
+  "catalog": {
+    "includeInactive": "Show inactive",
+    "add": "Add type",
+    "columns": {
+      "code": "Code",
+      "name": "Name",
+      "points": "Points",
+      "category": "Category",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "emptyTitle": "Violation catalog is empty",
+    "emptyBody": "Add violation types along with their point values.",
+    "edit": "Edit",
+    "deleteTitle": "Deactivate violation type",
+    "deleteBody": "\"{name}\" can no longer be chosen for new records. Existing records keep their own data.",
+    "deleteConfirm": "Deactivate",
+    "deleted": "Violation type deactivated",
+    "saved": "Violation type saved",
+    "form": {
+      "createTitle": "Add violation type",
+      "editTitle": "Edit violation type",
+      "code": "Code",
+      "name": "Name",
+      "points": "Points",
+      "category": "Category",
+      "categoryPlaceholder": "E.g. conduct, academic",
+      "active": "Active",
+      "cancel": "Cancel",
+      "submit": "Save"
+    }
+  },
+  "policy": {
+    "description": "Warning-letter levels based on accumulated points. Order them from the smallest threshold to the largest.",
+    "emptyTitle": "No warning-letter levels yet",
+    "emptyBody": "Add the first level to start the policy.",
+    "columns": {
+      "level": "Level",
+      "label": "Label",
+      "minPoints": "Point threshold"
+    },
+    "remove": "Remove level",
+    "levelPlaceholder": "E.g. SP1",
+    "addLevel": "Add level",
+    "save": "Save policy",
+    "saved": "Warning-letter policy saved"
+  },
+  "warningLetters": {
+    "eyebrow": "Discipline",
+    "title": "Warning Letters",
+    "tabs": {
+      "issued": "Issued letters",
+      "atRisk": "Students nearing threshold"
+    },
+    "filters": {
+      "class": "Class",
+      "classAll": "All classes"
+    },
+    "columns": {
+      "student": "Student",
+      "level": "Level",
+      "letterNumber": "Letter number",
+      "points": "Points",
+      "issuedAt": "Issued on",
+      "actions": "Actions"
+    },
+    "download": "Download",
+    "emptyTitle": "No warning letters yet",
+    "emptyBody": "Letters issued this year will appear here.",
+    "unknownStudent": "Unknown student",
+    "atRisk": {
+      "columns": {
+        "student": "Student",
+        "points": "Total points",
+        "lastOccurred": "Last violation",
+        "actions": "Actions"
+      },
+      "issue": "Issue",
+      "issued": "Warning letter issued",
+      "emptyTitle": "No students nearing the threshold",
+      "emptyBody": "Students above the lowest warning-letter threshold will appear here.",
+      "noPolicyTitle": "Warning-letter policy not set up",
+      "noPolicyBody": "Set up the policy on the Violations page before issuing letters.",
+      "unknownStudent": "Unknown student"
+    }
+  },
+  "counseling": {
+    "eyebrow": "Discipline",
+    "title": "Counseling",
+    "add": "Log counseling",
+    "columns": {
+      "title": "Title",
+      "student": "Student",
+      "date": "Date",
+      "kind": "Kind",
+      "visibility": "Visibility"
+    },
+    "emptyTitle": "No counseling notes yet",
+    "emptyBody": "Your counseling notes will appear here. Click a row to open its content.",
+    "unknownStudent": "Unknown student",
+    "detail": {
+      "edit": "Edit",
+      "delete": "Delete",
+      "followUp": "Follow-up plan"
+    },
+    "deleteTitle": "Delete counseling note",
+    "deleteBody": "\"{title}\" will be permanently deleted and cannot be recovered.",
+    "deleteConfirm": "Delete",
+    "deleted": "Counseling note deleted",
+    "form": {
+      "createTitle": "Log counseling",
+      "editTitle": "Edit counseling note",
+      "student": "Student",
+      "studentPlaceholder": "Choose a student",
+      "sessionAt": "Session date",
+      "kind": "Session kind",
+      "kindOptions": {
+        "individual": "Individual",
+        "group": "Group",
+        "parent": "Parent",
+        "referral": "Referral"
+      },
+      "title": "Title",
+      "titlePlaceholder": "Short summary of the topic",
+      "content": "Note content",
+      "contentPlaceholder": "Description of the counseling session",
+      "followUpPlan": "Follow-up plan",
+      "followUpPlanPlaceholder": "Optional",
+      "visibility": "Visibility",
+      "visibilityOptions": {
+        "counselor": "Counselor",
+        "bk_team": "Counseling team",
+        "leadership": "Leadership"
+      },
+      "visibilityHint": {
+        "counselor": "Only you can read this note.",
+        "bk_team": "The counseling team can read this note.",
+        "leadership": "School leadership can read this note."
+      },
+      "cancel": "Cancel",
+      "submit": "Save",
+      "saved": "Counseling note saved"
+    }
+  }
+}

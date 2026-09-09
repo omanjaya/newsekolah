@@ -1,0 +1,105 @@
+paths:
+  /v1/children/{studentId}/attendance:
+    get:
+      tags: [family]
+      operationId: getChildAttendance
+      x-permission: view_child_attendance
+      summary: One linked child's attendance month
+      parameters:
+        - { name: studentId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: month, in: query, required: true, schema: { type: string, pattern: "^[0-9]{4}-[0-9]{2}$" } }
+      responses:
+        "200":
+          description: Days and totals
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, totals]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/ChildCalendarDay" } }
+                  totals:
+                    type: object
+                    additionalProperties: { type: integer }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/children/{studentId}/grades:
+    get:
+      tags: [family]
+      operationId: getChildGrades
+      x-permission: view_child_grades
+      summary: One linked child's published grades
+      parameters:
+        - { name: studentId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Grades
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ChildGrades" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/children/{studentId}/discipline:
+    get:
+      tags: [family]
+      operationId: getChildDiscipline
+      x-permission: view_child_attendance
+      summary: One linked child's violation points and warning letters
+      parameters:
+        - { name: studentId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Discipline
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ChildDiscipline" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+components:
+  schemas:
+    ChildCalendarDay:
+      type: object
+      required: [date, status_code, expected_sessions, submitted_sessions, complete]
+      properties:
+        date: { type: string, format: date }
+        status_code: { type: string }
+        expected_sessions: { type: integer }
+        submitted_sessions: { type: integer }
+        complete: { type: boolean }
+    ChildSubjectGrade:
+      type: object
+      required: [subject_id]
+      properties:
+        subject_id: { type: string, format: uuid }
+        average: { type: number }
+        report_score: { type: number }
+    ChildGrades:
+      type: object
+      required: [term_id, term_name, subjects, stars]
+      properties:
+        term_id: { type: string, format: uuid }
+        term_name: { type: string }
+        subjects: { type: array, items: { $ref: "#/components/schemas/ChildSubjectGrade" } }
+        stars: { type: integer }
+    ChildViolation:
+      type: object
+      required: [type_name, points, occurred_on]
+      properties:
+        type_name: { type: string }
+        points: { type: integer }
+        occurred_on: { type: string, format: date }
+    ChildWarningLetter:
+      type: object
+      required: [number, level_label, issued_at]
+      properties:
+        number: { type: string }
+        level_label: { type: string }
+        issued_at: { type: string, format: date }
+    ChildDiscipline:
+      type: object
+      required: [total_points, records, letters]
+      properties:
+        total_points: { type: integer }
+        records: { type: array, items: { $ref: "#/components/schemas/ChildViolation" } }
+        letters: { type: array, items: { $ref: "#/components/schemas/ChildWarningLetter" } }

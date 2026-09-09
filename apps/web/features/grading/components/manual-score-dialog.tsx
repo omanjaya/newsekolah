@@ -4,13 +4,12 @@ import { ApiError } from "@newsekolah/api-client";
 import { Button, Dialog, DialogContent, Input, useToast } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSetManualReportScoreMutation } from "../api";
 
 export interface ManualScoreDialogProps {
-  open: boolean;
   onOpenChange: (open: boolean) => void;
   classId: string;
   subjectId: string;
@@ -24,10 +23,10 @@ export interface ManualScoreDialogProps {
 /**
  * Overrides one student's report score for this class-subject. Clearing
  * the field and saving removes the override, so the report score falls
- * back to the computed average again.
+ * back to the computed average again. The caller mounts this only while a
+ * student is targeted, so each open starts from a fresh instance.
  */
 export function ManualScoreDialog({
-  open,
   onOpenChange,
   classId,
   subjectId,
@@ -41,12 +40,9 @@ export function ManualScoreDialog({
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const setManual = useSetManualReportScoreMutation();
-  const [value, setValue] = useState("");
-
-  useEffect(() => {
-    if (!open) return;
-    setValue(currentManualScore !== undefined ? String(currentManualScore) : "");
-  }, [open, currentManualScore]);
+  const [value, setValue] = useState(
+    currentManualScore !== undefined ? String(currentManualScore) : "",
+  );
 
   async function save() {
     const trimmed = value.trim();
@@ -68,7 +64,7 @@ export function ManualScoreDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open onOpenChange={onOpenChange}>
       <DialogContent title={t("title", { name: studentName })}>
         <form
           className="flex flex-col gap-4"

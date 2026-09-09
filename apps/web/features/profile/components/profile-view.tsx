@@ -7,12 +7,14 @@ import type { ReactElement } from "react";
 import { useSession } from "../../../lib/session/session-provider";
 import { ChangePasswordForm } from "../../auth/components/change-password-form";
 
+import { AccountSecurity } from "./account-security";
 import { SessionsTable } from "./sessions-table";
 
 export function ProfileView(): ReactElement | null {
   const { me } = useSession();
   const t = useTranslations("app.profile");
   const tAuth = useTranslations("auth.sessions");
+  const tAudit = useTranslations("app.audit");
 
   if (!me) return null;
 
@@ -40,6 +42,11 @@ export function ProfileView(): ReactElement | null {
             </dd>
           </dl>
         </div>
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <h2 className="text-[16px] font-medium text-fg">{tAudit("accountSecurity.title")}</h2>
+        <AccountSecurity />
       </section>
 
       <section className="flex flex-col gap-3">

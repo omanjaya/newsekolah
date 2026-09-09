@@ -6,6 +6,7 @@ var (
 	ErrUserNotFound         = errors.New("user not found")
 	ErrInvalidCredentials   = errors.New("invalid credentials")
 	ErrAccountNotActive     = errors.New("account is not active")
+	ErrInvalidRelation      = errors.New("parent-student link is invalid")
 	ErrMfaNotAvailable      = errors.New("two-factor authentication is not configured")
 	ErrMfaNotEnrolled       = errors.New("two-factor authentication is not enrolled")
 	ErrMfaInvalidCode       = errors.New("two-factor code is invalid")

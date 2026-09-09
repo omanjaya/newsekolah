@@ -766,8 +766,125 @@ paths:
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
 
+  /v1/me/children:
+    get:
+      tags: [users]
+      operationId: listMyChildren
+      x-permission: authenticated
+      summary: Students linked to the signed-in parent account
+      responses:
+        "200":
+          description: Children
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/LinkedChild" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /v1/users/{userId}/children:
+    get:
+      tags: [users]
+      operationId: listUserChildren
+      x-permission: view_users
+      summary: Students linked to one parent account
+      parameters:
+        - { name: userId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Children
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/LinkedChild" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: [users]
+      operationId: linkChild
+      x-permission: edit_users
+      summary: Link a parent account to a student
+      parameters:
+        - { name: userId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [student_user_id, relation]
+              properties:
+                student_user_id: { type: string, format: uuid }
+                relation: { $ref: "#/components/schemas/ParentRelation" }
+                can_approve_leave: { type: boolean, default: false }
+      responses:
+        "204": { description: Linked }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /v1/users/{userId}/children/{studentId}:
+    delete:
+      tags: [users]
+      operationId: unlinkChild
+      x-permission: edit_users
+      summary: Remove a parent-student link
+      parameters:
+        - { name: userId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: studentId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "204": { description: Unlinked }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/students/{studentId}/guardians:
+    get:
+      tags: [users]
+      operationId: listStudentGuardians
+      x-permission: view_users
+      summary: Parent accounts linked to one student
+      parameters:
+        - { name: studentId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Guardians
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/Guardian" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
 components:
   schemas:
+    ParentRelation:
+      type: string
+      enum: [father, mother, guardian]
+    LinkedChild:
+      type: object
+      required: [student_user_id, student_name, relation, can_approve_leave]
+      properties:
+        student_user_id: { type: string, format: uuid }
+        student_name: { type: string }
+        class_id: { type: string, format: uuid }
+        class_name: { type: string }
+        relation: { $ref: "#/components/schemas/ParentRelation" }
+        can_approve_leave: { type: boolean }
+    Guardian:
+      type: object
+      required: [parent_user_id, parent_name, relation, can_approve_leave]
+      properties:
+        parent_user_id: { type: string, format: uuid }
+        parent_name: { type: string }
+        phone: { type: string }
+        relation: { $ref: "#/components/schemas/ParentRelation" }
+        can_approve_leave: { type: boolean }
     MfaStatus:
       type: object
       required: [enrolled, confirmed, remaining_recovery_codes]

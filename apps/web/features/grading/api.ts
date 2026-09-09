@@ -169,8 +169,12 @@ export function useSetGradePublicationMutation() {
   const client = useApiClient();
   const invalidate = useInvalidateGradebook();
   return useMutation({
-    mutationFn: (body: { class_id: string; subject_id: string; term_id?: string; is_published: boolean }) =>
-      client.PUT("/v1/grading/publications", { body }),
+    mutationFn: (body: {
+      class_id: string;
+      subject_id: string;
+      term_id?: string;
+      is_published: boolean;
+    }) => client.PUT("/v1/grading/publications", { body }),
     onSuccess: invalidate,
   });
 }

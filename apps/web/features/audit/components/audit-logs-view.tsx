@@ -10,8 +10,8 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
-import { useDirectoryQuery, useLookup } from "../../reference/api";
 import { useSession } from "../../../lib/session/session-provider";
+import { useDirectoryQuery, useLookup } from "../../reference/api";
 import { type AuditLogEntry, useAuditLogsQuery } from "../api";
 
 import { AuditLogDetailDialog } from "./audit-log-detail-dialog";
@@ -58,8 +58,7 @@ export function AuditLogsView(): ReactElement {
         accessorKey: "occurred_at",
         header: t("columns.when"),
         enableSorting: false,
-        cell: ({ row }) =>
-          formatDateTime(row.original.occurred_at, { locale, timeZone }),
+        cell: ({ row }) => formatDateTime(row.original.occurred_at, { locale, timeZone }),
       },
       {
         id: "actor",

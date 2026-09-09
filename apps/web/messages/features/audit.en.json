@@ -1,1 +1,45 @@
-{}
+{
+  "navLabel": "Audit trail",
+  "eyebrow": "Settings",
+  "title": "Audit trail",
+  "description": "History of changes made by users in this system, newest first.",
+  "system": "System",
+  "actingAs": "impersonating {name}",
+  "filters": {
+    "actor": "Actor",
+    "actorAll": "All users",
+    "entityType": "Entity type",
+    "entityTypePlaceholder": "e.g. user, class",
+    "from": "From date",
+    "to": "To date",
+    "reset": "Reset filters"
+  },
+  "columns": {
+    "when": "When",
+    "actor": "Actor",
+    "action": "Action",
+    "entity": "Entity",
+    "ip": "IP address"
+  },
+  "pagePrev": "Previous",
+  "pageNext": "Next",
+  "emptyTitle": "No activity recorded yet",
+  "emptyBody": "The audit trail fills in as people make changes.",
+  "detail": {
+    "title": "Change detail",
+    "before": "Before",
+    "after": "After",
+    "noValue": "No data",
+    "requestId": "Request ID"
+  },
+  "impersonationNote": "This session is impersonating another user. View details and stop it from the profile page.",
+  "impersonationLink": "Open profile",
+  "accountSecurity": {
+    "title": "Account security",
+    "activeSessions": "Active sessions",
+    "lastLogin": "This session started",
+    "lastLoginUnknown": "Unknown",
+    "resetLinkLabel": "Password reset link",
+    "resetLinkBody": "A school admin can only generate a set-password link, never see your password. That link is single-use and expires after 30 minutes."
+  }
+}

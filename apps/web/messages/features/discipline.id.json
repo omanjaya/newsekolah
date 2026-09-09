@@ -1,1 +1,208 @@
-{}
+{
+  "violations": {
+    "eyebrow": "Kesiswaan",
+    "title": "Pelanggaran",
+    "tabs": {
+      "ledger": "Catatan poin",
+      "catalog": "Katalog pelanggaran",
+      "policy": "Kebijakan SP"
+    },
+    "filters": {
+      "class": "Kelas",
+      "classAll": "Semua kelas",
+      "from": "Dari tanggal",
+      "to": "Sampai tanggal",
+      "includeVoided": "Tampilkan yang dibatalkan"
+    },
+    "record": "Catat pelanggaran",
+    "void": "Batalkan",
+    "voided": "Catatan pelanggaran dibatalkan",
+    "columns": {
+      "student": "Siswa",
+      "type": "Jenis pelanggaran",
+      "points": "Poin",
+      "date": "Tanggal",
+      "status": "Status",
+      "actions": "Aksi"
+    },
+    "status": {
+      "active": "Aktif",
+      "voided": "Dibatalkan"
+    },
+    "emptyTitle": "Belum ada catatan pelanggaran",
+    "emptyBody": "Catatan pelanggaran tahun ini akan muncul di sini.",
+    "unknownStudent": "Siswa tidak diketahui",
+    "dueLevelTitle": "Ambang surat peringatan tercapai",
+    "dueLevelBody": "{student} mencapai {level} dengan ambang {points} poin.",
+    "issueNow": "Terbitkan surat sekarang",
+    "dismiss": "Nanti saja",
+    "form": {
+      "title": "Catat pelanggaran",
+      "student": "Siswa",
+      "studentPlaceholder": "Pilih siswa",
+      "type": "Jenis pelanggaran",
+      "typePlaceholder": "Pilih jenis pelanggaran",
+      "typePoints": "{name} ({points} poin)",
+      "date": "Tanggal kejadian",
+      "notes": "Catatan",
+      "notesPlaceholder": "Uraian singkat kejadian (opsional)",
+      "cancel": "Batal",
+      "submit": "Simpan",
+      "recorded": "Pelanggaran tercatat"
+    },
+    "voidDialog": {
+      "title": "Batalkan catatan pelanggaran",
+      "body": "Catatan {points} poin untuk {student} tetap tersimpan untuk audit tetapi tidak lagi dihitung.",
+      "reason": "Alasan pembatalan",
+      "confirm": "Batalkan catatan"
+    }
+  },
+  "catalog": {
+    "includeInactive": "Tampilkan yang nonaktif",
+    "add": "Tambah jenis",
+    "columns": {
+      "code": "Kode",
+      "name": "Nama",
+      "points": "Poin",
+      "category": "Kategori",
+      "status": "Status",
+      "actions": "Aksi"
+    },
+    "status": {
+      "active": "Aktif",
+      "inactive": "Nonaktif"
+    },
+    "emptyTitle": "Katalog pelanggaran kosong",
+    "emptyBody": "Tambahkan jenis pelanggaran beserta bobot poinnya.",
+    "edit": "Ubah",
+    "deleteTitle": "Nonaktifkan jenis pelanggaran",
+    "deleteBody": "\"{name}\" tidak lagi bisa dipilih untuk catatan baru. Catatan lama tetap menyimpan datanya sendiri.",
+    "deleteConfirm": "Nonaktifkan",
+    "deleted": "Jenis pelanggaran dinonaktifkan",
+    "saved": "Jenis pelanggaran tersimpan",
+    "form": {
+      "createTitle": "Tambah jenis pelanggaran",
+      "editTitle": "Ubah jenis pelanggaran",
+      "code": "Kode",
+      "name": "Nama",
+      "points": "Poin",
+      "category": "Kategori",
+      "categoryPlaceholder": "Contoh: kedisiplinan, akademik",
+      "active": "Aktif",
+      "cancel": "Batal",
+      "submit": "Simpan"
+    }
+  },
+  "policy": {
+    "description": "Tingkat surat peringatan berdasarkan akumulasi poin. Urutkan dari ambang poin terkecil ke terbesar.",
+    "emptyTitle": "Belum ada tingkat SP",
+    "emptyBody": "Tambahkan tingkat pertama untuk memulai kebijakan.",
+    "columns": {
+      "level": "Tingkat",
+      "label": "Label",
+      "minPoints": "Ambang poin"
+    },
+    "remove": "Hapus tingkat",
+    "levelPlaceholder": "Contoh: SP1",
+    "addLevel": "Tambah tingkat",
+    "save": "Simpan kebijakan",
+    "saved": "Kebijakan SP tersimpan"
+  },
+  "warningLetters": {
+    "eyebrow": "Kesiswaan",
+    "title": "Surat Peringatan",
+    "tabs": {
+      "issued": "Surat terbit",
+      "atRisk": "Siswa mendekati ambang"
+    },
+    "filters": {
+      "class": "Kelas",
+      "classAll": "Semua kelas"
+    },
+    "columns": {
+      "student": "Siswa",
+      "level": "Tingkat",
+      "letterNumber": "Nomor surat",
+      "points": "Poin",
+      "issuedAt": "Tanggal terbit",
+      "actions": "Aksi"
+    },
+    "download": "Unduh",
+    "emptyTitle": "Belum ada surat peringatan",
+    "emptyBody": "Surat yang diterbitkan tahun ini akan muncul di sini.",
+    "unknownStudent": "Siswa tidak diketahui",
+    "atRisk": {
+      "columns": {
+        "student": "Siswa",
+        "points": "Total poin",
+        "lastOccurred": "Pelanggaran terakhir",
+        "actions": "Aksi"
+      },
+      "issue": "Terbitkan",
+      "issued": "Surat peringatan diterbitkan",
+      "emptyTitle": "Tidak ada siswa mendekati ambang",
+      "emptyBody": "Siswa dengan poin di atas ambang SP terendah akan muncul di sini.",
+      "noPolicyTitle": "Kebijakan SP belum diatur",
+      "noPolicyBody": "Atur kebijakan SP di halaman Pelanggaran sebelum menerbitkan surat.",
+      "unknownStudent": "Siswa tidak diketahui"
+    }
+  },
+  "counseling": {
+    "eyebrow": "Kesiswaan",
+    "title": "Konseling",
+    "add": "Catat konseling",
+    "columns": {
+      "title": "Judul",
+      "student": "Siswa",
+      "date": "Tanggal",
+      "kind": "Jenis",
+      "visibility": "Visibilitas"
+    },
+    "emptyTitle": "Belum ada catatan konseling",
+    "emptyBody": "Catatan konseling Anda akan muncul di sini. Klik baris untuk membuka isinya.",
+    "unknownStudent": "Siswa tidak diketahui",
+    "detail": {
+      "edit": "Ubah",
+      "delete": "Hapus",
+      "followUp": "Rencana tindak lanjut"
+    },
+    "deleteTitle": "Hapus catatan konseling",
+    "deleteBody": "Catatan \"{title}\" akan dihapus permanen dan tidak bisa dikembalikan.",
+    "deleteConfirm": "Hapus",
+    "deleted": "Catatan konseling dihapus",
+    "form": {
+      "createTitle": "Catat konseling",
+      "editTitle": "Ubah catatan konseling",
+      "student": "Siswa",
+      "studentPlaceholder": "Pilih siswa",
+      "sessionAt": "Tanggal sesi",
+      "kind": "Jenis sesi",
+      "kindOptions": {
+        "individual": "Individu",
+        "group": "Kelompok",
+        "parent": "Orang tua",
+        "referral": "Rujukan"
+      },
+      "title": "Judul",
+      "titlePlaceholder": "Ringkasan singkat topik",
+      "content": "Isi catatan",
+      "contentPlaceholder": "Uraian sesi konseling",
+      "followUpPlan": "Rencana tindak lanjut",
+      "followUpPlanPlaceholder": "Opsional",
+      "visibility": "Visibilitas",
+      "visibilityOptions": {
+        "counselor": "Konselor",
+        "bk_team": "Tim BK",
+        "leadership": "Pimpinan"
+      },
+      "visibilityHint": {
+        "counselor": "Hanya Anda yang bisa membaca catatan ini.",
+        "bk_team": "Tim bimbingan konseling bisa membaca catatan ini.",
+        "leadership": "Pimpinan sekolah bisa membaca catatan ini."
+      },
+      "cancel": "Batal",
+      "submit": "Simpan",
+      "saved": "Catatan konseling tersimpan"
+    }
+  }
+}

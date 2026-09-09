@@ -8,6 +8,7 @@ import (
 
 	attendanceservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance/service"
 	disciplineservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/discipline/service"
+	familyservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/family/service"
 	gradingservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/grading/service"
 	identityservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/identity/service"
 	permitsservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/service"
@@ -194,4 +195,60 @@ func (n IdentityNames) Names(ctx context.Context, tenantID uuid.UUID, ids []uuid
 		}
 		filter.Cursor = result.NextCursor
 	}
+}
+
+// Family readers give the parent view read-only access to each child's
+// data without the family module importing those modules.
+
+type FamilyAttendance struct{ Svc *attendanceservice.Service }
+
+func (f FamilyAttendance) StudentMonth(ctx context.Context, tenantID, studentID uuid.UUID, month string) ([]familyservice.CalendarDay, map[string]int, error) {
+	days, totals, err := f.Svc.GetMonthlySummary(ctx, tenantID, studentID, month)
+	if err != nil {
+		return nil, nil, err
+	}
+	out := make([]familyservice.CalendarDay, len(days))
+	for i, d := range days {
+		out[i] = familyservice.CalendarDay{
+			Date: d.Date.Format("2006-01-02"), StatusCode: d.StatusCode,
+			ExpectedSessions: d.ExpectedSessions, SubmittedSessions: d.SubmittedSessions, Complete: d.Complete,
+		}
+	}
+	return out, totals, nil
+}
+
+type FamilyGrading struct{ Svc *gradingservice.Service }
+
+func (f FamilyGrading) StudentGrades(ctx context.Context, tenantID, studentID uuid.UUID) (familyservice.StudentGrades, error) {
+	grades, err := f.Svc.MyGrades(ctx, tenantID, studentID, uuid.NullUUID{})
+	if err != nil {
+		return familyservice.StudentGrades{}, err
+	}
+	out := familyservice.StudentGrades{TermID: grades.Term.ID, TermName: grades.Term.Name, Stars: grades.Stars}
+	out.Subjects = make([]familyservice.SubjectGrade, len(grades.Subjects))
+	for i, s := range grades.Subjects {
+		out.Subjects[i] = familyservice.SubjectGrade{SubjectID: s.SubjectID, Average: s.Average, ReportScore: s.ReportScore}
+	}
+	return out, nil
+}
+
+type FamilyDiscipline struct{ Svc *disciplineservice.Service }
+
+func (f FamilyDiscipline) StudentDiscipline(ctx context.Context, tenantID, studentID uuid.UUID) (familyservice.StudentDiscipline, error) {
+	summary, err := f.Svc.StudentSummary(ctx, tenantID, studentID)
+	if err != nil {
+		return familyservice.StudentDiscipline{}, err
+	}
+	out := familyservice.StudentDiscipline{TotalPoints: summary.TotalPoints}
+	for _, r := range summary.Records {
+		if r.IsVoided() {
+			continue
+		}
+		out.Records = append(out.Records, familyservice.DisciplineRecord{TypeName: r.TypeName, Points: r.PointsSnapshot, OccurredOn: r.OccurredOn.Format("2006-01-02")})
+	}
+	out.Letters = make([]familyservice.DisciplineLetter, len(summary.Letters))
+	for i, l := range summary.Letters {
+		out.Letters[i] = familyservice.DisciplineLetter{Number: l.LetterNumber, LevelLabel: l.LevelLabel, IssuedAt: l.IssuedAt.Format("2006-01-02")}
+	}
+	return out, nil
 }

@@ -12,7 +12,7 @@ import {
 } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import {
@@ -33,28 +33,29 @@ const KINDS: AssessmentComponentKind[] = [
 ];
 
 export interface ComponentDialogProps {
-  open: boolean;
   onOpenChange: (open: boolean) => void;
   classId: string;
   subjectId: string;
   termId?: string;
   nextSequence: number;
-  editing: AssessmentComponent | null;
+  /** "new" adds a component; an existing component opens it for edit or delete. */
+  target: AssessmentComponent | "new";
 }
 
 /**
  * Create, edit, or delete one assessment component (a gradebook column).
  * Delete is confirmed separately since it also removes every score already
- * entered for that column.
+ * entered for that column. The caller mounts this only while a dialog
+ * target is set, so each open starts from a fresh component instance and
+ * its form state never needs resetting from an effect.
  */
 export function ComponentDialog({
-  open,
   onOpenChange,
   classId,
   subjectId,
   termId,
   nextSequence,
-  editing,
+  target,
 }: ComponentDialogProps): ReactElement {
   const t = useTranslations("app.grading.componentDialog");
   const tKind = useTranslations("app.grading.kind");
@@ -63,22 +64,14 @@ export function ComponentDialog({
   const create = useCreateComponentMutation();
   const update = useUpdateComponentMutation();
   const remove = useDeleteComponentMutation();
+  const editing = target === "new" ? null : target;
 
-  const [code, setCode] = useState("");
-  const [kind, setKind] = useState<AssessmentComponentKind>("formative");
-  const [weight, setWeight] = useState("1");
-  const [kktp, setKktp] = useState("");
-  const [sequence, setSequence] = useState("1");
+  const [code, setCode] = useState(editing?.code ?? "");
+  const [kind, setKind] = useState<AssessmentComponentKind>(editing?.kind ?? "formative");
+  const [weight, setWeight] = useState(String(editing?.weight ?? 1));
+  const [kktp, setKktp] = useState(editing?.kktp !== undefined ? String(editing.kktp) : "");
+  const [sequence, setSequence] = useState(String(editing?.sequence ?? nextSequence));
   const [confirmingDelete, setConfirmingDelete] = useState(false);
-
-  useEffect(() => {
-    if (!open) return;
-    setCode(editing?.code ?? "");
-    setKind(editing?.kind ?? "formative");
-    setWeight(String(editing?.weight ?? 1));
-    setKktp(editing?.kktp !== undefined ? String(editing.kktp) : "");
-    setSequence(String(editing?.sequence ?? nextSequence));
-  }, [open, editing, nextSequence]);
 
   function fail(error: unknown) {
     toast.error(
@@ -127,7 +120,7 @@ export function ComponentDialog({
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
+      <Dialog open onOpenChange={onOpenChange}>
         <DialogContent title={editing ? t("editTitle") : t("addTitle")}>
           <form
             className="flex flex-col gap-4"
