@@ -111,11 +111,15 @@ ujung ke ujung di lingkungan pengembangan:
 | Pusat laporan (ekspor XLSX)                        | Selesai, termasuk ekspor terjadwal lewat surel       |
 | Onboarding: checklist, profil, wizard, Dapodik     | Selesai, termasuk template jenjang dan data contoh   |
 | Orang tua: tautan anak dan tampilan per anak       | Selesai di web dan mobile                            |
-| Perpustakaan                                       | Belum (Fase 4)                                       |
+| Perpustakaan                                       | Selesai, termasuk OPAC publik dan opname             |
 | Konsol platform multi-sekolah                      | Selesai, aktif hanya pada mode multi-tenant          |
 | Kalender akademik, tahun ajaran baru, kenaikan     | Selesai; salin jadwal antar tahun belum              |
 | ETL dari MySQL SION                                | Selesai, idempoten dengan laporan selisih            |
-| Rilis store iOS dan Android                        | Belum (Fase 4)                                       |
+| Rilis store iOS dan Android                        | Disiapkan; belum diunggah ke store                   |
+| Mobile: alur per peran dan presensi offline        | Selesai; layar jadwal siswa belum ada endpoint       |
+| SSO Google Workspace dan passkey                   | Selesai di web                                       |
+| API publik: kunci API dan webhook                  | Selesai, lihat `docs/14-public-api.md`               |
+| WhatsApp: Meta Cloud API dan gateway lokal         | Selesai, dengan template dan log pengiriman          |
 
 Lingkungan pengembangan berjalan penuh lewat `pnpm dev:docker` dengan hot
 reload untuk API dan web; lihat `infra/docker/README.dev.md`.
@@ -128,6 +132,10 @@ reload untuk API dan web; lihat `infra/docker/README.dev.md`.
 - `apps/web`: unggah bukti izin dan berkas lain memakai presigned URL; indikator progres baru ada pada unggah Dapodik, belum pada unggah lain.
 - ETL dari MySQL SION (`apps/api/cmd/etl`, `docs/13-etl-sion.md`) selesai: identitas, akademik, jadwal, presensi, disiplin, dan izin yang sudah terbit. Exit permit, late arrival, dan permohonan izin yang belum final sengaja tidak dimigrasikan (lihat dokumen).
 - Presensi masih membaca hari sekolah lewat query lintas modulnya sendiri; ganti ke pembaca kalender akademik yang sudah tersedia.
+- Mobile belum punya layar jadwal siswa: tidak ada endpoint yang memetakan siswa ke kelasnya sendiri.
+- Label dan kartu perpustakaan tercetak sebagai PDF teks; perender dokumen belum bisa menggambar barcode.
+- Modul lain masih mengirim WhatsApp sebagai teks bebas lewat template bawaan, belum memilih template tertentu.
+- Login passkey masih meminta nama pengguna lebih dulu; login tanpa nama pengguna belum ada.
 - Menyalin jadwal saat membuka tahun ajaran baru menunggu modul penjadwalan mengekspos operasi salin.
 - Binari worker mandiri belum mendaftarkan pekerjaan laporan terjadwal karena merender laporan butuh seluruh tumpukan layanan presensi, kesiswaan, penilaian, dan perizinan.
 - Domain kustom pada konsol platform dicatat tanpa verifikasi kepemilikan.
