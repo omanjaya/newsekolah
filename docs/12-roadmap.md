@@ -70,11 +70,31 @@ Modul PRD yang belum dibangun, diurutkan menurut permintaan yang paling mungkin:
 | Ketergantungan WhatsApp resmi mahal | Adapter agar sekolah memilih gateway; email dan push sebagai default |
 | Kinerja RLS | Index `(tenant_id, ...)`, `SET LOCAL`, uji beban 500 tenant sintetis di Fase 3 |
 
-## Keputusan yang masih perlu dari pemilik produk
+## Keputusan pemilik produk (9 September 2026)
 
-1. Nama produk dan domain SaaS (`*.nouschool.id`?).
-2. Model bisnis: SaaS per siswa per tahun, lisensi self-host, atau keduanya (memengaruhi konsol platform dan billing).
-3. Sekolah pilot pertama dan tanggal target pindah dari SION.
-4. Penyedia WhatsApp (resmi Meta via BSP, atau gateway lokal).
-5. Apakah aplikasi SwiftUI `nouschool` dihentikan setelah Expo v1 rilis.
-6. Jenjang yang didukung di rilis pertama (SMA saja, atau SD/SMP juga).
+| Topik | Keputusan | Konsekuensi teknis |
+|---|---|---|
+| Model bisnis | Bukan SaaS dulu; satu sekolah per instalasi, tetapi siap SaaS | `TENANCY_MODE=single` default; skema tetap `tenant_id` + RLS; konsol platform ditunda ke Fase 3 tetapi tidak ada keputusan desain yang menutup jalan ke multi |
+| WhatsApp | Disiapkan | Antarmuka `notify.WhatsAppSender` dengan provider `noop` default; adapter Meta Cloud API dan gateway lokal ditambahkan saat dibutuhkan |
+| Aplikasi SwiftUI `nouschool` | Ditunda, tetap disiapkan | Kontrak API sama (bearer, refresh token di body untuk `client: ios`, kode error stabil); tidak ada perubahan yang memutus klien native |
+| Nama produk | Sementara tetap **SION**; kandidat lain di bawah untuk nanti | Kode memakai nama netral `newsekolah`; "SION" hanya muncul sebagai default branding platform (`platform_settings.product_name`) dan nama aplikasi mobile/web, sehingga ganti nama = ubah satu setting + nama app |
+| Sekolah pilot, jenjang rilis pertama | Belum diputuskan | Asumsi SMA dulu; template jenjang lain menyusul |
+
+### Kandidat nama produk
+
+| Nama | Arti dan alasan | Catatan |
+|---|---|---|
+| Wiyata | Sanskerta/Jawa: pendidikan, pengajaran; pendek, mudah dieja, netral daerah | Cek ketersediaan `wiyata.id` dan merek |
+| Widya | Pengetahuan; hangat dan formal | Dipakai beberapa yayasan, cek merek |
+| Aksara | Huruf, ilmu tulis; modern dan mudah diingat | Ada produk lain bernama serupa di ranah berbeda |
+| Lentera | Penerang; cocok untuk citra sekolah yang membimbing | Agak generik |
+| NouSchool | Konsisten dengan brand Nouma dan bundle iOS yang sudah ada | Terdengar asing untuk sekolah negeri |
+| Sekolahku | Langsung dan jelas | Sulit dibedakan, kemungkinan sudah dipakai |
+
+Rekomendasi bila nanti diganti: Wiyata (utama) atau NouSchool bila ingin satu payung merek dengan Nouma.
+
+## Backlog teknis (ditemukan saat implementasi)
+
+- `@newsekolah/api-client`: `createApiClient` menerima `baseUrl`/`tenantSlug` sebagai nilai tetap; ubah menjadi getter agar mobile tidak perlu membangun ulang klien saat ganti sekolah/server.
+- `@newsekolah/ui-tokens`: `dist/tokens.ts` masih TypeScript mentah; terbitkan juga `dist/tokens.js` + `.d.ts` agar bisa di-`require` dari konfigurasi Tailwind tanpa transpiler.
+- `apps/api/cmd/seed`: belum idempoten (gagal bila tenant `sma-contoh` sudah ada); ubah menjadi upsert.
