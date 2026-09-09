@@ -108,5 +108,42 @@
     "confirmBody": "Ini membuat jenjang kelas standar untuk tingkat yang dipilih. Jenjang yang sudah ada tidak diduplikasi.",
     "confirm": "Gunakan template",
     "success": "Jenjang kelas dari template tersimpan."
+  },
+  "wizard": {
+    "title": "Wizard onboarding",
+    "body": "Siapkan jenjang, mata pelajaran, dan jam pelajaran, lalu impor data siswa dari Dapodik.",
+    "steps": {
+      "template": "Template jenjang",
+      "upload": "Unggah Dapodik",
+      "review": "Tinjau",
+      "done": "Selesai"
+    },
+    "templateBody": "Pilih jenjang sekolah untuk membuat daftar kelas, mata pelajaran, dan jam pelajaran standar. Data yang sudah ada tidak diduplikasi.",
+    "templateLabel": "Jenjang",
+    "templatePick": "Pilih jenjang",
+    "templateApply": "Terapkan template",
+    "templateApplied": "Template jenjang diterapkan.",
+    "skip": "Lewati langkah ini",
+    "uploadBody": "Unggah berkas CSV ekspor Dapodik (kolom nama, nisn, nipd, jenis_kelamin, tempat_lahir, tanggal_lahir, rombel saat ini).",
+    "uploadLabel": "Berkas CSV Dapodik",
+    "uploading": "Mengunggah... {percent}%",
+    "previewAction": "Tinjau data",
+    "reviewSummary": "{create} siswa baru, {update} siswa diperbarui, {error} baris bermasalah.",
+    "reviewEmpty": "Tidak ada baris untuk ditinjau.",
+    "reviewBack": "Unggah ulang",
+    "columnRow": "Baris",
+    "columnName": "Nama",
+    "columnNisn": "NISN",
+    "columnClass": "Rombel",
+    "columnAction": "Aksi",
+    "columnErrors": "Keterangan",
+    "action": {
+      "create": "Baru",
+      "update": "Perbarui",
+      "error": "Bermasalah"
+    },
+    "commitAction": "Simpan data siswa",
+    "doneTitle": "{count} siswa berhasil disimpan.",
+    "doneBody": "Data siswa sudah masuk. Lihat kelengkapan data di bawah untuk langkah berikutnya."
   }
 }

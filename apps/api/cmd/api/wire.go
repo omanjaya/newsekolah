@@ -84,6 +84,13 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 
 	academicModule := academic.Register(pool, clock.Real{})
 
+	// The onboarding wizard (level templates, Dapodik import, sample-data
+	// seeding) lives on schoolModule.Service but needs academic and
+	// identity, both constructed after school (they in turn depend on
+	// school for the active academic year) -- so it is wired here with a
+	// setter instead of at school.Register time.
+	schoolModule.Service.SetOnboardingDependencies(academicModule.Service, identityModule.Service, clock.Real{})
+
 	authenticator := auth.NewAuthenticator(tokenIssuer, sessionCache, identityModule.Service)
 
 	eventBus := events.NewBus()

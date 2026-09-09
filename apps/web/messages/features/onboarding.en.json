@@ -108,5 +108,42 @@
     "confirmBody": "This creates the standard grade levels for the selected level. Existing grade levels are not duplicated.",
     "confirm": "Apply template",
     "success": "Grade levels from the template were saved."
+  },
+  "wizard": {
+    "title": "Onboarding wizard",
+    "body": "Set up grade levels, subjects, and lesson periods, then import student data from Dapodik.",
+    "steps": {
+      "template": "Level template",
+      "upload": "Upload Dapodik",
+      "review": "Review",
+      "done": "Done"
+    },
+    "templateBody": "Choose the school's level to create standard classes, subjects, and lesson periods. Existing data is not duplicated.",
+    "templateLabel": "Level",
+    "templatePick": "Choose a level",
+    "templateApply": "Apply template",
+    "templateApplied": "Level template applied.",
+    "skip": "Skip this step",
+    "uploadBody": "Upload the Dapodik student-export CSV (columns nama, nisn, nipd, jenis_kelamin, tempat_lahir, tanggal_lahir, rombel saat ini).",
+    "uploadLabel": "Dapodik CSV file",
+    "uploading": "Uploading... {percent}%",
+    "previewAction": "Review data",
+    "reviewSummary": "{create} new students, {update} updated students, {error} rows with issues.",
+    "reviewEmpty": "No rows to review.",
+    "reviewBack": "Upload again",
+    "columnRow": "Row",
+    "columnName": "Name",
+    "columnNisn": "NISN",
+    "columnClass": "Class",
+    "columnAction": "Action",
+    "columnErrors": "Notes",
+    "action": {
+      "create": "New",
+      "update": "Update",
+      "error": "Issue"
+    },
+    "commitAction": "Save student data",
+    "doneTitle": "{count} students saved successfully.",
+    "doneBody": "Student data is in. Check the completeness list below for what's next."
   }
 }
