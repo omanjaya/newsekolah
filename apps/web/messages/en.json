@@ -1,0 +1,105 @@
+{
+  "app": {
+    "shell": {
+      "appearance": "Appearance",
+      "commandPalette": {
+        "trigger": "Search pages or actions",
+        "placeholder": "Type to search",
+        "hint": "Open with Ctrl K or Cmd K"
+      },
+      "notifications": {
+        "label": "Notifications",
+        "empty": "Notifications module not available yet"
+      },
+      "profileMenu": {
+        "label": "Account menu",
+        "profile": "Profile",
+        "logout": "Log out"
+      },
+      "impersonation": {
+        "banner": "Operated by {adminName} as {name}, session ends automatically in 30 minutes"
+      },
+      "offline": {
+        "banner": "No connection, changes are saved on this device for now"
+      },
+      "updateAvailable": {
+        "title": "New version available",
+        "body": "Reload to use the latest version of the app",
+        "action": "Reload"
+      },
+      "skipToContent": "Skip to main content"
+    },
+    "login": {
+      "usernamePlaceholder": "Username",
+      "passwordPlaceholder": "Password",
+      "rateLimitRetry": "Too many attempts, try again in {seconds, number} seconds",
+      "genericError": "Sign in failed, check your username and password and try again"
+    },
+    "changePassword": {
+      "forcedTitle": "Change your password to continue",
+      "forcedBody": "This password was set by an admin and needs to be changed before you can use the app.",
+      "successRedirect": "Password changed, redirecting to the home page"
+    },
+    "dashboard": {
+      "title": "Home",
+      "greeting": "Welcome, {name}",
+      "rolesLabel": "Roles",
+      "academicYearLabel": "Active academic year",
+      "noAcademicYear": "No active academic year yet",
+      "tasksTitle": "Today's tasks",
+      "tasksEmptyTitle": "Tasks module not available yet",
+      "tasksEmptyBody": "Pending permit approvals and unsaved attendance will show up here once those modules are enabled.",
+      "announcementsTitle": "Recent announcements",
+      "announcementsEmptyTitle": "Announcements module not available yet",
+      "announcementsEmptyBody": "School announcements will show up here once the communication module is enabled.",
+      "summaryTitle": "Summary",
+      "summaryEmptyTitle": "No summary data yet",
+      "summaryEmptyBody": "Attendance and permit figures will show up here once the reporting module is enabled."
+    },
+    "profile": {
+      "title": "Profile",
+      "identityTitle": "Identity",
+      "usernameLabel": "Username",
+      "emailLabel": "Email",
+      "emailEmpty": "Not set",
+      "rolesLabel": "Roles",
+      "sessionsColumnDevice": "Device",
+      "sessionsColumnLastSeen": "Last seen",
+      "sessionsColumnActions": "Actions",
+      "sessionsEmptyTitle": "No other sessions",
+      "sessionsEmptyBody": "Other sessions will show up here after signing in from another device.",
+      "revokeSuccess": "Session ended",
+      "changePasswordTitle": "Change password"
+    },
+    "settings": {
+      "appearance": {
+        "title": "Appearance",
+        "description": "Set the light or dark theme for this device.",
+        "themeLabel": "Theme",
+        "themeSystem": "Follow system",
+        "themeLight": "Light",
+        "themeDark": "Dark"
+      }
+    },
+    "forbidden": {
+      "title": "Access denied",
+      "body": "This account does not have permission to open this page. Contact the school admin if this access should be available.",
+      "backHome": "Back to home"
+    },
+    "notFound": {
+      "title": "Page not found",
+      "body": "The address you requested does not exist or has moved.",
+      "backHome": "Back to home"
+    },
+    "error": {
+      "title": "Something went wrong",
+      "body": "This page failed to load. Try reloading, or contact support if it keeps happening.",
+      "digestLabel": "Code: {digest}"
+    },
+    "offlinePage": {
+      "title": "No connection",
+      "body": "This page needs an internet connection and has not been saved for offline use.",
+      "retry": "Try again"
+    }
+  }
+}

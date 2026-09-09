@@ -14,3 +14,5 @@ apps/api/bin/
 apps/mobile/.expo/
 apps/mobile/ios/
 apps/mobile/android/
+apps/web/playwright-report/
+apps/web/test-results/

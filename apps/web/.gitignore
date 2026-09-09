@@ -1,0 +1,25 @@
+# Next.js
+.next/
+out/
+
+# Serwist-generated service worker (built from app/sw.ts on each build)
+/public/sw.js
+/public/sw.js.map
+/public/swe-worker-*.js
+
+# Tooling
+node_modules/
+.env.local
+.env*.local
+
+# Testing
+/coverage
+/playwright-report
+/test-results
+/blob-report
+/playwright/.cache
+
+# Misc
+.DS_Store
+*.tsbuildinfo
+next-env.d.ts

@@ -11,7 +11,10 @@ export function useLogin(client: NewsekolahApiClient) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (body: LoginRequest) => client.POST("/v1/auth/login", { body }),
-    onSuccess: () => {
+    onSuccess: (data) => {
+      // Seed the session from the login payload first so route guards never
+      // observe an anonymous gap between "logged in" and the refetch landing.
+      queryClient.setQueryData(queryKeys.me(), data.user);
       void queryClient.invalidateQueries({ queryKey: queryKeys.me() });
     },
   });

@@ -1,0 +1,26 @@
+/*
+ * App-level globals on top of @newsekolah/ui/styles.css (imported first in
+ * layout.tsx, which already pulls in Tailwind and the token preset).
+ */
+
+html,
+body {
+  height: 100%;
+}
+
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: 0;
+  z-index: var(--z-toast);
+  padding: var(--space-2) var(--space-4);
+  background-color: var(--color-accent);
+  color: var(--color-accent-fg);
+  border-radius: var(--radius-xs);
+  font-size: var(--text-13);
+}
+
+.skip-link:focus {
+  top: var(--space-2);
+  left: var(--space-2);
+}

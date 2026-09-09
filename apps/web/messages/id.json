@@ -1,0 +1,105 @@
+{
+  "app": {
+    "shell": {
+      "appearance": "Tampilan",
+      "commandPalette": {
+        "trigger": "Cari halaman atau aksi",
+        "placeholder": "Ketik untuk mencari",
+        "hint": "Buka dengan Ctrl K atau Cmd K"
+      },
+      "notifications": {
+        "label": "Notifikasi",
+        "empty": "Belum ada modul notifikasi"
+      },
+      "profileMenu": {
+        "label": "Menu akun",
+        "profile": "Profil",
+        "logout": "Keluar"
+      },
+      "impersonation": {
+        "banner": "Dioperasikan oleh {adminName} sebagai {name}, sesi berakhir otomatis dalam 30 menit"
+      },
+      "offline": {
+        "banner": "Tidak ada koneksi, perubahan disimpan sementara di perangkat"
+      },
+      "updateAvailable": {
+        "title": "Versi baru tersedia",
+        "body": "Muat ulang untuk memakai versi terbaru aplikasi",
+        "action": "Muat ulang"
+      },
+      "skipToContent": "Lompat ke konten utama"
+    },
+    "login": {
+      "usernamePlaceholder": "Nama pengguna",
+      "passwordPlaceholder": "Kata sandi",
+      "rateLimitRetry": "Terlalu banyak percobaan, coba lagi dalam {seconds, number} detik",
+      "genericError": "Masuk gagal, periksa nama pengguna dan kata sandi lalu coba lagi"
+    },
+    "changePassword": {
+      "forcedTitle": "Ubah kata sandi sebelum melanjutkan",
+      "forcedBody": "Kata sandi ini dibuat oleh admin dan perlu diganti sebelum mengakses aplikasi.",
+      "successRedirect": "Kata sandi berhasil diubah, mengalihkan ke beranda"
+    },
+    "dashboard": {
+      "title": "Beranda",
+      "greeting": "Selamat datang, {name}",
+      "rolesLabel": "Peran",
+      "academicYearLabel": "Tahun ajaran aktif",
+      "noAcademicYear": "Belum ada tahun ajaran aktif",
+      "tasksTitle": "Tugas hari ini",
+      "tasksEmptyTitle": "Belum ada modul tugas",
+      "tasksEmptyBody": "Antrean izin dan presensi belum submit akan tampil di sini setelah modul terkait aktif.",
+      "announcementsTitle": "Pengumuman terbaru",
+      "announcementsEmptyTitle": "Belum ada modul pengumuman",
+      "announcementsEmptyBody": "Pengumuman sekolah akan tampil di sini setelah modul komunikasi aktif.",
+      "summaryTitle": "Ringkasan",
+      "summaryEmptyTitle": "Belum ada data ringkasan",
+      "summaryEmptyBody": "Angka kehadiran dan izin akan tampil di sini setelah modul pelaporan aktif."
+    },
+    "profile": {
+      "title": "Profil",
+      "identityTitle": "Identitas",
+      "usernameLabel": "Nama pengguna",
+      "emailLabel": "Email",
+      "emailEmpty": "Belum diisi",
+      "rolesLabel": "Peran",
+      "sessionsColumnDevice": "Perangkat",
+      "sessionsColumnLastSeen": "Terakhir aktif",
+      "sessionsColumnActions": "Aksi",
+      "sessionsEmptyTitle": "Tidak ada sesi lain",
+      "sessionsEmptyBody": "Sesi lain akan tampil di sini setelah masuk dari perangkat lain.",
+      "revokeSuccess": "Sesi berhasil diakhiri",
+      "changePasswordTitle": "Ubah kata sandi"
+    },
+    "settings": {
+      "appearance": {
+        "title": "Tampilan",
+        "description": "Atur tema terang atau gelap untuk perangkat ini.",
+        "themeLabel": "Tema",
+        "themeSystem": "Ikuti sistem",
+        "themeLight": "Terang",
+        "themeDark": "Gelap"
+      }
+    },
+    "forbidden": {
+      "title": "Tidak memiliki akses",
+      "body": "Akun ini tidak memiliki izin untuk membuka halaman ini. Hubungi admin sekolah bila akses ini seharusnya tersedia.",
+      "backHome": "Kembali ke beranda"
+    },
+    "notFound": {
+      "title": "Halaman tidak ditemukan",
+      "body": "Alamat yang dituju tidak ada atau sudah dipindahkan.",
+      "backHome": "Kembali ke beranda"
+    },
+    "error": {
+      "title": "Terjadi kesalahan",
+      "body": "Halaman ini gagal dimuat. Coba muat ulang, atau hubungi dukungan bila terus terjadi.",
+      "digestLabel": "Kode: {digest}"
+    },
+    "offlinePage": {
+      "title": "Tidak ada koneksi",
+      "body": "Halaman ini butuh koneksi internet dan belum tersimpan untuk dibuka tanpa koneksi.",
+      "retry": "Coba lagi"
+    }
+  }
+}
