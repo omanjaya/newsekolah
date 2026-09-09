@@ -16,3 +16,5 @@ apps/mobile/ios/
 apps/mobile/android/
 apps/web/playwright-report/
 apps/web/test-results/
+.claude/scheduled_tasks.lock
+.claude/launch.json
