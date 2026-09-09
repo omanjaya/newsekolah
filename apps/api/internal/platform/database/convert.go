@@ -3,6 +3,7 @@ package database
 import (
 	"net"
 	"net/netip"
+	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -117,4 +118,44 @@ func InetOrEmpty(a *netip.Addr) string {
 		return ""
 	}
 	return a.String()
+}
+
+// Numeric converts a float to a Postgres numeric. Scores and weights are
+// small decimals, so the float64 round-trip is exact enough for two
+// decimal places; the column's own scale does the final rounding.
+func Numeric(f float64) pgtype.Numeric {
+	var n pgtype.Numeric
+	if err := n.Scan(strconv.FormatFloat(f, 'f', -1, 64)); err != nil {
+		return pgtype.Numeric{}
+	}
+	return n
+}
+
+// NumericPtr is Numeric for an optional value; nil stays NULL.
+func NumericPtr(f *float64) pgtype.Numeric {
+	if f == nil {
+		return pgtype.Numeric{}
+	}
+	return Numeric(*f)
+}
+
+// FloatOrZero reads a numeric back as a float.
+func FloatOrZero(n pgtype.Numeric) float64 {
+	if !n.Valid {
+		return 0
+	}
+	value, err := n.Float64Value()
+	if err != nil || !value.Valid {
+		return 0
+	}
+	return value.Float64
+}
+
+// FloatPtr reads an optional numeric back; NULL stays nil.
+func FloatPtr(n pgtype.Numeric) *float64 {
+	if !n.Valid {
+		return nil
+	}
+	f := FloatOrZero(n)
+	return &f
 }

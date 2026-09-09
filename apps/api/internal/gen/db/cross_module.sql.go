@@ -271,6 +271,236 @@ func (q *Queries) GetUserName(ctx context.Context, arg GetUserNameParams) (strin
 	return name, err
 }
 
+const gradingActiveTerm = `-- name: GradingActiveTerm :one
+select id, name from terms where tenant_id = $1 and academic_year_id = $2 and is_active limit 1
+`
+
+type GradingActiveTermParams struct {
+	TenantID       uuid.UUID `json:"tenant_id"`
+	AcademicYearID uuid.UUID `json:"academic_year_id"`
+}
+
+type GradingActiveTermRow struct {
+	ID   uuid.UUID `json:"id"`
+	Name string    `json:"name"`
+}
+
+// cross-module read: terms is owned by the academic module.
+func (q *Queries) GradingActiveTerm(ctx context.Context, arg GradingActiveTermParams) (GradingActiveTermRow, error) {
+	row := q.db.QueryRow(ctx, gradingActiveTerm, arg.TenantID, arg.AcademicYearID)
+	var i GradingActiveTermRow
+	err := row.Scan(&i.ID, &i.Name)
+	return i, err
+}
+
+const gradingClassStudentIDs = `-- name: GradingClassStudentIDs :many
+select student_user_id from enrollments
+where tenant_id = $1 and academic_year_id = $2 and class_id = $3 and status = 'active'
+order by student_user_id
+`
+
+type GradingClassStudentIDsParams struct {
+	TenantID       uuid.UUID `json:"tenant_id"`
+	AcademicYearID uuid.UUID `json:"academic_year_id"`
+	ClassID        uuid.UUID `json:"class_id"`
+}
+
+// cross-module read: enrollments is owned by the academic module.
+func (q *Queries) GradingClassStudentIDs(ctx context.Context, arg GradingClassStudentIDsParams) ([]uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, gradingClassStudentIDs, arg.TenantID, arg.AcademicYearID, arg.ClassID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []uuid.UUID{}
+	for rows.Next() {
+		var student_user_id uuid.UUID
+		if err := rows.Scan(&student_user_id); err != nil {
+			return nil, err
+		}
+		items = append(items, student_user_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const gradingCreatePolicy = `-- name: GradingCreatePolicy :exec
+insert into tenant_policies (tenant_id, kind, version, config, effective_from, created_by)
+values ($1, $2, $3, $4, $5, $6)
+on conflict (tenant_id, kind, version) do nothing
+`
+
+type GradingCreatePolicyParams struct {
+	TenantID      uuid.UUID   `json:"tenant_id"`
+	Kind          string      `json:"kind"`
+	Version       int32       `json:"version"`
+	Config        []byte      `json:"config"`
+	EffectiveFrom pgtype.Date `json:"effective_from"`
+	CreatedBy     pgtype.UUID `json:"created_by"`
+}
+
+func (q *Queries) GradingCreatePolicy(ctx context.Context, arg GradingCreatePolicyParams) error {
+	_, err := q.db.Exec(ctx, gradingCreatePolicy,
+		arg.TenantID,
+		arg.Kind,
+		arg.Version,
+		arg.Config,
+		arg.EffectiveFrom,
+		arg.CreatedBy,
+	)
+	return err
+}
+
+const gradingGetLatestPolicy = `-- name: GradingGetLatestPolicy :one
+select config, version from tenant_policies where tenant_id = $1 and kind = $2 order by version desc limit 1
+`
+
+type GradingGetLatestPolicyParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	Kind     string    `json:"kind"`
+}
+
+type GradingGetLatestPolicyRow struct {
+	Config  []byte `json:"config"`
+	Version int32  `json:"version"`
+}
+
+func (q *Queries) GradingGetLatestPolicy(ctx context.Context, arg GradingGetLatestPolicyParams) (GradingGetLatestPolicyRow, error) {
+	row := q.db.QueryRow(ctx, gradingGetLatestPolicy, arg.TenantID, arg.Kind)
+	var i GradingGetLatestPolicyRow
+	err := row.Scan(&i.Config, &i.Version)
+	return i, err
+}
+
+const gradingGetTerm = `-- name: GradingGetTerm :one
+select id, academic_year_id, name, sequence from terms where tenant_id = $1 and id = $2
+`
+
+type GradingGetTermParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	ID       uuid.UUID `json:"id"`
+}
+
+type GradingGetTermRow struct {
+	ID             uuid.UUID `json:"id"`
+	AcademicYearID uuid.UUID `json:"academic_year_id"`
+	Name           string    `json:"name"`
+	Sequence       int16     `json:"sequence"`
+}
+
+func (q *Queries) GradingGetTerm(ctx context.Context, arg GradingGetTermParams) (GradingGetTermRow, error) {
+	row := q.db.QueryRow(ctx, gradingGetTerm, arg.TenantID, arg.ID)
+	var i GradingGetTermRow
+	err := row.Scan(
+		&i.ID,
+		&i.AcademicYearID,
+		&i.Name,
+		&i.Sequence,
+	)
+	return i, err
+}
+
+const gradingPreviousTerm = `-- name: GradingPreviousTerm :one
+select id from terms where tenant_id = $1 and academic_year_id = $2 and sequence < $3 order by sequence desc limit 1
+`
+
+type GradingPreviousTermParams struct {
+	TenantID       uuid.UUID `json:"tenant_id"`
+	AcademicYearID uuid.UUID `json:"academic_year_id"`
+	Sequence       int16     `json:"sequence"`
+}
+
+func (q *Queries) GradingPreviousTerm(ctx context.Context, arg GradingPreviousTermParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, gradingPreviousTerm, arg.TenantID, arg.AcademicYearID, arg.Sequence)
+	var id uuid.UUID
+	err := row.Scan(&id)
+	return id, err
+}
+
+const gradingStudentClassID = `-- name: GradingStudentClassID :one
+select class_id from enrollments
+where tenant_id = $1 and academic_year_id = $2 and student_user_id = $3 and status = 'active'
+limit 1
+`
+
+type GradingStudentClassIDParams struct {
+	TenantID       uuid.UUID `json:"tenant_id"`
+	AcademicYearID uuid.UUID `json:"academic_year_id"`
+	StudentUserID  uuid.UUID `json:"student_user_id"`
+}
+
+func (q *Queries) GradingStudentClassID(ctx context.Context, arg GradingStudentClassIDParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, gradingStudentClassID, arg.TenantID, arg.AcademicYearID, arg.StudentUserID)
+	var class_id uuid.UUID
+	err := row.Scan(&class_id)
+	return class_id, err
+}
+
+const gradingStudentNames = `-- name: GradingStudentNames :many
+select id, name from users where tenant_id = $1 and id = any($2::uuid[])
+`
+
+type GradingStudentNamesParams struct {
+	TenantID uuid.UUID   `json:"tenant_id"`
+	UserIds  []uuid.UUID `json:"user_ids"`
+}
+
+type GradingStudentNamesRow struct {
+	ID   uuid.UUID `json:"id"`
+	Name string    `json:"name"`
+}
+
+func (q *Queries) GradingStudentNames(ctx context.Context, arg GradingStudentNamesParams) ([]GradingStudentNamesRow, error) {
+	rows, err := q.db.Query(ctx, gradingStudentNames, arg.TenantID, arg.UserIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GradingStudentNamesRow{}
+	for rows.Next() {
+		var i GradingStudentNamesRow
+		if err := rows.Scan(&i.ID, &i.Name); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const gradingTeacherTeaches = `-- name: GradingTeacherTeaches :one
+select exists (
+  select 1 from teaching_assignments
+  where tenant_id = $1 and academic_year_id = $2 and teacher_user_id = $3 and class_id = $4 and subject_id = $5 and is_active
+)::bool as teaches
+`
+
+type GradingTeacherTeachesParams struct {
+	TenantID       uuid.UUID `json:"tenant_id"`
+	AcademicYearID uuid.UUID `json:"academic_year_id"`
+	TeacherUserID  uuid.UUID `json:"teacher_user_id"`
+	ClassID        uuid.UUID `json:"class_id"`
+	SubjectID      uuid.UUID `json:"subject_id"`
+}
+
+// cross-module read: teaching_assignments is owned by the academic module.
+func (q *Queries) GradingTeacherTeaches(ctx context.Context, arg GradingTeacherTeachesParams) (bool, error) {
+	row := q.db.QueryRow(ctx, gradingTeacherTeaches,
+		arg.TenantID,
+		arg.AcademicYearID,
+		arg.TeacherUserID,
+		arg.ClassID,
+		arg.SubjectID,
+	)
+	var teaches bool
+	err := row.Scan(&teaches)
+	return teaches, err
+}
+
 const hasActiveDuty = `-- name: HasActiveDuty :one
 select exists (
   select 1

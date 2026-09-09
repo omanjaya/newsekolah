@@ -1,0 +1,508 @@
+paths:
+  /v1/grading/scale:
+    get:
+      tags: [grading]
+      operationId: getGradingScale
+      x-permission: authenticated
+      summary: The school's grading scale and report-increase cap
+      responses:
+        "200":
+          description: Scale
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GradingScale" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    put:
+      tags: [grading]
+      operationId: updateGradingScale
+      x-permission: manage_settings
+      summary: Replace the grading scale (new policy version)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/GradingScaleWrite" }
+      responses:
+        "200":
+          description: Scale
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GradingScale" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /v1/grading/gradebook:
+    get:
+      tags: [grading]
+      operationId: getGradebook
+      x-permission: manage_grades
+      summary: One class-subject sheet with components, students and scores
+      parameters:
+        - { name: class_id, in: query, required: true, schema: { type: string, format: uuid } }
+        - { name: subject_id, in: query, required: true, schema: { type: string, format: uuid } }
+        - { name: term_id, in: query, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Gradebook
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Gradebook" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /v1/grading/components:
+    post:
+      tags: [grading]
+      operationId: createAssessmentComponent
+      x-permission: manage_grades
+      summary: Add an assessment component to a class-subject
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AssessmentComponentWrite" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AssessmentComponent" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /v1/grading/components/{componentId}:
+    put:
+      tags: [grading]
+      operationId: updateAssessmentComponent
+      x-permission: manage_grades
+      summary: Edit a component
+      parameters:
+        - { name: componentId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AssessmentComponentWrite" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AssessmentComponent" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: [grading]
+      operationId: deleteAssessmentComponent
+      x-permission: manage_grades
+      summary: Delete a component and its scores
+      parameters:
+        - { name: componentId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "204": { description: Deleted }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /v1/grading/components/{componentId}/scores:
+    put:
+      tags: [grading]
+      operationId: saveComponentScores
+      x-permission: manage_grades
+      summary: Save one component's column and recompute report scores
+      parameters:
+        - { name: componentId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [entries]
+              properties:
+                entries:
+                  type: array
+                  items:
+                    type: object
+                    required: [student_user_id, score]
+                    properties:
+                      student_user_id: { type: string, format: uuid }
+                      score: { type: number }
+      responses:
+        "200":
+          description: Sheet after saving
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Gradebook" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /v1/grading/report-scores/manual:
+    put:
+      tags: [grading]
+      operationId: setManualReportScore
+      x-permission: manage_grades
+      summary: Override one student's report score for a subject
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [class_id, subject_id, student_user_id]
+              properties:
+                class_id: { type: string, format: uuid }
+                subject_id: { type: string, format: uuid }
+                student_user_id: { type: string, format: uuid }
+                term_id: { type: string, format: uuid }
+                manual_score: { type: number, nullable: true }
+      responses:
+        "200":
+          description: Score
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ReportScore" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /v1/grading/publications:
+    put:
+      tags: [grading]
+      operationId: setGradePublication
+      x-permission: manage_grades
+      summary: Publish or unpublish one class-subject's grades to students
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [class_id, subject_id, is_published]
+              properties:
+                class_id: { type: string, format: uuid }
+                subject_id: { type: string, format: uuid }
+                term_id: { type: string, format: uuid }
+                is_published: { type: boolean }
+      responses:
+        "200":
+          description: Publication
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GradePublication" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /v1/grading/grade-ranges:
+    get:
+      tags: [grading]
+      operationId: listGradeRanges
+      x-permission: manage_grades
+      summary: Report-score increase ranges for this year
+      responses:
+        "200":
+          description: Ranges
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/GradeRange" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: [grading]
+      operationId: createGradeRange
+      x-permission: manage_settings
+      summary: Add a report-score increase range
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/GradeRangeWrite" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GradeRange" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/grading/grade-ranges/{rangeId}:
+    delete:
+      tags: [grading]
+      operationId: deleteGradeRange
+      x-permission: manage_settings
+      summary: Remove a range
+      parameters:
+        - { name: rangeId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "204": { description: Deleted }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /v1/me/grades:
+    get:
+      tags: [grading]
+      operationId: getMyGrades
+      x-permission: view_own_grades
+      summary: The current student's published grades and star balance
+      parameters:
+        - { name: term_id, in: query, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Grades
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MyGrades" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /v1/grading/stars:
+    post:
+      tags: [grading]
+      operationId: giveStar
+      x-permission: manage_grades
+      summary: Add or subtract stars for a student (balance never goes negative)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [student_user_id, class_id, delta]
+              properties:
+                student_user_id: { type: string, format: uuid }
+                class_id: { type: string, format: uuid }
+                subject_id: { type: string, format: uuid }
+                delta: { type: integer }
+                note: { type: string, maxLength: 300 }
+                visible_to_student: { type: boolean, default: true }
+      responses:
+        "201":
+          description: Recorded
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [event, balance]
+                properties:
+                  event: { $ref: "#/components/schemas/StarEvent" }
+                  balance: { type: integer }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /v1/grading/stars/{studentId}:
+    get:
+      tags: [grading]
+      operationId: getStarLedger
+      x-permission: manage_grades
+      summary: One student's star ledger and balance
+      parameters:
+        - { name: studentId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 200, default: 50 } }
+      responses:
+        "200":
+          description: Ledger
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, balance]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/StarEvent" } }
+                  balance: { type: integer }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/grading/stars/class/{classId}:
+    get:
+      tags: [grading]
+      operationId: listClassStarBalances
+      x-permission: manage_grades
+      summary: Star balances of one class
+      parameters:
+        - { name: classId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Balances
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      required: [student_user_id, balance]
+                      properties:
+                        student_user_id: { type: string, format: uuid }
+                        balance: { type: integer }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+components:
+  schemas:
+    GradingScale:
+      type: object
+      required: [version, min, max, report_increase_max, default_kktp, round_decimal]
+      properties:
+        version: { type: integer }
+        min: { type: number }
+        max: { type: number }
+        report_increase_max: { type: number }
+        default_kktp: { type: number }
+        round_decimal: { type: integer }
+    GradingScaleWrite:
+      type: object
+      required: [min, max, report_increase_max, default_kktp, round_decimal]
+      properties:
+        min: { type: number }
+        max: { type: number }
+        report_increase_max: { type: number, minimum: 0 }
+        default_kktp: { type: number }
+        round_decimal: { type: integer, minimum: 0, maximum: 4 }
+    AssessmentComponentKind:
+      type: string
+      enum: [formative, summative, project, practical, attitude, other]
+    AssessmentComponent:
+      type: object
+      required: [id, class_id, subject_id, term_id, code, kind, weight, sequence]
+      properties:
+        id: { type: string, format: uuid }
+        class_id: { type: string, format: uuid }
+        subject_id: { type: string, format: uuid }
+        term_id: { type: string, format: uuid }
+        teacher_user_id: { type: string, format: uuid }
+        code: { type: string }
+        kind: { $ref: "#/components/schemas/AssessmentComponentKind" }
+        description: { type: string }
+        kktp: { type: number }
+        weight: { type: number }
+        sequence: { type: integer }
+    AssessmentComponentWrite:
+      type: object
+      required: [class_id, subject_id, code, kind, weight]
+      properties:
+        class_id: { type: string, format: uuid }
+        subject_id: { type: string, format: uuid }
+        term_id: { type: string, format: uuid }
+        code: { type: string, minLength: 1, maxLength: 32 }
+        kind: { $ref: "#/components/schemas/AssessmentComponentKind" }
+        description: { type: string, maxLength: 500 }
+        kktp: { type: number }
+        weight: { type: number, exclusiveMinimum: 0 }
+        sequence: { type: integer, minimum: 1, default: 1 }
+    GradebookStudent:
+      type: object
+      required: [student_user_id, name, scores]
+      properties:
+        student_user_id: { type: string, format: uuid }
+        name: { type: string }
+        scores:
+          type: object
+          additionalProperties: { type: number }
+        average: { type: number }
+        report_score: { type: number }
+    Gradebook:
+      type: object
+      required: [term_id, term_name, class_id, subject_id, scale, components, students, is_published]
+      properties:
+        term_id: { type: string, format: uuid }
+        term_name: { type: string }
+        class_id: { type: string, format: uuid }
+        subject_id: { type: string, format: uuid }
+        scale: { $ref: "#/components/schemas/GradingScale" }
+        components: { type: array, items: { $ref: "#/components/schemas/AssessmentComponent" } }
+        students: { type: array, items: { $ref: "#/components/schemas/GradebookStudent" } }
+        is_published: { type: boolean }
+    ReportScore:
+      type: object
+      required: [term_id, class_id, subject_id, student_user_id, final_score]
+      properties:
+        term_id: { type: string, format: uuid }
+        class_id: { type: string, format: uuid }
+        subject_id: { type: string, format: uuid }
+        student_user_id: { type: string, format: uuid }
+        previous_score: { type: number }
+        manual_score: { type: number }
+        final_score: { type: number }
+        computed_at: { type: string, format: date-time }
+    GradePublication:
+      type: object
+      required: [term_id, class_id, subject_id, is_published]
+      properties:
+        term_id: { type: string, format: uuid }
+        class_id: { type: string, format: uuid }
+        subject_id: { type: string, format: uuid }
+        is_published: { type: boolean }
+        published_at: { type: string, format: date-time }
+    GradeRange:
+      type: object
+      required: [id, min_score, max_score, increase_amount]
+      properties:
+        id: { type: string, format: uuid }
+        subject_id: { type: string, format: uuid }
+        teacher_user_id: { type: string, format: uuid }
+        min_score: { type: number }
+        max_score: { type: number }
+        increase_amount: { type: number }
+    GradeRangeWrite:
+      type: object
+      required: [min_score, max_score, increase_amount]
+      properties:
+        subject_id: { type: string, format: uuid }
+        teacher_user_id: { type: string, format: uuid }
+        min_score: { type: number }
+        max_score: { type: number }
+        increase_amount: { type: number, minimum: 0 }
+    MyComponentScore:
+      type: object
+      required: [code, kind, score]
+      properties:
+        code: { type: string }
+        kind: { $ref: "#/components/schemas/AssessmentComponentKind" }
+        kktp: { type: number }
+        score: { type: number }
+    MySubjectGrade:
+      type: object
+      required: [subject_id, components]
+      properties:
+        subject_id: { type: string, format: uuid }
+        components: { type: array, items: { $ref: "#/components/schemas/MyComponentScore" } }
+        average: { type: number }
+        report_score: { type: number }
+    MyGrades:
+      type: object
+      required: [term_id, term_name, scale, subjects, stars]
+      properties:
+        term_id: { type: string, format: uuid }
+        term_name: { type: string }
+        scale: { $ref: "#/components/schemas/GradingScale" }
+        subjects: { type: array, items: { $ref: "#/components/schemas/MySubjectGrade" } }
+        stars: { type: integer }
+    StarEvent:
+      type: object
+      required: [id, student_user_id, class_id, teacher_user_id, delta, note, visible_to_student, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        student_user_id: { type: string, format: uuid }
+        class_id: { type: string, format: uuid }
+        subject_id: { type: string, format: uuid }
+        teacher_user_id: { type: string, format: uuid }
+        delta: { type: integer }
+        note: { type: string }
+        visible_to_student: { type: boolean }
+        created_at: { type: string, format: date-time }

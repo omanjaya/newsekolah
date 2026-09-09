@@ -58,6 +58,24 @@ type AnnouncementRead struct {
 	ReadAt         pgtype.Timestamptz `json:"read_at"`
 }
 
+type AssessmentComponent struct {
+	ID             uuid.UUID          `json:"id"`
+	TenantID       uuid.UUID          `json:"tenant_id"`
+	AcademicYearID uuid.UUID          `json:"academic_year_id"`
+	TermID         uuid.UUID          `json:"term_id"`
+	TeacherUserID  uuid.UUID          `json:"teacher_user_id"`
+	ClassID        uuid.UUID          `json:"class_id"`
+	SubjectID      uuid.UUID          `json:"subject_id"`
+	Code           string             `json:"code"`
+	Kind           string             `json:"kind"`
+	Description    string             `json:"description"`
+	Kktp           pgtype.Numeric     `json:"kktp"`
+	Weight         pgtype.Numeric     `json:"weight"`
+	Sequence       int16              `json:"sequence"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+}
+
 type Asset struct {
 	ID         uuid.UUID          `json:"id"`
 	TenantID   uuid.UUID          `json:"tenant_id"`
@@ -303,12 +321,35 @@ type FeatureFlag struct {
 	Config   []byte    `json:"config"`
 }
 
+type Grade struct {
+	ID            uuid.UUID          `json:"id"`
+	TenantID      uuid.UUID          `json:"tenant_id"`
+	ComponentID   uuid.UUID          `json:"component_id"`
+	StudentUserID uuid.UUID          `json:"student_user_id"`
+	Score         pgtype.Numeric     `json:"score"`
+	RecordedBy    pgtype.UUID        `json:"recorded_by"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
+}
+
 type GradeLevel struct {
 	ID       uuid.UUID `json:"id"`
 	TenantID uuid.UUID `json:"tenant_id"`
 	Code     string    `json:"code"`
 	Name     string    `json:"name"`
 	Sequence int16     `json:"sequence"`
+}
+
+type GradePublication struct {
+	ID             uuid.UUID          `json:"id"`
+	TenantID       uuid.UUID          `json:"tenant_id"`
+	AcademicYearID uuid.UUID          `json:"academic_year_id"`
+	TermID         uuid.UUID          `json:"term_id"`
+	ClassID        uuid.UUID          `json:"class_id"`
+	SubjectID      uuid.UUID          `json:"subject_id"`
+	IsPublished    bool               `json:"is_published"`
+	PublishedAt    pgtype.Timestamptz `json:"published_at"`
+	PublishedBy    pgtype.UUID        `json:"published_by"`
 }
 
 type ImpersonationAction struct {
@@ -542,6 +583,42 @@ type PushDevice struct {
 	CreatedAt       pgtype.Timestamptz `json:"created_at"`
 }
 
+type ReportGradeRange struct {
+	ID             uuid.UUID      `json:"id"`
+	TenantID       uuid.UUID      `json:"tenant_id"`
+	AcademicYearID uuid.UUID      `json:"academic_year_id"`
+	SubjectID      pgtype.UUID    `json:"subject_id"`
+	TeacherUserID  pgtype.UUID    `json:"teacher_user_id"`
+	MinScore       pgtype.Numeric `json:"min_score"`
+	MaxScore       pgtype.Numeric `json:"max_score"`
+	IncreaseAmount pgtype.Numeric `json:"increase_amount"`
+}
+
+type ReportScore struct {
+	ID             uuid.UUID          `json:"id"`
+	TenantID       uuid.UUID          `json:"tenant_id"`
+	AcademicYearID uuid.UUID          `json:"academic_year_id"`
+	TermID         uuid.UUID          `json:"term_id"`
+	ClassID        uuid.UUID          `json:"class_id"`
+	SubjectID      uuid.UUID          `json:"subject_id"`
+	StudentUserID  uuid.UUID          `json:"student_user_id"`
+	PreviousScore  pgtype.Numeric     `json:"previous_score"`
+	ManualScore    pgtype.Numeric     `json:"manual_score"`
+	FinalScore     pgtype.Numeric     `json:"final_score"`
+	ComputedAt     pgtype.Timestamptz `json:"computed_at"`
+}
+
+type ReportTpMapping struct {
+	ID          uuid.UUID      `json:"id"`
+	TenantID    uuid.UUID      `json:"tenant_id"`
+	ComponentID uuid.UUID      `json:"component_id"`
+	ExportCode  string         `json:"export_code"`
+	RMin        pgtype.Numeric `json:"r_min"`
+	RMax        pgtype.Numeric `json:"r_max"`
+	TMin        pgtype.Numeric `json:"t_min"`
+	TMax        pgtype.Numeric `json:"t_max"`
+}
+
 type Role struct {
 	ID          uuid.UUID          `json:"id"`
 	TenantID    uuid.UUID          `json:"tenant_id"`
@@ -643,6 +720,20 @@ type StaffProfile struct {
 	JoinedYear       pgtype.Int2        `json:"joined_year"`
 	CreatedAt        pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+}
+
+type StarEvent struct {
+	ID               uuid.UUID          `json:"id"`
+	TenantID         uuid.UUID          `json:"tenant_id"`
+	AcademicYearID   uuid.UUID          `json:"academic_year_id"`
+	ClassID          uuid.UUID          `json:"class_id"`
+	SubjectID        pgtype.UUID        `json:"subject_id"`
+	StudentUserID    uuid.UUID          `json:"student_user_id"`
+	TeacherUserID    uuid.UUID          `json:"teacher_user_id"`
+	Delta            int32              `json:"delta"`
+	Note             string             `json:"note"`
+	VisibleToStudent bool               `json:"visible_to_student"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
 }
 
 type StudentProfile struct {

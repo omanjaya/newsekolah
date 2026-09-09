@@ -17,6 +17,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/announcements"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/discipline"
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/grading"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/identity"
 	identityservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/identity/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/notifications"
@@ -105,6 +106,9 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	if err != nil {
 		return nil, nil, err
 	}
+	gradingModule := grading.Register(grading.Dependencies{
+		Pool: pool, Years: schoolModule.Service, Perms: identityModule.Service, Clock: clock.Real{},
+	})
 	disciplineModule := discipline.Register(discipline.Dependencies{
 		Pool: pool, Years: schoolModule.Service, Docs: wiring.DisciplineDocuments{Permits: permitsModule.Service},
 		Sealer: sealer, Bus: eventBus, Clock: clock.Real{},
@@ -164,6 +168,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		NotificationsHandler: notificationsModule.Handler,
 		AnnouncementsHandler: announcementsModule.Handler,
 		DisciplineHandler:    disciplineModule.Handler,
+		GradingHandler:       gradingModule.Handler,
 		healthHandler:        &healthHandler{version: version, pool: pool, redis: redisClient},
 	}
 

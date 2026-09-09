@@ -1395,6 +1395,230 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/grading/scale": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The school's grading scale and report-increase cap */
+        get: operations["getGradingScale"];
+        /** Replace the grading scale (new policy version) */
+        put: operations["updateGradingScale"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/grading/gradebook": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One class-subject sheet with components, students and scores */
+        get: operations["getGradebook"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/grading/components": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add an assessment component to a class-subject */
+        post: operations["createAssessmentComponent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/grading/components/{componentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Edit a component */
+        put: operations["updateAssessmentComponent"];
+        post?: never;
+        /** Delete a component and its scores */
+        delete: operations["deleteAssessmentComponent"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/grading/components/{componentId}/scores": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Save one component's column and recompute report scores */
+        put: operations["saveComponentScores"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/grading/report-scores/manual": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Override one student's report score for a subject */
+        put: operations["setManualReportScore"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/grading/publications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Publish or unpublish one class-subject's grades to students */
+        put: operations["setGradePublication"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/grading/grade-ranges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Report-score increase ranges for this year */
+        get: operations["listGradeRanges"];
+        put?: never;
+        /** Add a report-score increase range */
+        post: operations["createGradeRange"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/grading/grade-ranges/{rangeId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove a range */
+        delete: operations["deleteGradeRange"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/grades": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The current student's published grades and star balance */
+        get: operations["getMyGrades"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/grading/stars": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add or subtract stars for a student (balance never goes negative) */
+        post: operations["giveStar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/grading/stars/{studentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One student's star ledger and balance */
+        get: operations["getStarLedger"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/grading/stars/class/{classId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Star balances of one class */
+        get: operations["listClassStarBalances"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/users": {
         parameters: {
             query?: never;
@@ -3481,6 +3705,163 @@ export interface components {
             created_at: string;
             /** Format: date-time */
             updated_at?: string;
+        };
+        GradingScale: {
+            version: number;
+            min: number;
+            max: number;
+            report_increase_max: number;
+            default_kktp: number;
+            round_decimal: number;
+        };
+        GradingScaleWrite: {
+            min: number;
+            max: number;
+            report_increase_max: number;
+            default_kktp: number;
+            round_decimal: number;
+        };
+        /** @enum {string} */
+        AssessmentComponentKind: "formative" | "summative" | "project" | "practical" | "attitude" | "other";
+        AssessmentComponent: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            class_id: string;
+            /** Format: uuid */
+            subject_id: string;
+            /** Format: uuid */
+            term_id: string;
+            /** Format: uuid */
+            teacher_user_id?: string;
+            code: string;
+            kind: components["schemas"]["AssessmentComponentKind"];
+            description?: string;
+            kktp?: number;
+            weight: number;
+            sequence: number;
+        };
+        AssessmentComponentWrite: {
+            /** Format: uuid */
+            class_id: string;
+            /** Format: uuid */
+            subject_id: string;
+            /** Format: uuid */
+            term_id?: string;
+            code: string;
+            kind: components["schemas"]["AssessmentComponentKind"];
+            description?: string;
+            kktp?: number;
+            weight: number;
+            /** @default 1 */
+            sequence: number;
+        };
+        GradebookStudent: {
+            /** Format: uuid */
+            student_user_id: string;
+            name: string;
+            scores: {
+                [key: string]: number;
+            };
+            average?: number;
+            report_score?: number;
+        };
+        Gradebook: {
+            /** Format: uuid */
+            term_id: string;
+            term_name: string;
+            /** Format: uuid */
+            class_id: string;
+            /** Format: uuid */
+            subject_id: string;
+            scale: components["schemas"]["GradingScale"];
+            components: components["schemas"]["AssessmentComponent"][];
+            students: components["schemas"]["GradebookStudent"][];
+            is_published: boolean;
+        };
+        ReportScore: {
+            /** Format: uuid */
+            term_id: string;
+            /** Format: uuid */
+            class_id: string;
+            /** Format: uuid */
+            subject_id: string;
+            /** Format: uuid */
+            student_user_id: string;
+            previous_score?: number;
+            manual_score?: number;
+            final_score: number;
+            /** Format: date-time */
+            computed_at?: string;
+        };
+        GradePublication: {
+            /** Format: uuid */
+            term_id: string;
+            /** Format: uuid */
+            class_id: string;
+            /** Format: uuid */
+            subject_id: string;
+            is_published: boolean;
+            /** Format: date-time */
+            published_at?: string;
+        };
+        GradeRange: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            subject_id?: string;
+            /** Format: uuid */
+            teacher_user_id?: string;
+            min_score: number;
+            max_score: number;
+            increase_amount: number;
+        };
+        GradeRangeWrite: {
+            /** Format: uuid */
+            subject_id?: string;
+            /** Format: uuid */
+            teacher_user_id?: string;
+            min_score: number;
+            max_score: number;
+            increase_amount: number;
+        };
+        MyComponentScore: {
+            code: string;
+            kind: components["schemas"]["AssessmentComponentKind"];
+            kktp?: number;
+            score: number;
+        };
+        MySubjectGrade: {
+            /** Format: uuid */
+            subject_id: string;
+            components: components["schemas"]["MyComponentScore"][];
+            average?: number;
+            report_score?: number;
+        };
+        MyGrades: {
+            /** Format: uuid */
+            term_id: string;
+            term_name: string;
+            scale: components["schemas"]["GradingScale"];
+            subjects: components["schemas"]["MySubjectGrade"][];
+            stars: number;
+        };
+        StarEvent: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            student_user_id: string;
+            /** Format: uuid */
+            class_id: string;
+            /** Format: uuid */
+            subject_id?: string;
+            /** Format: uuid */
+            teacher_user_id: string;
+            delta: number;
+            note: string;
+            visible_to_student: boolean;
+            /** Format: date-time */
+            created_at: string;
         };
         DirectoryUser: {
             /** Format: uuid */
@@ -7248,6 +7629,469 @@ export interface operations {
                 content: {
                     "application/json": {
                         data: components["schemas"]["Counseling"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    getGradingScale: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Scale */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GradingScale"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    updateGradingScale: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GradingScaleWrite"];
+            };
+        };
+        responses: {
+            /** @description Scale */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GradingScale"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    getGradebook: {
+        parameters: {
+            query: {
+                class_id: string;
+                subject_id: string;
+                term_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Gradebook */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Gradebook"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createAssessmentComponent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssessmentComponentWrite"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssessmentComponent"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    updateAssessmentComponent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                componentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssessmentComponentWrite"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssessmentComponent"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteAssessmentComponent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                componentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    saveComponentScores: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                componentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    entries: {
+                        /** Format: uuid */
+                        student_user_id: string;
+                        score: number;
+                    }[];
+                };
+            };
+        };
+        responses: {
+            /** @description Sheet after saving */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Gradebook"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    setManualReportScore: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    class_id: string;
+                    /** Format: uuid */
+                    subject_id: string;
+                    /** Format: uuid */
+                    student_user_id: string;
+                    /** Format: uuid */
+                    term_id?: string;
+                    manual_score?: number | null;
+                };
+            };
+        };
+        responses: {
+            /** @description Score */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportScore"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    setGradePublication: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    class_id: string;
+                    /** Format: uuid */
+                    subject_id: string;
+                    /** Format: uuid */
+                    term_id?: string;
+                    is_published: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Publication */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GradePublication"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    listGradeRanges: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Ranges */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["GradeRange"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createGradeRange: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GradeRangeWrite"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GradeRange"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    deleteGradeRange: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                rangeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    getMyGrades: {
+        parameters: {
+            query?: {
+                term_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Grades */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyGrades"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    giveStar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    student_user_id: string;
+                    /** Format: uuid */
+                    class_id: string;
+                    /** Format: uuid */
+                    subject_id?: string;
+                    delta: number;
+                    note?: string;
+                    /** @default true */
+                    visible_to_student?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Recorded */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        event: components["schemas"]["StarEvent"];
+                        balance: number;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getStarLedger: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Ledger */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["StarEvent"][];
+                        balance: number;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    listClassStarBalances: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                classId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Balances */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            /** Format: uuid */
+                            student_user_id: string;
+                            balance: number;
+                        }[];
                     };
                 };
             };

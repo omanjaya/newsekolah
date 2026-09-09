@@ -49,3 +49,5 @@ tags:
     description: Scan tokens, exit permits, late arrivals, leave requests, documents
   - name: discipline
     description: Violations, warning letters, counseling
+  - name: grading
+    description: Assessment components, grades, report scores, stars
