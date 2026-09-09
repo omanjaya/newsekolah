@@ -4,6 +4,1046 @@
  */
 
 export interface paths {
+    "/v1/academic/years": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List academic years */
+        get: operations["listAcademicYears"];
+        put?: never;
+        /** Create an academic year (and seed its terms from the calendar.terms policy) */
+        post: operations["createAcademicYear"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academic/years/{yearId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                yearId: components["parameters"]["YearIdParam"];
+            };
+            cookie?: never;
+        };
+        /** Get one academic year */
+        get: operations["getAcademicYear"];
+        /** Update an academic year's label and period */
+        put: operations["updateAcademicYear"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academic/years/{yearId}/activate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                yearId: components["parameters"]["YearIdParam"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Activate this year; deactivates every other year for the tenant (transactional, exactly one active) */
+        post: operations["activateAcademicYear"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academic/years/{yearId}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                yearId: components["parameters"]["YearIdParam"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Archive this year (must not be the active year) */
+        post: operations["archiveAcademicYear"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academic/years/{yearId}/terms": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                yearId: components["parameters"]["YearIdParam"];
+            };
+            cookie?: never;
+        };
+        /** List terms for an academic year */
+        get: operations["listTerms"];
+        put?: never;
+        /** Add a term to an academic year */
+        post: operations["createTerm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academic/terms/{termId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                termId: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /** Update a term */
+        put: operations["updateTerm"];
+        post?: never;
+        /** Delete a term */
+        delete: operations["deleteTerm"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academic/terms/{termId}/activate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                termId: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Activate this term; deactivates every other term in the same academic year */
+        post: operations["activateTerm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academic/years/{yearId}/calendar-events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                yearId: components["parameters"]["YearIdParam"];
+            };
+            cookie?: never;
+        };
+        /** List calendar events for an academic year */
+        get: operations["listCalendarEvents"];
+        put?: never;
+        /** Add a calendar event (holiday, exam, event, no_school) */
+        post: operations["createCalendarEvent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academic/calendar-events/{eventId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /** Update a calendar event */
+        put: operations["updateCalendarEvent"];
+        post?: never;
+        /** Delete a calendar event */
+        delete: operations["deleteCalendarEvent"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academic/years/{yearId}/school-days": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                yearId: components["parameters"]["YearIdParam"];
+            };
+            cookie?: never;
+        };
+        /** List which weekdays are school days for this academic year */
+        get: operations["listSchoolDays"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academic/years/{yearId}/school-days/{dayOfWeek}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                yearId: components["parameters"]["YearIdParam"];
+                /** @description ISO-8601 weekday, 1 (Monday) to 7 (Sunday) */
+                dayOfWeek: components["parameters"]["DayOfWeekParam"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /** Mark one weekday as a school day or not, for this academic year */
+        put: operations["setSchoolDay"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academic/grade-levels": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List grade levels */
+        get: operations["listGradeLevels"];
+        put?: never;
+        /** Create a grade level */
+        post: operations["createGradeLevel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academic/grade-levels/apply-template": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create the standard grade levels for an education level (SD 1-6, SMP 7-9, SMA/SMK X-XII); existing codes are skipped */
+        post: operations["applyGradeLevelTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academic/grade-levels/{gradeLevelId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                gradeLevelId: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /** Update a grade level */
+        put: operations["updateGradeLevel"];
+        post?: never;
+        /** Delete a grade level (fails if any class still references it) */
+        delete: operations["deleteGradeLevel"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academic/tracks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List tracks (majors) */
+        get: operations["listTracks"];
+        put?: never;
+        /** Create a track */
+        post: operations["createTrack"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academic/tracks/{trackId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                trackId: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /** Update a track */
+        put: operations["updateTrack"];
+        post?: never;
+        /** Delete a track (fails if any class still references it) */
+        delete: operations["deleteTrack"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academic/classes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List classes in an academic year */
+        get: operations["listClasses"];
+        put?: never;
+        /** Create a class */
+        post: operations["createClass"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academic/classes/{classId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                classId: components["parameters"]["ClassIdParam"];
+            };
+            cookie?: never;
+        };
+        /** Get one class */
+        get: operations["getClass"];
+        /** Update a class */
+        put: operations["updateClass"];
+        post?: never;
+        /** Delete a class (fails if it has active enrollments or teaching assignments) */
+        delete: operations["deleteClass"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academic/classes/{classId}/enrollments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                classId: components["parameters"]["ClassIdParam"];
+            };
+            cookie?: never;
+        };
+        /** List active enrollments for a class */
+        get: operations["listClassEnrollments"];
+        put?: never;
+        /** Assign one student to this class (must have no active enrollment this year) */
+        post: operations["assignStudent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academic/classes/{classId}/enrollments/bulk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                classId: components["parameters"]["ClassIdParam"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Assign several students to this class; a student who already has an active enrollment this year is skipped, not failed */
+        post: operations["bulkAssignStudents"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academic/enrollments/{enrollmentId}/move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrollmentId: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Move the enrolled student to a different class; closes the old enrollment row (moved) and opens a new one, preserving history */
+        post: operations["moveStudent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academic/years/{yearId}/unassigned-students": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                yearId: components["parameters"]["YearIdParam"];
+            };
+            cookie?: never;
+        };
+        /** List students with no active enrollment in this academic year */
+        get: operations["listUnassignedStudents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academic/promotion/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Compute (without writing) how every actively-enrolled student in from_year_id would promote into to_year_id */
+        post: operations["previewPromotion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academic/promotion/commit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Apply the promotion plan (re-computed server-side from the same inputs); items with no resolvable target class are skipped, not partially applied */
+        post: operations["commitPromotion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academic/enrollments/import/template": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download the xlsx template for the class-assignment import */
+        get: operations["downloadEnrollmentImportTemplate"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academic/enrollments/import/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Parse an uploaded workbook and report what each row would do, matching students by NIS or username, without writing anything */
+        post: operations["previewEnrollmentImport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academic/enrollments/import/commit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Re-parse the same workbook and apply every row that isn't an error (assign or move) */
+        post: operations["commitEnrollmentImport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academic/subjects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List subjects */
+        get: operations["listSubjects"];
+        put?: never;
+        /** Create a subject */
+        post: operations["createSubject"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academic/subjects/{subjectId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                subjectId: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /** Update a subject */
+        put: operations["updateSubject"];
+        post?: never;
+        /** Delete a subject (fails if it has offerings or teaching assignments) */
+        delete: operations["deleteSubject"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academic/years/{yearId}/subject-offerings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                yearId: components["parameters"]["YearIdParam"];
+            };
+            cookie?: never;
+        };
+        /** List subject offerings for an academic year */
+        get: operations["listSubjectOfferings"];
+        put?: never;
+        /** Offer a subject for an academic year (optionally scoped to one grade level) */
+        post: operations["createSubjectOffering"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academic/subject-offerings/{offeringId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                offeringId: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /** Update a subject offering */
+        put: operations["updateSubjectOffering"];
+        post?: never;
+        /** Remove a subject offering */
+        delete: operations["deleteSubjectOffering"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academic/rooms": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List rooms */
+        get: operations["listRooms"];
+        put?: never;
+        /** Create a room */
+        post: operations["createRoom"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academic/rooms/{roomId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                roomId: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /** Update a room */
+        put: operations["updateRoom"];
+        post?: never;
+        /** Delete a room (fails if any class still references it) */
+        delete: operations["deleteRoom"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academic/period-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List period templates */
+        get: operations["listPeriodTemplates"];
+        put?: never;
+        /** Create a period template */
+        post: operations["createPeriodTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academic/period-templates/{templateId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                templateId: components["parameters"]["TemplateIdParam"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /** Update a period template */
+        put: operations["updatePeriodTemplate"];
+        post?: never;
+        /** Delete a period template (fails if any weekday still points to it) */
+        delete: operations["deletePeriodTemplate"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academic/period-templates/{templateId}/periods": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                templateId: components["parameters"]["TemplateIdParam"];
+            };
+            cookie?: never;
+        };
+        /** List periods in a template */
+        get: operations["listPeriods"];
+        put?: never;
+        /** Add a period to a template */
+        post: operations["createPeriod"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academic/periods/{periodId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                periodId: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /** Update a period */
+        put: operations["updatePeriod"];
+        post?: never;
+        /** Delete a period */
+        delete: operations["deletePeriod"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academic/years/{yearId}/weekday-assignments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                yearId: components["parameters"]["YearIdParam"];
+            };
+            cookie?: never;
+        };
+        /** List which period template is in effect on each weekday for this academic year */
+        get: operations["listWeekdayAssignments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academic/years/{yearId}/weekday-assignments/{dayOfWeek}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                yearId: components["parameters"]["YearIdParam"];
+                /** @description ISO-8601 weekday, 1 (Monday) to 7 (Sunday) */
+                dayOfWeek: components["parameters"]["DayOfWeekParam"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /** Assign the period template in effect on one weekday */
+        put: operations["setWeekdayAssignment"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academic/periods/today": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The period in session right now, in the tenant's timezone, or 404 when none is */
+        get: operations["getPeriodToday"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academic/teaching-assignments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List teaching assignments for an academic year */
+        get: operations["listTeachingAssignments"];
+        put?: never;
+        /** Assign a teacher to teach a subject in a class */
+        post: operations["createTeachingAssignment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academic/teaching-assignments/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Replace all of a teacher's assignments for an academic year with exactly the given (subject, class) pairs */
+        post: operations["syncTeacherAssignments"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academic/teaching-assignments/{assignmentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                assignmentId: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /** Activate or deactivate a teaching assignment */
+        put: operations["updateTeachingAssignment"];
+        post?: never;
+        /** Remove a teaching assignment */
+        delete: operations["deleteTeachingAssignment"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/attendance/me/today": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Today's sessions for the current teacher (own schedules plus accepted substitutions) */
+        get: operations["listMyAttendanceToday"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/attendance/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Open (idempotently) the session for a schedule occurrence and return its full recording payload */
+        post: operations["openAttendanceSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/attendance/sessions/{sessionId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sessionId: string;
+            };
+            cookie?: never;
+        };
+        /** One session's full recording payload */
+        get: operations["getAttendanceSession"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/attendance/sessions/{sessionId}/entries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sessionId: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /** Save a batch of student statuses and the lesson journal for a session */
+        put: operations["saveAttendanceEntries"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/attendance/me/calendar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The current student's daily status for one month */
+        get: operations["getMyAttendanceCalendar"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/attendance/homeroom": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One day's daily status for every student in the caller's homeroom class */
+        get: operations["getHomeroomAttendance"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/attendance/reports/daily": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One class's expected vs. submitted sessions and per-student status for one day */
+        get: operations["getDailyAttendanceReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/attendance/reports/daily/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The daily report as an XLSX file */
+        get: operations["exportDailyAttendanceReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/attendance/reports/monthly": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One student's daily statuses for one month */
+        get: operations["getMonthlyAttendanceSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/monitor/snapshot": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public monitor-display snapshot, gated by the tenant's monitor.display_token setting */
+        get: operations["getMonitorSnapshot"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/monitor/presence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Who currently has a realtime socket open, by role */
+        get: operations["getMonitorPresence"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ws/monitor": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Realtime monitor channel (WebSocket upgrade). Authenticated by the same monitor.display_token as GET /v1/monitor/snapshot, passed as a query parameter since browsers cannot set custom headers before the handshake completes. */
+        get: operations["wsMonitor"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ws/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Realtime per-user channel (WebSocket upgrade). Authenticated by the access token, sent either as a bearer Authorization header (native clients) or as a `bearer.<token>` WebSocket subprotocol (browsers). */
+        get: operations["wsMe"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/auth/login": {
         parameters: {
             query?: never;
@@ -127,6 +1167,190 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schedules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Grid of schedules for a class, a teacher, or one day, merged into contiguous blocks */
+        get: operations["listSchedules"];
+        put?: never;
+        /** Create a schedule (admin for any teacher, or a teacher for themselves within the edit deadline) */
+        post: operations["createSchedule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schedules/bulk-import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create many schedules atomically (typically after clearing the academic year) */
+        post: operations["bulkImportSchedules"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schedules/clear": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Delete every schedule for one academic year */
+        post: operations["clearSchedules"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schedules/{scheduleId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                scheduleId: string;
+            };
+            cookie?: never;
+        };
+        /** One schedule */
+        get: operations["getSchedule"];
+        /** Update a schedule (admin, or the owning teacher within the edit deadline) */
+        put: operations["updateSchedule"];
+        post?: never;
+        /** Delete a schedule (admin, or the owning teacher within the edit deadline) */
+        delete: operations["deleteSchedule"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/substitutions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Substitution requests directed at me (incoming) or made by me (outgoing) */
+        get: operations["listSubstitutions"];
+        put?: never;
+        /** Request a substitute for one dated occurrence of my own schedule */
+        post: operations["createSubstitution"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/substitutions/{substitutionId}/respond": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                substitutionId: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Accept or reject a substitution request addressed to me */
+        post: operations["respondSubstitution"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/substitutions/{substitutionId}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                substitutionId: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel a substitution request I made */
+        post: operations["cancelSubstitution"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/journals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** My own journals for an academic year, or (class_id given, requires view_journals_all) every journal for a class */
+        get: operations["listJournals"];
+        put?: never;
+        /** Create or update the journal for a class/subject/date (unique per day) */
+        post: operations["upsertJournal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/journals/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Export journals as XLSX or DOCX */
+        get: operations["exportJournals"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/journals/{journalId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                journalId: string;
+            };
+            cookie?: never;
+        };
+        /** One journal */
+        get: operations["getJournal"];
+        put?: never;
+        post?: never;
+        /** Delete a journal (its own teacher/writer only) */
+        delete: operations["deleteJournal"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -195,6 +1419,507 @@ export interface components {
                 }[];
                 request_id?: string;
             };
+        };
+        PageMeta: {
+            total: number;
+            page: number;
+            page_size: number;
+        };
+        AcademicYear: {
+            /** Format: uuid */
+            id: string;
+            label: string;
+            /** Format: date */
+            starts_on: string;
+            /** Format: date */
+            ends_on: string;
+            is_active: boolean;
+            /** Format: date-time */
+            archived_at?: string;
+        };
+        AcademicYearInput: {
+            label: string;
+            /** Format: date */
+            starts_on: string;
+            /** Format: date */
+            ends_on: string;
+        };
+        AcademicYearList: {
+            data: components["schemas"]["AcademicYear"][];
+            page: components["schemas"]["PageMeta"];
+        };
+        Term: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            academic_year_id: string;
+            name: string;
+            sequence: number;
+            /** Format: date */
+            starts_on: string;
+            /** Format: date */
+            ends_on: string;
+            is_active: boolean;
+        };
+        TermInput: {
+            name: string;
+            sequence: number;
+            /** Format: date */
+            starts_on: string;
+            /** Format: date */
+            ends_on: string;
+        };
+        TermUpdateInput: {
+            name: string;
+            /** Format: date */
+            starts_on: string;
+            /** Format: date */
+            ends_on: string;
+        };
+        /** @enum {string} */
+        CalendarEventKind: "holiday" | "exam" | "event" | "no_school";
+        CalendarEvent: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            academic_year_id: string;
+            /** Format: date */
+            date: string;
+            kind: components["schemas"]["CalendarEventKind"];
+            name: string;
+        };
+        CalendarEventInput: {
+            /** Format: date */
+            date: string;
+            kind: components["schemas"]["CalendarEventKind"];
+            name: string;
+        };
+        CalendarEventList: {
+            data: components["schemas"]["CalendarEvent"][];
+            page: components["schemas"]["PageMeta"];
+        };
+        SchoolDay: {
+            day_of_week: number;
+            is_active: boolean;
+        };
+        /** @enum {string} */
+        GradeLevelTemplate: "sd" | "smp" | "sma" | "smk";
+        GradeLevel: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            name: string;
+            sequence: number;
+        };
+        GradeLevelInput: {
+            code: string;
+            name: string;
+            sequence: number;
+        };
+        Track: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            name: string;
+        };
+        TrackInput: {
+            code: string;
+            name: string;
+        };
+        Class: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            academic_year_id: string;
+            /** Format: uuid */
+            grade_level_id: string;
+            /** Format: uuid */
+            track_id?: string;
+            name: string;
+            /** Format: uuid */
+            room_id?: string;
+            capacity?: number;
+            /** Format: uuid */
+            homeroom_teacher_id?: string;
+        };
+        ClassInput: {
+            /** Format: uuid */
+            academic_year_id: string;
+            /** Format: uuid */
+            grade_level_id: string;
+            /** Format: uuid */
+            track_id?: string;
+            name: string;
+            /** Format: uuid */
+            room_id?: string;
+            capacity?: number;
+            /** Format: uuid */
+            homeroom_teacher_id?: string;
+        };
+        ClassList: {
+            data: components["schemas"]["Class"][];
+            page: components["schemas"]["PageMeta"];
+        };
+        /** @enum {string} */
+        EnrollmentStatus: "active" | "moved" | "graduated" | "left";
+        Enrollment: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            academic_year_id: string;
+            /** Format: uuid */
+            student_user_id: string;
+            /** Format: uuid */
+            class_id: string;
+            status: components["schemas"]["EnrollmentStatus"];
+            /** Format: date */
+            joined_on: string;
+            /** Format: date */
+            left_on?: string;
+        };
+        EnrollmentList: {
+            data: components["schemas"]["Enrollment"][];
+            page: components["schemas"]["PageMeta"];
+        };
+        AssignStudentInput: {
+            /** Format: uuid */
+            student_user_id: string;
+            /** Format: date */
+            joined_on: string;
+        };
+        BulkAssignInput: {
+            student_user_ids: string[];
+            /** Format: date */
+            joined_on: string;
+        };
+        BulkAssignResult: {
+            assigned: components["schemas"]["Enrollment"][];
+            /** @description Student IDs that already had an active enrollment this year */
+            skipped: string[];
+        };
+        MoveStudentInput: {
+            /** Format: uuid */
+            to_class_id: string;
+            /** Format: date */
+            effective_on: string;
+        };
+        StudentSummary: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            username: string;
+        };
+        StudentSummaryList: {
+            data: components["schemas"]["StudentSummary"][];
+            page: components["schemas"]["PageMeta"];
+        };
+        /** @enum {string} */
+        PromotionAction: "promote" | "retain" | "graduate";
+        PromotionOverride: {
+            /** Format: uuid */
+            student_user_id: string;
+            action: components["schemas"]["PromotionAction"];
+            /** Format: uuid */
+            target_class_id?: string;
+        };
+        PromotionRequest: {
+            /** Format: uuid */
+            from_year_id: string;
+            /** Format: uuid */
+            to_year_id: string;
+            overrides?: components["schemas"]["PromotionOverride"][];
+        };
+        PromotionCommitRequest: components["schemas"]["PromotionRequest"] & {
+            /** Format: date */
+            effective_on: string;
+        };
+        PromotionPlanItem: {
+            /** Format: uuid */
+            student_user_id: string;
+            /** Format: uuid */
+            from_class_id: string;
+            action: components["schemas"]["PromotionAction"];
+            /** Format: uuid */
+            target_class_id?: string;
+            /** @description True when action is promote/retain but no target class could be resolved */
+            unresolved: boolean;
+        };
+        PromotionPlan: {
+            data: components["schemas"]["PromotionPlanItem"][];
+        };
+        PromotionCommitResult: {
+            applied: components["schemas"]["PromotionPlanItem"][];
+            skipped: components["schemas"]["PromotionPlanItem"][];
+        };
+        /** @enum {string} */
+        ImportRowAction: "assign" | "move" | "unchanged" | "error";
+        ImportRowResult: {
+            row_number: number;
+            nis?: string;
+            username?: string;
+            class_name?: string;
+            student_name?: string;
+            action: components["schemas"]["ImportRowAction"];
+            message?: string;
+        };
+        ImportRowResultList: {
+            data: components["schemas"]["ImportRowResult"][];
+        };
+        Subject: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            name: string;
+        };
+        SubjectInput: {
+            code: string;
+            name: string;
+        };
+        SubjectList: {
+            data: components["schemas"]["Subject"][];
+            page: components["schemas"]["PageMeta"];
+        };
+        SubjectOffering: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            academic_year_id: string;
+            /** Format: uuid */
+            subject_id: string;
+            /** Format: uuid */
+            grade_level_id?: string;
+            hours_per_week: number;
+        };
+        SubjectOfferingInput: {
+            /** Format: uuid */
+            subject_id: string;
+            /** Format: uuid */
+            grade_level_id?: string;
+            hours_per_week: number;
+        };
+        SubjectOfferingUpdateInput: {
+            /** Format: uuid */
+            grade_level_id?: string;
+            hours_per_week: number;
+        };
+        Room: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            name: string;
+            capacity?: number;
+        };
+        RoomInput: {
+            code: string;
+            name: string;
+            capacity?: number;
+        };
+        RoomList: {
+            data: components["schemas"]["Room"][];
+            page: components["schemas"]["PageMeta"];
+        };
+        PeriodTemplate: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            is_default: boolean;
+        };
+        PeriodTemplateInput: {
+            name: string;
+            /** @default false */
+            is_default: boolean;
+        };
+        Period: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            template_id: string;
+            name: string;
+            sequence: number;
+            /** @example 07:00 */
+            starts_at: string;
+            /** @example 07:45 */
+            ends_at: string;
+            is_break: boolean;
+        };
+        PeriodInput: {
+            name: string;
+            sequence: number;
+            starts_at: string;
+            ends_at: string;
+            /** @default false */
+            is_break: boolean;
+        };
+        WeekdayAssignment: {
+            day_of_week: number;
+            /** Format: uuid */
+            template_id: string;
+        };
+        TeachingAssignment: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            academic_year_id: string;
+            /** Format: uuid */
+            teacher_user_id: string;
+            /** Format: uuid */
+            subject_id: string;
+            /** Format: uuid */
+            class_id: string;
+            is_active: boolean;
+        };
+        TeachingAssignmentInput: {
+            /** Format: uuid */
+            academic_year_id: string;
+            /** Format: uuid */
+            teacher_user_id: string;
+            /** Format: uuid */
+            subject_id: string;
+            /** Format: uuid */
+            class_id: string;
+        };
+        TeachingAssignmentList: {
+            data: components["schemas"]["TeachingAssignment"][];
+            page: components["schemas"]["PageMeta"];
+        };
+        SubjectClassPair: {
+            /** Format: uuid */
+            subject_id: string;
+            /** Format: uuid */
+            class_id: string;
+        };
+        SyncTeacherAssignmentsInput: {
+            /** Format: uuid */
+            academic_year_id: string;
+            /** Format: uuid */
+            teacher_user_id: string;
+            pairs: components["schemas"]["SubjectClassPair"][];
+        };
+        AttendanceStatusDef: {
+            code: string;
+            label: string;
+            color: string;
+            counts_as_present: boolean;
+        };
+        AttendanceSessionSummary: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            schedule_id: string;
+            /** Format: date */
+            date: string;
+            /** Format: uuid */
+            class_id: string;
+            /** Format: uuid */
+            subject_id: string;
+            /** Format: uuid */
+            teacher_user_id: string;
+            /** Format: uuid */
+            substitute_user_id?: string;
+            /** Format: uuid */
+            start_period_id: string;
+            /** Format: uuid */
+            end_period_id: string;
+            is_substitute: boolean;
+            /** Format: date-time */
+            submitted_at?: string;
+        };
+        AttendanceRosterItem: {
+            /** Format: uuid */
+            student_user_id: string;
+            name: string;
+            previous_status?: string;
+            current_status?: string;
+            /** @enum {string} */
+            source?: "teacher" | "leave" | "permit" | "system";
+            notes?: string;
+            blocked?: boolean;
+            blocked_reason?: string;
+        };
+        AttendanceSessionDetail: components["schemas"]["AttendanceSessionSummary"] & {
+            meeting_number: number;
+            previous_journal_topic?: string;
+            statuses: components["schemas"]["AttendanceStatusDef"][];
+            roster: components["schemas"]["AttendanceRosterItem"][];
+            journal_topic?: string;
+            journal_activities?: string;
+            journal_reflection?: string;
+        };
+        SaveAttendanceEntriesRequest: {
+            /**
+             * @default normal
+             * @enum {string}
+             */
+            mode: "normal" | "correction";
+            /** @description Required when mode is correction. */
+            reason?: string;
+            entries: {
+                /** Format: uuid */
+                student_user_id: string;
+                status_code: string;
+                notes?: string;
+            }[];
+            journal?: {
+                topic: string;
+                activities: string;
+                reflection?: string;
+            };
+        };
+        AttendanceCalendarDay: {
+            /** Format: date */
+            date: string;
+            status_code: string;
+            expected_sessions: number;
+            submitted_sessions: number;
+            complete: boolean;
+            sessions?: {
+                /** Format: uuid */
+                schedule_id: string;
+                /** Format: uuid */
+                subject_id: string;
+                status_code?: string;
+            }[];
+        };
+        AttendanceRosterEntry: {
+            /** Format: uuid */
+            student_user_id: string;
+            name: string;
+            status_code: string;
+            expected_sessions: number;
+            submitted_sessions: number;
+            complete: boolean;
+        };
+        AttendanceDailyReport: {
+            /** Format: uuid */
+            class_id: string;
+            /** Format: date */
+            date: string;
+            expected_sessions: number;
+            submitted_sessions: number;
+            complete: boolean;
+            students: components["schemas"]["AttendanceRosterEntry"][];
+            status_counts: {
+                [key: string]: number;
+            };
+        };
+        MonitorSessionCard: {
+            class_name: string;
+            subject_name: string;
+            teacher_name: string;
+            /** @enum {string} */
+            status: "not_started" | "in_progress" | "submitted";
+        };
+        MonitorSnapshot: {
+            /** Format: date-time */
+            generated_at: string;
+            status_counts: {
+                [key: string]: number;
+            };
+            sessions: components["schemas"]["MonitorSessionCard"][];
+        };
+        PresenceSnapshot: {
+            count: number;
+            keys: string[];
         };
         /** @enum {string} */
         ClientKind: "web" | "ios" | "android";
@@ -273,6 +1998,145 @@ export interface components {
                 name?: string;
             };
         };
+        /** @enum {string} */
+        ScheduleSource: "admin" | "teacher" | "import";
+        MutationPolicy: {
+            can_edit: boolean;
+            can_delete: boolean;
+            reason?: string;
+        };
+        Schedule: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            academic_year_id: string;
+            /** Format: uuid */
+            term_id?: string;
+            /** Format: uuid */
+            class_id: string;
+            /** Format: uuid */
+            subject_id: string;
+            /** Format: uuid */
+            teacher_user_id: string;
+            /** Format: uuid */
+            room_id?: string;
+            day_of_week: number;
+            /** Format: uuid */
+            start_period_id: string;
+            /** Format: uuid */
+            end_period_id: string;
+            source: components["schemas"]["ScheduleSource"];
+            notes?: string;
+            mutation_policy?: components["schemas"]["MutationPolicy"];
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        ScheduleBlock: {
+            schedule_ids: string[];
+            /** Format: uuid */
+            class_id: string;
+            /** Format: uuid */
+            subject_id: string;
+            /** Format: uuid */
+            teacher_user_id: string;
+            /** Format: uuid */
+            room_id?: string;
+            day_of_week: number;
+            start_seq: number;
+            end_seq: number;
+            source: components["schemas"]["ScheduleSource"];
+        };
+        ScheduleWriteRequest: {
+            /** Format: uuid */
+            academic_year_id: string;
+            /** Format: uuid */
+            term_id?: string;
+            /** Format: uuid */
+            class_id: string;
+            /** Format: uuid */
+            subject_id: string;
+            /** Format: uuid */
+            teacher_user_id: string;
+            /** Format: uuid */
+            room_id?: string;
+            day_of_week: number;
+            /** Format: uuid */
+            start_period_id: string;
+            /** Format: uuid */
+            end_period_id: string;
+            source?: components["schemas"]["ScheduleSource"];
+            notes?: string;
+        };
+        /** @enum {string} */
+        SubstitutionStatus: "pending" | "accepted" | "rejected" | "cancelled";
+        Substitution: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            academic_year_id: string;
+            /** Format: uuid */
+            schedule_id: string;
+            /** Format: date */
+            date: string;
+            /** Format: uuid */
+            requester_user_id: string;
+            /** Format: uuid */
+            substitute_user_id: string;
+            status: components["schemas"]["SubstitutionStatus"];
+            requester_note?: string;
+            response_note?: string;
+            /** Format: date-time */
+            responded_at?: string;
+            /** Format: date-time */
+            created_at: string;
+        };
+        SubstitutionCreateRequest: {
+            /** Format: uuid */
+            schedule_id: string;
+            /** Format: date */
+            date: string;
+            /** Format: uuid */
+            substitute_user_id: string;
+            note?: string;
+        };
+        Journal: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            academic_year_id: string;
+            /** Format: uuid */
+            teacher_user_id: string;
+            /** Format: uuid */
+            written_by_user_id: string;
+            /** Format: uuid */
+            class_id: string;
+            /** Format: uuid */
+            subject_id: string;
+            /** Format: date */
+            lesson_date: string;
+            topic: string;
+            activities: string;
+            reflection?: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        JournalWriteRequest: {
+            /** Format: uuid */
+            academic_year_id: string;
+            /** Format: uuid */
+            class_id: string;
+            /** Format: uuid */
+            subject_id: string;
+            /** Format: date */
+            lesson_date: string;
+            topic: string;
+            activities: string;
+            reflection?: string;
+        };
         TenantSummary: {
             /** Format: uuid */
             id: string;
@@ -300,6 +2164,15 @@ export interface components {
         };
     };
     responses: {
+        /** @description The request conflicts with existing state (duplicate, dependents, or state machine) */
+        Conflict: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["Error"];
+            };
+        };
         /** @description Validation failed */
         BadRequest: {
             headers: {
@@ -346,8 +2219,30 @@ export interface components {
                 "application/json": components["schemas"]["Error"];
             };
         };
+        /** @description The class or the teacher already has an overlapping schedule */
+        ScheduleConflict: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["Error"];
+            };
+        };
     };
     parameters: {
+        /** @description Client-generated key (mobile clients on unstable networks) that makes a POST/PUT safe to retry; docs/08-security.md section 7. The same key replays the first response instead of repeating the write. */
+        IdempotencyKeyHeader: string;
+        YearIdParam: string;
+        YearIdQueryParam: string;
+        ClassIdParam: string;
+        TemplateIdParam: string;
+        /** @description ISO-8601 weekday, 1 (Monday) to 7 (Sunday) */
+        DayOfWeekParam: number;
+        SearchParam: string;
+        PageParam: number;
+        PageSizeParam: number;
+        /** @description The tenant's configured monitor.display_token setting. */
+        MonitorTokenHeader: string;
         /** @description Tenant slug for mobile clients before a token exists. Ignored when the host already resolves a tenant or in single-tenant mode. */
         TenantHeader: string;
     };
@@ -357,6 +2252,2139 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    listAcademicYears: {
+        parameters: {
+            query?: {
+                search?: components["parameters"]["SearchParam"];
+                page?: components["parameters"]["PageParam"];
+                page_size?: components["parameters"]["PageSizeParam"];
+                include_archived?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Academic years */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AcademicYearList"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createAcademicYear: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AcademicYearInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AcademicYear"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getAcademicYear: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                yearId: components["parameters"]["YearIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Academic year */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AcademicYear"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateAcademicYear: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                yearId: components["parameters"]["YearIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AcademicYearInput"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AcademicYear"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    activateAcademicYear: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                yearId: components["parameters"]["YearIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Activated */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description The year is archived and cannot be reactivated */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    archiveAcademicYear: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                yearId: components["parameters"]["YearIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Archived */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listTerms: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                yearId: components["parameters"]["YearIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Terms */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Term"][];
+                    };
+                };
+            };
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createTerm: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                yearId: components["parameters"]["YearIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TermInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Term"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    updateTerm: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                termId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TermUpdateInput"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Term"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteTerm: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                termId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    activateTerm: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                termId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Activated */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listCalendarEvents: {
+        parameters: {
+            query?: {
+                kind?: components["schemas"]["CalendarEventKind"];
+                page?: components["parameters"]["PageParam"];
+                page_size?: components["parameters"]["PageSizeParam"];
+            };
+            header?: never;
+            path: {
+                yearId: components["parameters"]["YearIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Calendar events */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalendarEventList"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createCalendarEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                yearId: components["parameters"]["YearIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CalendarEventInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalendarEvent"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    updateCalendarEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CalendarEventInput"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalendarEvent"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteCalendarEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    listSchoolDays: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                yearId: components["parameters"]["YearIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description School days */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["SchoolDay"][];
+                    };
+                };
+            };
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    setSchoolDay: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                yearId: components["parameters"]["YearIdParam"];
+                /** @description ISO-8601 weekday, 1 (Monday) to 7 (Sunday) */
+                dayOfWeek: components["parameters"]["DayOfWeekParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    is_active: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Saved */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    listGradeLevels: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Grade levels */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["GradeLevel"][];
+                    };
+                };
+            };
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createGradeLevel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GradeLevelInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GradeLevel"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    applyGradeLevelTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    template: components["schemas"]["GradeLevelTemplate"];
+                };
+            };
+        };
+        responses: {
+            /** @description Grade levels created (existing codes were skipped, not duplicated) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["GradeLevel"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    updateGradeLevel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                gradeLevelId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GradeLevelInput"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GradeLevel"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteGradeLevel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                gradeLevelId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listTracks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Tracks */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Track"][];
+                    };
+                };
+            };
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createTrack: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TrackInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Track"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    updateTrack: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                trackId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TrackInput"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Track"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteTrack: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                trackId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listClasses: {
+        parameters: {
+            query: {
+                academic_year_id: components["parameters"]["YearIdQueryParam"];
+                search?: components["parameters"]["SearchParam"];
+                page?: components["parameters"]["PageParam"];
+                page_size?: components["parameters"]["PageSizeParam"];
+                grade_level_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Classes */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClassList"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createClass: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClassInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Class"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getClass: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                classId: components["parameters"]["ClassIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Class */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Class"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateClass: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                classId: components["parameters"]["ClassIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClassInput"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Class"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    deleteClass: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                classId: components["parameters"]["ClassIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listClassEnrollments: {
+        parameters: {
+            query?: {
+                page?: components["parameters"]["PageParam"];
+                page_size?: components["parameters"]["PageSizeParam"];
+            };
+            header?: never;
+            path: {
+                classId: components["parameters"]["ClassIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Enrollments */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnrollmentList"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    assignStudent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                classId: components["parameters"]["ClassIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssignStudentInput"];
+            };
+        };
+        responses: {
+            /** @description Enrolled */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Enrollment"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    bulkAssignStudents: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                classId: components["parameters"]["ClassIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkAssignInput"];
+            };
+        };
+        responses: {
+            /** @description Assignment result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkAssignResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    moveStudent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrollmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MoveStudentInput"];
+            };
+        };
+        responses: {
+            /** @description New enrollment */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Enrollment"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listUnassignedStudents: {
+        parameters: {
+            query?: {
+                search?: components["parameters"]["SearchParam"];
+                page?: components["parameters"]["PageParam"];
+                page_size?: components["parameters"]["PageSizeParam"];
+            };
+            header?: never;
+            path: {
+                yearId: components["parameters"]["YearIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Unassigned students */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentSummaryList"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    previewPromotion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PromotionRequest"];
+            };
+        };
+        responses: {
+            /** @description Promotion plan */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PromotionPlan"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    commitPromotion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PromotionCommitRequest"];
+            };
+        };
+        responses: {
+            /** @description Promotion result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PromotionCommitResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    downloadEnrollmentImportTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Workbook */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
+                };
+            };
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    previewEnrollmentImport: {
+        parameters: {
+            query: {
+                academic_year_id: components["parameters"]["YearIdQueryParam"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
+            };
+        };
+        responses: {
+            /** @description Row-by-row preview */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportRowResultList"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    commitEnrollmentImport: {
+        parameters: {
+            query: {
+                academic_year_id: components["parameters"]["YearIdQueryParam"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
+            };
+        };
+        responses: {
+            /** @description Row-by-row result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportRowResultList"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    listSubjects: {
+        parameters: {
+            query?: {
+                search?: components["parameters"]["SearchParam"];
+                page?: components["parameters"]["PageParam"];
+                page_size?: components["parameters"]["PageSizeParam"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Subjects */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubjectList"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createSubject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubjectInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Subject"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    updateSubject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                subjectId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubjectInput"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Subject"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    deleteSubject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                subjectId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listSubjectOfferings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                yearId: components["parameters"]["YearIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Subject offerings */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["SubjectOffering"][];
+                    };
+                };
+            };
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createSubjectOffering: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                yearId: components["parameters"]["YearIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubjectOfferingInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubjectOffering"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    updateSubjectOffering: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                offeringId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubjectOfferingUpdateInput"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubjectOffering"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteSubjectOffering: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                offeringId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    listRooms: {
+        parameters: {
+            query?: {
+                search?: components["parameters"]["SearchParam"];
+                page?: components["parameters"]["PageParam"];
+                page_size?: components["parameters"]["PageSizeParam"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Rooms */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoomList"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createRoom: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RoomInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Room"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    updateRoom: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                roomId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RoomInput"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Room"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    deleteRoom: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                roomId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listPeriodTemplates: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Period templates */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["PeriodTemplate"][];
+                    };
+                };
+            };
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createPeriodTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PeriodTemplateInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PeriodTemplate"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    updatePeriodTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                templateId: components["parameters"]["TemplateIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PeriodTemplateInput"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PeriodTemplate"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deletePeriodTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                templateId: components["parameters"]["TemplateIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listPeriods: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                templateId: components["parameters"]["TemplateIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Periods */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Period"][];
+                    };
+                };
+            };
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createPeriod: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                templateId: components["parameters"]["TemplateIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PeriodInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Period"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    updatePeriod: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                periodId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PeriodInput"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Period"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    deletePeriod: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                periodId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    listWeekdayAssignments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                yearId: components["parameters"]["YearIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Weekday assignments */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["WeekdayAssignment"][];
+                    };
+                };
+            };
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    setWeekdayAssignment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                yearId: components["parameters"]["YearIdParam"];
+                /** @description ISO-8601 weekday, 1 (Monday) to 7 (Sunday) */
+                dayOfWeek: components["parameters"]["DayOfWeekParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    template_id: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Saved */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    getPeriodToday: {
+        parameters: {
+            query: {
+                academic_year_id: components["parameters"]["YearIdQueryParam"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current period */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Period"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listTeachingAssignments: {
+        parameters: {
+            query: {
+                academic_year_id: components["parameters"]["YearIdQueryParam"];
+                teacher_user_id?: string;
+                class_id?: string;
+                page?: components["parameters"]["PageParam"];
+                page_size?: components["parameters"]["PageSizeParam"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Teaching assignments */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeachingAssignmentList"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createTeachingAssignment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TeachingAssignmentInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeachingAssignment"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    syncTeacherAssignments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SyncTeacherAssignmentsInput"];
+            };
+        };
+        responses: {
+            /** @description The teacher's assignments after the sync */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["TeachingAssignment"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    updateTeachingAssignment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                assignmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    is_active: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeachingAssignment"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteTeachingAssignment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                assignmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    listMyAttendanceToday: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sessions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AttendanceSessionSummary"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    openAttendanceSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    schedule_id: string;
+                    /** Format: date */
+                    date: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Session payload */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AttendanceSessionDetail"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    getAttendanceSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sessionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Session payload */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AttendanceSessionDetail"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    saveAttendanceEntries: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Client-generated key (mobile clients on unstable networks) that makes a POST/PUT safe to retry; docs/08-security.md section 7. The same key replays the first response instead of repeating the write. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKeyHeader"];
+            };
+            path: {
+                sessionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveAttendanceEntriesRequest"];
+            };
+        };
+        responses: {
+            /** @description Saved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AttendanceSessionDetail"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+            /** @description The save or correction window for this session has closed */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getMyAttendanceCalendar: {
+        parameters: {
+            query: {
+                /** @description YYYY-MM */
+                month: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Calendar */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AttendanceCalendarDay"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+        };
+    };
+    getHomeroomAttendance: {
+        parameters: {
+            query: {
+                date: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Homeroom roster with daily status */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AttendanceRosterEntry"][];
+                    };
+                };
+            };
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    getDailyAttendanceReport: {
+        parameters: {
+            query: {
+                date: string;
+                class_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Report */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AttendanceDailyReport"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+        };
+    };
+    exportDailyAttendanceReport: {
+        parameters: {
+            query: {
+                date: string;
+                class_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description XLSX file */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
+                };
+            };
+            400: components["responses"]["BadRequest"];
+        };
+    };
+    getMonthlyAttendanceSummary: {
+        parameters: {
+            query: {
+                student_id: string;
+                /** @description YYYY-MM */
+                month: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Summary */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AttendanceCalendarDay"][];
+                        totals: {
+                            [key: string]: number;
+                        };
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+        };
+    };
+    getMonitorSnapshot: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description The tenant's configured monitor.display_token setting. */
+                "X-Monitor-Token": components["parameters"]["MonitorTokenHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Snapshot */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MonitorSnapshot"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    getMonitorPresence: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Presence */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PresenceSnapshot"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    wsMonitor: {
+        parameters: {
+            query: {
+                token: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Switching Protocols */
+            101: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    wsMe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Switching Protocols */
+            101: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
     login: {
         parameters: {
             query?: never;
@@ -532,6 +4560,427 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+        };
+    };
+    listSchedules: {
+        parameters: {
+            query: {
+                academic_year_id: string;
+                class_id?: string;
+                teacher_user_id?: string;
+                /** @description 1 (Monday) through 7 (Sunday) */
+                day_of_week?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Schedule blocks */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ScheduleBlock"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    createSchedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScheduleWriteRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Schedule"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["ScheduleConflict"];
+        };
+    };
+    bulkImportSchedules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    schedules: components["schemas"]["ScheduleWriteRequest"][];
+                };
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Schedule"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            409: components["responses"]["ScheduleConflict"];
+        };
+    };
+    clearSchedules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    academic_year_id: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Cleared */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+        };
+    };
+    getSchedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                scheduleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Schedule */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Schedule"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateSchedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                scheduleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScheduleWriteRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Schedule"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["ScheduleConflict"];
+        };
+    };
+    deleteSchedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                scheduleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listSubstitutions: {
+        parameters: {
+            query: {
+                direction: "incoming" | "outgoing";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Substitution requests */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Substitution"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+        };
+    };
+    createSubstitution: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubstitutionCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Requested */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Substitution"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    respondSubstitution: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                substitutionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    accept: boolean;
+                    note?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Substitution"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    cancelSubstitution: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                substitutionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cancelled */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Substitution"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listJournals: {
+        parameters: {
+            query: {
+                academic_year_id: string;
+                class_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Journals */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Journal"][];
+                    };
+                };
+            };
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    upsertJournal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["JournalWriteRequest"];
+            };
+        };
+        responses: {
+            /** @description Created or updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Journal"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    exportJournals: {
+        parameters: {
+            query: {
+                academic_year_id: string;
+                class_id?: string;
+                format: "xlsx" | "docx";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description File */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
+                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": string;
+                };
+            };
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    getJournal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                journalId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Journal */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Journal"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteJournal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                journalId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     getHealth: {
