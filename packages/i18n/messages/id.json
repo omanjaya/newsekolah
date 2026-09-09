@@ -1,0 +1,186 @@
+{
+  "common": {
+    "actions": {
+      "save": "Simpan",
+      "cancel": "Batal",
+      "confirm": "Konfirmasi",
+      "delete": "Hapus",
+      "edit": "Ubah",
+      "add": "Tambah",
+      "create": "Buat",
+      "search": "Cari",
+      "filter": "Filter",
+      "clearFilter": "Bersihkan filter",
+      "export": "Ekspor",
+      "import": "Impor",
+      "retry": "Coba lagi",
+      "close": "Tutup",
+      "back": "Kembali",
+      "next": "Lanjut",
+      "done": "Selesai",
+      "viewAll": "Lihat semua",
+      "viewDetail": "Lihat detail",
+      "print": "Cetak",
+      "download": "Unduh",
+      "copy": "Salin",
+      "logout": "Keluar"
+    },
+    "states": {
+      "loading": "Memuat",
+      "empty": "Belum ada data",
+      "error": "Terjadi kesalahan",
+      "noResults": "Tidak ada hasil yang cocok",
+      "saved": "Tersimpan",
+      "unsavedChanges": "Ada perubahan yang belum disimpan",
+      "offline": "Tidak ada koneksi, perubahan disimpan sementara di perangkat"
+    },
+    "table": {
+      "rowsSelected": "{count, plural, one {# baris dipilih} other {# baris dipilih}}",
+      "densityNormal": "Normal",
+      "densityCompact": "Padat",
+      "columnVisibility": "Kolom tampil",
+      "page": "Halaman {current, number} dari {total, number}",
+      "goToNextPage": "Ke halaman berikutnya",
+      "goToPreviousPage": "Ke halaman sebelumnya"
+    },
+    "confirmDialog": {
+      "defaultTitle": "Konfirmasi tindakan",
+      "defaultConfirmLabel": "Lanjutkan",
+      "defaultCancelLabel": "Batal"
+    }
+  },
+  "validation": {
+    "required": "Wajib diisi",
+    "email": "Format email tidak valid",
+    "minLength": "Minimal {min, number} karakter",
+    "maxLength": "Maksimal {max, number} karakter",
+    "usernameRequired": "Nama pengguna wajib diisi",
+    "passwordRequired": "Kata sandi wajib diisi",
+    "passwordMin": "Kata sandi minimal {min, number} karakter",
+    "passwordMax": "Kata sandi maksimal {max, number} karakter",
+    "passwordMismatch": "Konfirmasi kata sandi tidak sama dengan kata sandi baru",
+    "tenantQueryMin": "Ketik minimal {min, number} karakter"
+  },
+  "auth": {
+    "login": {
+      "title": "Masuk",
+      "usernameLabel": "Nama pengguna",
+      "passwordLabel": "Kata sandi",
+      "tenantLabel": "Sekolah",
+      "submit": "Masuk",
+      "submitting": "Memeriksa akun"
+    },
+    "changePassword": {
+      "title": "Ubah kata sandi",
+      "currentLabel": "Kata sandi saat ini",
+      "newLabel": "Kata sandi baru",
+      "confirmLabel": "Konfirmasi kata sandi baru",
+      "submit": "Ubah kata sandi",
+      "success": "Kata sandi berhasil diubah, sesi lain diakhiri"
+    },
+    "sessions": {
+      "title": "Sesi aktif",
+      "currentDevice": "Perangkat ini",
+      "revoke": "Akhiri sesi",
+      "revokeConfirmTitle": "Akhiri sesi ini",
+      "revokeConfirmBody": "Perangkat ini perlu masuk ulang setelah sesi diakhiri.",
+      "lastSeen": "Terakhir aktif {time}"
+    }
+  },
+  "nav": {
+    "home": "Beranda",
+    "academic": {
+      "label": "Akademik",
+      "items": {
+        "schedule": "Jadwal",
+        "attendance": "Presensi",
+        "journal": "Jurnal",
+        "substituteTeacher": "Guru Pengganti",
+        "homeroomClass": "Kelas Binaan",
+        "grading": "Penilaian"
+      }
+    },
+    "permits": {
+      "label": "Perizinan",
+      "items": {
+        "plannedLeave": "Izin Terencana",
+        "exitPermit": "Izin Keluar",
+        "late": "Terlambat",
+        "gate": "Gerbang",
+        "verification": "Verifikasi"
+      }
+    },
+    "discipline": {
+      "label": "Kesiswaan",
+      "items": {
+        "violations": "Pelanggaran",
+        "warningLetters": "Surat Peringatan",
+        "counseling": "Konseling",
+        "reports": "Laporan Kesiswaan"
+      }
+    },
+    "library": {
+      "label": "Perpustakaan",
+      "items": {
+        "circulation": "Sirkulasi",
+        "catalog": "Katalog",
+        "members": "Anggota",
+        "stockOpname": "Opname",
+        "visits": "Kunjungan",
+        "reports": "Laporan",
+        "opac": "OPAC"
+      }
+    },
+    "communication": {
+      "label": "Komunikasi",
+      "items": {
+        "announcements": "Pengumuman",
+        "notifications": "Notifikasi"
+      }
+    },
+    "schoolData": {
+      "label": "Data Sekolah",
+      "items": {
+        "academicYear": "Tahun Ajaran",
+        "classesAndStudents": "Kelas dan Siswa",
+        "teachersAndStaff": "Guru dan Pegawai",
+        "subjects": "Mapel",
+        "rooms": "Ruang",
+        "periods": "Jam Pelajaran",
+        "assignments": "Tugas",
+        "violationCatalog": "Katalog Pelanggaran"
+      }
+    },
+    "settings": {
+      "label": "Pengaturan",
+      "items": {
+        "schoolProfile": "Profil Sekolah",
+        "policies": "Kebijakan",
+        "documentTemplates": "Template Dokumen",
+        "rolesAndAccess": "Peran dan Akses",
+        "integrations": "Integrasi",
+        "sessionsAndSecurity": "Sesi dan Keamanan",
+        "modules": "Modul"
+      }
+    },
+    "compact": {
+      "attendance": "Presensi",
+      "permits": "Izin",
+      "grades": "Nilai",
+      "library": "Perpustakaan",
+      "announcements": "Pengumuman",
+      "profile": "Profil"
+    }
+  },
+  "errors": {
+    "AUTH_INVALID_CREDENTIALS": "Nama pengguna atau kata sandi salah",
+    "AUTH_TOKEN_EXPIRED": "Sesi berakhir, silakan masuk kembali",
+    "TENANT_NOT_FOUND": "Sekolah tidak ditemukan",
+    "VALIDATION_FAILED": "Data yang dikirim tidak valid",
+    "RATE_LIMITED": "Terlalu banyak percobaan, coba lagi dalam beberapa saat",
+    "FORBIDDEN": "Anda tidak memiliki akses untuk tindakan ini",
+    "NOT_FOUND": "Data yang dicari tidak ditemukan",
+    "NETWORK": "Tidak dapat terhubung ke server, periksa koneksi",
+    "UNKNOWN": "Terjadi kesalahan, coba lagi"
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "name": "@newsekolah/config",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./tsconfig.base.json": "./tsconfig.base.json",
+    "./tsconfig.react.json": "./tsconfig.react.json",
+    "./tsconfig.node.json": "./tsconfig.node.json",
+    "./eslint/base": "./eslint/base.js",
+    "./eslint/react": "./eslint/react.js",
+    "./eslint/next": "./eslint/next.js",
+    "./tailwind/preset.css": "./tailwind/preset.css",
+    "./prettier": "./prettier.cjs"
+  },
+  "files": [
+    "tsconfig.base.json",
+    "tsconfig.react.json",
+    "tsconfig.node.json",
+    "eslint",
+    "tailwind",
+    "prettier.cjs"
+  ],
+  "scripts": {
+    "build": "echo 'config: nothing to build, configs are consumed as source'",
+    "typecheck": "echo 'config: no TypeScript sources to typecheck'",
+    "lint": "eslint eslint --no-warn-ignored",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@eslint/js": "^9.39.0",
+    "@typescript-eslint/parser": "^8.70.0",
+    "eslint-import-resolver-typescript": "^4.4.5",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "typescript-eslint": "^8.70.0"
+  },
+  "peerDependencies": {
+    "eslint": "^9.0.0",
+    "typescript": "^5.9.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "eslint": "^9.39.5",
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.0"
+  }
+}

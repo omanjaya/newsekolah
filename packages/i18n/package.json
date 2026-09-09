@@ -1,0 +1,37 @@
+{
+  "name": "@newsekolah/i18n",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./messages/id.json": "./messages/id.json",
+    "./messages/en.json": "./messages/en.json"
+  },
+  "files": [
+    "dist",
+    "messages"
+  ],
+  "scripts": {
+    "codegen": "tsx scripts/generate-types.ts",
+    "build": "pnpm codegen && tsup",
+    "typecheck": "pnpm codegen && tsc --noEmit -p tsconfig.json",
+    "lint": "eslint src scripts --no-warn-ignored",
+    "test": "pnpm codegen && vitest run"
+  },
+  "dependencies": {
+    "intl-messageformat": "^11.2.14"
+  },
+  "devDependencies": {
+    "@newsekolah/config": "workspace:*",
+    "@types/node": "^22.10.0",
+    "eslint": "^9.39.5",
+    "tsup": "^8.5.1",
+    "tsx": "^4.23.13",
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.0"
+  }
+}

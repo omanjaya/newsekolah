@@ -1,0 +1,91 @@
+/*
+ * @newsekolah/ui/styles.css
+ *
+ * Import once at the app root, after Tailwind: it pulls in the token
+ * preset and layers base rules DESIGN.md requires everywhere (visible
+ * focus rings, reduced-motion, tabular numerals in tables).
+ */
+@import "tailwindcss";
+@import "@newsekolah/config/tailwind/preset.css";
+
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  /* Radix content elements manage their own focus; avoid a double ring on
+     the trigger while a popover/menu/dialog built from them is open. */
+  [data-radix-popper-content-wrapper] :focus-visible {
+    outline-offset: 1px;
+  }
+}
+
+/*
+ * Radix content mounts/unmounts rather than staying in the DOM, so these
+ * play on `data-state` instead of Tailwind's enter/exit variants (which need
+ * an element present in both states). Durations reference the token scale:
+ * 200ms for opening/closing a dialog or menu, per DESIGN.md's motion section.
+ */
+@keyframes overlay-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes overlay-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.98);
+  }
+}
+@keyframes dialog-out {
+  to {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.98);
+  }
+}
+@keyframes sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+}
+@keyframes sheet-out {
+  to {
+    transform: translateY(100%);
+  }
+}
+
+@utility animate-overlay-in {
+  animation: overlay-in var(--duration-base) var(--ease-standard);
+}
+@utility animate-overlay-out {
+  animation: overlay-out var(--duration-base) var(--ease-standard);
+}
+@utility animate-dialog-in {
+  animation: dialog-in var(--duration-base) var(--ease-standard);
+}
+@utility animate-dialog-out {
+  animation: dialog-out var(--duration-base) var(--ease-standard);
+}
+@utility animate-sheet-in {
+  animation: sheet-in var(--duration-base) var(--ease-standard);
+}
+@utility animate-sheet-out {
+  animation: sheet-out var(--duration-base) var(--ease-standard);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

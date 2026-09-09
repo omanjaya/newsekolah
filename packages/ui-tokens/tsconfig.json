@@ -1,0 +1,9 @@
+{
+  "extends": "@newsekolah/config/tsconfig.node.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "dist",
+    "noEmit": true
+  },
+  "include": ["scripts", "tokens.json"]
+}

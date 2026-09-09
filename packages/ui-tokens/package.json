@@ -1,0 +1,30 @@
+{
+  "name": "@newsekolah/ui-tokens",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./tokens.json": "./tokens.json",
+    "./dist/tokens.css": "./dist/tokens.css",
+    "./dist/tokens.ts": "./dist/tokens.ts"
+  },
+  "files": [
+    "tokens.json",
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsx scripts/build-tokens.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint scripts --no-warn-ignored",
+    "test": "vitest run && tsx scripts/contrast-check.ts",
+    "contrast-check": "tsx scripts/contrast-check.ts"
+  },
+  "devDependencies": {
+    "@newsekolah/config": "workspace:*",
+    "@types/node": "^22.10.0",
+    "eslint": "^9.39.5",
+    "tsx": "^4.23.13",
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.0"
+  }
+}

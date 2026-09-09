@@ -1,0 +1,186 @@
+{
+  "common": {
+    "actions": {
+      "save": "Save",
+      "cancel": "Cancel",
+      "confirm": "Confirm",
+      "delete": "Delete",
+      "edit": "Edit",
+      "add": "Add",
+      "create": "Create",
+      "search": "Search",
+      "filter": "Filter",
+      "clearFilter": "Clear filter",
+      "export": "Export",
+      "import": "Import",
+      "retry": "Retry",
+      "close": "Close",
+      "back": "Back",
+      "next": "Next",
+      "done": "Done",
+      "viewAll": "View all",
+      "viewDetail": "View detail",
+      "print": "Print",
+      "download": "Download",
+      "copy": "Copy",
+      "logout": "Log out"
+    },
+    "states": {
+      "loading": "Loading",
+      "empty": "No data yet",
+      "error": "Something went wrong",
+      "noResults": "No matching results",
+      "saved": "Saved",
+      "unsavedChanges": "There are unsaved changes",
+      "offline": "No connection, changes are kept on this device for now"
+    },
+    "table": {
+      "rowsSelected": "{count, plural, one {# row selected} other {# rows selected}}",
+      "densityNormal": "Normal",
+      "densityCompact": "Compact",
+      "columnVisibility": "Visible columns",
+      "page": "Page {current, number} of {total, number}",
+      "goToNextPage": "Go to next page",
+      "goToPreviousPage": "Go to previous page"
+    },
+    "confirmDialog": {
+      "defaultTitle": "Confirm this action",
+      "defaultConfirmLabel": "Continue",
+      "defaultCancelLabel": "Cancel"
+    }
+  },
+  "validation": {
+    "required": "This field is required",
+    "email": "Enter a valid email address",
+    "minLength": "At least {min, number} characters",
+    "maxLength": "At most {max, number} characters",
+    "usernameRequired": "Username is required",
+    "passwordRequired": "Password is required",
+    "passwordMin": "Password must be at least {min, number} characters",
+    "passwordMax": "Password must be at most {max, number} characters",
+    "passwordMismatch": "Confirmation does not match the new password",
+    "tenantQueryMin": "Type at least {min, number} characters"
+  },
+  "auth": {
+    "login": {
+      "title": "Sign in",
+      "usernameLabel": "Username",
+      "passwordLabel": "Password",
+      "tenantLabel": "School",
+      "submit": "Sign in",
+      "submitting": "Checking your account"
+    },
+    "changePassword": {
+      "title": "Change password",
+      "currentLabel": "Current password",
+      "newLabel": "New password",
+      "confirmLabel": "Confirm new password",
+      "submit": "Change password",
+      "success": "Password changed, other sessions were ended"
+    },
+    "sessions": {
+      "title": "Active sessions",
+      "currentDevice": "This device",
+      "revoke": "End session",
+      "revokeConfirmTitle": "End this session",
+      "revokeConfirmBody": "This device will need to sign in again after the session ends.",
+      "lastSeen": "Last active {time}"
+    }
+  },
+  "nav": {
+    "home": "Home",
+    "academic": {
+      "label": "Academics",
+      "items": {
+        "schedule": "Schedule",
+        "attendance": "Attendance",
+        "journal": "Journal",
+        "substituteTeacher": "Substitute Teacher",
+        "homeroomClass": "Homeroom Class",
+        "grading": "Grading"
+      }
+    },
+    "permits": {
+      "label": "Permits",
+      "items": {
+        "plannedLeave": "Planned Leave",
+        "exitPermit": "Exit Permit",
+        "late": "Late Arrival",
+        "gate": "Gate",
+        "verification": "Verification"
+      }
+    },
+    "discipline": {
+      "label": "Discipline",
+      "items": {
+        "violations": "Violations",
+        "warningLetters": "Warning Letters",
+        "counseling": "Counseling",
+        "reports": "Discipline Reports"
+      }
+    },
+    "library": {
+      "label": "Library",
+      "items": {
+        "circulation": "Circulation",
+        "catalog": "Catalog",
+        "members": "Members",
+        "stockOpname": "Stock Opname",
+        "visits": "Visits",
+        "reports": "Reports",
+        "opac": "OPAC"
+      }
+    },
+    "communication": {
+      "label": "Communication",
+      "items": {
+        "announcements": "Announcements",
+        "notifications": "Notifications"
+      }
+    },
+    "schoolData": {
+      "label": "School Data",
+      "items": {
+        "academicYear": "Academic Year",
+        "classesAndStudents": "Classes and Students",
+        "teachersAndStaff": "Teachers and Staff",
+        "subjects": "Subjects",
+        "rooms": "Rooms",
+        "periods": "Periods",
+        "assignments": "Assignments",
+        "violationCatalog": "Violation Catalog"
+      }
+    },
+    "settings": {
+      "label": "Settings",
+      "items": {
+        "schoolProfile": "School Profile",
+        "policies": "Policies",
+        "documentTemplates": "Document Templates",
+        "rolesAndAccess": "Roles and Access",
+        "integrations": "Integrations",
+        "sessionsAndSecurity": "Sessions and Security",
+        "modules": "Modules"
+      }
+    },
+    "compact": {
+      "attendance": "Attendance",
+      "permits": "Permits",
+      "grades": "Grades",
+      "library": "Library",
+      "announcements": "Announcements",
+      "profile": "Profile"
+    }
+  },
+  "errors": {
+    "AUTH_INVALID_CREDENTIALS": "Incorrect username or password",
+    "AUTH_TOKEN_EXPIRED": "Your session expired, please sign in again",
+    "TENANT_NOT_FOUND": "School not found",
+    "VALIDATION_FAILED": "The submitted data is invalid",
+    "RATE_LIMITED": "Too many attempts, try again shortly",
+    "FORBIDDEN": "You do not have access to this action",
+    "NOT_FOUND": "The requested data was not found",
+    "NETWORK": "Could not reach the server, check your connection",
+    "UNKNOWN": "Something went wrong, please try again"
+  }
+}

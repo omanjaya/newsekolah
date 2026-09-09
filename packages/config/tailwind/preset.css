@@ -1,0 +1,85 @@
+/*
+ * @newsekolah/config/tailwind/preset.css
+ *
+ * Tailwind v4 theme registration. Values are re-exported from
+ * @newsekolah/ui-tokens/dist/tokens.css (the single source of truth, see
+ * DESIGN.md) so utility classes such as `bg-bg`, `text-status-present`, or
+ * `rounded-sm` resolve to the same CSS custom properties the tokens package
+ * generates, including their dark-mode overrides.
+ *
+ * Consumers import this file once, after `@import "tailwindcss"`:
+ *   @import "tailwindcss";
+ *   @import "@newsekolah/config/tailwind/preset.css";
+ */
+@import "@newsekolah/ui-tokens/dist/tokens.css";
+
+@theme {
+  --color-bg: var(--color-bg);
+  --color-surface: var(--color-surface);
+  --color-fg: var(--color-fg);
+  --color-fg-muted: var(--color-fg-muted);
+  --color-border: var(--color-border);
+  --color-accent: var(--color-accent);
+  --color-accent-fg: var(--color-accent-fg);
+
+  --color-status-present: var(--color-status-present);
+  --color-status-present-fg: var(--color-status-present-fg);
+  --color-status-sick: var(--color-status-sick);
+  --color-status-sick-fg: var(--color-status-sick-fg);
+  --color-status-excused: var(--color-status-excused);
+  --color-status-excused-fg: var(--color-status-excused-fg);
+  --color-status-dispensation: var(--color-status-dispensation);
+  --color-status-dispensation-fg: var(--color-status-dispensation-fg);
+  --color-status-absent: var(--color-status-absent);
+  --color-status-absent-fg: var(--color-status-absent-fg);
+  --color-status-late: var(--color-status-late);
+  --color-status-late-fg: var(--color-status-late-fg);
+
+  --spacing-1: var(--space-1);
+  --spacing-2: var(--space-2);
+  --spacing-3: var(--space-3);
+  --spacing-4: var(--space-4);
+  --spacing-5: var(--space-5);
+  --spacing-6: var(--space-6);
+  --spacing-8: var(--space-8);
+  --spacing-10: var(--space-10);
+  --spacing-12: var(--space-12);
+  --spacing-16: var(--space-16);
+
+  --radius-xs: var(--radius-xs);
+  --radius-sm: var(--radius-sm);
+  --radius-full: var(--radius-full);
+
+  --text-xs: var(--text-12);
+  --text-sm: var(--text-13);
+  --text-base: var(--text-14);
+  --text-md: var(--text-16);
+  --text-lg: var(--text-20);
+  --text-xl: var(--text-24);
+  --text-2xl: var(--text-32);
+
+  --shadow-float: var(--shadow-float);
+
+  --ease-standard: var(--ease-standard);
+  --default-transition-duration: var(--duration-fast);
+
+  --font-sans:
+    Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+    sans-serif;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-fg);
+    font-variant-numeric: normal;
+  }
+
+  table {
+    font-variant-numeric: tabular-nums;
+  }
+}
