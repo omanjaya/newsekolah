@@ -59,6 +59,7 @@ export function Sidebar({
   items: NavItem[];
   className?: string;
 }): ReactElement {
+  const t = useTranslations();
   // Starts empty (all groups open) to match the server-rendered pass; the
   // effect below applies the stored preference right after mount, the same
   // trade-off as ThemeProvider and OfflineIndicator make for the same reason.
@@ -109,7 +110,7 @@ export function Sidebar({
               aria-expanded={!collapsed[group]}
               className="flex h-8 items-center justify-between px-3 text-[12px] font-medium text-fg-muted"
             >
-              {group}
+              {t(group)}
               <ChevronDown
                 className={cn("size-4 transition-transform", collapsed[group] && "-rotate-90")}
                 aria-hidden="true"

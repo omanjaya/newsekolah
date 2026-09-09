@@ -79,6 +79,30 @@
         "themeSystem": "Ikuti sistem",
         "themeLight": "Terang",
         "themeDark": "Gelap"
+      },
+      "notifications": {
+        "navLabel": "Notifikasi",
+        "eyebrow": "Pengaturan",
+        "title": "Preferensi notifikasi",
+        "channelsTitle": "Kanal per jenis",
+        "channelsBody": "Pilih lewat mana setiap jenis pemberitahuan dikirim. Kotak masuk aplikasi selalu aktif.",
+        "kindColumn": "Jenis",
+        "channels": {
+          "inapp": "Aplikasi",
+          "push": "Push",
+          "email": "Email",
+          "whatsapp": "WhatsApp"
+        },
+        "timingTitle": "Waktu pengiriman",
+        "quietHoursLabel": "Jam tenang",
+        "quietHoursBody": "Push, email, dan WhatsApp ditunda sampai jam tenang berakhir.",
+        "quietFrom": "Mulai",
+        "quietTo": "sampai",
+        "digestLabel": "Ringkasan harian",
+        "digestBody": "Kirim satu email ringkasan per hari alih-alih satu per kejadian.",
+        "digestHour": "Jam ringkasan",
+        "save": "Simpan",
+        "saved": "Preferensi tersimpan"
       }
     },
     "forbidden": {
@@ -100,6 +124,112 @@
       "title": "Tidak ada koneksi",
       "body": "Halaman ini butuh koneksi internet dan belum tersimpan untuk dibuka tanpa koneksi.",
       "retry": "Coba lagi"
+    },
+    "notifications": {
+      "eyebrow": "Komunikasi",
+      "title": "Notifikasi",
+      "bellLabel": "Notifikasi",
+      "bellUnread": "{count, plural, one {# notifikasi belum dibaca} other {# notifikasi belum dibaca}}",
+      "markAllRead": "Tandai semua dibaca",
+      "filterAll": "Semua",
+      "filterUnread": "Belum dibaca",
+      "emptyTitle": "Belum ada notifikasi",
+      "emptyUnreadTitle": "Semua sudah dibaca",
+      "emptyBody": "Pemberitahuan izin, presensi, dan pengumuman akan muncul di sini.",
+      "unreadMarker": "belum dibaca",
+      "kinds": {
+        "announcement_published": "Pengumuman baru",
+        "attendance_submitted": "Presensi tercatat",
+        "substitution_requested": "Permintaan guru pengganti",
+        "substitution_responded": "Respon guru pengganti",
+        "leave_request_submitted": "Pengajuan izin baru",
+        "leave_request_reviewed": "Pengajuan izin ditinjau",
+        "leave_request_issued": "Surat izin diterbitkan",
+        "exit_permit_stage_changed": "Tahap izin keluar berubah",
+        "exit_permit_issued": "Izin keluar diterbitkan",
+        "exit_permit_exited": "Siswa keluar gerbang",
+        "late_arrival_opened": "Keterlambatan tercatat",
+        "late_arrival_updated": "Keterlambatan diperbarui"
+      }
+    },
+    "announcements": {
+      "eyebrow": "Komunikasi",
+      "title": "Pengumuman",
+      "tabFeed": "Untuk saya",
+      "tabManage": "Kelola",
+      "feedEmptyTitle": "Belum ada pengumuman",
+      "feedEmptyBody": "Pengumuman sekolah yang ditujukan untuk Anda akan tampil di sini.",
+      "pinned": "Disematkan",
+      "unread": "Baru",
+      "manageEmptyTitle": "Belum ada pengumuman dibuat",
+      "manageEmptyBody": "Buat draf, pilih penerima, lalu terbitkan atau jadwalkan.",
+      "columns": {
+        "title": "Judul",
+        "status": "Status",
+        "when": "Waktu",
+        "reach": "Dibaca",
+        "actions": "Aksi"
+      },
+      "status": {
+        "all": "Semua status",
+        "draft": "Draf",
+        "scheduled": "Terjadwal",
+        "published": "Terbit",
+        "archived": "Diarsipkan"
+      },
+      "reach": "{read} dari {total}",
+      "audienceClassCount": "{count, plural, one {# kelas} other {# kelas}}",
+      "audienceUserCount": "{count, plural, one {# pengguna} other {# pengguna}}",
+      "pagePrev": "Sebelumnya",
+      "pageNext": "Berikutnya",
+      "roles": {
+        "student": "Siswa",
+        "teacher": "Guru",
+        "parent": "Orang tua",
+        "staff": "Pegawai"
+      },
+      "actions": {
+        "menu": "Aksi pengumuman",
+        "create": "Buat pengumuman",
+        "edit": "Ubah",
+        "publish": "Terbitkan",
+        "schedule": "Jadwalkan",
+        "archive": "Arsipkan",
+        "delete": "Hapus",
+        "publishDone": "Pengumuman terbit dan dikirim ke penerima",
+        "scheduleDone": "Pengumuman dijadwalkan",
+        "archiveDone": "Pengumuman diarsipkan",
+        "deleteDone": "Pengumuman dihapus",
+        "publishConfirmTitle": "Terbitkan pengumuman",
+        "publishConfirmBody": "\"{title}\" akan dikirim ke {audience}. Isi tidak bisa diubah setelah terbit.",
+        "deleteConfirmTitle": "Hapus pengumuman",
+        "deleteConfirmBody": "\"{title}\" akan dihapus dari daftar."
+      },
+      "form": {
+        "createTitle": "Pengumuman baru",
+        "editTitle": "Ubah pengumuman",
+        "title": "Judul",
+        "body": "Isi",
+        "bodyHint": "Pisahkan paragraf dengan baris kosong.",
+        "audience": "Penerima",
+        "audienceAll": "Semua pengguna",
+        "audienceRoles": "Peran tertentu",
+        "audienceClasses": "Kelas tertentu",
+        "startsAt": "Tampil mulai",
+        "startsAtHint": "Kosongkan untuk tampil segera setelah terbit. Isi lalu pilih Jadwalkan agar terbit otomatis.",
+        "endsAt": "Tampil sampai",
+        "pinned": "Sematkan di atas",
+        "cancel": "Batal",
+        "saveDraft": "Simpan draf",
+        "saveChanges": "Simpan perubahan",
+        "created": "Draf tersimpan",
+        "updated": "Perubahan tersimpan",
+        "requiredError": "Judul dan isi wajib diisi.",
+        "audienceError": "Pilih minimal satu penerima."
+      }
+    },
+    "duty": {
+      "navLabel": "Piket"
     }
   }
 }

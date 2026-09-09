@@ -1,5 +1,15 @@
-import { Home, Settings, UserRound } from "lucide-react";
+import { domainIcons } from "@newsekolah/ui";
 import type { LucideIcon } from "lucide-react";
+import {
+  Bell,
+  ClipboardList,
+  Home,
+  Repeat,
+  Settings,
+  ShieldCheck,
+  UserRound,
+  UsersRound,
+} from "lucide-react";
 
 export interface NavItem {
   key: string;
@@ -18,29 +28,172 @@ export interface NavItem {
   /** Shown in the mobile bottom tab bar in addition to the sidebar. */
   showInTabBar?: boolean;
   /**
-   * Sidebar group label (e.g. "Akademik", "Perizinan" from docs/07-ui-ux.md
-   * section 2). Omitted for the current small item set, which renders flat;
-   * the Sidebar's collapsible-group rendering activates once items declare one.
+   * Sidebar group, as a message key (e.g. "nav.academic.label"), translated
+   * by the sidebar. Omitted items render flat above the groups.
    */
   group?: string;
 }
 
+const GROUP = {
+  academic: "nav.academic.label",
+  permits: "nav.permits.label",
+  communication: "nav.communication.label",
+  schoolData: "nav.schoolData.label",
+  settings: "nav.settings.label",
+} as const;
+
 /**
  * Single source of truth for the sidebar, the mobile tab bar, and the
  * command palette (docs/03-layered-architecture.md section 3, docs/07-ui-ux.md
- * section 2: "satu registri navigation.ts ... dipakai sidebar, tab bar,
- * command palette"). Only lists items that resolve to a real page: modules
- * from the full docs/07 information architecture (Akademik, Perizinan,
- * Kesiswaan, Perpustakaan, ...) land here once their pages ship, per
- * antislop R-24 ("dead navigation" — every item needs a real destination).
+ * section 2). Only lists items that resolve to a real page (antislop R-24:
+ * every item needs a real destination); groups follow the docs/07
+ * information architecture and appear once their first page ships.
  */
 export const navigation: NavItem[] = [
+  { key: "dashboard", labelKey: "nav.home", href: "/dashboard", icon: Home, showInTabBar: true },
+
   {
-    key: "dashboard",
-    labelKey: "nav.home",
-    href: "/dashboard",
-    icon: Home,
+    key: "schedule",
+    labelKey: "nav.academic.items.schedule",
+    href: "/schedule",
+    icon: domainIcons.schedule,
+    permission: "view_schedules",
+    group: GROUP.academic,
+  },
+  {
+    key: "attendance",
+    labelKey: "nav.academic.items.attendance",
+    href: "/attendance",
+    icon: domainIcons.attendance,
+    permission: "view_attendance",
+    group: GROUP.academic,
     showInTabBar: true,
+  },
+  {
+    key: "substitutions",
+    labelKey: "nav.academic.items.substituteTeacher",
+    href: "/substitutions",
+    icon: Repeat,
+    permission: "manage_attendance",
+    group: GROUP.academic,
+  },
+  {
+    key: "homeroom",
+    labelKey: "nav.academic.items.homeroomClass",
+    href: "/homeroom",
+    icon: UsersRound,
+    permission: "manage_attendance",
+    group: GROUP.academic,
+  },
+
+  {
+    key: "leave-requests",
+    labelKey: "nav.permits.items.plannedLeave",
+    href: "/leave-requests",
+    icon: ClipboardList,
+    group: GROUP.permits,
+    showInTabBar: true,
+  },
+  {
+    key: "exit-permits",
+    labelKey: "nav.permits.items.exitPermit",
+    href: "/exit-permits",
+    icon: domainIcons.exitPermit,
+    group: GROUP.permits,
+  },
+  {
+    key: "late-arrivals",
+    labelKey: "nav.permits.items.late",
+    href: "/late-arrivals",
+    icon: domainIcons.late,
+    group: GROUP.permits,
+  },
+  {
+    key: "duty",
+    labelKey: "app.duty.navLabel",
+    href: "/duty",
+    icon: domainIcons.qr,
+    permission: "issue_scan_tokens",
+    group: GROUP.permits,
+  },
+
+  {
+    key: "announcements",
+    labelKey: "nav.communication.items.announcements",
+    href: "/announcements",
+    icon: domainIcons.announcement,
+    group: GROUP.communication,
+  },
+  {
+    key: "notifications",
+    labelKey: "nav.communication.items.notifications",
+    href: "/notifications",
+    icon: Bell,
+    group: GROUP.communication,
+  },
+
+  {
+    key: "school-classes",
+    labelKey: "nav.schoolData.items.classesAndStudents",
+    href: "/school/classes",
+    icon: domainIcons.users,
+    permission: "view_academic_data",
+    group: GROUP.schoolData,
+  },
+  {
+    key: "school-users",
+    labelKey: "nav.schoolData.items.teachersAndStaff",
+    href: "/school/users",
+    icon: UserRound,
+    permission: "view_users",
+    group: GROUP.schoolData,
+  },
+  {
+    key: "school-subjects",
+    labelKey: "nav.schoolData.items.subjects",
+    href: "/school/subjects",
+    icon: domainIcons.grades,
+    permission: "manage_master_data",
+    group: GROUP.schoolData,
+  },
+  {
+    key: "school-periods",
+    labelKey: "nav.schoolData.items.periods",
+    href: "/school/periods",
+    icon: domainIcons.schedule,
+    permission: "manage_master_data",
+    group: GROUP.schoolData,
+  },
+  {
+    key: "school-duties",
+    labelKey: "nav.schoolData.items.assignments",
+    href: "/school/duties",
+    icon: ShieldCheck,
+    permission: "manage_master_data",
+    group: GROUP.schoolData,
+  },
+
+  {
+    key: "settings-roles",
+    labelKey: "nav.settings.items.rolesAndAccess",
+    href: "/settings/roles",
+    icon: ShieldCheck,
+    permission: "view_roles",
+    group: GROUP.settings,
+  },
+  {
+    key: "settings-notifications",
+    labelKey: "app.settings.notifications.navLabel",
+    href: "/settings/notifications",
+    icon: Bell,
+    group: GROUP.settings,
+  },
+  {
+    key: "settings-appearance",
+    labelKey: "app.shell.appearance",
+    href: "/settings/appearance",
+    icon: Settings,
+    group: GROUP.settings,
   },
   {
     key: "profile",
@@ -48,13 +201,7 @@ export const navigation: NavItem[] = [
     href: "/profile",
     icon: UserRound,
     showInTabBar: true,
-  },
-  {
-    key: "settings-appearance",
-    labelKey: "app.shell.appearance",
-    href: "/settings/appearance",
-    icon: Settings,
-    showInTabBar: false,
+    group: GROUP.settings,
   },
 ];
 

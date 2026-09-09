@@ -9,13 +9,14 @@ import {
   DropdownMenuTrigger,
   IconButton,
 } from "@newsekolah/ui";
-import { Bell, LogOut, Search, UserRound } from "lucide-react";
+import { LogOut, Search, UserRound } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import { useLogoutMutation } from "../features/auth/api";
+import { NotificationBell } from "../features/notifications/components/notification-bell";
 import { useSession } from "../lib/session/session-provider";
 
 import { useCommandPalette } from "./command-palette-provider";
@@ -56,12 +57,7 @@ export function Header(): ReactElement {
       />
       <div className="flex items-center gap-1">
         <ThemeToggle />
-        <IconButton
-          icon={<Bell />}
-          aria-label={t("notifications.label")}
-          disabled
-          title={t("notifications.empty")}
-        />
+        <NotificationBell />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button type="button" aria-label={t("profileMenu.label")} className="ml-1 rounded-full">

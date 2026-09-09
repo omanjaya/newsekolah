@@ -79,6 +79,30 @@
         "themeSystem": "Follow system",
         "themeLight": "Light",
         "themeDark": "Dark"
+      },
+      "notifications": {
+        "navLabel": "Notifications",
+        "eyebrow": "Settings",
+        "title": "Notification preferences",
+        "channelsTitle": "Channels per kind",
+        "channelsBody": "Choose how each kind of notification reaches you. The in-app inbox is always on.",
+        "kindColumn": "Kind",
+        "channels": {
+          "inapp": "In-app",
+          "push": "Push",
+          "email": "Email",
+          "whatsapp": "WhatsApp"
+        },
+        "timingTitle": "Delivery timing",
+        "quietHoursLabel": "Quiet hours",
+        "quietHoursBody": "Push, email and WhatsApp wait until quiet hours end.",
+        "quietFrom": "From",
+        "quietTo": "to",
+        "digestLabel": "Daily digest",
+        "digestBody": "Send one summary email per day instead of one per event.",
+        "digestHour": "Digest hour",
+        "save": "Save",
+        "saved": "Preferences saved"
       }
     },
     "forbidden": {
@@ -100,6 +124,112 @@
       "title": "No connection",
       "body": "This page needs an internet connection and has not been saved for offline use.",
       "retry": "Try again"
+    },
+    "notifications": {
+      "eyebrow": "Communication",
+      "title": "Notifications",
+      "bellLabel": "Notifications",
+      "bellUnread": "{count, plural, one {# unread notification} other {# unread notifications}}",
+      "markAllRead": "Mark all as read",
+      "filterAll": "All",
+      "filterUnread": "Unread",
+      "emptyTitle": "No notifications yet",
+      "emptyUnreadTitle": "All caught up",
+      "emptyBody": "Permit, attendance and announcement updates will show up here.",
+      "unreadMarker": "unread",
+      "kinds": {
+        "announcement_published": "New announcement",
+        "attendance_submitted": "Attendance submitted",
+        "substitution_requested": "Substitute request",
+        "substitution_responded": "Substitute response",
+        "leave_request_submitted": "New leave request",
+        "leave_request_reviewed": "Leave request reviewed",
+        "leave_request_issued": "Leave letter issued",
+        "exit_permit_stage_changed": "Exit permit stage changed",
+        "exit_permit_issued": "Exit permit issued",
+        "exit_permit_exited": "Student left the gate",
+        "late_arrival_opened": "Late arrival recorded",
+        "late_arrival_updated": "Late arrival updated"
+      }
+    },
+    "announcements": {
+      "eyebrow": "Communication",
+      "title": "Announcements",
+      "tabFeed": "For me",
+      "tabManage": "Manage",
+      "feedEmptyTitle": "No announcements yet",
+      "feedEmptyBody": "School announcements addressed to you will show up here.",
+      "pinned": "Pinned",
+      "unread": "New",
+      "manageEmptyTitle": "No announcements created yet",
+      "manageEmptyBody": "Create a draft, pick the audience, then publish or schedule it.",
+      "columns": {
+        "title": "Title",
+        "status": "Status",
+        "when": "When",
+        "reach": "Read",
+        "actions": "Actions"
+      },
+      "status": {
+        "all": "All statuses",
+        "draft": "Draft",
+        "scheduled": "Scheduled",
+        "published": "Published",
+        "archived": "Archived"
+      },
+      "reach": "{read} of {total}",
+      "audienceClassCount": "{count, plural, one {# class} other {# classes}}",
+      "audienceUserCount": "{count, plural, one {# user} other {# users}}",
+      "pagePrev": "Previous",
+      "pageNext": "Next",
+      "roles": {
+        "student": "Students",
+        "teacher": "Teachers",
+        "parent": "Parents",
+        "staff": "Staff"
+      },
+      "actions": {
+        "menu": "Announcement actions",
+        "create": "New announcement",
+        "edit": "Edit",
+        "publish": "Publish",
+        "schedule": "Schedule",
+        "archive": "Archive",
+        "delete": "Delete",
+        "publishDone": "Announcement published and sent to recipients",
+        "scheduleDone": "Announcement scheduled",
+        "archiveDone": "Announcement archived",
+        "deleteDone": "Announcement deleted",
+        "publishConfirmTitle": "Publish announcement",
+        "publishConfirmBody": "\"{title}\" will be sent to {audience}. The content cannot change after publishing.",
+        "deleteConfirmTitle": "Delete announcement",
+        "deleteConfirmBody": "\"{title}\" will be removed from the list."
+      },
+      "form": {
+        "createTitle": "New announcement",
+        "editTitle": "Edit announcement",
+        "title": "Title",
+        "body": "Body",
+        "bodyHint": "Separate paragraphs with a blank line.",
+        "audience": "Audience",
+        "audienceAll": "Everyone",
+        "audienceRoles": "Specific roles",
+        "audienceClasses": "Specific classes",
+        "startsAt": "Visible from",
+        "startsAtHint": "Leave empty to show right after publishing. Fill it and choose Schedule to publish automatically.",
+        "endsAt": "Visible until",
+        "pinned": "Pin to top",
+        "cancel": "Cancel",
+        "saveDraft": "Save draft",
+        "saveChanges": "Save changes",
+        "created": "Draft saved",
+        "updated": "Changes saved",
+        "requiredError": "Title and body are required.",
+        "audienceError": "Pick at least one recipient."
+      }
+    },
+    "duty": {
+      "navLabel": "Duty desk"
     }
   }
 }
