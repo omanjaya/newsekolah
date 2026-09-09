@@ -108,11 +108,13 @@ ujung ke ujung di lingkungan pengembangan:
 | Notifikasi dan pengumuman                          | Selesai, kanal in-app, push, email, WhatsApp         |
 | Kesiswaan (pelanggaran, SP, konseling)             | Selesai, konseling terenkripsi AES-GCM               |
 | Penilaian (komponen, rapor, publikasi, bintang)    | Selesai                                              |
-| Pusat laporan (ekspor XLSX)                        | Selesai, ekspor terjadwal belum                      |
-| Onboarding: checklist dan profil sekolah           | Selesai; wizard import Dapodik belum                 |
+| Pusat laporan (ekspor XLSX)                        | Selesai, termasuk ekspor terjadwal lewat surel       |
+| Onboarding: checklist, profil, wizard, Dapodik     | Selesai, termasuk template jenjang dan data contoh   |
 | Orang tua: tautan anak dan tampilan per anak       | Selesai di web dan mobile                            |
 | Perpustakaan                                       | Belum (Fase 4)                                       |
-| Konsol platform multi-sekolah                      | Belum (Fase 3)                                       |
+| Konsol platform multi-sekolah                      | Selesai, aktif hanya pada mode multi-tenant          |
+| Kalender akademik, tahun ajaran baru, kenaikan     | Selesai; salin jadwal antar tahun belum              |
+| ETL dari MySQL SION                                | Selesai, idempoten dengan laporan selisih            |
 | Rilis store iOS dan Android                        | Belum (Fase 4)                                       |
 
 Lingkungan pengembangan berjalan penuh lewat `pnpm dev:docker` dengan hot
@@ -123,5 +125,11 @@ reload untuk API dan web; lihat `infra/docker/README.dev.md`.
 - `@newsekolah/api-client`: `createApiClient` menerima `baseUrl`/`tenantSlug` sebagai nilai tetap; ubah menjadi getter agar mobile tidak perlu membangun ulang klien saat ganti sekolah/server.
 - `@newsekolah/ui-tokens`: `dist/tokens.ts` masih TypeScript mentah; terbitkan juga `dist/tokens.js` + `.d.ts` agar bisa di-`require` dari konfigurasi Tailwind tanpa transpiler.
 - ~~`apps/api/cmd/seed`: belum idempoten~~ selesai: seed sekarang upsert dan mengisi data operasional (jadwal, presensi, katalog pelanggaran, komponen penilaian, tautan orang tua).
-- `apps/web`: unggah bukti izin dan berkas lain memakai presigned URL; belum ada indikator progres unggah.
-- ETL dari MySQL SION (`apps/api/cmd/etl`, `docs/13-etl-sion.md`) selesai: identitas, akademik, jadwal, presensi, disiplin, dan izin yang sudah terbit. Exit permit, late arrival, dan permohonan izin yang belum final sengaja tidak dimigrasikan (lihat dokumen). Import Dapodik belum dikerjakan.
+- `apps/web`: unggah bukti izin dan berkas lain memakai presigned URL; indikator progres baru ada pada unggah Dapodik, belum pada unggah lain.
+- ETL dari MySQL SION (`apps/api/cmd/etl`, `docs/13-etl-sion.md`) selesai: identitas, akademik, jadwal, presensi, disiplin, dan izin yang sudah terbit. Exit permit, late arrival, dan permohonan izin yang belum final sengaja tidak dimigrasikan (lihat dokumen).
+- Presensi masih membaca hari sekolah lewat query lintas modulnya sendiri; ganti ke pembaca kalender akademik yang sudah tersedia.
+- Menyalin jadwal saat membuka tahun ajaran baru menunggu modul penjadwalan mengekspos operasi salin.
+- Binari worker mandiri belum mendaftarkan pekerjaan laporan terjadwal karena merender laporan butuh seluruh tumpukan layanan presensi, kesiswaan, penilaian, dan perizinan.
+- Domain kustom pada konsol platform dicatat tanpa verifikasi kepemilikan.
+- Import Dapodik belum memindahkan siswa antar rombel saat pembaruan, dan pencocokan rombel ke jenjang jatuh ke jenjang pertama bila awalan kode tidak terbaca.
+- Badan permintaan yang kehilangan field wajib menghasilkan 500, bukan 400: server strict oapi-codegen tidak memvalidasi skema permintaan. Pasang middleware validator permintaan.
