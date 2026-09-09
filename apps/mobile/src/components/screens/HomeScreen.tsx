@@ -1,12 +1,24 @@
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { router } from "expo-router";
-import { CalendarCheck, ClipboardList, ClockAlert, DoorOpen, GraduationCap, ShieldCheck } from "lucide-react-native";
+import {
+  CalendarCheck,
+  ClipboardList,
+  ClockAlert,
+  DoorOpen,
+  GraduationCap,
+  NotebookPen,
+  Repeat,
+  ShieldCheck,
+  Users,
+} from "lucide-react-native";
 import type { LucideIcon } from "lucide-react-native";
 import { ScreenHeader } from "@/components/ui/ScreenHeader";
 import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { AnnouncementsList } from "@/components/screens/AnnouncementsList";
+import { OfflineQueueBanner } from "@/components/screens/OfflineQueueBanner";
 import { useAuth } from "@/lib/auth/AuthProvider";
+import { hasRole } from "@/lib/auth/roles";
 import {
   useClasses,
   useOpenSession,
@@ -17,7 +29,15 @@ import {
 import { showToast } from "@/components/ui/Toast";
 import { t } from "@/i18n/t";
 
-function Section({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }): React.JSX.Element {
+function Section({
+  title,
+  action,
+  children,
+}: {
+  title: string;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+}): React.JSX.Element {
   return (
     <View className="gap-2 pt-4">
       <View className="flex-row items-center justify-between px-4">
@@ -29,7 +49,15 @@ function Section({ title, action, children }: { title: string; action?: React.Re
   );
 }
 
-function QuickLink({ icon: Icon, label, href }: { icon: LucideIcon; label: string; href: string }): React.JSX.Element {
+function QuickLink({
+  icon: Icon,
+  label,
+  href,
+}: {
+  icon: LucideIcon;
+  label: string;
+  href: string;
+}): React.JSX.Element {
   return (
     <Pressable
       accessibilityRole="button"
@@ -47,6 +75,10 @@ export function HomeScreen(): React.JSX.Element {
   const { me, activeTabGroup } = useAuth();
   const isTeacher = activeTabGroup === "teacher";
   const isStudent = activeTabGroup === "student";
+  const isStaff = activeTabGroup === "staff";
+  const isHomeroomTeacher = isTeacher && me != null && hasRole(me, "homeroom_teacher");
+  const isDutyTeacher = isStaff && me != null && hasRole(me, "duty_teacher");
+  const isCounselor = isStaff && me != null && hasRole(me, "counselor");
   const sessions = useTodaySessions(isTeacher);
   const classes = useClasses();
   const subjects = useSubjects();
@@ -62,23 +94,38 @@ export function HomeScreen(): React.JSX.Element {
         <View className="px-4 pt-4">
           <Text className="text-md font-medium text-ink dark:text-ink-dark">{me?.name}</Text>
           <Text className="text-sm text-ink/60 dark:text-ink-dark/60">
-            {me?.active_academic_year?.label ?? ""}{(unread.data?.count ?? 0) > 0 ? ` · ${unread.data?.count} ${t("home.unread")}` : ""}
+            {me?.active_academic_year?.label ?? ""}
+            {(unread.data?.count ?? 0) > 0 ? ` · ${unread.data?.count} ${t("home.unread")}` : ""}
           </Text>
         </View>
+
+        {isTeacher ? <OfflineQueueBanner /> : null}
 
         {isTeacher ? (
           <Section title={t("home.today_sessions")}>
             {sessions.isLoading ? (
-              <View className="gap-2 px-4"><Skeleton height={64} /><Skeleton height={64} /></View>
+              <View className="gap-2 px-4">
+                <Skeleton height={64} />
+                <Skeleton height={64} />
+              </View>
             ) : (sessions.data?.data ?? []).length === 0 ? (
-              <Text className="px-4 text-sm text-ink/60 dark:text-ink-dark/60">{t("home.no_sessions")}</Text>
+              <Text className="px-4 text-sm text-ink/60 dark:text-ink-dark/60">
+                {t("home.no_sessions")}
+              </Text>
             ) : (
               <View className="gap-2 px-4">
                 {(sessions.data?.data ?? []).map((s) => (
-                  <View key={s.schedule_id} className="flex-row items-center gap-3 rounded-input border border-line bg-surface p-3 dark:border-line-dark dark:bg-surface-dark">
+                  <View
+                    key={s.schedule_id}
+                    className="flex-row items-center gap-3 rounded-input border border-line bg-surface p-3 dark:border-line-dark dark:bg-surface-dark"
+                  >
                     <View className="flex-1">
-                      <Text className="text-base text-ink dark:text-ink-dark">{classMap.get(s.class_id) ?? "-"} · {subjectMap.get(s.subject_id) ?? ""}</Text>
-                      <Text className="text-sm text-ink/60 dark:text-ink-dark/60">{s.submitted_at ? t("home.submitted") : t("home.pending")}</Text>
+                      <Text className="text-base text-ink dark:text-ink-dark">
+                        {classMap.get(s.class_id) ?? "-"} · {subjectMap.get(s.subject_id) ?? ""}
+                      </Text>
+                      <Text className="text-sm text-ink/60 dark:text-ink-dark/60">
+                        {s.submitted_at ? t("home.submitted") : t("home.pending")}
+                      </Text>
                     </View>
                     <Button
                       label={s.submitted_at ? t("home.open_session") : t("home.fill_attendance")}
@@ -88,7 +135,11 @@ export function HomeScreen(): React.JSX.Element {
                         open.mutate(
                           { schedule_id: s.schedule_id, date: s.date },
                           {
-                            onSuccess: (detail) => router.push({ pathname: "/attendance/[sessionId]", params: { sessionId: detail.id } }),
+                            onSuccess: (detail) =>
+                              router.push({
+                                pathname: "/attendance/[sessionId]",
+                                params: { sessionId: detail.id },
+                              }),
                             onError: () => showToast(t("common.error"), "error"),
                           },
                         );
@@ -101,13 +152,52 @@ export function HomeScreen(): React.JSX.Element {
           </Section>
         ) : null}
 
+        {isTeacher ? (
+          <Section title={t("home.teacher_tools")}>
+            <View className="flex-row flex-wrap gap-2 px-4">
+              <QuickLink icon={NotebookPen} label={t("home.journal")} href="/journal" />
+              <QuickLink icon={Repeat} label={t("home.substitutions")} href="/substitutions" />
+              {isHomeroomTeacher ? (
+                <QuickLink icon={Users} label={t("home.homeroom")} href="/attendance/homeroom" />
+              ) : null}
+            </View>
+          </Section>
+        ) : null}
+
+        {isDutyTeacher || isCounselor ? (
+          <Section title={t("home.duty_tools")}>
+            <View className="flex-row flex-wrap gap-2 px-4">
+              {isDutyTeacher ? (
+                <QuickLink
+                  icon={ClockAlert}
+                  label={t("home.late_queue")}
+                  href="/review/late-arrivals"
+                />
+              ) : null}
+              <QuickLink
+                icon={ClipboardList}
+                label={t("home.leave_queue")}
+                href="/review/leave-requests"
+              />
+            </View>
+          </Section>
+        ) : null}
+
         {isStudent ? (
           <Section title={t("home.my_attendance")}>
             <View className="flex-row flex-wrap gap-2 px-4">
-              <QuickLink icon={CalendarCheck} label={t("home.view_calendar")} href="/attendance/calendar" />
+              <QuickLink
+                icon={CalendarCheck}
+                label={t("home.view_calendar")}
+                href="/attendance/calendar"
+              />
               <QuickLink icon={DoorOpen} label={t("home.exit_permits")} href="/permits/exit" />
               <QuickLink icon={ClockAlert} label={t("home.late_arrival")} href="/permits/late" />
-              <QuickLink icon={ClipboardList} label={t("home.leave_requests")} href="/permits/leave" />
+              <QuickLink
+                icon={ClipboardList}
+                label={t("home.leave_requests")}
+                href="/permits/leave"
+              />
               <QuickLink icon={GraduationCap} label={t("home.grades")} href="/grades" />
               <QuickLink icon={ShieldCheck} label={t("home.discipline")} href="/discipline" />
             </View>
@@ -116,7 +206,13 @@ export function HomeScreen(): React.JSX.Element {
 
         <Section
           title={t("home.announcements")}
-          action={<Button label={t("home.see_all")} variant="ghost" onPress={() => router.push("/announcements")} />}
+          action={
+            <Button
+              label={t("home.see_all")}
+              variant="ghost"
+              onPress={() => router.push("/announcements")}
+            />
+          }
         >
           <AnnouncementsList limit={3} />
         </Section>

@@ -60,3 +60,11 @@ export function resolveDefaultTabGroup(me: Pick<Me, "roles" | "profile_kind">): 
 export function hasMultipleTabGroups(me: Pick<Me, "roles" | "profile_kind">): boolean {
   return resolveTabGroups(me).length > 1;
 }
+
+/** Whether the account holds a role with this slug, e.g. "homeroom_teacher"
+ * or "duty_teacher" -- used to show a role-specific shortcut (homeroom
+ * class, review queues) only to the people it applies to, on top of the
+ * server's own permission check on the underlying endpoint. */
+export function hasRole(me: Pick<Me, "roles">, slug: string): boolean {
+  return me.roles.some((role) => role.slug === slug);
+}
