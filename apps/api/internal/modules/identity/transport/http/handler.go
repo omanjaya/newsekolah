@@ -66,7 +66,7 @@ func mapAuthError(err error) error {
 		if errors.As(err, &appErr) {
 			return appErr
 		}
-		return httpx.ErrInternal
+		return httpx.Internal(err)
 	}
 }
 

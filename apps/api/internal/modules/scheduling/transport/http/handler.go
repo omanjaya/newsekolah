@@ -93,7 +93,7 @@ func mapScheduleError(err error) error {
 		if errors.As(err, &appErr) {
 			return appErr
 		}
-		return httpx.ErrInternal
+		return httpx.Internal(err)
 	}
 }
 
@@ -116,7 +116,7 @@ func mapSubstitutionError(err error) error {
 		if errors.As(err, &appErr) {
 			return appErr
 		}
-		return httpx.ErrInternal
+		return httpx.Internal(err)
 	}
 }
 
@@ -137,7 +137,7 @@ func mapJournalError(err error) error {
 		if errors.As(err, &appErr) {
 			return appErr
 		}
-		return httpx.ErrInternal
+		return httpx.Internal(err)
 	}
 }
 

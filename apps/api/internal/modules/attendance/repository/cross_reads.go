@@ -114,6 +114,14 @@ func (r *Repository) IsSchoolDay(ctx context.Context, tenantID, academicYearID u
 // GetPeriodEndTime reuses scheduling's GetPeriodRefForSchedule query for
 // the one column (ends_at) the save-window calculation needs, rather than
 // duplicating a period lookup.
+func (r *Repository) GetPeriodStartTime(ctx context.Context, tenantID, periodID uuid.UUID) (time.Duration, error) {
+	period, err := r.queries(ctx).GetPeriodRefForSchedule(ctx, db.GetPeriodRefForScheduleParams{TenantID: tenantID, ID: periodID})
+	if err != nil {
+		return 0, err
+	}
+	return time.Duration(period.StartsAt.Microseconds) * time.Microsecond, nil
+}
+
 func (r *Repository) GetPeriodEndTime(ctx context.Context, tenantID, periodID uuid.UUID) (time.Duration, error) {
 	period, err := r.queries(ctx).GetPeriodRefForSchedule(ctx, db.GetPeriodRefForScheduleParams{TenantID: tenantID, ID: periodID})
 	if err != nil {

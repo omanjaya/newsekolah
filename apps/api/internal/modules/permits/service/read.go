@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -117,4 +118,18 @@ func (s *Service) RequireCanViewLeaveRequest(ctx context.Context, tenantID, inst
 		}
 		return domain.ErrNotWorkflowSubject
 	})
+}
+
+// LeaveOverride reports the attendance status an issued leave letter forces
+// for the student on date (attendance.Overrider).
+func (s *Service) LeaveOverride(ctx context.Context, tenantID, studentUserID uuid.UUID, date time.Time) (statusCode string, ok bool, err error) {
+	err = s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		lr, found, err := s.repo.GetIssuedLeaveCoveringDate(ctx, tenantID, studentUserID, date)
+		if err != nil || !found {
+			return err
+		}
+		statusCode, ok = attendanceStatusFor(lr.Category), true
+		return nil
+	})
+	return statusCode, ok, err
 }

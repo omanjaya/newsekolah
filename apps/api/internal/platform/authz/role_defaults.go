@@ -20,10 +20,10 @@ func RoleDefaults() []RoleDefault {
 		{"teacher", "Guru", []string{
 			PermViewDashboard, PermViewAnnouncements, PermViewSchedules, PermViewAcademicData,
 			PermViewAttendance, PermManageAttendance, PermViewNotifications,
-			PermManageGrades, PermViewLibrary,
+			PermManageGrades, PermViewLibrary, PermIssueScanTokens,
 		}},
 		{"staff", "Pegawai", []string{
-			PermViewDashboard, PermViewAnnouncements, PermViewNotifications, PermViewLibrary, PermViewAcademicData,
+			PermViewDashboard, PermViewAnnouncements, PermViewNotifications, PermViewLibrary, PermViewAcademicData, PermIssueScanTokens,
 		}},
 		{"student", "Siswa", []string{
 			PermViewDashboard, PermViewAnnouncements, PermViewNotifications, PermViewSchedules, PermViewAcademicData,

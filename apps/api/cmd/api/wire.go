@@ -1,9 +1,12 @@
 package main
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
+	"time"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
 
@@ -68,16 +71,24 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	schedulingModule := scheduling.Register(pool, eventBus, identityModule.Service)
 
 	hub := realtime.NewHub(broadcasterFor(redisClient))
+
+	// permits and attendance depend on each other only through adapters:
+	// permits is built first with a late-bound attendance sync, then
+	// attendance receives permits' blocker/overrider.
+	sync := &lateBoundSync{}
+	permitsModule := permits.Register(permits.Dependencies{
+		Pool: pool, Years: schoolModule.Service, Bus: eventBus, Storage: storageClientFor(cfg, logger),
+		Schedule: permitsScheduleLookup{schedules: schedulingModule.ScheduleReader, periods: academicModule.Service, years: schoolModule.Service},
+		Sync:     sync,
+		Clock:    clock.Real{}, Config: permitsservice.DefaultConfig([]byte(cfg.DocumentSigningKey), cfg.S3Bucket), Logger: logger,
+	})
 	attendanceModule := attendance.Register(attendance.Dependencies{
 		Pool: pool, Bus: eventBus, Years: schoolModule.Service,
 		Schedules: schedulingModule.ScheduleReader, Access: schedulingModule.AccessChecker, Journals: schedulingModule.JournalService,
 		Perms: identityModule.Service, Hub: hub,
+		Blocker: permitsBlocker{svc: permitsModule.Service}, Overrider: permitsOverrider{svc: permitsModule.Service},
 	})
-
-	permitsModule := permits.Register(permits.Dependencies{
-		Pool: pool, Years: schoolModule.Service, Bus: eventBus, Storage: storageClientFor(cfg, logger),
-		Clock: clock.Real{}, Config: permitsservice.DefaultConfig([]byte(cfg.DocumentSigningKey), cfg.S3Bucket), Logger: logger,
-	})
+	sync.inner = attendanceSyncAdapter{force: attendanceModule.Service.ForceStatus}
 
 	doc, err := api.GetSpec()
 	if err != nil {
@@ -172,5 +183,22 @@ func storageClientFor(cfg config.Config, logger *slog.Logger) permitsservice.Sto
 		logger.Warn("S3 client init failed; uploads disabled", "error", err)
 		return nil
 	}
+	ensureCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := client.EnsureBucket(ensureCtx); err != nil {
+		// Production buckets are provisioned out of band; a missing bucket
+		// surfaces on the first upload, not at boot.
+		logger.Warn("S3 bucket not reachable; document storage may fail", "bucket", cfg.S3Bucket, "error", err)
+	}
 	return client
+}
+
+// lateBoundSync breaks the permits <-> attendance construction cycle.
+type lateBoundSync struct{ inner permitsservice.AttendanceSync }
+
+func (l *lateBoundSync) ForceStatus(ctx context.Context, tenantID, studentUserID uuid.UUID, from, to time.Time, statusCode, reason string) error {
+	if l.inner == nil {
+		return nil
+	}
+	return l.inner.ForceStatus(ctx, tenantID, studentUserID, from, to, statusCode, reason)
 }

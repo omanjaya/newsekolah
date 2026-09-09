@@ -56,11 +56,12 @@ type Repository interface {
 	// Leave requests.
 	CreateLeaveRequest(ctx context.Context, r domain.LeaveRequest) (domain.LeaveRequest, error)
 	GetLeaveRequest(ctx context.Context, tenantID, instanceID uuid.UUID) (domain.LeaveRequest, bool, error)
+	GetIssuedLeaveCoveringDate(ctx context.Context, tenantID, studentUserID uuid.UUID, date time.Time) (domain.LeaveRequest, bool, error)
 	IssueLeaveRequest(ctx context.Context, tenantID, instanceID uuid.UUID, letterNumber string, issuedAt time.Time, issuedBy uuid.UUID) (domain.LeaveRequest, error)
 	UpsertLeaveDocument(ctx context.Context, tenantID, leaveRequestID uuid.UUID, kind domain.DocumentKind, assetID, createdBy uuid.UUID) (LeaveDocumentInfo, error)
 	GetLeaveDocument(ctx context.Context, tenantID, leaveRequestID uuid.UUID, kind domain.DocumentKind) (LeaveDocumentInfo, bool, error)
 	ListLeaveRequestsBySubject(ctx context.Context, tenantID, subjectUserID uuid.UUID, limit, offset int) ([]LeaveRequestItem, error)
-	ListLeaveRequestsForReview(ctx context.Context, tenantID uuid.UUID, classID uuid.NullUUID) ([]LeaveRequestItem, error)
+	ListLeaveRequestsForReview(ctx context.Context, tenantID, reviewerUserID uuid.UUID, classID uuid.NullUUID) ([]LeaveRequestItem, error)
 
 	// Scan tokens.
 	CreateScanToken(ctx context.Context, t domain.ScanToken) (domain.ScanToken, error)

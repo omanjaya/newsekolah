@@ -115,6 +115,7 @@ type Repository interface {
 	// -- cross-module read; replace with academic reader interface after merge --
 	IsSchoolDay(ctx context.Context, tenantID, academicYearID uuid.UUID, dayOfWeek int16) (bool, error)
 	GetPeriodEndTime(ctx context.Context, tenantID, periodID uuid.UUID) (time.Duration, error)
+	GetPeriodStartTime(ctx context.Context, tenantID, periodID uuid.UUID) (time.Duration, error)
 }
 
 // AcademicYearReader is the narrow interface attendance needs from the

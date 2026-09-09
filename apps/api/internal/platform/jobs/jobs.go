@@ -24,13 +24,14 @@ func NewWorkers() *river.Workers {
 // as long as the client's Start is never called -- docs/09-tech-stack.md
 // notes cmd/worker can share a process with cmd/api for small schools, but
 // does not have to.
-func NewClient(pool *pgxpool.Pool, workers *river.Workers, logger *slog.Logger) (*river.Client[pgx.Tx], error) {
+func NewClient(pool *pgxpool.Pool, workers *river.Workers, logger *slog.Logger, periodic ...*river.PeriodicJob) (*river.Client[pgx.Tx], error) {
 	if workers == nil {
 		workers = NewWorkers()
 	}
 	return river.NewClient(riverpgxv5.New(pool), &river.Config{
-		Logger:  logger,
-		Queues:  map[string]river.QueueConfig{river.QueueDefault: {MaxWorkers: 10}},
-		Workers: workers,
+		Logger:       logger,
+		Queues:       map[string]river.QueueConfig{river.QueueDefault: {MaxWorkers: 10}},
+		Workers:      workers,
+		PeriodicJobs: periodic,
 	})
 }

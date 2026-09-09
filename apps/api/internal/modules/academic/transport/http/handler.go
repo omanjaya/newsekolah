@@ -137,7 +137,7 @@ func mapDomainError(err error) error {
 			return httpx.ErrValidation
 		}
 	}
-	return httpx.ErrInternal
+	return httpx.Internal(err)
 }
 
 func toPage(page *int, pageSize *int) service.Page {

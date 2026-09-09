@@ -436,11 +436,14 @@ func (s *Service) ListMyLeaveRequests(ctx context.Context, tenantID, studentUser
 	return out, err
 }
 
-func (s *Service) ListLeaveRequestsForReview(ctx context.Context, tenantID uuid.UUID, classID uuid.NullUUID) ([]LeaveRequestItem, error) {
+// ListLeaveRequestsForReview returns the requests reviewerUserID may act
+// on: their homeroom classes, or every class for counselors and
+// leadership. classID narrows the result further.
+func (s *Service) ListLeaveRequestsForReview(ctx context.Context, tenantID, reviewerUserID uuid.UUID, classID uuid.NullUUID) ([]LeaveRequestItem, error) {
 	var out []LeaveRequestItem
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error
-		out, err = s.repo.ListLeaveRequestsForReview(ctx, tenantID, classID)
+		out, err = s.repo.ListLeaveRequestsForReview(ctx, tenantID, reviewerUserID, classID)
 		return err
 	})
 	return out, err

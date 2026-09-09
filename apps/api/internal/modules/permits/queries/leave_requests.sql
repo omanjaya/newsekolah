@@ -23,10 +23,31 @@ order by wi.opened_at desc
 limit $3 offset $4;
 
 -- name: ListLeaveRequestsForReview :many
+-- The reviewer's queue: in-progress requests from classes where the
+-- caller is homeroom, or every class when the caller holds a school-scoped
+-- reviewing duty (counselor, leadership). class_id narrows further.
 select lr.*, wi.status, wi.opened_at, wi.current_stage_index, wi.class_id, wi.subject_user_id
 from leave_requests lr
 join workflow_instances wi on wi.id = lr.instance_id
-where lr.tenant_id = $1 and wi.status = 'in_progress' and wi.class_id = $2
+where lr.tenant_id = $1 and wi.status = 'in_progress'
+  and (sqlc.narg('class_id')::uuid is null or wi.class_id = sqlc.narg('class_id')::uuid)
+  and exists (
+    select 1
+    from duty_assignments da
+    join duty_types dt on dt.id = da.duty_type_id
+    where da.tenant_id = lr.tenant_id
+      and da.academic_year_id = wi.academic_year_id
+      and da.user_id = $2
+      and da.is_active
+      and dt.is_active
+      and dt.deleted_at is null
+      and da.starts_on <= current_date
+      and (da.ends_on is null or da.ends_on >= current_date)
+      and (
+        (dt.slug = 'homeroom' and da.scope_class_id = wi.class_id)
+        or (dt.scope_kind = 'school' and dt.slug in ('counselor', 'leadership'))
+      )
+  )
 order by wi.opened_at;
 
 -- name: CreateLeaveDocument :one
@@ -40,3 +61,13 @@ select * from leave_documents where tenant_id = $1 and leave_request_id = $2 and
 
 -- name: ListLeaveDocuments :many
 select * from leave_documents where tenant_id = $1 and leave_request_id = $2;
+
+-- name: GetIssuedLeaveCoveringDate :one
+-- attendance.Overrider: an issued letter forces the student's status for
+-- every date it covers.
+select lr.* from leave_requests lr
+join workflow_instances wi on wi.id = lr.instance_id and wi.tenant_id = lr.tenant_id
+where lr.tenant_id = $1 and wi.subject_user_id = $2 and lr.issued_at is not null
+  and lr.starts_on <= $3 and lr.ends_on >= $3
+order by lr.issued_at desc
+limit 1;

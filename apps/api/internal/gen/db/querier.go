@@ -260,6 +260,9 @@ type Querier interface {
 	GetInProgressWorkflowInstance(ctx context.Context, arg GetInProgressWorkflowInstanceParams) (WorkflowInstance, error)
 	GetIssuedDocumentByEntity(ctx context.Context, arg GetIssuedDocumentByEntityParams) (IssuedDocument, error)
 	GetIssuedDocumentByVerificationHash(ctx context.Context, arg GetIssuedDocumentByVerificationHashParams) (IssuedDocument, error)
+	// attendance.Overrider: an issued letter forces the student's status for
+	// every date it covers.
+	GetIssuedLeaveCoveringDate(ctx context.Context, arg GetIssuedLeaveCoveringDateParams) (LeaveRequest, error)
 	GetJournalByID(ctx context.Context, arg GetJournalByIDParams) (ClassJournal, error)
 	GetJournalByUnique(ctx context.Context, arg GetJournalByUniqueParams) (ClassJournal, error)
 	GetLateArrival(ctx context.Context, arg GetLateArrivalParams) (LateArrival, error)
@@ -372,6 +375,9 @@ type Querier interface {
 	ListLateArrivalsForReview(ctx context.Context, tenantID uuid.UUID) ([]ListLateArrivalsForReviewRow, error)
 	ListLeaveDocuments(ctx context.Context, arg ListLeaveDocumentsParams) ([]LeaveDocument, error)
 	ListLeaveRequestsBySubject(ctx context.Context, arg ListLeaveRequestsBySubjectParams) ([]ListLeaveRequestsBySubjectRow, error)
+	// The reviewer's queue: in-progress requests from classes where the
+	// caller is homeroom, or every class when the caller holds a school-scoped
+	// reviewing duty (counselor, leadership). class_id narrows further.
 	ListLeaveRequestsForReview(ctx context.Context, arg ListLeaveRequestsForReviewParams) ([]ListLeaveRequestsForReviewRow, error)
 	ListPeriodsRefByTemplate(ctx context.Context, arg ListPeriodsRefByTemplateParams) ([]Period, error)
 	ListPermissionCodesForDutyTypes(ctx context.Context, dutyTypeIds []uuid.UUID) ([]ListPermissionCodesForDutyTypesRow, error)

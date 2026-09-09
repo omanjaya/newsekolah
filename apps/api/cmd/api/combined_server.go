@@ -1,6 +1,8 @@
 package main
 
 import (
+	"errors"
+	"log/slog"
 	"net/http"
 
 	academichttp "github.com/omanjaya/newsekolah/apps/api/internal/modules/academic/transport/http"
@@ -36,5 +38,11 @@ func decodeErrorHandler(w http.ResponseWriter, r *http.Request, err error) {
 // as an error -- almost always a *httpx.Error produced by a service/domain
 // error mapping, or by authz.Authorize itself.
 func responseErrorHandler(w http.ResponseWriter, r *http.Request, err error) {
+	var appErr *httpx.Error
+	if !errors.As(err, &appErr) || appErr.Status >= http.StatusInternalServerError {
+		slog.ErrorContext(r.Context(), "unhandled request error",
+			"error", err, "method", r.Method, "path", r.URL.Path,
+			"request_id", httpx.RequestIDFromContext(r.Context()))
+	}
 	httpx.WriteError(w, r, err)
 }

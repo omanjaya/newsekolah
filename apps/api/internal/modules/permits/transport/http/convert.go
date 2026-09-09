@@ -74,7 +74,7 @@ func mapError(err error) error {
 	if errors.As(err, &appErr) {
 		return appErr
 	}
-	return httpx.ErrInternal
+	return httpx.Internal(err)
 }
 
 func strPtr(s string) *string {

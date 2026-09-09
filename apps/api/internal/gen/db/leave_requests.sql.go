@@ -100,6 +100,44 @@ func (q *Queries) CreateLeaveRequest(ctx context.Context, arg CreateLeaveRequest
 	return i, err
 }
 
+const getIssuedLeaveCoveringDate = `-- name: GetIssuedLeaveCoveringDate :one
+select lr.instance_id, lr.tenant_id, lr.category, lr.reason, lr.starts_on, lr.ends_on, lr.letter_number, lr.issued_at, lr.issued_by, lr.parent_approved_at, lr.student_name_snapshot, lr.class_name_snapshot, lr.guardian_name_snapshot from leave_requests lr
+join workflow_instances wi on wi.id = lr.instance_id and wi.tenant_id = lr.tenant_id
+where lr.tenant_id = $1 and wi.subject_user_id = $2 and lr.issued_at is not null
+  and lr.starts_on <= $3 and lr.ends_on >= $3
+order by lr.issued_at desc
+limit 1
+`
+
+type GetIssuedLeaveCoveringDateParams struct {
+	TenantID      uuid.UUID   `json:"tenant_id"`
+	SubjectUserID uuid.UUID   `json:"subject_user_id"`
+	StartsOn      pgtype.Date `json:"starts_on"`
+}
+
+// attendance.Overrider: an issued letter forces the student's status for
+// every date it covers.
+func (q *Queries) GetIssuedLeaveCoveringDate(ctx context.Context, arg GetIssuedLeaveCoveringDateParams) (LeaveRequest, error) {
+	row := q.db.QueryRow(ctx, getIssuedLeaveCoveringDate, arg.TenantID, arg.SubjectUserID, arg.StartsOn)
+	var i LeaveRequest
+	err := row.Scan(
+		&i.InstanceID,
+		&i.TenantID,
+		&i.Category,
+		&i.Reason,
+		&i.StartsOn,
+		&i.EndsOn,
+		&i.LetterNumber,
+		&i.IssuedAt,
+		&i.IssuedBy,
+		&i.ParentApprovedAt,
+		&i.StudentNameSnapshot,
+		&i.ClassNameSnapshot,
+		&i.GuardianNameSnapshot,
+	)
+	return i, err
+}
+
 const getLeaveDocument = `-- name: GetLeaveDocument :one
 select id, tenant_id, leave_request_id, kind, asset_id, created_by, created_at from leave_documents where tenant_id = $1 and leave_request_id = $2 and kind = $3
 `
@@ -314,12 +352,31 @@ const listLeaveRequestsForReview = `-- name: ListLeaveRequestsForReview :many
 select lr.instance_id, lr.tenant_id, lr.category, lr.reason, lr.starts_on, lr.ends_on, lr.letter_number, lr.issued_at, lr.issued_by, lr.parent_approved_at, lr.student_name_snapshot, lr.class_name_snapshot, lr.guardian_name_snapshot, wi.status, wi.opened_at, wi.current_stage_index, wi.class_id, wi.subject_user_id
 from leave_requests lr
 join workflow_instances wi on wi.id = lr.instance_id
-where lr.tenant_id = $1 and wi.status = 'in_progress' and wi.class_id = $2
+where lr.tenant_id = $1 and wi.status = 'in_progress'
+  and ($3::uuid is null or wi.class_id = $3::uuid)
+  and exists (
+    select 1
+    from duty_assignments da
+    join duty_types dt on dt.id = da.duty_type_id
+    where da.tenant_id = lr.tenant_id
+      and da.academic_year_id = wi.academic_year_id
+      and da.user_id = $2
+      and da.is_active
+      and dt.is_active
+      and dt.deleted_at is null
+      and da.starts_on <= current_date
+      and (da.ends_on is null or da.ends_on >= current_date)
+      and (
+        (dt.slug = 'homeroom' and da.scope_class_id = wi.class_id)
+        or (dt.scope_kind = 'school' and dt.slug in ('counselor', 'leadership'))
+      )
+  )
 order by wi.opened_at
 `
 
 type ListLeaveRequestsForReviewParams struct {
 	TenantID uuid.UUID   `json:"tenant_id"`
+	UserID   uuid.UUID   `json:"user_id"`
 	ClassID  pgtype.UUID `json:"class_id"`
 }
 
@@ -344,8 +401,11 @@ type ListLeaveRequestsForReviewRow struct {
 	SubjectUserID        uuid.UUID          `json:"subject_user_id"`
 }
 
+// The reviewer's queue: in-progress requests from classes where the
+// caller is homeroom, or every class when the caller holds a school-scoped
+// reviewing duty (counselor, leadership). class_id narrows further.
 func (q *Queries) ListLeaveRequestsForReview(ctx context.Context, arg ListLeaveRequestsForReviewParams) ([]ListLeaveRequestsForReviewRow, error) {
-	rows, err := q.db.Query(ctx, listLeaveRequestsForReview, arg.TenantID, arg.ClassID)
+	rows, err := q.db.Query(ctx, listLeaveRequestsForReview, arg.TenantID, arg.UserID, arg.ClassID)
 	if err != nil {
 		return nil, err
 	}

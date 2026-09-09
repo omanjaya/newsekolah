@@ -186,6 +186,17 @@ func (r *Repository) GetLeaveRequest(ctx context.Context, tenantID, instanceID u
 	return toLeaveRequest(row), true, nil
 }
 
+func (r *Repository) GetIssuedLeaveCoveringDate(ctx context.Context, tenantID, studentUserID uuid.UUID, date time.Time) (domain.LeaveRequest, bool, error) {
+	row, err := r.queries(ctx).GetIssuedLeaveCoveringDate(ctx, db.GetIssuedLeaveCoveringDateParams{TenantID: tenantID, SubjectUserID: studentUserID, StartsOn: pdatabase.Date(date)})
+	if notFound(err) {
+		return domain.LeaveRequest{}, false, nil
+	}
+	if err != nil {
+		return domain.LeaveRequest{}, false, fmt.Errorf("get issued leave covering date: %w", err)
+	}
+	return toLeaveRequest(row), true, nil
+}
+
 func (r *Repository) IssueLeaveRequest(ctx context.Context, tenantID, instanceID uuid.UUID, letterNumber string, issuedAt time.Time, issuedBy uuid.UUID) (domain.LeaveRequest, error) {
 	row, err := r.queries(ctx).IssueLeaveRequest(ctx, db.IssueLeaveRequestParams{
 		TenantID: tenantID, InstanceID: instanceID, LetterNumber: pdatabase.Text(letterNumber),
@@ -217,8 +228,8 @@ func (r *Repository) ListLeaveRequestsBySubject(ctx context.Context, tenantID, s
 	return out, nil
 }
 
-func (r *Repository) ListLeaveRequestsForReview(ctx context.Context, tenantID uuid.UUID, classID uuid.NullUUID) ([]service.LeaveRequestItem, error) {
-	rows, err := r.queries(ctx).ListLeaveRequestsForReview(ctx, db.ListLeaveRequestsForReviewParams{TenantID: tenantID, ClassID: pdatabase.NullUUID(classID)})
+func (r *Repository) ListLeaveRequestsForReview(ctx context.Context, tenantID, reviewerUserID uuid.UUID, classID uuid.NullUUID) ([]service.LeaveRequestItem, error) {
+	rows, err := r.queries(ctx).ListLeaveRequestsForReview(ctx, db.ListLeaveRequestsForReviewParams{TenantID: tenantID, UserID: reviewerUserID, ClassID: pdatabase.NullUUID(classID)})
 	if err != nil {
 		return nil, fmt.Errorf("list leave requests for review: %w", err)
 	}

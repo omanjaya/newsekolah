@@ -11,10 +11,15 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/permits"
+	permitsservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/service"
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/school"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/config"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/jobs"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/telemetry"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/tenant"
 )
 
 func main() {
@@ -40,7 +45,15 @@ func run(logger *slog.Logger) error {
 	}
 	defer pool.Close()
 
-	client, err := jobs.NewClient(pool, jobs.NewWorkers(), logger)
+	workers := jobs.NewWorkers()
+	schoolModule := school.Register(pool, tenantModeFor(cfg))
+	permitsModule := permits.Register(permits.Dependencies{
+		Pool: pool, Years: schoolModule.Service, Clock: clock.Real{},
+		Config: permitsservice.DefaultConfig([]byte(cfg.DocumentSigningKey), cfg.S3Bucket), Logger: logger,
+	})
+	periodic := permitsModule.RegisterJobs(workers, logger)
+
+	client, err := jobs.NewClient(pool, workers, logger, periodic...)
 	if err != nil {
 		return err
 	}
@@ -53,4 +66,11 @@ func run(logger *slog.Logger) error {
 	<-ctx.Done()
 	logger.Info("worker stopping")
 	return client.Stop(context.Background())
+}
+
+func tenantModeFor(cfg config.Config) tenant.Mode {
+	if cfg.TenancyMode == config.TenancyMulti {
+		return tenant.ModeMulti
+	}
+	return tenant.ModeSingle
 }

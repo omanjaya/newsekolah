@@ -318,7 +318,7 @@ func (h *PermitsHandler) ListLeaveRequestsForReview(ctx context.Context, request
 	if request.Params.ClassId != nil {
 		classID = uuid.NullUUID{UUID: *request.Params.ClassId, Valid: true}
 	}
-	items, err := h.service.ListLeaveRequestsForReview(ctx, tenantID(ctx), classID)
+	items, err := h.service.ListLeaveRequestsForReview(ctx, tenantID(ctx), userID(ctx), classID)
 	if err != nil {
 		return nil, mapError(err)
 	}

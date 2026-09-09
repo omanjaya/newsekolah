@@ -44,6 +44,12 @@ func WrapError(status int, code string, cause error) *Error {
 	return &Error{Status: status, Code: code, cause: cause}
 }
 
+// Internal wraps an unexpected error so the 500 envelope stays generic
+// while the cause still reaches the response error handler's log line.
+func Internal(cause error) *Error {
+	return WrapError(http.StatusInternalServerError, "INTERNAL_ERROR", cause)
+}
+
 func (e *Error) WithDetails(details ...ErrorDetail) *Error {
 	e.Details = details
 	return e

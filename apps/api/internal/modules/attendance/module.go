@@ -75,13 +75,24 @@ type Dependencies struct {
 	Journals  scheduling.JournalService
 	Perms     authz.PermissionsProvider
 	Hub       *realtime.Hub
+	// Blocker and Overrider are optional; permits supplies them after wiring.
+	Blocker   Blocker
+	Overrider Overrider
 }
 
 func Register(deps Dependencies) *Module {
 	repo := repository.New(deps.Pool)
+	var blocker Blocker = NoOpBlocker{}
+	if deps.Blocker != nil {
+		blocker = deps.Blocker
+	}
+	var overrider Overrider = NoOpOverrider{}
+	if deps.Overrider != nil {
+		overrider = deps.Overrider
+	}
 	svc := service.New(
 		deps.Pool, repo, deps.Years, deps.Schedules, deps.Access, deps.Journals,
-		NoOpBlocker{}, NoOpOverrider{},
+		blocker, overrider,
 		busPublisher{bus: deps.Bus}, hubPublisher{hub: deps.Hub}, hubPresence{hub: deps.Hub},
 	)
 	handler := transporthttp.New(svc, deps.Perms)
