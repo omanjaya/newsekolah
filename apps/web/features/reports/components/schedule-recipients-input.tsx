@@ -54,7 +54,7 @@ export function ScheduleRecipientsInput({
             {email}
             <IconButton
               icon={<X />}
-              className="size-5 [&>svg]:size-3.5"
+              className="[&>svg]:size-3.5"
               aria-label={t("removeRecipient", { email })}
               onClick={() => {
                 onChange(value.filter((v) => v !== email));

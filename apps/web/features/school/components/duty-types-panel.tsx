@@ -55,7 +55,7 @@ export function DutyTypesPanel({ canManage }: { canManage: boolean }): ReactElem
             onClick={() => {
               setSelectedId(d.id);
             }}
-            className={`flex items-center justify-between rounded-xs px-3 py-2 text-left text-[14px] ${selected?.id === d.id ? "bg-accent/10 text-accent" : "text-fg hover:bg-bg"}`}
+            className={`flex min-h-11 items-center justify-between rounded-xs px-3 py-2 text-left text-[14px] ${selected?.id === d.id ? "bg-accent/10 text-accent" : "text-fg hover:bg-bg"}`}
           >
             <span>{d.name}</span>
             {!d.is_active && <Badge>{t("types.inactive")}</Badge>}

@@ -95,8 +95,8 @@ export function EnrollmentPanel({
         <ol className="grid gap-1 text-[14px] md:grid-cols-2">
           {rows.map((e, i) => (
             <li key={e.id} className="flex items-center gap-2 rounded-xs px-2 py-1">
-              <span className="w-6 text-right text-fg-muted">{i + 1}</span>
-              <span className="flex-1">
+              <span className="w-6 shrink-0 text-right text-fg-muted">{i + 1}</span>
+              <span className="min-w-0 flex-1 truncate">
                 {studentMap.get(e.student_user_id)?.name ?? e.student_user_id}
               </span>
               {canManage && (

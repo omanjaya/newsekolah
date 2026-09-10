@@ -84,7 +84,7 @@ export function ClassesView(): ReactElement {
                 onClick={() => {
                   setSelectedId(c.id);
                 }}
-                className={`rounded-xs px-3 py-2 text-left text-[14px] ${selected?.id === c.id ? "bg-accent/10 text-accent" : "text-fg hover:bg-bg"}`}
+                className={`flex min-h-11 items-center rounded-xs px-3 py-2 text-left text-[14px] ${selected?.id === c.id ? "bg-accent/10 text-accent" : "text-fg hover:bg-bg"}`}
               >
                 {c.name}
               </button>

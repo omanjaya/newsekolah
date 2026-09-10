@@ -134,7 +134,7 @@ export function ManageChildrenDialog({
                           onClick={() => {
                             setPickedStudentId(s.id);
                           }}
-                          className={`flex w-full items-center justify-between gap-2 border-b border-border px-3 py-2 text-left text-[13px] last:border-b-0 hover:bg-bg ${
+                          className={`flex min-h-11 w-full items-center justify-between gap-2 border-b border-border px-3 py-2 text-left text-[13px] last:border-b-0 hover:bg-bg ${
                             pickedStudentId === s.id ? "bg-bg" : ""
                           }`}
                         >

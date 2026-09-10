@@ -45,6 +45,11 @@ export const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(func
         ref={ref}
         className={cn(
           "fixed left-1/2 top-1/2 z-(--z-modal) w-full max-w-md -translate-x-1/2 -translate-y-1/2",
+          // A form long enough to outgrow the screen would otherwise run
+          // off the top and bottom with no way to reach either end, since
+          // the dialog is centred rather than anchored. Cap it and let its
+          // own body scroll.
+          "max-h-[calc(100dvh-2rem)] overflow-y-auto",
           "rounded-sm border border-border bg-surface p-6 shadow-(--shadow-float)",
           "data-[state=open]:animate-dialog-in data-[state=closed]:animate-dialog-out",
           className,

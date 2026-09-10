@@ -26,7 +26,10 @@ export const TabsTrigger = forwardRef<
     <TabsPrimitive.Trigger
       ref={ref}
       className={cn(
+        // Tall enough for a thumb on a phone; the underline still sits
+        // where it did, because only the space above it grows.
         "border-b-2 border-transparent px-1 pb-2 text-[13px] font-medium text-fg-muted",
+        "min-h-11 md:min-h-0",
         "transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)]",
         "hover:text-fg",
         "data-[state=active]:border-accent data-[state=active]:text-fg",
