@@ -18,6 +18,7 @@ import {
   useToast,
 } from "@newsekolah/ui";
 import { Plus, Trash2 } from "lucide-react";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
@@ -130,15 +131,23 @@ export function ScheduleView(): ReactElement {
         title={t("title")}
         actions={
           canManage && (
-            <Button
-              size="sm"
-              icon={<Plus />}
-              onClick={() => {
-                setCreating({ day: activeDays[0] ?? 1, startSeq: lessonPeriods[0]?.sequence ?? 1 });
-              }}
-            >
-              {t("addBlock")}
-            </Button>
+            <div className="flex gap-2">
+              <Button asChild variant="secondary" size="sm">
+                <Link href="/schedule/bulk">{t("bulk.navLink")}</Link>
+              </Button>
+              <Button
+                size="sm"
+                icon={<Plus />}
+                onClick={() => {
+                  setCreating({
+                    day: activeDays[0] ?? 1,
+                    startSeq: lessonPeriods[0]?.sequence ?? 1,
+                  });
+                }}
+              >
+                {t("addBlock")}
+              </Button>
+            </div>
           )
         }
       />

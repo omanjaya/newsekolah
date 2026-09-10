@@ -87,7 +87,8 @@
     "return": "Kembalikan",
     "renew": "Perpanjang",
     "returned": "Pengembalian dicatat",
-    "renewed": "Peminjaman diperpanjang"
+    "renewed": "Peminjaman diperpanjang",
+    "markLost": "Tandai hilang"
   },
   "memberHistory": {
     "title": "Riwayat peminjaman",
@@ -96,8 +97,10 @@
       "borrowedAt": "Tanggal pinjam",
       "dueOn": "Jatuh tempo",
       "status": "Status",
-      "fine": "Denda"
+      "fine": "Denda",
+      "actions": "Aksi"
     },
+    "markLost": "Tandai hilang",
     "status": {
       "active": "Dipinjam",
       "returned": "Dikembalikan",
@@ -142,6 +145,27 @@
     }
   },
   "reports": {
+    "navLabel": "Laporan perpustakaan",
+    "eyebrow": "Perpustakaan",
+    "title": "Laporan perpustakaan",
+    "fromLabel": "Dari tanggal",
+    "toLabel": "Sampai tanggal",
+    "tabs": {
+      "loans": "Peminjaman",
+      "overdueMembers": "Anggota terlambat",
+      "mostBorrowed": "Paling sering dipinjam"
+    },
+    "loans": {
+      "title": "Peminjaman dalam rentang tanggal",
+      "columns": {
+        "copy": "Eksemplar",
+        "member": "Anggota",
+        "borrowedAt": "Tanggal pinjam",
+        "dueOn": "Jatuh tempo",
+        "status": "Status"
+      },
+      "emptyTitle": "Tidak ada peminjaman pada rentang ini"
+    },
     "overdueMembers": {
       "title": "Anggota terlambat",
       "columns": {
@@ -157,6 +181,14 @@
         "loanCount": "Jumlah peminjaman"
       }
     }
+  },
+  "markLost": {
+    "title": "Tandai eksemplar hilang",
+    "body": "Peminjaman ini ditutup sebagai hilang dan biaya penggantian dibebankan ke anggota alih-alih denda per hari.",
+    "replacementCostLabel": "Biaya penggantian (Rp)",
+    "cancel": "Batal",
+    "confirm": "Tandai hilang",
+    "success": "Peminjaman ditutup sebagai hilang"
   },
   "opac": {
     "title": "Katalog Perpustakaan",

@@ -1,0 +1,40 @@
+{
+  "navLabel": "Approval workflows",
+  "eyebrow": "Settings",
+  "title": "Approval workflows",
+  "body": "Arrange the approval stages for each request kind. Saving a change creates a new version; requests already in progress keep the stages of the version active when they were opened -- only new requests use this one.",
+  "versionLabel": "Active version: {version}",
+  "kind": {
+    "exit_permit": "Exit permit",
+    "late_arrival": "Late arrival",
+    "leave_request": "Leave request"
+  },
+  "addStage": "Add stage",
+  "save": "Save changes",
+  "saved": "Workflow saved",
+  "confirmTitle": "Save new approval workflow",
+  "confirmBody": "This change takes effect as a new version. Requests already in progress keep the previous version's stages until they finish; only requests opened after this uses the new stage list.",
+  "confirmSave": "Save as new version",
+  "stage": {
+    "labelField": "Stage name",
+    "keyField": "Stage key",
+    "approverRuleField": "Who approves",
+    "dutySlugField": "Duty officer",
+    "dutySlugPlaceholder": "Pick a duty type",
+    "verificationField": "Verification",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "removeStage": "Remove stage",
+    "rule": {
+      "any_teacher": "Any teacher",
+      "teacher_of_class_now": "Teacher currently teaching this class",
+      "homeroom_of_student": "Student's homeroom teacher",
+      "duty": "A specific duty officer"
+    },
+    "verification": {
+      "qr_scan": "QR scan",
+      "manual": "Manual approval",
+      "auto": "Automatic"
+    }
+  }
+}

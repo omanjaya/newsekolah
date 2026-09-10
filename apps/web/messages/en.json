@@ -133,6 +133,20 @@
         "digestHour": "Digest hour",
         "save": "Save",
         "saved": "Preferences saved"
+      },
+      "notificationDefaults": {
+        "navLabel": "Notification defaults",
+        "eyebrow": "Settings",
+        "title": "School notification defaults",
+        "body": "Default channels for each notification kind. Users who have not changed their own preference use this setting.",
+        "kindColumn": "Kind",
+        "channels": {
+          "inapp": "In-app",
+          "push": "Push",
+          "email": "Email",
+          "whatsapp": "WhatsApp"
+        },
+        "saved": "Defaults saved"
       }
     },
     "forbidden": {
@@ -324,6 +338,37 @@
         "created": "Schedule added",
         "cancel": "Cancel",
         "save": "Save"
+      },
+      "bulk": {
+        "navLink": "Bulk operations",
+        "eyebrow": "Academic",
+        "title": "Bulk schedule operations",
+        "importSection": {
+          "title": "Import from CSV",
+          "body": "Paste or upload a CSV with columns class,subject,teacher,day,start_period,end_period,notes. Class, subject, teacher and period names are matched against existing data; day is the ISO weekday, 1 (Monday) to 7 (Sunday).",
+          "uploadLabel": "Upload a CSV file",
+          "textareaLabel": "Or paste the CSV content here",
+          "previewTitle": "Preview",
+          "previewSummary": "{valid} rows ready to import, {invalid} rows need attention",
+          "columnLine": "Line",
+          "columnStatus": "Status",
+          "statusValid": "Ready",
+          "statusInvalid": "Needs fixing: {columns}",
+          "apply": "Import {count} schedules",
+          "applied": "{count} schedules imported",
+          "empty": "Nothing to preview yet."
+        },
+        "clearSection": {
+          "title": "Clear every schedule this year",
+          "body": "Deletes every timetable entry of academic year {year}. This cannot be undone and does not remove attendance already recorded.",
+          "button": "Clear all schedules",
+          "confirmTitle": "Clear every schedule of {year}",
+          "confirmBody": "Every timetable entry of academic year {year} will be permanently deleted. Type the academic year's name below to continue.",
+          "confirmInputLabel": "Type \"{year}\" to confirm",
+          "confirmButton": "Delete permanently",
+          "cancel": "Cancel",
+          "cleared": "Every schedule of {year} has been cleared"
+        }
       }
     },
     "attendance": {

@@ -87,7 +87,8 @@
     "return": "Return",
     "renew": "Renew",
     "returned": "Return recorded",
-    "renewed": "Loan renewed"
+    "renewed": "Loan renewed",
+    "markLost": "Mark lost"
   },
   "memberHistory": {
     "title": "Loan history",
@@ -96,8 +97,10 @@
       "borrowedAt": "Borrowed on",
       "dueOn": "Due on",
       "status": "Status",
-      "fine": "Fine"
+      "fine": "Fine",
+      "actions": "Actions"
     },
+    "markLost": "Mark lost",
     "status": {
       "active": "On loan",
       "returned": "Returned",
@@ -142,6 +145,27 @@
     }
   },
   "reports": {
+    "navLabel": "Library reports",
+    "eyebrow": "Library",
+    "title": "Library reports",
+    "fromLabel": "From date",
+    "toLabel": "To date",
+    "tabs": {
+      "loans": "Loans",
+      "overdueMembers": "Overdue members",
+      "mostBorrowed": "Most borrowed"
+    },
+    "loans": {
+      "title": "Loans within the date range",
+      "columns": {
+        "copy": "Copy",
+        "member": "Member",
+        "borrowedAt": "Borrowed on",
+        "dueOn": "Due on",
+        "status": "Status"
+      },
+      "emptyTitle": "No loans in this range"
+    },
     "overdueMembers": {
       "title": "Overdue members",
       "columns": {
@@ -157,6 +181,14 @@
         "loanCount": "Loans"
       }
     }
+  },
+  "markLost": {
+    "title": "Mark copy lost",
+    "body": "This loan is closed as lost and a replacement cost is charged to the member instead of a per-day fine.",
+    "replacementCostLabel": "Replacement cost (Rp)",
+    "cancel": "Cancel",
+    "confirm": "Mark lost",
+    "success": "Loan closed as lost"
   },
   "opac": {
     "title": "Library Catalogue",

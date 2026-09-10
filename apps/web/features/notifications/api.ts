@@ -125,3 +125,31 @@ export function useUpdateNotificationSettingsMutation() {
     },
   });
 }
+
+// Tenant-wide defaults (admin), as opposed to a signed-in user's own
+// preferences above: a school configures what a new user starts with.
+
+export function useTenantNotificationDefaultQuery(kind: NotificationKind) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: queryKeys.tenantNotificationDefault(kind),
+    queryFn: () => client.GET("/v1/tenant/notification-defaults", { params: { query: { kind } } }),
+  });
+}
+
+export function useSetTenantNotificationDefaultMutation() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: {
+      kind: NotificationKind;
+      channel: NotificationChannel;
+      enabled: boolean;
+    }) => client.PUT("/v1/tenant/notification-defaults", { body }),
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.tenantNotificationDefault(variables.kind),
+      });
+    },
+  });
+}

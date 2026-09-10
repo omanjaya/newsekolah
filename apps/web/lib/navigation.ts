@@ -2,20 +2,14 @@ import { domainIcons } from "@newsekolah/ui";
 import type { LucideIcon } from "lucide-react";
 import {
   Bell,
-  Building2,
   CalendarDays,
   ClipboardList,
   FileBarChart,
-  FileSpreadsheet,
   GraduationCap,
-  ListChecks,
   Home,
-  MessageCircle,
   MonitorSmartphone,
   NotebookPen,
-  Plug,
   Repeat,
-  Settings,
   ShieldCheck,
   UserRound,
   Users,
@@ -23,6 +17,7 @@ import {
 } from "lucide-react";
 
 import { academicNavItems } from "./navigation-academic";
+import { settingsNavItems } from "./navigation-settings";
 
 /** Profile kinds a nav item can be restricted to, mirroring `Me["profile_kind"]`. */
 export type NavProfileKind = "student" | "teacher" | "staff" | "parent";
@@ -216,6 +211,14 @@ export const navigation: NavItem[] = [
     group: GROUP.library,
   },
   {
+    key: "library-reports",
+    labelKey: "app.library.reports.navLabel",
+    href: "/library/reports",
+    icon: domainIcons.library,
+    permission: "view_library_reports",
+    group: GROUP.library,
+  },
+  {
     key: "leave-requests",
     labelKey: "nav.permits.items.plannedLeave",
     href: "/leave-requests",
@@ -318,101 +321,7 @@ export const navigation: NavItem[] = [
     group: GROUP.schoolData,
   },
   ...academicNavItems,
-
-  {
-    key: "settings-roles",
-    labelKey: "nav.settings.items.rolesAndAccess",
-    href: "/settings/roles",
-    icon: ShieldCheck,
-    permission: "view_roles",
-    group: GROUP.settings,
-  },
-  {
-    key: "reports",
-    labelKey: "app.reports.navLabel",
-    href: "/reports",
-    icon: FileSpreadsheet,
-    permission: "view_reports",
-    group: GROUP.settings,
-  },
-  {
-    key: "setup",
-    labelKey: "app.onboarding.navLabel",
-    href: "/setup",
-    icon: ListChecks,
-    permission: "manage_settings",
-    group: GROUP.settings,
-  },
-  {
-    key: "settings-security",
-    labelKey: "app.security.navLabel",
-    href: "/settings/security",
-    icon: ShieldCheck,
-    group: GROUP.settings,
-  },
-  {
-    key: "settings-sso",
-    labelKey: "app.sso.navLabel",
-    href: "/settings/sso",
-    icon: ShieldCheck,
-    permission: "manage_settings",
-    group: GROUP.settings,
-  },
-  {
-    key: "settings-audit",
-    labelKey: "app.audit.navLabel",
-    href: "/settings/audit-logs",
-    icon: ShieldCheck,
-    permission: "view_audit_logs",
-    group: GROUP.settings,
-  },
-  {
-    key: "settings-integrations",
-    labelKey: "app.integrations.navLabel",
-    href: "/settings/integrations",
-    icon: Plug,
-    permission: "view_integrations",
-    group: GROUP.settings,
-  },
-  {
-    key: "settings-notifications",
-    labelKey: "app.settings.notifications.navLabel",
-    href: "/settings/notifications",
-    icon: Bell,
-    group: GROUP.settings,
-  },
-  {
-    key: "settings-whatsapp",
-    labelKey: "app.messaging.navLabel",
-    href: "/settings/whatsapp",
-    icon: MessageCircle,
-    permission: "manage_whatsapp",
-    group: GROUP.settings,
-  },
-  {
-    key: "settings-appearance",
-    labelKey: "app.shell.appearance",
-    href: "/settings/appearance",
-    icon: Settings,
-    group: GROUP.settings,
-  },
-  {
-    key: "profile",
-    labelKey: "nav.compact.profile",
-    href: "/profile",
-    icon: UserRound,
-    showInTabBar: true,
-    group: GROUP.settings,
-  },
-
-  {
-    key: "platform-tenants",
-    labelKey: "nav.platform.items.tenants",
-    href: "/platform",
-    icon: Building2,
-    permission: "platform_superadmin",
-    group: GROUP.platform,
-  },
+  ...settingsNavItems,
 ];
 
 export function filterNavigation(
