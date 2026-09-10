@@ -1,0 +1,468 @@
+paths:
+  /v1/mentoring/settings/group-size-limit:
+    get:
+      tags: [mentoring]
+      operationId: getMentorGroupSizeLimit
+      x-permission: view_mentoring
+      summary: Maximum students one mentor group may hold
+      responses:
+        "200":
+          description: Limit
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MentorGroupSizeLimit" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    put:
+      tags: [mentoring]
+      operationId: setMentorGroupSizeLimit
+      x-permission: manage_mentor_groups
+      summary: Change the group-size limit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MentorGroupSizeLimit" }
+      responses:
+        "200":
+          description: Limit
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MentorGroupSizeLimit" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /v1/mentoring/groups:
+    get:
+      tags: [mentoring]
+      operationId: listMentorGroups
+      x-permission: view_mentoring
+      summary: Every mentor group this academic year
+      responses:
+        "200":
+          description: Groups
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/MentorGroup" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: [mentoring]
+      operationId: createMentorGroup
+      x-permission: manage_mentor_groups
+      summary: Create a mentor group for one teacher
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MentorGroupWrite" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MentorGroup" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /v1/mentoring/my-groups:
+    get:
+      tags: [mentoring]
+      operationId: listMyMentorGroups
+      x-permission: view_mentoring
+      summary: The mentor groups the current user leads
+      responses:
+        "200":
+          description: Groups
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/MentorGroup" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /v1/mentoring/groups/{groupId}:
+    get:
+      tags: [mentoring]
+      operationId: getMentorGroup
+      x-permission: view_mentoring
+      summary: One mentor group
+      parameters:
+        - { name: groupId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Group
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MentorGroup" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: [mentoring]
+      operationId: updateMentorGroup
+      x-permission: manage_mentor_groups
+      summary: Rename a group or reassign its mentor
+      parameters:
+        - { name: groupId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MentorGroupWrite" }
+      responses:
+        "200":
+          description: Group
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MentorGroup" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: [mentoring]
+      operationId: deleteMentorGroup
+      x-permission: manage_mentor_groups
+      summary: Remove a mentor group
+      parameters:
+        - { name: groupId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "204": { description: Deleted }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /v1/mentoring/groups/{groupId}/members:
+    get:
+      tags: [mentoring]
+      operationId: listMentorGroupMembers
+      x-permission: view_mentoring
+      summary: Students assigned to a mentor group
+      parameters:
+        - { name: groupId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Members
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/MentorGroupMember" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: [mentoring]
+      operationId: assignMentorGroupMember
+      x-permission: manage_mentor_groups
+      summary: Assign a student to the group, refused past the group-size limit
+      parameters:
+        - { name: groupId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [student_user_id]
+              properties:
+                student_user_id: { type: string, format: uuid }
+      responses:
+        "201":
+          description: Member
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MentorGroupMember" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /v1/mentoring/groups/{groupId}/members/{studentId}:
+    delete:
+      tags: [mentoring]
+      operationId: removeMentorGroupMember
+      x-permission: manage_mentor_groups
+      summary: Remove a student from the group
+      parameters:
+        - { name: groupId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: studentId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "204": { description: Removed }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /v1/mentoring/groups/{groupId}/notes:
+    get:
+      tags: [mentoring]
+      operationId: listMentorMeetingNotes
+      x-permission: manage_mentoring
+      summary: Meeting notes for a group the reader may open (mentor, counselor, leadership)
+      parameters:
+        - { name: groupId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Notes
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/MentorMeetingNote" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: [mentoring]
+      operationId: createMentorMeetingNote
+      x-permission: manage_mentoring
+      summary: Record a mentoring session
+      parameters:
+        - { name: groupId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MentorMeetingNoteWrite" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MentorMeetingNote" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /v1/mentoring/notes/{noteId}:
+    get:
+      tags: [mentoring]
+      operationId: getMentorMeetingNote
+      x-permission: manage_mentoring
+      summary: One meeting note, visible only to its mentor, a counselor, or leadership
+      parameters:
+        - { name: noteId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Note
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MentorMeetingNote" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: [mentoring]
+      operationId: updateMentorMeetingNote
+      x-permission: manage_mentoring
+      summary: Edit a meeting note (its own mentor only)
+      parameters:
+        - { name: noteId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MentorMeetingNoteWrite" }
+      responses:
+        "200":
+          description: Note
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MentorMeetingNote" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: [mentoring]
+      operationId: deleteMentorMeetingNote
+      x-permission: manage_mentoring
+      summary: Delete a meeting note (its own mentor only)
+      parameters:
+        - { name: noteId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "204": { description: Deleted }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /v1/mentoring/students/{studentId}/snapshot:
+    get:
+      tags: [mentoring]
+      operationId: getMentorStudentSnapshot
+      x-permission: view_mentoring
+      summary: One student's attendance, discipline points, and published grades
+      parameters:
+        - { name: studentId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Snapshot
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MentorStudentSnapshot" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /v1/mentoring/groups/{groupId}/term-summaries/{termId}/{studentId}:
+    get:
+      tags: [mentoring]
+      operationId: getMentorTermSummary
+      x-permission: manage_mentoring
+      summary: The mentor's written term appraisal of one student
+      parameters:
+        - { name: groupId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: termId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: studentId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Summary
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MentorTermSummary" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: [mentoring]
+      operationId: writeMentorTermSummary
+      x-permission: manage_mentoring
+      summary: Write or replace the term appraisal
+      parameters:
+        - { name: groupId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: termId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: studentId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [summary]
+              properties:
+                summary: { type: string, maxLength: 4000 }
+      responses:
+        "200":
+          description: Summary
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MentorTermSummary" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+components:
+  schemas:
+    MentorGroupSizeLimit:
+      type: object
+      required: [limit]
+      properties:
+        limit: { type: integer, minimum: 1 }
+
+    MentorGroup:
+      type: object
+      required: [id, academic_year_id, mentor_user_id, name, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        academic_year_id: { type: string, format: uuid }
+        mentor_user_id: { type: string, format: uuid }
+        name: { type: string, maxLength: 160 }
+        created_at: { type: string, format: date-time }
+
+    MentorGroupWrite:
+      type: object
+      required: [mentor_user_id, name]
+      properties:
+        mentor_user_id: { type: string, format: uuid }
+        name: { type: string, maxLength: 160 }
+
+    MentorGroupMember:
+      type: object
+      required: [id, group_id, student_user_id, assigned_at]
+      properties:
+        id: { type: string, format: uuid }
+        group_id: { type: string, format: uuid }
+        student_user_id: { type: string, format: uuid }
+        assigned_at: { type: string, format: date-time }
+
+    MentorMeetingNote:
+      type: object
+      required: [id, group_id, met_at, kind, attendee_user_ids, topic, content, agreed_actions]
+      properties:
+        id: { type: string, format: uuid }
+        group_id: { type: string, format: uuid }
+        mentor_user_id: { type: string, format: uuid }
+        met_at: { type: string, format: date-time }
+        kind: { type: string, enum: [group, individual] }
+        attendee_user_ids: { type: array, items: { type: string, format: uuid } }
+        topic: { type: string, maxLength: 200 }
+        content:
+          type: string
+          description: Sealed at rest; returned in full only to a reader the fixed restriction allows.
+        agreed_actions: { type: string }
+
+    MentorMeetingNoteWrite:
+      type: object
+      required: [met_at, kind, attendee_user_ids, topic, content]
+      properties:
+        met_at: { type: string, format: date-time }
+        kind: { type: string, enum: [group, individual] }
+        attendee_user_ids: { type: array, minItems: 1, items: { type: string, format: uuid } }
+        topic: { type: string, maxLength: 200 }
+        content: { type: string }
+        agreed_actions: { type: string }
+
+    MentorStudentSnapshot:
+      type: object
+      required:
+        [
+          student_user_id,
+          student_name,
+          class_name,
+          attendance_by_status,
+          discipline_points,
+          discipline_active_count,
+          published_subjects,
+        ]
+      properties:
+        student_user_id: { type: string, format: uuid }
+        student_name: { type: string }
+        class_name: { type: string }
+        attendance_by_status:
+          type: object
+          additionalProperties: { type: integer }
+          description: This month's day count per attendance status code, using the tenant's own status policy.
+        discipline_points: { type: integer }
+        discipline_active_count: { type: integer }
+        published_subjects:
+          type: array
+          items:
+            type: object
+            required: [subject_id, score]
+            properties:
+              subject_id: { type: string, format: uuid }
+              score: { type: number }
+
+    MentorTermSummary:
+      type: object
+      required: [id, term_id, group_id, student_user_id, summary]
+      properties:
+        id: { type: string, format: uuid }
+        term_id: { type: string, format: uuid }
+        group_id: { type: string, format: uuid }
+        student_user_id: { type: string, format: uuid }
+        mentor_user_id: { type: string, format: uuid }
+        summary: { type: string, maxLength: 4000 }

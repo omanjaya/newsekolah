@@ -16,12 +16,14 @@ import (
 	identityhttp "github.com/omanjaya/newsekolah/apps/api/internal/modules/identity/transport/http"
 	integrationshttp "github.com/omanjaya/newsekolah/apps/api/internal/modules/integrations/transport/http"
 	libraryhttp "github.com/omanjaya/newsekolah/apps/api/internal/modules/library/transport/http"
+	mentoringhttp "github.com/omanjaya/newsekolah/apps/api/internal/modules/mentoring/transport/http"
 	notificationshttp "github.com/omanjaya/newsekolah/apps/api/internal/modules/notifications/transport/http"
 	permitshttp "github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/transport/http"
 	platformhttp "github.com/omanjaya/newsekolah/apps/api/internal/modules/platform/transport/http"
 	reportshttp "github.com/omanjaya/newsekolah/apps/api/internal/modules/reports/transport/http"
 	schedulinghttp "github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling/transport/http"
 	schoolhttp "github.com/omanjaya/newsekolah/apps/api/internal/modules/school/transport/http"
+	supervisionhttp "github.com/omanjaya/newsekolah/apps/api/internal/modules/supervision/transport/http"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
 )
 
@@ -46,6 +48,8 @@ type combinedServer struct {
 	*integrationshttp.IntegrationsHandler
 	*analyticshttp.AnalyticsHandler
 	*activitieshttp.ActivitiesHandler
+	*mentoringhttp.MentoringHandler
+	*supervisionhttp.SupervisionHandler
 	*healthHandler
 }
 

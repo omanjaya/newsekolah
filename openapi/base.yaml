@@ -65,3 +65,7 @@ tags:
     description: Early-warning risk signals per student
   - name: activities
     description: Extracurricular clubs and membership, meeting attendance, school activities, and student achievements
+  - name: mentoring
+    description: Guru wali mentor groups, meeting notes, per-student view, and term summaries
+  - name: supervision
+    description: Leadership observing a teacher's lesson against a scored instrument

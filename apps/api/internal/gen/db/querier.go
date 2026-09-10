@@ -715,6 +715,33 @@ type Querier interface {
 	MarkNotificationRead(ctx context.Context, arg MarkNotificationReadParams) error
 	MarkPasswordResetUsed(ctx context.Context, arg MarkPasswordResetUsedParams) error
 	MarkReservationReady(ctx context.Context, arg MarkReservationReadyParams) (LibraryReservation, error)
+	MentoringAddGroupMember(ctx context.Context, arg MentoringAddGroupMemberParams) (MentorGroupMember, error)
+	MentoringCountGroupMembers(ctx context.Context, arg MentoringCountGroupMembersParams) (int64, error)
+	MentoringCreateGroup(ctx context.Context, arg MentoringCreateGroupParams) (MentorGroup, error)
+	MentoringCreateMeetingNote(ctx context.Context, arg MentoringCreateMeetingNoteParams) (MentorMeetingNote, error)
+	MentoringDeleteGroup(ctx context.Context, arg MentoringDeleteGroupParams) error
+	MentoringDeleteMeetingNote(ctx context.Context, arg MentoringDeleteMeetingNoteParams) error
+	MentoringFindMembershipForStudent(ctx context.Context, arg MentoringFindMembershipForStudentParams) (MentorGroupMember, error)
+	MentoringGetGroup(ctx context.Context, arg MentoringGetGroupParams) (MentorGroup, error)
+	MentoringGetGroupSizeLimit(ctx context.Context, tenantID uuid.UUID) (int32, error)
+	MentoringGetMeetingNote(ctx context.Context, arg MentoringGetMeetingNoteParams) (MentorMeetingNote, error)
+	MentoringGetTermSummary(ctx context.Context, arg MentoringGetTermSummaryParams) (MentorTermSummary, error)
+	// cross-module read: duty_assignments/duty_types (identity), for resolving
+	// whether a reader may open a meeting note (counselor, leadership).
+	MentoringHasActiveDuty(ctx context.Context, arg MentoringHasActiveDutyParams) (bool, error)
+	MentoringListGroupMembers(ctx context.Context, arg MentoringListGroupMembersParams) ([]MentorGroupMember, error)
+	MentoringListGroupsForMentor(ctx context.Context, arg MentoringListGroupsForMentorParams) ([]MentorGroup, error)
+	MentoringListGroupsForYear(ctx context.Context, arg MentoringListGroupsForYearParams) ([]MentorGroup, error)
+	MentoringListMeetingNotesForGroup(ctx context.Context, arg MentoringListMeetingNotesForGroupParams) ([]MentorMeetingNote, error)
+	MentoringListTermSummariesForGroup(ctx context.Context, arg MentoringListTermSummariesForGroupParams) ([]MentorTermSummary, error)
+	MentoringRemoveGroupMember(ctx context.Context, arg MentoringRemoveGroupMemberParams) error
+	// cross-module read: users (identity) and enrollments/classes (academic),
+	// for the name and class shown in the mentor's per-student view.
+	MentoringStudentInfo(ctx context.Context, arg MentoringStudentInfoParams) (MentoringStudentInfoRow, error)
+	MentoringUpdateGroup(ctx context.Context, arg MentoringUpdateGroupParams) (MentorGroup, error)
+	MentoringUpdateMeetingNote(ctx context.Context, arg MentoringUpdateMeetingNoteParams) (MentorMeetingNote, error)
+	MentoringUpsertGroupSizeLimit(ctx context.Context, arg MentoringUpsertGroupSizeLimitParams) error
+	MentoringUpsertTermSummary(ctx context.Context, arg MentoringUpsertTermSummaryParams) (MentorTermSummary, error)
 	// Shallow-merges extra into the instance's existing payload (jsonb ||),
 	// e.g. attaching a late arrival review's opaque violation_ids list.
 	MergeWorkflowInstancePayload(ctx context.Context, arg MergeWorkflowInstancePayloadParams) (WorkflowInstance, error)
@@ -773,6 +800,24 @@ type Querier interface {
 	StarBalance(ctx context.Context, arg StarBalanceParams) (int32, error)
 	SubmitAttendanceSession(ctx context.Context, arg SubmitAttendanceSessionParams) (AttendanceSession, error)
 	SumActivePoints(ctx context.Context, arg SumActivePointsParams) (int32, error)
+	SupervisionCreateCycle(ctx context.Context, arg SupervisionCreateCycleParams) (SupervisionCycle, error)
+	SupervisionCreateObservation(ctx context.Context, arg SupervisionCreateObservationParams) (SupervisionObservation, error)
+	SupervisionCreateScheduledObservation(ctx context.Context, arg SupervisionCreateScheduledObservationParams) (SupervisionScheduledObservation, error)
+	SupervisionGetCycle(ctx context.Context, arg SupervisionGetCycleParams) (SupervisionCycle, error)
+	SupervisionGetObservation(ctx context.Context, arg SupervisionGetObservationParams) (SupervisionObservation, error)
+	SupervisionGetObservationByScheduled(ctx context.Context, arg SupervisionGetObservationByScheduledParams) (SupervisionObservation, error)
+	SupervisionGetScheduledObservation(ctx context.Context, arg SupervisionGetScheduledObservationParams) (SupervisionScheduledObservation, error)
+	// cross-module read: duty_assignments/duty_types (identity), for resolving
+	// whether a reader may open an observation report (leadership).
+	SupervisionHasActiveDuty(ctx context.Context, arg SupervisionHasActiveDutyParams) (bool, error)
+	SupervisionListCyclesForYear(ctx context.Context, arg SupervisionListCyclesForYearParams) ([]SupervisionCycle, error)
+	SupervisionListObservationsForCycle(ctx context.Context, arg SupervisionListObservationsForCycleParams) ([]SupervisionObservation, error)
+	SupervisionListObservationsForTeacherCycle(ctx context.Context, arg SupervisionListObservationsForTeacherCycleParams) ([]SupervisionObservation, error)
+	SupervisionListScheduledForCycle(ctx context.Context, arg SupervisionListScheduledForCycleParams) ([]SupervisionScheduledObservation, error)
+	SupervisionListScheduledForTeacher(ctx context.Context, arg SupervisionListScheduledForTeacherParams) ([]SupervisionScheduledObservation, error)
+	SupervisionTeacherName(ctx context.Context, arg SupervisionTeacherNameParams) (string, error)
+	SupervisionUpdateCycle(ctx context.Context, arg SupervisionUpdateCycleParams) (SupervisionCycle, error)
+	SupervisionUpdateObservation(ctx context.Context, arg SupervisionUpdateObservationParams) (SupervisionObservation, error)
 	TouchAPIKeyLastUsed(ctx context.Context, arg TouchAPIKeyLastUsedParams) error
 	TouchPushDeviceUsed(ctx context.Context, arg TouchPushDeviceUsedParams) error
 	TouchSessionLastSeen(ctx context.Context, arg TouchSessionLastSeenParams) error

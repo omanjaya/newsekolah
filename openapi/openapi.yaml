@@ -66,6 +66,10 @@ tags:
     description: Early-warning risk signals per student
   - name: activities
     description: Extracurricular clubs and membership, meeting attendance, school activities, and student achievements
+  - name: mentoring
+    description: Guru wali mentor groups, meeting notes, per-student view, and term summaries
+  - name: supervision
+    description: Leadership observing a teacher's lesson against a scored instrument
 paths:
   /v1/academic/years:
     get:
@@ -7840,6 +7844,573 @@ paths:
                       $ref: "#/components/schemas/LibraryTitle"
         "400":
           $ref: "#/components/responses/BadRequest"
+  /v1/mentoring/settings/group-size-limit:
+    get:
+      tags:
+        - mentoring
+      operationId: getMentorGroupSizeLimit
+      x-permission: view_mentoring
+      summary: Maximum students one mentor group may hold
+      responses:
+        "200":
+          description: Limit
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MentorGroupSizeLimit"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    put:
+      tags:
+        - mentoring
+      operationId: setMentorGroupSizeLimit
+      x-permission: manage_mentor_groups
+      summary: Change the group-size limit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MentorGroupSizeLimit"
+      responses:
+        "200":
+          description: Limit
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MentorGroupSizeLimit"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/mentoring/groups:
+    get:
+      tags:
+        - mentoring
+      operationId: listMentorGroups
+      x-permission: view_mentoring
+      summary: Every mentor group this academic year
+      responses:
+        "200":
+          description: Groups
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/MentorGroup"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags:
+        - mentoring
+      operationId: createMentorGroup
+      x-permission: manage_mentor_groups
+      summary: Create a mentor group for one teacher
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MentorGroupWrite"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MentorGroup"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/mentoring/my-groups:
+    get:
+      tags:
+        - mentoring
+      operationId: listMyMentorGroups
+      x-permission: view_mentoring
+      summary: The mentor groups the current user leads
+      responses:
+        "200":
+          description: Groups
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/MentorGroup"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /v1/mentoring/groups/{groupId}:
+    get:
+      tags:
+        - mentoring
+      operationId: getMentorGroup
+      x-permission: view_mentoring
+      summary: One mentor group
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Group
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MentorGroup"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      tags:
+        - mentoring
+      operationId: updateMentorGroup
+      x-permission: manage_mentor_groups
+      summary: Rename a group or reassign its mentor
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MentorGroupWrite"
+      responses:
+        "200":
+          description: Group
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MentorGroup"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags:
+        - mentoring
+      operationId: deleteMentorGroup
+      x-permission: manage_mentor_groups
+      summary: Remove a mentor group
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/mentoring/groups/{groupId}/members:
+    get:
+      tags:
+        - mentoring
+      operationId: listMentorGroupMembers
+      x-permission: view_mentoring
+      summary: Students assigned to a mentor group
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Members
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/MentorGroupMember"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags:
+        - mentoring
+      operationId: assignMentorGroupMember
+      x-permission: manage_mentor_groups
+      summary: Assign a student to the group, refused past the group-size limit
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - student_user_id
+              properties:
+                student_user_id:
+                  type: string
+                  format: uuid
+      responses:
+        "201":
+          description: Member
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MentorGroupMember"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/mentoring/groups/{groupId}/members/{studentId}:
+    delete:
+      tags:
+        - mentoring
+      operationId: removeMentorGroupMember
+      x-permission: manage_mentor_groups
+      summary: Remove a student from the group
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: studentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Removed
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/mentoring/groups/{groupId}/notes:
+    get:
+      tags:
+        - mentoring
+      operationId: listMentorMeetingNotes
+      x-permission: manage_mentoring
+      summary: Meeting notes for a group the reader may open (mentor, counselor, leadership)
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Notes
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/MentorMeetingNote"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags:
+        - mentoring
+      operationId: createMentorMeetingNote
+      x-permission: manage_mentoring
+      summary: Record a mentoring session
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MentorMeetingNoteWrite"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MentorMeetingNote"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/mentoring/notes/{noteId}:
+    get:
+      tags:
+        - mentoring
+      operationId: getMentorMeetingNote
+      x-permission: manage_mentoring
+      summary: One meeting note, visible only to its mentor, a counselor, or leadership
+      parameters:
+        - name: noteId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Note
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MentorMeetingNote"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      tags:
+        - mentoring
+      operationId: updateMentorMeetingNote
+      x-permission: manage_mentoring
+      summary: Edit a meeting note (its own mentor only)
+      parameters:
+        - name: noteId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MentorMeetingNoteWrite"
+      responses:
+        "200":
+          description: Note
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MentorMeetingNote"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags:
+        - mentoring
+      operationId: deleteMentorMeetingNote
+      x-permission: manage_mentoring
+      summary: Delete a meeting note (its own mentor only)
+      parameters:
+        - name: noteId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/mentoring/students/{studentId}/snapshot:
+    get:
+      tags:
+        - mentoring
+      operationId: getMentorStudentSnapshot
+      x-permission: view_mentoring
+      summary: One student's attendance, discipline points, and published grades
+      parameters:
+        - name: studentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Snapshot
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MentorStudentSnapshot"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/mentoring/groups/{groupId}/term-summaries/{termId}/{studentId}:
+    get:
+      tags:
+        - mentoring
+      operationId: getMentorTermSummary
+      x-permission: manage_mentoring
+      summary: The mentor's written term appraisal of one student
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: termId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: studentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MentorTermSummary"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      tags:
+        - mentoring
+      operationId: writeMentorTermSummary
+      x-permission: manage_mentoring
+      summary: Write or replace the term appraisal
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: termId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: studentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - summary
+              properties:
+                summary:
+                  type: string
+                  maxLength: 4000
+      responses:
+        "200":
+          description: Summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MentorTermSummary"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /v1/notifications:
     get:
       tags:
@@ -10570,6 +11141,385 @@ paths:
       responses:
         "204":
           description: Deleted
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/supervision/cycles:
+    get:
+      tags:
+        - supervision
+      operationId: listSupervisionCycles
+      x-permission: view_supervision
+      summary: Supervision cycles this academic year
+      responses:
+        "200":
+          description: Cycles
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/SupervisionCycle"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags:
+        - supervision
+      operationId: createSupervisionCycle
+      x-permission: manage_supervision
+      summary: Start a cycle with its instrument
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SupervisionCycleWrite"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SupervisionCycle"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/supervision/cycles/{cycleId}:
+    get:
+      tags:
+        - supervision
+      operationId: getSupervisionCycle
+      x-permission: view_supervision
+      summary: One cycle and its instrument
+      parameters:
+        - name: cycleId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Cycle
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SupervisionCycle"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      tags:
+        - supervision
+      operationId: updateSupervisionCycle
+      x-permission: manage_supervision
+      summary: Rename a cycle or edit its instrument
+      parameters:
+        - name: cycleId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SupervisionCycleWrite"
+      responses:
+        "200":
+          description: Cycle
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SupervisionCycle"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/supervision/cycles/{cycleId}/scheduled:
+    get:
+      tags:
+        - supervision
+      operationId: listScheduledObservations
+      x-permission: view_supervision
+      summary: Planned visits in a cycle
+      parameters:
+        - name: cycleId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Scheduled observations
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ScheduledObservation"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags:
+        - supervision
+      operationId: scheduleObservation
+      x-permission: manage_supervision
+      summary: Plan a visit to a specific lesson, resolved through the scheduling module
+      parameters:
+        - name: cycleId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScheduledObservationWrite"
+      responses:
+        "201":
+          description: Scheduled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScheduledObservation"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/supervision/cycles/{cycleId}/teachers/{teacherId}/scheduled:
+    get:
+      tags:
+        - supervision
+      operationId: listScheduledObservationsForTeacher
+      x-permission: view_supervision
+      summary: Planned visits to one teacher within a cycle
+      parameters:
+        - name: cycleId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: teacherId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Scheduled observations
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ScheduledObservation"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/supervision/observations:
+    post:
+      tags:
+        - supervision
+      operationId: completeObservation
+      x-permission: manage_supervision
+      summary: Record the completed visit -- scores, notes, teacher response, follow-up
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ObservationWrite"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Observation"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/supervision/observations/{observationId}:
+    get:
+      tags:
+        - supervision
+      operationId: getObservation
+      x-permission: view_supervision
+      summary: One completed observation; a teacher can always read their own
+      parameters:
+        - name: observationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Observation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Observation"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/supervision/observations/{observationId}/response:
+    put:
+      tags:
+        - supervision
+      operationId: respondToObservation
+      x-permission: respond_to_supervision
+      summary: The observed teacher's response and the agreed follow-up
+      parameters:
+        - name: observationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                teacher_response:
+                  type: string
+                  maxLength: 4000
+                agreed_follow_up:
+                  type: string
+                  maxLength: 2000
+      responses:
+        "200":
+          description: Observation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Observation"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/supervision/cycles/{cycleId}/teachers/{teacherId}/report:
+    get:
+      tags:
+        - supervision
+      operationId: getTeacherSupervisionReport
+      x-permission: view_supervision
+      summary: One teacher's observations within a cycle, averaged per criterion
+      parameters:
+        - name: cycleId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: teacherId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeacherSupervisionReport"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/supervision/cycles/{cycleId}/teachers/{teacherId}/report/export:
+    get:
+      tags:
+        - supervision
+      operationId: exportTeacherSupervisionReport
+      x-permission: view_supervision
+      summary: The same report as an XLSX workbook
+      parameters:
+        - name: cycleId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: teacherId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Workbook
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+        "401":
+          $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
         "404":
@@ -15104,6 +16054,209 @@ components:
           $ref: "#/components/schemas/LibraryTitle"
         loan_count:
           type: integer
+    MentorGroupSizeLimit:
+      type: object
+      required:
+        - limit
+      properties:
+        limit:
+          type: integer
+          minimum: 1
+    MentorGroup:
+      type: object
+      required:
+        - id
+        - academic_year_id
+        - mentor_user_id
+        - name
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        academic_year_id:
+          type: string
+          format: uuid
+        mentor_user_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 160
+        created_at:
+          type: string
+          format: date-time
+    MentorGroupWrite:
+      type: object
+      required:
+        - mentor_user_id
+        - name
+      properties:
+        mentor_user_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 160
+    MentorGroupMember:
+      type: object
+      required:
+        - id
+        - group_id
+        - student_user_id
+        - assigned_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        group_id:
+          type: string
+          format: uuid
+        student_user_id:
+          type: string
+          format: uuid
+        assigned_at:
+          type: string
+          format: date-time
+    MentorMeetingNote:
+      type: object
+      required:
+        - id
+        - group_id
+        - met_at
+        - kind
+        - attendee_user_ids
+        - topic
+        - content
+        - agreed_actions
+      properties:
+        id:
+          type: string
+          format: uuid
+        group_id:
+          type: string
+          format: uuid
+        mentor_user_id:
+          type: string
+          format: uuid
+        met_at:
+          type: string
+          format: date-time
+        kind:
+          type: string
+          enum:
+            - group
+            - individual
+        attendee_user_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+        topic:
+          type: string
+          maxLength: 200
+        content:
+          type: string
+          description: Sealed at rest; returned in full only to a reader the fixed restriction allows.
+        agreed_actions:
+          type: string
+    MentorMeetingNoteWrite:
+      type: object
+      required:
+        - met_at
+        - kind
+        - attendee_user_ids
+        - topic
+        - content
+      properties:
+        met_at:
+          type: string
+          format: date-time
+        kind:
+          type: string
+          enum:
+            - group
+            - individual
+        attendee_user_ids:
+          type: array
+          minItems: 1
+          items:
+            type: string
+            format: uuid
+        topic:
+          type: string
+          maxLength: 200
+        content:
+          type: string
+        agreed_actions:
+          type: string
+    MentorStudentSnapshot:
+      type: object
+      required:
+        - student_user_id
+        - student_name
+        - class_name
+        - attendance_by_status
+        - discipline_points
+        - discipline_active_count
+        - published_subjects
+      properties:
+        student_user_id:
+          type: string
+          format: uuid
+        student_name:
+          type: string
+        class_name:
+          type: string
+        attendance_by_status:
+          type: object
+          additionalProperties:
+            type: integer
+          description: This month's day count per attendance status code, using the tenant's own status policy.
+        discipline_points:
+          type: integer
+        discipline_active_count:
+          type: integer
+        published_subjects:
+          type: array
+          items:
+            type: object
+            required:
+              - subject_id
+              - score
+            properties:
+              subject_id:
+                type: string
+                format: uuid
+              score:
+                type: number
+    MentorTermSummary:
+      type: object
+      required:
+        - id
+        - term_id
+        - group_id
+        - student_user_id
+        - summary
+      properties:
+        id:
+          type: string
+          format: uuid
+        term_id:
+          type: string
+          format: uuid
+        group_id:
+          type: string
+          format: uuid
+        student_user_id:
+          type: string
+          format: uuid
+        mentor_user_id:
+          type: string
+          format: uuid
+        summary:
+          type: string
+          maxLength: 4000
     NotificationChannel:
       type: string
       enum:
@@ -16546,6 +17699,215 @@ components:
           type: string
         reflection:
           type: string
+    SupervisionCriterion:
+      type: object
+      required:
+        - key
+        - name
+      properties:
+        key:
+          type: string
+          maxLength: 60
+        name:
+          type: string
+          maxLength: 160
+    SupervisionInstrument:
+      type: object
+      required:
+        - name
+        - scale_min
+        - scale_max
+        - criteria
+      properties:
+        name:
+          type: string
+          maxLength: 160
+        scale_min:
+          type: integer
+        scale_max:
+          type: integer
+        criteria:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/SupervisionCriterion"
+    SupervisionCycle:
+      type: object
+      required:
+        - id
+        - academic_year_id
+        - name
+        - instrument
+      properties:
+        id:
+          type: string
+          format: uuid
+        academic_year_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 160
+        instrument:
+          $ref: "#/components/schemas/SupervisionInstrument"
+    SupervisionCycleWrite:
+      type: object
+      required:
+        - name
+        - instrument
+      properties:
+        name:
+          type: string
+          maxLength: 160
+        instrument:
+          $ref: "#/components/schemas/SupervisionInstrument"
+    ScheduledObservation:
+      type: object
+      required:
+        - id
+        - cycle_id
+        - schedule_id
+        - lesson_date
+        - teacher_user_id
+        - observer_user_id
+      properties:
+        id:
+          type: string
+          format: uuid
+        cycle_id:
+          type: string
+          format: uuid
+        schedule_id:
+          type: string
+          format: uuid
+        lesson_date:
+          type: string
+          format: date
+        teacher_user_id:
+          type: string
+          format: uuid
+        observer_user_id:
+          type: string
+          format: uuid
+    ScheduledObservationWrite:
+      type: object
+      required:
+        - schedule_id
+        - lesson_date
+      properties:
+        schedule_id:
+          type: string
+          format: uuid
+        lesson_date:
+          type: string
+          format: date
+    CriterionScore:
+      type: object
+      required:
+        - criterion_key
+        - score
+      properties:
+        criterion_key:
+          type: string
+        score:
+          type: integer
+    Observation:
+      type: object
+      required:
+        - id
+        - scheduled_id
+        - cycle_id
+        - teacher_user_id
+        - observer_user_id
+        - scores
+        - observer_notes
+        - teacher_response
+        - agreed_follow_up
+        - observed_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        scheduled_id:
+          type: string
+          format: uuid
+        cycle_id:
+          type: string
+          format: uuid
+        teacher_user_id:
+          type: string
+          format: uuid
+        observer_user_id:
+          type: string
+          format: uuid
+        scores:
+          type: array
+          items:
+            $ref: "#/components/schemas/CriterionScore"
+        observer_notes:
+          type: string
+        teacher_response:
+          type: string
+        agreed_follow_up:
+          type: string
+        observed_at:
+          type: string
+          format: date-time
+    ObservationWrite:
+      type: object
+      required:
+        - scheduled_id
+        - scores
+        - observer_notes
+        - observed_at
+      properties:
+        scheduled_id:
+          type: string
+          format: uuid
+        scores:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/CriterionScore"
+        observer_notes:
+          type: string
+          maxLength: 4000
+        teacher_response:
+          type: string
+          maxLength: 4000
+        agreed_follow_up:
+          type: string
+          maxLength: 2000
+        observed_at:
+          type: string
+          format: date-time
+    TeacherSupervisionReport:
+      type: object
+      required:
+        - teacher_user_id
+        - teacher_name
+        - cycle
+        - observations
+        - overall_average
+        - criterion_average
+      properties:
+        teacher_user_id:
+          type: string
+          format: uuid
+        teacher_name:
+          type: string
+        cycle:
+          $ref: "#/components/schemas/SupervisionCycle"
+        observations:
+          type: array
+          items:
+            $ref: "#/components/schemas/Observation"
+        overall_average:
+          type: number
+        criterion_average:
+          type: object
+          additionalProperties:
+            type: number
     SetupStep:
       type: object
       required:

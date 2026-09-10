@@ -18,6 +18,8 @@ sql:
       - "internal/modules/integrations/queries"
       - "internal/modules/analytics/queries"
       - "internal/modules/activities/queries"
+      - "internal/modules/mentoring/queries"
+      - "internal/modules/supervision/queries"
     schema: "migrations"
     gen:
       go:

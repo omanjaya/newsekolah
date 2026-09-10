@@ -1,0 +1,365 @@
+paths:
+  /v1/supervision/cycles:
+    get:
+      tags: [supervision]
+      operationId: listSupervisionCycles
+      x-permission: view_supervision
+      summary: Supervision cycles this academic year
+      responses:
+        "200":
+          description: Cycles
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/SupervisionCycle" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: [supervision]
+      operationId: createSupervisionCycle
+      x-permission: manage_supervision
+      summary: Start a cycle with its instrument
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SupervisionCycleWrite" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SupervisionCycle" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /v1/supervision/cycles/{cycleId}:
+    get:
+      tags: [supervision]
+      operationId: getSupervisionCycle
+      x-permission: view_supervision
+      summary: One cycle and its instrument
+      parameters:
+        - { name: cycleId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Cycle
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SupervisionCycle" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: [supervision]
+      operationId: updateSupervisionCycle
+      x-permission: manage_supervision
+      summary: Rename a cycle or edit its instrument
+      parameters:
+        - { name: cycleId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SupervisionCycleWrite" }
+      responses:
+        "200":
+          description: Cycle
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SupervisionCycle" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /v1/supervision/cycles/{cycleId}/scheduled:
+    get:
+      tags: [supervision]
+      operationId: listScheduledObservations
+      x-permission: view_supervision
+      summary: Planned visits in a cycle
+      parameters:
+        - { name: cycleId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Scheduled observations
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    { type: array, items: { $ref: "#/components/schemas/ScheduledObservation" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: [supervision]
+      operationId: scheduleObservation
+      x-permission: manage_supervision
+      summary: Plan a visit to a specific lesson, resolved through the scheduling module
+      parameters:
+        - { name: cycleId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ScheduledObservationWrite" }
+      responses:
+        "201":
+          description: Scheduled
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ScheduledObservation" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /v1/supervision/cycles/{cycleId}/teachers/{teacherId}/scheduled:
+    get:
+      tags: [supervision]
+      operationId: listScheduledObservationsForTeacher
+      x-permission: view_supervision
+      summary: Planned visits to one teacher within a cycle
+      parameters:
+        - { name: cycleId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: teacherId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Scheduled observations
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    { type: array, items: { $ref: "#/components/schemas/ScheduledObservation" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /v1/supervision/observations:
+    post:
+      tags: [supervision]
+      operationId: completeObservation
+      x-permission: manage_supervision
+      summary: Record the completed visit -- scores, notes, teacher response, follow-up
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ObservationWrite" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Observation" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /v1/supervision/observations/{observationId}:
+    get:
+      tags: [supervision]
+      operationId: getObservation
+      x-permission: view_supervision
+      summary: One completed observation; a teacher can always read their own
+      parameters:
+        - { name: observationId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Observation
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Observation" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /v1/supervision/observations/{observationId}/response:
+    put:
+      tags: [supervision]
+      operationId: respondToObservation
+      x-permission: respond_to_supervision
+      summary: The observed teacher's response and the agreed follow-up
+      parameters:
+        - { name: observationId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                teacher_response: { type: string, maxLength: 4000 }
+                agreed_follow_up: { type: string, maxLength: 2000 }
+      responses:
+        "200":
+          description: Observation
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Observation" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /v1/supervision/cycles/{cycleId}/teachers/{teacherId}/report:
+    get:
+      tags: [supervision]
+      operationId: getTeacherSupervisionReport
+      x-permission: view_supervision
+      summary: One teacher's observations within a cycle, averaged per criterion
+      parameters:
+        - { name: cycleId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: teacherId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Report
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TeacherSupervisionReport" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /v1/supervision/cycles/{cycleId}/teachers/{teacherId}/report/export:
+    get:
+      tags: [supervision]
+      operationId: exportTeacherSupervisionReport
+      x-permission: view_supervision
+      summary: The same report as an XLSX workbook
+      parameters:
+        - { name: cycleId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: teacherId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Workbook
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: { type: string, format: binary }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+components:
+  schemas:
+    SupervisionCriterion:
+      type: object
+      required: [key, name]
+      properties:
+        key: { type: string, maxLength: 60 }
+        name: { type: string, maxLength: 160 }
+
+    SupervisionInstrument:
+      type: object
+      required: [name, scale_min, scale_max, criteria]
+      properties:
+        name: { type: string, maxLength: 160 }
+        scale_min: { type: integer }
+        scale_max: { type: integer }
+        criteria:
+          type: array
+          minItems: 1
+          items: { $ref: "#/components/schemas/SupervisionCriterion" }
+
+    SupervisionCycle:
+      type: object
+      required: [id, academic_year_id, name, instrument]
+      properties:
+        id: { type: string, format: uuid }
+        academic_year_id: { type: string, format: uuid }
+        name: { type: string, maxLength: 160 }
+        instrument: { $ref: "#/components/schemas/SupervisionInstrument" }
+
+    SupervisionCycleWrite:
+      type: object
+      required: [name, instrument]
+      properties:
+        name: { type: string, maxLength: 160 }
+        instrument: { $ref: "#/components/schemas/SupervisionInstrument" }
+
+    ScheduledObservation:
+      type: object
+      required: [id, cycle_id, schedule_id, lesson_date, teacher_user_id, observer_user_id]
+      properties:
+        id: { type: string, format: uuid }
+        cycle_id: { type: string, format: uuid }
+        schedule_id: { type: string, format: uuid }
+        lesson_date: { type: string, format: date }
+        teacher_user_id: { type: string, format: uuid }
+        observer_user_id: { type: string, format: uuid }
+
+    ScheduledObservationWrite:
+      type: object
+      required: [schedule_id, lesson_date]
+      properties:
+        schedule_id: { type: string, format: uuid }
+        lesson_date: { type: string, format: date }
+
+    CriterionScore:
+      type: object
+      required: [criterion_key, score]
+      properties:
+        criterion_key: { type: string }
+        score: { type: integer }
+
+    Observation:
+      type: object
+      required:
+        [
+          id,
+          scheduled_id,
+          cycle_id,
+          teacher_user_id,
+          observer_user_id,
+          scores,
+          observer_notes,
+          teacher_response,
+          agreed_follow_up,
+          observed_at,
+        ]
+      properties:
+        id: { type: string, format: uuid }
+        scheduled_id: { type: string, format: uuid }
+        cycle_id: { type: string, format: uuid }
+        teacher_user_id: { type: string, format: uuid }
+        observer_user_id: { type: string, format: uuid }
+        scores: { type: array, items: { $ref: "#/components/schemas/CriterionScore" } }
+        observer_notes: { type: string }
+        teacher_response: { type: string }
+        agreed_follow_up: { type: string }
+        observed_at: { type: string, format: date-time }
+
+    ObservationWrite:
+      type: object
+      required: [scheduled_id, scores, observer_notes, observed_at]
+      properties:
+        scheduled_id: { type: string, format: uuid }
+        scores: { type: array, minItems: 1, items: { $ref: "#/components/schemas/CriterionScore" } }
+        observer_notes: { type: string, maxLength: 4000 }
+        teacher_response: { type: string, maxLength: 4000 }
+        agreed_follow_up: { type: string, maxLength: 2000 }
+        observed_at: { type: string, format: date-time }
+
+    TeacherSupervisionReport:
+      type: object
+      required:
+        [teacher_user_id, teacher_name, cycle, observations, overall_average, criterion_average]
+      properties:
+        teacher_user_id: { type: string, format: uuid }
+        teacher_name: { type: string }
+        cycle: { $ref: "#/components/schemas/SupervisionCycle" }
+        observations: { type: array, items: { $ref: "#/components/schemas/Observation" } }
+        overall_average: { type: number }
+        criterion_average:
+          type: object
+          additionalProperties: { type: number }
