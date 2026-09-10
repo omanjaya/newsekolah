@@ -233,6 +233,14 @@
     "LIBRARY_RESERVATION_NOT_WAITING": "Reservasi ini sudah tidak dalam antrean",
     "LIBRARY_COPY_AVAILABLE_FOR_LOAN": "Eksemplar ini belum dipinjam",
     "LIBRARY_STOCKTAKE_NOT_FOUND": "Sesi opname tidak ditemukan",
-    "LIBRARY_STOCKTAKE_CLOSED": "Sesi opname ini sudah ditutup"
+    "LIBRARY_STOCKTAKE_CLOSED": "Sesi opname ini sudah ditutup",
+    "BILLING_MODULE_DISABLED": "Modul pembayaran SPP belum diaktifkan untuk sekolah ini",
+    "FEE_TYPE_NOT_FOUND": "Jenis biaya tidak ditemukan",
+    "DISCOUNT_NOT_FOUND": "Potongan tidak ditemukan",
+    "BILL_NOT_FOUND": "Tagihan tidak ditemukan",
+    "BILL_ALREADY_PAID": "Tagihan ini sudah lunas",
+    "PAYMENT_NOT_FOUND": "Pembayaran tidak ditemukan",
+    "PAYMENT_ALREADY_VOIDED": "Pembayaran ini sudah dibatalkan",
+    "PAYMENT_EXCEEDS_OUTSTANDING": "Jumlah pembayaran melebihi sisa tagihan"
   }
 }

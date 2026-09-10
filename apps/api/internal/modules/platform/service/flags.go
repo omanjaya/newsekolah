@@ -47,6 +47,29 @@ func (s *Service) ListFlags(ctx context.Context, tenantID uuid.UUID) ([]domain.M
 	return out, nil
 }
 
+// IsModuleEnabled reports whether module is turned on for tenantID.
+// Unlike every other method on this service, it does not refuse in
+// single-tenant mode: a module gating its own operations on its flag must
+// work for every deployment shape, even though the console that lets an
+// operator flip the flag is multi-tenant only. Matches ListFlags' opt-out
+// default: a tenant with no row for module still runs it.
+func (s *Service) IsModuleEnabled(ctx context.Context, tenantID uuid.UUID, module domain.Module) (bool, error) {
+	enabled := true
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		flags, err := s.repo.ListFeatureFlags(ctx, tenantID)
+		if err != nil {
+			return err
+		}
+		for _, f := range flags {
+			if f.Module == string(module) {
+				enabled = f.Enabled
+			}
+		}
+		return nil
+	})
+	return enabled, err
+}
+
 // SetFlag enables or disables one module for a tenant.
 func (s *Service) SetFlag(ctx context.Context, tenantID uuid.UUID, module string, enabled bool) (domain.ModuleFlag, error) {
 	if err := s.guard(); err != nil {

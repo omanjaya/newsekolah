@@ -233,6 +233,14 @@
     "LIBRARY_RESERVATION_NOT_WAITING": "This reservation is no longer in the queue",
     "LIBRARY_COPY_AVAILABLE_FOR_LOAN": "This copy has not been borrowed",
     "LIBRARY_STOCKTAKE_NOT_FOUND": "Stocktake session not found",
-    "LIBRARY_STOCKTAKE_CLOSED": "This stocktake session is already closed"
+    "LIBRARY_STOCKTAKE_CLOSED": "This stocktake session is already closed",
+    "BILLING_MODULE_DISABLED": "The billing module is not enabled for this school",
+    "FEE_TYPE_NOT_FOUND": "Fee type not found",
+    "DISCOUNT_NOT_FOUND": "Discount not found",
+    "BILL_NOT_FOUND": "Bill not found",
+    "BILL_ALREADY_PAID": "This bill is already fully paid",
+    "PAYMENT_NOT_FOUND": "Payment not found",
+    "PAYMENT_ALREADY_VOIDED": "This payment was already voided",
+    "PAYMENT_EXCEEDS_OUTSTANDING": "The payment amount exceeds the bill's outstanding balance"
   }
 }

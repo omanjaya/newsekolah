@@ -69,7 +69,8 @@
         "grading": "Grading",
         "permits": "Permits",
         "announcements": "Announcements",
-        "reports": "Reports"
+        "reports": "Reports",
+        "billing": "School Fees"
       },
       "flagUpdated": "Module updated",
       "exportTitle": "Export school data",

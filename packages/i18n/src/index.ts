@@ -10,6 +10,7 @@ export {
   type Translator,
 } from "./translator.js";
 export {
+  formatCurrency,
   formatDate,
   formatDateTime,
   formatNumber,

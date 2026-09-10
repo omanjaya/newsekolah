@@ -1,0 +1,169 @@
+{
+  "navGroup": "Finance",
+  "navLabel": "School Fees",
+  "eyebrow": "Finance",
+  "title": "School Fees",
+  "tabs": {
+    "desk": "Payment Desk",
+    "feeTypes": "Fee Types",
+    "generate": "Generate Bills",
+    "arrears": "Arrears"
+  },
+  "feeTypes": {
+    "includeInactive": "Show inactive",
+    "add": "Add fee type",
+    "saved": "Fee type saved",
+    "deleted": "Fee type retired",
+    "emptyTitle": "No fee types yet",
+    "emptyBody": "Add a fee type such as monthly tuition or an enrollment fee.",
+    "edit": "Edit",
+    "manageDiscounts": "Manage discounts",
+    "deleteTitle": "Retire fee type",
+    "deleteBody": "\"{name}\" can no longer be used for new bills. Bills already issued keep their own snapshot of it.",
+    "deleteConfirm": "Retire",
+    "recurrenceMonthly": "Monthly",
+    "columns": {
+      "name": "Name",
+      "amount": "Amount",
+      "recurrence": "Period",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "form": {
+      "createTitle": "Add fee type",
+      "editTitle": "Edit fee type",
+      "name": "Name",
+      "description": "Description",
+      "amount": "Amount (Rp)",
+      "recurrence": {
+        "label": "Recurrence",
+        "monthly": "Monthly (tuition)",
+        "oneOff": "One-off"
+      },
+      "period": "Period code",
+      "periodPlaceholder": "e.g. 2026-enrollment-fee",
+      "active": "Active",
+      "cancel": "Cancel",
+      "submit": "Save"
+    }
+  },
+  "discounts": {
+    "title": "Discounts for {name}",
+    "add": "Add discount",
+    "saved": "Discount saved",
+    "emptyTitle": "No discounts yet",
+    "emptyBody": "Add a discount or waiver for a specific student.",
+    "unknownStudent": "Unknown student",
+    "remove": "Remove",
+    "kind": {
+      "waiver": "Full waiver",
+      "percentage": "Percentage discount",
+      "fixed": "Fixed discount"
+    },
+    "percentageValue": "{value}%",
+    "fixedValue": "Rp {amount}",
+    "form": {
+      "student": "Student",
+      "studentPlaceholder": "Choose a student",
+      "kind": {
+        "label": "Discount kind",
+        "percentage": "Percentage",
+        "fixed": "Fixed amount",
+        "waiver": "Full waiver"
+      },
+      "percentage": "Percentage (%)",
+      "amount": "Discount amount (Rp)",
+      "reason": "Reason",
+      "reasonPlaceholder": "e.g. Sibling discount, merit scholarship",
+      "cancel": "Cancel",
+      "submit": "Save"
+    }
+  },
+  "generation": {
+    "period": "Period",
+    "preview": "Preview",
+    "resultTitle": "Bills generated",
+    "resultBody": "{created} new bills created, {skipped} already billed and skipped.",
+    "previewSummary": "{count} bills would be created, {skipped} already billed and skipped. Total: {total}.",
+    "generate": "Generate bills",
+    "confirmTitle": "Generate bills?",
+    "confirmBody": "{count} bills totaling {total} will be issued. Safe to repeat: bills that already exist are never duplicated.",
+    "generated": "{count} bills generated",
+    "emptyTitle": "Nothing to generate",
+    "emptyBody": "Every student is already billed for this period, or no fee type is active.",
+    "unknownStudent": "Unknown student",
+    "columns": {
+      "student": "Student",
+      "feeType": "Fee type",
+      "period": "Period",
+      "amount": "Amount"
+    }
+  },
+  "paymentDesk": {
+    "pickStudent": "Student",
+    "pickStudentPlaceholder": "Search a student's name",
+    "pickStudentTitle": "Pick a student",
+    "pickStudentBody": "Choose a student to see their bills and payment history.",
+    "emptyTitle": "No bills yet",
+    "emptyBody": "This student has no bills for this academic year.",
+    "dueDate": "due {date}",
+    "pay": "Record payment",
+    "receipt": "Receipt",
+    "void": "Void",
+    "voidedLabel": "Voided",
+    "status": {
+      "unpaid": "Unpaid",
+      "partial": "Partially paid",
+      "paid": "Paid"
+    },
+    "method": {
+      "cash": "Cash",
+      "bankTransfer": "Bank transfer",
+      "other": "Other"
+    },
+    "paymentForm": {
+      "title": "Record a payment",
+      "outstanding": "Outstanding: {amount}",
+      "amount": "Amount paid (Rp)",
+      "method": {
+        "label": "Payment method",
+        "cash": "Cash",
+        "bankTransfer": "Bank transfer",
+        "other": "Other"
+      },
+      "paidOn": "Date paid",
+      "reference": "Reference",
+      "referencePlaceholder": "Transfer slip no., etc. (optional)",
+      "cancel": "Cancel",
+      "submit": "Record payment",
+      "recorded": "Payment recorded"
+    },
+    "voidDialog": {
+      "title": "Void payment",
+      "cancel": "Cancel",
+      "confirm": "Void payment",
+      "voided": "Payment voided",
+      "body": "The {amount} payment stays on file for audit but no longer counts toward paid.",
+      "reason": "Reason for voiding"
+    }
+  },
+  "arrears": {
+    "byClass": "By class",
+    "byStudent": "By student",
+    "unknownStudent": "Unknown student",
+    "noClass": "No class",
+    "emptyTitle": "No arrears",
+    "emptyBody": "Every bill for this academic year is fully paid.",
+    "columns": {
+      "student": "Student",
+      "class": "Class",
+      "billCount": "Bill count",
+      "outstanding": "Outstanding",
+      "studentCount": "Student count"
+    }
+  }
+}

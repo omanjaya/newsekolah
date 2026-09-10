@@ -64,6 +64,8 @@ tags:
     description: API keys and outgoing webhooks for machine access to the API
   - name: analytics
     description: Early-warning risk signals per student
+  - name: billing
+    description: Fee types, discounts, bill generation, payments, receipts and arrears
 paths:
   /v1/academic/years:
     get:
@@ -2464,6 +2466,589 @@ paths:
           description: Switching Protocols
         "401":
           $ref: "#/components/responses/Unauthorized"
+  /v1/children/{studentId}/billing:
+    get:
+      tags:
+        - family
+      operationId: getChildBilling
+      x-permission: view_child_billing
+      summary: One linked child's bills and payment history, read-only
+      parameters:
+        - name: studentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: History
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudentBillHistory"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/billing/fee-types:
+    get:
+      tags:
+        - billing
+      operationId: listFeeTypes
+      x-permission: view_billing
+      summary: Fee types for the active academic year
+      parameters:
+        - name: include_inactive
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: Fee types
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/FeeType"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags:
+        - billing
+      operationId: createFeeType
+      x-permission: manage_fee_types
+      summary: Add a fee type
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FeeTypeWrite"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FeeType"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/billing/fee-types/{feeTypeId}:
+    get:
+      tags:
+        - billing
+      operationId: getFeeType
+      x-permission: view_billing
+      summary: One fee type
+      parameters:
+        - name: feeTypeId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Fee type
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FeeType"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      tags:
+        - billing
+      operationId: updateFeeType
+      x-permission: manage_fee_types
+      summary: Edit a fee type
+      parameters:
+        - name: feeTypeId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FeeTypeWrite"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FeeType"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags:
+        - billing
+      operationId: deleteFeeType
+      x-permission: manage_fee_types
+      summary: Retire a fee type (bills already generated keep their snapshot)
+      parameters:
+        - name: feeTypeId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/billing/fee-types/{feeTypeId}/discounts:
+    get:
+      tags:
+        - billing
+      operationId: listFeeTypeDiscounts
+      x-permission: view_billing
+      summary: Discounts configured for one fee type
+      parameters:
+        - name: feeTypeId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Discounts
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Discount"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/billing/discounts:
+    post:
+      tags:
+        - billing
+      operationId: createDiscount
+      x-permission: manage_fee_types
+      summary: Add a per-student discount or waiver
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DiscountWrite"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Discount"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/billing/discounts/{discountId}:
+    put:
+      tags:
+        - billing
+      operationId: updateDiscount
+      x-permission: manage_fee_types
+      summary: Edit a discount
+      parameters:
+        - name: discountId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DiscountWrite"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Discount"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags:
+        - billing
+      operationId: deleteDiscount
+      x-permission: manage_fee_types
+      summary: Remove a discount
+      parameters:
+        - name: discountId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/billing/students/{studentId}/discounts:
+    get:
+      tags:
+        - billing
+      operationId: listStudentDiscounts
+      x-permission: view_billing
+      summary: Discounts configured for one student
+      parameters:
+        - name: studentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Discounts
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Discount"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/billing/generation/preview:
+    post:
+      tags:
+        - billing
+      operationId: previewBillGeneration
+      x-permission: generate_bills
+      summary: Compute what generating bills for a period would create, without saving anything
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerationRequest"
+      responses:
+        "200":
+          description: Preview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenerationSummary"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/billing/generation/run:
+    post:
+      tags:
+        - billing
+      operationId: runBillGeneration
+      x-permission: generate_bills
+      summary: Generate bills for a period (idempotent, safe to repeat)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerationRequest"
+      responses:
+        "200":
+          description: Result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenerationSummary"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/billing/bills:
+    get:
+      tags:
+        - billing
+      operationId: listBills
+      x-permission: view_billing
+      summary: Bills for the active academic year, filterable by period, status and class
+      parameters:
+        - name: period
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/BillStatus"
+        - name: class_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        "200":
+          description: Bills
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Bill"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/billing/bills/{billId}:
+    get:
+      tags:
+        - billing
+      operationId: getBill
+      x-permission: view_billing
+      summary: One bill
+      parameters:
+        - name: billId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Bill
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Bill"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/billing/students/{studentId}/bills:
+    get:
+      tags:
+        - billing
+      operationId: getStudentBillHistory
+      x-permission: view_billing
+      summary: One student's bills and payments this year
+      parameters:
+        - name: studentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: History
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudentBillHistory"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/billing/payments:
+    post:
+      tags:
+        - billing
+      operationId: recordPayment
+      x-permission: record_payments
+      summary: Record a payment against a bill and issue its receipt
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaymentWrite"
+      responses:
+        "201":
+          description: Recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Payment"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/billing/payments/{paymentId}/void:
+    post:
+      tags:
+        - billing
+      operationId: voidPayment
+      x-permission: void_payments
+      summary: Void a recorded payment (kept, never deleted)
+      parameters:
+        - name: paymentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - reason
+              properties:
+                reason:
+                  type: string
+                  minLength: 1
+                  maxLength: 300
+      responses:
+        "200":
+          description: Voided
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Payment"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/billing/payments/{paymentId}/receipt:
+    get:
+      tags:
+        - billing
+      operationId: getPaymentReceiptUrl
+      x-permission: view_billing
+      summary: Short-lived download URL for the receipt PDF
+      parameters:
+        - name: paymentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: URL
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - url
+                properties:
+                  url:
+                    type: string
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/billing/arrears:
+    get:
+      tags:
+        - billing
+      operationId: getArrearsReport
+      x-permission: view_billing
+      summary: Outstanding balances per student and per class, for the finance office
+      responses:
+        "200":
+          description: Report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArrearsReport"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /v1/discipline/violation-types:
     get:
       tags:
@@ -11708,6 +12293,393 @@ components:
           type: array
           items:
             type: string
+    Recurrence:
+      type: string
+      enum:
+        - monthly
+        - one_off
+    FeeTypeWrite:
+      type: object
+      required:
+        - name
+        - amount_minor
+        - recurrence
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 150
+        description:
+          type: string
+          maxLength: 2000
+        amount_minor:
+          type: integer
+          format: int64
+          minimum: 0
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          default: IDR
+        recurrence:
+          $ref: "#/components/schemas/Recurrence"
+        period:
+          type: string
+          maxLength: 20
+          description: Required when recurrence is one_off; ignored for monthly.
+        is_active:
+          type: boolean
+          default: true
+    FeeType:
+      type: object
+      required:
+        - id
+        - name
+        - amount_minor
+        - currency
+        - recurrence
+        - is_active
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        amount_minor:
+          type: integer
+          format: int64
+        currency:
+          type: string
+        recurrence:
+          $ref: "#/components/schemas/Recurrence"
+        period:
+          type: string
+        is_active:
+          type: boolean
+    DiscountKind:
+      type: string
+      enum:
+        - percentage
+        - fixed
+        - waiver
+    DiscountWrite:
+      type: object
+      required:
+        - fee_type_id
+        - student_user_id
+        - kind
+        - reason
+      properties:
+        fee_type_id:
+          type: string
+          format: uuid
+        student_user_id:
+          type: string
+          format: uuid
+        kind:
+          $ref: "#/components/schemas/DiscountKind"
+        percentage_bp:
+          type: integer
+          minimum: 1
+          maximum: 10000
+          description: Basis points (1/100 of a percent); required when kind is percentage.
+        amount_minor:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Required when kind is fixed.
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 300
+        is_active:
+          type: boolean
+          default: true
+    Discount:
+      type: object
+      required:
+        - id
+        - fee_type_id
+        - student_user_id
+        - kind
+        - reason
+        - is_active
+      properties:
+        id:
+          type: string
+          format: uuid
+        fee_type_id:
+          type: string
+          format: uuid
+        student_user_id:
+          type: string
+          format: uuid
+        kind:
+          $ref: "#/components/schemas/DiscountKind"
+        percentage_bp:
+          type: integer
+        amount_minor:
+          type: integer
+          format: int64
+        reason:
+          type: string
+        is_active:
+          type: boolean
+    GenerationRequest:
+      type: object
+      required:
+        - period
+      properties:
+        period:
+          type: string
+          minLength: 1
+          maxLength: 20
+          description: Billing period key, e.g. "2026-07" for a monthly charge; ignored by one-off fee types, which always use
+            their own fixed period.
+    BillCandidate:
+      type: object
+      required:
+        - student_user_id
+        - fee_type_id
+        - fee_type_name
+        - period
+        - original_amount_minor
+        - discount_amount_minor
+        - amount_minor
+      properties:
+        student_user_id:
+          type: string
+          format: uuid
+        fee_type_id:
+          type: string
+          format: uuid
+        fee_type_name:
+          type: string
+        period:
+          type: string
+        original_amount_minor:
+          type: integer
+          format: int64
+        discount_amount_minor:
+          type: integer
+          format: int64
+        amount_minor:
+          type: integer
+          format: int64
+    GenerationSummary:
+      type: object
+      required:
+        - created
+        - skipped
+      properties:
+        created:
+          type: array
+          items:
+            $ref: "#/components/schemas/BillCandidate"
+        skipped:
+          type: integer
+          description: Candidates that already had a bill for this fee type, student and period, and were left untouched.
+    BillStatus:
+      type: string
+      enum:
+        - unpaid
+        - partial
+        - paid
+    Bill:
+      type: object
+      required:
+        - id
+        - student_user_id
+        - fee_type_id
+        - fee_type_name
+        - currency
+        - period
+        - due_date
+        - original_amount_minor
+        - discount_amount_minor
+        - amount_minor
+        - paid_amount_minor
+        - status
+        - generated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        student_user_id:
+          type: string
+          format: uuid
+        fee_type_id:
+          type: string
+          format: uuid
+        fee_type_name:
+          type: string
+        currency:
+          type: string
+        period:
+          type: string
+        due_date:
+          type: string
+          format: date
+        original_amount_minor:
+          type: integer
+          format: int64
+        discount_amount_minor:
+          type: integer
+          format: int64
+        amount_minor:
+          type: integer
+          format: int64
+        paid_amount_minor:
+          type: integer
+          format: int64
+        status:
+          $ref: "#/components/schemas/BillStatus"
+        generated_at:
+          type: string
+          format: date-time
+    PaymentMethod:
+      type: string
+      enum:
+        - cash
+        - bank_transfer
+        - other
+    PaymentWrite:
+      type: object
+      required:
+        - bill_id
+        - amount_minor
+        - method
+        - paid_on
+      properties:
+        bill_id:
+          type: string
+          format: uuid
+        amount_minor:
+          type: integer
+          format: int64
+          minimum: 1
+        method:
+          $ref: "#/components/schemas/PaymentMethod"
+        paid_on:
+          type: string
+          format: date
+        reference:
+          type: string
+          maxLength: 200
+    Payment:
+      type: object
+      required:
+        - id
+        - bill_id
+        - amount_minor
+        - method
+        - paid_on
+        - received_by_user_id
+        - created_at
+        - is_voided
+      properties:
+        id:
+          type: string
+          format: uuid
+        bill_id:
+          type: string
+          format: uuid
+        amount_minor:
+          type: integer
+          format: int64
+        method:
+          $ref: "#/components/schemas/PaymentMethod"
+        paid_on:
+          type: string
+          format: date
+        received_by_user_id:
+          type: string
+          format: uuid
+        reference:
+          type: string
+        receipt_number:
+          type: string
+        has_receipt:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        is_voided:
+          type: boolean
+        voided_at:
+          type: string
+          format: date-time
+        void_reason:
+          type: string
+    StudentBillHistoryEntry:
+      type: object
+      required:
+        - bill
+        - payments
+      properties:
+        bill:
+          $ref: "#/components/schemas/Bill"
+        payments:
+          type: array
+          items:
+            $ref: "#/components/schemas/Payment"
+    StudentBillHistory:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/StudentBillHistoryEntry"
+    ArrearsStudentLine:
+      type: object
+      required:
+        - student_user_id
+        - outstanding_minor
+        - bill_count
+      properties:
+        student_user_id:
+          type: string
+          format: uuid
+        class_id:
+          type: string
+          format: uuid
+        outstanding_minor:
+          type: integer
+          format: int64
+        bill_count:
+          type: integer
+    ArrearsClassLine:
+      type: object
+      required:
+        - outstanding_minor
+        - student_count
+      properties:
+        class_id:
+          type: string
+          format: uuid
+        outstanding_minor:
+          type: integer
+          format: int64
+        student_count:
+          type: integer
+    ArrearsReport:
+      type: object
+      required:
+        - by_student
+        - by_class
+      properties:
+        by_student:
+          type: array
+          items:
+            $ref: "#/components/schemas/ArrearsStudentLine"
+        by_class:
+          type: array
+          items:
+            $ref: "#/components/schemas/ArrearsClassLine"
     ViolationType:
       type: object
       required:
@@ -14717,6 +15689,7 @@ components:
         - permits
         - announcements
         - reports
+        - billing
     PlatformTenant:
       type: object
       required:

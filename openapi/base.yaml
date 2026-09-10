@@ -63,3 +63,5 @@ tags:
     description: API keys and outgoing webhooks for machine access to the API
   - name: analytics
     description: Early-warning risk signals per student
+  - name: billing
+    description: Fee types, discounts, bill generation, payments, receipts and arrears

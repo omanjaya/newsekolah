@@ -171,6 +171,12 @@ type Querier interface {
 	AnalyticsUpsertStudentRisk(ctx context.Context, arg AnalyticsUpsertStudentRiskParams) error
 	ArchiveUser(ctx context.Context, arg ArchiveUserParams) error
 	AssignUserRole(ctx context.Context, arg AssignUserRoleParams) error
+	// cross-module read: enrollments/classes (academic), for the student list
+	// generation charges and the arrears report groups by class.
+	BillingActiveEnrollments(ctx context.Context, arg BillingActiveEnrollmentsParams) ([]BillingActiveEnrollmentsRow, error)
+	// cross-module read: users (identity) and enrollments/classes (academic),
+	// for the name and class printed on a receipt.
+	BillingStudentDisplay(ctx context.Context, arg BillingStudentDisplayParams) (BillingStudentDisplayRow, error)
 	CancelReservation(ctx context.Context, arg CancelReservationParams) (LibraryReservation, error)
 	CancelSubstitutionRequest(ctx context.Context, arg CancelSubstitutionRequestParams) (SubstitutionRequest, error)
 	// Inserts a pending run row for one due slot. The unique (schedule_id,
@@ -208,15 +214,24 @@ type Querier interface {
 	CreateAnnouncement(ctx context.Context, arg CreateAnnouncementParams) (Announcement, error)
 	CreateAsset(ctx context.Context, arg CreateAssetParams) (Asset, error)
 	CreateAttendanceCorrection(ctx context.Context, arg CreateAttendanceCorrectionParams) (AttendanceCorrection, error)
+	// Inserted one at a time inside the generation transaction (see
+	// repository.CreateBills): "on conflict do nothing" makes each insert
+	// idempotent on its own, and a plain loop keeps this query portable
+	// across sqlc's static analysis instead of relying on a wide unnest.
+	// Returns no row when the (fee_type_id, student_user_id, period) key
+	// already exists, which the repository reads as "already billed, skip".
+	CreateBill(ctx context.Context, arg CreateBillParams) (Bill, error)
 	CreateClass(ctx context.Context, arg CreateClassParams) (Class, error)
 	CreateComponent(ctx context.Context, arg CreateComponentParams) (AssessmentComponent, error)
 	CreateCopy(ctx context.Context, arg CreateCopyParams) (LibraryCopy, error)
 	CreateCounseling(ctx context.Context, arg CreateCounselingParams) (Counseling, error)
 	CreateDapodikImportBatch(ctx context.Context, arg CreateDapodikImportBatchParams) (DapodikImportBatch, error)
+	CreateDiscount(ctx context.Context, arg CreateDiscountParams) (FeeDiscount, error)
 	CreateDocumentTemplate(ctx context.Context, arg CreateDocumentTemplateParams) (DocumentTemplate, error)
 	CreateDutyAssignment(ctx context.Context, arg CreateDutyAssignmentParams) (DutyAssignment, error)
 	CreateDutyType(ctx context.Context, arg CreateDutyTypeParams) (DutyType, error)
 	CreateExitPermit(ctx context.Context, arg CreateExitPermitParams) (ExitPermit, error)
+	CreateFeeType(ctx context.Context, arg CreateFeeTypeParams) (FeeType, error)
 	CreateGradeLevel(ctx context.Context, arg CreateGradeLevelParams) (GradeLevel, error)
 	CreateGradeRange(ctx context.Context, arg CreateGradeRangeParams) (ReportGradeRange, error)
 	CreateImpersonationSession(ctx context.Context, arg CreateImpersonationSessionParams) (Session, error)
@@ -228,6 +243,7 @@ type Querier interface {
 	CreateLibraryPolicy(ctx context.Context, arg CreateLibraryPolicyParams) error
 	CreateLoan(ctx context.Context, arg CreateLoanParams) (LibraryLoan, error)
 	CreatePasswordReset(ctx context.Context, arg CreatePasswordResetParams) (PasswordReset, error)
+	CreatePayment(ctx context.Context, arg CreatePaymentParams) (Payment, error)
 	// cross-module read/write; the assets table is shared platform
 	// infrastructure (migrations/0001_platform_core.up.sql), not owned by any
 	// single feature module. permits writes here for evidence images it
@@ -260,10 +276,12 @@ type Querier interface {
 	DeleteComponent(ctx context.Context, arg DeleteComponentParams) error
 	DeleteCounseling(ctx context.Context, arg DeleteCounselingParams) error
 	DeleteDeliveriesOlderThan(ctx context.Context, arg DeleteDeliveriesOlderThanParams) (int64, error)
+	DeleteDiscount(ctx context.Context, arg DeleteDiscountParams) error
 	DeleteDutyAssignment(ctx context.Context, arg DeleteDutyAssignmentParams) error
 	DeleteDutyPermissions(ctx context.Context, arg DeleteDutyPermissionsParams) error
 	DeleteExpiredOrFailedPushDevices(ctx context.Context, arg DeleteExpiredOrFailedPushDevicesParams) (int64, error)
 	DeleteExpiredScanTokens(ctx context.Context, arg DeleteExpiredScanTokensParams) (int64, error)
+	DeleteFeeType(ctx context.Context, arg DeleteFeeTypeParams) error
 	DeleteGoogleSSOConfig(ctx context.Context, tenantID uuid.UUID) error
 	DeleteGradeRange(ctx context.Context, arg DeleteGradeRangeParams) error
 	DeleteJournal(ctx context.Context, arg DeleteJournalParams) error
@@ -326,6 +344,7 @@ type Querier interface {
 	GetAttendanceDailySummary(ctx context.Context, arg GetAttendanceDailySummaryParams) (AttendanceDailySummary, error)
 	GetAttendanceSessionByID(ctx context.Context, arg GetAttendanceSessionByIDParams) (AttendanceSession, error)
 	GetAttendanceSessionBySchedule(ctx context.Context, arg GetAttendanceSessionByScheduleParams) (AttendanceSession, error)
+	GetBill(ctx context.Context, arg GetBillParams) (Bill, error)
 	GetClassName(ctx context.Context, arg GetClassNameParams) (string, error)
 	// cross-module read; replace with academic reader interface after merge
 	// Every query in this file reads a table owned by the academic module
@@ -339,6 +358,7 @@ type Querier interface {
 	GetCopyByBarcode(ctx context.Context, arg GetCopyByBarcodeParams) (LibraryCopy, error)
 	GetCounseling(ctx context.Context, arg GetCounselingParams) (Counseling, error)
 	GetDefaultDocumentTemplate(ctx context.Context, arg GetDefaultDocumentTemplateParams) (DocumentTemplate, error)
+	GetDiscount(ctx context.Context, arg GetDiscountParams) (FeeDiscount, error)
 	GetDocumentTemplateByID(ctx context.Context, arg GetDocumentTemplateByIDParams) (DocumentTemplate, error)
 	GetDutyAssignmentByID(ctx context.Context, arg GetDutyAssignmentByIDParams) (DutyAssignment, error)
 	GetDutyTypeByID(ctx context.Context, arg GetDutyTypeByIDParams) (DutyType, error)
@@ -349,6 +369,7 @@ type Querier interface {
 	GetEnrolledClassForAttendance(ctx context.Context, arg GetEnrolledClassForAttendanceParams) (uuid.UUID, error)
 	GetEntryBySessionStudent(ctx context.Context, arg GetEntryBySessionStudentParams) (AttendanceEntry, error)
 	GetExitPermit(ctx context.Context, arg GetExitPermitParams) (ExitPermit, error)
+	GetFeeType(ctx context.Context, arg GetFeeTypeParams) (FeeType, error)
 	GetGoogleSSOConfig(ctx context.Context, tenantID uuid.UUID) (SsoGoogleConfig, error)
 	// The class a teacher is homeroom (wali kelas) duty holder of this
 	// academic year, if any -- duty slug "homeroom", scope_class_id per
@@ -382,6 +403,7 @@ type Querier interface {
 	GetMfaTotp(ctx context.Context, arg GetMfaTotpParams) (MfaTotp, error)
 	GetNotificationByID(ctx context.Context, arg GetNotificationByIDParams) (Notification, error)
 	GetNotificationSettings(ctx context.Context, arg GetNotificationSettingsParams) (NotificationSetting, error)
+	GetPayment(ctx context.Context, arg GetPaymentParams) (Payment, error)
 	GetPeriod(ctx context.Context, arg GetPeriodParams) (GetPeriodRow, error)
 	GetPeriodRefForSchedule(ctx context.Context, arg GetPeriodRefForScheduleParams) (Period, error)
 	GetPeriodTemplateRefForDay(ctx context.Context, arg GetPeriodTemplateRefForDayParams) (uuid.UUID, error)
@@ -491,6 +513,7 @@ type Querier interface {
 	ListActiveAnnouncementsForUser(ctx context.Context, tenantID uuid.UUID) ([]Announcement, error)
 	// cross-module read: enrollments is owned by the academic module.
 	ListActiveClassIDsForStudent(ctx context.Context, arg ListActiveClassIDsForStudentParams) ([]uuid.UUID, error)
+	ListActiveDiscounts(ctx context.Context, arg ListActiveDiscountsParams) ([]FeeDiscount, error)
 	ListActiveDutyAssignmentsForUser(ctx context.Context, arg ListActiveDutyAssignmentsForUserParams) ([]ListActiveDutyAssignmentsForUserRow, error)
 	ListActiveDutyAssignmentsWithPermissions(ctx context.Context, arg ListActiveDutyAssignmentsWithPermissionsParams) ([]ListActiveDutyAssignmentsWithPermissionsRow, error)
 	// cross-module read; replace with academic/identity/school reader
@@ -505,6 +528,7 @@ type Querier interface {
 	// cross-module reads use for ClassRef/SubjectRef.
 	ListActiveEnrollmentsForAttendance(ctx context.Context, arg ListActiveEnrollmentsForAttendanceParams) ([]ListActiveEnrollmentsForAttendanceRow, error)
 	ListActiveEnrollmentsRefByClass(ctx context.Context, arg ListActiveEnrollmentsRefByClassParams) ([]ListActiveEnrollmentsRefByClassRow, error)
+	ListActiveFeeTypes(ctx context.Context, arg ListActiveFeeTypesParams) ([]FeeType, error)
 	ListActiveSessionsForUser(ctx context.Context, arg ListActiveSessionsForUserParams) ([]Session, error)
 	// cross-module read: classes/enrollments tables are owned by the academic
 	// module. Not yet migrated in this branch; type-checked here against
@@ -545,6 +569,12 @@ type Querier interface {
 	// this gives newest-first without needing a second sort key even though
 	// the table's primary key is (id, occurred_at) for partitioning.
 	ListAuditLogs(ctx context.Context, arg ListAuditLogsParams) ([]AuditLog, error)
+	// Existing (fee_type_id, student_user_id) pairs already billed for one
+	// period, used to keep a second generation run from even attempting a
+	// duplicate insert (the unique index on bills is the backstop).
+	ListBillKeysForPeriod(ctx context.Context, arg ListBillKeysForPeriodParams) ([]ListBillKeysForPeriodRow, error)
+	ListBills(ctx context.Context, arg ListBillsParams) ([]Bill, error)
+	ListBillsForStudent(ctx context.Context, arg ListBillsForStudentParams) ([]Bill, error)
 	ListChildrenForParent(ctx context.Context, arg ListChildrenForParentParams) ([]ListChildrenForParentRow, error)
 	ListComponents(ctx context.Context, arg ListComponentsParams) ([]AssessmentComponent, error)
 	// Every copy not currently on loan is expected on the shelf during a stocktake.
@@ -559,6 +589,8 @@ type Querier interface {
 	// if one has been opened -- the raw input to the monitor snapshot's
 	// per-class submission cards.
 	ListCurrentPeriodScheduleCardsForAttendance(ctx context.Context, arg ListCurrentPeriodScheduleCardsForAttendanceParams) ([]ListCurrentPeriodScheduleCardsForAttendanceRow, error)
+	ListDiscountsForFeeType(ctx context.Context, arg ListDiscountsForFeeTypeParams) ([]FeeDiscount, error)
+	ListDiscountsForStudent(ctx context.Context, arg ListDiscountsForStudentParams) ([]FeeDiscount, error)
 	ListDocumentTemplates(ctx context.Context, tenantID uuid.UUID) ([]DocumentTemplate, error)
 	// Drives the "announcements.publish_scheduled" periodic job.
 	ListDueScheduledAnnouncements(ctx context.Context) ([]Announcement, error)
@@ -575,6 +607,7 @@ type Querier interface {
 	// submitted sessions -- the raw input to attendance/domain.ComputeDailyStatus.
 	ListEntryStatusesForStudentDate(ctx context.Context, arg ListEntryStatusesForStudentDateParams) ([]string, error)
 	ListExitPermitsForReport(ctx context.Context, arg ListExitPermitsForReportParams) ([]ListExitPermitsForReportRow, error)
+	ListFeeTypes(ctx context.Context, arg ListFeeTypesParams) ([]FeeType, error)
 	ListGradeRanges(ctx context.Context, arg ListGradeRangesParams) ([]ReportGradeRange, error)
 	ListGradesForComponents(ctx context.Context, arg ListGradesForComponentsParams) ([]Grade, error)
 	// Every grade of one student in a term, joined to its component; the
@@ -593,8 +626,10 @@ type Querier interface {
 	ListLoansInPeriod(ctx context.Context, arg ListLoansInPeriodParams) ([]LibraryLoan, error)
 	ListNotificationPreferencesForUser(ctx context.Context, arg ListNotificationPreferencesForUserParams) ([]NotificationPreference, error)
 	ListNotificationsForUser(ctx context.Context, arg ListNotificationsForUserParams) ([]Notification, error)
+	ListOutstandingBills(ctx context.Context, arg ListOutstandingBillsParams) ([]Bill, error)
 	ListOverdueLoans(ctx context.Context, arg ListOverdueLoansParams) ([]LibraryLoan, error)
 	ListParentsForStudent(ctx context.Context, arg ListParentsForStudentParams) ([]ListParentsForStudentRow, error)
+	ListPaymentsForBill(ctx context.Context, arg ListPaymentsForBillParams) ([]Payment, error)
 	ListPeriodsRefByTemplate(ctx context.Context, arg ListPeriodsRefByTemplateParams) ([]Period, error)
 	ListPermissionCodesForDutyTypes(ctx context.Context, dutyTypeIds []uuid.UUID) ([]ListPermissionCodesForDutyTypesRow, error)
 	ListPermissionCodesForRoles(ctx context.Context, roleIds []uuid.UUID) ([]string, error)
@@ -731,6 +766,7 @@ type Querier interface {
 	SetExitPermitGateToken(ctx context.Context, arg SetExitPermitGateTokenParams) (ExitPermit, error)
 	SetManualReportScore(ctx context.Context, arg SetManualReportScoreParams) (ReportScore, error)
 	SetMfaRecoveryCodes(ctx context.Context, arg SetMfaRecoveryCodesParams) error
+	SetPaymentReceipt(ctx context.Context, arg SetPaymentReceiptParams) error
 	SetReportScheduleEnabled(ctx context.Context, arg SetReportScheduleEnabledParams) (ReportSchedule, error)
 	SetUserAvatarAsset(ctx context.Context, arg SetUserAvatarAssetParams) error
 	SetUserStatus(ctx context.Context, arg SetUserStatusParams) error
@@ -748,12 +784,15 @@ type Querier interface {
 	UnlinkParentStudent(ctx context.Context, arg UnlinkParentStudentParams) error
 	UpdateAnnouncement(ctx context.Context, arg UpdateAnnouncementParams) (Announcement, error)
 	UpdateAnnouncementStatus(ctx context.Context, arg UpdateAnnouncementStatusParams) (Announcement, error)
+	UpdateBillPayment(ctx context.Context, arg UpdateBillPaymentParams) error
 	UpdateComponent(ctx context.Context, arg UpdateComponentParams) (AssessmentComponent, error)
 	UpdateCopyStatus(ctx context.Context, arg UpdateCopyStatusParams) (LibraryCopy, error)
 	UpdateCounseling(ctx context.Context, arg UpdateCounselingParams) (Counseling, error)
+	UpdateDiscount(ctx context.Context, arg UpdateDiscountParams) (FeeDiscount, error)
 	UpdateDocumentTemplate(ctx context.Context, arg UpdateDocumentTemplateParams) (DocumentTemplate, error)
 	UpdateDutyAssignment(ctx context.Context, arg UpdateDutyAssignmentParams) error
 	UpdateDutyType(ctx context.Context, arg UpdateDutyTypeParams) error
+	UpdateFeeType(ctx context.Context, arg UpdateFeeTypeParams) (FeeType, error)
 	UpdateJournal(ctx context.Context, arg UpdateJournalParams) (ClassJournal, error)
 	UpdateLateArrivalReview(ctx context.Context, arg UpdateLateArrivalReviewParams) (LateArrival, error)
 	UpdateOwnProfile(ctx context.Context, arg UpdateOwnProfileParams) error
@@ -793,6 +832,7 @@ type Querier interface {
 	UsernameExists(ctx context.Context, arg UsernameExistsParams) (bool, error)
 	// cross-module read: users table is owned by the identity module.
 	ValidateUserIDsBelongToTenant(ctx context.Context, arg ValidateUserIDsBelongToTenantParams) ([]uuid.UUID, error)
+	VoidPayment(ctx context.Context, arg VoidPaymentParams) (Payment, error)
 	VoidViolationRecord(ctx context.Context, arg VoidViolationRecordParams) (ViolationRecord, error)
 }
 

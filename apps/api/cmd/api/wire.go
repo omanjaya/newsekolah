@@ -18,6 +18,7 @@ import (
 	analyticsjobs "github.com/omanjaya/newsekolah/apps/api/internal/modules/analytics/transport/jobs"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/announcements"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance"
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/billing"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/discipline"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/family"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/grading"
@@ -200,6 +201,11 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	}
 	platformModule := platform.Register(platformDeps)
 
+	billingModule := billing.Register(billing.Dependencies{
+		Pool: pool, Years: schoolModule.Service, Docs: wiring.BillingDocuments{Permits: permitsModule.Service},
+		Flags: wiring.BillingFlags{Platform: platformModule.Service}, Links: identityModule.Service, Clock: clock.Real{},
+	})
+
 	var (
 		workers  *river.Workers
 		periodic []*river.PeriodicJob
@@ -269,6 +275,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		LibraryHandler:       libraryModule.Handler,
 		IntegrationsHandler:  integrationsModule.Handler,
 		AnalyticsHandler:     analyticsModule.Handler,
+		BillingHandler:       billingModule.Handler,
 		healthHandler:        &healthHandler{version: version, pool: pool, redis: redisClient},
 	}
 

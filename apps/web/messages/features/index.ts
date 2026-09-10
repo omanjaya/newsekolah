@@ -15,6 +15,8 @@ import attendanceReportsEn from "./attendanceReports.en.json";
 import attendanceReportsId from "./attendanceReports.id.json";
 import auditEn from "./audit.en.json";
 import auditId from "./audit.id.json";
+import billingEn from "./billing.en.json";
+import billingId from "./billing.id.json";
 import calendarEn from "./calendar.en.json";
 import calendarId from "./calendar.id.json";
 import disciplineEn from "./discipline.en.json";
@@ -59,6 +61,7 @@ registerFeatureMessages({ namespace: "academic", id: academicId, en: academicEn 
 registerFeatureMessages({ namespace: "analytics", id: analyticsId, en: analyticsEn });
 registerFeatureMessages({ namespace: "account", id: accountId, en: accountEn });
 registerFeatureMessages({ namespace: "calendar", id: calendarId, en: calendarEn });
+registerFeatureMessages({ namespace: "billing", id: billingId, en: billingEn });
 registerFeatureMessages({ namespace: "discipline", id: disciplineId, en: disciplineEn });
 registerFeatureMessages({ namespace: "family", id: familyId, en: familyEn });
 registerFeatureMessages({ namespace: "documents", id: documentsId, en: documentsEn });

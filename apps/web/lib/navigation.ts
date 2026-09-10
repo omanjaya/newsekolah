@@ -58,6 +58,15 @@ const GROUP = {
   discipline: "nav.discipline.label",
   library: "nav.library.label",
   permits: "nav.permits.label",
+  /**
+   * Not a shared `nav.*` key: billing is this branch's only feature so
+   * far to need a new sidebar group, and packages/i18n/messages is a
+   * shared, generated file other modules touch concurrently, so this
+   * group's label lives in the feature's own catalog instead
+   * (registered under "app.billing", reachable by the sidebar's
+   * unnamespaced `t(group)` the same as every other group key).
+   */
+  finance: "app.billing.navGroup",
   communication: "nav.communication.label",
   schoolData: "nav.schoolData.label",
   settings: "nav.settings.label",
@@ -264,6 +273,15 @@ export const navigation: NavItem[] = [
     icon: domainIcons.qr,
     permission: "issue_scan_tokens",
     group: GROUP.permits,
+  },
+
+  {
+    key: "billing",
+    labelKey: "app.billing.navLabel",
+    href: "/billing",
+    icon: domainIcons.billing,
+    permission: "view_billing",
+    group: GROUP.finance,
   },
 
   {

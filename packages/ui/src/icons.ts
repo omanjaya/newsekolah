@@ -8,10 +8,12 @@ import {
   GraduationCap,
   Megaphone,
   QrCode,
+  Receipt,
   ScanLine,
   Settings,
   ShieldAlert,
   Users,
+  Wallet,
   Workflow,
   type LucideIcon,
 } from "lucide-react";
@@ -38,6 +40,8 @@ export const domainIcons = {
   grades: GraduationCap,
   document: FileText,
   workflow: Workflow,
+  billing: Wallet,
+  receipt: Receipt,
 } satisfies Record<string, LucideIcon>;
 
 export type DomainIconName = keyof typeof domainIcons;

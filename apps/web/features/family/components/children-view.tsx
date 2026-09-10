@@ -1,7 +1,9 @@
 "use client";
 
+import { type Locale, formatCurrency, formatDate } from "@newsekolah/i18n";
 import {
   Alert,
+  Badge,
   EmptyState,
   Input,
   PageHeader,
@@ -11,7 +13,7 @@ import {
 } from "@newsekolah/ui";
 import { FileText, GraduationCap, ShieldCheck, Star } from "lucide-react";
 import Link from "next/link";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
@@ -21,6 +23,7 @@ import { useLookup, useSubjectsQuery } from "../../reference/api";
 import {
   currentMonth,
   useChildAttendanceQuery,
+  useChildBillingQuery,
   useChildDisciplineQuery,
   useChildGradesQuery,
   useMyChildrenQuery,
@@ -100,16 +103,19 @@ function PendingApprovalsBanner(): ReactElement | null {
 
 function ChildSections({ child }: { child: LinkedChild }): ReactElement {
   const canSeeGrades = useCan("view_child_grades");
+  const canSeeBilling = useCan("view_child_billing");
   const [month, setMonth] = useState(currentMonth());
   const attendance = useChildAttendanceQuery(child.student_user_id, month);
   const grades = useChildGradesQuery(child.student_user_id);
   const discipline = useChildDisciplineQuery(child.student_user_id);
+  const billing = useChildBillingQuery(canSeeBilling ? child.student_user_id : "");
 
   return (
     <div className="flex flex-col gap-6">
       <AttendanceSection month={month} onMonthChange={setMonth} query={attendance} />
       {canSeeGrades && <GradesSection query={grades} />}
       <DisciplineSection query={discipline} />
+      {canSeeBilling && <BillingSection query={billing} />}
     </div>
   );
 }
@@ -267,6 +273,68 @@ function DisciplineSection({
             </ul>
           )}
         </div>
+      )}
+    </section>
+  );
+}
+
+/**
+ * A guardian's read-only view of their child's bills and payments, the
+ * same data the finance office sees on the student's bill history minus
+ * anything that would let a parent record or void a payment themselves.
+ */
+function BillingSection({
+  query,
+}: {
+  query: ReturnType<typeof useChildBillingQuery>;
+}): ReactElement {
+  const t = useTranslations("app.family.myChildren.billing");
+  const locale = useLocale() as Locale;
+  const entries = query.data?.data ?? [];
+  const outstanding = entries.reduce(
+    (sum, entry) => sum + entry.bill.amount_minor - entry.bill.paid_amount_minor,
+    0,
+  );
+
+  return (
+    <section className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-4">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-[16px] font-medium text-fg">{t("title")}</h2>
+        {entries.length > 0 && (
+          <span className="text-[13px] text-fg-muted [font-variant-numeric:tabular-nums]">
+            {t("outstanding", { amount: formatCurrency(outstanding, "IDR", { locale }) })}
+          </span>
+        )}
+      </div>
+      {query.isLoading ? (
+        <Skeleton className="h-20 w-full" />
+      ) : entries.length === 0 ? (
+        <EmptyState
+          icon={<domainIcons.billing aria-hidden="true" />}
+          title={t("emptyTitle")}
+          description={t("emptyBody")}
+        />
+      ) : (
+        <ul className="flex flex-col gap-1.5">
+          {entries.map(({ bill }) => (
+            <li key={bill.id} className="flex items-center justify-between gap-2 text-[13px]">
+              <div className="flex flex-col">
+                <span className="text-fg">{bill.fee_type_name}</span>
+                <span className="text-fg-muted">
+                  {bill.period} · {t("dueDate", { date: formatDate(bill.due_date, { locale }) })}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-fg [font-variant-numeric:tabular-nums]">
+                  {formatCurrency(bill.amount_minor, bill.currency, { locale })}
+                </span>
+                <Badge variant={bill.status === "paid" ? "accent" : "neutral"}>
+                  {t(`status.${bill.status}`)}
+                </Badge>
+              </div>
+            </li>
+          ))}
+        </ul>
       )}
     </section>
   );
