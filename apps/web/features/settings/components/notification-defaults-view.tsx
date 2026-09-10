@@ -30,7 +30,7 @@ export function NotificationDefaultsView(): ReactElement {
       <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
       <p className="text-[13px] text-fg-muted">{t("body")}</p>
 
-      <div className="overflow-x-auto rounded-sm border border-border bg-surface">
+      <div className="hidden overflow-x-auto rounded-sm border border-border bg-surface md:block">
         <table className="w-full min-w-[560px] text-[13px]">
           <thead>
             <tr className="text-left text-fg-muted">
@@ -51,17 +51,21 @@ export function NotificationDefaultsView(): ReactElement {
           </tbody>
         </table>
       </div>
+
+      {/* A four-column matrix on a phone shows one column and hides the rest
+          behind a sideways scroll nothing announces (same trade-off as
+          NotificationSettingsView's own channel matrix). Stacked per kind,
+          every channel for that kind is on screen at once. */}
+      <ul className="flex flex-col gap-3 md:hidden">
+        {NOTIFICATION_KINDS.map((kind) => (
+          <NotificationDefaultCard key={kind} kind={kind} label={tKinds(kind)} />
+        ))}
+      </ul>
     </div>
   );
 }
 
-function NotificationDefaultRow({
-  kind,
-  label,
-}: {
-  kind: NotificationKind;
-  label: string;
-}): ReactElement {
+function useNotificationDefaultRow(kind: NotificationKind) {
   const t = useTranslations("app.settings.notificationDefaults");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
@@ -83,6 +87,18 @@ function NotificationDefaultRow({
       },
     );
   }
+
+  return { t, data, isLoading, toggle };
+}
+
+function NotificationDefaultRow({
+  kind,
+  label,
+}: {
+  kind: NotificationKind;
+  label: string;
+}): ReactElement {
+  const { t, data, isLoading, toggle } = useNotificationDefaultRow(kind);
 
   return (
     <tr>
@@ -106,5 +122,40 @@ function NotificationDefaultRow({
         </td>
       ))}
     </tr>
+  );
+}
+
+function NotificationDefaultCard({
+  kind,
+  label,
+}: {
+  kind: NotificationKind;
+  label: string;
+}): ReactElement {
+  const { t, data, isLoading, toggle } = useNotificationDefaultRow(kind);
+
+  return (
+    <li className="flex flex-col gap-2 rounded-sm border border-border p-3">
+      <span className="text-[13px] font-medium text-fg">{label}</span>
+      <div className="flex flex-col gap-2">
+        {NOTIFICATION_CHANNELS.map((channel) => (
+          <div key={channel} className="flex items-center justify-between gap-3">
+            <span className="text-[13px] text-fg-muted">{t(`channels.${channel}`)}</span>
+            {isLoading ? (
+              <Skeleton className="h-5 w-9" />
+            ) : (
+              <Switch
+                checked={data?.[channel] ?? false}
+                disabled={channel === "inapp"}
+                aria-label={`${label}: ${t(`channels.${channel}`)}`}
+                onCheckedChange={(checked) => {
+                  toggle(channel, checked);
+                }}
+              />
+            )}
+          </div>
+        ))}
+      </div>
+    </li>
   );
 }

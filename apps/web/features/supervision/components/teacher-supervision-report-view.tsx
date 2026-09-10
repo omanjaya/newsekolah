@@ -121,7 +121,7 @@ export function TeacherSupervisionReportView({
               <li key={observation.id}>
                 <button
                   type="button"
-                  className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-[13px] hover:bg-bg"
+                  className="flex min-h-11 w-full items-center justify-between gap-3 px-3 py-2 text-left text-[13px] hover:bg-bg md:min-h-9"
                   onClick={() => {
                     router.push(`/supervision/observations/${observation.id}`);
                   }}

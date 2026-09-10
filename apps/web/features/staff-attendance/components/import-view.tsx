@@ -105,7 +105,7 @@ export function StaffAttendanceImportView(): ReactElement {
         <p className="text-[12px] text-fg-muted">{t("columns")}</p>
         <label
           htmlFor="staff-attendance-import-file"
-          className="flex w-fit cursor-pointer items-center gap-2 rounded-sm border border-border px-3 py-2 text-[13px] text-fg hover:bg-bg"
+          className="flex h-11 w-fit cursor-pointer items-center gap-2 rounded-sm border border-border px-3 text-[13px] text-fg hover:bg-bg md:h-8"
         >
           <FileUp className="size-4" aria-hidden="true" />
           {fileName ?? t("chooseFile")}
