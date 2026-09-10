@@ -70,6 +70,8 @@ tags:
     description: Guru wali mentor groups, meeting notes, per-student view, and term summaries
   - name: supervision
     description: Leadership observing a teacher's lesson against a scored instrument
+  - name: staff-attendance
+    description: Working attendance of teachers and staff -- schedules, daily records, corrections, monthly recap
 paths:
   /v1/academic/years:
     get:
@@ -11145,6 +11147,345 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
+  /v1/staff-attendance/roster:
+    get:
+      tags:
+        - staff-attendance
+      operationId: listStaffAttendanceRoster
+      x-permission: view_staff_attendance
+      summary: Every employee this module tracks (has at least one work schedule day configured)
+      responses:
+        "200":
+          description: Roster
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/StaffAttendanceEmployee"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Module disabled for this tenant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/staff-attendance/schedules/{employeeId}:
+    parameters:
+      - name: employeeId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags:
+        - staff-attendance
+      operationId: getStaffAttendanceSchedule
+      x-permission: view_staff_attendance
+      summary: One employee's weekly work schedule
+      responses:
+        "200":
+          description: Weekly schedule
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/StaffAttendanceScheduleDay"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    put:
+      tags:
+        - staff-attendance
+      operationId: replaceStaffAttendanceSchedule
+      x-permission: manage_staff_attendance_schedules
+      summary: Replace an employee's weekly work schedule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReplaceStaffAttendanceScheduleRequest"
+      responses:
+        "200":
+          description: Saved schedule
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/StaffAttendanceScheduleDay"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/staff-attendance/today:
+    get:
+      tags:
+        - staff-attendance
+      operationId: getStaffAttendanceToday
+      x-permission: view_staff_attendance
+      summary: Today's board -- every tracked employee's status for one date
+      parameters:
+        - name: date
+          in: query
+          required: false
+          description: Defaults to the current date in the tenant's timezone
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Today's board
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/StaffAttendanceRecord"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/staff-attendance/scan:
+    post:
+      tags:
+        - staff-attendance
+      operationId: scanStaffAttendance
+      x-permission: authenticated
+      summary: Self-service QR check-in/check-out for the current user (first scan of the day records arrival, the second
+        records departure)
+      responses:
+        "200":
+          description: Saved record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaffAttendanceRecord"
+        "409":
+          description: Both arrival and departure are already recorded for today
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/staff-attendance/manual:
+    post:
+      tags:
+        - staff-attendance
+      operationId: recordStaffAttendanceManual
+      x-permission: manage_staff_attendance
+      summary: An administrator enters or updates one employee's day directly
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StaffAttendanceManualEntry"
+      responses:
+        "200":
+          description: Saved record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaffAttendanceRecord"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/staff-attendance/import:
+    post:
+      tags:
+        - staff-attendance
+      operationId: importStaffAttendance
+      x-permission: manage_staff_attendance
+      summary: Bulk-import a batch of days from an attendance device
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StaffAttendanceImportRequest"
+      responses:
+        "200":
+          description: Saved records
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/StaffAttendanceRecord"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/staff-attendance/employees/{employeeId}/history:
+    parameters:
+      - name: employeeId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags:
+        - staff-attendance
+      operationId: getStaffAttendanceHistory
+      x-permission: view_staff_attendance
+      summary: One employee's daily status across a date range
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: true
+          description: Exclusive end date
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: History
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/StaffAttendanceRecord"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/staff-attendance/employees/{employeeId}/recap:
+    parameters:
+      - name: employeeId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags:
+        - staff-attendance
+      operationId: getStaffAttendanceMonthlyRecap
+      x-permission: view_staff_attendance
+      summary: One employee's monthly recap with totals
+      parameters:
+        - name: month
+          in: query
+          required: true
+          description: YYYY-MM
+          schema:
+            type: string
+            pattern: ^[0-9]{4}-[0-9]{2}$
+      responses:
+        "200":
+          description: Monthly recap
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaffAttendanceMonthlyRecap"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/staff-attendance/employees/{employeeId}/recap/export:
+    parameters:
+      - name: employeeId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags:
+        - staff-attendance
+      operationId: exportStaffAttendanceMonthlyRecap
+      x-permission: view_staff_attendance
+      summary: The monthly recap as an XLSX workbook
+      parameters:
+        - name: month
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: ^[0-9]{4}-[0-9]{2}$
+      responses:
+        "200":
+          description: XLSX file
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /v1/staff-attendance/records/{recordId}/correct:
+    parameters:
+      - name: recordId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    patch:
+      tags:
+        - staff-attendance
+      operationId: correctStaffAttendanceRecord
+      x-permission: correct_staff_attendance
+      summary: Correct a submitted record, keeping who changed it and why
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StaffAttendanceCorrectionRequest"
+      responses:
+        "200":
+          description: Corrected record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaffAttendanceRecord"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /v1/supervision/cycles:
     get:
       tags:
@@ -17699,6 +18040,196 @@ components:
           type: string
         reflection:
           type: string
+    StaffAttendanceEmployee:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+    StaffAttendanceScheduleDay:
+      type: object
+      required:
+        - weekday
+        - is_working_day
+        - start_minute
+        - end_minute
+        - grace_minutes
+      properties:
+        weekday:
+          type: integer
+          minimum: 1
+          maximum: 7
+          description: ISO weekday, 1 (Monday) to 7 (Sunday)
+        is_working_day:
+          type: boolean
+        start_minute:
+          type: integer
+          minimum: 0
+          maximum: 1439
+          description: Minutes since local midnight
+        end_minute:
+          type: integer
+          minimum: 0
+          maximum: 1439
+          description: Minutes since local midnight; a value at or before start_minute means the shift crosses midnight
+        grace_minutes:
+          type: integer
+          minimum: 0
+    ReplaceStaffAttendanceScheduleRequest:
+      type: object
+      required:
+        - days
+      properties:
+        days:
+          type: array
+          items:
+            $ref: "#/components/schemas/StaffAttendanceScheduleDay"
+    StaffAttendanceStatusCode:
+      type: string
+      enum:
+        - present
+        - late
+        - absent
+        - on_leave
+        - holiday
+        - incomplete
+    StaffAttendanceSource:
+      type: string
+      enum:
+        - qr
+        - manual
+        - import
+    StaffAttendanceRecord:
+      type: object
+      required:
+        - employee_user_id
+        - employee_name
+        - date
+        - status_code
+        - late_minutes
+        - early_leave_minutes
+        - source
+      properties:
+        record_id:
+          type: string
+          format: uuid
+          nullable: true
+        employee_user_id:
+          type: string
+          format: uuid
+        employee_name:
+          type: string
+        date:
+          type: string
+          format: date
+        arrival_at:
+          type: string
+          format: date-time
+          nullable: true
+        departure_at:
+          type: string
+          format: date-time
+          nullable: true
+        status_code:
+          $ref: "#/components/schemas/StaffAttendanceStatusCode"
+        late_minutes:
+          type: integer
+        early_leave_minutes:
+          type: integer
+        source:
+          $ref: "#/components/schemas/StaffAttendanceSource"
+        notes:
+          type: string
+    StaffAttendanceManualEntry:
+      type: object
+      required:
+        - employee_user_id
+        - date
+      properties:
+        employee_user_id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        arrival_at:
+          type: string
+          format: date-time
+          nullable: true
+        departure_at:
+          type: string
+          format: date-time
+          nullable: true
+        notes:
+          type: string
+    StaffAttendanceImportRequest:
+      type: object
+      required:
+        - entries
+      properties:
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/StaffAttendanceManualEntry"
+    StaffAttendanceCorrectionRequest:
+      type: object
+      required:
+        - reason
+      properties:
+        arrival_at:
+          type: string
+          format: date-time
+          nullable: true
+        clear_arrival:
+          type: boolean
+        departure_at:
+          type: string
+          format: date-time
+          nullable: true
+        clear_departure:
+          type: boolean
+        notes:
+          type: string
+          nullable: true
+        reason:
+          type: string
+          minLength: 1
+          description: Required explanation kept forever alongside who made the change
+    StaffAttendanceMonthlyRecap:
+      type: object
+      required:
+        - employee_user_id
+        - employee_name
+        - month
+        - days
+        - status_totals
+        - total_late_minutes
+        - total_early_leave_minutes
+      properties:
+        employee_user_id:
+          type: string
+          format: uuid
+        employee_name:
+          type: string
+        month:
+          type: string
+        days:
+          type: array
+          items:
+            $ref: "#/components/schemas/StaffAttendanceRecord"
+        status_totals:
+          type: object
+          additionalProperties:
+            type: integer
+        total_late_minutes:
+          type: integer
+        total_early_leave_minutes:
+          type: integer
     SupervisionCriterion:
       type: object
       required:

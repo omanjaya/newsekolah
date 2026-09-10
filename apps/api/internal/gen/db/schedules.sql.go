@@ -668,6 +668,87 @@ func (q *Queries) ListSchedulesByTeacher(ctx context.Context, arg ListSchedulesB
 	return items, nil
 }
 
+const listStaffAttendanceRosterEmployees = `-- name: ListStaffAttendanceRosterEmployees :many
+select distinct u.id, u.name
+from staff_attendance_schedules s
+join users u on u.id = s.employee_user_id
+where s.tenant_id = $1
+order by u.name
+`
+
+type ListStaffAttendanceRosterEmployeesRow struct {
+	ID   uuid.UUID `json:"id"`
+	Name string    `json:"name"`
+}
+
+// The module's own roster: every user who has at least one schedule day
+// configured, per apps/api/migrations/0070_staff_attendance.up.sql's
+// header note that the schedule table is the source of "who counts as
+// staff" for this module.
+func (q *Queries) ListStaffAttendanceRosterEmployees(ctx context.Context, tenantID uuid.UUID) ([]ListStaffAttendanceRosterEmployeesRow, error) {
+	rows, err := q.db.Query(ctx, listStaffAttendanceRosterEmployees, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListStaffAttendanceRosterEmployeesRow{}
+	for rows.Next() {
+		var i ListStaffAttendanceRosterEmployeesRow
+		if err := rows.Scan(&i.ID, &i.Name); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listStaffAttendanceScheduleDays = `-- name: ListStaffAttendanceScheduleDays :many
+select id, tenant_id, employee_user_id, weekday, is_working_day, start_minute, end_minute, grace_minutes, created_at, updated_at, created_by, updated_by from staff_attendance_schedules
+where tenant_id = $1 and employee_user_id = $2
+order by weekday
+`
+
+type ListStaffAttendanceScheduleDaysParams struct {
+	TenantID       uuid.UUID `json:"tenant_id"`
+	EmployeeUserID uuid.UUID `json:"employee_user_id"`
+}
+
+func (q *Queries) ListStaffAttendanceScheduleDays(ctx context.Context, arg ListStaffAttendanceScheduleDaysParams) ([]StaffAttendanceSchedule, error) {
+	rows, err := q.db.Query(ctx, listStaffAttendanceScheduleDays, arg.TenantID, arg.EmployeeUserID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []StaffAttendanceSchedule{}
+	for rows.Next() {
+		var i StaffAttendanceSchedule
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.EmployeeUserID,
+			&i.Weekday,
+			&i.IsWorkingDay,
+			&i.StartMinute,
+			&i.EndMinute,
+			&i.GraceMinutes,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.CreatedBy,
+			&i.UpdatedBy,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const setReportScheduleEnabled = `-- name: SetReportScheduleEnabled :one
 update report_schedules set enabled = $3 where tenant_id = $1 and id = $2 returning id, tenant_id, report_kind, params, cadence, weekday, day_of_month, hour, recipients, enabled, created_by, created_at, updated_at
 `
@@ -816,6 +897,60 @@ func (q *Queries) UpdateSchedule(ctx context.Context, arg UpdateScheduleParams) 
 		&i.UpdatedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const upsertStaffAttendanceScheduleDay = `-- name: UpsertStaffAttendanceScheduleDay :one
+insert into staff_attendance_schedules (
+  tenant_id, employee_user_id, weekday, is_working_day, start_minute, end_minute, grace_minutes, created_by, updated_by
+)
+values ($1, $2, $3, $4, $5, $6, $7, $8, $8)
+on conflict (tenant_id, employee_user_id, weekday) do update set
+  is_working_day = excluded.is_working_day,
+  start_minute = excluded.start_minute,
+  end_minute = excluded.end_minute,
+  grace_minutes = excluded.grace_minutes,
+  updated_by = excluded.updated_by
+returning id, tenant_id, employee_user_id, weekday, is_working_day, start_minute, end_minute, grace_minutes, created_at, updated_at, created_by, updated_by
+`
+
+type UpsertStaffAttendanceScheduleDayParams struct {
+	TenantID       uuid.UUID   `json:"tenant_id"`
+	EmployeeUserID uuid.UUID   `json:"employee_user_id"`
+	Weekday        int16       `json:"weekday"`
+	IsWorkingDay   bool        `json:"is_working_day"`
+	StartMinute    int16       `json:"start_minute"`
+	EndMinute      int16       `json:"end_minute"`
+	GraceMinutes   int16       `json:"grace_minutes"`
+	CreatedBy      pgtype.UUID `json:"created_by"`
+}
+
+func (q *Queries) UpsertStaffAttendanceScheduleDay(ctx context.Context, arg UpsertStaffAttendanceScheduleDayParams) (StaffAttendanceSchedule, error) {
+	row := q.db.QueryRow(ctx, upsertStaffAttendanceScheduleDay,
+		arg.TenantID,
+		arg.EmployeeUserID,
+		arg.Weekday,
+		arg.IsWorkingDay,
+		arg.StartMinute,
+		arg.EndMinute,
+		arg.GraceMinutes,
+		arg.CreatedBy,
+	)
+	var i StaffAttendanceSchedule
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.EmployeeUserID,
+		&i.Weekday,
+		&i.IsWorkingDay,
+		&i.StartMinute,
+		&i.EndMinute,
+		&i.GraceMinutes,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.CreatedBy,
+		&i.UpdatedBy,
 	)
 	return i, err
 }

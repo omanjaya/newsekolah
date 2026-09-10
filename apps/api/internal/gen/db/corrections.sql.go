@@ -49,6 +49,44 @@ func (q *Queries) CreateAttendanceCorrection(ctx context.Context, arg CreateAtte
 	return i, err
 }
 
+const createStaffAttendanceCorrection = `-- name: CreateStaffAttendanceCorrection :one
+insert into staff_attendance_corrections (tenant_id, record_id, reason, previous_snapshot, new_snapshot, created_by)
+values ($1, $2, $3, $4, $5, $6)
+returning id, tenant_id, record_id, reason, previous_snapshot, new_snapshot, created_at, created_by
+`
+
+type CreateStaffAttendanceCorrectionParams struct {
+	TenantID         uuid.UUID `json:"tenant_id"`
+	RecordID         uuid.UUID `json:"record_id"`
+	Reason           string    `json:"reason"`
+	PreviousSnapshot []byte    `json:"previous_snapshot"`
+	NewSnapshot      []byte    `json:"new_snapshot"`
+	CreatedBy        uuid.UUID `json:"created_by"`
+}
+
+func (q *Queries) CreateStaffAttendanceCorrection(ctx context.Context, arg CreateStaffAttendanceCorrectionParams) (StaffAttendanceCorrection, error) {
+	row := q.db.QueryRow(ctx, createStaffAttendanceCorrection,
+		arg.TenantID,
+		arg.RecordID,
+		arg.Reason,
+		arg.PreviousSnapshot,
+		arg.NewSnapshot,
+		arg.CreatedBy,
+	)
+	var i StaffAttendanceCorrection
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.RecordID,
+		&i.Reason,
+		&i.PreviousSnapshot,
+		&i.NewSnapshot,
+		&i.CreatedAt,
+		&i.CreatedBy,
+	)
+	return i, err
+}
+
 const listCorrectionsByEntry = `-- name: ListCorrectionsByEntry :many
 select id, tenant_id, entry_id, old_status, new_status, reason, corrected_by, corrected_at from attendance_corrections where tenant_id = $1 and entry_id = $2 order by corrected_at desc
 `
@@ -76,6 +114,46 @@ func (q *Queries) ListCorrectionsByEntry(ctx context.Context, arg ListCorrection
 			&i.Reason,
 			&i.CorrectedBy,
 			&i.CorrectedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listStaffAttendanceCorrectionsByRecord = `-- name: ListStaffAttendanceCorrectionsByRecord :many
+select id, tenant_id, record_id, reason, previous_snapshot, new_snapshot, created_at, created_by from staff_attendance_corrections
+where tenant_id = $1 and record_id = $2
+order by created_at desc
+`
+
+type ListStaffAttendanceCorrectionsByRecordParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	RecordID uuid.UUID `json:"record_id"`
+}
+
+func (q *Queries) ListStaffAttendanceCorrectionsByRecord(ctx context.Context, arg ListStaffAttendanceCorrectionsByRecordParams) ([]StaffAttendanceCorrection, error) {
+	rows, err := q.db.Query(ctx, listStaffAttendanceCorrectionsByRecord, arg.TenantID, arg.RecordID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []StaffAttendanceCorrection{}
+	for rows.Next() {
+		var i StaffAttendanceCorrection
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.RecordID,
+			&i.Reason,
+			&i.PreviousSnapshot,
+			&i.NewSnapshot,
+			&i.CreatedAt,
+			&i.CreatedBy,
 		); err != nil {
 			return nil, err
 		}

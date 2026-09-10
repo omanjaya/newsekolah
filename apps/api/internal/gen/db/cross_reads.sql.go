@@ -251,3 +251,41 @@ func (q *Queries) ListCurrentPeriodScheduleCardsForAttendance(ctx context.Contex
 	}
 	return items, nil
 }
+
+const staffAttendanceGetEmployeeName = `-- name: StaffAttendanceGetEmployeeName :one
+select name from users where tenant_id = $1 and id = $2
+`
+
+type StaffAttendanceGetEmployeeNameParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	ID       uuid.UUID `json:"id"`
+}
+
+func (q *Queries) StaffAttendanceGetEmployeeName(ctx context.Context, arg StaffAttendanceGetEmployeeNameParams) (string, error) {
+	row := q.db.QueryRow(ctx, staffAttendanceGetEmployeeName, arg.TenantID, arg.ID)
+	var name string
+	err := row.Scan(&name)
+	return name, err
+}
+
+const staffAttendanceGetFeatureFlag = `-- name: StaffAttendanceGetFeatureFlag :one
+select enabled from feature_flags where tenant_id = $1 and module = $2
+`
+
+type StaffAttendanceGetFeatureFlagParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	Module   string    `json:"module"`
+}
+
+// Reads the shared feature_flags table (owned by platform, migration
+// 0001) directly within the caller's ordinary tenant-scoped transaction:
+// the tenant_isolation policy on feature_flags already allows this, no
+// platform_admin escalation needed, per
+// docs/03-layered-architecture.md section 5 ("setiap modul ... memeriksa
+// school.feature_flags").
+func (q *Queries) StaffAttendanceGetFeatureFlag(ctx context.Context, arg StaffAttendanceGetFeatureFlagParams) (bool, error) {
+	row := q.db.QueryRow(ctx, staffAttendanceGetFeatureFlag, arg.TenantID, arg.Module)
+	var enabled bool
+	err := row.Scan(&enabled)
+	return enabled, err
+}

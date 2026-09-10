@@ -69,3 +69,5 @@ tags:
     description: Guru wali mentor groups, meeting notes, per-student view, and term summaries
   - name: supervision
     description: Leadership observing a teacher's lesson against a scored instrument
+  - name: staff-attendance
+    description: Working attendance of teachers and staff -- schedules, daily records, corrections, monthly recap

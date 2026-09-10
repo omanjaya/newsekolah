@@ -49,6 +49,8 @@ import securityEn from "./security.en.json";
 import securityId from "./security.id.json";
 import ssoEn from "./sso.en.json";
 import ssoId from "./sso.id.json";
+import staffAttendanceEn from "./staffAttendance.en.json";
+import staffAttendanceId from "./staffAttendance.id.json";
 import workflowsEn from "./workflows.en.json";
 import workflowsId from "./workflows.id.json";
 
@@ -79,3 +81,8 @@ registerFeatureMessages({ namespace: "workflows", id: workflowsId, en: workflows
 registerFeatureMessages({ namespace: "messaging", id: messagingId, en: messagingEn });
 registerFeatureMessages({ namespace: "journal", id: journalId, en: journalEn });
 registerFeatureMessages({ namespace: "monitor", id: monitorId, en: monitorEn });
+registerFeatureMessages({
+  namespace: "staffAttendance",
+  id: staffAttendanceId,
+  en: staffAttendanceEn,
+});

@@ -4871,6 +4871,187 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/staff-attendance/roster": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every employee this module tracks (has at least one work schedule day configured) */
+        get: operations["listStaffAttendanceRoster"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff-attendance/schedules/{employeeId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                employeeId: string;
+            };
+            cookie?: never;
+        };
+        /** One employee's weekly work schedule */
+        get: operations["getStaffAttendanceSchedule"];
+        /** Replace an employee's weekly work schedule */
+        put: operations["replaceStaffAttendanceSchedule"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff-attendance/today": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Today's board -- every tracked employee's status for one date */
+        get: operations["getStaffAttendanceToday"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff-attendance/scan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Self-service QR check-in/check-out for the current user (first scan of the day records arrival, the second records departure) */
+        post: operations["scanStaffAttendance"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff-attendance/manual": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** An administrator enters or updates one employee's day directly */
+        post: operations["recordStaffAttendanceManual"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff-attendance/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Bulk-import a batch of days from an attendance device */
+        post: operations["importStaffAttendance"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff-attendance/employees/{employeeId}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                employeeId: string;
+            };
+            cookie?: never;
+        };
+        /** One employee's daily status across a date range */
+        get: operations["getStaffAttendanceHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff-attendance/employees/{employeeId}/recap": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                employeeId: string;
+            };
+            cookie?: never;
+        };
+        /** One employee's monthly recap with totals */
+        get: operations["getStaffAttendanceMonthlyRecap"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff-attendance/employees/{employeeId}/recap/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                employeeId: string;
+            };
+            cookie?: never;
+        };
+        /** The monthly recap as an XLSX workbook */
+        get: operations["exportStaffAttendanceMonthlyRecap"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff-attendance/records/{recordId}/correct": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recordId: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Correct a submitted record, keeping who changed it and why */
+        patch: operations["correctStaffAttendanceRecord"];
+        trace?: never;
+    };
     "/v1/supervision/cycles": {
         parameters: {
             query?: never;
@@ -7635,6 +7816,83 @@ export interface components {
             topic: string;
             activities: string;
             reflection?: string;
+        };
+        StaffAttendanceEmployee: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+        };
+        StaffAttendanceScheduleDay: {
+            /** @description ISO weekday, 1 (Monday) to 7 (Sunday) */
+            weekday: number;
+            is_working_day: boolean;
+            /** @description Minutes since local midnight */
+            start_minute: number;
+            /** @description Minutes since local midnight; a value at or before start_minute means the shift crosses midnight */
+            end_minute: number;
+            grace_minutes: number;
+        };
+        ReplaceStaffAttendanceScheduleRequest: {
+            days: components["schemas"]["StaffAttendanceScheduleDay"][];
+        };
+        /** @enum {string} */
+        StaffAttendanceStatusCode: "present" | "late" | "absent" | "on_leave" | "holiday" | "incomplete";
+        /** @enum {string} */
+        StaffAttendanceSource: "qr" | "manual" | "import";
+        StaffAttendanceRecord: {
+            /** Format: uuid */
+            record_id?: string | null;
+            /** Format: uuid */
+            employee_user_id: string;
+            employee_name: string;
+            /** Format: date */
+            date: string;
+            /** Format: date-time */
+            arrival_at?: string | null;
+            /** Format: date-time */
+            departure_at?: string | null;
+            status_code: components["schemas"]["StaffAttendanceStatusCode"];
+            late_minutes: number;
+            early_leave_minutes: number;
+            source: components["schemas"]["StaffAttendanceSource"];
+            notes?: string;
+        };
+        StaffAttendanceManualEntry: {
+            /** Format: uuid */
+            employee_user_id: string;
+            /** Format: date */
+            date: string;
+            /** Format: date-time */
+            arrival_at?: string | null;
+            /** Format: date-time */
+            departure_at?: string | null;
+            notes?: string;
+        };
+        StaffAttendanceImportRequest: {
+            entries: components["schemas"]["StaffAttendanceManualEntry"][];
+        };
+        StaffAttendanceCorrectionRequest: {
+            /** Format: date-time */
+            arrival_at?: string | null;
+            clear_arrival?: boolean;
+            /** Format: date-time */
+            departure_at?: string | null;
+            clear_departure?: boolean;
+            notes?: string | null;
+            /** @description Required explanation kept forever alongside who made the change */
+            reason: string;
+        };
+        StaffAttendanceMonthlyRecap: {
+            /** Format: uuid */
+            employee_user_id: string;
+            employee_name: string;
+            month: string;
+            days: components["schemas"]["StaffAttendanceRecord"][];
+            status_totals: {
+                [key: string]: number;
+            };
+            total_late_minutes: number;
+            total_early_leave_minutes: number;
         };
         SupervisionCriterion: {
             key: string;
@@ -18132,6 +18390,313 @@ export interface operations {
                 };
                 content?: never;
             };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listStaffAttendanceRoster: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Roster */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["StaffAttendanceEmployee"][];
+                    };
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            /** @description Module disabled for this tenant */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getStaffAttendanceSchedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                employeeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Weekly schedule */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["StaffAttendanceScheduleDay"][];
+                    };
+                };
+            };
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    replaceStaffAttendanceSchedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                employeeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReplaceStaffAttendanceScheduleRequest"];
+            };
+        };
+        responses: {
+            /** @description Saved schedule */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["StaffAttendanceScheduleDay"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    getStaffAttendanceToday: {
+        parameters: {
+            query?: {
+                /** @description Defaults to the current date in the tenant's timezone */
+                date?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Today's board */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["StaffAttendanceRecord"][];
+                    };
+                };
+            };
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    scanStaffAttendance: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Saved record */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffAttendanceRecord"];
+                };
+            };
+            /** @description Both arrival and departure are already recorded for today */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    recordStaffAttendanceManual: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StaffAttendanceManualEntry"];
+            };
+        };
+        responses: {
+            /** @description Saved record */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffAttendanceRecord"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    importStaffAttendance: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StaffAttendanceImportRequest"];
+            };
+        };
+        responses: {
+            /** @description Saved records */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["StaffAttendanceRecord"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    getStaffAttendanceHistory: {
+        parameters: {
+            query: {
+                from: string;
+                /** @description Exclusive end date */
+                to: string;
+            };
+            header?: never;
+            path: {
+                employeeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description History */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["StaffAttendanceRecord"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    getStaffAttendanceMonthlyRecap: {
+        parameters: {
+            query: {
+                /** @description YYYY-MM */
+                month: string;
+            };
+            header?: never;
+            path: {
+                employeeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Monthly recap */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffAttendanceMonthlyRecap"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    exportStaffAttendanceMonthlyRecap: {
+        parameters: {
+            query: {
+                month: string;
+            };
+            header?: never;
+            path: {
+                employeeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description XLSX file */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
+                };
+            };
+            400: components["responses"]["BadRequest"];
+        };
+    };
+    correctStaffAttendanceRecord: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recordId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StaffAttendanceCorrectionRequest"];
+            };
+        };
+        responses: {
+            /** @description Corrected record */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffAttendanceRecord"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
         };

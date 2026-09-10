@@ -1,0 +1,105 @@
+{
+  "navLabel": "Staff Attendance",
+  "title": "Staff Attendance",
+  "tabs": {
+    "today": "Today",
+    "schedule": "Work Schedule",
+    "recap": "Monthly Recap"
+  },
+  "statuses": {
+    "present": "Present",
+    "late": "Late",
+    "absent": "Absent",
+    "on_leave": "On leave",
+    "holiday": "Holiday",
+    "incomplete": "Incomplete"
+  },
+  "sources": {
+    "qr": "QR scan",
+    "manual": "Manual entry",
+    "import": "Device import"
+  },
+  "today": {
+    "title": "Today's Board",
+    "subtitle": "Attendance status for every employee with a work schedule",
+    "empty": "No employee has a work schedule yet. Set one up first.",
+    "scan": "Record My Attendance",
+    "scanSuccess": "Attendance recorded",
+    "alreadyScanned": "Today's arrival and departure are already recorded",
+    "manualEntry": "Manual Entry",
+    "columns": {
+      "employee": "Employee",
+      "status": "Status",
+      "arrival": "Arrival",
+      "departure": "Departure",
+      "late": "Late (min)",
+      "early": "Early leave (min)",
+      "source": "Source",
+      "actions": "Actions"
+    },
+    "correct": "Correct"
+  },
+  "manualForm": {
+    "title": "Manual Entry",
+    "employee": "Employee",
+    "employeePlaceholder": "Select an employee",
+    "date": "Date",
+    "arrival": "Arrival time",
+    "departure": "Departure time",
+    "notes": "Notes",
+    "save": "Save",
+    "cancel": "Cancel",
+    "saved": "Record saved"
+  },
+  "schedule": {
+    "title": "Work Schedule",
+    "subtitle": "Expected working hours for each day of the week",
+    "employee": "Employee",
+    "employeePlaceholder": "Select an employee",
+    "isWorkingDay": "Working day",
+    "start": "Start",
+    "end": "End",
+    "grace": "Grace period (min)",
+    "endHint": "Set an end time earlier than the start time for a shift that crosses midnight",
+    "save": "Save Schedule",
+    "saved": "Schedule saved",
+    "weekdays": {
+      "1": "Monday",
+      "2": "Tuesday",
+      "3": "Wednesday",
+      "4": "Thursday",
+      "5": "Friday",
+      "6": "Saturday",
+      "7": "Sunday"
+    }
+  },
+  "history": {
+    "title": "Attendance History",
+    "from": "From",
+    "to": "To",
+    "empty": "No records in this date range",
+    "date": "Date"
+  },
+  "recap": {
+    "title": "Monthly Recap",
+    "month": "Month",
+    "download": "Download XLSX",
+    "totalLate": "Total late (min)",
+    "totalEarly": "Total early leave (min)",
+    "empty": "No records this month"
+  },
+  "correction": {
+    "title": "Correct Record",
+    "body": "This change is saved as a correction along with its reason.",
+    "arrival": "Arrival time",
+    "departure": "Departure time",
+    "clearArrival": "Clear arrival time",
+    "clearDeparture": "Clear departure time",
+    "notes": "Notes",
+    "reason": "Reason for the correction",
+    "reasonRequired": "A reason is required",
+    "save": "Save Correction",
+    "cancel": "Cancel",
+    "saved": "Correction saved"
+  }
+}

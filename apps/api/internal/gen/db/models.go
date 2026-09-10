@@ -1076,6 +1076,50 @@ type SsoGoogleConfig struct {
 	UpdatedAt             pgtype.Timestamptz `json:"updated_at"`
 }
 
+type StaffAttendanceCorrection struct {
+	ID               uuid.UUID          `json:"id"`
+	TenantID         uuid.UUID          `json:"tenant_id"`
+	RecordID         uuid.UUID          `json:"record_id"`
+	Reason           string             `json:"reason"`
+	PreviousSnapshot []byte             `json:"previous_snapshot"`
+	NewSnapshot      []byte             `json:"new_snapshot"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	CreatedBy        uuid.UUID          `json:"created_by"`
+}
+
+type StaffAttendanceRecord struct {
+	ID                uuid.UUID          `json:"id"`
+	TenantID          uuid.UUID          `json:"tenant_id"`
+	EmployeeUserID    uuid.UUID          `json:"employee_user_id"`
+	Date              pgtype.Date        `json:"date"`
+	ArrivalAt         pgtype.Timestamptz `json:"arrival_at"`
+	DepartureAt       pgtype.Timestamptz `json:"departure_at"`
+	StatusCode        string             `json:"status_code"`
+	LateMinutes       int32              `json:"late_minutes"`
+	EarlyLeaveMinutes int32              `json:"early_leave_minutes"`
+	Source            string             `json:"source"`
+	Notes             string             `json:"notes"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt         pgtype.Timestamptz `json:"updated_at"`
+	CreatedBy         pgtype.UUID        `json:"created_by"`
+	UpdatedBy         pgtype.UUID        `json:"updated_by"`
+}
+
+type StaffAttendanceSchedule struct {
+	ID             uuid.UUID          `json:"id"`
+	TenantID       uuid.UUID          `json:"tenant_id"`
+	EmployeeUserID uuid.UUID          `json:"employee_user_id"`
+	Weekday        int16              `json:"weekday"`
+	IsWorkingDay   bool               `json:"is_working_day"`
+	StartMinute    int16              `json:"start_minute"`
+	EndMinute      int16              `json:"end_minute"`
+	GraceMinutes   int16              `json:"grace_minutes"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+	CreatedBy      pgtype.UUID        `json:"created_by"`
+	UpdatedBy      pgtype.UUID        `json:"updated_by"`
+}
+
 type StaffProfile struct {
 	UserID           uuid.UUID          `json:"user_id"`
 	TenantID         uuid.UUID          `json:"tenant_id"`

@@ -75,15 +75,16 @@ const (
 type Module string
 
 const (
-	ModuleLibrary       Module = "library"
-	ModuleDiscipline    Module = "discipline"
-	ModuleGrading       Module = "grading"
-	ModulePermits       Module = "permits"
-	ModuleAnnouncements Module = "announcements"
-	ModuleReports       Module = "reports"
-	ModuleActivities    Module = "activities"
-	ModuleMentoring     Module = "mentoring"
-	ModuleSupervision   Module = "supervision"
+	ModuleLibrary         Module = "library"
+	ModuleDiscipline      Module = "discipline"
+	ModuleGrading         Module = "grading"
+	ModulePermits         Module = "permits"
+	ModuleAnnouncements   Module = "announcements"
+	ModuleReports         Module = "reports"
+	ModuleActivities      Module = "activities"
+	ModuleMentoring       Module = "mentoring"
+	ModuleSupervision     Module = "supervision"
+	ModuleStaffAttendance Module = "staff_attendance"
 )
 
 // AllModules lists every module the console can toggle, in the fixed order
@@ -91,7 +92,7 @@ const (
 // (docs/12-roadmap.md) ship behind these flags from day one.
 var AllModules = []Module{
 	ModuleLibrary, ModuleDiscipline, ModuleGrading, ModulePermits, ModuleAnnouncements, ModuleReports,
-	ModuleActivities, ModuleMentoring, ModuleSupervision,
+	ModuleActivities, ModuleMentoring, ModuleSupervision, ModuleStaffAttendance,
 }
 
 func (m Module) Valid() bool {
