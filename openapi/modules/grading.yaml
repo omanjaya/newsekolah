@@ -311,7 +311,11 @@ paths:
       summary: One student's star ledger and balance
       parameters:
         - { name: studentId, in: path, required: true, schema: { type: string, format: uuid } }
-        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 200, default: 50 } }
+        - {
+            name: limit,
+            in: query,
+            schema: { type: integer, minimum: 1, maximum: 200, default: 50 },
+          }
       responses:
         "200":
           description: Ledger
@@ -350,6 +354,58 @@ paths:
                       properties:
                         student_user_id: { type: string, format: uuid }
                         balance: { type: integer }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /v1/grading/erapor/preview:
+    get:
+      tags: [grading]
+      operationId: previewEraporExport
+      x-permission: manage_grades
+      summary: What an e-Rapor export for one class and term would contain, before downloading it
+      parameters:
+        - { name: class_id, in: query, required: true, schema: { type: string, format: uuid } }
+        - { name: term_id, in: query, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Preview
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EraporPreview" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /v1/grading/erapor/export:
+    get:
+      tags: [grading]
+      operationId: exportErapor
+      x-permission: manage_grades
+      summary: Download the e-Rapor import file for one class and term
+      description: >-
+        Refuses with GRADES_NOT_PUBLISHED (403) when none of the class's
+        subjects have published grades for the term. The skip report travels
+        with the file itself (a second sheet for XLSX, a trailing section
+        for CSV); call previewEraporExport first to see it without
+        downloading.
+      parameters:
+        - { name: class_id, in: query, required: true, schema: { type: string, format: uuid } }
+        - { name: term_id, in: query, schema: { type: string, format: uuid } }
+        - {
+            name: format,
+            in: query,
+            schema: { $ref: "#/components/schemas/EraporFormat" },
+            default: xlsx,
+          }
+      responses:
+        "200":
+          description: e-Rapor import file
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: { type: string, format: binary }
+            text/csv:
+              schema: { type: string, format: binary }
+        "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
 
@@ -418,7 +474,8 @@ components:
         report_score: { type: number }
     Gradebook:
       type: object
-      required: [term_id, term_name, class_id, subject_id, scale, components, students, is_published]
+      required:
+        [term_id, term_name, class_id, subject_id, scale, components, students, is_published]
       properties:
         term_id: { type: string, format: uuid }
         term_name: { type: string }
@@ -495,7 +552,17 @@ components:
         stars: { type: integer }
     StarEvent:
       type: object
-      required: [id, student_user_id, class_id, teacher_user_id, delta, note, visible_to_student, created_at]
+      required:
+        [
+          id,
+          student_user_id,
+          class_id,
+          teacher_user_id,
+          delta,
+          note,
+          visible_to_student,
+          created_at,
+        ]
       properties:
         id: { type: string, format: uuid }
         student_user_id: { type: string, format: uuid }
@@ -506,3 +573,32 @@ components:
         note: { type: string }
         visible_to_student: { type: boolean }
         created_at: { type: string, format: date-time }
+    EraporFormat:
+      type: string
+      enum: [xlsx, csv]
+    EraporRow:
+      type: object
+      required: [nisn, subject_code, score, predicate]
+      properties:
+        nisn: { type: string }
+        subject_code: { type: string }
+        score: { type: number }
+        predicate: { type: string }
+    EraporSkipReason:
+      type: string
+      enum: [missing_nisn, no_published_score]
+    EraporSkip:
+      type: object
+      required: [student_name, subject_name, reason]
+      properties:
+        student_name: { type: string }
+        subject_name: { type: string }
+        reason: { $ref: "#/components/schemas/EraporSkipReason" }
+    EraporPreview:
+      type: object
+      required: [class_id, term_id, rows, skipped]
+      properties:
+        class_id: { type: string, format: uuid }
+        term_id: { type: string, format: uuid }
+        rows: { type: array, items: { $ref: "#/components/schemas/EraporRow" } }
+        skipped: { type: array, items: { $ref: "#/components/schemas/EraporSkip" } }

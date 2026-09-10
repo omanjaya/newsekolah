@@ -6,6 +6,7 @@
   "pickBoth": "Pilih kelas dan mapel untuk membuka lembar nilai.",
   "tabGradebook": "Nilai",
   "tabSettings": "Pengaturan",
+  "tabErapor": "e-Rapor",
   "kind": {
     "formative": "Formatif",
     "summative": "Sumatif",
@@ -121,5 +122,30 @@
     "noComponents": "Belum ada komponen nilai untuk mapel ini.",
     "belowKktp": "Di bawah KKTP",
     "average": "Rata-rata {score}"
+  },
+  "erapor": {
+    "pickTerm": "Pilih semester",
+    "allTerms": "Semester aktif",
+    "formatLabel": "Format berkas",
+    "formatXlsx": "Excel (.xlsx)",
+    "formatCsv": "CSV (.csv)",
+    "previewError": "Pratinjau ekspor gagal dimuat.",
+    "summary": "{rows} baris siap diekspor, {skipped} dilewati.",
+    "rowsTitle": "Akan diekspor",
+    "rowsEmpty": "Tidak ada nilai yang bisa diekspor untuk pilihan ini.",
+    "rowsColumnNisn": "NISN",
+    "rowsColumnSubject": "Kode mapel",
+    "rowsColumnScore": "Nilai",
+    "rowsColumnPredicate": "Predikat",
+    "rowsMore": "dan {count} baris lainnya",
+    "skippedTitle": "Dilewati",
+    "skippedEmpty": "Tidak ada yang dilewati.",
+    "skippedRow": "{student} - {subject}",
+    "reason": {
+      "missing_nisn": "NISN belum diisi",
+      "no_published_score": "Nilai belum diterbitkan"
+    },
+    "download": "Unduh berkas e-Rapor",
+    "downloadError": "Gagal mengunduh berkas e-Rapor."
   }
 }

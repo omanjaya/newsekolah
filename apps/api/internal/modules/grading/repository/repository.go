@@ -372,6 +372,35 @@ func (r *Repository) StudentNames(ctx context.Context, tenantID uuid.UUID, ids [
 	return out, nil
 }
 
+// e-Rapor export.
+
+func (r *Repository) ListClassSubjects(ctx context.Context, tenantID, yearID, classID uuid.UUID) ([]service.EraporSubject, error) {
+	rows, err := r.queries(ctx).GradingClassSubjects(ctx, db.GradingClassSubjectsParams{TenantID: tenantID, AcademicYearID: yearID, ClassID: classID})
+	if err != nil {
+		return nil, fmt.Errorf("list class subjects: %w", err)
+	}
+	out := make([]service.EraporSubject, len(rows))
+	for i, row := range rows {
+		out[i] = service.EraporSubject{ID: row.ID, Code: row.Code, Name: row.Name}
+	}
+	return out, nil
+}
+
+func (r *Repository) StudentNISNs(ctx context.Context, tenantID uuid.UUID, ids []uuid.UUID) (map[uuid.UUID]service.EraporStudent, error) {
+	if len(ids) == 0 {
+		return map[uuid.UUID]service.EraporStudent{}, nil
+	}
+	rows, err := r.queries(ctx).GradingStudentNISNs(ctx, db.GradingStudentNISNsParams{TenantID: tenantID, UserIds: ids})
+	if err != nil {
+		return nil, fmt.Errorf("list student nisns: %w", err)
+	}
+	out := make(map[uuid.UUID]service.EraporStudent, len(rows))
+	for _, row := range rows {
+		out[row.ID] = service.EraporStudent{Name: row.Name, NISN: row.Nisn}
+	}
+	return out, nil
+}
+
 func (r *Repository) GetLatestPolicy(ctx context.Context, tenantID uuid.UUID, kind string) ([]byte, int, bool, error) {
 	row, err := r.queries(ctx).GradingGetLatestPolicy(ctx, db.GradingGetLatestPolicyParams{TenantID: tenantID, Kind: kind})
 	if errors.Is(err, pgx.ErrNoRows) {

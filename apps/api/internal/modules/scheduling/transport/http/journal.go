@@ -92,7 +92,7 @@ func (h *SchedulingHandler) DeleteJournal(ctx context.Context, request api.Delet
 }
 
 func (h *SchedulingHandler) ExportJournals(ctx context.Context, request api.ExportJournalsRequestObject) (api.ExportJournalsResponseObject, error) {
-	if request.Params.Format == api.Docx {
+	if request.Params.Format == api.ExportJournalsParamsFormatDocx {
 		return nil, httpx.NewError(http.StatusNotImplemented, "NOT_IMPLEMENTED")
 	}
 

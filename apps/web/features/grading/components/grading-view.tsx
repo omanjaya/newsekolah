@@ -8,10 +8,11 @@ import { useState } from "react";
 import { useCan } from "../../../lib/session/session-provider";
 import { useClassesQuery, useSubjectsQuery } from "../../reference/api";
 
+import { EraporExport } from "./erapor-export";
 import { GradebookSheet } from "./gradebook-sheet";
 import { GradingSettings } from "./grading-settings";
 
-type Tab = "gradebook" | "settings";
+type Tab = "gradebook" | "settings" | "erapor";
 
 /**
  * The teacher's gradebook screen: pick a class and subject, then work in
@@ -55,7 +56,7 @@ export function GradingView(): ReactElement {
           aria-label={t("pickSubject")}
           className="w-56"
         />
-        {canManageSettings && (
+        {(canManageSettings || canManageGrades) && (
           <Tabs
             value={tab}
             onValueChange={(value) => {
@@ -64,7 +65,8 @@ export function GradingView(): ReactElement {
           >
             <TabsList>
               <TabsTrigger value="gradebook">{t("tabGradebook")}</TabsTrigger>
-              <TabsTrigger value="settings">{t("tabSettings")}</TabsTrigger>
+              {canManageGrades && <TabsTrigger value="erapor">{t("tabErapor")}</TabsTrigger>}
+              {canManageSettings && <TabsTrigger value="settings">{t("tabSettings")}</TabsTrigger>}
             </TabsList>
           </Tabs>
         )}
@@ -72,6 +74,8 @@ export function GradingView(): ReactElement {
 
       {tab === "settings" && canManageSettings ? (
         <GradingSettings />
+      ) : tab === "erapor" && canManageGrades ? (
+        <EraporExport />
       ) : effectiveClassId && effectiveSubjectId ? (
         <GradebookSheet
           key={`${effectiveClassId}-${effectiveSubjectId}`}

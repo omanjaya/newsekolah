@@ -21,6 +21,7 @@ var (
 	ErrNoActiveAcademicYear = errors.New("no active academic year")
 	ErrInvalidInput         = errors.New("invalid input")
 	ErrScoreOutOfRange      = errors.New("score outside the grading scale")
+	ErrNoGradableSubjects   = errors.New("class has no subjects to export")
 )
 
 type ComponentKind string

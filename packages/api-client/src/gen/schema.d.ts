@@ -1721,6 +1721,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/grading/erapor/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** What an e-Rapor export for one class and term would contain, before downloading it */
+        get: operations["previewEraporExport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/grading/erapor/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download the e-Rapor import file for one class and term
+         * @description Refuses with GRADES_NOT_PUBLISHED (403) when none of the class's subjects have published grades for the term. The skip report travels with the file itself (a second sheet for XLSX, a trailing section for CSV); call previewEraporExport first to see it without downloading.
+         */
+        get: operations["exportErapor"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/users": {
         parameters: {
             query?: never;
@@ -5380,6 +5417,29 @@ export interface components {
             visible_to_student: boolean;
             /** Format: date-time */
             created_at: string;
+        };
+        /** @enum {string} */
+        EraporFormat: "xlsx" | "csv";
+        EraporRow: {
+            nisn: string;
+            subject_code: string;
+            score: number;
+            predicate: string;
+        };
+        /** @enum {string} */
+        EraporSkipReason: "missing_nisn" | "no_published_score";
+        EraporSkip: {
+            student_name: string;
+            subject_name: string;
+            reason: components["schemas"]["EraporSkipReason"];
+        };
+        EraporPreview: {
+            /** Format: uuid */
+            class_id: string;
+            /** Format: uuid */
+            term_id: string;
+            rows: components["schemas"]["EraporRow"][];
+            skipped: components["schemas"]["EraporSkip"][];
         };
         /** @enum {string} */
         ParentRelation: "father" | "mother" | "guardian";
@@ -10350,6 +10410,61 @@ export interface operations {
                     };
                 };
             };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    previewEraporExport: {
+        parameters: {
+            query: {
+                class_id: string;
+                term_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Preview */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EraporPreview"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    exportErapor: {
+        parameters: {
+            query: {
+                class_id: string;
+                term_id?: string;
+                /** @default xlsx */
+                format?: components["schemas"]["EraporFormat"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description e-Rapor import file */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
+                    "text/csv": string;
+                };
+            };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
         };

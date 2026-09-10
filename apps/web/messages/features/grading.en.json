@@ -6,6 +6,7 @@
   "pickBoth": "Pick a class and a subject to open the score sheet.",
   "tabGradebook": "Grades",
   "tabSettings": "Settings",
+  "tabErapor": "e-Rapor",
   "kind": {
     "formative": "Formative",
     "summative": "Summative",
@@ -121,5 +122,30 @@
     "noComponents": "No graded components for this subject yet.",
     "belowKktp": "Below minimum mastery",
     "average": "Average {score}"
+  },
+  "erapor": {
+    "pickTerm": "Select term",
+    "allTerms": "Active term",
+    "formatLabel": "File format",
+    "formatXlsx": "Excel (.xlsx)",
+    "formatCsv": "CSV (.csv)",
+    "previewError": "Could not load the export preview.",
+    "summary": "{rows} rows ready to export, {skipped} skipped.",
+    "rowsTitle": "Will be exported",
+    "rowsEmpty": "Nothing can be exported for this selection.",
+    "rowsColumnNisn": "NISN",
+    "rowsColumnSubject": "Subject code",
+    "rowsColumnScore": "Score",
+    "rowsColumnPredicate": "Predicate",
+    "rowsMore": "and {count} more rows",
+    "skippedTitle": "Skipped",
+    "skippedEmpty": "Nothing was skipped.",
+    "skippedRow": "{student} - {subject}",
+    "reason": {
+      "missing_nisn": "Missing NISN",
+      "no_published_score": "Score not published"
+    },
+    "download": "Download e-Rapor file",
+    "downloadError": "Could not download the e-Rapor file."
   }
 }
