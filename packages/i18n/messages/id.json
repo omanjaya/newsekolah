@@ -155,7 +155,13 @@
         "assignments": "Tugas",
         "violationCatalog": "Katalog Pelanggaran",
         "academicCalendar": "Kalender Akademik",
-        "promotion": "Kenaikan Kelas"
+        "promotion": "Kenaikan Kelas",
+        "gradeLevels": "Tingkat Kelas",
+        "tracks": "Peminatan",
+        "subjectOfferings": "Mapel per Tahun Ajaran",
+        "teachingAssignments": "Penugasan Mengajar",
+        "enrollmentImport": "Impor Penempatan Kelas",
+        "newYearSetup": "Persiapan Tahun Ajaran Baru"
       }
     },
     "settings": {

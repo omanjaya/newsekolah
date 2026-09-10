@@ -25,6 +25,7 @@ import { useMemo, useState } from "react";
 import { useActiveYear } from "../../../lib/hooks/use-active-year";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan, useSession } from "../../../lib/session/session-provider";
+import { TodayPeriodBanner } from "../../academic/components/today-period-banner";
 import {
   useClassesQuery,
   useLookup,
@@ -141,6 +142,8 @@ export function ScheduleView(): ReactElement {
           )
         }
       />
+
+      <TodayPeriodBanner />
 
       <div className="flex flex-wrap items-center gap-3">
         <Tabs

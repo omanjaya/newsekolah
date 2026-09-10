@@ -681,6 +681,13 @@
         "teachingAdded": "Subject teacher added",
         "pickSubject": "Subject",
         "pickTeacher": "Teacher",
+        "moveStudent": "Move student",
+        "moveBody": "Move {name} to a different class. Their enrollment history in this class is kept.",
+        "moveTargetClass": "Target class",
+        "moveTargetPlaceholder": "Pick a class",
+        "moveEffectiveOn": "Effective from",
+        "moveSubmit": "Move",
+        "moved": "Student moved",
         "form": {
           "name": "Class name",
           "grade": "Grade",
@@ -745,7 +752,13 @@
         "weekBody": "Enable school days and pick the template each day uses.",
         "usesTemplate": "Uses this template",
         "useTemplate": "Use this template",
-        "sequence": "Order"
+        "sequence": "Order",
+        "renameTemplate": "Rename template",
+        "deleteTemplate": "Delete template",
+        "templateUpdated": "Template name updated",
+        "templateDeleted": "Template deleted",
+        "deleteTemplateTitle": "Delete this template?",
+        "deleteTemplateBody": "\"{name}\" will be deleted. It cannot be deleted while a school day still uses it."
       },
       "duties": {
         "eyebrow": "School Data",

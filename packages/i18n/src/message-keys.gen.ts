@@ -123,11 +123,17 @@ export type MessageKey =
   | "nav.schoolData.items.academicYear"
   | "nav.schoolData.items.assignments"
   | "nav.schoolData.items.classesAndStudents"
+  | "nav.schoolData.items.enrollmentImport"
+  | "nav.schoolData.items.gradeLevels"
+  | "nav.schoolData.items.newYearSetup"
   | "nav.schoolData.items.periods"
   | "nav.schoolData.items.promotion"
   | "nav.schoolData.items.rooms"
+  | "nav.schoolData.items.subjectOfferings"
   | "nav.schoolData.items.subjects"
   | "nav.schoolData.items.teachersAndStaff"
+  | "nav.schoolData.items.teachingAssignments"
+  | "nav.schoolData.items.tracks"
   | "nav.schoolData.items.violationCatalog"
   | "nav.schoolData.label"
   | "nav.settings.items.documentTemplates"
@@ -272,11 +278,17 @@ export const MESSAGE_KEYS: readonly MessageKey[] = [
   "nav.schoolData.items.academicYear",
   "nav.schoolData.items.assignments",
   "nav.schoolData.items.classesAndStudents",
+  "nav.schoolData.items.enrollmentImport",
+  "nav.schoolData.items.gradeLevels",
+  "nav.schoolData.items.newYearSetup",
   "nav.schoolData.items.periods",
   "nav.schoolData.items.promotion",
   "nav.schoolData.items.rooms",
+  "nav.schoolData.items.subjectOfferings",
   "nav.schoolData.items.subjects",
   "nav.schoolData.items.teachersAndStaff",
+  "nav.schoolData.items.teachingAssignments",
+  "nav.schoolData.items.tracks",
   "nav.schoolData.items.violationCatalog",
   "nav.schoolData.label",
   "nav.settings.items.documentTemplates",

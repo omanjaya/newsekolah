@@ -22,6 +22,8 @@ import {
   UsersRound,
 } from "lucide-react";
 
+import { academicNavItems } from "./navigation-academic";
+
 /** Profile kinds a nav item can be restricted to, mirroring `Me["profile_kind"]`. */
 export type NavProfileKind = "student" | "teacher" | "staff" | "parent";
 
@@ -315,6 +317,7 @@ export const navigation: NavItem[] = [
     permission: "manage_enrollments",
     group: GROUP.schoolData,
   },
+  ...academicNavItems,
 
   {
     key: "settings-roles",

@@ -5,6 +5,8 @@
  */
 import { registerFeatureMessages } from "../../lib/i18n/get-messages";
 
+import academicEn from "./academic.en.json";
+import academicId from "./academic.id.json";
 import attendanceReportsEn from "./attendanceReports.en.json";
 import attendanceReportsId from "./attendanceReports.id.json";
 import auditEn from "./audit.en.json";
@@ -45,6 +47,7 @@ registerFeatureMessages({
   id: attendanceReportsId,
   en: attendanceReportsEn,
 });
+registerFeatureMessages({ namespace: "academic", id: academicId, en: academicEn });
 registerFeatureMessages({ namespace: "calendar", id: calendarId, en: calendarEn });
 registerFeatureMessages({ namespace: "discipline", id: disciplineId, en: disciplineEn });
 registerFeatureMessages({ namespace: "family", id: familyId, en: familyEn });
