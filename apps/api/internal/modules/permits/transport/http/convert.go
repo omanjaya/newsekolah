@@ -29,6 +29,7 @@ var (
 	errLeaveDates          = httpx.NewError(http.StatusBadRequest, "LEAVE_DATE_RANGE_INVALID")
 	errLeaveNotReviewable  = httpx.NewError(http.StatusConflict, "LEAVE_REQUEST_NOT_REVIEWABLE")
 	errLeaveNotIssuable    = httpx.NewError(http.StatusConflict, "LEAVE_REQUEST_NOT_ISSUABLE")
+	errLeaveRejectReason   = httpx.NewError(http.StatusBadRequest, "LEAVE_REJECTION_REASON_REQUIRED")
 	errEvidenceTooLarge    = httpx.NewError(http.StatusBadRequest, "EVIDENCE_TOO_LARGE")
 	errEvidenceType        = httpx.NewError(http.StatusBadRequest, "EVIDENCE_INVALID_TYPE")
 	errDefinitionInvalid   = httpx.NewError(http.StatusBadRequest, "WORKFLOW_DEFINITION_INVALID")
@@ -57,6 +58,7 @@ var permitErrorMap = map[error]error{
 	domain.ErrLeaveRequestDateRangeInvalid: errLeaveDates,
 	domain.ErrLeaveRequestNotReviewable:    errLeaveNotReviewable,
 	domain.ErrLeaveRequestNotIssuable:      errLeaveNotIssuable,
+	domain.ErrLeaveRejectionReasonRequired: errLeaveRejectReason,
 	domain.ErrEvidenceTooLarge:             errEvidenceTooLarge,
 	domain.ErrEvidenceInvalidType:          errEvidenceType,
 	domain.ErrTemplateNotFound:             httpx.ErrNotFound,

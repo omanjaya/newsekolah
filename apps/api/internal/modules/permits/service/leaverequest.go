@@ -252,6 +252,19 @@ func (s *Service) ReviewLeaveRequest(ctx context.Context, tenantID, instanceID, 
 	return detail, nil
 }
 
+// ReviewLeaveRequestAsGuardian is a guardian's approve/reject at their
+// stage. It is a thin wrapper over ReviewLeaveRequest -- eligibility (is
+// guardianUserID actually a guardian of this request's subject) is
+// enforced the same way as any other stage, by evaluateApproverRule -- but
+// requires a reason on rejection, since a guardian declining a child's
+// planned absence is expected to say why.
+func (s *Service) ReviewLeaveRequestAsGuardian(ctx context.Context, tenantID, instanceID, guardianUserID uuid.UUID, approve bool, note string) (LeaveRequestDetail, error) {
+	if !approve && note == "" {
+		return LeaveRequestDetail{}, domain.ErrLeaveRejectionReasonRequired
+	}
+	return s.ReviewLeaveRequest(ctx, tenantID, instanceID, guardianUserID, approve, note)
+}
+
 // IssueLeaveLetter is the counselor's final approval: it numbers the
 // letter from the per-year sequence, renders and stores the PDF, records
 // the issued document with a verification code, and forces the student's
@@ -445,6 +458,58 @@ func (s *Service) ListLeaveRequestsForReview(ctx context.Context, tenantID, revi
 		var err error
 		out, err = s.repo.ListLeaveRequestsForReview(ctx, tenantID, reviewerUserID, classID)
 		return err
+	})
+	return out, err
+}
+
+// ListLeaveRequestsForGuardianReview is a guardian's queue: the
+// in-progress leave request of each child they hold approval rights for,
+// but only when its current stage is actually "guardian_of_student" --
+// a tenant that has not opted a guardian stage into its workflow (see
+// domain.DefaultStages) leaves this queue empty rather than surfacing
+// requests the guardian has no say over.
+func (s *Service) ListLeaveRequestsForGuardianReview(ctx context.Context, tenantID, guardianUserID uuid.UUID) ([]LeaveRequestItem, error) {
+	var out []LeaveRequestItem
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		if s.guardians == nil {
+			return nil
+		}
+		children, err := s.guardians.ApprovingChildrenOf(ctx, tenantID, guardianUserID)
+		if err != nil {
+			return err
+		}
+		for _, studentID := range children {
+			inst, ok, err := s.repo.GetInProgressInstance(ctx, tenantID, domain.KindLeaveRequest, studentID)
+			if err != nil {
+				return err
+			}
+			if !ok {
+				continue
+			}
+			def, ok, err := s.repo.GetDefinitionByID(ctx, tenantID, inst.DefinitionID)
+			if err != nil {
+				return err
+			}
+			if !ok {
+				continue
+			}
+			stage, err := def.StageAt(inst.CurrentStageIndex)
+			if err != nil || stage.ApproverRule != domain.RuleGuardianOfStudent {
+				continue
+			}
+			lr, ok, err := s.repo.GetLeaveRequest(ctx, tenantID, inst.ID)
+			if err != nil {
+				return err
+			}
+			if !ok {
+				continue
+			}
+			out = append(out, LeaveRequestItem{
+				LeaveRequest: lr, SubjectUserID: inst.SubjectUserID, ClassID: inst.ClassID,
+				Status: inst.Status, OpenedAt: inst.OpenedAt, CurrentStageIndex: inst.CurrentStageIndex,
+			})
+		}
+		return nil
 	})
 	return out, err
 }

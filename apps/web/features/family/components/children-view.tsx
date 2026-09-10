@@ -10,11 +10,13 @@ import {
   domainIcons,
 } from "@newsekolah/ui";
 import { FileText, GraduationCap, ShieldCheck, Star } from "lucide-react";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { useCan } from "../../../lib/session/session-provider";
+import { useGuardianLeaveQueueQuery } from "../../permits/api";
 import { useLookup, useSubjectsQuery } from "../../reference/api";
 import {
   currentMonth,
@@ -44,6 +46,7 @@ export function ChildrenView(): ReactElement {
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
       <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
+      <PendingApprovalsBanner />
 
       {children.isLoading ? (
         <Skeleton className="h-32 w-full" />
@@ -70,6 +73,28 @@ export function ChildrenView(): ReactElement {
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * A guardian's shortcut to their pending leave-request approvals, shown
+ * only once there is something waiting -- this screen is about the
+ * child's record, not a second inbox, so it stays silent otherwise.
+ */
+function PendingApprovalsBanner(): ReactElement | null {
+  const t = useTranslations("app.family.myChildren.pendingApprovals");
+  const canApproveAsGuardian = useCan("approve_child_leave_requests");
+  const queue = useGuardianLeaveQueueQuery(canApproveAsGuardian);
+  const count = queue.data?.data.length ?? 0;
+
+  if (!canApproveAsGuardian || count === 0) return null;
+
+  return (
+    <Alert variant="warning" title={t("title", { count })}>
+      <Link href="/leave-requests" className="underline underline-offset-2">
+        {t("link")}
+      </Link>
+    </Alert>
   );
 }
 

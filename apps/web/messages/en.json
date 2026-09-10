@@ -614,6 +614,7 @@
         "title": "Planned leave",
         "tabQueue": "Queue",
         "tabMine": "My requests",
+        "tabGuardianQueue": "My children",
         "noAccessTitle": "No access",
         "noAccessBody": "Your role is not part of the planned leave flow.",
         "submit": "Request leave",
@@ -644,6 +645,16 @@
         "issuedBody": "Attendance for the leave dates is filled automatically. The letter can be downloaded above.",
         "queueEmptyTitle": "No requests waiting",
         "queueEmptyBody": "Requests from your homeroom class, or awaiting letter issuance, show up here.",
+        "guardian": {
+          "reviewNote": "Reason (required when rejecting)",
+          "reject": "Reject",
+          "approve": "Approve",
+          "rejected": "Request rejected",
+          "approved": "Request approved",
+          "reasonRequired": "A reason is required to reject.",
+          "queueEmptyTitle": "Nothing awaiting your decision",
+          "queueEmptyBody": "A child's leave request shows up here when it reaches the stage that needs your approval."
+        },
         "form": {
           "category": "Leave type",
           "startsOn": "From",

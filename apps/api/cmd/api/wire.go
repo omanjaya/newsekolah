@@ -120,9 +120,10 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	sync := &lateBoundSync{}
 	permitsModule := permits.Register(permits.Dependencies{
 		Pool: pool, Years: schoolModule.Service, Bus: eventBus, Storage: sharedStorage,
-		Schedule: permitsScheduleLookup{schedules: schedulingModule.ScheduleReader, periods: academicModule.Service, years: schoolModule.Service},
-		Sync:     sync,
-		Clock:    clock.Real{}, Config: permitsservice.DefaultConfig([]byte(cfg.DocumentSigningKey), cfg.S3Bucket), Logger: logger,
+		Schedule:  permitsScheduleLookup{schedules: schedulingModule.ScheduleReader, periods: academicModule.Service, years: schoolModule.Service},
+		Sync:      sync,
+		Guardians: wiring.GuardianLinks{Identity: identityModule.Service},
+		Clock:     clock.Real{}, Config: permitsservice.DefaultConfig([]byte(cfg.DocumentSigningKey), cfg.S3Bucket), Logger: logger,
 	})
 	attendanceModule := attendance.Register(attendance.Dependencies{
 		Pool: pool, Bus: eventBus, Years: schoolModule.Service,

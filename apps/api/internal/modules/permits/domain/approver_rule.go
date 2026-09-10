@@ -10,6 +10,12 @@ const (
 	RuleAnyTeacher        = "any_teacher"
 	RuleTeacherOfClassNow = "teacher_of_class_now"
 	RuleHomeroomOfStudent = "homeroom_of_student"
+	// RuleGuardianOfStudent matches a guardian linked to the instance's
+	// subject with leave-approval rights (identity's parent_students.
+	// can_approve_leave). Not part of any DefaultStages list -- a tenant
+	// opts in by inserting a stage with this rule into its own workflow
+	// definition (see service.validApproverRule).
+	RuleGuardianOfStudent = "guardian_of_student"
 	dutyRulePrefix        = "duty:"
 )
 

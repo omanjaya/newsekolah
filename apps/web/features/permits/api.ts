@@ -245,6 +245,29 @@ export function useSubmitLeaveRequestMutation() {
   });
 }
 
+export function useGuardianLeaveQueueQuery(enabled = true) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: queryKeys.leaveGuardianQueue(),
+    queryFn: () => client.GET("/v1/leave-requests/guardian-queue"),
+    enabled,
+    refetchInterval: 60_000,
+  });
+}
+
+export function useReviewLeaveRequestAsGuardianMutation() {
+  const client = useApiClient();
+  const invalidate = useInvalidatePermits();
+  return useMutation({
+    mutationFn: ({ id, approve, note }: { id: string; approve: boolean; note?: string }) =>
+      client.POST("/v1/leave-requests/{instanceId}/guardian-review", {
+        params: { path: { instanceId: id } },
+        body: { approve, ...(note ? { note } : {}) },
+      }),
+    onSuccess: invalidate,
+  });
+}
+
 export function useReviewLeaveRequestMutation() {
   const client = useApiClient();
   const invalidate = useInvalidatePermits();

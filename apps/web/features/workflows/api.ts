@@ -12,14 +12,17 @@ export type WorkflowDefinition = components["schemas"]["WorkflowDefinition"];
 export const WORKFLOW_KINDS: WorkflowKind[] = ["exit_permit", "late_arrival", "leave_request"];
 
 /**
- * The three fixed approver rules the backend recognizes outright
+ * The fixed approver rules the backend recognizes outright
  * (apps/api/internal/modules/permits/service/workflow.go validApproverRule);
  * a "duty:<slug>" rule is entered as free text against a known duty slug.
+ * "guardian_of_student" is not part of any default definition (domain
+ * DefaultStages) -- a school opts a guardian stage in here explicitly.
  */
 export const FIXED_APPROVER_RULES = [
   "any_teacher",
   "teacher_of_class_now",
   "homeroom_of_student",
+  "guardian_of_student",
 ] as const;
 
 export const VERIFICATION_MODES: WorkflowStage["verification"][] = ["qr_scan", "manual", "auto"];
