@@ -26,6 +26,12 @@ interface Period {
  * One class or one teacher across the week. Rows are periods, columns are
  * the days the school runs. Hidden below md, where the agenda takes over.
  */
+/** 1 (Monday) through 7 (Sunday), matching the schedule's own numbering. */
+function todayOfWeek(): number {
+  const jsDay = new Date().getDay();
+  return jsDay === 0 ? 7 : jsDay;
+}
+
 export function ScheduleWeekGrid({
   hidden,
   activeDays,
@@ -44,6 +50,7 @@ export function ScheduleWeekGrid({
   onDelete,
   t,
   tDays,
+  currentSeq,
 }: {
   hidden: boolean;
   activeDays: readonly number[];
@@ -62,7 +69,13 @@ export function ScheduleWeekGrid({
   onDelete: (block: ScheduleBlock) => void;
   t: (key: string) => string;
   tDays: (key: string) => string;
+  /** Sequence of the period in session right now, when there is one. */
+  currentSeq?: number;
 }): ReactElement {
+  // A timetable is opened to answer "where am I now" before anything
+  // else, and a week grid says nothing about that on its own.
+  const today = todayOfWeek();
+
   return (
     <div
       className={cn(
@@ -80,7 +93,11 @@ export function ScheduleWeekGrid({
               <th
                 key={day}
                 scope="col"
-                className="border-b border-l border-border px-3 py-2 font-medium"
+                aria-current={day === today ? "date" : undefined}
+                className={cn(
+                  "border-b border-l border-border px-3 py-2 font-medium",
+                  day === today && "bg-accent/10 text-fg",
+                )}
               >
                 {tDays(String(day))}
               </th>
@@ -89,7 +106,13 @@ export function ScheduleWeekGrid({
         </thead>
         <tbody>
           {lessonPeriods.map((period) => (
-            <tr key={period.id} className={cn(period.is_break && "bg-bg/60")}>
+            <tr
+              key={period.id}
+              className={cn(
+                period.is_break && "bg-bg/60",
+                period.sequence === currentSeq && "bg-accent/5",
+              )}
+            >
               <th scope="row" className="border-b border-border px-3 py-2 text-left font-normal">
                 <div className="flex flex-col">
                   <span className="text-fg">{period.name}</span>

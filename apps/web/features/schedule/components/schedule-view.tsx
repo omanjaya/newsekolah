@@ -23,6 +23,7 @@ import { useMemo, useState } from "react";
 import { useActiveYear } from "../../../lib/hooks/use-active-year";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan, useSession } from "../../../lib/session/session-provider";
+import { usePeriodTodayQuery } from "../../academic/api-enrollment";
 import { TodayPeriodBanner } from "../../academic/components/today-period-banner";
 import {
   useClassesQuery,
@@ -90,6 +91,9 @@ export function ScheduleView(): ReactElement {
   const teachers = useTeachersQuery();
   const periods = usePeriodsQuery();
   const schoolDays = useSchoolDaysQuery();
+  // Ties the "period in session now" strip above the grid to the grid
+  // itself, so the reader does not have to match a time by eye.
+  const periodNow = usePeriodTodayQuery(year.id);
   const classMap = useLookup(classes.data?.data);
   const subjectMap = useLookup(subjects.data?.data);
   const teacherMap = useLookup(teachers.data?.data);
@@ -408,6 +412,7 @@ export function ScheduleView(): ReactElement {
             onDelete={setPendingDelete}
             t={t}
             tDays={tDays}
+            currentSeq={periodNow.data?.sequence}
           />
         </>
       )}
