@@ -351,7 +351,8 @@
         "rangeError": "End period must be the same as or after the start period.",
         "created": "Schedule added",
         "cancel": "Cancel",
-        "save": "Save"
+        "save": "Save",
+        "updated": "Schedule updated."
       },
       "bulk": {
         "navLink": "Bulk operations",
@@ -383,7 +384,14 @@
           "cancel": "Cancel",
           "cleared": "Every schedule of {year} has been cleared"
         }
-      }
+      },
+      "copyBlock": "Copy",
+      "editBlock": "Edit lesson",
+      "pasteHere": "Paste",
+      "cancelCopy": "Cancel copy",
+      "pasted": "Lesson pasted.",
+      "pasteNoRoom": "Not enough periods left in this slot.",
+      "copyingHint": "Copying {subject} for {class}. Click an empty slot to paste."
     },
     "attendance": {
       "eyebrow": "Academic",

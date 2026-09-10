@@ -351,7 +351,8 @@
         "rangeError": "Jam selesai harus sama atau setelah jam mulai.",
         "created": "Jadwal ditambahkan",
         "cancel": "Batal",
-        "save": "Simpan"
+        "save": "Simpan",
+        "updated": "Jadwal diperbarui."
       },
       "bulk": {
         "navLink": "Operasi massal",
@@ -383,7 +384,14 @@
           "cancel": "Batal",
           "cleared": "Semua jadwal tahun ajaran {year} telah dihapus"
         }
-      }
+      },
+      "copyBlock": "Salin",
+      "editBlock": "Ubah jadwal",
+      "pasteHere": "Tempel",
+      "cancelCopy": "Batal salin",
+      "pasted": "Jadwal ditempel.",
+      "pasteNoRoom": "Tidak cukup jam pelajaran di slot ini.",
+      "copyingHint": "Menyalin {subject} kelas {class}. Klik slot kosong untuk menempel."
     },
     "attendance": {
       "eyebrow": "Akademik",

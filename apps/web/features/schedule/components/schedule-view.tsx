@@ -4,8 +4,6 @@ import { ApiError } from "@newsekolah/api-client";
 import {
   Button,
   ConfirmDialog,
-  Dialog,
-  DialogContent,
   EmptyState,
   PageHeader,
   Select,
@@ -17,7 +15,7 @@ import {
   domainIcons,
   useToast,
 } from "@newsekolah/ui";
-import { Plus, Trash2 } from "lucide-react";
+import { Copy, Pencil, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -35,9 +33,16 @@ import {
   useSubjectsQuery,
   useTeachersQuery,
 } from "../../reference/api";
-import { type ScheduleBlock, useDeleteScheduleBlockMutation, useSchedulesQuery } from "../api";
+import {
+  type ScheduleBlock,
+  useCreateScheduleMutation,
+  useDeleteScheduleBlockMutation,
+  useSchedulesQuery,
+} from "../api";
 
-import { ScheduleForm } from "./schedule-form";
+import { BlockAction } from "./block-action";
+import { CopyBanner } from "./copy-banner";
+import { ScheduleDialogs } from "./schedule-dialogs";
 import { ScheduleMobileAgenda } from "./schedule-mobile-agenda";
 
 type Mode = "class" | "teacher";
@@ -63,6 +68,12 @@ export function ScheduleView(): ReactElement {
   const [classId, setClassId] = useState("");
   const [teacherId, setTeacherId] = useState(isTeacher ? (me?.id ?? "") : "");
   const [creating, setCreating] = useState<{ day: number; startSeq: number } | null>(null);
+  const [editing, setEditing] = useState<ScheduleBlock | null>(null);
+  // A timetable is built by repetition: the same teacher takes the same
+  // subject to the same class several times a week. Copying a lesson once
+  // and dropping it into empty slots is what the old system got right and
+  // what makes filling a week bearable.
+  const [copied, setCopied] = useState<ScheduleBlock | null>(null);
   const [pendingDelete, setPendingDelete] = useState<ScheduleBlock | null>(null);
   const [mobileDayOverride, setMobileDayOverride] = useState<number | null>(null);
 
@@ -75,6 +86,7 @@ export function ScheduleView(): ReactElement {
   const subjectMap = useLookup(subjects.data?.data);
   const teacherMap = useLookup(teachers.data?.data);
   const remove = useDeleteScheduleBlockMutation();
+  const create = useCreateScheduleMutation();
 
   const effectiveClassId = mode === "class" ? classId || (classes.data?.data[0]?.id ?? "") : "";
   const effectiveTeacherId = mode === "teacher" ? teacherId : "";
@@ -103,6 +115,43 @@ export function ScheduleView(): ReactElement {
     }
     return map;
   }, [schedules.data]);
+
+  /**
+   * Drops the copied lesson into an empty slot, keeping its class,
+   * subject, teacher and length, and moving only where it sits. The
+   * server refuses a clash, so a paste onto a busy teacher comes back as
+   * its own error rather than being guessed at here.
+   */
+  async function pasteInto(day: number, startSeq: number) {
+    if (!copied) return;
+    const span = copied.end_seq - copied.start_seq;
+    const start = lessonPeriods.find((p) => p.sequence === startSeq);
+    // A lesson does not run through a break, so a paste that would reach
+    // past one is refused rather than quietly drawn over it.
+    const crossesBreak = lessonPeriods.some(
+      (p) => p.is_break && p.sequence > startSeq && p.sequence <= startSeq + span,
+    );
+    const end = lessonPeriods.find((p) => p.sequence === startSeq + span);
+    if (!start || !end || crossesBreak) {
+      toast.error(t("pasteNoRoom"));
+      return;
+    }
+    try {
+      await create.mutateAsync({
+        academic_year_id: year.id,
+        class_id: copied.class_id,
+        subject_id: copied.subject_id,
+        teacher_user_id: copied.teacher_user_id,
+        day_of_week: day,
+        start_period_id: start.id,
+        end_period_id: end.id,
+        source: "admin",
+      });
+      toast.success(t("pasted"));
+    } catch (err) {
+      toast.error(err instanceof ApiError ? apiErrorMessage(err.code) : apiErrorMessage("UNKNOWN"));
+    }
+  }
 
   function blockAt(day: number, seq: number): ScheduleBlock | undefined {
     return blocksByDay.get(day)?.find((b) => b.start_seq <= seq && seq <= b.end_seq);
@@ -191,6 +240,16 @@ export function ScheduleView(): ReactElement {
         <span className="text-[13px] text-fg-muted">{year.label}</span>
       </div>
 
+      <CopyBanner
+        copied={copied}
+        subjectMap={subjectMap}
+        classMap={classMap}
+        onCancel={() => {
+          setCopied(null);
+        }}
+        t={t}
+      />
+
       {loading ? (
         <Skeleton className="h-96 w-full" aria-busy="true" />
       ) : lessonPeriods.length === 0 ? (
@@ -257,6 +316,14 @@ export function ScheduleView(): ReactElement {
                       </div>
                     </th>
                     {activeDays.map((day) => {
+                      const block = blockAt(day, period.sequence);
+                      // A cell already covered by a block that started in
+                      // an earlier row emits nothing, break or not.
+                      // Emitting one anyway pushed every later cell in the
+                      // row one column to the right.
+                      if (block && block.start_seq !== period.sequence) {
+                        return null;
+                      }
                       if (period.is_break) {
                         return (
                           <td
@@ -265,10 +332,6 @@ export function ScheduleView(): ReactElement {
                           />
                         );
                       }
-                      const block = blockAt(day, period.sequence);
-                      if (block && block.start_seq !== period.sequence) {
-                        return null;
-                      }
                       if (!block) {
                         return (
                           <td
@@ -276,14 +339,26 @@ export function ScheduleView(): ReactElement {
                             className="border-b border-l border-border px-2 py-1 align-top"
                           >
                             {canManage && (
+                              // Visible without hovering: a tablet has no
+                              // hover, and an invisible control is one
+                              // nobody finds.
                               <button
                                 type="button"
                                 onClick={() => {
+                                  if (copied) {
+                                    void pasteInto(day, period.sequence);
+                                    return;
+                                  }
                                   setCreating({ day, startSeq: period.sequence });
                                 }}
-                                className="h-full min-h-10 w-full rounded-xs text-[12px] text-fg-muted opacity-0 hover:bg-bg hover:opacity-100 focus-visible:opacity-100"
+                                className="flex h-full min-h-10 w-full items-center justify-center gap-1 rounded-xs border border-dashed border-border text-[12px] text-fg-muted hover:border-accent hover:bg-accent/5 hover:text-accent"
                               >
-                                {t("addHere")}
+                                {copied ? (
+                                  <Copy className="size-3.5" aria-hidden="true" />
+                                ) : (
+                                  <Plus className="size-3.5" aria-hidden="true" />
+                                )}
+                                {copied ? t("pasteHere") : t("addHere")}
                               </button>
                             )}
                           </td>
@@ -306,17 +381,30 @@ export function ScheduleView(): ReactElement {
                             </span>
                             <span className="text-[12px] text-fg-muted">{title}</span>
                             {canManage && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setPendingDelete(block);
-                                }}
-                                aria-label={t("deleteBlock")}
-                                className="mt-1 inline-flex items-center gap-1 self-start text-[12px] text-fg-muted hover:text-status-absent"
-                              >
-                                <Trash2 className="size-3.5" aria-hidden="true" />
-                                {t("deleteBlock")}
-                              </button>
+                              <div className="mt-1 flex items-center gap-1">
+                                <BlockAction
+                                  label={t("copyBlock")}
+                                  icon={<Copy className="size-3.5" aria-hidden="true" />}
+                                  onClick={() => {
+                                    setCopied(block);
+                                  }}
+                                />
+                                <BlockAction
+                                  label={t("editBlock")}
+                                  icon={<Pencil className="size-3.5" aria-hidden="true" />}
+                                  onClick={() => {
+                                    setEditing(block);
+                                  }}
+                                />
+                                <BlockAction
+                                  label={t("deleteBlock")}
+                                  danger
+                                  icon={<Trash2 className="size-3.5" aria-hidden="true" />}
+                                  onClick={() => {
+                                    setPendingDelete(block);
+                                  }}
+                                />
+                              </div>
                             )}
                           </div>
                         </td>
@@ -330,27 +418,20 @@ export function ScheduleView(): ReactElement {
         </>
       )}
 
-      <Dialog
-        open={creating !== null}
-        onOpenChange={(open) => {
-          if (!open) setCreating(null);
+      <ScheduleDialogs
+        year={year}
+        creating={creating}
+        editing={editing}
+        effectiveClassId={effectiveClassId}
+        effectiveTeacherId={effectiveTeacherId}
+        onCloseCreate={() => {
+          setCreating(null);
         }}
-      >
-        <DialogContent title={t("addBlock")}>
-          {creating && (
-            <ScheduleForm
-              yearId={year.id}
-              initialDay={creating.day}
-              initialStartSeq={creating.startSeq}
-              initialClassId={effectiveClassId}
-              initialTeacherId={effectiveTeacherId}
-              onDone={() => {
-                setCreating(null);
-              }}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+        onCloseEdit={() => {
+          setEditing(null);
+        }}
+        t={t}
+      />
 
       <ConfirmDialog
         open={pendingDelete !== null}

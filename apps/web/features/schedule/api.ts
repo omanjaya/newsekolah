@@ -53,6 +53,26 @@ export function useCreateScheduleMutation() {
   });
 }
 
+/**
+ * Replaces one block. A block spans one or more periods and the server
+ * keeps a row per period, so moving it means rewriting every row: the old
+ * ones go, the new span is created. Doing it in that order rather than
+ * the reverse avoids tripping the overlap constraint against itself.
+ */
+export function useReplaceScheduleBlockMutation() {
+  const client = useApiClient();
+  const invalidate = useInvalidateSchedules();
+  return useMutation({
+    mutationFn: async ({ scheduleIds, body }: { scheduleIds: string[]; body: ScheduleWrite }) => {
+      for (const scheduleId of scheduleIds) {
+        await client.DELETE("/v1/schedules/{scheduleId}", { params: { path: { scheduleId } } });
+      }
+      return client.POST("/v1/schedules", { body });
+    },
+    onSuccess: invalidate,
+  });
+}
+
 /** Deletes every schedule row of a block (a block is one class-subject span). */
 export function useDeleteScheduleBlockMutation() {
   const client = useApiClient();
