@@ -114,8 +114,8 @@ export function AuditLogsView(): ReactElement {
       <p className="text-[13px] text-fg-muted">{t("description")}</p>
 
       {isImpersonating && (
-        <div className="flex items-center justify-between gap-4 rounded-sm border border-border bg-surface p-4 text-[13px]">
-          <span className="text-fg">{t("impersonationNote")}</span>
+        <div className="flex flex-wrap items-center justify-between gap-4 rounded-sm border border-border bg-surface p-4 text-[13px]">
+          <span className="min-w-0 text-fg">{t("impersonationNote")}</span>
           <Button asChild variant="secondary" size="sm">
             <Link href="/profile">{t("impersonationLink")}</Link>
           </Button>

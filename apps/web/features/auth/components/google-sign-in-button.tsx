@@ -56,6 +56,22 @@ export function GoogleSignInButton({
   const googleLogin = useGoogleLoginMutation();
   const containerRef = useRef<HTMLDivElement>(null);
   const [scriptLoaded, setScriptLoaded] = useState(false);
+  // Google's button takes a fixed pixel width (it does not fill its
+  // container), so it is measured from the card it renders into rather
+  // than hardcoded -- the auth card is narrower than 320px on a phone.
+  const [width, setWidth] = useState(320);
+
+  useEffect(() => {
+    function measure() {
+      const available = containerRef.current?.parentElement?.getBoundingClientRect().width;
+      if (available) setWidth(Math.min(320, Math.max(200, Math.floor(available))));
+    }
+    measure();
+    window.addEventListener("resize", measure);
+    return () => {
+      window.removeEventListener("resize", measure);
+    };
+  }, []);
 
   useEffect(() => {
     if (!scriptLoaded || !containerRef.current || !window.google) return;
@@ -73,11 +89,12 @@ export function GoogleSignInButton({
         });
       },
     });
+    containerRef.current.replaceChildren();
     window.google.accounts.id.renderButton(containerRef.current, {
       type: "standard",
       theme: "outline",
       size: "large",
-      width: 320,
+      width,
       text: "signin_with",
       locale,
     });
@@ -86,7 +103,7 @@ export function GoogleSignInButton({
     // this effect for those would just re-render the same button, so only
     // the values that change what Google actually renders are listed.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scriptLoaded, clientId, locale]);
+  }, [scriptLoaded, clientId, locale, width]);
 
   return (
     <>

@@ -82,13 +82,13 @@ export function FeeTypeDiscountsDialog({
                     key={discount.id}
                     className="flex items-center justify-between gap-2 rounded-sm border border-border p-2 text-[13px]"
                   >
-                    <div className="flex flex-col">
-                      <span className="text-fg">
+                    <div className="flex min-w-0 flex-col">
+                      <span className="truncate text-fg">
                         {studentMap.get(discount.student_user_id)?.name ?? t("unknownStudent")}
                       </span>
-                      <span className="text-fg-muted">{discount.reason}</span>
+                      <span className="truncate text-fg-muted">{discount.reason}</span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex shrink-0 items-center gap-2">
                       <Badge variant={discount.is_active ? "accent" : "neutral"}>
                         {describe(discount.kind, discount.percentage_bp, discount.amount_minor)}
                       </Badge>

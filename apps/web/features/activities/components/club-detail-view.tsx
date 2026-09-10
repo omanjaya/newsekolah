@@ -145,14 +145,14 @@ function MembersPanel({ clubId, canManage }: { clubId: string; canManage: boolea
         )}
         {members.map((m) => (
           <li key={m.id} className="flex items-center justify-between gap-2 p-3 text-[13px]">
-            <div className="flex flex-col">
-              <span className="font-medium">{m.student_user_id}</span>
+            <div className="flex min-w-0 flex-col">
+              <span className="truncate font-medium">{m.student_user_id}</span>
               <span className="text-muted-foreground">
                 {m.joined_on}
                 {m.left_on ? ` - ${m.left_on}` : ""}
               </span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex shrink-0 items-center gap-2">
               <Badge variant={m.status === "active" ? "accent" : "neutral"}>
                 {t(`status.${m.status}`)}
               </Badge>
@@ -241,7 +241,7 @@ function MeetingsPanel({ clubId }: { clubId: string }): ReactElement {
           <li key={m.id}>
             <button
               type="button"
-              className="w-full rounded-md border border-border p-3 text-left text-[13px] hover:bg-muted"
+              className="flex min-h-11 w-full items-center rounded-md border border-border p-3 text-left text-[13px] hover:bg-muted"
               onClick={() => {
                 setSelectedMeeting(m.id === selectedMeeting ? null : m.id);
               }}

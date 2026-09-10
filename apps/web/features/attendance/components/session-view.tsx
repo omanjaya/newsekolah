@@ -192,7 +192,7 @@ function SessionEditor({ session }: { session: SessionDetail }): ReactElement {
                   )}
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <div
                   role="radiogroup"
                   aria-label={item.name}
@@ -212,7 +212,7 @@ function SessionEditor({ session }: { session: SessionDetail }): ReactElement {
                           setStatuses((prev) => ({ ...prev, [item.student_user_id]: s.code }));
                         }}
                         className={cn(
-                          "min-w-11 px-2 py-2 text-[13px] font-medium first:rounded-l-xs last:rounded-r-xs disabled:opacity-50",
+                          "min-h-11 min-w-11 px-2 py-2 text-[13px] font-medium first:rounded-l-xs last:rounded-r-xs disabled:opacity-50",
                           selected ? "bg-accent text-accent-fg" : "text-fg hover:bg-bg",
                         )}
                       >
