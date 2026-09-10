@@ -72,7 +72,12 @@ export function DataTableCards<TData>({
               {rest.map((cell) => (
                 <div key={cell.id} className="flex items-baseline justify-between gap-3">
                   <dt className="shrink-0 text-[12px] text-fg-muted">{headers[cell.column.id]}</dt>
-                  <dd className="min-w-0 text-right text-[13px] text-fg">
+                  {/*
+                    A link or button sitting in a cell is a real tap target
+                    on a phone, so give it a thumb-sized height here rather
+                    than leaving it as tall as its text.
+                  */}
+                  <dd className="min-w-0 text-right text-[13px] text-fg [&_a]:inline-flex [&_a]:min-h-11 [&_a]:items-center [&_button]:inline-flex [&_button]:min-h-11 [&_button]:items-center">
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </dd>
                 </div>

@@ -21,8 +21,11 @@ const buttonVariants = cva(
         danger: "bg-status-absent text-status-absent-fg hover:opacity-90",
       },
       size: {
-        sm: "h-8 px-3",
-        md: "h-10 px-4",
+        // Both sizes clear 44px on a touch screen and shrink once there is
+        // a cursor. A compact button is a density choice for a dense
+        // desktop table, not a reason to make a thumb miss on a phone.
+        sm: "h-11 px-3 md:h-8",
+        md: "h-11 px-4 md:h-10",
       },
     },
     defaultVariants: { variant: "primary", size: "md" },

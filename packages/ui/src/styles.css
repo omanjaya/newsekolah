@@ -8,6 +8,14 @@
 @import "tailwindcss";
 @import "@newsekolah/config/tailwind/preset.css";
 
+/*
+ * Apps resolve this file through node_modules, which Tailwind excludes
+ * from automatic source detection, so a utility used only inside a shared
+ * component would never be generated. Naming the directory explicitly is
+ * what makes those classes reach the app's stylesheet.
+ */
+@source "./";
+
 @layer base {
   :focus-visible {
     outline: 2px solid var(--color-accent);

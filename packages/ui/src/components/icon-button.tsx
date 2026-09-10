@@ -3,8 +3,11 @@ import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
 
 import { cn } from "../utils/cn.js";
 
+// 44px on a touch screen, 32 once there is a cursor. A thumb has no pixel
+// accuracy, and these are the header's primary controls; the icon itself
+// stays the same size, only the area around it grows.
 const iconButtonVariants = cva(
-  "inline-flex size-8 items-center justify-center rounded-sm text-fg transition-colors " +
+  "inline-flex size-11 md:size-8 items-center justify-center rounded-sm text-fg transition-colors " +
     "duration-[var(--duration-fast)] ease-[var(--ease-standard)] hover:bg-bg " +
     "disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-5",
   {

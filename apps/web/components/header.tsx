@@ -60,7 +60,11 @@ export function Header(): ReactElement {
         <NotificationBell />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button type="button" aria-label={t("profileMenu.label")} className="ml-1 rounded-full">
+            <button
+              type="button"
+              aria-label={t("profileMenu.label")}
+              className="ml-1 flex size-11 items-center justify-center rounded-full md:size-8"
+            >
               <Avatar name={me?.name ?? "?"} src={me?.avatar_url} size="sm" />
             </button>
           </DropdownMenuTrigger>
