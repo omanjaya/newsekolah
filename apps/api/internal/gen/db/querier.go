@@ -145,6 +145,7 @@ type Querier interface {
 	AcademicUpsertWeekdayAssignment(ctx context.Context, arg AcademicUpsertWeekdayAssignmentParams) error
 	ActivateAcademicYear(ctx context.Context, arg ActivateAcademicYearParams) error
 	AddDutyPermission(ctx context.Context, arg AddDutyPermissionParams) error
+	AddParticipant(ctx context.Context, arg AddParticipantParams) (ActivityParticipant, error)
 	AddRolePermission(ctx context.Context, arg AddRolePermissionParams) error
 	AdvanceWorkflowInstanceStage(ctx context.Context, arg AdvanceWorkflowInstanceStageParams) (WorkflowInstance, error)
 	AnalyticsCreatePolicy(ctx context.Context, arg AnalyticsCreatePolicyParams) error
@@ -187,7 +188,9 @@ type Querier interface {
 	// UPDATE guarded by consumed_at IS NULL AND expires_at > now(), so two
 	// concurrent scans of the same token can never both succeed.
 	ConsumeScanToken(ctx context.Context, arg ConsumeScanTokenParams) (ScanToken, error)
+	CountActiveClubsForStudent(ctx context.Context, arg CountActiveClubsForStudentParams) (int32, error)
 	CountActiveLoansForMember(ctx context.Context, arg CountActiveLoansForMemberParams) (int32, error)
+	CountActiveMembers(ctx context.Context, arg CountActiveMembersParams) (int32, error)
 	CountAnnouncementReads(ctx context.Context, arg CountAnnouncementReadsParams) (int64, error)
 	CountAssignmentsForDutyType(ctx context.Context, arg CountAssignmentsForDutyTypeParams) (int64, error)
 	// The input to "meeting_number" in the session payload: how many prior
@@ -205,6 +208,9 @@ type Querier interface {
 	CountWorkflowInstancesForSubjectYear(ctx context.Context, arg CountWorkflowInstancesForSubjectYearParams) (int64, error)
 	CreateAPIKey(ctx context.Context, arg CreateAPIKeyParams) (IntegrationApiKey, error)
 	CreateAcademicYear(ctx context.Context, arg CreateAcademicYearParams) (AcademicYear, error)
+	CreateAchievement(ctx context.Context, arg CreateAchievementParams) (StudentAchievement, error)
+	CreateActivitiesPolicy(ctx context.Context, arg CreateActivitiesPolicyParams) error
+	CreateActivity(ctx context.Context, arg CreateActivityParams) (SchoolActivity, error)
 	CreateAnnouncement(ctx context.Context, arg CreateAnnouncementParams) (Announcement, error)
 	CreateAsset(ctx context.Context, arg CreateAssetParams) (Asset, error)
 	CreateAttendanceCorrection(ctx context.Context, arg CreateAttendanceCorrectionParams) (AttendanceCorrection, error)
@@ -217,6 +223,7 @@ type Querier interface {
 	CreateDutyAssignment(ctx context.Context, arg CreateDutyAssignmentParams) (DutyAssignment, error)
 	CreateDutyType(ctx context.Context, arg CreateDutyTypeParams) (DutyType, error)
 	CreateExitPermit(ctx context.Context, arg CreateExitPermitParams) (ExitPermit, error)
+	CreateExtracurricular(ctx context.Context, arg CreateExtracurricularParams) (Extracurricular, error)
 	CreateGradeLevel(ctx context.Context, arg CreateGradeLevelParams) (GradeLevel, error)
 	CreateGradeRange(ctx context.Context, arg CreateGradeRangeParams) (ReportGradeRange, error)
 	CreateImpersonationSession(ctx context.Context, arg CreateImpersonationSessionParams) (Session, error)
@@ -227,6 +234,8 @@ type Querier interface {
 	CreateLeaveRequest(ctx context.Context, arg CreateLeaveRequestParams) (LeaveRequest, error)
 	CreateLibraryPolicy(ctx context.Context, arg CreateLibraryPolicyParams) error
 	CreateLoan(ctx context.Context, arg CreateLoanParams) (LibraryLoan, error)
+	CreateMeeting(ctx context.Context, arg CreateMeetingParams) (ExtracurricularMeeting, error)
+	CreateMembership(ctx context.Context, arg CreateMembershipParams) (ExtracurricularMembership, error)
 	CreatePasswordReset(ctx context.Context, arg CreatePasswordResetParams) (PasswordReset, error)
 	// cross-module read/write; the assets table is shared platform
 	// infrastructure (migrations/0001_platform_core.up.sql), not owned by any
@@ -256,6 +265,8 @@ type Querier interface {
 	CreateWorkflowInstance(ctx context.Context, arg CreateWorkflowInstanceParams) (WorkflowInstance, error)
 	DeactivateActiveWorkflowDefinitions(ctx context.Context, arg DeactivateActiveWorkflowDefinitionsParams) error
 	DeactivateAllAcademicYears(ctx context.Context, tenantID uuid.UUID) error
+	DeleteAchievement(ctx context.Context, arg DeleteAchievementParams) error
+	DeleteActivity(ctx context.Context, arg DeleteActivityParams) error
 	DeleteAnnouncement(ctx context.Context, arg DeleteAnnouncementParams) error
 	DeleteComponent(ctx context.Context, arg DeleteComponentParams) error
 	DeleteCounseling(ctx context.Context, arg DeleteCounselingParams) error
@@ -264,6 +275,7 @@ type Querier interface {
 	DeleteDutyPermissions(ctx context.Context, arg DeleteDutyPermissionsParams) error
 	DeleteExpiredOrFailedPushDevices(ctx context.Context, arg DeleteExpiredOrFailedPushDevicesParams) (int64, error)
 	DeleteExpiredScanTokens(ctx context.Context, arg DeleteExpiredScanTokensParams) (int64, error)
+	DeleteExtracurricular(ctx context.Context, arg DeleteExtracurricularParams) error
 	DeleteGoogleSSOConfig(ctx context.Context, tenantID uuid.UUID) error
 	DeleteGradeRange(ctx context.Context, arg DeleteGradeRangeParams) error
 	DeleteJournal(ctx context.Context, arg DeleteJournalParams) error
@@ -295,6 +307,7 @@ type Querier interface {
 	// for the name and class printed on a warning letter.
 	DisciplineStudentSnapshot(ctx context.Context, arg DisciplineStudentSnapshotParams) (DisciplineStudentSnapshotRow, error)
 	EmailExists(ctx context.Context, arg EmailExistsParams) (bool, error)
+	EndMembership(ctx context.Context, arg EndMembershipParams) (ExtracurricularMembership, error)
 	EnsureNotificationsPartition(ctx context.Context, targetMonth pgtype.Date) error
 	// Bug fix vs. the old app (docs/02-system-design.md section 6.2 step 4):
 	// any instance still in_progress past its opening day is force-closed so
@@ -306,6 +319,7 @@ type Querier interface {
 	GetAPIKeyByID(ctx context.Context, arg GetAPIKeyByIDParams) (IntegrationApiKey, error)
 	GetAcademicYearByID(ctx context.Context, arg GetAcademicYearByIDParams) (AcademicYear, error)
 	GetAcceptedSubstitutionForScheduleDate(ctx context.Context, arg GetAcceptedSubstitutionForScheduleDateParams) (SubstitutionRequest, error)
+	GetAchievement(ctx context.Context, arg GetAchievementParams) (StudentAchievement, error)
 	GetActiveAcademicYear(ctx context.Context, tenantID uuid.UUID) (AcademicYear, error)
 	// cross-module read; replace with reader interface after merge.
 	//
@@ -318,8 +332,10 @@ type Querier interface {
 	// module) instead of permits querying another module's tables directly.
 	GetActiveEnrollment(ctx context.Context, arg GetActiveEnrollmentParams) (GetActiveEnrollmentRow, error)
 	GetActiveLoanForCopy(ctx context.Context, arg GetActiveLoanForCopyParams) (LibraryLoan, error)
+	GetActiveMembership(ctx context.Context, arg GetActiveMembershipParams) (ExtracurricularMembership, error)
 	GetActiveSubstitutionForScheduleDate(ctx context.Context, arg GetActiveSubstitutionForScheduleDateParams) (SubstitutionRequest, error)
 	GetActiveWorkflowDefinition(ctx context.Context, arg GetActiveWorkflowDefinitionParams) (WorkflowDefinition, error)
+	GetActivity(ctx context.Context, arg GetActivityParams) (SchoolActivity, error)
 	GetAnnouncementByID(ctx context.Context, arg GetAnnouncementByIDParams) (Announcement, error)
 	GetAssetByID(ctx context.Context, arg GetAssetByIDParams) (Asset, error)
 	GetAssetObjectKey(ctx context.Context, arg GetAssetObjectKeyParams) (string, error)
@@ -349,6 +365,7 @@ type Querier interface {
 	GetEnrolledClassForAttendance(ctx context.Context, arg GetEnrolledClassForAttendanceParams) (uuid.UUID, error)
 	GetEntryBySessionStudent(ctx context.Context, arg GetEntryBySessionStudentParams) (AttendanceEntry, error)
 	GetExitPermit(ctx context.Context, arg GetExitPermitParams) (ExitPermit, error)
+	GetExtracurricular(ctx context.Context, arg GetExtracurricularParams) (Extracurricular, error)
 	GetGoogleSSOConfig(ctx context.Context, tenantID uuid.UUID) (SsoGoogleConfig, error)
 	// The class a teacher is homeroom (wali kelas) duty holder of this
 	// academic year, if any -- duty slug "homeroom", scope_class_id per
@@ -370,6 +387,7 @@ type Querier interface {
 	GetJournalByID(ctx context.Context, arg GetJournalByIDParams) (ClassJournal, error)
 	GetJournalByUnique(ctx context.Context, arg GetJournalByUniqueParams) (ClassJournal, error)
 	GetLateArrival(ctx context.Context, arg GetLateArrivalParams) (LateArrival, error)
+	GetLatestActivitiesPolicy(ctx context.Context, tenantID uuid.UUID) (GetLatestActivitiesPolicyRow, error)
 	// The previous meeting of this schedule, used to look up its journal for
 	// "previous_journal_topic".
 	GetLatestAttendanceSessionBeforeDate(ctx context.Context, arg GetLatestAttendanceSessionBeforeDateParams) (AttendanceSession, error)
@@ -379,6 +397,8 @@ type Querier interface {
 	GetLeaveDocument(ctx context.Context, arg GetLeaveDocumentParams) (LeaveDocument, error)
 	GetLeaveRequest(ctx context.Context, arg GetLeaveRequestParams) (LeaveRequest, error)
 	GetLoan(ctx context.Context, arg GetLoanParams) (LibraryLoan, error)
+	GetMeeting(ctx context.Context, arg GetMeetingParams) (ExtracurricularMeeting, error)
+	GetMembership(ctx context.Context, arg GetMembershipParams) (ExtracurricularMembership, error)
 	GetMfaTotp(ctx context.Context, arg GetMfaTotpParams) (MfaTotp, error)
 	GetNotificationByID(ctx context.Context, arg GetNotificationByIDParams) (Notification, error)
 	GetNotificationSettings(ctx context.Context, arg GetNotificationSettingsParams) (NotificationSetting, error)
@@ -484,6 +504,7 @@ type Querier interface {
 	// the input to the attendance module's "today's sessions" list
 	// (own schedules plus accepted substitutions).
 	ListAcceptedSubstitutionsForSubstituteDate(ctx context.Context, arg ListAcceptedSubstitutionsForSubstituteDateParams) ([]SubstitutionRequest, error)
+	ListAchievements(ctx context.Context, arg ListAchievementsParams) ([]StudentAchievement, error)
 	// GET /v1/me/announcements: published, inside the active window, pinned
 	// first then most recent. Recipient filtering (does this user's audience
 	// match) happens in the service, since audience is a jsonb blob evaluated
@@ -505,6 +526,7 @@ type Querier interface {
 	// cross-module reads use for ClassRef/SubjectRef.
 	ListActiveEnrollmentsForAttendance(ctx context.Context, arg ListActiveEnrollmentsForAttendanceParams) ([]ListActiveEnrollmentsForAttendanceRow, error)
 	ListActiveEnrollmentsRefByClass(ctx context.Context, arg ListActiveEnrollmentsRefByClassParams) ([]ListActiveEnrollmentsRefByClassRow, error)
+	ListActiveMemberStudentIDs(ctx context.Context, arg ListActiveMemberStudentIDsParams) ([]uuid.UUID, error)
 	ListActiveSessionsForUser(ctx context.Context, arg ListActiveSessionsForUserParams) ([]Session, error)
 	// cross-module read: classes/enrollments tables are owned by the academic
 	// module. Not yet migrated in this branch; type-checked here against
@@ -534,10 +556,13 @@ type Querier interface {
 	// cross-module read: users table is owned by the identity module.
 	ListActiveUserIDsForTenant(ctx context.Context, tenantID uuid.UUID) ([]uuid.UUID, error)
 	ListActiveWebhookEndpointsForEvent(ctx context.Context, arg ListActiveWebhookEndpointsForEventParams) ([]IntegrationWebhookEndpoint, error)
+	ListActivities(ctx context.Context, arg ListActivitiesParams) ([]SchoolActivity, error)
 	ListAllGradeRanges(ctx context.Context, arg ListAllGradeRangesParams) ([]ReportGradeRange, error)
 	ListAnnouncementsForAdmin(ctx context.Context, arg ListAnnouncementsForAdminParams) ([]Announcement, error)
 	ListAttendanceDailySummaryForClassDate(ctx context.Context, arg ListAttendanceDailySummaryForClassDateParams) ([]AttendanceDailySummary, error)
 	ListAttendanceDailySummaryForStudentMonth(ctx context.Context, arg ListAttendanceDailySummaryForStudentMonthParams) ([]AttendanceDailySummary, error)
+	ListAttendanceForClub(ctx context.Context, arg ListAttendanceForClubParams) ([]ExtracurricularAttendance, error)
+	ListAttendanceForMeeting(ctx context.Context, arg ListAttendanceForMeetingParams) ([]ExtracurricularAttendance, error)
 	ListAttendanceSessionsByClassDate(ctx context.Context, arg ListAttendanceSessionsByClassDateParams) ([]AttendanceSession, error)
 	ListAttendanceSessionsByDateRange(ctx context.Context, arg ListAttendanceSessionsByDateRangeParams) ([]AttendanceSession, error)
 	ListAttendanceSessionsByTeacherDate(ctx context.Context, arg ListAttendanceSessionsByTeacherDateParams) ([]AttendanceSession, error)
@@ -575,6 +600,7 @@ type Querier interface {
 	// submitted sessions -- the raw input to attendance/domain.ComputeDailyStatus.
 	ListEntryStatusesForStudentDate(ctx context.Context, arg ListEntryStatusesForStudentDateParams) ([]string, error)
 	ListExitPermitsForReport(ctx context.Context, arg ListExitPermitsForReportParams) ([]ListExitPermitsForReportRow, error)
+	ListExtracurriculars(ctx context.Context, arg ListExtracurricularsParams) ([]Extracurricular, error)
 	ListGradeRanges(ctx context.Context, arg ListGradeRangesParams) ([]ReportGradeRange, error)
 	ListGradesForComponents(ctx context.Context, arg ListGradesForComponentsParams) ([]Grade, error)
 	// Every grade of one student in a term, joined to its component; the
@@ -591,10 +617,14 @@ type Querier interface {
 	ListLeaveRequestsForReview(ctx context.Context, arg ListLeaveRequestsForReviewParams) ([]ListLeaveRequestsForReviewRow, error)
 	ListLoansForMember(ctx context.Context, arg ListLoansForMemberParams) ([]LibraryLoan, error)
 	ListLoansInPeriod(ctx context.Context, arg ListLoansInPeriodParams) ([]LibraryLoan, error)
+	ListMeetingsForClub(ctx context.Context, arg ListMeetingsForClubParams) ([]ExtracurricularMeeting, error)
+	ListMembershipsForClub(ctx context.Context, arg ListMembershipsForClubParams) ([]ExtracurricularMembership, error)
+	ListMembershipsForStudent(ctx context.Context, arg ListMembershipsForStudentParams) ([]ListMembershipsForStudentRow, error)
 	ListNotificationPreferencesForUser(ctx context.Context, arg ListNotificationPreferencesForUserParams) ([]NotificationPreference, error)
 	ListNotificationsForUser(ctx context.Context, arg ListNotificationsForUserParams) ([]Notification, error)
 	ListOverdueLoans(ctx context.Context, arg ListOverdueLoansParams) ([]LibraryLoan, error)
 	ListParentsForStudent(ctx context.Context, arg ListParentsForStudentParams) ([]ListParentsForStudentRow, error)
+	ListParticipants(ctx context.Context, arg ListParticipantsParams) ([]ActivityParticipant, error)
 	ListPeriodsRefByTemplate(ctx context.Context, arg ListPeriodsRefByTemplateParams) ([]Period, error)
 	ListPermissionCodesForDutyTypes(ctx context.Context, dutyTypeIds []uuid.UUID) ([]ListPermissionCodesForDutyTypesRow, error)
 	ListPermissionCodesForRoles(ctx context.Context, roleIds []uuid.UUID) ([]string, error)
@@ -714,6 +744,7 @@ type Querier interface {
 	PlatformUpsertFeatureFlag(ctx context.Context, arg PlatformUpsertFeatureFlagParams) (FeatureFlag, error)
 	RecordDeliveryAttempt(ctx context.Context, arg RecordDeliveryAttemptParams) error
 	RecordStocktakeScan(ctx context.Context, arg RecordStocktakeScanParams) (LibraryStocktakeScan, error)
+	RemoveParticipant(ctx context.Context, arg RemoveParticipantParams) error
 	RenameWebAuthnCredential(ctx context.Context, arg RenameWebAuthnCredentialParams) (WebauthnCredential, error)
 	RenewLoan(ctx context.Context, arg RenewLoanParams) (LibraryLoan, error)
 	ResetWebhookEndpointFailure(ctx context.Context, arg ResetWebhookEndpointFailureParams) error
@@ -746,6 +777,8 @@ type Querier interface {
 	TouchPushDeviceUsed(ctx context.Context, arg TouchPushDeviceUsedParams) error
 	TouchSessionLastSeen(ctx context.Context, arg TouchSessionLastSeenParams) error
 	UnlinkParentStudent(ctx context.Context, arg UnlinkParentStudentParams) error
+	UpdateAchievement(ctx context.Context, arg UpdateAchievementParams) (StudentAchievement, error)
+	UpdateActivity(ctx context.Context, arg UpdateActivityParams) (SchoolActivity, error)
 	UpdateAnnouncement(ctx context.Context, arg UpdateAnnouncementParams) (Announcement, error)
 	UpdateAnnouncementStatus(ctx context.Context, arg UpdateAnnouncementStatusParams) (Announcement, error)
 	UpdateComponent(ctx context.Context, arg UpdateComponentParams) (AssessmentComponent, error)
@@ -754,6 +787,7 @@ type Querier interface {
 	UpdateDocumentTemplate(ctx context.Context, arg UpdateDocumentTemplateParams) (DocumentTemplate, error)
 	UpdateDutyAssignment(ctx context.Context, arg UpdateDutyAssignmentParams) error
 	UpdateDutyType(ctx context.Context, arg UpdateDutyTypeParams) error
+	UpdateExtracurricular(ctx context.Context, arg UpdateExtracurricularParams) (Extracurricular, error)
 	UpdateJournal(ctx context.Context, arg UpdateJournalParams) (ClassJournal, error)
 	UpdateLateArrivalReview(ctx context.Context, arg UpdateLateArrivalReviewParams) (LateArrival, error)
 	UpdateOwnProfile(ctx context.Context, arg UpdateOwnProfileParams) error
@@ -771,6 +805,7 @@ type Querier interface {
 	UpdateWebhookEndpoint(ctx context.Context, arg UpdateWebhookEndpointParams) (IntegrationWebhookEndpoint, error)
 	UpdateWhatsAppDeliveryReceipt(ctx context.Context, arg UpdateWhatsAppDeliveryReceiptParams) (int64, error)
 	UpdateWhatsAppTemplate(ctx context.Context, arg UpdateWhatsAppTemplateParams) (WhatsappTemplate, error)
+	UpsertAttendance(ctx context.Context, arg UpsertAttendanceParams) (ExtracurricularAttendance, error)
 	UpsertAttendanceDailySummary(ctx context.Context, arg UpsertAttendanceDailySummaryParams) error
 	UpsertAttendanceEntry(ctx context.Context, arg UpsertAttendanceEntryParams) (AttendanceEntry, error)
 	UpsertGoogleSSOConfig(ctx context.Context, arg UpsertGoogleSSOConfigParams) (SsoGoogleConfig, error)

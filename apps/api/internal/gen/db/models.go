@@ -39,6 +39,25 @@ type AcademicYear struct {
 	ArchivedAt pgtype.Timestamptz `json:"archived_at"`
 }
 
+type ActivitiesPolicy struct {
+	TenantID      uuid.UUID          `json:"tenant_id"`
+	Version       int32              `json:"version"`
+	Config        []byte             `json:"config"`
+	EffectiveFrom pgtype.Date        `json:"effective_from"`
+	CreatedBy     pgtype.UUID        `json:"created_by"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+}
+
+type ActivityParticipant struct {
+	ID            uuid.UUID          `json:"id"`
+	TenantID      uuid.UUID          `json:"tenant_id"`
+	ActivityID    uuid.UUID          `json:"activity_id"`
+	ClassID       pgtype.UUID        `json:"class_id"`
+	GradeLevelID  pgtype.UUID        `json:"grade_level_id"`
+	StudentUserID pgtype.UUID        `json:"student_user_id"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+}
+
 type AnalyticsPolicy struct {
 	TenantID      uuid.UUID          `json:"tenant_id"`
 	Version       int32              `json:"version"`
@@ -352,6 +371,58 @@ type ExitPermit struct {
 	SecurityUserID      pgtype.UUID        `json:"security_user_id"`
 	StudentNameSnapshot string             `json:"student_name_snapshot"`
 	ClassNameSnapshot   string             `json:"class_name_snapshot"`
+}
+
+type Extracurricular struct {
+	ID             uuid.UUID          `json:"id"`
+	TenantID       uuid.UUID          `json:"tenant_id"`
+	AcademicYearID uuid.UUID          `json:"academic_year_id"`
+	Name           string             `json:"name"`
+	Description    string             `json:"description"`
+	CoachUserID    pgtype.UUID        `json:"coach_user_id"`
+	Capacity       pgtype.Int4        `json:"capacity"`
+	MeetingDay     pgtype.Int2        `json:"meeting_day"`
+	MeetingStart   pgtype.Time        `json:"meeting_start"`
+	MeetingEnd     pgtype.Time        `json:"meeting_end"`
+	Location       string             `json:"location"`
+	IsActive       bool               `json:"is_active"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+	DeletedAt      pgtype.Timestamptz `json:"deleted_at"`
+}
+
+type ExtracurricularAttendance struct {
+	ID            uuid.UUID          `json:"id"`
+	TenantID      uuid.UUID          `json:"tenant_id"`
+	MeetingID     uuid.UUID          `json:"meeting_id"`
+	StudentUserID uuid.UUID          `json:"student_user_id"`
+	StatusCode    string             `json:"status_code"`
+	Notes         string             `json:"notes"`
+	RecordedBy    pgtype.UUID        `json:"recorded_by"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
+}
+
+type ExtracurricularMeeting struct {
+	ID                uuid.UUID          `json:"id"`
+	TenantID          uuid.UUID          `json:"tenant_id"`
+	ExtracurricularID uuid.UUID          `json:"extracurricular_id"`
+	MeetingDate       pgtype.Date        `json:"meeting_date"`
+	Notes             string             `json:"notes"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
+}
+
+type ExtracurricularMembership struct {
+	ID                uuid.UUID          `json:"id"`
+	TenantID          uuid.UUID          `json:"tenant_id"`
+	ExtracurricularID uuid.UUID          `json:"extracurricular_id"`
+	StudentUserID     uuid.UUID          `json:"student_user_id"`
+	JoinedOn          pgtype.Date        `json:"joined_on"`
+	LeftOn            pgtype.Date        `json:"left_on"`
+	Status            string             `json:"status"`
+	ActiveKey         pgtype.UUID        `json:"active_key"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt         pgtype.Timestamptz `json:"updated_at"`
 }
 
 type FeatureFlag struct {
@@ -899,6 +970,21 @@ type Schedule struct {
 	UpdatedAt      pgtype.Timestamptz        `json:"updated_at"`
 }
 
+type SchoolActivity struct {
+	ID              uuid.UUID          `json:"id"`
+	TenantID        uuid.UUID          `json:"tenant_id"`
+	AcademicYearID  uuid.UUID          `json:"academic_year_id"`
+	Name            string             `json:"name"`
+	Description     string             `json:"description"`
+	Location        string             `json:"location"`
+	StartDate       pgtype.Date        `json:"start_date"`
+	EndDate         pgtype.Date        `json:"end_date"`
+	OrganiserUserID pgtype.UUID        `json:"organiser_user_id"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+	DeletedAt       pgtype.Timestamptz `json:"deleted_at"`
+}
+
 type SchoolDay struct {
 	TenantID       uuid.UUID `json:"tenant_id"`
 	AcademicYearID uuid.UUID `json:"academic_year_id"`
@@ -960,6 +1046,22 @@ type StarEvent struct {
 	Note             string             `json:"note"`
 	VisibleToStudent bool               `json:"visible_to_student"`
 	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+}
+
+type StudentAchievement struct {
+	ID              uuid.UUID          `json:"id"`
+	TenantID        uuid.UUID          `json:"tenant_id"`
+	AcademicYearID  uuid.UUID          `json:"academic_year_id"`
+	StudentUserID   uuid.UUID          `json:"student_user_id"`
+	CompetitionName string             `json:"competition_name"`
+	Level           string             `json:"level"`
+	Placement       string             `json:"placement"`
+	AchievedOn      pgtype.Date        `json:"achieved_on"`
+	Notes           string             `json:"notes"`
+	CreatedBy       pgtype.UUID        `json:"created_by"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+	DeletedAt       pgtype.Timestamptz `json:"deleted_at"`
 }
 
 type StudentProfile struct {
