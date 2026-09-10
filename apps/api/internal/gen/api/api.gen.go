@@ -720,6 +720,42 @@ func (e MeProfileKind) Valid() bool {
 	}
 }
 
+// Defines values for MentorMeetingNoteKind.
+const (
+	MentorMeetingNoteKindGroup      MentorMeetingNoteKind = "group"
+	MentorMeetingNoteKindIndividual MentorMeetingNoteKind = "individual"
+)
+
+// Valid indicates whether the value is a known member of the MentorMeetingNoteKind enum.
+func (e MentorMeetingNoteKind) Valid() bool {
+	switch e {
+	case MentorMeetingNoteKindGroup:
+		return true
+	case MentorMeetingNoteKindIndividual:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MentorMeetingNoteWriteKind.
+const (
+	MentorMeetingNoteWriteKindGroup      MentorMeetingNoteWriteKind = "group"
+	MentorMeetingNoteWriteKindIndividual MentorMeetingNoteWriteKind = "individual"
+)
+
+// Valid indicates whether the value is a known member of the MentorMeetingNoteWriteKind enum.
+func (e MentorMeetingNoteWriteKind) Valid() bool {
+	switch e {
+	case MentorMeetingNoteWriteKindGroup:
+		return true
+	case MentorMeetingNoteWriteKindIndividual:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for MonitorSessionCardStatus.
 const (
 	MonitorSessionCardStatusInProgress MonitorSessionCardStatus = "in_progress"
@@ -2044,6 +2080,12 @@ type CreateUserRequest struct {
 // CreateUserRequestLocale defines model for CreateUserRequest.Locale.
 type CreateUserRequestLocale string
 
+// CriterionScore defines model for CriterionScore.
+type CriterionScore struct {
+	CriterionKey string `json:"criterion_key"`
+	Score        int    `json:"score"`
+}
+
 // DapodikImportAction defines model for DapodikImportAction.
 type DapodikImportAction string
 
@@ -2747,6 +2789,90 @@ type MeDutiesScopeKind string
 // MeProfileKind defines model for Me.ProfileKind.
 type MeProfileKind string
 
+// MentorGroup defines model for MentorGroup.
+type MentorGroup struct {
+	AcademicYearId openapi_types.UUID `json:"academic_year_id"`
+	CreatedAt      time.Time          `json:"created_at"`
+	Id             openapi_types.UUID `json:"id"`
+	MentorUserId   openapi_types.UUID `json:"mentor_user_id"`
+	Name           string             `json:"name"`
+}
+
+// MentorGroupMember defines model for MentorGroupMember.
+type MentorGroupMember struct {
+	AssignedAt    time.Time          `json:"assigned_at"`
+	GroupId       openapi_types.UUID `json:"group_id"`
+	Id            openapi_types.UUID `json:"id"`
+	StudentUserId openapi_types.UUID `json:"student_user_id"`
+}
+
+// MentorGroupSizeLimit defines model for MentorGroupSizeLimit.
+type MentorGroupSizeLimit struct {
+	Limit int `json:"limit"`
+}
+
+// MentorGroupWrite defines model for MentorGroupWrite.
+type MentorGroupWrite struct {
+	MentorUserId openapi_types.UUID `json:"mentor_user_id"`
+	Name         string             `json:"name"`
+}
+
+// MentorMeetingNote defines model for MentorMeetingNote.
+type MentorMeetingNote struct {
+	AgreedActions   string               `json:"agreed_actions"`
+	AttendeeUserIds []openapi_types.UUID `json:"attendee_user_ids"`
+
+	// Content Sealed at rest; returned in full only to a reader the fixed restriction allows.
+	Content      string                `json:"content"`
+	GroupId      openapi_types.UUID    `json:"group_id"`
+	Id           openapi_types.UUID    `json:"id"`
+	Kind         MentorMeetingNoteKind `json:"kind"`
+	MentorUserId *openapi_types.UUID   `json:"mentor_user_id,omitempty"`
+	MetAt        time.Time             `json:"met_at"`
+	Topic        string                `json:"topic"`
+}
+
+// MentorMeetingNoteKind defines model for MentorMeetingNote.Kind.
+type MentorMeetingNoteKind string
+
+// MentorMeetingNoteWrite defines model for MentorMeetingNoteWrite.
+type MentorMeetingNoteWrite struct {
+	AgreedActions   *string                    `json:"agreed_actions,omitempty"`
+	AttendeeUserIds []openapi_types.UUID       `json:"attendee_user_ids"`
+	Content         string                     `json:"content"`
+	Kind            MentorMeetingNoteWriteKind `json:"kind"`
+	MetAt           time.Time                  `json:"met_at"`
+	Topic           string                     `json:"topic"`
+}
+
+// MentorMeetingNoteWriteKind defines model for MentorMeetingNoteWrite.Kind.
+type MentorMeetingNoteWriteKind string
+
+// MentorStudentSnapshot defines model for MentorStudentSnapshot.
+type MentorStudentSnapshot struct {
+	// AttendanceByStatus This month's day count per attendance status code, using the tenant's own status policy.
+	AttendanceByStatus    map[string]int `json:"attendance_by_status"`
+	ClassName             string         `json:"class_name"`
+	DisciplineActiveCount int            `json:"discipline_active_count"`
+	DisciplinePoints      int            `json:"discipline_points"`
+	PublishedSubjects     []struct {
+		Score     float32            `json:"score"`
+		SubjectId openapi_types.UUID `json:"subject_id"`
+	} `json:"published_subjects"`
+	StudentName   string             `json:"student_name"`
+	StudentUserId openapi_types.UUID `json:"student_user_id"`
+}
+
+// MentorTermSummary defines model for MentorTermSummary.
+type MentorTermSummary struct {
+	GroupId       openapi_types.UUID  `json:"group_id"`
+	Id            openapi_types.UUID  `json:"id"`
+	MentorUserId  *openapi_types.UUID `json:"mentor_user_id,omitempty"`
+	StudentUserId openapi_types.UUID  `json:"student_user_id"`
+	Summary       string              `json:"summary"`
+	TermId        openapi_types.UUID  `json:"term_id"`
+}
+
 // MfaCode defines model for MfaCode.
 type MfaCode struct {
 	Code string `json:"code"`
@@ -2900,6 +3026,30 @@ type NotificationSettingsUpdate struct {
 	DigestHour      int  `json:"digest_hour"`
 	QuietHoursEnd   *int `json:"quiet_hours_end,omitempty"`
 	QuietHoursStart *int `json:"quiet_hours_start,omitempty"`
+}
+
+// Observation defines model for Observation.
+type Observation struct {
+	AgreedFollowUp  string             `json:"agreed_follow_up"`
+	CycleId         openapi_types.UUID `json:"cycle_id"`
+	Id              openapi_types.UUID `json:"id"`
+	ObservedAt      time.Time          `json:"observed_at"`
+	ObserverNotes   string             `json:"observer_notes"`
+	ObserverUserId  openapi_types.UUID `json:"observer_user_id"`
+	ScheduledId     openapi_types.UUID `json:"scheduled_id"`
+	Scores          []CriterionScore   `json:"scores"`
+	TeacherResponse string             `json:"teacher_response"`
+	TeacherUserId   openapi_types.UUID `json:"teacher_user_id"`
+}
+
+// ObservationWrite defines model for ObservationWrite.
+type ObservationWrite struct {
+	AgreedFollowUp  *string            `json:"agreed_follow_up,omitempty"`
+	ObservedAt      time.Time          `json:"observed_at"`
+	ObserverNotes   string             `json:"observer_notes"`
+	ScheduledId     openapi_types.UUID `json:"scheduled_id"`
+	Scores          []CriterionScore   `json:"scores"`
+	TeacherResponse *string            `json:"teacher_response,omitempty"`
 }
 
 // PageMeta defines model for PageMeta.
@@ -3407,6 +3557,22 @@ type ScheduleWriteRequest struct {
 	TermId         *openapi_types.UUID `json:"term_id,omitempty"`
 }
 
+// ScheduledObservation defines model for ScheduledObservation.
+type ScheduledObservation struct {
+	CycleId        openapi_types.UUID `json:"cycle_id"`
+	Id             openapi_types.UUID `json:"id"`
+	LessonDate     openapi_types.Date `json:"lesson_date"`
+	ObserverUserId openapi_types.UUID `json:"observer_user_id"`
+	ScheduleId     openapi_types.UUID `json:"schedule_id"`
+	TeacherUserId  openapi_types.UUID `json:"teacher_user_id"`
+}
+
+// ScheduledObservationWrite defines model for ScheduledObservationWrite.
+type ScheduledObservationWrite struct {
+	LessonDate openapi_types.Date `json:"lesson_date"`
+	ScheduleId openapi_types.UUID `json:"schedule_id"`
+}
+
 // SchoolDay defines model for SchoolDay.
 type SchoolDay struct {
 	DayOfWeek int  `json:"day_of_week"`
@@ -3601,11 +3767,49 @@ type SubstitutionCreateRequest struct {
 // SubstitutionStatus defines model for SubstitutionStatus.
 type SubstitutionStatus string
 
+// SupervisionCriterion defines model for SupervisionCriterion.
+type SupervisionCriterion struct {
+	Key  string `json:"key"`
+	Name string `json:"name"`
+}
+
+// SupervisionCycle defines model for SupervisionCycle.
+type SupervisionCycle struct {
+	AcademicYearId openapi_types.UUID    `json:"academic_year_id"`
+	Id             openapi_types.UUID    `json:"id"`
+	Instrument     SupervisionInstrument `json:"instrument"`
+	Name           string                `json:"name"`
+}
+
+// SupervisionCycleWrite defines model for SupervisionCycleWrite.
+type SupervisionCycleWrite struct {
+	Instrument SupervisionInstrument `json:"instrument"`
+	Name       string                `json:"name"`
+}
+
+// SupervisionInstrument defines model for SupervisionInstrument.
+type SupervisionInstrument struct {
+	Criteria []SupervisionCriterion `json:"criteria"`
+	Name     string                 `json:"name"`
+	ScaleMax int                    `json:"scale_max"`
+	ScaleMin int                    `json:"scale_min"`
+}
+
 // SyncTeacherAssignmentsInput defines model for SyncTeacherAssignmentsInput.
 type SyncTeacherAssignmentsInput struct {
 	AcademicYearId openapi_types.UUID `json:"academic_year_id"`
 	Pairs          []SubjectClassPair `json:"pairs"`
 	TeacherUserId  openapi_types.UUID `json:"teacher_user_id"`
+}
+
+// TeacherSupervisionReport defines model for TeacherSupervisionReport.
+type TeacherSupervisionReport struct {
+	CriterionAverage map[string]float32 `json:"criterion_average"`
+	Cycle            SupervisionCycle   `json:"cycle"`
+	Observations     []Observation      `json:"observations"`
+	OverallAverage   float32            `json:"overall_average"`
+	TeacherName      string             `json:"teacher_name"`
+	TeacherUserId    openapi_types.UUID `json:"teacher_user_id"`
 }
 
 // TeachingAssignment defines model for TeachingAssignment.
@@ -4723,6 +4927,16 @@ type UpdateMyProfileJSONBody struct {
 // UpdateMyProfileJSONBodyLocale defines parameters for UpdateMyProfile.
 type UpdateMyProfileJSONBodyLocale string
 
+// AssignMentorGroupMemberJSONBody defines parameters for AssignMentorGroupMember.
+type AssignMentorGroupMemberJSONBody struct {
+	StudentUserId openapi_types.UUID `json:"student_user_id"`
+}
+
+// WriteMentorTermSummaryJSONBody defines parameters for WriteMentorTermSummary.
+type WriteMentorTermSummaryJSONBody struct {
+	Summary string `json:"summary"`
+}
+
 // GetMonitorSnapshotParams defines parameters for GetMonitorSnapshot.
 type GetMonitorSnapshotParams struct {
 	// XMonitorToken The tenant's configured monitor.display_token setting.
@@ -4824,6 +5038,12 @@ type ListSubstitutionsParamsDirection string
 type RespondSubstitutionJSONBody struct {
 	Accept bool    `json:"accept"`
 	Note   *string `json:"note,omitempty"`
+}
+
+// RespondToObservationJSONBody defines parameters for RespondToObservation.
+type RespondToObservationJSONBody struct {
+	AgreedFollowUp  *string `json:"agreed_follow_up,omitempty"`
+	TeacherResponse *string `json:"teacher_response,omitempty"`
 }
 
 // GetTenantNotificationDefaultsParams defines parameters for GetTenantNotificationDefaults.
@@ -5212,6 +5432,27 @@ type ChangePasswordJSONRequestBody ChangePasswordJSONBody
 // UpdateMyProfileJSONRequestBody defines body for UpdateMyProfile for application/json ContentType.
 type UpdateMyProfileJSONRequestBody UpdateMyProfileJSONBody
 
+// CreateMentorGroupJSONRequestBody defines body for CreateMentorGroup for application/json ContentType.
+type CreateMentorGroupJSONRequestBody = MentorGroupWrite
+
+// UpdateMentorGroupJSONRequestBody defines body for UpdateMentorGroup for application/json ContentType.
+type UpdateMentorGroupJSONRequestBody = MentorGroupWrite
+
+// AssignMentorGroupMemberJSONRequestBody defines body for AssignMentorGroupMember for application/json ContentType.
+type AssignMentorGroupMemberJSONRequestBody AssignMentorGroupMemberJSONBody
+
+// CreateMentorMeetingNoteJSONRequestBody defines body for CreateMentorMeetingNote for application/json ContentType.
+type CreateMentorMeetingNoteJSONRequestBody = MentorMeetingNoteWrite
+
+// WriteMentorTermSummaryJSONRequestBody defines body for WriteMentorTermSummary for application/json ContentType.
+type WriteMentorTermSummaryJSONRequestBody WriteMentorTermSummaryJSONBody
+
+// UpdateMentorMeetingNoteJSONRequestBody defines body for UpdateMentorMeetingNote for application/json ContentType.
+type UpdateMentorMeetingNoteJSONRequestBody = MentorMeetingNoteWrite
+
+// SetMentorGroupSizeLimitJSONRequestBody defines body for SetMentorGroupSizeLimit for application/json ContentType.
+type SetMentorGroupSizeLimitJSONRequestBody = MentorGroupSizeLimit
+
 // SetNotificationPreferenceJSONRequestBody defines body for SetNotificationPreference for application/json ContentType.
 type SetNotificationPreferenceJSONRequestBody = NotificationPreferenceUpdate
 
@@ -5271,6 +5512,21 @@ type CreateSubstitutionJSONRequestBody = SubstitutionCreateRequest
 
 // RespondSubstitutionJSONRequestBody defines body for RespondSubstitution for application/json ContentType.
 type RespondSubstitutionJSONRequestBody RespondSubstitutionJSONBody
+
+// CreateSupervisionCycleJSONRequestBody defines body for CreateSupervisionCycle for application/json ContentType.
+type CreateSupervisionCycleJSONRequestBody = SupervisionCycleWrite
+
+// UpdateSupervisionCycleJSONRequestBody defines body for UpdateSupervisionCycle for application/json ContentType.
+type UpdateSupervisionCycleJSONRequestBody = SupervisionCycleWrite
+
+// ScheduleObservationJSONRequestBody defines body for ScheduleObservation for application/json ContentType.
+type ScheduleObservationJSONRequestBody = ScheduledObservationWrite
+
+// CompleteObservationJSONRequestBody defines body for CompleteObservation for application/json ContentType.
+type CompleteObservationJSONRequestBody = ObservationWrite
+
+// RespondToObservationJSONRequestBody defines body for RespondToObservation for application/json ContentType.
+type RespondToObservationJSONRequestBody RespondToObservationJSONBody
 
 // SetTenantNotificationDefaultJSONRequestBody defines body for SetTenantNotificationDefault for application/json ContentType.
 type SetTenantNotificationDefaultJSONRequestBody = NotificationPreferenceUpdate
@@ -6060,6 +6316,63 @@ type ServerInterface interface {
 	// UpdateMyProfile Update own name, email, phone and locale
 	// (PUT /v1/me/profile)
 	UpdateMyProfile(w http.ResponseWriter, r *http.Request)
+	// ListMentorGroups Every mentor group this academic year
+	// (GET /v1/mentoring/groups)
+	ListMentorGroups(w http.ResponseWriter, r *http.Request)
+	// CreateMentorGroup Create a mentor group for one teacher
+	// (POST /v1/mentoring/groups)
+	CreateMentorGroup(w http.ResponseWriter, r *http.Request)
+	// DeleteMentorGroup Remove a mentor group
+	// (DELETE /v1/mentoring/groups/{groupId})
+	DeleteMentorGroup(w http.ResponseWriter, r *http.Request, groupId openapi_types.UUID)
+	// GetMentorGroup One mentor group
+	// (GET /v1/mentoring/groups/{groupId})
+	GetMentorGroup(w http.ResponseWriter, r *http.Request, groupId openapi_types.UUID)
+	// UpdateMentorGroup Rename a group or reassign its mentor
+	// (PUT /v1/mentoring/groups/{groupId})
+	UpdateMentorGroup(w http.ResponseWriter, r *http.Request, groupId openapi_types.UUID)
+	// ListMentorGroupMembers Students assigned to a mentor group
+	// (GET /v1/mentoring/groups/{groupId}/members)
+	ListMentorGroupMembers(w http.ResponseWriter, r *http.Request, groupId openapi_types.UUID)
+	// AssignMentorGroupMember Assign a student to the group, refused past the group-size limit
+	// (POST /v1/mentoring/groups/{groupId}/members)
+	AssignMentorGroupMember(w http.ResponseWriter, r *http.Request, groupId openapi_types.UUID)
+	// RemoveMentorGroupMember Remove a student from the group
+	// (DELETE /v1/mentoring/groups/{groupId}/members/{studentId})
+	RemoveMentorGroupMember(w http.ResponseWriter, r *http.Request, groupId openapi_types.UUID, studentId openapi_types.UUID)
+	// ListMentorMeetingNotes Meeting notes for a group the reader may open (mentor, counselor, leadership)
+	// (GET /v1/mentoring/groups/{groupId}/notes)
+	ListMentorMeetingNotes(w http.ResponseWriter, r *http.Request, groupId openapi_types.UUID)
+	// CreateMentorMeetingNote Record a mentoring session
+	// (POST /v1/mentoring/groups/{groupId}/notes)
+	CreateMentorMeetingNote(w http.ResponseWriter, r *http.Request, groupId openapi_types.UUID)
+	// GetMentorTermSummary The mentor's written term appraisal of one student
+	// (GET /v1/mentoring/groups/{groupId}/term-summaries/{termId}/{studentId})
+	GetMentorTermSummary(w http.ResponseWriter, r *http.Request, groupId openapi_types.UUID, termId openapi_types.UUID, studentId openapi_types.UUID)
+	// WriteMentorTermSummary Write or replace the term appraisal
+	// (PUT /v1/mentoring/groups/{groupId}/term-summaries/{termId}/{studentId})
+	WriteMentorTermSummary(w http.ResponseWriter, r *http.Request, groupId openapi_types.UUID, termId openapi_types.UUID, studentId openapi_types.UUID)
+	// ListMyMentorGroups The mentor groups the current user leads
+	// (GET /v1/mentoring/my-groups)
+	ListMyMentorGroups(w http.ResponseWriter, r *http.Request)
+	// DeleteMentorMeetingNote Delete a meeting note (its own mentor only)
+	// (DELETE /v1/mentoring/notes/{noteId})
+	DeleteMentorMeetingNote(w http.ResponseWriter, r *http.Request, noteId openapi_types.UUID)
+	// GetMentorMeetingNote One meeting note, visible only to its mentor, a counselor, or leadership
+	// (GET /v1/mentoring/notes/{noteId})
+	GetMentorMeetingNote(w http.ResponseWriter, r *http.Request, noteId openapi_types.UUID)
+	// UpdateMentorMeetingNote Edit a meeting note (its own mentor only)
+	// (PUT /v1/mentoring/notes/{noteId})
+	UpdateMentorMeetingNote(w http.ResponseWriter, r *http.Request, noteId openapi_types.UUID)
+	// GetMentorGroupSizeLimit Maximum students one mentor group may hold
+	// (GET /v1/mentoring/settings/group-size-limit)
+	GetMentorGroupSizeLimit(w http.ResponseWriter, r *http.Request)
+	// SetMentorGroupSizeLimit Change the group-size limit
+	// (PUT /v1/mentoring/settings/group-size-limit)
+	SetMentorGroupSizeLimit(w http.ResponseWriter, r *http.Request)
+	// GetMentorStudentSnapshot One student's attendance, discipline points, and published grades
+	// (GET /v1/mentoring/students/{studentId}/snapshot)
+	GetMentorStudentSnapshot(w http.ResponseWriter, r *http.Request, studentId openapi_types.UUID)
 	// GetMonitorPresence Who currently has a realtime socket open, by role
 	// (GET /v1/monitor/presence)
 	GetMonitorPresence(w http.ResponseWriter, r *http.Request)
@@ -6222,6 +6535,42 @@ type ServerInterface interface {
 	// RespondSubstitution Accept or reject a substitution request addressed to me
 	// (POST /v1/substitutions/{substitutionId}/respond)
 	RespondSubstitution(w http.ResponseWriter, r *http.Request, substitutionId openapi_types.UUID)
+	// ListSupervisionCycles Supervision cycles this academic year
+	// (GET /v1/supervision/cycles)
+	ListSupervisionCycles(w http.ResponseWriter, r *http.Request)
+	// CreateSupervisionCycle Start a cycle with its instrument
+	// (POST /v1/supervision/cycles)
+	CreateSupervisionCycle(w http.ResponseWriter, r *http.Request)
+	// GetSupervisionCycle One cycle and its instrument
+	// (GET /v1/supervision/cycles/{cycleId})
+	GetSupervisionCycle(w http.ResponseWriter, r *http.Request, cycleId openapi_types.UUID)
+	// UpdateSupervisionCycle Rename a cycle or edit its instrument
+	// (PUT /v1/supervision/cycles/{cycleId})
+	UpdateSupervisionCycle(w http.ResponseWriter, r *http.Request, cycleId openapi_types.UUID)
+	// ListScheduledObservations Planned visits in a cycle
+	// (GET /v1/supervision/cycles/{cycleId}/scheduled)
+	ListScheduledObservations(w http.ResponseWriter, r *http.Request, cycleId openapi_types.UUID)
+	// ScheduleObservation Plan a visit to a specific lesson, resolved through the scheduling module
+	// (POST /v1/supervision/cycles/{cycleId}/scheduled)
+	ScheduleObservation(w http.ResponseWriter, r *http.Request, cycleId openapi_types.UUID)
+	// GetTeacherSupervisionReport One teacher's observations within a cycle, averaged per criterion
+	// (GET /v1/supervision/cycles/{cycleId}/teachers/{teacherId}/report)
+	GetTeacherSupervisionReport(w http.ResponseWriter, r *http.Request, cycleId openapi_types.UUID, teacherId openapi_types.UUID)
+	// ExportTeacherSupervisionReport The same report as an XLSX workbook
+	// (GET /v1/supervision/cycles/{cycleId}/teachers/{teacherId}/report/export)
+	ExportTeacherSupervisionReport(w http.ResponseWriter, r *http.Request, cycleId openapi_types.UUID, teacherId openapi_types.UUID)
+	// ListScheduledObservationsForTeacher Planned visits to one teacher within a cycle
+	// (GET /v1/supervision/cycles/{cycleId}/teachers/{teacherId}/scheduled)
+	ListScheduledObservationsForTeacher(w http.ResponseWriter, r *http.Request, cycleId openapi_types.UUID, teacherId openapi_types.UUID)
+	// CompleteObservation Record the completed visit -- scores, notes, teacher response, follow-up
+	// (POST /v1/supervision/observations)
+	CompleteObservation(w http.ResponseWriter, r *http.Request)
+	// GetObservation One completed observation; a teacher can always read their own
+	// (GET /v1/supervision/observations/{observationId})
+	GetObservation(w http.ResponseWriter, r *http.Request, observationId openapi_types.UUID)
+	// RespondToObservation The observed teacher's response and the agreed follow-up
+	// (PUT /v1/supervision/observations/{observationId}/response)
+	RespondToObservation(w http.ResponseWriter, r *http.Request, observationId openapi_types.UUID)
 	// GetTenantBranding Public branding for the resolved tenant (login screen, manifest)
 	// (GET /v1/tenant/branding)
 	GetTenantBranding(w http.ResponseWriter, r *http.Request)
@@ -7839,6 +8188,120 @@ func (_ Unimplemented) UpdateMyProfile(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// ListMentorGroups Every mentor group this academic year
+// (GET /v1/mentoring/groups)
+func (_ Unimplemented) ListMentorGroups(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CreateMentorGroup Create a mentor group for one teacher
+// (POST /v1/mentoring/groups)
+func (_ Unimplemented) CreateMentorGroup(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// DeleteMentorGroup Remove a mentor group
+// (DELETE /v1/mentoring/groups/{groupId})
+func (_ Unimplemented) DeleteMentorGroup(w http.ResponseWriter, r *http.Request, groupId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetMentorGroup One mentor group
+// (GET /v1/mentoring/groups/{groupId})
+func (_ Unimplemented) GetMentorGroup(w http.ResponseWriter, r *http.Request, groupId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// UpdateMentorGroup Rename a group or reassign its mentor
+// (PUT /v1/mentoring/groups/{groupId})
+func (_ Unimplemented) UpdateMentorGroup(w http.ResponseWriter, r *http.Request, groupId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListMentorGroupMembers Students assigned to a mentor group
+// (GET /v1/mentoring/groups/{groupId}/members)
+func (_ Unimplemented) ListMentorGroupMembers(w http.ResponseWriter, r *http.Request, groupId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// AssignMentorGroupMember Assign a student to the group, refused past the group-size limit
+// (POST /v1/mentoring/groups/{groupId}/members)
+func (_ Unimplemented) AssignMentorGroupMember(w http.ResponseWriter, r *http.Request, groupId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// RemoveMentorGroupMember Remove a student from the group
+// (DELETE /v1/mentoring/groups/{groupId}/members/{studentId})
+func (_ Unimplemented) RemoveMentorGroupMember(w http.ResponseWriter, r *http.Request, groupId openapi_types.UUID, studentId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListMentorMeetingNotes Meeting notes for a group the reader may open (mentor, counselor, leadership)
+// (GET /v1/mentoring/groups/{groupId}/notes)
+func (_ Unimplemented) ListMentorMeetingNotes(w http.ResponseWriter, r *http.Request, groupId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CreateMentorMeetingNote Record a mentoring session
+// (POST /v1/mentoring/groups/{groupId}/notes)
+func (_ Unimplemented) CreateMentorMeetingNote(w http.ResponseWriter, r *http.Request, groupId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetMentorTermSummary The mentor's written term appraisal of one student
+// (GET /v1/mentoring/groups/{groupId}/term-summaries/{termId}/{studentId})
+func (_ Unimplemented) GetMentorTermSummary(w http.ResponseWriter, r *http.Request, groupId openapi_types.UUID, termId openapi_types.UUID, studentId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// WriteMentorTermSummary Write or replace the term appraisal
+// (PUT /v1/mentoring/groups/{groupId}/term-summaries/{termId}/{studentId})
+func (_ Unimplemented) WriteMentorTermSummary(w http.ResponseWriter, r *http.Request, groupId openapi_types.UUID, termId openapi_types.UUID, studentId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListMyMentorGroups The mentor groups the current user leads
+// (GET /v1/mentoring/my-groups)
+func (_ Unimplemented) ListMyMentorGroups(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// DeleteMentorMeetingNote Delete a meeting note (its own mentor only)
+// (DELETE /v1/mentoring/notes/{noteId})
+func (_ Unimplemented) DeleteMentorMeetingNote(w http.ResponseWriter, r *http.Request, noteId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetMentorMeetingNote One meeting note, visible only to its mentor, a counselor, or leadership
+// (GET /v1/mentoring/notes/{noteId})
+func (_ Unimplemented) GetMentorMeetingNote(w http.ResponseWriter, r *http.Request, noteId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// UpdateMentorMeetingNote Edit a meeting note (its own mentor only)
+// (PUT /v1/mentoring/notes/{noteId})
+func (_ Unimplemented) UpdateMentorMeetingNote(w http.ResponseWriter, r *http.Request, noteId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetMentorGroupSizeLimit Maximum students one mentor group may hold
+// (GET /v1/mentoring/settings/group-size-limit)
+func (_ Unimplemented) GetMentorGroupSizeLimit(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// SetMentorGroupSizeLimit Change the group-size limit
+// (PUT /v1/mentoring/settings/group-size-limit)
+func (_ Unimplemented) SetMentorGroupSizeLimit(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetMentorStudentSnapshot One student's attendance, discipline points, and published grades
+// (GET /v1/mentoring/students/{studentId}/snapshot)
+func (_ Unimplemented) GetMentorStudentSnapshot(w http.ResponseWriter, r *http.Request, studentId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // GetMonitorPresence Who currently has a realtime socket open, by role
 // (GET /v1/monitor/presence)
 func (_ Unimplemented) GetMonitorPresence(w http.ResponseWriter, r *http.Request) {
@@ -8160,6 +8623,78 @@ func (_ Unimplemented) CancelSubstitution(w http.ResponseWriter, r *http.Request
 // RespondSubstitution Accept or reject a substitution request addressed to me
 // (POST /v1/substitutions/{substitutionId}/respond)
 func (_ Unimplemented) RespondSubstitution(w http.ResponseWriter, r *http.Request, substitutionId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListSupervisionCycles Supervision cycles this academic year
+// (GET /v1/supervision/cycles)
+func (_ Unimplemented) ListSupervisionCycles(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CreateSupervisionCycle Start a cycle with its instrument
+// (POST /v1/supervision/cycles)
+func (_ Unimplemented) CreateSupervisionCycle(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetSupervisionCycle One cycle and its instrument
+// (GET /v1/supervision/cycles/{cycleId})
+func (_ Unimplemented) GetSupervisionCycle(w http.ResponseWriter, r *http.Request, cycleId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// UpdateSupervisionCycle Rename a cycle or edit its instrument
+// (PUT /v1/supervision/cycles/{cycleId})
+func (_ Unimplemented) UpdateSupervisionCycle(w http.ResponseWriter, r *http.Request, cycleId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListScheduledObservations Planned visits in a cycle
+// (GET /v1/supervision/cycles/{cycleId}/scheduled)
+func (_ Unimplemented) ListScheduledObservations(w http.ResponseWriter, r *http.Request, cycleId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ScheduleObservation Plan a visit to a specific lesson, resolved through the scheduling module
+// (POST /v1/supervision/cycles/{cycleId}/scheduled)
+func (_ Unimplemented) ScheduleObservation(w http.ResponseWriter, r *http.Request, cycleId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetTeacherSupervisionReport One teacher's observations within a cycle, averaged per criterion
+// (GET /v1/supervision/cycles/{cycleId}/teachers/{teacherId}/report)
+func (_ Unimplemented) GetTeacherSupervisionReport(w http.ResponseWriter, r *http.Request, cycleId openapi_types.UUID, teacherId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ExportTeacherSupervisionReport The same report as an XLSX workbook
+// (GET /v1/supervision/cycles/{cycleId}/teachers/{teacherId}/report/export)
+func (_ Unimplemented) ExportTeacherSupervisionReport(w http.ResponseWriter, r *http.Request, cycleId openapi_types.UUID, teacherId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListScheduledObservationsForTeacher Planned visits to one teacher within a cycle
+// (GET /v1/supervision/cycles/{cycleId}/teachers/{teacherId}/scheduled)
+func (_ Unimplemented) ListScheduledObservationsForTeacher(w http.ResponseWriter, r *http.Request, cycleId openapi_types.UUID, teacherId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CompleteObservation Record the completed visit -- scores, notes, teacher response, follow-up
+// (POST /v1/supervision/observations)
+func (_ Unimplemented) CompleteObservation(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetObservation One completed observation; a teacher can always read their own
+// (GET /v1/supervision/observations/{observationId})
+func (_ Unimplemented) GetObservation(w http.ResponseWriter, r *http.Request, observationId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// RespondToObservation The observed teacher's response and the agreed follow-up
+// (PUT /v1/supervision/observations/{observationId}/response)
+func (_ Unimplemented) RespondToObservation(w http.ResponseWriter, r *http.Request, observationId openapi_types.UUID) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -15253,6 +15788,485 @@ func (siw *ServerInterfaceWrapper) UpdateMyProfile(w http.ResponseWriter, r *htt
 	handler.ServeHTTP(w, r)
 }
 
+// ListMentorGroups operation middleware
+func (siw *ServerInterfaceWrapper) ListMentorGroups(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListMentorGroups(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateMentorGroup operation middleware
+func (siw *ServerInterfaceWrapper) CreateMentorGroup(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateMentorGroup(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteMentorGroup operation middleware
+func (siw *ServerInterfaceWrapper) DeleteMentorGroup(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "groupId" -------------
+	var groupId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "groupId", chi.URLParam(r, "groupId"), &groupId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "groupId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteMentorGroup(w, r, groupId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetMentorGroup operation middleware
+func (siw *ServerInterfaceWrapper) GetMentorGroup(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "groupId" -------------
+	var groupId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "groupId", chi.URLParam(r, "groupId"), &groupId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "groupId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetMentorGroup(w, r, groupId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateMentorGroup operation middleware
+func (siw *ServerInterfaceWrapper) UpdateMentorGroup(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "groupId" -------------
+	var groupId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "groupId", chi.URLParam(r, "groupId"), &groupId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "groupId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateMentorGroup(w, r, groupId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListMentorGroupMembers operation middleware
+func (siw *ServerInterfaceWrapper) ListMentorGroupMembers(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "groupId" -------------
+	var groupId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "groupId", chi.URLParam(r, "groupId"), &groupId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "groupId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListMentorGroupMembers(w, r, groupId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AssignMentorGroupMember operation middleware
+func (siw *ServerInterfaceWrapper) AssignMentorGroupMember(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "groupId" -------------
+	var groupId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "groupId", chi.URLParam(r, "groupId"), &groupId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "groupId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AssignMentorGroupMember(w, r, groupId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RemoveMentorGroupMember operation middleware
+func (siw *ServerInterfaceWrapper) RemoveMentorGroupMember(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "groupId" -------------
+	var groupId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "groupId", chi.URLParam(r, "groupId"), &groupId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "groupId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "studentId" -------------
+	var studentId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "studentId", chi.URLParam(r, "studentId"), &studentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "studentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RemoveMentorGroupMember(w, r, groupId, studentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListMentorMeetingNotes operation middleware
+func (siw *ServerInterfaceWrapper) ListMentorMeetingNotes(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "groupId" -------------
+	var groupId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "groupId", chi.URLParam(r, "groupId"), &groupId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "groupId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListMentorMeetingNotes(w, r, groupId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateMentorMeetingNote operation middleware
+func (siw *ServerInterfaceWrapper) CreateMentorMeetingNote(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "groupId" -------------
+	var groupId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "groupId", chi.URLParam(r, "groupId"), &groupId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "groupId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateMentorMeetingNote(w, r, groupId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetMentorTermSummary operation middleware
+func (siw *ServerInterfaceWrapper) GetMentorTermSummary(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "groupId" -------------
+	var groupId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "groupId", chi.URLParam(r, "groupId"), &groupId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "groupId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "termId" -------------
+	var termId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "termId", chi.URLParam(r, "termId"), &termId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "termId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "studentId" -------------
+	var studentId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "studentId", chi.URLParam(r, "studentId"), &studentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "studentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetMentorTermSummary(w, r, groupId, termId, studentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// WriteMentorTermSummary operation middleware
+func (siw *ServerInterfaceWrapper) WriteMentorTermSummary(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "groupId" -------------
+	var groupId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "groupId", chi.URLParam(r, "groupId"), &groupId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "groupId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "termId" -------------
+	var termId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "termId", chi.URLParam(r, "termId"), &termId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "termId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "studentId" -------------
+	var studentId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "studentId", chi.URLParam(r, "studentId"), &studentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "studentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.WriteMentorTermSummary(w, r, groupId, termId, studentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListMyMentorGroups operation middleware
+func (siw *ServerInterfaceWrapper) ListMyMentorGroups(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListMyMentorGroups(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteMentorMeetingNote operation middleware
+func (siw *ServerInterfaceWrapper) DeleteMentorMeetingNote(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "noteId" -------------
+	var noteId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "noteId", chi.URLParam(r, "noteId"), &noteId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "noteId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteMentorMeetingNote(w, r, noteId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetMentorMeetingNote operation middleware
+func (siw *ServerInterfaceWrapper) GetMentorMeetingNote(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "noteId" -------------
+	var noteId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "noteId", chi.URLParam(r, "noteId"), &noteId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "noteId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetMentorMeetingNote(w, r, noteId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateMentorMeetingNote operation middleware
+func (siw *ServerInterfaceWrapper) UpdateMentorMeetingNote(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "noteId" -------------
+	var noteId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "noteId", chi.URLParam(r, "noteId"), &noteId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "noteId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateMentorMeetingNote(w, r, noteId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetMentorGroupSizeLimit operation middleware
+func (siw *ServerInterfaceWrapper) GetMentorGroupSizeLimit(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetMentorGroupSizeLimit(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SetMentorGroupSizeLimit operation middleware
+func (siw *ServerInterfaceWrapper) SetMentorGroupSizeLimit(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetMentorGroupSizeLimit(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetMentorStudentSnapshot operation middleware
+func (siw *ServerInterfaceWrapper) GetMentorStudentSnapshot(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "studentId" -------------
+	var studentId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "studentId", chi.URLParam(r, "studentId"), &studentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "studentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetMentorStudentSnapshot(w, r, studentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetMonitorPresence operation middleware
 func (siw *ServerInterfaceWrapper) GetMonitorPresence(w http.ResponseWriter, r *http.Request) {
 
@@ -16622,6 +17636,309 @@ func (siw *ServerInterfaceWrapper) RespondSubstitution(w http.ResponseWriter, r 
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.RespondSubstitution(w, r, substitutionId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListSupervisionCycles operation middleware
+func (siw *ServerInterfaceWrapper) ListSupervisionCycles(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListSupervisionCycles(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateSupervisionCycle operation middleware
+func (siw *ServerInterfaceWrapper) CreateSupervisionCycle(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateSupervisionCycle(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetSupervisionCycle operation middleware
+func (siw *ServerInterfaceWrapper) GetSupervisionCycle(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "cycleId" -------------
+	var cycleId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "cycleId", chi.URLParam(r, "cycleId"), &cycleId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cycleId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetSupervisionCycle(w, r, cycleId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateSupervisionCycle operation middleware
+func (siw *ServerInterfaceWrapper) UpdateSupervisionCycle(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "cycleId" -------------
+	var cycleId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "cycleId", chi.URLParam(r, "cycleId"), &cycleId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cycleId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateSupervisionCycle(w, r, cycleId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListScheduledObservations operation middleware
+func (siw *ServerInterfaceWrapper) ListScheduledObservations(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "cycleId" -------------
+	var cycleId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "cycleId", chi.URLParam(r, "cycleId"), &cycleId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cycleId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListScheduledObservations(w, r, cycleId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ScheduleObservation operation middleware
+func (siw *ServerInterfaceWrapper) ScheduleObservation(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "cycleId" -------------
+	var cycleId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "cycleId", chi.URLParam(r, "cycleId"), &cycleId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cycleId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ScheduleObservation(w, r, cycleId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetTeacherSupervisionReport operation middleware
+func (siw *ServerInterfaceWrapper) GetTeacherSupervisionReport(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "cycleId" -------------
+	var cycleId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "cycleId", chi.URLParam(r, "cycleId"), &cycleId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cycleId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "teacherId" -------------
+	var teacherId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "teacherId", chi.URLParam(r, "teacherId"), &teacherId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "teacherId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetTeacherSupervisionReport(w, r, cycleId, teacherId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ExportTeacherSupervisionReport operation middleware
+func (siw *ServerInterfaceWrapper) ExportTeacherSupervisionReport(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "cycleId" -------------
+	var cycleId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "cycleId", chi.URLParam(r, "cycleId"), &cycleId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cycleId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "teacherId" -------------
+	var teacherId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "teacherId", chi.URLParam(r, "teacherId"), &teacherId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "teacherId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ExportTeacherSupervisionReport(w, r, cycleId, teacherId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListScheduledObservationsForTeacher operation middleware
+func (siw *ServerInterfaceWrapper) ListScheduledObservationsForTeacher(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "cycleId" -------------
+	var cycleId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "cycleId", chi.URLParam(r, "cycleId"), &cycleId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cycleId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "teacherId" -------------
+	var teacherId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "teacherId", chi.URLParam(r, "teacherId"), &teacherId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "teacherId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListScheduledObservationsForTeacher(w, r, cycleId, teacherId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CompleteObservation operation middleware
+func (siw *ServerInterfaceWrapper) CompleteObservation(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CompleteObservation(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetObservation operation middleware
+func (siw *ServerInterfaceWrapper) GetObservation(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "observationId" -------------
+	var observationId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "observationId", chi.URLParam(r, "observationId"), &observationId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "observationId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetObservation(w, r, observationId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RespondToObservation operation middleware
+func (siw *ServerInterfaceWrapper) RespondToObservation(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "observationId" -------------
+	var observationId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "observationId", chi.URLParam(r, "observationId"), &observationId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "observationId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RespondToObservation(w, r, observationId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -18435,6 +19752,63 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/v1/opac/titles", wrapper.SearchOpacTitles)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/mentoring/settings/group-size-limit", wrapper.GetMentorGroupSizeLimit)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/v1/mentoring/settings/group-size-limit", wrapper.SetMentorGroupSizeLimit)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/mentoring/groups", wrapper.ListMentorGroups)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/mentoring/groups", wrapper.CreateMentorGroup)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/mentoring/my-groups", wrapper.ListMyMentorGroups)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/v1/mentoring/groups/{groupId}", wrapper.DeleteMentorGroup)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/mentoring/groups/{groupId}", wrapper.GetMentorGroup)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/v1/mentoring/groups/{groupId}", wrapper.UpdateMentorGroup)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/mentoring/groups/{groupId}/members", wrapper.ListMentorGroupMembers)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/mentoring/groups/{groupId}/members", wrapper.AssignMentorGroupMember)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/v1/mentoring/groups/{groupId}/members/{studentId}", wrapper.RemoveMentorGroupMember)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/mentoring/groups/{groupId}/notes", wrapper.ListMentorMeetingNotes)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/mentoring/groups/{groupId}/notes", wrapper.CreateMentorMeetingNote)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/v1/mentoring/notes/{noteId}", wrapper.DeleteMentorMeetingNote)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/mentoring/notes/{noteId}", wrapper.GetMentorMeetingNote)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/v1/mentoring/notes/{noteId}", wrapper.UpdateMentorMeetingNote)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/mentoring/students/{studentId}/snapshot", wrapper.GetMentorStudentSnapshot)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/mentoring/groups/{groupId}/term-summaries/{termId}/{studentId}", wrapper.GetMentorTermSummary)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/v1/mentoring/groups/{groupId}/term-summaries/{termId}/{studentId}", wrapper.WriteMentorTermSummary)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/v1/notifications", wrapper.ListNotifications)
 	})
 	r.Group(func(r chi.Router) {
@@ -18706,6 +20080,42 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/v1/journals/{journalId}", wrapper.GetJournal)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/supervision/cycles", wrapper.ListSupervisionCycles)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/supervision/cycles", wrapper.CreateSupervisionCycle)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/supervision/cycles/{cycleId}", wrapper.GetSupervisionCycle)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/v1/supervision/cycles/{cycleId}", wrapper.UpdateSupervisionCycle)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/supervision/cycles/{cycleId}/scheduled", wrapper.ListScheduledObservations)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/supervision/cycles/{cycleId}/scheduled", wrapper.ScheduleObservation)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/supervision/cycles/{cycleId}/teachers/{teacherId}/scheduled", wrapper.ListScheduledObservationsForTeacher)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/v1/supervision/observations", wrapper.CompleteObservation)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/supervision/observations/{observationId}", wrapper.GetObservation)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/v1/supervision/observations/{observationId}/response", wrapper.RespondToObservation)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/supervision/cycles/{cycleId}/teachers/{teacherId}/report", wrapper.GetTeacherSupervisionReport)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/v1/supervision/cycles/{cycleId}/teachers/{teacherId}/report/export", wrapper.ExportTeacherSupervisionReport)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/health", wrapper.GetHealth)
@@ -33139,6 +34549,1205 @@ func (response UpdateMyProfile409JSONResponse) VisitUpdateMyProfileResponse(w ht
 	return err
 }
 
+type ListMentorGroupsRequestObject struct {
+}
+
+type ListMentorGroupsResponseObject interface {
+	VisitListMentorGroupsResponse(w http.ResponseWriter) error
+}
+
+type ListMentorGroups200JSONResponse struct {
+	Data []MentorGroup `json:"data"`
+}
+
+func (response ListMentorGroups200JSONResponse) VisitListMentorGroupsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListMentorGroups401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListMentorGroups401JSONResponse) VisitListMentorGroupsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListMentorGroups403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListMentorGroups403JSONResponse) VisitListMentorGroupsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateMentorGroupRequestObject struct {
+	Body *CreateMentorGroupJSONRequestBody
+}
+
+type CreateMentorGroupResponseObject interface {
+	VisitCreateMentorGroupResponse(w http.ResponseWriter) error
+}
+
+type CreateMentorGroup201JSONResponse MentorGroup
+
+func (response CreateMentorGroup201JSONResponse) VisitCreateMentorGroupResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateMentorGroup400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CreateMentorGroup400JSONResponse) VisitCreateMentorGroupResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateMentorGroup401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateMentorGroup401JSONResponse) VisitCreateMentorGroupResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateMentorGroup403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CreateMentorGroup403JSONResponse) VisitCreateMentorGroupResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteMentorGroupRequestObject struct {
+	GroupId openapi_types.UUID `json:"groupId"`
+}
+
+type DeleteMentorGroupResponseObject interface {
+	VisitDeleteMentorGroupResponse(w http.ResponseWriter) error
+}
+
+type DeleteMentorGroup204Response struct {
+}
+
+func (response DeleteMentorGroup204Response) VisitDeleteMentorGroupResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteMentorGroup401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response DeleteMentorGroup401JSONResponse) VisitDeleteMentorGroupResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteMentorGroup403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response DeleteMentorGroup403JSONResponse) VisitDeleteMentorGroupResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteMentorGroup404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response DeleteMentorGroup404JSONResponse) VisitDeleteMentorGroupResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMentorGroupRequestObject struct {
+	GroupId openapi_types.UUID `json:"groupId"`
+}
+
+type GetMentorGroupResponseObject interface {
+	VisitGetMentorGroupResponse(w http.ResponseWriter) error
+}
+
+type GetMentorGroup200JSONResponse MentorGroup
+
+func (response GetMentorGroup200JSONResponse) VisitGetMentorGroupResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMentorGroup401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetMentorGroup401JSONResponse) VisitGetMentorGroupResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMentorGroup403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetMentorGroup403JSONResponse) VisitGetMentorGroupResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMentorGroup404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetMentorGroup404JSONResponse) VisitGetMentorGroupResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateMentorGroupRequestObject struct {
+	GroupId openapi_types.UUID `json:"groupId"`
+	Body    *UpdateMentorGroupJSONRequestBody
+}
+
+type UpdateMentorGroupResponseObject interface {
+	VisitUpdateMentorGroupResponse(w http.ResponseWriter) error
+}
+
+type UpdateMentorGroup200JSONResponse MentorGroup
+
+func (response UpdateMentorGroup200JSONResponse) VisitUpdateMentorGroupResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateMentorGroup400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response UpdateMentorGroup400JSONResponse) VisitUpdateMentorGroupResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateMentorGroup401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response UpdateMentorGroup401JSONResponse) VisitUpdateMentorGroupResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateMentorGroup403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response UpdateMentorGroup403JSONResponse) VisitUpdateMentorGroupResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateMentorGroup404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response UpdateMentorGroup404JSONResponse) VisitUpdateMentorGroupResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListMentorGroupMembersRequestObject struct {
+	GroupId openapi_types.UUID `json:"groupId"`
+}
+
+type ListMentorGroupMembersResponseObject interface {
+	VisitListMentorGroupMembersResponse(w http.ResponseWriter) error
+}
+
+type ListMentorGroupMembers200JSONResponse struct {
+	Data []MentorGroupMember `json:"data"`
+}
+
+func (response ListMentorGroupMembers200JSONResponse) VisitListMentorGroupMembersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListMentorGroupMembers401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListMentorGroupMembers401JSONResponse) VisitListMentorGroupMembersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListMentorGroupMembers403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListMentorGroupMembers403JSONResponse) VisitListMentorGroupMembersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AssignMentorGroupMemberRequestObject struct {
+	GroupId openapi_types.UUID `json:"groupId"`
+	Body    *AssignMentorGroupMemberJSONRequestBody
+}
+
+type AssignMentorGroupMemberResponseObject interface {
+	VisitAssignMentorGroupMemberResponse(w http.ResponseWriter) error
+}
+
+type AssignMentorGroupMember201JSONResponse MentorGroupMember
+
+func (response AssignMentorGroupMember201JSONResponse) VisitAssignMentorGroupMemberResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AssignMentorGroupMember400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response AssignMentorGroupMember400JSONResponse) VisitAssignMentorGroupMemberResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AssignMentorGroupMember401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response AssignMentorGroupMember401JSONResponse) VisitAssignMentorGroupMemberResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AssignMentorGroupMember403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response AssignMentorGroupMember403JSONResponse) VisitAssignMentorGroupMemberResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AssignMentorGroupMember404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response AssignMentorGroupMember404JSONResponse) VisitAssignMentorGroupMemberResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AssignMentorGroupMember409JSONResponse struct{ ConflictJSONResponse }
+
+func (response AssignMentorGroupMember409JSONResponse) VisitAssignMentorGroupMemberResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RemoveMentorGroupMemberRequestObject struct {
+	GroupId   openapi_types.UUID `json:"groupId"`
+	StudentId openapi_types.UUID `json:"studentId"`
+}
+
+type RemoveMentorGroupMemberResponseObject interface {
+	VisitRemoveMentorGroupMemberResponse(w http.ResponseWriter) error
+}
+
+type RemoveMentorGroupMember204Response struct {
+}
+
+func (response RemoveMentorGroupMember204Response) VisitRemoveMentorGroupMemberResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type RemoveMentorGroupMember401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response RemoveMentorGroupMember401JSONResponse) VisitRemoveMentorGroupMemberResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RemoveMentorGroupMember403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response RemoveMentorGroupMember403JSONResponse) VisitRemoveMentorGroupMemberResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListMentorMeetingNotesRequestObject struct {
+	GroupId openapi_types.UUID `json:"groupId"`
+}
+
+type ListMentorMeetingNotesResponseObject interface {
+	VisitListMentorMeetingNotesResponse(w http.ResponseWriter) error
+}
+
+type ListMentorMeetingNotes200JSONResponse struct {
+	Data []MentorMeetingNote `json:"data"`
+}
+
+func (response ListMentorMeetingNotes200JSONResponse) VisitListMentorMeetingNotesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListMentorMeetingNotes401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListMentorMeetingNotes401JSONResponse) VisitListMentorMeetingNotesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListMentorMeetingNotes403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListMentorMeetingNotes403JSONResponse) VisitListMentorMeetingNotesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateMentorMeetingNoteRequestObject struct {
+	GroupId openapi_types.UUID `json:"groupId"`
+	Body    *CreateMentorMeetingNoteJSONRequestBody
+}
+
+type CreateMentorMeetingNoteResponseObject interface {
+	VisitCreateMentorMeetingNoteResponse(w http.ResponseWriter) error
+}
+
+type CreateMentorMeetingNote201JSONResponse MentorMeetingNote
+
+func (response CreateMentorMeetingNote201JSONResponse) VisitCreateMentorMeetingNoteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateMentorMeetingNote400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CreateMentorMeetingNote400JSONResponse) VisitCreateMentorMeetingNoteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateMentorMeetingNote401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateMentorMeetingNote401JSONResponse) VisitCreateMentorMeetingNoteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateMentorMeetingNote403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CreateMentorMeetingNote403JSONResponse) VisitCreateMentorMeetingNoteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateMentorMeetingNote404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response CreateMentorMeetingNote404JSONResponse) VisitCreateMentorMeetingNoteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMentorTermSummaryRequestObject struct {
+	GroupId   openapi_types.UUID `json:"groupId"`
+	TermId    openapi_types.UUID `json:"termId"`
+	StudentId openapi_types.UUID `json:"studentId"`
+}
+
+type GetMentorTermSummaryResponseObject interface {
+	VisitGetMentorTermSummaryResponse(w http.ResponseWriter) error
+}
+
+type GetMentorTermSummary200JSONResponse MentorTermSummary
+
+func (response GetMentorTermSummary200JSONResponse) VisitGetMentorTermSummaryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMentorTermSummary401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetMentorTermSummary401JSONResponse) VisitGetMentorTermSummaryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMentorTermSummary403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetMentorTermSummary403JSONResponse) VisitGetMentorTermSummaryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMentorTermSummary404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetMentorTermSummary404JSONResponse) VisitGetMentorTermSummaryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type WriteMentorTermSummaryRequestObject struct {
+	GroupId   openapi_types.UUID `json:"groupId"`
+	TermId    openapi_types.UUID `json:"termId"`
+	StudentId openapi_types.UUID `json:"studentId"`
+	Body      *WriteMentorTermSummaryJSONRequestBody
+}
+
+type WriteMentorTermSummaryResponseObject interface {
+	VisitWriteMentorTermSummaryResponse(w http.ResponseWriter) error
+}
+
+type WriteMentorTermSummary200JSONResponse MentorTermSummary
+
+func (response WriteMentorTermSummary200JSONResponse) VisitWriteMentorTermSummaryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type WriteMentorTermSummary400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response WriteMentorTermSummary400JSONResponse) VisitWriteMentorTermSummaryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type WriteMentorTermSummary401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response WriteMentorTermSummary401JSONResponse) VisitWriteMentorTermSummaryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type WriteMentorTermSummary403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response WriteMentorTermSummary403JSONResponse) VisitWriteMentorTermSummaryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type WriteMentorTermSummary404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response WriteMentorTermSummary404JSONResponse) VisitWriteMentorTermSummaryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListMyMentorGroupsRequestObject struct {
+}
+
+type ListMyMentorGroupsResponseObject interface {
+	VisitListMyMentorGroupsResponse(w http.ResponseWriter) error
+}
+
+type ListMyMentorGroups200JSONResponse struct {
+	Data []MentorGroup `json:"data"`
+}
+
+func (response ListMyMentorGroups200JSONResponse) VisitListMyMentorGroupsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListMyMentorGroups401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListMyMentorGroups401JSONResponse) VisitListMyMentorGroupsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteMentorMeetingNoteRequestObject struct {
+	NoteId openapi_types.UUID `json:"noteId"`
+}
+
+type DeleteMentorMeetingNoteResponseObject interface {
+	VisitDeleteMentorMeetingNoteResponse(w http.ResponseWriter) error
+}
+
+type DeleteMentorMeetingNote204Response struct {
+}
+
+func (response DeleteMentorMeetingNote204Response) VisitDeleteMentorMeetingNoteResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteMentorMeetingNote401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response DeleteMentorMeetingNote401JSONResponse) VisitDeleteMentorMeetingNoteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteMentorMeetingNote403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response DeleteMentorMeetingNote403JSONResponse) VisitDeleteMentorMeetingNoteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteMentorMeetingNote404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response DeleteMentorMeetingNote404JSONResponse) VisitDeleteMentorMeetingNoteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMentorMeetingNoteRequestObject struct {
+	NoteId openapi_types.UUID `json:"noteId"`
+}
+
+type GetMentorMeetingNoteResponseObject interface {
+	VisitGetMentorMeetingNoteResponse(w http.ResponseWriter) error
+}
+
+type GetMentorMeetingNote200JSONResponse MentorMeetingNote
+
+func (response GetMentorMeetingNote200JSONResponse) VisitGetMentorMeetingNoteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMentorMeetingNote401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetMentorMeetingNote401JSONResponse) VisitGetMentorMeetingNoteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMentorMeetingNote403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetMentorMeetingNote403JSONResponse) VisitGetMentorMeetingNoteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMentorMeetingNote404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetMentorMeetingNote404JSONResponse) VisitGetMentorMeetingNoteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateMentorMeetingNoteRequestObject struct {
+	NoteId openapi_types.UUID `json:"noteId"`
+	Body   *UpdateMentorMeetingNoteJSONRequestBody
+}
+
+type UpdateMentorMeetingNoteResponseObject interface {
+	VisitUpdateMentorMeetingNoteResponse(w http.ResponseWriter) error
+}
+
+type UpdateMentorMeetingNote200JSONResponse MentorMeetingNote
+
+func (response UpdateMentorMeetingNote200JSONResponse) VisitUpdateMentorMeetingNoteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateMentorMeetingNote400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response UpdateMentorMeetingNote400JSONResponse) VisitUpdateMentorMeetingNoteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateMentorMeetingNote401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response UpdateMentorMeetingNote401JSONResponse) VisitUpdateMentorMeetingNoteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateMentorMeetingNote403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response UpdateMentorMeetingNote403JSONResponse) VisitUpdateMentorMeetingNoteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateMentorMeetingNote404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response UpdateMentorMeetingNote404JSONResponse) VisitUpdateMentorMeetingNoteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMentorGroupSizeLimitRequestObject struct {
+}
+
+type GetMentorGroupSizeLimitResponseObject interface {
+	VisitGetMentorGroupSizeLimitResponse(w http.ResponseWriter) error
+}
+
+type GetMentorGroupSizeLimit200JSONResponse MentorGroupSizeLimit
+
+func (response GetMentorGroupSizeLimit200JSONResponse) VisitGetMentorGroupSizeLimitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMentorGroupSizeLimit401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetMentorGroupSizeLimit401JSONResponse) VisitGetMentorGroupSizeLimitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMentorGroupSizeLimit403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetMentorGroupSizeLimit403JSONResponse) VisitGetMentorGroupSizeLimitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetMentorGroupSizeLimitRequestObject struct {
+	Body *SetMentorGroupSizeLimitJSONRequestBody
+}
+
+type SetMentorGroupSizeLimitResponseObject interface {
+	VisitSetMentorGroupSizeLimitResponse(w http.ResponseWriter) error
+}
+
+type SetMentorGroupSizeLimit200JSONResponse MentorGroupSizeLimit
+
+func (response SetMentorGroupSizeLimit200JSONResponse) VisitSetMentorGroupSizeLimitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetMentorGroupSizeLimit400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response SetMentorGroupSizeLimit400JSONResponse) VisitSetMentorGroupSizeLimitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetMentorGroupSizeLimit401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response SetMentorGroupSizeLimit401JSONResponse) VisitSetMentorGroupSizeLimitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetMentorGroupSizeLimit403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response SetMentorGroupSizeLimit403JSONResponse) VisitSetMentorGroupSizeLimitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMentorStudentSnapshotRequestObject struct {
+	StudentId openapi_types.UUID `json:"studentId"`
+}
+
+type GetMentorStudentSnapshotResponseObject interface {
+	VisitGetMentorStudentSnapshotResponse(w http.ResponseWriter) error
+}
+
+type GetMentorStudentSnapshot200JSONResponse MentorStudentSnapshot
+
+func (response GetMentorStudentSnapshot200JSONResponse) VisitGetMentorStudentSnapshotResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMentorStudentSnapshot401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetMentorStudentSnapshot401JSONResponse) VisitGetMentorStudentSnapshotResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMentorStudentSnapshot403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetMentorStudentSnapshot403JSONResponse) VisitGetMentorStudentSnapshotResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMentorStudentSnapshot404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetMentorStudentSnapshot404JSONResponse) VisitGetMentorStudentSnapshotResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetMonitorPresenceRequestObject struct {
 }
 
@@ -36259,6 +38868,805 @@ func (response RespondSubstitution409JSONResponse) VisitRespondSubstitutionRespo
 	return err
 }
 
+type ListSupervisionCyclesRequestObject struct {
+}
+
+type ListSupervisionCyclesResponseObject interface {
+	VisitListSupervisionCyclesResponse(w http.ResponseWriter) error
+}
+
+type ListSupervisionCycles200JSONResponse struct {
+	Data []SupervisionCycle `json:"data"`
+}
+
+func (response ListSupervisionCycles200JSONResponse) VisitListSupervisionCyclesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListSupervisionCycles401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListSupervisionCycles401JSONResponse) VisitListSupervisionCyclesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListSupervisionCycles403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListSupervisionCycles403JSONResponse) VisitListSupervisionCyclesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateSupervisionCycleRequestObject struct {
+	Body *CreateSupervisionCycleJSONRequestBody
+}
+
+type CreateSupervisionCycleResponseObject interface {
+	VisitCreateSupervisionCycleResponse(w http.ResponseWriter) error
+}
+
+type CreateSupervisionCycle201JSONResponse SupervisionCycle
+
+func (response CreateSupervisionCycle201JSONResponse) VisitCreateSupervisionCycleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateSupervisionCycle400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CreateSupervisionCycle400JSONResponse) VisitCreateSupervisionCycleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateSupervisionCycle401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateSupervisionCycle401JSONResponse) VisitCreateSupervisionCycleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateSupervisionCycle403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CreateSupervisionCycle403JSONResponse) VisitCreateSupervisionCycleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetSupervisionCycleRequestObject struct {
+	CycleId openapi_types.UUID `json:"cycleId"`
+}
+
+type GetSupervisionCycleResponseObject interface {
+	VisitGetSupervisionCycleResponse(w http.ResponseWriter) error
+}
+
+type GetSupervisionCycle200JSONResponse SupervisionCycle
+
+func (response GetSupervisionCycle200JSONResponse) VisitGetSupervisionCycleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetSupervisionCycle401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetSupervisionCycle401JSONResponse) VisitGetSupervisionCycleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetSupervisionCycle403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetSupervisionCycle403JSONResponse) VisitGetSupervisionCycleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetSupervisionCycle404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetSupervisionCycle404JSONResponse) VisitGetSupervisionCycleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateSupervisionCycleRequestObject struct {
+	CycleId openapi_types.UUID `json:"cycleId"`
+	Body    *UpdateSupervisionCycleJSONRequestBody
+}
+
+type UpdateSupervisionCycleResponseObject interface {
+	VisitUpdateSupervisionCycleResponse(w http.ResponseWriter) error
+}
+
+type UpdateSupervisionCycle200JSONResponse SupervisionCycle
+
+func (response UpdateSupervisionCycle200JSONResponse) VisitUpdateSupervisionCycleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateSupervisionCycle400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response UpdateSupervisionCycle400JSONResponse) VisitUpdateSupervisionCycleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateSupervisionCycle401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response UpdateSupervisionCycle401JSONResponse) VisitUpdateSupervisionCycleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateSupervisionCycle403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response UpdateSupervisionCycle403JSONResponse) VisitUpdateSupervisionCycleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateSupervisionCycle404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response UpdateSupervisionCycle404JSONResponse) VisitUpdateSupervisionCycleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListScheduledObservationsRequestObject struct {
+	CycleId openapi_types.UUID `json:"cycleId"`
+}
+
+type ListScheduledObservationsResponseObject interface {
+	VisitListScheduledObservationsResponse(w http.ResponseWriter) error
+}
+
+type ListScheduledObservations200JSONResponse struct {
+	Data []ScheduledObservation `json:"data"`
+}
+
+func (response ListScheduledObservations200JSONResponse) VisitListScheduledObservationsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListScheduledObservations401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListScheduledObservations401JSONResponse) VisitListScheduledObservationsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListScheduledObservations403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListScheduledObservations403JSONResponse) VisitListScheduledObservationsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ScheduleObservationRequestObject struct {
+	CycleId openapi_types.UUID `json:"cycleId"`
+	Body    *ScheduleObservationJSONRequestBody
+}
+
+type ScheduleObservationResponseObject interface {
+	VisitScheduleObservationResponse(w http.ResponseWriter) error
+}
+
+type ScheduleObservation201JSONResponse ScheduledObservation
+
+func (response ScheduleObservation201JSONResponse) VisitScheduleObservationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ScheduleObservation400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ScheduleObservation400JSONResponse) VisitScheduleObservationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ScheduleObservation401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ScheduleObservation401JSONResponse) VisitScheduleObservationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ScheduleObservation403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ScheduleObservation403JSONResponse) VisitScheduleObservationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ScheduleObservation404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ScheduleObservation404JSONResponse) VisitScheduleObservationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetTeacherSupervisionReportRequestObject struct {
+	CycleId   openapi_types.UUID `json:"cycleId"`
+	TeacherId openapi_types.UUID `json:"teacherId"`
+}
+
+type GetTeacherSupervisionReportResponseObject interface {
+	VisitGetTeacherSupervisionReportResponse(w http.ResponseWriter) error
+}
+
+type GetTeacherSupervisionReport200JSONResponse TeacherSupervisionReport
+
+func (response GetTeacherSupervisionReport200JSONResponse) VisitGetTeacherSupervisionReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetTeacherSupervisionReport401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetTeacherSupervisionReport401JSONResponse) VisitGetTeacherSupervisionReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetTeacherSupervisionReport403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetTeacherSupervisionReport403JSONResponse) VisitGetTeacherSupervisionReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetTeacherSupervisionReport404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetTeacherSupervisionReport404JSONResponse) VisitGetTeacherSupervisionReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ExportTeacherSupervisionReportRequestObject struct {
+	CycleId   openapi_types.UUID `json:"cycleId"`
+	TeacherId openapi_types.UUID `json:"teacherId"`
+}
+
+type ExportTeacherSupervisionReportResponseObject interface {
+	VisitExportTeacherSupervisionReportResponse(w http.ResponseWriter) error
+}
+
+type ExportTeacherSupervisionReport200ApplicationvndOpenxmlformatsOfficedocumentSpreadsheetmlSheetResponse struct {
+	Body          io.Reader
+	ContentLength int64
+}
+
+func (response ExportTeacherSupervisionReport200ApplicationvndOpenxmlformatsOfficedocumentSpreadsheetmlSheetResponse) VisitExportTeacherSupervisionReportResponse(w http.ResponseWriter) error {
+
+	w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type ExportTeacherSupervisionReport401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ExportTeacherSupervisionReport401JSONResponse) VisitExportTeacherSupervisionReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ExportTeacherSupervisionReport403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ExportTeacherSupervisionReport403JSONResponse) VisitExportTeacherSupervisionReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ExportTeacherSupervisionReport404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ExportTeacherSupervisionReport404JSONResponse) VisitExportTeacherSupervisionReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListScheduledObservationsForTeacherRequestObject struct {
+	CycleId   openapi_types.UUID `json:"cycleId"`
+	TeacherId openapi_types.UUID `json:"teacherId"`
+}
+
+type ListScheduledObservationsForTeacherResponseObject interface {
+	VisitListScheduledObservationsForTeacherResponse(w http.ResponseWriter) error
+}
+
+type ListScheduledObservationsForTeacher200JSONResponse struct {
+	Data []ScheduledObservation `json:"data"`
+}
+
+func (response ListScheduledObservationsForTeacher200JSONResponse) VisitListScheduledObservationsForTeacherResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListScheduledObservationsForTeacher401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListScheduledObservationsForTeacher401JSONResponse) VisitListScheduledObservationsForTeacherResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListScheduledObservationsForTeacher403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListScheduledObservationsForTeacher403JSONResponse) VisitListScheduledObservationsForTeacherResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CompleteObservationRequestObject struct {
+	Body *CompleteObservationJSONRequestBody
+}
+
+type CompleteObservationResponseObject interface {
+	VisitCompleteObservationResponse(w http.ResponseWriter) error
+}
+
+type CompleteObservation201JSONResponse Observation
+
+func (response CompleteObservation201JSONResponse) VisitCompleteObservationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CompleteObservation400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CompleteObservation400JSONResponse) VisitCompleteObservationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CompleteObservation401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CompleteObservation401JSONResponse) VisitCompleteObservationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CompleteObservation403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CompleteObservation403JSONResponse) VisitCompleteObservationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CompleteObservation404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response CompleteObservation404JSONResponse) VisitCompleteObservationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CompleteObservation409JSONResponse struct{ ConflictJSONResponse }
+
+func (response CompleteObservation409JSONResponse) VisitCompleteObservationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetObservationRequestObject struct {
+	ObservationId openapi_types.UUID `json:"observationId"`
+}
+
+type GetObservationResponseObject interface {
+	VisitGetObservationResponse(w http.ResponseWriter) error
+}
+
+type GetObservation200JSONResponse Observation
+
+func (response GetObservation200JSONResponse) VisitGetObservationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetObservation401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetObservation401JSONResponse) VisitGetObservationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetObservation403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetObservation403JSONResponse) VisitGetObservationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetObservation404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetObservation404JSONResponse) VisitGetObservationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RespondToObservationRequestObject struct {
+	ObservationId openapi_types.UUID `json:"observationId"`
+	Body          *RespondToObservationJSONRequestBody
+}
+
+type RespondToObservationResponseObject interface {
+	VisitRespondToObservationResponse(w http.ResponseWriter) error
+}
+
+type RespondToObservation200JSONResponse Observation
+
+func (response RespondToObservation200JSONResponse) VisitRespondToObservationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RespondToObservation401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response RespondToObservation401JSONResponse) VisitRespondToObservationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RespondToObservation403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response RespondToObservation403JSONResponse) VisitRespondToObservationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RespondToObservation404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response RespondToObservation404JSONResponse) VisitRespondToObservationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetTenantBrandingRequestObject struct {
 }
 
@@ -39140,6 +42548,63 @@ type StrictServerInterface interface {
 	// UpdateMyProfile Update own name, email, phone and locale
 	// (PUT /v1/me/profile)
 	UpdateMyProfile(ctx context.Context, request UpdateMyProfileRequestObject) (UpdateMyProfileResponseObject, error)
+	// ListMentorGroups Every mentor group this academic year
+	// (GET /v1/mentoring/groups)
+	ListMentorGroups(ctx context.Context, request ListMentorGroupsRequestObject) (ListMentorGroupsResponseObject, error)
+	// CreateMentorGroup Create a mentor group for one teacher
+	// (POST /v1/mentoring/groups)
+	CreateMentorGroup(ctx context.Context, request CreateMentorGroupRequestObject) (CreateMentorGroupResponseObject, error)
+	// DeleteMentorGroup Remove a mentor group
+	// (DELETE /v1/mentoring/groups/{groupId})
+	DeleteMentorGroup(ctx context.Context, request DeleteMentorGroupRequestObject) (DeleteMentorGroupResponseObject, error)
+	// GetMentorGroup One mentor group
+	// (GET /v1/mentoring/groups/{groupId})
+	GetMentorGroup(ctx context.Context, request GetMentorGroupRequestObject) (GetMentorGroupResponseObject, error)
+	// UpdateMentorGroup Rename a group or reassign its mentor
+	// (PUT /v1/mentoring/groups/{groupId})
+	UpdateMentorGroup(ctx context.Context, request UpdateMentorGroupRequestObject) (UpdateMentorGroupResponseObject, error)
+	// ListMentorGroupMembers Students assigned to a mentor group
+	// (GET /v1/mentoring/groups/{groupId}/members)
+	ListMentorGroupMembers(ctx context.Context, request ListMentorGroupMembersRequestObject) (ListMentorGroupMembersResponseObject, error)
+	// AssignMentorGroupMember Assign a student to the group, refused past the group-size limit
+	// (POST /v1/mentoring/groups/{groupId}/members)
+	AssignMentorGroupMember(ctx context.Context, request AssignMentorGroupMemberRequestObject) (AssignMentorGroupMemberResponseObject, error)
+	// RemoveMentorGroupMember Remove a student from the group
+	// (DELETE /v1/mentoring/groups/{groupId}/members/{studentId})
+	RemoveMentorGroupMember(ctx context.Context, request RemoveMentorGroupMemberRequestObject) (RemoveMentorGroupMemberResponseObject, error)
+	// ListMentorMeetingNotes Meeting notes for a group the reader may open (mentor, counselor, leadership)
+	// (GET /v1/mentoring/groups/{groupId}/notes)
+	ListMentorMeetingNotes(ctx context.Context, request ListMentorMeetingNotesRequestObject) (ListMentorMeetingNotesResponseObject, error)
+	// CreateMentorMeetingNote Record a mentoring session
+	// (POST /v1/mentoring/groups/{groupId}/notes)
+	CreateMentorMeetingNote(ctx context.Context, request CreateMentorMeetingNoteRequestObject) (CreateMentorMeetingNoteResponseObject, error)
+	// GetMentorTermSummary The mentor's written term appraisal of one student
+	// (GET /v1/mentoring/groups/{groupId}/term-summaries/{termId}/{studentId})
+	GetMentorTermSummary(ctx context.Context, request GetMentorTermSummaryRequestObject) (GetMentorTermSummaryResponseObject, error)
+	// WriteMentorTermSummary Write or replace the term appraisal
+	// (PUT /v1/mentoring/groups/{groupId}/term-summaries/{termId}/{studentId})
+	WriteMentorTermSummary(ctx context.Context, request WriteMentorTermSummaryRequestObject) (WriteMentorTermSummaryResponseObject, error)
+	// ListMyMentorGroups The mentor groups the current user leads
+	// (GET /v1/mentoring/my-groups)
+	ListMyMentorGroups(ctx context.Context, request ListMyMentorGroupsRequestObject) (ListMyMentorGroupsResponseObject, error)
+	// DeleteMentorMeetingNote Delete a meeting note (its own mentor only)
+	// (DELETE /v1/mentoring/notes/{noteId})
+	DeleteMentorMeetingNote(ctx context.Context, request DeleteMentorMeetingNoteRequestObject) (DeleteMentorMeetingNoteResponseObject, error)
+	// GetMentorMeetingNote One meeting note, visible only to its mentor, a counselor, or leadership
+	// (GET /v1/mentoring/notes/{noteId})
+	GetMentorMeetingNote(ctx context.Context, request GetMentorMeetingNoteRequestObject) (GetMentorMeetingNoteResponseObject, error)
+	// UpdateMentorMeetingNote Edit a meeting note (its own mentor only)
+	// (PUT /v1/mentoring/notes/{noteId})
+	UpdateMentorMeetingNote(ctx context.Context, request UpdateMentorMeetingNoteRequestObject) (UpdateMentorMeetingNoteResponseObject, error)
+	// GetMentorGroupSizeLimit Maximum students one mentor group may hold
+	// (GET /v1/mentoring/settings/group-size-limit)
+	GetMentorGroupSizeLimit(ctx context.Context, request GetMentorGroupSizeLimitRequestObject) (GetMentorGroupSizeLimitResponseObject, error)
+	// SetMentorGroupSizeLimit Change the group-size limit
+	// (PUT /v1/mentoring/settings/group-size-limit)
+	SetMentorGroupSizeLimit(ctx context.Context, request SetMentorGroupSizeLimitRequestObject) (SetMentorGroupSizeLimitResponseObject, error)
+	// GetMentorStudentSnapshot One student's attendance, discipline points, and published grades
+	// (GET /v1/mentoring/students/{studentId}/snapshot)
+	GetMentorStudentSnapshot(ctx context.Context, request GetMentorStudentSnapshotRequestObject) (GetMentorStudentSnapshotResponseObject, error)
 	// GetMonitorPresence Who currently has a realtime socket open, by role
 	// (GET /v1/monitor/presence)
 	GetMonitorPresence(ctx context.Context, request GetMonitorPresenceRequestObject) (GetMonitorPresenceResponseObject, error)
@@ -39302,6 +42767,42 @@ type StrictServerInterface interface {
 	// RespondSubstitution Accept or reject a substitution request addressed to me
 	// (POST /v1/substitutions/{substitutionId}/respond)
 	RespondSubstitution(ctx context.Context, request RespondSubstitutionRequestObject) (RespondSubstitutionResponseObject, error)
+	// ListSupervisionCycles Supervision cycles this academic year
+	// (GET /v1/supervision/cycles)
+	ListSupervisionCycles(ctx context.Context, request ListSupervisionCyclesRequestObject) (ListSupervisionCyclesResponseObject, error)
+	// CreateSupervisionCycle Start a cycle with its instrument
+	// (POST /v1/supervision/cycles)
+	CreateSupervisionCycle(ctx context.Context, request CreateSupervisionCycleRequestObject) (CreateSupervisionCycleResponseObject, error)
+	// GetSupervisionCycle One cycle and its instrument
+	// (GET /v1/supervision/cycles/{cycleId})
+	GetSupervisionCycle(ctx context.Context, request GetSupervisionCycleRequestObject) (GetSupervisionCycleResponseObject, error)
+	// UpdateSupervisionCycle Rename a cycle or edit its instrument
+	// (PUT /v1/supervision/cycles/{cycleId})
+	UpdateSupervisionCycle(ctx context.Context, request UpdateSupervisionCycleRequestObject) (UpdateSupervisionCycleResponseObject, error)
+	// ListScheduledObservations Planned visits in a cycle
+	// (GET /v1/supervision/cycles/{cycleId}/scheduled)
+	ListScheduledObservations(ctx context.Context, request ListScheduledObservationsRequestObject) (ListScheduledObservationsResponseObject, error)
+	// ScheduleObservation Plan a visit to a specific lesson, resolved through the scheduling module
+	// (POST /v1/supervision/cycles/{cycleId}/scheduled)
+	ScheduleObservation(ctx context.Context, request ScheduleObservationRequestObject) (ScheduleObservationResponseObject, error)
+	// GetTeacherSupervisionReport One teacher's observations within a cycle, averaged per criterion
+	// (GET /v1/supervision/cycles/{cycleId}/teachers/{teacherId}/report)
+	GetTeacherSupervisionReport(ctx context.Context, request GetTeacherSupervisionReportRequestObject) (GetTeacherSupervisionReportResponseObject, error)
+	// ExportTeacherSupervisionReport The same report as an XLSX workbook
+	// (GET /v1/supervision/cycles/{cycleId}/teachers/{teacherId}/report/export)
+	ExportTeacherSupervisionReport(ctx context.Context, request ExportTeacherSupervisionReportRequestObject) (ExportTeacherSupervisionReportResponseObject, error)
+	// ListScheduledObservationsForTeacher Planned visits to one teacher within a cycle
+	// (GET /v1/supervision/cycles/{cycleId}/teachers/{teacherId}/scheduled)
+	ListScheduledObservationsForTeacher(ctx context.Context, request ListScheduledObservationsForTeacherRequestObject) (ListScheduledObservationsForTeacherResponseObject, error)
+	// CompleteObservation Record the completed visit -- scores, notes, teacher response, follow-up
+	// (POST /v1/supervision/observations)
+	CompleteObservation(ctx context.Context, request CompleteObservationRequestObject) (CompleteObservationResponseObject, error)
+	// GetObservation One completed observation; a teacher can always read their own
+	// (GET /v1/supervision/observations/{observationId})
+	GetObservation(ctx context.Context, request GetObservationRequestObject) (GetObservationResponseObject, error)
+	// RespondToObservation The observed teacher's response and the agreed follow-up
+	// (PUT /v1/supervision/observations/{observationId}/response)
+	RespondToObservation(ctx context.Context, request RespondToObservationRequestObject) (RespondToObservationResponseObject, error)
 	// GetTenantBranding Public branding for the resolved tenant (login screen, manifest)
 	// (GET /v1/tenant/branding)
 	GetTenantBranding(ctx context.Context, request GetTenantBrandingRequestObject) (GetTenantBrandingResponseObject, error)
@@ -46538,6 +50039,544 @@ func (sh *strictHandler) UpdateMyProfile(w http.ResponseWriter, r *http.Request)
 	}
 }
 
+// ListMentorGroups operation middleware
+func (sh *strictHandler) ListMentorGroups(w http.ResponseWriter, r *http.Request) {
+	var request ListMentorGroupsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListMentorGroups(ctx, request.(ListMentorGroupsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListMentorGroups")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListMentorGroupsResponseObject); ok {
+		if err := validResponse.VisitListMentorGroupsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateMentorGroup operation middleware
+func (sh *strictHandler) CreateMentorGroup(w http.ResponseWriter, r *http.Request) {
+	var request CreateMentorGroupRequestObject
+
+	var body CreateMentorGroupJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateMentorGroup(ctx, request.(CreateMentorGroupRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateMentorGroup")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateMentorGroupResponseObject); ok {
+		if err := validResponse.VisitCreateMentorGroupResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteMentorGroup operation middleware
+func (sh *strictHandler) DeleteMentorGroup(w http.ResponseWriter, r *http.Request, groupId openapi_types.UUID) {
+	var request DeleteMentorGroupRequestObject
+
+	request.GroupId = groupId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteMentorGroup(ctx, request.(DeleteMentorGroupRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteMentorGroup")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteMentorGroupResponseObject); ok {
+		if err := validResponse.VisitDeleteMentorGroupResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetMentorGroup operation middleware
+func (sh *strictHandler) GetMentorGroup(w http.ResponseWriter, r *http.Request, groupId openapi_types.UUID) {
+	var request GetMentorGroupRequestObject
+
+	request.GroupId = groupId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetMentorGroup(ctx, request.(GetMentorGroupRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetMentorGroup")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetMentorGroupResponseObject); ok {
+		if err := validResponse.VisitGetMentorGroupResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateMentorGroup operation middleware
+func (sh *strictHandler) UpdateMentorGroup(w http.ResponseWriter, r *http.Request, groupId openapi_types.UUID) {
+	var request UpdateMentorGroupRequestObject
+
+	request.GroupId = groupId
+
+	var body UpdateMentorGroupJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateMentorGroup(ctx, request.(UpdateMentorGroupRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateMentorGroup")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateMentorGroupResponseObject); ok {
+		if err := validResponse.VisitUpdateMentorGroupResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListMentorGroupMembers operation middleware
+func (sh *strictHandler) ListMentorGroupMembers(w http.ResponseWriter, r *http.Request, groupId openapi_types.UUID) {
+	var request ListMentorGroupMembersRequestObject
+
+	request.GroupId = groupId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListMentorGroupMembers(ctx, request.(ListMentorGroupMembersRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListMentorGroupMembers")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListMentorGroupMembersResponseObject); ok {
+		if err := validResponse.VisitListMentorGroupMembersResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// AssignMentorGroupMember operation middleware
+func (sh *strictHandler) AssignMentorGroupMember(w http.ResponseWriter, r *http.Request, groupId openapi_types.UUID) {
+	var request AssignMentorGroupMemberRequestObject
+
+	request.GroupId = groupId
+
+	var body AssignMentorGroupMemberJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.AssignMentorGroupMember(ctx, request.(AssignMentorGroupMemberRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AssignMentorGroupMember")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AssignMentorGroupMemberResponseObject); ok {
+		if err := validResponse.VisitAssignMentorGroupMemberResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RemoveMentorGroupMember operation middleware
+func (sh *strictHandler) RemoveMentorGroupMember(w http.ResponseWriter, r *http.Request, groupId openapi_types.UUID, studentId openapi_types.UUID) {
+	var request RemoveMentorGroupMemberRequestObject
+
+	request.GroupId = groupId
+	request.StudentId = studentId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RemoveMentorGroupMember(ctx, request.(RemoveMentorGroupMemberRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RemoveMentorGroupMember")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RemoveMentorGroupMemberResponseObject); ok {
+		if err := validResponse.VisitRemoveMentorGroupMemberResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListMentorMeetingNotes operation middleware
+func (sh *strictHandler) ListMentorMeetingNotes(w http.ResponseWriter, r *http.Request, groupId openapi_types.UUID) {
+	var request ListMentorMeetingNotesRequestObject
+
+	request.GroupId = groupId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListMentorMeetingNotes(ctx, request.(ListMentorMeetingNotesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListMentorMeetingNotes")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListMentorMeetingNotesResponseObject); ok {
+		if err := validResponse.VisitListMentorMeetingNotesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateMentorMeetingNote operation middleware
+func (sh *strictHandler) CreateMentorMeetingNote(w http.ResponseWriter, r *http.Request, groupId openapi_types.UUID) {
+	var request CreateMentorMeetingNoteRequestObject
+
+	request.GroupId = groupId
+
+	var body CreateMentorMeetingNoteJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateMentorMeetingNote(ctx, request.(CreateMentorMeetingNoteRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateMentorMeetingNote")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateMentorMeetingNoteResponseObject); ok {
+		if err := validResponse.VisitCreateMentorMeetingNoteResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetMentorTermSummary operation middleware
+func (sh *strictHandler) GetMentorTermSummary(w http.ResponseWriter, r *http.Request, groupId openapi_types.UUID, termId openapi_types.UUID, studentId openapi_types.UUID) {
+	var request GetMentorTermSummaryRequestObject
+
+	request.GroupId = groupId
+	request.TermId = termId
+	request.StudentId = studentId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetMentorTermSummary(ctx, request.(GetMentorTermSummaryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetMentorTermSummary")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetMentorTermSummaryResponseObject); ok {
+		if err := validResponse.VisitGetMentorTermSummaryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// WriteMentorTermSummary operation middleware
+func (sh *strictHandler) WriteMentorTermSummary(w http.ResponseWriter, r *http.Request, groupId openapi_types.UUID, termId openapi_types.UUID, studentId openapi_types.UUID) {
+	var request WriteMentorTermSummaryRequestObject
+
+	request.GroupId = groupId
+	request.TermId = termId
+	request.StudentId = studentId
+
+	var body WriteMentorTermSummaryJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.WriteMentorTermSummary(ctx, request.(WriteMentorTermSummaryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "WriteMentorTermSummary")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(WriteMentorTermSummaryResponseObject); ok {
+		if err := validResponse.VisitWriteMentorTermSummaryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListMyMentorGroups operation middleware
+func (sh *strictHandler) ListMyMentorGroups(w http.ResponseWriter, r *http.Request) {
+	var request ListMyMentorGroupsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListMyMentorGroups(ctx, request.(ListMyMentorGroupsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListMyMentorGroups")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListMyMentorGroupsResponseObject); ok {
+		if err := validResponse.VisitListMyMentorGroupsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteMentorMeetingNote operation middleware
+func (sh *strictHandler) DeleteMentorMeetingNote(w http.ResponseWriter, r *http.Request, noteId openapi_types.UUID) {
+	var request DeleteMentorMeetingNoteRequestObject
+
+	request.NoteId = noteId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteMentorMeetingNote(ctx, request.(DeleteMentorMeetingNoteRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteMentorMeetingNote")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteMentorMeetingNoteResponseObject); ok {
+		if err := validResponse.VisitDeleteMentorMeetingNoteResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetMentorMeetingNote operation middleware
+func (sh *strictHandler) GetMentorMeetingNote(w http.ResponseWriter, r *http.Request, noteId openapi_types.UUID) {
+	var request GetMentorMeetingNoteRequestObject
+
+	request.NoteId = noteId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetMentorMeetingNote(ctx, request.(GetMentorMeetingNoteRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetMentorMeetingNote")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetMentorMeetingNoteResponseObject); ok {
+		if err := validResponse.VisitGetMentorMeetingNoteResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateMentorMeetingNote operation middleware
+func (sh *strictHandler) UpdateMentorMeetingNote(w http.ResponseWriter, r *http.Request, noteId openapi_types.UUID) {
+	var request UpdateMentorMeetingNoteRequestObject
+
+	request.NoteId = noteId
+
+	var body UpdateMentorMeetingNoteJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateMentorMeetingNote(ctx, request.(UpdateMentorMeetingNoteRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateMentorMeetingNote")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateMentorMeetingNoteResponseObject); ok {
+		if err := validResponse.VisitUpdateMentorMeetingNoteResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetMentorGroupSizeLimit operation middleware
+func (sh *strictHandler) GetMentorGroupSizeLimit(w http.ResponseWriter, r *http.Request) {
+	var request GetMentorGroupSizeLimitRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetMentorGroupSizeLimit(ctx, request.(GetMentorGroupSizeLimitRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetMentorGroupSizeLimit")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetMentorGroupSizeLimitResponseObject); ok {
+		if err := validResponse.VisitGetMentorGroupSizeLimitResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SetMentorGroupSizeLimit operation middleware
+func (sh *strictHandler) SetMentorGroupSizeLimit(w http.ResponseWriter, r *http.Request) {
+	var request SetMentorGroupSizeLimitRequestObject
+
+	var body SetMentorGroupSizeLimitJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SetMentorGroupSizeLimit(ctx, request.(SetMentorGroupSizeLimitRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SetMentorGroupSizeLimit")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SetMentorGroupSizeLimitResponseObject); ok {
+		if err := validResponse.VisitSetMentorGroupSizeLimitResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetMentorStudentSnapshot operation middleware
+func (sh *strictHandler) GetMentorStudentSnapshot(w http.ResponseWriter, r *http.Request, studentId openapi_types.UUID) {
+	var request GetMentorStudentSnapshotRequestObject
+
+	request.StudentId = studentId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetMentorStudentSnapshot(ctx, request.(GetMentorStudentSnapshotRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetMentorStudentSnapshot")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetMentorStudentSnapshotResponseObject); ok {
+		if err := validResponse.VisitGetMentorStudentSnapshotResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetMonitorPresence operation middleware
 func (sh *strictHandler) GetMonitorPresence(w http.ResponseWriter, r *http.Request) {
 	var request GetMonitorPresenceRequestObject
@@ -48038,6 +52077,350 @@ func (sh *strictHandler) RespondSubstitution(w http.ResponseWriter, r *http.Requ
 	}
 }
 
+// ListSupervisionCycles operation middleware
+func (sh *strictHandler) ListSupervisionCycles(w http.ResponseWriter, r *http.Request) {
+	var request ListSupervisionCyclesRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListSupervisionCycles(ctx, request.(ListSupervisionCyclesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListSupervisionCycles")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListSupervisionCyclesResponseObject); ok {
+		if err := validResponse.VisitListSupervisionCyclesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateSupervisionCycle operation middleware
+func (sh *strictHandler) CreateSupervisionCycle(w http.ResponseWriter, r *http.Request) {
+	var request CreateSupervisionCycleRequestObject
+
+	var body CreateSupervisionCycleJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateSupervisionCycle(ctx, request.(CreateSupervisionCycleRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateSupervisionCycle")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateSupervisionCycleResponseObject); ok {
+		if err := validResponse.VisitCreateSupervisionCycleResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetSupervisionCycle operation middleware
+func (sh *strictHandler) GetSupervisionCycle(w http.ResponseWriter, r *http.Request, cycleId openapi_types.UUID) {
+	var request GetSupervisionCycleRequestObject
+
+	request.CycleId = cycleId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetSupervisionCycle(ctx, request.(GetSupervisionCycleRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetSupervisionCycle")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetSupervisionCycleResponseObject); ok {
+		if err := validResponse.VisitGetSupervisionCycleResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateSupervisionCycle operation middleware
+func (sh *strictHandler) UpdateSupervisionCycle(w http.ResponseWriter, r *http.Request, cycleId openapi_types.UUID) {
+	var request UpdateSupervisionCycleRequestObject
+
+	request.CycleId = cycleId
+
+	var body UpdateSupervisionCycleJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateSupervisionCycle(ctx, request.(UpdateSupervisionCycleRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateSupervisionCycle")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateSupervisionCycleResponseObject); ok {
+		if err := validResponse.VisitUpdateSupervisionCycleResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListScheduledObservations operation middleware
+func (sh *strictHandler) ListScheduledObservations(w http.ResponseWriter, r *http.Request, cycleId openapi_types.UUID) {
+	var request ListScheduledObservationsRequestObject
+
+	request.CycleId = cycleId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListScheduledObservations(ctx, request.(ListScheduledObservationsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListScheduledObservations")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListScheduledObservationsResponseObject); ok {
+		if err := validResponse.VisitListScheduledObservationsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ScheduleObservation operation middleware
+func (sh *strictHandler) ScheduleObservation(w http.ResponseWriter, r *http.Request, cycleId openapi_types.UUID) {
+	var request ScheduleObservationRequestObject
+
+	request.CycleId = cycleId
+
+	var body ScheduleObservationJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ScheduleObservation(ctx, request.(ScheduleObservationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ScheduleObservation")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ScheduleObservationResponseObject); ok {
+		if err := validResponse.VisitScheduleObservationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetTeacherSupervisionReport operation middleware
+func (sh *strictHandler) GetTeacherSupervisionReport(w http.ResponseWriter, r *http.Request, cycleId openapi_types.UUID, teacherId openapi_types.UUID) {
+	var request GetTeacherSupervisionReportRequestObject
+
+	request.CycleId = cycleId
+	request.TeacherId = teacherId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetTeacherSupervisionReport(ctx, request.(GetTeacherSupervisionReportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetTeacherSupervisionReport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetTeacherSupervisionReportResponseObject); ok {
+		if err := validResponse.VisitGetTeacherSupervisionReportResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ExportTeacherSupervisionReport operation middleware
+func (sh *strictHandler) ExportTeacherSupervisionReport(w http.ResponseWriter, r *http.Request, cycleId openapi_types.UUID, teacherId openapi_types.UUID) {
+	var request ExportTeacherSupervisionReportRequestObject
+
+	request.CycleId = cycleId
+	request.TeacherId = teacherId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ExportTeacherSupervisionReport(ctx, request.(ExportTeacherSupervisionReportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ExportTeacherSupervisionReport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ExportTeacherSupervisionReportResponseObject); ok {
+		if err := validResponse.VisitExportTeacherSupervisionReportResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListScheduledObservationsForTeacher operation middleware
+func (sh *strictHandler) ListScheduledObservationsForTeacher(w http.ResponseWriter, r *http.Request, cycleId openapi_types.UUID, teacherId openapi_types.UUID) {
+	var request ListScheduledObservationsForTeacherRequestObject
+
+	request.CycleId = cycleId
+	request.TeacherId = teacherId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListScheduledObservationsForTeacher(ctx, request.(ListScheduledObservationsForTeacherRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListScheduledObservationsForTeacher")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListScheduledObservationsForTeacherResponseObject); ok {
+		if err := validResponse.VisitListScheduledObservationsForTeacherResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CompleteObservation operation middleware
+func (sh *strictHandler) CompleteObservation(w http.ResponseWriter, r *http.Request) {
+	var request CompleteObservationRequestObject
+
+	var body CompleteObservationJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CompleteObservation(ctx, request.(CompleteObservationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CompleteObservation")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CompleteObservationResponseObject); ok {
+		if err := validResponse.VisitCompleteObservationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetObservation operation middleware
+func (sh *strictHandler) GetObservation(w http.ResponseWriter, r *http.Request, observationId openapi_types.UUID) {
+	var request GetObservationRequestObject
+
+	request.ObservationId = observationId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetObservation(ctx, request.(GetObservationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetObservation")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetObservationResponseObject); ok {
+		if err := validResponse.VisitGetObservationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RespondToObservation operation middleware
+func (sh *strictHandler) RespondToObservation(w http.ResponseWriter, r *http.Request, observationId openapi_types.UUID) {
+	var request RespondToObservationRequestObject
+
+	request.ObservationId = observationId
+
+	var body RespondToObservationJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RespondToObservation(ctx, request.(RespondToObservationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RespondToObservation")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RespondToObservationResponseObject); ok {
+		if err := validResponse.VisitRespondToObservationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetTenantBranding operation middleware
 func (sh *strictHandler) GetTenantBranding(w http.ResponseWriter, r *http.Request) {
 	var request GetTenantBrandingRequestObject
@@ -49067,617 +53450,659 @@ func (sh *strictHandler) WsMonitor(w http.ResponseWriter, r *http.Request, param
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
+	"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",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

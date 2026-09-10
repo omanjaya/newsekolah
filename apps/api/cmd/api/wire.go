@@ -25,6 +25,7 @@ import (
 	identityservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/identity/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/integrations"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/library"
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/mentoring"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/notifications"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/permits"
 	permitsservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/service"
@@ -32,6 +33,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/reports"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/school"
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/supervision"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/auth"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/authz"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
@@ -200,6 +202,24 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	}
 	platformModule := platform.Register(platformDeps)
 
+	// Fase 6 modules (docs/12-roadmap.md): both gated by platform's
+	// per-tenant feature flags through the wiring.PlatformFlags adapter,
+	// so neither imports the platform module directly.
+	mentoringModule := mentoring.Register(mentoring.Dependencies{
+		Pool: pool, Years: schoolModule.Service,
+		Attendance: wiring.MentoringAttendance{Svc: attendanceModule.Service},
+		Discipline: wiring.MentoringDiscipline{Svc: disciplineModule.Service},
+		Grading:    wiring.MentoringGrading{Svc: gradingModule.Service},
+		Flags:      wiring.PlatformFlags{Svc: platformModule.Service},
+		Sealer:     sealer, Clock: clock.Real{},
+	})
+	supervisionModule := supervision.Register(supervision.Dependencies{
+		Pool: pool, Years: schoolModule.Service,
+		Schedules: wiring.SupervisionSchedule{Reader: schedulingModule.ScheduleReader},
+		Flags:     wiring.PlatformFlags{Svc: platformModule.Service},
+		Clock:     clock.Real{},
+	})
+
 	var (
 		workers  *river.Workers
 		periodic []*river.PeriodicJob
@@ -269,6 +289,8 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		LibraryHandler:       libraryModule.Handler,
 		IntegrationsHandler:  integrationsModule.Handler,
 		AnalyticsHandler:     analyticsModule.Handler,
+		MentoringHandler:     mentoringModule.Handler,
+		SupervisionHandler:   supervisionModule.Handler,
 		healthHandler:        &healthHandler{version: version, pool: pool, redis: redisClient},
 	}
 

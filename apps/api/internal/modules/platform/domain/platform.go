@@ -81,11 +81,17 @@ const (
 	ModulePermits       Module = "permits"
 	ModuleAnnouncements Module = "announcements"
 	ModuleReports       Module = "reports"
+	ModuleMentoring     Module = "mentoring"
+	ModuleSupervision   Module = "supervision"
 )
 
 // AllModules lists every module the console can toggle, in the fixed order
-// a tenant detail view renders them.
-var AllModules = []Module{ModuleLibrary, ModuleDiscipline, ModuleGrading, ModulePermits, ModuleAnnouncements, ModuleReports}
+// a tenant detail view renders them. Mentoring and supervision are Fase 6
+// modules (docs/12-roadmap.md): both ship behind these flags from day one.
+var AllModules = []Module{
+	ModuleLibrary, ModuleDiscipline, ModuleGrading, ModulePermits, ModuleAnnouncements, ModuleReports,
+	ModuleMentoring, ModuleSupervision,
+}
 
 func (m Module) Valid() bool {
 	for _, v := range AllModules {

@@ -614,6 +614,60 @@ type LoginAttemptsDefault struct {
 	OccurredAt pgtype.Timestamptz `json:"occurred_at"`
 }
 
+type MentorGroup struct {
+	ID             uuid.UUID          `json:"id"`
+	TenantID       uuid.UUID          `json:"tenant_id"`
+	AcademicYearID uuid.UUID          `json:"academic_year_id"`
+	MentorUserID   uuid.UUID          `json:"mentor_user_id"`
+	Name           string             `json:"name"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+}
+
+type MentorGroupMember struct {
+	ID             uuid.UUID          `json:"id"`
+	TenantID       uuid.UUID          `json:"tenant_id"`
+	GroupID        uuid.UUID          `json:"group_id"`
+	AcademicYearID uuid.UUID          `json:"academic_year_id"`
+	StudentUserID  uuid.UUID          `json:"student_user_id"`
+	AssignedAt     pgtype.Timestamptz `json:"assigned_at"`
+}
+
+type MentorGroupSetting struct {
+	TenantID       uuid.UUID          `json:"tenant_id"`
+	GroupSizeLimit int32              `json:"group_size_limit"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+}
+
+type MentorMeetingNote struct {
+	ID                     uuid.UUID          `json:"id"`
+	TenantID               uuid.UUID          `json:"tenant_id"`
+	AcademicYearID         uuid.UUID          `json:"academic_year_id"`
+	GroupID                uuid.UUID          `json:"group_id"`
+	MentorUserID           uuid.UUID          `json:"mentor_user_id"`
+	MetAt                  pgtype.Timestamptz `json:"met_at"`
+	Kind                   string             `json:"kind"`
+	AttendeeUserIds        []uuid.UUID        `json:"attendee_user_ids"`
+	Topic                  string             `json:"topic"`
+	ContentEncrypted       []byte             `json:"content_encrypted"`
+	ContentKeyID           string             `json:"content_key_id"`
+	AgreedActionsEncrypted []byte             `json:"agreed_actions_encrypted"`
+	CreatedAt              pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
+}
+
+type MentorTermSummary struct {
+	ID            uuid.UUID          `json:"id"`
+	TenantID      uuid.UUID          `json:"tenant_id"`
+	TermID        uuid.UUID          `json:"term_id"`
+	GroupID       uuid.UUID          `json:"group_id"`
+	StudentUserID uuid.UUID          `json:"student_user_id"`
+	MentorUserID  uuid.UUID          `json:"mentor_user_id"`
+	Summary       string             `json:"summary"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
+}
+
 type MessageDelivery struct {
 	ID                    uuid.UUID          `json:"id"`
 	TenantID              uuid.UUID          `json:"tenant_id"`
@@ -1010,6 +1064,43 @@ type SubstitutionRequest struct {
 	ResponseNote     pgtype.Text        `json:"response_note"`
 	RespondedAt      pgtype.Timestamptz `json:"responded_at"`
 	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+}
+
+type SupervisionCycle struct {
+	ID             uuid.UUID          `json:"id"`
+	TenantID       uuid.UUID          `json:"tenant_id"`
+	AcademicYearID uuid.UUID          `json:"academic_year_id"`
+	Name           string             `json:"name"`
+	Instrument     []byte             `json:"instrument"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+}
+
+type SupervisionObservation struct {
+	ID              uuid.UUID          `json:"id"`
+	TenantID        uuid.UUID          `json:"tenant_id"`
+	ScheduledID     uuid.UUID          `json:"scheduled_id"`
+	CycleID         uuid.UUID          `json:"cycle_id"`
+	TeacherUserID   uuid.UUID          `json:"teacher_user_id"`
+	ObserverUserID  uuid.UUID          `json:"observer_user_id"`
+	Scores          []byte             `json:"scores"`
+	ObserverNotes   string             `json:"observer_notes"`
+	TeacherResponse string             `json:"teacher_response"`
+	AgreedFollowUp  string             `json:"agreed_follow_up"`
+	ObservedAt      pgtype.Timestamptz `json:"observed_at"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+}
+
+type SupervisionScheduledObservation struct {
+	ID             uuid.UUID          `json:"id"`
+	TenantID       uuid.UUID          `json:"tenant_id"`
+	CycleID        uuid.UUID          `json:"cycle_id"`
+	ScheduleID     uuid.UUID          `json:"schedule_id"`
+	LessonDate     pgtype.Date        `json:"lesson_date"`
+	TeacherUserID  uuid.UUID          `json:"teacher_user_id"`
+	ObserverUserID uuid.UUID          `json:"observer_user_id"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
 }
 
 type TeacherProfile struct {

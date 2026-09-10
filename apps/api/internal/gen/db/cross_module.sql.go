@@ -802,3 +802,109 @@ func (q *Queries) ListActiveTenants(ctx context.Context) ([]ListActiveTenantsRow
 	}
 	return items, nil
 }
+
+const mentoringHasActiveDuty = `-- name: MentoringHasActiveDuty :one
+select exists (
+  select 1 from duty_assignments da
+  join duty_types dt on dt.id = da.duty_type_id
+  where da.tenant_id = $1 and da.academic_year_id = $2 and da.user_id = $3 and dt.slug = $4
+    and da.is_active and dt.is_active and dt.deleted_at is null
+    and da.starts_on <= current_date and (da.ends_on is null or da.ends_on >= current_date)
+)::bool as has_duty
+`
+
+type MentoringHasActiveDutyParams struct {
+	TenantID       uuid.UUID `json:"tenant_id"`
+	AcademicYearID uuid.UUID `json:"academic_year_id"`
+	UserID         uuid.UUID `json:"user_id"`
+	Slug           string    `json:"slug"`
+}
+
+// cross-module read: duty_assignments/duty_types (identity), for resolving
+// whether a reader may open a meeting note (counselor, leadership).
+func (q *Queries) MentoringHasActiveDuty(ctx context.Context, arg MentoringHasActiveDutyParams) (bool, error) {
+	row := q.db.QueryRow(ctx, mentoringHasActiveDuty,
+		arg.TenantID,
+		arg.AcademicYearID,
+		arg.UserID,
+		arg.Slug,
+	)
+	var has_duty bool
+	err := row.Scan(&has_duty)
+	return has_duty, err
+}
+
+const mentoringStudentInfo = `-- name: MentoringStudentInfo :one
+select u.name as student_name, coalesce(c.name, '') as class_name
+from users u
+left join enrollments e on e.student_user_id = u.id and e.academic_year_id = $2 and e.status = 'active'
+left join classes c on c.id = e.class_id
+where u.tenant_id = $1 and u.id = $3
+`
+
+type MentoringStudentInfoParams struct {
+	TenantID       uuid.UUID `json:"tenant_id"`
+	AcademicYearID uuid.UUID `json:"academic_year_id"`
+	ID             uuid.UUID `json:"id"`
+}
+
+type MentoringStudentInfoRow struct {
+	StudentName string `json:"student_name"`
+	ClassName   string `json:"class_name"`
+}
+
+// cross-module read: users (identity) and enrollments/classes (academic),
+// for the name and class shown in the mentor's per-student view.
+func (q *Queries) MentoringStudentInfo(ctx context.Context, arg MentoringStudentInfoParams) (MentoringStudentInfoRow, error) {
+	row := q.db.QueryRow(ctx, mentoringStudentInfo, arg.TenantID, arg.AcademicYearID, arg.ID)
+	var i MentoringStudentInfoRow
+	err := row.Scan(&i.StudentName, &i.ClassName)
+	return i, err
+}
+
+const supervisionHasActiveDuty = `-- name: SupervisionHasActiveDuty :one
+select exists (
+  select 1 from duty_assignments da
+  join duty_types dt on dt.id = da.duty_type_id
+  where da.tenant_id = $1 and da.academic_year_id = $2 and da.user_id = $3 and dt.slug = $4
+    and da.is_active and dt.is_active and dt.deleted_at is null
+    and da.starts_on <= current_date and (da.ends_on is null or da.ends_on >= current_date)
+)::bool as has_duty
+`
+
+type SupervisionHasActiveDutyParams struct {
+	TenantID       uuid.UUID `json:"tenant_id"`
+	AcademicYearID uuid.UUID `json:"academic_year_id"`
+	UserID         uuid.UUID `json:"user_id"`
+	Slug           string    `json:"slug"`
+}
+
+// cross-module read: duty_assignments/duty_types (identity), for resolving
+// whether a reader may open an observation report (leadership).
+func (q *Queries) SupervisionHasActiveDuty(ctx context.Context, arg SupervisionHasActiveDutyParams) (bool, error) {
+	row := q.db.QueryRow(ctx, supervisionHasActiveDuty,
+		arg.TenantID,
+		arg.AcademicYearID,
+		arg.UserID,
+		arg.Slug,
+	)
+	var has_duty bool
+	err := row.Scan(&has_duty)
+	return has_duty, err
+}
+
+const supervisionTeacherName = `-- name: SupervisionTeacherName :one
+select name from users where tenant_id = $1 and id = $2
+`
+
+type SupervisionTeacherNameParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	ID       uuid.UUID `json:"id"`
+}
+
+func (q *Queries) SupervisionTeacherName(ctx context.Context, arg SupervisionTeacherNameParams) (string, error) {
+	row := q.db.QueryRow(ctx, supervisionTeacherName, arg.TenantID, arg.ID)
+	var name string
+	err := row.Scan(&name)
+	return name, err
+}
