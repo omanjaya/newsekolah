@@ -155,7 +155,13 @@
         "assignments": "Assignments",
         "violationCatalog": "Violation Catalog",
         "academicCalendar": "Academic Calendar",
-        "promotion": "Class Promotion"
+        "promotion": "Class Promotion",
+        "gradeLevels": "Grade Levels",
+        "tracks": "Tracks",
+        "subjectOfferings": "Subject Offerings",
+        "teachingAssignments": "Teaching Assignments",
+        "enrollmentImport": "Class Assignment Import",
+        "newYearSetup": "New Year Setup"
       }
     },
     "settings": {

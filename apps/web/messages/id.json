@@ -681,6 +681,13 @@
         "teachingAdded": "Guru pengampu ditambahkan",
         "pickSubject": "Mapel",
         "pickTeacher": "Guru",
+        "moveStudent": "Pindahkan siswa",
+        "moveBody": "Pindahkan {name} ke kelas lain. Riwayat pendaftaran di kelas ini tetap tersimpan.",
+        "moveTargetClass": "Kelas tujuan",
+        "moveTargetPlaceholder": "Pilih kelas",
+        "moveEffectiveOn": "Berlaku mulai",
+        "moveSubmit": "Pindahkan",
+        "moved": "Siswa dipindahkan",
         "form": {
           "name": "Nama kelas",
           "grade": "Tingkat",
@@ -745,7 +752,13 @@
         "weekBody": "Aktifkan hari sekolah dan pilih template yang dipakai tiap hari.",
         "usesTemplate": "Memakai template ini",
         "useTemplate": "Pakai template ini",
-        "sequence": "Urutan"
+        "sequence": "Urutan",
+        "renameTemplate": "Ubah nama template",
+        "deleteTemplate": "Hapus template",
+        "templateUpdated": "Nama template diperbarui",
+        "templateDeleted": "Template dihapus",
+        "deleteTemplateTitle": "Hapus template ini?",
+        "deleteTemplateBody": "\"{name}\" akan dihapus. Tidak bisa dihapus jika masih dipakai hari sekolah."
       },
       "duties": {
         "eyebrow": "Data Sekolah",

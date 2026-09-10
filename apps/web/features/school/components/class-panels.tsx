@@ -6,25 +6,29 @@ import {
   Checkbox,
   Dialog,
   DialogContent,
+  IconButton,
   Input,
   Select,
   Skeleton,
   useToast,
 } from "@newsekolah/ui";
-import { Plus, Trash2 } from "lucide-react";
+import { ArrowRightLeft, Plus, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
 import { useActiveYear } from "../../../lib/hooks/use-active-year";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { useMoveStudentMutation } from "../../academic/api-school-extras";
 import {
+  useClassesQuery,
   useDirectoryQuery,
   useLookup,
   useSubjectsQuery,
   useTeachersQuery,
 } from "../../reference/api";
 import {
+  type Enrollment,
   useBulkAssignMutation,
   useCreateTeachingAssignmentMutation,
   useDeleteTeachingAssignmentMutation,
@@ -53,6 +57,19 @@ export function EnrollmentPanel({
   const [picked, setPicked] = useState<string[]>([]);
   const rows = (enrollments.data?.data ?? []).filter((e) => e.status === "active");
 
+  const classes = useClassesQuery();
+  const moveTargets = (classes.data?.data ?? []).filter((c) => c.id !== classId);
+  const moveStudent = useMoveStudentMutation(classId);
+  const [moving, setMoving] = useState<Enrollment | null>(null);
+  const [toClassId, setToClassId] = useState("");
+  const [effectiveOn, setEffectiveOn] = useState(() => new Date().toISOString().slice(0, 10));
+
+  const fail = (error: unknown) => {
+    toast.error(
+      error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
+    );
+  };
+
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
@@ -77,9 +94,21 @@ export function EnrollmentPanel({
       ) : (
         <ol className="grid gap-1 text-[14px] md:grid-cols-2">
           {rows.map((e, i) => (
-            <li key={e.id} className="flex gap-2 rounded-xs px-2 py-1">
+            <li key={e.id} className="flex items-center gap-2 rounded-xs px-2 py-1">
               <span className="w-6 text-right text-fg-muted">{i + 1}</span>
-              {studentMap.get(e.student_user_id)?.name ?? e.student_user_id}
+              <span className="flex-1">
+                {studentMap.get(e.student_user_id)?.name ?? e.student_user_id}
+              </span>
+              {canManage && (
+                <IconButton
+                  icon={<ArrowRightLeft />}
+                  aria-label={t("moveStudent")}
+                  onClick={() => {
+                    setMoving(e);
+                    setToClassId("");
+                  }}
+                />
+              )}
             </li>
           ))}
         </ol>
@@ -142,18 +171,81 @@ export function EnrollmentPanel({
                         setAdding(false);
                         setPicked([]);
                       },
-                      onError: (error) => {
-                        toast.error(
-                          error instanceof ApiError
-                            ? apiErrorMessage(error.code)
-                            : apiErrorMessage("UNKNOWN"),
-                        );
-                      },
+                      onError: fail,
                     },
                   );
                 }}
               >
                 {t("assignCount", { n: picked.length })}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+      <Dialog
+        open={moving !== null}
+        onOpenChange={(o) => {
+          if (!o) setMoving(null);
+        }}
+      >
+        <DialogContent title={t("moveStudent")}>
+          <div className="flex flex-col gap-4">
+            <p className="text-[13px] text-fg-muted">
+              {moving
+                ? t("moveBody", {
+                    name: studentMap.get(moving.student_user_id)?.name ?? moving.student_user_id,
+                  })
+                : ""}
+            </p>
+            <label className="flex flex-col gap-1 text-[13px]">
+              <span className="font-medium">{t("moveTargetClass")}</span>
+              <Select
+                options={moveTargets.map((c) => ({ value: c.id, label: c.name }))}
+                value={toClassId}
+                onValueChange={setToClassId}
+                placeholder={t("moveTargetPlaceholder")}
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-[13px]">
+              <span className="font-medium">{t("moveEffectiveOn")}</span>
+              <Input
+                type="date"
+                value={effectiveOn}
+                onChange={(e) => {
+                  setEffectiveOn(e.target.value);
+                }}
+              />
+            </label>
+            <div className="flex justify-end gap-2 border-t border-border pt-3">
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setMoving(null);
+                }}
+              >
+                {t("form.cancel")}
+              </Button>
+              <Button
+                disabled={!toClassId}
+                loading={moveStudent.isPending}
+                onClick={() => {
+                  if (!moving) return;
+                  moveStudent.mutate(
+                    {
+                      enrollmentId: moving.id,
+                      body: { to_class_id: toClassId, effective_on: effectiveOn },
+                    },
+                    {
+                      onSuccess: () => {
+                        toast.success(t("moved"));
+                        setMoving(null);
+                      },
+                      onError: fail,
+                    },
+                  );
+                }}
+              >
+                {t("moveSubmit")}
               </Button>
             </div>
           </div>

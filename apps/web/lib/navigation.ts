@@ -18,6 +18,8 @@ import {
   UsersRound,
 } from "lucide-react";
 
+import { academicNavItems } from "./navigation-academic";
+
 export interface NavItem {
   key: string;
   /**
@@ -262,6 +264,7 @@ export const navigation: NavItem[] = [
     permission: "manage_enrollments",
     group: GROUP.schoolData,
   },
+  ...academicNavItems,
 
   {
     key: "settings-roles",

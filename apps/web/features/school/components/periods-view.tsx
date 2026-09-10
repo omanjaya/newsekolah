@@ -3,6 +3,7 @@
 import { ApiError } from "@newsekolah/api-client";
 import {
   Button,
+  ConfirmDialog,
   Dialog,
   DialogContent,
   EmptyState,
@@ -21,7 +22,12 @@ import { useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import {
+  useDeletePeriodTemplateMutation,
+  useUpdatePeriodTemplateMutation,
+} from "../../academic/api-school-extras";
+import {
   type Period,
+  type PeriodTemplate,
   useCreatePeriodMutation,
   useCreatePeriodTemplateMutation,
   useDeletePeriodMutation,
@@ -41,9 +47,21 @@ export function PeriodsView(): ReactElement {
   const [templateId, setTemplateId] = useState("");
   const [newTemplate, setNewTemplate] = useState("");
   const createTemplate = useCreatePeriodTemplateMutation();
+  const updateTemplate = useUpdatePeriodTemplateMutation();
+  const deleteTemplate = useDeletePeriodTemplateMutation();
   const list = templates.data?.data ?? [];
   const selected =
     list.find((x) => x.id === templateId) ?? list.find((x) => x.is_default) ?? list[0];
+
+  const [renaming, setRenaming] = useState<PeriodTemplate | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const [pendingDelete, setPendingDelete] = useState<PeriodTemplate | null>(null);
+
+  const fail = (error: unknown) => {
+    toast.error(
+      error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
+    );
+  };
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
@@ -62,6 +80,25 @@ export function PeriodsView(): ReactElement {
             placeholder={t("noTemplate")}
           />
         </label>
+        {selected && (
+          <div className="flex gap-1">
+            <IconButton
+              icon={<Pencil />}
+              aria-label={t("renameTemplate")}
+              onClick={() => {
+                setRenaming(selected);
+                setRenameValue(selected.name);
+              }}
+            />
+            <IconButton
+              icon={<Trash2 />}
+              aria-label={t("deleteTemplate")}
+              onClick={() => {
+                setPendingDelete(selected);
+              }}
+            />
+          </div>
+        )}
         <form
           className="flex items-end gap-2"
           onSubmit={(e) => {
@@ -74,13 +111,7 @@ export function PeriodsView(): ReactElement {
                   setNewTemplate("");
                   toast.success(t("templateCreated"));
                 },
-                onError: (error) => {
-                  toast.error(
-                    error instanceof ApiError
-                      ? apiErrorMessage(error.code)
-                      : apiErrorMessage("UNKNOWN"),
-                  );
-                },
+                onError: fail,
               },
             );
           }}
@@ -115,6 +146,85 @@ export function PeriodsView(): ReactElement {
           description={t("emptyBody")}
         />
       )}
+
+      <Dialog
+        open={renaming !== null}
+        onOpenChange={(open) => {
+          if (!open) setRenaming(null);
+        }}
+      >
+        <DialogContent title={t("renameTemplate")}>
+          <form
+            className="flex flex-col gap-4"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!renaming || !renameValue.trim()) return;
+              updateTemplate.mutate(
+                {
+                  id: renaming.id,
+                  body: { name: renameValue.trim(), is_default: renaming.is_default },
+                },
+                {
+                  onSuccess: () => {
+                    toast.success(t("templateUpdated"));
+                    setRenaming(null);
+                  },
+                  onError: fail,
+                },
+              );
+            }}
+          >
+            <label className="flex flex-col gap-1 text-[13px]">
+              <span className="font-medium">{t("newTemplate")}</span>
+              <Input
+                value={renameValue}
+                onChange={(e) => {
+                  setRenameValue(e.target.value);
+                }}
+                required
+              />
+            </label>
+            <div className="flex justify-end gap-2 border-t border-border pt-4">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => {
+                  setRenaming(null);
+                }}
+              >
+                {t("cancel")}
+              </Button>
+              <Button type="submit" loading={updateTemplate.isPending}>
+                {t("save")}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingDelete(null);
+        }}
+        title={t("deleteTemplateTitle")}
+        description={pendingDelete ? t("deleteTemplateBody", { name: pendingDelete.name }) : ""}
+        confirmLabel={t("delete")}
+        destructive
+        confirming={deleteTemplate.isPending}
+        onConfirm={async () => {
+          if (!pendingDelete) return;
+          try {
+            await deleteTemplate.mutateAsync(pendingDelete.id);
+            toast.success(t("templateDeleted"));
+            if (templateId === pendingDelete.id) setTemplateId("");
+          } catch (error) {
+            fail(error);
+          } finally {
+            setPendingDelete(null);
+          }
+        }}
+      />
     </div>
   );
 }
