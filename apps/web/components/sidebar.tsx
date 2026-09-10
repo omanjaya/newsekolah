@@ -92,7 +92,16 @@ export function Sidebar({
   }
 
   return (
-    <aside className={cn("w-60 shrink-0 flex-col border-r border-border bg-surface", className)}>
+    // `self-start` matters: a flex child stretches to the container's full
+    // height by default, and an element as tall as its container never
+    // sticks. Pinned to the viewport with its own height, the nav below
+    // scrolls on its own while the page scrolls behind it.
+    <aside
+      className={cn(
+        "sticky top-0 h-dvh w-60 shrink-0 self-start flex-col border-r border-border bg-surface",
+        className,
+      )}
+    >
       <div className="flex h-14 items-center border-b border-border px-4">
         <TenantBrand />
       </div>
