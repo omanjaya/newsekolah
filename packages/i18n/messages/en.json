@@ -190,6 +190,15 @@
       "library": "Library",
       "announcements": "Announcements",
       "profile": "Profile"
+    },
+    "visitors": {
+      "label": "Visitors & Incidents",
+      "items": {
+        "board": "Gate Board",
+        "expected": "Expected Guests",
+        "incidents": "Incidents",
+        "reports": "Visitor Recap"
+      }
     }
   },
   "errors": {
@@ -233,6 +242,14 @@
     "LIBRARY_RESERVATION_NOT_WAITING": "This reservation is no longer in the queue",
     "LIBRARY_COPY_AVAILABLE_FOR_LOAN": "This copy has not been borrowed",
     "LIBRARY_STOCKTAKE_NOT_FOUND": "Stocktake session not found",
-    "LIBRARY_STOCKTAKE_CLOSED": "This stocktake session is already closed"
+    "LIBRARY_STOCKTAKE_CLOSED": "This stocktake session is already closed",
+    "EXPECTED_GUEST_NOT_FOUND": "Expected guest not found",
+    "EXPECTED_GUEST_RESOLVED": "This expected-guest entry was already resolved",
+    "VISIT_NOT_FOUND": "Visit not found",
+    "VISIT_ALREADY_CHECKED_OUT": "This visitor has already checked out",
+    "INCIDENT_NOT_FOUND": "Incident record not found",
+    "INCIDENT_ALREADY_CLOSED": "This incident is already closed",
+    "INCIDENT_FORBIDDEN": "You are not authorized to read this incident",
+    "VISITORS_MODULE_DISABLED": "The visitors module is not enabled for this school"
   }
 }

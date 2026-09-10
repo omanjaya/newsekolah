@@ -190,6 +190,15 @@
       "library": "Perpustakaan",
       "announcements": "Pengumuman",
       "profile": "Profil"
+    },
+    "visitors": {
+      "label": "Tamu & Insiden",
+      "items": {
+        "board": "Papan Tamu",
+        "expected": "Tamu Dijadwalkan",
+        "incidents": "Insiden",
+        "reports": "Rekap Kunjungan"
+      }
     }
   },
   "errors": {
@@ -233,6 +242,14 @@
     "LIBRARY_RESERVATION_NOT_WAITING": "Reservasi ini sudah tidak dalam antrean",
     "LIBRARY_COPY_AVAILABLE_FOR_LOAN": "Eksemplar ini belum dipinjam",
     "LIBRARY_STOCKTAKE_NOT_FOUND": "Sesi opname tidak ditemukan",
-    "LIBRARY_STOCKTAKE_CLOSED": "Sesi opname ini sudah ditutup"
+    "LIBRARY_STOCKTAKE_CLOSED": "Sesi opname ini sudah ditutup",
+    "EXPECTED_GUEST_NOT_FOUND": "Tamu yang dijadwalkan tidak ditemukan",
+    "EXPECTED_GUEST_RESOLVED": "Entri tamu ini sudah diproses",
+    "VISIT_NOT_FOUND": "Kunjungan tidak ditemukan",
+    "VISIT_ALREADY_CHECKED_OUT": "Tamu ini sudah keluar kampus",
+    "INCIDENT_NOT_FOUND": "Catatan insiden tidak ditemukan",
+    "INCIDENT_ALREADY_CLOSED": "Insiden ini sudah ditutup",
+    "INCIDENT_FORBIDDEN": "Anda tidak berwenang membaca insiden ini",
+    "VISITORS_MODULE_DISABLED": "Modul kunjungan tamu belum diaktifkan untuk sekolah ini"
   }
 }

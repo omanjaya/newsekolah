@@ -47,6 +47,31 @@ func (s *Service) ListFlags(ctx context.Context, tenantID uuid.UUID) ([]domain.M
 	return out, nil
 }
 
+// IsModuleEnabled reports whether one feature-flagged module is on for a
+// tenant. Unlike ListFlags/SetFlag it is not gated behind guard(): a
+// single-tenant deployment still has exactly one tenant row and still
+// wants its per-module flags enforced, so any module checking its own gate
+// (visitors, and any Fase 6 module after it) calls this regardless of
+// tenancy mode. feature_flags is opt-out, so a tenant with no row for the
+// module is enabled.
+func (s *Service) IsModuleEnabled(ctx context.Context, tenantID uuid.UUID, module domain.Module) (bool, error) {
+	var stored []domain.ModuleFlag
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		stored, err = s.repo.ListFeatureFlags(ctx, tenantID)
+		return err
+	})
+	if err != nil {
+		return false, err
+	}
+	for _, f := range stored {
+		if f.Module == string(module) {
+			return f.Enabled, nil
+		}
+	}
+	return true, nil
+}
+
 // SetFlag enables or disables one module for a tenant.
 func (s *Service) SetFlag(ctx context.Context, tenantID uuid.UUID, module string, enabled bool) (domain.ModuleFlag, error) {
 	if err := s.guard(); err != nil {

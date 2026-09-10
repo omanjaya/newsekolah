@@ -1,4 +1,5 @@
 import {
+  AlertTriangle,
   BookOpen,
   CalendarCheck,
   CalendarDays,
@@ -11,6 +12,7 @@ import {
   ScanLine,
   Settings,
   ShieldAlert,
+  UserCheck,
   Users,
   Workflow,
   type LucideIcon,
@@ -38,6 +40,8 @@ export const domainIcons = {
   grades: GraduationCap,
   document: FileText,
   workflow: Workflow,
+  visitor: UserCheck,
+  incident: AlertTriangle,
 } satisfies Record<string, LucideIcon>;
 
 export type DomainIconName = keyof typeof domainIcons;

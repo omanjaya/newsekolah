@@ -171,8 +171,11 @@ type Querier interface {
 	AnalyticsUpsertStudentRisk(ctx context.Context, arg AnalyticsUpsertStudentRiskParams) error
 	ArchiveUser(ctx context.Context, arg ArchiveUserParams) error
 	AssignUserRole(ctx context.Context, arg AssignUserRoleParams) error
+	AverageVisitMinutesInRange(ctx context.Context, arg AverageVisitMinutesInRangeParams) (float64, error)
+	CancelExpectedGuest(ctx context.Context, arg CancelExpectedGuestParams) error
 	CancelReservation(ctx context.Context, arg CancelReservationParams) (LibraryReservation, error)
 	CancelSubstitutionRequest(ctx context.Context, arg CancelSubstitutionRequestParams) (SubstitutionRequest, error)
+	CheckOutVisit(ctx context.Context, arg CheckOutVisitParams) (VisitorVisit, error)
 	// Inserts a pending run row for one due slot. The unique (schedule_id,
 	// due_at) constraint makes this the run-once-per-slot guard: a second
 	// wake-up in the same hour (or a retried job) finds zero rows returned
@@ -180,6 +183,7 @@ type Querier interface {
 	ClaimReportScheduleRun(ctx context.Context, arg ClaimReportScheduleRunParams) (ReportScheduleRun, error)
 	ClassExistsInTenant(ctx context.Context, arg ClassExistsInTenantParams) (bool, error)
 	ClearDefaultDocumentTemplate(ctx context.Context, arg ClearDefaultDocumentTemplateParams) error
+	CloseIncident(ctx context.Context, arg CloseIncidentParams) (VisitorIncident, error)
 	CloseStocktake(ctx context.Context, arg CloseStocktakeParams) (LibraryStocktake, error)
 	CompleteReportScheduleRun(ctx context.Context, arg CompleteReportScheduleRunParams) error
 	ConfirmMfaTotp(ctx context.Context, arg ConfirmMfaTotpParams) (MfaTotp, error)
@@ -195,13 +199,16 @@ type Querier interface {
 	CountAttendanceSessionsForScheduleBeforeDate(ctx context.Context, arg CountAttendanceSessionsForScheduleBeforeDateParams) (int64, error)
 	CountAvailableCopies(ctx context.Context, arg CountAvailableCopiesParams) (int32, error)
 	CountDailySummaryStatusesForAttendance(ctx context.Context, arg CountDailySummaryStatusesForAttendanceParams) ([]CountDailySummaryStatusesForAttendanceRow, error)
+	CountIncidentsBySeverityInRange(ctx context.Context, arg CountIncidentsBySeverityInRangeParams) ([]CountIncidentsBySeverityInRangeRow, error)
 	// Read by the attendance module to compute a day's expected session count
 	// for a class (attendance/domain.ComputeDailyStatus's Expected input).
 	CountSchedulesForClassDay(ctx context.Context, arg CountSchedulesForClassDayParams) (int64, error)
+	CountStillOnCampusInRange(ctx context.Context, arg CountStillOnCampusInRangeParams) (int32, error)
 	CountSubmittedSessionsByClassDate(ctx context.Context, arg CountSubmittedSessionsByClassDateParams) (int64, error)
 	CountTitleCopies(ctx context.Context, arg CountTitleCopiesParams) (int32, error)
 	CountUnreadNotifications(ctx context.Context, arg CountUnreadNotificationsParams) (int64, error)
 	CountUsersForRole(ctx context.Context, arg CountUsersForRoleParams) (int64, error)
+	CountVisitsInRange(ctx context.Context, arg CountVisitsInRangeParams) (int32, error)
 	CountWorkflowInstancesForSubjectYear(ctx context.Context, arg CountWorkflowInstancesForSubjectYearParams) (int64, error)
 	CreateAPIKey(ctx context.Context, arg CreateAPIKeyParams) (IntegrationApiKey, error)
 	CreateAcademicYear(ctx context.Context, arg CreateAcademicYearParams) (AcademicYear, error)
@@ -217,9 +224,11 @@ type Querier interface {
 	CreateDutyAssignment(ctx context.Context, arg CreateDutyAssignmentParams) (DutyAssignment, error)
 	CreateDutyType(ctx context.Context, arg CreateDutyTypeParams) (DutyType, error)
 	CreateExitPermit(ctx context.Context, arg CreateExitPermitParams) (ExitPermit, error)
+	CreateExpectedGuest(ctx context.Context, arg CreateExpectedGuestParams) (VisitorExpectedGuest, error)
 	CreateGradeLevel(ctx context.Context, arg CreateGradeLevelParams) (GradeLevel, error)
 	CreateGradeRange(ctx context.Context, arg CreateGradeRangeParams) (ReportGradeRange, error)
 	CreateImpersonationSession(ctx context.Context, arg CreateImpersonationSessionParams) (Session, error)
+	CreateIncident(ctx context.Context, arg CreateIncidentParams) (VisitorIncident, error)
 	CreateIssuedDocument(ctx context.Context, arg CreateIssuedDocumentParams) (IssuedDocument, error)
 	CreateJournal(ctx context.Context, arg CreateJournalParams) (ClassJournal, error)
 	CreateLateArrival(ctx context.Context, arg CreateLateArrivalParams) (LateArrival, error)
@@ -248,6 +257,7 @@ type Querier interface {
 	CreateUserProfile(ctx context.Context, arg CreateUserProfileParams) error
 	CreateViolationRecord(ctx context.Context, arg CreateViolationRecordParams) (ViolationRecord, error)
 	CreateViolationType(ctx context.Context, arg CreateViolationTypeParams) (ViolationType, error)
+	CreateVisit(ctx context.Context, arg CreateVisitParams) (VisitorVisit, error)
 	CreateWarningLetter(ctx context.Context, arg CreateWarningLetterParams) (WarningLetter, error)
 	CreateWebhookDelivery(ctx context.Context, arg CreateWebhookDeliveryParams) (IntegrationWebhookDelivery, error)
 	CreateWebhookEndpoint(ctx context.Context, arg CreateWebhookEndpointParams) (IntegrationWebhookEndpoint, error)
@@ -349,6 +359,7 @@ type Querier interface {
 	GetEnrolledClassForAttendance(ctx context.Context, arg GetEnrolledClassForAttendanceParams) (uuid.UUID, error)
 	GetEntryBySessionStudent(ctx context.Context, arg GetEntryBySessionStudentParams) (AttendanceEntry, error)
 	GetExitPermit(ctx context.Context, arg GetExitPermitParams) (ExitPermit, error)
+	GetExpectedGuest(ctx context.Context, arg GetExpectedGuestParams) (VisitorExpectedGuest, error)
 	GetGoogleSSOConfig(ctx context.Context, tenantID uuid.UUID) (SsoGoogleConfig, error)
 	// The class a teacher is homeroom (wali kelas) duty holder of this
 	// academic year, if any -- duty slug "homeroom", scope_class_id per
@@ -362,6 +373,7 @@ type Querier interface {
 	// Any not-yet-terminal instance of this kind for this subject, used to
 	// reject a new submission with a clear 409 before the DB constraint would.
 	GetInProgressWorkflowInstance(ctx context.Context, arg GetInProgressWorkflowInstanceParams) (WorkflowInstance, error)
+	GetIncident(ctx context.Context, arg GetIncidentParams) (VisitorIncident, error)
 	GetIssuedDocumentByEntity(ctx context.Context, arg GetIssuedDocumentByEntityParams) (IssuedDocument, error)
 	GetIssuedDocumentByVerificationHash(ctx context.Context, arg GetIssuedDocumentByVerificationHashParams) (IssuedDocument, error)
 	// attendance.Overrider: an issued letter forces the student's status for
@@ -425,6 +437,7 @@ type Querier interface {
 	GetValidPasswordResetByHash(ctx context.Context, arg GetValidPasswordResetByHashParams) (PasswordReset, error)
 	GetViolationRecord(ctx context.Context, arg GetViolationRecordParams) (ViolationRecord, error)
 	GetViolationType(ctx context.Context, arg GetViolationTypeParams) (ViolationType, error)
+	GetVisit(ctx context.Context, arg GetVisitParams) (VisitorVisit, error)
 	GetWarningLetter(ctx context.Context, arg GetWarningLetterParams) (WarningLetter, error)
 	GetWebAuthnCredential(ctx context.Context, arg GetWebAuthnCredentialParams) (WebauthnCredential, error)
 	GetWebhookDeliveryByID(ctx context.Context, arg GetWebhookDeliveryByIDParams) (IntegrationWebhookDelivery, error)
@@ -575,11 +588,14 @@ type Querier interface {
 	// submitted sessions -- the raw input to attendance/domain.ComputeDailyStatus.
 	ListEntryStatusesForStudentDate(ctx context.Context, arg ListEntryStatusesForStudentDateParams) ([]string, error)
 	ListExitPermitsForReport(ctx context.Context, arg ListExitPermitsForReportParams) ([]ListExitPermitsForReportRow, error)
+	// The guard's lookup list: everyone expected on a given day, soonest first.
+	ListExpectedGuests(ctx context.Context, arg ListExpectedGuestsParams) ([]VisitorExpectedGuest, error)
 	ListGradeRanges(ctx context.Context, arg ListGradeRangesParams) ([]ReportGradeRange, error)
 	ListGradesForComponents(ctx context.Context, arg ListGradesForComponentsParams) ([]Grade, error)
 	// Every grade of one student in a term, joined to its component; the
 	// service hides subjects whose publication is still off.
 	ListGradesForStudent(ctx context.Context, arg ListGradesForStudentParams) ([]ListGradesForStudentRow, error)
+	ListIncidents(ctx context.Context, arg ListIncidentsParams) ([]VisitorIncident, error)
 	ListJournalsByClass(ctx context.Context, arg ListJournalsByClassParams) ([]ClassJournal, error)
 	ListJournalsByTeacher(ctx context.Context, arg ListJournalsByTeacherParams) ([]ClassJournal, error)
 	ListLateArrivalsForReview(ctx context.Context, tenantID uuid.UUID) ([]ListLateArrivalsForReviewRow, error)
@@ -593,6 +609,8 @@ type Querier interface {
 	ListLoansInPeriod(ctx context.Context, arg ListLoansInPeriodParams) ([]LibraryLoan, error)
 	ListNotificationPreferencesForUser(ctx context.Context, arg ListNotificationPreferencesForUserParams) ([]NotificationPreference, error)
 	ListNotificationsForUser(ctx context.Context, arg ListNotificationsForUserParams) ([]Notification, error)
+	// The gate board: everyone who has not signed out, oldest arrival first.
+	ListOnCampus(ctx context.Context, tenantID uuid.UUID) ([]VisitorVisit, error)
 	ListOverdueLoans(ctx context.Context, arg ListOverdueLoansParams) ([]LibraryLoan, error)
 	ListParentsForStudent(ctx context.Context, arg ListParentsForStudentParams) ([]ListParentsForStudentRow, error)
 	ListPeriodsRefByTemplate(ctx context.Context, arg ListPeriodsRefByTemplateParams) ([]Period, error)
@@ -657,6 +675,7 @@ type Querier interface {
 	ListViolationRecords(ctx context.Context, arg ListViolationRecordsParams) ([]ListViolationRecordsRow, error)
 	ListViolationRecordsForStudent(ctx context.Context, arg ListViolationRecordsForStudentParams) ([]ListViolationRecordsForStudentRow, error)
 	ListViolationTypes(ctx context.Context, arg ListViolationTypesParams) ([]ViolationType, error)
+	ListVisits(ctx context.Context, arg ListVisitsParams) ([]VisitorVisit, error)
 	ListWarningLetters(ctx context.Context, arg ListWarningLettersParams) ([]WarningLetter, error)
 	ListWarningLettersForStudent(ctx context.Context, arg ListWarningLettersForStudentParams) ([]WarningLetter, error)
 	ListWebAuthnCredentials(ctx context.Context, arg ListWebAuthnCredentialsParams) ([]WebauthnCredential, error)
@@ -729,6 +748,7 @@ type Querier interface {
 	SetDefaultDocumentTemplate(ctx context.Context, arg SetDefaultDocumentTemplateParams) (DocumentTemplate, error)
 	SetDeliveryTemplateAndPayload(ctx context.Context, arg SetDeliveryTemplateAndPayloadParams) error
 	SetExitPermitGateToken(ctx context.Context, arg SetExitPermitGateTokenParams) (ExitPermit, error)
+	SetExpectedGuestStatus(ctx context.Context, arg SetExpectedGuestStatusParams) (VisitorExpectedGuest, error)
 	SetManualReportScore(ctx context.Context, arg SetManualReportScoreParams) (ReportScore, error)
 	SetMfaRecoveryCodes(ctx context.Context, arg SetMfaRecoveryCodesParams) error
 	SetReportScheduleEnabled(ctx context.Context, arg SetReportScheduleEnabledParams) (ReportSchedule, error)
@@ -754,6 +774,7 @@ type Querier interface {
 	UpdateDocumentTemplate(ctx context.Context, arg UpdateDocumentTemplateParams) (DocumentTemplate, error)
 	UpdateDutyAssignment(ctx context.Context, arg UpdateDutyAssignmentParams) error
 	UpdateDutyType(ctx context.Context, arg UpdateDutyTypeParams) error
+	UpdateIncident(ctx context.Context, arg UpdateIncidentParams) (VisitorIncident, error)
 	UpdateJournal(ctx context.Context, arg UpdateJournalParams) (ClassJournal, error)
 	UpdateLateArrivalReview(ctx context.Context, arg UpdateLateArrivalReviewParams) (LateArrival, error)
 	UpdateOwnProfile(ctx context.Context, arg UpdateOwnProfileParams) error
@@ -793,6 +814,10 @@ type Querier interface {
 	UsernameExists(ctx context.Context, arg UsernameExistsParams) (bool, error)
 	// cross-module read: users table is owned by the identity module.
 	ValidateUserIDsBelongToTenant(ctx context.Context, arg ValidateUserIDsBelongToTenantParams) ([]uuid.UUID, error)
+	// cross-module read: duty_assignments/duty_types (identity/school), to
+	// decide whether a reader may open an incident as campus security or
+	// school leadership rather than only its reporter.
+	VisitorsHasActiveDuty(ctx context.Context, arg VisitorsHasActiveDutyParams) (bool, error)
 	VoidViolationRecord(ctx context.Context, arg VoidViolationRecordParams) (ViolationRecord, error)
 }
 

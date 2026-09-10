@@ -28,6 +28,7 @@ func RoleDefaults() []RoleDefault {
 			PermViewDashboard, PermViewAnnouncements, PermViewNotifications, PermViewLibrary, PermViewAcademicData, PermIssueScanTokens,
 			PermCreateAnnouncements, PermEditAnnouncements, PermPublishAnnouncements,
 			PermViewDiscipline, PermRecordViolations, PermViewEarlyWarning,
+			PermViewVisitors, PermManageVisitors, PermViewVisitorIncidents, PermManageVisitorIncidents, PermViewVisitorReports,
 		}},
 		{"student", "Siswa", []string{
 			PermViewDashboard, PermViewAnnouncements, PermViewNotifications, PermViewSchedules, PermViewAcademicData,

@@ -32,6 +32,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/reports"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/school"
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/visitors"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/auth"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/authz"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
@@ -200,6 +201,11 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	}
 	platformModule := platform.Register(platformDeps)
 
+	visitorsModule := visitors.Register(visitors.Dependencies{
+		Pool: pool, Years: schoolModule.Service, Docs: wiring.VisitorsDocuments{Permits: permitsModule.Service},
+		Flags: wiring.VisitorsFlags{Platform: platformModule.Service}, Audit: wiring.VisitorsAudit{}, Clock: clock.Real{},
+	})
+
 	var (
 		workers  *river.Workers
 		periodic []*river.PeriodicJob
@@ -269,6 +275,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		LibraryHandler:       libraryModule.Handler,
 		IntegrationsHandler:  integrationsModule.Handler,
 		AnalyticsHandler:     analyticsModule.Handler,
+		VisitorsHandler:      visitorsModule.Handler,
 		healthHandler:        &healthHandler{version: version, pool: pool, redis: redisClient},
 	}
 

@@ -802,3 +802,36 @@ func (q *Queries) ListActiveTenants(ctx context.Context) ([]ListActiveTenantsRow
 	}
 	return items, nil
 }
+
+const visitorsHasActiveDuty = `-- name: VisitorsHasActiveDuty :one
+select exists (
+  select 1 from duty_assignments da
+  join duty_types dt on dt.id = da.duty_type_id
+  where da.tenant_id = $1 and da.academic_year_id = $2 and da.user_id = $3 and dt.slug = $4
+    and da.is_active and dt.is_active and dt.deleted_at is null
+    and da.starts_on <= current_date and (da.ends_on is null or da.ends_on >= current_date)
+    and dt.scope_kind = 'school'
+)::bool as has_duty
+`
+
+type VisitorsHasActiveDutyParams struct {
+	TenantID       uuid.UUID `json:"tenant_id"`
+	AcademicYearID uuid.UUID `json:"academic_year_id"`
+	UserID         uuid.UUID `json:"user_id"`
+	Slug           string    `json:"slug"`
+}
+
+// cross-module read: duty_assignments/duty_types (identity/school), to
+// decide whether a reader may open an incident as campus security or
+// school leadership rather than only its reporter.
+func (q *Queries) VisitorsHasActiveDuty(ctx context.Context, arg VisitorsHasActiveDutyParams) (bool, error) {
+	row := q.db.QueryRow(ctx, visitorsHasActiveDuty,
+		arg.TenantID,
+		arg.AcademicYearID,
+		arg.UserID,
+		arg.Slug,
+	)
+	var has_duty bool
+	err := row.Scan(&has_duty)
+	return has_duty, err
+}
