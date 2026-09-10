@@ -326,6 +326,49 @@ func (q *Queries) GradingClassStudentIDs(ctx context.Context, arg GradingClassSt
 	return items, nil
 }
 
+const gradingClassSubjects = `-- name: GradingClassSubjects :many
+select distinct s.id, s.code, s.name
+from teaching_assignments ta
+join subjects s on s.id = ta.subject_id and s.tenant_id = ta.tenant_id
+where ta.tenant_id = $1 and ta.academic_year_id = $2 and ta.class_id = $3 and ta.is_active
+order by s.code
+`
+
+type GradingClassSubjectsParams struct {
+	TenantID       uuid.UUID `json:"tenant_id"`
+	AcademicYearID uuid.UUID `json:"academic_year_id"`
+	ClassID        uuid.UUID `json:"class_id"`
+}
+
+type GradingClassSubjectsRow struct {
+	ID   uuid.UUID `json:"id"`
+	Code string    `json:"code"`
+	Name string    `json:"name"`
+}
+
+// cross-module read: teaching_assignments and subjects are owned by the
+// academic module. Used by the e-Rapor export to enumerate what a class is
+// taught in one term.
+func (q *Queries) GradingClassSubjects(ctx context.Context, arg GradingClassSubjectsParams) ([]GradingClassSubjectsRow, error) {
+	rows, err := q.db.Query(ctx, gradingClassSubjects, arg.TenantID, arg.AcademicYearID, arg.ClassID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GradingClassSubjectsRow{}
+	for rows.Next() {
+		var i GradingClassSubjectsRow
+		if err := rows.Scan(&i.ID, &i.Code, &i.Name); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const gradingCreatePolicy = `-- name: GradingCreatePolicy :exec
 insert into tenant_policies (tenant_id, kind, version, config, effective_from, created_by)
 values ($1, $2, $3, $4, $5, $6)
@@ -436,6 +479,46 @@ func (q *Queries) GradingStudentClassID(ctx context.Context, arg GradingStudentC
 	var class_id uuid.UUID
 	err := row.Scan(&class_id)
 	return class_id, err
+}
+
+const gradingStudentNISNs = `-- name: GradingStudentNISNs :many
+select u.id, u.name, coalesce(sp.nisn, '') as nisn
+from users u
+left join student_profiles sp on sp.user_id = u.id and sp.tenant_id = u.tenant_id
+where u.tenant_id = $1 and u.id = any($2::uuid[])
+`
+
+type GradingStudentNISNsParams struct {
+	TenantID uuid.UUID   `json:"tenant_id"`
+	UserIds  []uuid.UUID `json:"user_ids"`
+}
+
+type GradingStudentNISNsRow struct {
+	ID   uuid.UUID `json:"id"`
+	Name string    `json:"name"`
+	Nisn string    `json:"nisn"`
+}
+
+// cross-module read: student_profiles is owned by the identity module. NISN
+// (Nomor Induk Siswa Nasional) is the key e-Rapor imports students by.
+func (q *Queries) GradingStudentNISNs(ctx context.Context, arg GradingStudentNISNsParams) ([]GradingStudentNISNsRow, error) {
+	rows, err := q.db.Query(ctx, gradingStudentNISNs, arg.TenantID, arg.UserIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GradingStudentNISNsRow{}
+	for rows.Next() {
+		var i GradingStudentNISNsRow
+		if err := rows.Scan(&i.ID, &i.Name, &i.Nisn); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const gradingStudentNames = `-- name: GradingStudentNames :many

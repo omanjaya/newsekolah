@@ -1,9 +1,12 @@
 "use client";
 
-import { type components } from "@newsekolah/api-client";
+import { ApiError, type components } from "@newsekolah/api-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { getAccessToken } from "../../lib/api/access-token";
 import { useApiClient } from "../../lib/api/client";
+import { API_URL } from "../../lib/env";
+import { useActiveYear } from "../../lib/hooks/use-active-year";
 
 export type GradingScale = components["schemas"]["GradingScale"];
 export type GradingScaleWrite = components["schemas"]["GradingScaleWrite"];
@@ -20,6 +23,11 @@ export type MyGrades = components["schemas"]["MyGrades"];
 export type MySubjectGrade = components["schemas"]["MySubjectGrade"];
 export type MyComponentScore = components["schemas"]["MyComponentScore"];
 export type StarEvent = components["schemas"]["StarEvent"];
+export type EraporFormat = components["schemas"]["EraporFormat"];
+export type EraporRow = components["schemas"]["EraporRow"];
+export type EraporSkip = components["schemas"]["EraporSkip"];
+export type EraporSkipReason = components["schemas"]["EraporSkipReason"];
+export type EraporPreview = components["schemas"]["EraporPreview"];
 
 /**
  * Local query keys, kept in this feature per the grading build's scope
@@ -35,6 +43,8 @@ export const gradingKeys = {
   myGrades: (termId?: string) => ["grading", "my-grades", termId ?? ""] as const,
   starLedger: (studentId: string) => ["grading", "stars", "ledger", studentId] as const,
   classStarBalances: (classId: string) => ["grading", "stars", "class", classId] as const,
+  eraporPreview: (classId: string, termId?: string) =>
+    ["grading", "erapor", "preview", classId, termId ?? ""] as const,
 };
 
 function useInvalidate(prefix: readonly unknown[]) {
@@ -264,4 +274,76 @@ export function useClassStarBalancesQuery(classId: string) {
       client.GET("/v1/grading/stars/class/{classId}", { params: { path: { classId } } }),
     enabled: classId !== "",
   });
+}
+
+// e-Rapor export.
+
+/** Terms of the active academic year, so the export picker can offer one. */
+export function useTermsQuery() {
+  const client = useApiClient();
+  const year = useActiveYear();
+  return useQuery({
+    queryKey: ["grading", "terms", year.id] as const,
+    queryFn: () =>
+      client.GET("/v1/academic/years/{yearId}/terms", { params: { path: { yearId: year.id } } }),
+    enabled: year.id !== "",
+  });
+}
+
+export function useEraporPreviewQuery(classId: string, termId?: string) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: gradingKeys.eraporPreview(classId, termId),
+    queryFn: () =>
+      client.GET("/v1/grading/erapor/preview", {
+        params: { query: { class_id: classId, ...(termId ? { term_id: termId } : {}) } },
+      }),
+    enabled: classId !== "",
+  });
+}
+
+async function readErrorCode(response: Response): Promise<string> {
+  try {
+    const body: unknown = await response.json();
+    if (body && typeof body === "object" && "code" in body && typeof body.code === "string") {
+      return body.code;
+    }
+  } catch {
+    // Response body was not JSON (or empty); fall through to the generic code.
+  }
+  return "UNKNOWN";
+}
+
+/**
+ * Downloads the e-Rapor import file. Uses a direct `fetch` rather than the
+ * shared API client: the client parses every response as JSON, but this
+ * endpoint returns an XLSX or CSV binary.
+ */
+export async function downloadEraporExport(
+  classId: string,
+  termId: string | undefined,
+  format: EraporFormat,
+): Promise<void> {
+  const token = getAccessToken();
+  const params = new URLSearchParams({ class_id: classId, format });
+  if (termId) params.set("term_id", termId);
+  const response = await fetch(`${API_URL}/v1/grading/erapor/export?${params.toString()}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  });
+  if (!response.ok) {
+    const code = await readErrorCode(response);
+    throw new ApiError({ status: response.status, code, message: code });
+  }
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  try {
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `e-rapor.${format}`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  } finally {
+    URL.revokeObjectURL(url);
+  }
 }

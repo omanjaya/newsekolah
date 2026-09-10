@@ -3,6 +3,7 @@
 package http
 
 import (
+	"bytes"
 	"context"
 	"errors"
 
@@ -58,6 +59,7 @@ var errorMap = map[error]*httpx.Error{
 	domain.ErrScoreOutOfRange:      httpx.ErrScoreOutOfRange,
 	domain.ErrInvalidInput:         httpx.ErrValidation,
 	domain.ErrNoActiveAcademicYear: httpx.ErrValidation,
+	domain.ErrNoGradableSubjects:   httpx.ErrNoGradableSubjects,
 }
 
 func mapError(err error) error {
@@ -306,6 +308,47 @@ func (h *GradingHandler) ListClassStarBalances(ctx context.Context, request api.
 		}{Balance: b.Balance, StudentUserId: b.StudentUserID})
 	}
 	return resp, nil
+}
+
+// e-Rapor export.
+
+func (h *GradingHandler) PreviewEraporExport(ctx context.Context, request api.PreviewEraporExportRequestObject) (api.PreviewEraporExportResponseObject, error) {
+	preview, err := h.service.PreviewErapor(ctx, tenantID(ctx), userID(ctx), h.canManageAny(ctx), request.Params.ClassId, nullUUID(request.Params.TermId))
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return api.PreviewEraporExport200JSONResponse(toAPIEraporPreview(preview)), nil
+}
+
+func (h *GradingHandler) ExportErapor(ctx context.Context, request api.ExportEraporRequestObject) (api.ExportEraporResponseObject, error) {
+	format := service.EraporFormatXLSX
+	if request.Params.Format != nil && *request.Params.Format == api.EraporFormat(service.EraporFormatCSV) {
+		format = service.EraporFormatCSV
+	}
+	file, err := h.service.ExportErapor(ctx, tenantID(ctx), userID(ctx), h.canManageAny(ctx), request.Params.ClassId, nullUUID(request.Params.TermId), format)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	if format == service.EraporFormatCSV {
+		return api.ExportErapor200TextcsvResponse{
+			Body: bytes.NewReader(file.Content), ContentLength: int64(len(file.Content)),
+		}, nil
+	}
+	return api.ExportErapor200ApplicationvndOpenxmlformatsOfficedocumentSpreadsheetmlSheetResponse{
+		Body: bytes.NewReader(file.Content), ContentLength: int64(len(file.Content)),
+	}, nil
+}
+
+func toAPIEraporPreview(p service.EraporPreview) api.EraporPreview {
+	rows := make([]api.EraporRow, len(p.Rows))
+	for i, row := range p.Rows {
+		rows[i] = api.EraporRow{Nisn: row.NISN, SubjectCode: row.SubjectCode, Score: f32(row.Score), Predicate: row.Predicate}
+	}
+	skipped := make([]api.EraporSkip, len(p.Skipped))
+	for i, skip := range p.Skipped {
+		skipped[i] = api.EraporSkip{StudentName: skip.StudentName, SubjectName: skip.SubjectName, Reason: api.EraporSkipReason(skip.Reason)}
+	}
+	return api.EraporPreview{ClassId: p.ClassID, TermId: p.TermID, Rows: rows, Skipped: skipped}
 }
 
 // Conversions.

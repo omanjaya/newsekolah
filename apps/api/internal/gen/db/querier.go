@@ -421,11 +421,18 @@ type Querier interface {
 	GradingActiveTerm(ctx context.Context, arg GradingActiveTermParams) (GradingActiveTermRow, error)
 	// cross-module read: enrollments is owned by the academic module.
 	GradingClassStudentIDs(ctx context.Context, arg GradingClassStudentIDsParams) ([]uuid.UUID, error)
+	// cross-module read: teaching_assignments and subjects are owned by the
+	// academic module. Used by the e-Rapor export to enumerate what a class is
+	// taught in one term.
+	GradingClassSubjects(ctx context.Context, arg GradingClassSubjectsParams) ([]GradingClassSubjectsRow, error)
 	GradingCreatePolicy(ctx context.Context, arg GradingCreatePolicyParams) error
 	GradingGetLatestPolicy(ctx context.Context, arg GradingGetLatestPolicyParams) (GradingGetLatestPolicyRow, error)
 	GradingGetTerm(ctx context.Context, arg GradingGetTermParams) (GradingGetTermRow, error)
 	GradingPreviousTerm(ctx context.Context, arg GradingPreviousTermParams) (uuid.UUID, error)
 	GradingStudentClassID(ctx context.Context, arg GradingStudentClassIDParams) (uuid.UUID, error)
+	// cross-module read: student_profiles is owned by the identity module. NISN
+	// (Nomor Induk Siswa Nasional) is the key e-Rapor imports students by.
+	GradingStudentNISNs(ctx context.Context, arg GradingStudentNISNsParams) ([]GradingStudentNISNsRow, error)
 	GradingStudentNames(ctx context.Context, arg GradingStudentNamesParams) ([]GradingStudentNamesRow, error)
 	// cross-module read: teaching_assignments is owned by the academic module.
 	GradingTeacherTeaches(ctx context.Context, arg GradingTeacherTeachesParams) (bool, error)

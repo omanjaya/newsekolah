@@ -10,4 +10,5 @@ var (
 	ErrStarBalanceNegative = NewError(http.StatusConflict, "STAR_BALANCE_NEGATIVE")
 	ErrNoActiveTerm        = NewError(http.StatusConflict, "NO_ACTIVE_TERM")
 	ErrScoreOutOfRange     = NewError(http.StatusBadRequest, "SCORE_OUT_OF_RANGE")
+	ErrNoGradableSubjects  = NewError(http.StatusBadRequest, "NO_GRADABLE_SUBJECTS")
 )

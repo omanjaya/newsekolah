@@ -62,6 +62,10 @@ type Repository interface {
 	TeacherTeaches(ctx context.Context, tenantID, yearID, teacherID, classID, subjectID uuid.UUID) (bool, error)
 	StudentNames(ctx context.Context, tenantID uuid.UUID, ids []uuid.UUID) (map[uuid.UUID]string, error)
 
+	// e-Rapor export.
+	ListClassSubjects(ctx context.Context, tenantID, yearID, classID uuid.UUID) ([]EraporSubject, error)
+	StudentNISNs(ctx context.Context, tenantID uuid.UUID, ids []uuid.UUID) (map[uuid.UUID]EraporStudent, error)
+
 	GetLatestPolicy(ctx context.Context, tenantID uuid.UUID, kind string) ([]byte, int, bool, error)
 	CreatePolicy(ctx context.Context, tenantID uuid.UUID, kind string, version int, config []byte, effectiveFrom time.Time, createdBy uuid.NullUUID) error
 }
@@ -101,6 +105,21 @@ type ReportScore struct {
 type StarBalance struct {
 	StudentUserID uuid.UUID
 	Balance       int
+}
+
+// EraporSubject is one subject taught to a class, as read from the academic
+// module for the e-Rapor export.
+type EraporSubject struct {
+	ID   uuid.UUID
+	Code string
+	Name string
+}
+
+// EraporStudent is the name and NISN e-Rapor needs to match a student, as
+// read from the identity module.
+type EraporStudent struct {
+	Name string
+	NISN string
 }
 
 type AcademicYearReader interface {

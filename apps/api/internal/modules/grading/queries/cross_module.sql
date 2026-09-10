@@ -36,3 +36,21 @@ on conflict (tenant_id, kind, version) do nothing;
 
 -- name: GradingStudentNames :many
 select id, name from users where tenant_id = $1 and id = any(sqlc.arg(user_ids)::uuid[]);
+
+-- name: GradingClassSubjects :many
+-- cross-module read: teaching_assignments and subjects are owned by the
+-- academic module. Used by the e-Rapor export to enumerate what a class is
+-- taught in one term.
+select distinct s.id, s.code, s.name
+from teaching_assignments ta
+join subjects s on s.id = ta.subject_id and s.tenant_id = ta.tenant_id
+where ta.tenant_id = $1 and ta.academic_year_id = $2 and ta.class_id = $3 and ta.is_active
+order by s.code;
+
+-- name: GradingStudentNISNs :many
+-- cross-module read: student_profiles is owned by the identity module. NISN
+-- (Nomor Induk Siswa Nasional) is the key e-Rapor imports students by.
+select u.id, u.name, coalesce(sp.nisn, '') as nisn
+from users u
+left join student_profiles sp on sp.user_id = u.id and sp.tenant_id = u.tenant_id
+where u.tenant_id = $1 and u.id = any(sqlc.arg(user_ids)::uuid[]);
