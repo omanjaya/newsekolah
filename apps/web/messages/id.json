@@ -207,7 +207,8 @@
         "exit_permit_exited": "Siswa keluar gerbang",
         "late_arrival_opened": "Keterlambatan tercatat",
         "late_arrival_updated": "Keterlambatan diperbarui"
-      }
+      },
+      "seeAll": "Lihat semua"
     },
     "announcements": {
       "eyebrow": "Komunikasi",

@@ -207,7 +207,8 @@
         "exit_permit_exited": "Student left the gate",
         "late_arrival_opened": "Late arrival recorded",
         "late_arrival_updated": "Late arrival updated"
-      }
+      },
+      "seeAll": "See all"
     },
     "announcements": {
       "eyebrow": "Communication",
