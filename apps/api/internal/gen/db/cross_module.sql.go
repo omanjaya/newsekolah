@@ -12,6 +12,128 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const analyticsGetHomeroomClassID = `-- name: AnalyticsGetHomeroomClassID :one
+select da.scope_class_id
+from duty_assignments da
+join duty_types dt on dt.id = da.duty_type_id
+where da.tenant_id = $1 and da.academic_year_id = $2 and da.user_id = $3
+  and dt.slug = 'homeroom' and da.is_active and dt.is_active and dt.deleted_at is null
+limit 1
+`
+
+type AnalyticsGetHomeroomClassIDParams struct {
+	TenantID       uuid.UUID `json:"tenant_id"`
+	AcademicYearID uuid.UUID `json:"academic_year_id"`
+	UserID         uuid.UUID `json:"user_id"`
+}
+
+// cross-module read: duty slug 'homeroom', the same lookup as attendance's
+// GetHomeroomClassForAttendance (docs/analysis/backend-inventory.md
+// section 1.9's global-corrector rule).
+func (q *Queries) AnalyticsGetHomeroomClassID(ctx context.Context, arg AnalyticsGetHomeroomClassIDParams) (pgtype.UUID, error) {
+	row := q.db.QueryRow(ctx, analyticsGetHomeroomClassID, arg.TenantID, arg.AcademicYearID, arg.UserID)
+	var scope_class_id pgtype.UUID
+	err := row.Scan(&scope_class_id)
+	return scope_class_id, err
+}
+
+const analyticsHasActiveDuty = `-- name: AnalyticsHasActiveDuty :one
+select exists (
+  select 1 from duty_assignments da
+  join duty_types dt on dt.id = da.duty_type_id
+  where da.tenant_id = $1 and da.academic_year_id = $2 and da.user_id = $3 and dt.slug = $4
+    and da.is_active and dt.is_active and dt.deleted_at is null
+)
+`
+
+type AnalyticsHasActiveDutyParams struct {
+	TenantID       uuid.UUID `json:"tenant_id"`
+	AcademicYearID uuid.UUID `json:"academic_year_id"`
+	UserID         uuid.UUID `json:"user_id"`
+	Slug           string    `json:"slug"`
+}
+
+// cross-module read: same slugs ("counselor", "leadership") discipline's
+// counseling visibility already uses.
+func (q *Queries) AnalyticsHasActiveDuty(ctx context.Context, arg AnalyticsHasActiveDutyParams) (bool, error) {
+	row := q.db.QueryRow(ctx, analyticsHasActiveDuty,
+		arg.TenantID,
+		arg.AcademicYearID,
+		arg.UserID,
+		arg.Slug,
+	)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
+const analyticsListActiveStudents = `-- name: AnalyticsListActiveStudents :many
+select e.student_user_id, e.class_id
+from enrollments e
+where e.tenant_id = $1 and e.academic_year_id = $2 and e.status = 'active'
+`
+
+type AnalyticsListActiveStudentsParams struct {
+	TenantID       uuid.UUID `json:"tenant_id"`
+	AcademicYearID uuid.UUID `json:"academic_year_id"`
+}
+
+type AnalyticsListActiveStudentsRow struct {
+	StudentUserID uuid.UUID `json:"student_user_id"`
+	ClassID       uuid.UUID `json:"class_id"`
+}
+
+// cross-module read: enrollments (academic) is the roster the recompute
+// job scores, mirroring attendance's own ListActiveEnrollments.
+func (q *Queries) AnalyticsListActiveStudents(ctx context.Context, arg AnalyticsListActiveStudentsParams) ([]AnalyticsListActiveStudentsRow, error) {
+	rows, err := q.db.Query(ctx, analyticsListActiveStudents, arg.TenantID, arg.AcademicYearID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []AnalyticsListActiveStudentsRow{}
+	for rows.Next() {
+		var i AnalyticsListActiveStudentsRow
+		if err := rows.Scan(&i.StudentUserID, &i.ClassID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const analyticsListActiveTenants = `-- name: AnalyticsListActiveTenants :many
+select id from tenants where status = 'active'
+`
+
+// cross-module read: tenants is the platform-wide registry owned by the
+// school module, the same read notifications' ListActiveTenantsForMaintenance
+// already does for its own periodic jobs. Not RLS-protected: this loops
+// one tenant at a time before any tenant context is set, never queries
+// across tenants in one statement.
+func (q *Queries) AnalyticsListActiveTenants(ctx context.Context) ([]uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, analyticsListActiveTenants)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []uuid.UUID{}
+	for rows.Next() {
+		var id uuid.UUID
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const disciplineActiveClassID = `-- name: DisciplineActiveClassID :one
 select class_id from enrollments
 where tenant_id = $1 and academic_year_id = $2 and student_user_id = $3 and status = 'active'

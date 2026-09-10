@@ -8,6 +8,36 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/grading/domain"
 )
 
+// PreviousTerm returns the term immediately before currentTermID in
+// sequence within the same academic year, if one exists. It exposes
+// Repository.PreviousTermID (already used internally by previousScores)
+// as a public read for cross-module callers -- the analytics module's
+// wiring adapter uses it to compare two terms' report-score averages,
+// the same way discipline exposes StudentSummary and attendance exposes
+// GetMonthlySummary for their own cross-module readers.
+func (s *Service) PreviousTerm(ctx context.Context, tenantID, currentTermID uuid.UUID) (Term, bool, error) {
+	var (
+		term  Term
+		found bool
+	)
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		current, ok, err := s.repo.GetTerm(ctx, tenantID, currentTermID)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			return nil
+		}
+		prevID, err := s.repo.PreviousTermID(ctx, tenantID, current.AcademicYearID, current.Sequence)
+		if err != nil || !prevID.Valid {
+			return err
+		}
+		term, found, err = s.repo.GetTerm(ctx, tenantID, prevID.UUID)
+		return err
+	})
+	return term, found, err
+}
+
 // recomputeReportScores refreshes every student's report score for one
 // class-subject from the current component grades, applying the school's
 // grade ranges and never dropping below the previous term.

@@ -1,0 +1,55 @@
+{
+  "navLabel": "Peringatan Dini",
+  "list": {
+    "eyebrow": "Kesiswaan",
+    "title": "Peringatan Dini",
+    "description": "Siswa yang perlu diperhatikan, diurutkan dari skor tertinggi.",
+    "columns": {
+      "student": "Siswa",
+      "class": "Kelas",
+      "level": "Status",
+      "score": "Skor",
+      "computedAt": "Diperbarui"
+    },
+    "unknownStudent": "Siswa tidak dikenal",
+    "emptyTitle": "Tidak ada siswa yang perlu diperhatikan",
+    "emptyBody": "Belum ada siswa di kelas ini yang mencapai ambang siaga atau berisiko."
+  },
+  "level": {
+    "none": "Aman",
+    "watch": "Siaga",
+    "at_risk": "Berisiko"
+  },
+  "detail": {
+    "eyebrow": "Peringatan Dini",
+    "back": "Kembali",
+    "unknownStudent": "Siswa tidak dikenal",
+    "freshness": "Data dihitung {time}",
+    "score": "Skor {score}",
+    "reasonsTitle": "Alasan",
+    "noReasonsTitle": "Tidak ada alasan tercatat",
+    "noReasonsBody": "Tidak ada sinyal yang melewati ambang siaga.",
+    "signalsTitle": "Sinyal",
+    "signals": {
+      "attendance": "Kehadiran",
+      "attendanceValue": "Absen {absent} dari {considered} hari sekolah terakhir",
+      "discipline": "Pelanggaran",
+      "disciplineValue": "{points} poin pelanggaran aktif",
+      "warningLetters": "Surat peringatan diterbitkan",
+      "gradeTrend": "Tren nilai rapor",
+      "gradeTrendValue": "Rata-rata turun dari {previous} ke {current}",
+      "noData": "Belum ada data"
+    },
+    "reasons": {
+      "attendance_absence_watch": "Absen {absent_days} dari {considered_days} hari sekolah terakhir",
+      "attendance_absence_at_risk": "Absen {absent_days} dari {considered_days} hari sekolah terakhir",
+      "discipline_points_watch": "{points} poin pelanggaran aktif",
+      "discipline_points_at_risk": "{points} poin pelanggaran aktif",
+      "warning_letter_watch": "{warning_letter_count} surat peringatan sudah diterbitkan",
+      "warning_letter_at_risk": "{warning_letter_count} surat peringatan sudah diterbitkan",
+      "grade_drop_watch": "Rata-rata nilai rapor turun dari {previous_average} ke {current_average}",
+      "grade_drop_at_risk": "Rata-rata nilai rapor turun dari {previous_average} ke {current_average}",
+      "unknown": "Sinyal tidak dikenal"
+    }
+  }
+}

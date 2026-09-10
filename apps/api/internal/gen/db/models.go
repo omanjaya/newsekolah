@@ -39,6 +39,28 @@ type AcademicYear struct {
 	ArchivedAt pgtype.Timestamptz `json:"archived_at"`
 }
 
+type AnalyticsPolicy struct {
+	TenantID      uuid.UUID          `json:"tenant_id"`
+	Version       int32              `json:"version"`
+	Config        []byte             `json:"config"`
+	EffectiveFrom pgtype.Date        `json:"effective_from"`
+	CreatedBy     pgtype.UUID        `json:"created_by"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+}
+
+type AnalyticsStudentRisk struct {
+	TenantID       uuid.UUID          `json:"tenant_id"`
+	AcademicYearID uuid.UUID          `json:"academic_year_id"`
+	StudentUserID  uuid.UUID          `json:"student_user_id"`
+	ClassID        pgtype.UUID        `json:"class_id"`
+	Level          string             `json:"level"`
+	Score          int32              `json:"score"`
+	Signals        []byte             `json:"signals"`
+	Reasons        []byte             `json:"reasons"`
+	PolicyVersion  int32              `json:"policy_version"`
+	ComputedAt     pgtype.Timestamptz `json:"computed_at"`
+}
+
 type Announcement struct {
 	ID             uuid.UUID          `json:"id"`
 	TenantID       uuid.UUID          `json:"tenant_id"`

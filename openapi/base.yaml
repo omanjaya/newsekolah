@@ -61,3 +61,5 @@ tags:
     description: Catalogue, circulation, reservations, stocktake, and the public OPAC
   - name: integrations
     description: API keys and outgoing webhooks for machine access to the API
+  - name: analytics
+    description: Early-warning risk signals per student

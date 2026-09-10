@@ -10,6 +10,7 @@ import {
   MonitorSmartphone,
   NotebookPen,
   Repeat,
+  ShieldAlert,
   ShieldCheck,
   UserRound,
   Users,
@@ -184,6 +185,14 @@ export const navigation: NavItem[] = [
     href: "/discipline/counseling",
     icon: domainIcons.violation,
     permission: "manage_counseling",
+    group: GROUP.discipline,
+  },
+  {
+    key: "analytics",
+    labelKey: "app.analytics.navLabel",
+    href: "/analytics",
+    icon: ShieldAlert,
+    permission: "view_early_warning",
     group: GROUP.discipline,
   },
   {
