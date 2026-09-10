@@ -8,6 +8,7 @@ import {
   Dialog,
   DialogContent,
   EmptyState,
+  Input,
   PageHeader,
   domainIcons,
   useToast,
@@ -117,13 +118,13 @@ export function ExpectedGuestsView(): ReactElement {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <label className="flex flex-col gap-1 text-[13px]">
           <span className="font-medium">{t("filters.date")}</span>
-          <input
+          <Input
             type="date"
-            className="h-9 rounded-md border border-border bg-bg px-2 text-[14px]"
             value={date}
             onChange={(e) => {
               setDate(e.target.value);
             }}
+            className="w-44"
           />
         </label>
         {canManage && (

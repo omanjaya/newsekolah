@@ -35,7 +35,9 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select
         ref={ref}
         aria-invalid={invalid ?? undefined}
         className={cn(
-          "flex h-9 w-full items-center justify-between gap-2 rounded-xs border border-border",
+          // Matches Input and Button: thumb-sized on a phone, compact once
+          // there is a cursor.
+          "flex h-11 md:h-9 w-full items-center justify-between gap-2 rounded-xs border border-border",
           "bg-surface px-3 text-[14px] text-fg",
           "transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)]",
           "focus-visible:border-accent",
@@ -86,7 +88,8 @@ function SelectItem({
       value={value}
       disabled={disabled}
       className={cn(
-        "relative flex h-9 cursor-pointer items-center rounded-xs px-3 pr-8 text-[14px] text-fg outline-none",
+        // An option in the open list is tapped too, so it grows the same way.
+        "relative flex h-11 md:h-9 cursor-pointer items-center rounded-xs px-3 pr-8 text-[14px] text-fg outline-none",
         "data-[highlighted]:bg-bg data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
       )}
     >
