@@ -1,6 +1,7 @@
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { ScrollView, Text, View } from "react-native";
 import { router } from "expo-router";
 import {
+  BookMarked,
   CalendarCheck,
   ClipboardList,
   ClockAlert,
@@ -8,13 +9,14 @@ import {
   GraduationCap,
   NotebookPen,
   Repeat,
+  ScanLine,
   ShieldCheck,
   Users,
 } from "lucide-react-native";
-import type { LucideIcon } from "lucide-react-native";
 import { ScreenHeader } from "@/components/ui/ScreenHeader";
 import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { QuickLink } from "@/components/ui/QuickLink";
 import { AnnouncementsList } from "@/components/screens/AnnouncementsList";
 import { OfflineQueueBanner } from "@/components/screens/OfflineQueueBanner";
 import { useAuth } from "@/lib/auth/AuthProvider";
@@ -49,27 +51,6 @@ function Section({
   );
 }
 
-function QuickLink({
-  icon: Icon,
-  label,
-  href,
-}: {
-  icon: LucideIcon;
-  label: string;
-  href: string;
-}): React.JSX.Element {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={() => router.push(href)}
-      className="flex-1 items-center gap-2 rounded-input border border-line bg-surface px-2 py-3 dark:border-line-dark dark:bg-surface-dark"
-    >
-      <Icon size={22} strokeWidth={1.75} color="#1F3A5F" />
-      <Text className="text-center text-xs text-ink dark:text-ink-dark">{label}</Text>
-    </Pressable>
-  );
-}
-
 /** Role-aware home: teachers see today's sessions, students their permit shortcuts; everyone sees announcements. */
 export function HomeScreen(): React.JSX.Element {
   const { me, activeTabGroup } = useAuth();
@@ -79,6 +60,7 @@ export function HomeScreen(): React.JSX.Element {
   const isHomeroomTeacher = isTeacher && me != null && hasRole(me, "homeroom_teacher");
   const isDutyTeacher = isStaff && me != null && hasRole(me, "duty_teacher");
   const isCounselor = isStaff && me != null && hasRole(me, "counselor");
+  const isLibrarian = isStaff && me != null && hasRole(me, "librarian");
   const sessions = useTodaySessions(isTeacher);
   const classes = useClasses();
   const subjects = useSubjects();
@@ -179,6 +161,15 @@ export function HomeScreen(): React.JSX.Element {
                 label={t("home.leave_queue")}
                 href="/review/leave-requests"
               />
+            </View>
+          </Section>
+        ) : null}
+
+        {isLibrarian ? (
+          <Section title={t("home.library_tools")}>
+            <View className="flex-row flex-wrap gap-2 px-4">
+              <QuickLink icon={BookMarked} label={t("home.library_desk")} href="/library/desk" />
+              <QuickLink icon={ScanLine} label={t("home.library_opname")} href="/library/opname" />
             </View>
           </Section>
         ) : null}

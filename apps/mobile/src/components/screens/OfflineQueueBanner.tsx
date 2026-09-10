@@ -5,12 +5,14 @@ import { useOfflineQueueCounts } from "@/lib/offline/sync";
 import { t } from "@/i18n/t";
 
 /**
- * Visible pending-sync state for attendance taken offline (see
- * src/lib/offline/queue.ts and the Editor in
- * src/app/attendance/[sessionId].tsx). Shows nothing when the queue is
- * empty, a neutral strip while mutations are only waiting for a network
- * attempt, and a warning strip once one of them comes back as a conflict
- * that needs a person's decision (src/app/offline/conflicts.tsx).
+ * Visible pending-sync state for anything queued in the shared offline
+ * mutation queue (src/lib/offline/queue.ts) -- attendance taken offline
+ * (src/app/attendance/[sessionId].tsx) and library stocktake scans made
+ * offline (src/app/library/opname/[stocktakeId].tsx) both land here. Shows
+ * nothing when the queue is empty, a neutral strip while mutations are
+ * only waiting for a network attempt, and a warning strip once one of them
+ * comes back as a conflict that needs a person's decision
+ * (src/app/offline/conflicts.tsx).
  */
 export function OfflineQueueBanner(): React.JSX.Element | null {
   const { pending, conflicted } = useOfflineQueueCounts();

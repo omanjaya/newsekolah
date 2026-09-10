@@ -11,3 +11,4 @@ export * from "./permits";
 export * from "./family";
 export * from "./staff";
 export * from "./review";
+export * from "./library";
