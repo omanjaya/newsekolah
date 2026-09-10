@@ -59,7 +59,7 @@ export function ChangePasswordForm({ onSuccess }: { onSuccess?: () => void }): R
       form={form}
       translate={translateFormMessage(locale)}
       onSubmit={onSubmit}
-      className="flex max-w-sm flex-col gap-4"
+      className="flex flex-col gap-4"
     >
       {form.formState.errors.root?.message && (
         <Alert variant="warning" title={form.formState.errors.root.message} />

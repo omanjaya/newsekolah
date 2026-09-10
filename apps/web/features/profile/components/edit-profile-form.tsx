@@ -54,7 +54,7 @@ export function EditProfileForm(): ReactElement | null {
 
   return (
     <form
-      className="flex max-w-sm flex-col gap-4"
+      className="flex flex-col gap-4"
       onSubmit={(e) => {
         e.preventDefault();
         void submit();
