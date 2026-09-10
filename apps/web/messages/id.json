@@ -112,6 +112,20 @@
         "digestHour": "Jam ringkasan",
         "save": "Simpan",
         "saved": "Preferensi tersimpan"
+      },
+      "notificationDefaults": {
+        "navLabel": "Default notifikasi",
+        "eyebrow": "Pengaturan",
+        "title": "Default notifikasi sekolah",
+        "body": "Kanal default untuk setiap jenis notifikasi. Pengguna yang belum mengubah preferensinya sendiri memakai pengaturan ini.",
+        "kindColumn": "Jenis",
+        "channels": {
+          "inapp": "Aplikasi",
+          "push": "Push",
+          "email": "Email",
+          "whatsapp": "WhatsApp"
+        },
+        "saved": "Default disimpan"
       }
     },
     "forbidden": {
@@ -303,6 +317,37 @@
         "created": "Jadwal ditambahkan",
         "cancel": "Batal",
         "save": "Simpan"
+      },
+      "bulk": {
+        "navLink": "Operasi massal",
+        "eyebrow": "Akademik",
+        "title": "Operasi jadwal massal",
+        "importSection": {
+          "title": "Impor dari CSV",
+          "body": "Tempel atau unggah berkas CSV dengan kolom class,subject,teacher,day,start_period,end_period,notes. Nama kelas, mata pelajaran, guru, dan jam pelajaran dicocokkan dengan data yang sudah ada; hari memakai angka 1 (Senin) sampai 7 (Minggu).",
+          "uploadLabel": "Unggah berkas CSV",
+          "textareaLabel": "Atau tempel isi CSV di sini",
+          "previewTitle": "Pratinjau",
+          "previewSummary": "{valid} baris siap diimpor, {invalid} baris bermasalah",
+          "columnLine": "Baris",
+          "columnStatus": "Status",
+          "statusValid": "Siap",
+          "statusInvalid": "Perlu diperbaiki: {columns}",
+          "apply": "Impor {count} jadwal",
+          "applied": "{count} jadwal berhasil diimpor",
+          "empty": "Belum ada data untuk dipratinjau."
+        },
+        "clearSection": {
+          "title": "Hapus semua jadwal tahun ajaran ini",
+          "body": "Menghapus seluruh jadwal pelajaran tahun ajaran {year}. Tindakan ini tidak dapat dibatalkan dan tidak menghapus data presensi yang sudah tercatat.",
+          "button": "Hapus semua jadwal",
+          "confirmTitle": "Hapus semua jadwal {year}",
+          "confirmBody": "Semua jadwal pelajaran tahun ajaran {year} akan dihapus permanen. Ketik nama tahun ajaran di bawah untuk melanjutkan.",
+          "confirmInputLabel": "Ketik \"{year}\" untuk mengonfirmasi",
+          "confirmButton": "Hapus permanen",
+          "cancel": "Batal",
+          "cleared": "Semua jadwal tahun ajaran {year} telah dihapus"
+        }
       }
     },
     "attendance": {

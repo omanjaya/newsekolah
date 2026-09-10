@@ -4,6 +4,7 @@ import {
   CalendarDays,
   ClockAlert,
   DoorOpen,
+  FileText,
   GraduationCap,
   Megaphone,
   QrCode,
@@ -11,6 +12,7 @@ import {
   Settings,
   ShieldAlert,
   Users,
+  Workflow,
   type LucideIcon,
 } from "lucide-react";
 
@@ -34,6 +36,8 @@ export const domainIcons = {
   users: Users,
   schedule: CalendarDays,
   grades: GraduationCap,
+  document: FileText,
+  workflow: Workflow,
 } satisfies Record<string, LucideIcon>;
 
 export type DomainIconName = keyof typeof domainIcons;

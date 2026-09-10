@@ -66,3 +66,25 @@ export function useDeleteScheduleBlockMutation() {
     onSuccess: invalidate,
   });
 }
+
+/** Creates every row of a validated bulk-import batch in one request. */
+export function useBulkImportSchedulesMutation() {
+  const client = useApiClient();
+  const invalidate = useInvalidateSchedules();
+  return useMutation({
+    mutationFn: (schedules: ScheduleWrite[]) =>
+      client.POST("/v1/schedules/bulk-import", { body: { schedules } }),
+    onSuccess: invalidate,
+  });
+}
+
+/** Deletes every schedule of one academic year. Irreversible; the caller must confirm first. */
+export function useClearSchedulesMutation() {
+  const client = useApiClient();
+  const invalidate = useInvalidateSchedules();
+  return useMutation({
+    mutationFn: (academicYearId: string) =>
+      client.POST("/v1/schedules/clear", { body: { academic_year_id: academicYearId } }),
+    onSuccess: invalidate,
+  });
+}

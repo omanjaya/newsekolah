@@ -144,6 +144,19 @@ export function useReturnLoanMutation() {
   });
 }
 
+export function useMarkLoanLostMutation() {
+  const client = useApiClient();
+  const invalidate = useInvalidateLibrary();
+  return useMutation({
+    mutationFn: ({ loanId, replacementCost }: { loanId: string; replacementCost: number }) =>
+      client.POST("/v1/library/loans/{loanId}/lost", {
+        params: { path: { loanId } },
+        body: { replacement_cost: replacementCost },
+      }),
+    onSuccess: invalidate,
+  });
+}
+
 export function useRenewLoanMutation() {
   const client = useApiClient();
   const invalidate = useInvalidateLibrary();
@@ -277,6 +290,15 @@ export function useOverdueMembersReportQuery() {
   return useQuery({
     queryKey: ["library", "reports", "overdue-members"],
     queryFn: () => client.GET("/v1/library/reports/overdue-members"),
+  });
+}
+
+export function useLoansReportQuery(from: string, to: string) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: ["library", "reports", "loans", from, to],
+    queryFn: () => client.GET("/v1/library/reports/loans", { params: { query: { from, to } } }),
+    enabled: Boolean(from && to),
   });
 }
 

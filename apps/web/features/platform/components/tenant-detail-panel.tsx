@@ -14,6 +14,7 @@ import {
   useRequestExportMutation,
   useSetTenantFlagMutation,
   useTenantDetailQuery,
+  useTenantFlagsQuery,
   useUpdateTenantDomainMutation,
 } from "../api";
 
@@ -34,6 +35,7 @@ export function TenantDetailPanel({ tenantId }: { tenantId: string }): ReactElem
 
   const { data, isLoading } = useTenantDetailQuery(tenantId);
   const detail = data;
+  const flags = useTenantFlagsQuery(tenantId);
   const updateDomain = useUpdateTenantDomainMutation();
   const setFlag = useSetTenantFlagMutation();
   const requestExport = useRequestExportMutation();
@@ -59,7 +61,7 @@ export function TenantDetailPanel({ tenantId }: { tenantId: string }): ReactElem
     );
   }
 
-  const flagByModule = new Map(detail.flags.map((f) => [f.module, f.enabled]));
+  const flagByModule = new Map((flags.data?.data ?? []).map((f) => [f.module, f.enabled]));
   const exportView = exportQuery.data;
 
   return (
@@ -106,27 +108,31 @@ export function TenantDetailPanel({ tenantId }: { tenantId: string }): ReactElem
 
       <section className="flex flex-col gap-2">
         <h3 className="text-[13px] font-medium">{td("flagsTitle")}</h3>
-        <ul className="flex flex-col divide-y divide-border rounded-sm border border-border">
-          {MODULES.map((module) => (
-            <li key={module} className="flex items-center justify-between gap-4 px-3 py-2">
-              <span className="text-[13px]">{td(`modules.${module}`)}</span>
-              <Switch
-                checked={flagByModule.get(module) ?? true}
-                onCheckedChange={(enabled) => {
-                  setFlag.mutate(
-                    { tenantId, module, enabled },
-                    {
-                      onSuccess: () => {
-                        toast.success(td("flagUpdated"));
+        {flags.isLoading ? (
+          <Skeleton className="h-40 w-full" />
+        ) : (
+          <ul className="flex flex-col divide-y divide-border rounded-sm border border-border">
+            {MODULES.map((module) => (
+              <li key={module} className="flex items-center justify-between gap-4 px-3 py-2">
+                <span className="text-[13px]">{td(`modules.${module}`)}</span>
+                <Switch
+                  checked={flagByModule.get(module) ?? false}
+                  onCheckedChange={(enabled) => {
+                    setFlag.mutate(
+                      { tenantId, module, enabled },
+                      {
+                        onSuccess: () => {
+                          toast.success(td("flagUpdated"));
+                        },
+                        onError,
                       },
-                      onError,
-                    },
-                  );
-                }}
-              />
-            </li>
-          ))}
-        </ul>
+                    );
+                  }}
+                />
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       <section className="flex flex-col gap-2">

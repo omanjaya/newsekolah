@@ -6,7 +6,7 @@ import { Badge, Button, DataTable, EmptyState, PageHeader, domainIcons } from "@
 import type { ColumnDef } from "@tanstack/react-table";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 import {
   type LibraryLoan,
@@ -15,12 +15,15 @@ import {
   useMemberReservationsQuery,
 } from "../api";
 
+import { MarkLostDialog } from "./mark-lost-dialog";
+
 export function MemberHistoryView({ userId }: { userId: string }): ReactElement {
   const t = useTranslations("app.library.memberHistory");
   const locale = useLocale() as Locale;
   const loans = useMemberLoanHistoryQuery(userId);
   const reservations = useMemberReservationsQuery(userId);
   const items = loans.data?.data ?? [];
+  const [markingLost, setMarkingLost] = useState<string | null>(null);
 
   const columns = useMemo<ColumnDef<LibraryLoan>[]>(
     () => [
@@ -51,6 +54,24 @@ export function MemberHistoryView({ userId }: { userId: string }): ReactElement 
         accessorKey: "fine_amount",
         header: t("columns.fine"),
         enableSorting: false,
+      },
+      {
+        id: "actions",
+        header: t("columns.actions"),
+        enableSorting: false,
+        cell: ({ row }) =>
+          row.original.status === "active" ? (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-status-absent"
+              onClick={() => {
+                setMarkingLost(row.original.id);
+              }}
+            >
+              {t("markLost")}
+            </Button>
+          ) : null,
       },
     ],
     [t, locale],
@@ -103,6 +124,16 @@ export function MemberHistoryView({ userId }: { userId: string }): ReactElement 
           </ul>
         </div>
       )}
+
+      <MarkLostDialog
+        loanId={markingLost}
+        onOpenChange={(open) => {
+          if (!open) setMarkingLost(null);
+        }}
+        onDone={() => {
+          setMarkingLost(null);
+        }}
+      />
     </div>
   );
 }

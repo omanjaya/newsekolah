@@ -1,0 +1,40 @@
+{
+  "navLabel": "Alur persetujuan",
+  "eyebrow": "Pengaturan",
+  "title": "Alur persetujuan",
+  "body": "Susun tahapan persetujuan untuk tiap jenis permohonan. Mengubah dan menyimpan membuat versi baru; pengajuan yang sedang berjalan tetap memakai tahapan versi yang berlaku saat dibuka, hanya pengajuan baru yang memakai versi ini.",
+  "versionLabel": "Versi aktif: {version}",
+  "kind": {
+    "exit_permit": "Izin keluar",
+    "late_arrival": "Keterlambatan",
+    "leave_request": "Pengajuan izin"
+  },
+  "addStage": "Tambah tahap",
+  "save": "Simpan perubahan",
+  "saved": "Alur persetujuan disimpan",
+  "confirmTitle": "Simpan alur persetujuan baru",
+  "confirmBody": "Perubahan ini berlaku sebagai versi baru. Pengajuan yang sudah berjalan tetap memakai tahapan versi sebelumnya sampai selesai; hanya pengajuan baru setelah ini yang memakai susunan tahap yang baru.",
+  "confirmSave": "Simpan sebagai versi baru",
+  "stage": {
+    "labelField": "Nama tahap",
+    "keyField": "Kode tahap",
+    "approverRuleField": "Siapa yang menyetujui",
+    "dutySlugField": "Petugas piket",
+    "dutySlugPlaceholder": "Pilih jenis piket",
+    "verificationField": "Cara verifikasi",
+    "moveUp": "Pindah ke atas",
+    "moveDown": "Pindah ke bawah",
+    "removeStage": "Hapus tahap",
+    "rule": {
+      "any_teacher": "Guru mana pun",
+      "teacher_of_class_now": "Guru yang sedang mengajar kelas ini",
+      "homeroom_of_student": "Wali kelas siswa",
+      "duty": "Petugas piket tertentu"
+    },
+    "verification": {
+      "qr_scan": "Pindai QR",
+      "manual": "Disetujui manual",
+      "auto": "Otomatis"
+    }
+  }
+}

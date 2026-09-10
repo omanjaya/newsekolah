@@ -26,6 +26,8 @@ import {
   useReturnLoanMutation,
 } from "../api";
 
+import { MarkLostDialog } from "./mark-lost-dialog";
+
 export function LoanDeskView(): ReactElement {
   const t = useTranslations("app.library.desk");
   const locale = useLocale() as Locale;
@@ -34,6 +36,7 @@ export function LoanDeskView(): ReactElement {
 
   const [barcode, setBarcode] = useState("");
   const [memberId, setMemberId] = useState("");
+  const [markingLost, setMarkingLost] = useState<string | null>(null);
   const borrow = useBorrowLoanMutation();
   const returnLoan = useReturnLoanMutation();
   const renew = useRenewLoanMutation();
@@ -90,6 +93,16 @@ export function LoanDeskView(): ReactElement {
               }}
             >
               {t("return")}
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-status-absent"
+              onClick={() => {
+                setMarkingLost(row.original.id);
+              }}
+            >
+              {t("markLost")}
             </Button>
           </div>
         ),
@@ -176,6 +189,16 @@ export function LoanDeskView(): ReactElement {
           }
         />
       </div>
+
+      <MarkLostDialog
+        loanId={markingLost}
+        onOpenChange={(open) => {
+          if (!open) setMarkingLost(null);
+        }}
+        onDone={() => {
+          setMarkingLost(null);
+        }}
+      />
     </div>
   );
 }

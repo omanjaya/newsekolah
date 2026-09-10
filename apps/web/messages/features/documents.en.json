@@ -1,0 +1,47 @@
+{
+  "templates": {
+    "navLabel": "Document templates",
+    "eyebrow": "Settings",
+    "title": "Document templates",
+    "addTemplate": "Add template",
+    "columns": {
+      "name": "Name",
+      "kind": "Kind",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "kind": {
+      "leave_letter": "Leave letter",
+      "warning_letter": "Warning letter",
+      "class_journal": "Class journal",
+      "member_card": "Library member card",
+      "item_label": "Copy label",
+      "clearance_letter": "Library clearance letter",
+      "report": "Report"
+    },
+    "default": "Default",
+    "setDefault": "Make default",
+    "defaultUpdated": "Template set as default",
+    "emptyTitle": "No templates yet",
+    "emptyBody": "Templates you create appear here, grouped by document kind.",
+    "edit": "Edit",
+    "editor": {
+      "createTitle": "New template",
+      "editTitle": "Edit template",
+      "nameLabel": "Template name",
+      "kindLabel": "Document kind",
+      "bodyLabel": "Body (HTML)",
+      "bodyHint": "Use {{placeholder_name}} for parts filled in automatically when the document is issued.",
+      "placeholdersLabel": "Placeholders used in this template",
+      "noPlaceholders": "This template does not use any placeholders yet.",
+      "knownPlaceholdersLabel": "Placeholders available for this kind",
+      "knownPlaceholdersEmpty": "This document kind has no automatic data from the system yet; any placeholder written here appears as-is when issued.",
+      "previewLabel": "Preview",
+      "previewHint": "The preview fills in a sample value for each placeholder and renders in an isolated frame, not as part of this page.",
+      "save": "Save",
+      "cancel": "Cancel",
+      "saved": "Template saved",
+      "created": "Template created"
+    }
+  }
+}

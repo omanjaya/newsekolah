@@ -1,0 +1,47 @@
+{
+  "templates": {
+    "navLabel": "Template dokumen",
+    "eyebrow": "Pengaturan",
+    "title": "Template dokumen",
+    "addTemplate": "Tambah template",
+    "columns": {
+      "name": "Nama",
+      "kind": "Jenis",
+      "status": "Status",
+      "actions": "Aksi"
+    },
+    "kind": {
+      "leave_letter": "Surat izin",
+      "warning_letter": "Surat peringatan",
+      "class_journal": "Jurnal kelas",
+      "member_card": "Kartu anggota perpustakaan",
+      "item_label": "Label eksemplar",
+      "clearance_letter": "Surat keterangan bebas pustaka",
+      "report": "Laporan"
+    },
+    "default": "Default",
+    "setDefault": "Jadikan default",
+    "defaultUpdated": "Template dijadikan default",
+    "emptyTitle": "Belum ada template",
+    "emptyBody": "Template yang dibuat akan muncul di sini, dikelompokkan per jenis dokumen.",
+    "edit": "Ubah",
+    "editor": {
+      "createTitle": "Template baru",
+      "editTitle": "Ubah template",
+      "nameLabel": "Nama template",
+      "kindLabel": "Jenis dokumen",
+      "bodyLabel": "Isi (HTML)",
+      "bodyHint": "Gunakan {{nama_placeholder}} untuk bagian yang diisi otomatis saat dokumen diterbitkan.",
+      "placeholdersLabel": "Placeholder yang dipakai template ini",
+      "noPlaceholders": "Template ini belum memakai placeholder apa pun.",
+      "knownPlaceholdersLabel": "Placeholder yang tersedia untuk jenis ini",
+      "knownPlaceholdersEmpty": "Jenis dokumen ini belum punya data otomatis dari sistem; placeholder yang ditulis di sini akan tampil apa adanya saat diterbitkan.",
+      "previewLabel": "Pratinjau",
+      "previewHint": "Pratinjau memakai nilai contoh untuk setiap placeholder dan dirender dalam bingkai terisolasi, bukan sebagai bagian dari halaman ini.",
+      "save": "Simpan",
+      "cancel": "Batal",
+      "saved": "Template disimpan",
+      "created": "Template dibuat"
+    }
+  }
+}

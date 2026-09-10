@@ -23,6 +23,7 @@ export type PlatformEducationLevel = components["schemas"]["PlatformEducationLev
 const keys = {
   tenants: () => ["platform", "tenants"] as const,
   tenant: (id: string) => ["platform", "tenants", id] as const,
+  flags: (tenantId: string) => ["platform", "tenants", tenantId, "flags"] as const,
   export: (tenantId: string, exportId: string) =>
     ["platform", "tenants", tenantId, "exports", exportId] as const,
 };
@@ -90,6 +91,17 @@ export function useUpdateTenantDomainMutation() {
         body: { domain },
       }),
     onSuccess: invalidate,
+  });
+}
+
+/** Pass an empty string for tenantId while no tenant is selected yet. */
+export function useTenantFlagsQuery(tenantId: string) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: keys.flags(tenantId),
+    queryFn: () =>
+      client.GET("/v1/platform/tenants/{tenantId}/flags", { params: { path: { tenantId } } }),
+    enabled: tenantId !== "",
   });
 }
 

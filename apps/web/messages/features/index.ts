@@ -11,6 +11,8 @@ import calendarEn from "./calendar.en.json";
 import calendarId from "./calendar.id.json";
 import disciplineEn from "./discipline.en.json";
 import disciplineId from "./discipline.id.json";
+import documentsEn from "./documents.en.json";
+import documentsId from "./documents.id.json";
 import gradingEn from "./grading.en.json";
 import gradingId from "./grading.id.json";
 import integrationsEn from "./integrations.en.json";
@@ -31,9 +33,12 @@ import securityEn from "./security.en.json";
 import securityId from "./security.id.json";
 import ssoEn from "./sso.en.json";
 import ssoId from "./sso.id.json";
+import workflowsEn from "./workflows.en.json";
+import workflowsId from "./workflows.id.json";
 
 registerFeatureMessages({ namespace: "calendar", id: calendarId, en: calendarEn });
 registerFeatureMessages({ namespace: "discipline", id: disciplineId, en: disciplineEn });
+registerFeatureMessages({ namespace: "documents", id: documentsId, en: documentsEn });
 registerFeatureMessages({ namespace: "grading", id: gradingId, en: gradingEn });
 registerFeatureMessages({ namespace: "integrations", id: integrationsId, en: integrationsEn });
 registerFeatureMessages({ namespace: "audit", id: auditId, en: auditEn });
@@ -44,4 +49,5 @@ registerFeatureMessages({ namespace: "security", id: securityId, en: securityEn 
 registerFeatureMessages({ namespace: "sso", id: ssoId, en: ssoEn });
 registerFeatureMessages({ namespace: "platform", id: platformId, en: platformEn });
 registerFeatureMessages({ namespace: "library", id: libraryId, en: libraryEn });
+registerFeatureMessages({ namespace: "workflows", id: workflowsId, en: workflowsEn });
 registerFeatureMessages({ namespace: "messaging", id: messagingId, en: messagingEn });

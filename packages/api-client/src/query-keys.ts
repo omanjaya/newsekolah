@@ -66,6 +66,9 @@ export const queryKeys = {
   lateArrivalQueue: () => ["permits", "late-arrival-queue"] as const,
   workflowDefinitions: () => ["permits", "workflow-definitions"] as const,
 
+  documentTemplates: () => ["documents", "templates"] as const,
+  tenantNotificationDefault: (kind: string) => ["tenant", "notification-defaults", kind] as const,
+
   apiKeys: () => ["integrations", "api-keys"] as const,
   webhookEndpoints: () => ["integrations", "webhook-endpoints"] as const,
   webhookEventTypes: () => ["integrations", "event-types"] as const,
