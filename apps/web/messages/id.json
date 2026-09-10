@@ -17,7 +17,8 @@
         "logout": "Keluar"
       },
       "impersonation": {
-        "banner": "Dioperasikan oleh {adminName} sebagai {name}, sesi berakhir otomatis dalam 30 menit"
+        "banner": "Dioperasikan oleh {adminName} sebagai {name}, sesi berakhir otomatis dalam 30 menit",
+        "stop": "Hentikan impersonasi"
       },
       "offline": {
         "banner": "Tidak ada koneksi, perubahan disimpan sementara di perangkat"
@@ -78,7 +79,27 @@
       "sessionsEmptyTitle": "Tidak ada sesi lain",
       "sessionsEmptyBody": "Sesi lain akan tampil di sini setelah masuk dari perangkat lain.",
       "revokeSuccess": "Sesi berhasil diakhiri",
-      "changePasswordTitle": "Ubah kata sandi"
+      "changePasswordTitle": "Ubah kata sandi",
+      "avatar": {
+        "title": "Foto",
+        "change": "Ganti foto",
+        "hint": "JPEG, PNG, atau WebP, maksimal 2 MB",
+        "uploading": "Mengunggah, {percent, number}%",
+        "updated": "Foto diperbarui"
+      },
+      "edit": {
+        "title": "Ubah profil",
+        "nameLabel": "Nama lengkap",
+        "emailLabel": "Email",
+        "phoneLabel": "Telepon",
+        "phonePlaceholder": "Belum diisi",
+        "localeLabel": "Bahasa pilihan",
+        "localeId": "Bahasa Indonesia",
+        "localeEn": "Bahasa Inggris",
+        "requiredError": "Nama lengkap wajib diisi.",
+        "save": "Simpan perubahan",
+        "saved": "Profil diperbarui"
+      }
     },
     "settings": {
       "appearance": {
@@ -633,7 +654,9 @@
           "archive": "Arsipkan",
           "restore": "Pulihkan",
           "archived": "Pengguna diarsipkan",
-          "restored": "Pengguna dipulihkan"
+          "restored": "Pengguna dipulihkan",
+          "impersonate": "Masuk sebagai pengguna ini",
+          "impersonateBody": "Anda akan bertindak sebagai {name} selama maksimal 30 menit. Semua tindakan selama itu dicatat."
         },
         "form": {
           "createTitle": "Pengguna baru",
@@ -764,7 +787,30 @@
         "requiredError": "Tugas, pemegang, dan kelas (jika perlu) wajib diisi.",
         "assigned": "Tugas diberikan",
         "cancel": "Batal",
-        "save": "Simpan"
+        "save": "Simpan",
+        "tabs": {
+          "assignments": "Penugasan"
+        },
+        "types": {
+          "title": "Jenis tugas",
+          "empty": "Belum ada jenis tugas",
+          "inactive": "Tidak aktif",
+          "name": "Nama",
+          "scope": "Cakupan",
+          "scopeKinds": {
+            "school": "Seluruh sekolah",
+            "class": "Satu kelas",
+            "student": "Satu siswa"
+          },
+          "active": "Aktif",
+          "save": "Simpan",
+          "saved": "Perubahan disimpan",
+          "delete": "Hapus jenis tugas",
+          "deleteBody": "{name} hanya bisa dihapus jika sudah tidak ada penugasan yang memakainya.",
+          "deleted": "Jenis tugas dihapus",
+          "permissionsTitle": "Izin selama bertugas",
+          "permissionsBody": "Diberikan hanya kepada pemegang tugas ini, di luar izin dari perannya, dan hanya selama penugasan aktif."
+        }
       }
     },
     "roles": {

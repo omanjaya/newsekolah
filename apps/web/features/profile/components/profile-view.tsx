@@ -8,6 +8,8 @@ import { useSession } from "../../../lib/session/session-provider";
 import { ChangePasswordForm } from "../../auth/components/change-password-form";
 
 import { AccountSecurity } from "./account-security";
+import { AvatarUpload } from "./avatar-upload";
+import { EditProfileForm } from "./edit-profile-form";
 import { SessionsTable } from "./sessions-table";
 
 export function ProfileView(): ReactElement | null {
@@ -42,6 +44,16 @@ export function ProfileView(): ReactElement | null {
             </dd>
           </dl>
         </div>
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <h2 className="text-[16px] font-medium text-fg">{t("avatar.title")}</h2>
+        <AvatarUpload />
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <h2 className="text-[16px] font-medium text-fg">{t("edit.title")}</h2>
+        <EditProfileForm />
       </section>
 
       <section className="flex flex-col gap-3">

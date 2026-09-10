@@ -41,3 +41,27 @@ export const tenantLookupQuerySchema = z.object({
   q: z.string().min(2, "validation.tenantQueryMin").max(80, "validation.maxLength"),
 });
 export type TenantLookupQuery = z.infer<typeof tenantLookupQuerySchema>;
+
+export const forgotPasswordSchema = z.object({
+  username_or_email: z
+    .string()
+    .min(1, "validation.usernameRequired")
+    .max(120, "validation.maxLength"),
+});
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+
+/**
+ * The reset/set-password token itself never goes through this schema: it
+ * comes from the URL, not a form field the user types, so there is nothing
+ * to validate beyond the new password the user chooses.
+ */
+export const resetPasswordSchema = z
+  .object({
+    new_password: z.string().min(8, "validation.passwordMin").max(128, "validation.passwordMax"),
+    confirm_password: z.string().min(1, "validation.passwordRequired"),
+  })
+  .refine((data) => data.new_password === data.confirm_password, {
+    message: "validation.passwordMismatch",
+    path: ["confirm_password"],
+  });
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;

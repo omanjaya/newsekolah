@@ -73,7 +73,8 @@
       "googleButton": "Masuk dengan Google",
       "passkeyButton": "Masuk dengan passkey",
       "passkeyUsernameRequired": "Isi nama pengguna dahulu untuk masuk dengan passkey",
-      "backToPassword": "Masuk dengan kata sandi"
+      "backToPassword": "Masuk dengan kata sandi",
+      "forgotPasswordLink": "Lupa kata sandi?"
     },
     "changePassword": {
       "title": "Ubah kata sandi",
@@ -202,6 +203,14 @@
     "PASSKEY_NOT_CONFIGURED": "Passkey belum tersedia di server ini",
     "PASSKEY_NOT_FOUND": "Passkey tidak ditemukan",
     "PASSKEY_CHALLENGE_EXPIRED": "Permintaan passkey sudah kedaluwarsa, coba lagi",
-    "PASSKEY_INVALID_RESPONSE": "Perangkat tidak dapat memverifikasi passkey ini"
+    "PASSKEY_INVALID_RESPONSE": "Perangkat tidak dapat memverifikasi passkey ini",
+    "USER_ALREADY_EXISTS": "Username, email, atau nomor tersebut sudah dipakai",
+    "DUTY_TYPE_IN_USE": "Jenis tugas ini masih dipakai oleh satu atau lebih penugasan",
+    "IMPERSONATION_NOT_ALLOWED": "Pengguna ini tidak dapat diimpersonasi",
+    "NOT_IMPERSONATING": "Sesi ini bukan sesi impersonasi",
+    "PASSWORD_RESET_TOKEN_INVALID": "Tautan ini tidak valid atau sudah kedaluwarsa",
+    "UPLOAD_INVALID_FILE_TYPE": "Jenis berkas ini tidak didukung",
+    "UPLOAD_FILE_TOO_LARGE": "Ukuran berkas melebihi batas yang diizinkan",
+    "UPLOAD_NOT_CONFIGURED": "Penyimpanan berkas belum dikonfigurasi di server ini"
   }
 }

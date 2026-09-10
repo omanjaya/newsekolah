@@ -73,7 +73,8 @@
       "googleButton": "Sign in with Google",
       "passkeyButton": "Sign in with a passkey",
       "passkeyUsernameRequired": "Enter your username first to sign in with a passkey",
-      "backToPassword": "Sign in with a password"
+      "backToPassword": "Sign in with a password",
+      "forgotPasswordLink": "Forgot your password?"
     },
     "changePassword": {
       "title": "Change password",
@@ -202,6 +203,14 @@
     "PASSKEY_NOT_CONFIGURED": "Passkeys are not available on this server",
     "PASSKEY_NOT_FOUND": "Passkey not found",
     "PASSKEY_CHALLENGE_EXPIRED": "That passkey request has expired, please try again",
-    "PASSKEY_INVALID_RESPONSE": "Your device could not verify this passkey"
+    "PASSKEY_INVALID_RESPONSE": "Your device could not verify this passkey",
+    "USER_ALREADY_EXISTS": "That username, email, or number is already in use",
+    "DUTY_TYPE_IN_USE": "This duty still has one or more assignments",
+    "IMPERSONATION_NOT_ALLOWED": "This user cannot be impersonated",
+    "NOT_IMPERSONATING": "This session is not an impersonation session",
+    "PASSWORD_RESET_TOKEN_INVALID": "This link is invalid or has expired",
+    "UPLOAD_INVALID_FILE_TYPE": "This file type is not supported",
+    "UPLOAD_FILE_TOO_LARGE": "The file exceeds the allowed size",
+    "UPLOAD_NOT_CONFIGURED": "File storage is not configured on this server"
   }
 }

@@ -21,7 +21,8 @@ export type Period = components["schemas"]["Period"];
 export type DutyType = components["schemas"]["DutyType"];
 export type DutyAssignment = components["schemas"]["DutyAssignment"];
 
-function useInvalidate(prefix: readonly unknown[]) {
+/** Shared with duties-api.ts, which lives in its own file to keep this one under the line limit. */
+export function useInvalidate(prefix: readonly unknown[]) {
   const queryClient = useQueryClient();
   return () => {
     void queryClient.invalidateQueries({ queryKey: prefix });
@@ -111,6 +112,9 @@ export function useRolesQuery() {
   const client = useApiClient();
   return useQuery({ queryKey: queryKeys.roles(), queryFn: () => client.GET("/v1/roles") });
 }
+
+// Duty types, duty assignments and impersonation live in ./duties-api.ts
+// (kept out of this file to stay under the 400-line limit).
 
 // Classes and enrollments.
 
@@ -327,49 +331,6 @@ export function useSetWeekdayMutation() {
             ]
           : []),
       ]),
-    onSuccess: invalidate,
-  });
-}
-
-// Duties.
-
-export function useDutyTypesQuery() {
-  const client = useApiClient();
-  return useQuery({
-    queryKey: queryKeys.dutyTypes(),
-    queryFn: () => client.GET("/v1/duties"),
-  });
-}
-
-export function useDutyAssignmentsQuery() {
-  const client = useApiClient();
-  const year = useActiveYear();
-  return useQuery({
-    queryKey: queryKeys.dutyAssignments(year.id),
-    queryFn: () =>
-      client.GET("/v1/duty-assignments", { params: { query: { academic_year_id: year.id } } }),
-    enabled: year.id !== "",
-  });
-}
-
-export function useCreateDutyAssignmentMutation() {
-  const client = useApiClient();
-  const invalidate = useInvalidate(["duties"]);
-  return useMutation({
-    mutationFn: (body: components["schemas"]["DutyAssignmentWrite"]) =>
-      client.POST("/v1/duty-assignments", { body }),
-    onSuccess: invalidate,
-  });
-}
-
-export function useEndDutyAssignmentMutation() {
-  const client = useApiClient();
-  const invalidate = useInvalidate(["duties"]);
-  return useMutation({
-    mutationFn: (id: string) =>
-      client.DELETE("/v1/duty-assignments/{assignmentId}", {
-        params: { path: { assignmentId: id } },
-      }),
     onSuccess: invalidate,
   });
 }

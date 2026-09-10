@@ -15,6 +15,7 @@ import {
   FormMessage,
   Input,
 } from "@newsekolah/ui";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -142,6 +143,15 @@ export function LoginForm(): ReactElement {
             ? tSecurity("login.submit")
             : t("submit")}
       </Button>
+
+      {!otpRequired && (
+        <Link
+          href="/forgot-password"
+          className="text-center text-[13px] text-accent hover:underline"
+        >
+          {t("forgotPasswordLink")}
+        </Link>
+      )}
 
       {!otpRequired && (googleSSO.data?.enabled === true || isPasskeySupported()) && (
         <div className="flex flex-col items-center gap-3">
