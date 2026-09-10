@@ -132,7 +132,20 @@
         "digestBody": "Kirim satu email ringkasan per hari alih-alih satu per kejadian.",
         "digestHour": "Jam ringkasan",
         "save": "Simpan",
-        "saved": "Preferensi tersimpan"
+        "saved": "Preferensi tersimpan",
+        "push": {
+          "title": "Notifikasi peramban",
+          "body": "Terima notifikasi di perangkat ini meski tab sekolah sedang tertutup.",
+          "toggleLabel": "Aktifkan di peramban ini",
+          "enabled": "Notifikasi peramban aktif di perangkat ini.",
+          "disabled": "Notifikasi peramban dimatikan di perangkat ini.",
+          "denied": "Izin notifikasi tidak diberikan.",
+          "blocked": "Peramban ini memblokir notifikasi. Ubah izinnya lewat pengaturan situs.",
+          "unsupported": "Peramban ini tidak mendukung notifikasi, atau sekolah belum mengaktifkannya.",
+          "devicesTitle": "Perangkat terdaftar",
+          "noDevices": "Belum ada perangkat terdaftar.",
+          "removeHint": "Untuk melepas satu perangkat, matikan notifikasi dari perangkat itu sendiri."
+        }
       },
       "notificationDefaults": {
         "navLabel": "Default notifikasi",

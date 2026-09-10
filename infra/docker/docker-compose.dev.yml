@@ -96,8 +96,8 @@ services:
       - api-gomod:/go/pkg/mod
       - devsecrets:/run/secrets
     depends_on:
-      postgres: {condition: service_healthy}
-      keygen: {condition: service_completed_successfully}
+      postgres: { condition: service_healthy }
+      keygen: { condition: service_completed_successfully }
     command: ["go", "run", "./cmd/migrate", "up"]
 
   api:
@@ -112,9 +112,9 @@ services:
       - api-gomod:/go/pkg/mod
       - devsecrets:/run/secrets
     depends_on:
-      postgres: {condition: service_healthy}
-      redis: {condition: service_started}
-      migrate: {condition: service_completed_successfully}
+      postgres: { condition: service_healthy }
+      redis: { condition: service_started }
+      migrate: { condition: service_completed_successfully }
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/health"]
       interval: 10s
@@ -138,7 +138,7 @@ services:
       - api-gomod:/go/pkg/mod
       - devsecrets:/run/secrets
     depends_on:
-      migrate: {condition: service_completed_successfully}
+      migrate: { condition: service_completed_successfully }
     command: ["air", "-c", ".air.worker.toml"]
     profiles: ["worker"]
 
@@ -155,7 +155,7 @@ services:
       - api-gomod:/go/pkg/mod
       - devsecrets:/run/secrets
     depends_on:
-      migrate: {condition: service_completed_successfully}
+      migrate: { condition: service_completed_successfully }
     command: ["go", "run", "./cmd/seed"]
     profiles: ["seed"]
 
@@ -165,6 +165,10 @@ services:
       dockerfile: apps/web/Dockerfile.dev
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:8080
+      # Empty by default: without a VAPID key pair on the API side there is
+      # nothing to subscribe to, so the browser-notification switch stays
+      # hidden rather than failing when a viewer flips it.
+      NEXT_PUBLIC_VAPID_PUBLIC_KEY: "${VAPID_PUBLIC_KEY:-}"
       # Server components talk to the API over the compose network; the
       # browser uses the published port above.
       API_INTERNAL_URL: http://api:8080
@@ -181,7 +185,7 @@ services:
       - web-app-node-modules:/repo/apps/web/node_modules
       - web-next-cache:/repo/apps/web/.next
     depends_on:
-      api: {condition: service_started}
+      api: { condition: service_started }
 
 volumes:
   pgdata:

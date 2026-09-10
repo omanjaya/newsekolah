@@ -19,6 +19,8 @@ import {
   useUpdateNotificationSettingsMutation,
 } from "../../notifications/api";
 
+import { PushDevicesSection } from "./push-devices-section";
+
 const HOURS = Array.from({ length: 24 }, (_, hour) => ({
   value: String(hour),
   label: `${String(hour).padStart(2, "0")}.00`,
@@ -115,6 +117,8 @@ export function NotificationSettingsView(): ReactElement {
           </div>
         )}
       </section>
+
+      <PushDevicesSection />
 
       <section className="flex flex-col gap-4 rounded-sm border border-border bg-surface p-4">
         <h2 className="text-[16px] font-medium text-fg">{t("timingTitle")}</h2>

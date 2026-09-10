@@ -132,7 +132,20 @@
         "digestBody": "Send one summary email per day instead of one per event.",
         "digestHour": "Digest hour",
         "save": "Save",
-        "saved": "Preferences saved"
+        "saved": "Preferences saved",
+        "push": {
+          "title": "Browser notifications",
+          "body": "Get notifications on this device even when the school tab is closed.",
+          "toggleLabel": "Enable in this browser",
+          "enabled": "Browser notifications are on for this device.",
+          "disabled": "Browser notifications are off for this device.",
+          "denied": "Notification permission was not granted.",
+          "blocked": "This browser blocks notifications. Change it in the site settings.",
+          "unsupported": "This browser does not support notifications, or the school has not enabled them.",
+          "devicesTitle": "Registered devices",
+          "noDevices": "No devices registered yet.",
+          "removeHint": "To remove one device, turn notifications off on that device."
+        }
       },
       "notificationDefaults": {
         "navLabel": "Notification defaults",
