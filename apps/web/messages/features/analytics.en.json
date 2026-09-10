@@ -1,0 +1,55 @@
+{
+  "navLabel": "Early Warning",
+  "list": {
+    "eyebrow": "Student Affairs",
+    "title": "Early Warning",
+    "description": "Students to check on, ranked by score.",
+    "columns": {
+      "student": "Student",
+      "class": "Class",
+      "level": "Status",
+      "score": "Score",
+      "computedAt": "Updated"
+    },
+    "unknownStudent": "Unknown student",
+    "emptyTitle": "No students need attention",
+    "emptyBody": "No student in this class has reached the watch or at-risk threshold yet."
+  },
+  "level": {
+    "none": "None",
+    "watch": "Watch",
+    "at_risk": "At risk"
+  },
+  "detail": {
+    "eyebrow": "Early Warning",
+    "back": "Back",
+    "unknownStudent": "Unknown student",
+    "freshness": "Computed {time}",
+    "score": "Score {score}",
+    "reasonsTitle": "Reasons",
+    "noReasonsTitle": "No reasons recorded",
+    "noReasonsBody": "No signal crossed the watch threshold.",
+    "signalsTitle": "Signals",
+    "signals": {
+      "attendance": "Attendance",
+      "attendanceValue": "Absent {absent} of the last {considered} school days",
+      "discipline": "Discipline",
+      "disciplineValue": "{points} active violation points",
+      "warningLetters": "Warning letters issued",
+      "gradeTrend": "Report-score trend",
+      "gradeTrendValue": "Average dropped from {previous} to {current}",
+      "noData": "No data yet"
+    },
+    "reasons": {
+      "attendance_absence_watch": "Absent {absent_days} of the last {considered_days} school days",
+      "attendance_absence_at_risk": "Absent {absent_days} of the last {considered_days} school days",
+      "discipline_points_watch": "{points} active violation points",
+      "discipline_points_at_risk": "{points} active violation points",
+      "warning_letter_watch": "{warning_letter_count} warning letters already issued",
+      "warning_letter_at_risk": "{warning_letter_count} warning letters already issued",
+      "grade_drop_watch": "Report-score average dropped from {previous_average} to {current_average}",
+      "grade_drop_at_risk": "Report-score average dropped from {previous_average} to {current_average}",
+      "unknown": "Unknown signal"
+    }
+  }
+}

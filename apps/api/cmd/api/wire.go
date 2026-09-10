@@ -14,6 +14,8 @@ import (
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/api"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/academic"
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/analytics"
+	analyticsjobs "github.com/omanjaya/newsekolah/apps/api/internal/modules/analytics/transport/jobs"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/announcements"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/discipline"
@@ -141,6 +143,17 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		Sealer: sealer, Bus: eventBus, Clock: clock.Real{},
 	})
 
+	// analytics composes its risk signals through adapters over
+	// attendance, discipline and grading's own services (never their
+	// tables), so it is built after all three.
+	analyticsModule := analytics.Register(analytics.Dependencies{
+		Pool: pool, Years: schoolModule.Service,
+		Attendance: wiring.AnalyticsAttendance{Svc: attendanceModule.Service},
+		Discipline: wiring.AnalyticsDiscipline{Svc: disciplineModule.Service},
+		Grading:    wiring.AnalyticsGrading{Svc: gradingModule.Service},
+		Clock:      clock.Real{},
+	})
+
 	// Built before the jobs block below so its periodic due-schedule scan
 	// can be registered alongside every other module's.
 	reportsModule := reports.Register(reports.Dependencies{
@@ -203,6 +216,15 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		periodic = append(periodic, reportsModule.RegisterJobs(workers, wiring.ReportsEmailSender{Email: senders.Email}, logger)...)
 		platformModule.RegisterJobs(workers)
 		integrationsModule.RegisterJobs(workers, clock.Real{})
+		// analyticsModule needs attendance/discipline/grading already
+		// built, which cmd/worker does not construct today -- its
+		// recompute job runs only in this inline (WORKER_INLINE=true)
+		// path, the same single-process mode docs/12-roadmap.md expects
+		// a small school to run.
+		if err := analyticsjobs.Register(workers, analyticsModule.Service); err != nil {
+			return nil, nil, err
+		}
+		periodic = append(periodic, analyticsjobs.PeriodicJobs()...)
 	}
 	riverClient, err := jobs.NewClient(pool, workers, logger, periodic...)
 	if err != nil {
@@ -246,6 +268,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		PlatformHandler:      platformModule.Handler,
 		LibraryHandler:       libraryModule.Handler,
 		IntegrationsHandler:  integrationsModule.Handler,
+		AnalyticsHandler:     analyticsModule.Handler,
 		healthHandler:        &healthHandler{version: version, pool: pool, redis: redisClient},
 	}
 

@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	academichttp "github.com/omanjaya/newsekolah/apps/api/internal/modules/academic/transport/http"
+	analyticshttp "github.com/omanjaya/newsekolah/apps/api/internal/modules/analytics/transport/http"
 	announcementshttp "github.com/omanjaya/newsekolah/apps/api/internal/modules/announcements/transport/http"
 	attendancehttp "github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance/transport/http"
 	disciplinehttp "github.com/omanjaya/newsekolah/apps/api/internal/modules/discipline/transport/http"
@@ -42,6 +43,7 @@ type combinedServer struct {
 	*platformhttp.PlatformHandler
 	*libraryhttp.LibraryHandler
 	*integrationshttp.IntegrationsHandler
+	*analyticshttp.AnalyticsHandler
 	*healthHandler
 }
 

@@ -147,6 +147,28 @@ type Querier interface {
 	AddDutyPermission(ctx context.Context, arg AddDutyPermissionParams) error
 	AddRolePermission(ctx context.Context, arg AddRolePermissionParams) error
 	AdvanceWorkflowInstanceStage(ctx context.Context, arg AdvanceWorkflowInstanceStageParams) (WorkflowInstance, error)
+	AnalyticsCreatePolicy(ctx context.Context, arg AnalyticsCreatePolicyParams) error
+	// cross-module read: duty slug 'homeroom', the same lookup as attendance's
+	// GetHomeroomClassForAttendance (docs/analysis/backend-inventory.md
+	// section 1.9's global-corrector rule).
+	AnalyticsGetHomeroomClassID(ctx context.Context, arg AnalyticsGetHomeroomClassIDParams) (pgtype.UUID, error)
+	AnalyticsGetLatestPolicy(ctx context.Context, tenantID uuid.UUID) (AnalyticsGetLatestPolicyRow, error)
+	AnalyticsGetStudentRisk(ctx context.Context, arg AnalyticsGetStudentRiskParams) (AnalyticsStudentRisk, error)
+	// cross-module read: same slugs ("counselor", "leadership") discipline's
+	// counseling visibility already uses.
+	AnalyticsHasActiveDuty(ctx context.Context, arg AnalyticsHasActiveDutyParams) (bool, error)
+	// cross-module read: enrollments (academic) is the roster the recompute
+	// job scores, mirroring attendance's own ListActiveEnrollments.
+	AnalyticsListActiveStudents(ctx context.Context, arg AnalyticsListActiveStudentsParams) ([]AnalyticsListActiveStudentsRow, error)
+	// cross-module read: tenants is the platform-wide registry owned by the
+	// school module, the same read notifications' ListActiveTenantsForMaintenance
+	// already does for its own periodic jobs. Not RLS-protected: this loops
+	// one tenant at a time before any tenant context is set, never queries
+	// across tenants in one statement.
+	AnalyticsListActiveTenants(ctx context.Context) ([]uuid.UUID, error)
+	// sqlc.narg('class_id') left null lists every class (counselor/leadership scope).
+	AnalyticsListStudentRisk(ctx context.Context, arg AnalyticsListStudentRiskParams) ([]AnalyticsStudentRisk, error)
+	AnalyticsUpsertStudentRisk(ctx context.Context, arg AnalyticsUpsertStudentRiskParams) error
 	ArchiveUser(ctx context.Context, arg ArchiveUserParams) error
 	AssignUserRole(ctx context.Context, arg AssignUserRoleParams) error
 	CancelReservation(ctx context.Context, arg CancelReservationParams) (LibraryReservation, error)

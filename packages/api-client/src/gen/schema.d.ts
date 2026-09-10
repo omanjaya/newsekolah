@@ -853,6 +853,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/analytics/at-risk-students": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Early-warning risk list, scoped to the caller: a counselor or school leadership sees every class, a homeroom teacher sees only their own class. */
+        get: operations["listAtRiskStudents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/analytics/at-risk-students/{studentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One student's risk signals and the reasons behind the level */
+        get: operations["getStudentRisk"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/analytics/policy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Tenant's early-warning thresholds and weights */
+        get: operations["getEarlyWarningPolicy"];
+        /** Replace the early-warning policy (new policy version) */
+        put: operations["updateEarlyWarningPolicy"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/announcements": {
         parameters: {
             query?: never;
@@ -4949,6 +5001,68 @@ export interface components {
             pairs: components["schemas"]["SubjectClassPair"][];
         };
         /** @enum {string} */
+        RiskLevel: "none" | "watch" | "at_risk";
+        /** @description One observation that contributed to the level: a stable code plus the exact numbers observed (e.g. absent_days, considered_days), never a characterisation of the student. The UI renders the code as localized text with the params filled in. */
+        RiskReason: {
+            code: string;
+            weight: number;
+            params: {
+                [key: string]: unknown;
+            };
+        };
+        RiskSignals: {
+            has_attendance: boolean;
+            considered_days: number;
+            absent_days: number;
+            active_violation_count: number;
+            discipline_points: number;
+            warning_letter_count: number;
+            has_grade_trend: boolean;
+            previous_average: number;
+            current_average: number;
+        };
+        StudentRisk: {
+            /** Format: uuid */
+            student_user_id: string;
+            /** Format: uuid */
+            class_id: string;
+            level: components["schemas"]["RiskLevel"];
+            score: number;
+            /** Format: date-time */
+            computed_at: string;
+        };
+        StudentRiskDetail: {
+            /** Format: uuid */
+            student_user_id: string;
+            /** Format: uuid */
+            class_id: string;
+            level: components["schemas"]["RiskLevel"];
+            score: number;
+            signals: components["schemas"]["RiskSignals"];
+            reasons: components["schemas"]["RiskReason"][];
+            /** Format: date-time */
+            computed_at: string;
+        };
+        EarlyWarningPolicy: {
+            version: number;
+            window_days: number;
+            attendance_watch_rate: number;
+            attendance_at_risk_rate: number;
+            discipline_watch_points: number;
+            discipline_at_risk_points: number;
+            warning_letter_watch_count: number;
+            warning_letter_at_risk_count: number;
+            grade_drop_watch_points: number;
+            grade_drop_at_risk_points: number;
+            attendance_weight: number;
+            discipline_weight: number;
+            warning_weight: number;
+            grade_weight: number;
+            watch_score: number;
+            at_risk_score: number;
+        };
+        EarlyWarningPolicyWrite: components["schemas"]["EarlyWarningPolicy"];
+        /** @enum {string} */
         AnnouncementStatus: "draft" | "scheduled" | "published" | "archived";
         /** @enum {string} */
         AudienceType: "all" | "roles" | "classes" | "users";
@@ -8690,6 +8804,105 @@ export interface operations {
                 };
                 content?: never;
             };
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    listAtRiskStudents: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Students */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["StudentRisk"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getStudentRisk: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Detail */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentRiskDetail"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getEarlyWarningPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Policy */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EarlyWarningPolicy"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    updateEarlyWarningPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EarlyWarningPolicyWrite"];
+            };
+        };
+        responses: {
+            /** @description Policy */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EarlyWarningPolicy"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
         };
     };

@@ -12,6 +12,50 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const analyticsCreatePolicy = `-- name: AnalyticsCreatePolicy :exec
+insert into analytics_policies (tenant_id, version, config, effective_from, created_by)
+values ($1, $2, $3, $4, $5)
+on conflict (tenant_id, version) do nothing
+`
+
+type AnalyticsCreatePolicyParams struct {
+	TenantID      uuid.UUID   `json:"tenant_id"`
+	Version       int32       `json:"version"`
+	Config        []byte      `json:"config"`
+	EffectiveFrom pgtype.Date `json:"effective_from"`
+	CreatedBy     pgtype.UUID `json:"created_by"`
+}
+
+func (q *Queries) AnalyticsCreatePolicy(ctx context.Context, arg AnalyticsCreatePolicyParams) error {
+	_, err := q.db.Exec(ctx, analyticsCreatePolicy,
+		arg.TenantID,
+		arg.Version,
+		arg.Config,
+		arg.EffectiveFrom,
+		arg.CreatedBy,
+	)
+	return err
+}
+
+const analyticsGetLatestPolicy = `-- name: AnalyticsGetLatestPolicy :one
+select config, version from analytics_policies
+where tenant_id = $1
+order by version desc
+limit 1
+`
+
+type AnalyticsGetLatestPolicyRow struct {
+	Config  []byte `json:"config"`
+	Version int32  `json:"version"`
+}
+
+func (q *Queries) AnalyticsGetLatestPolicy(ctx context.Context, tenantID uuid.UUID) (AnalyticsGetLatestPolicyRow, error) {
+	row := q.db.QueryRow(ctx, analyticsGetLatestPolicy, tenantID)
+	var i AnalyticsGetLatestPolicyRow
+	err := row.Scan(&i.Config, &i.Version)
+	return i, err
+}
+
 const createTenantPolicy = `-- name: CreateTenantPolicy :one
 insert into tenant_policies (tenant_id, kind, version, config, effective_from, created_by)
 values ($1, $2, $3, $4, $5, $6)

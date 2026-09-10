@@ -1,0 +1,179 @@
+paths:
+  /v1/analytics/at-risk-students:
+    get:
+      tags: [analytics]
+      operationId: listAtRiskStudents
+      x-permission: view_early_warning
+      summary: >-
+        Early-warning risk list, scoped to the caller: a counselor or
+        school leadership sees every class, a homeroom teacher sees only
+        their own class.
+      responses:
+        "200":
+          description: Students
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/StudentRisk" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /v1/analytics/at-risk-students/{studentId}:
+    get:
+      tags: [analytics]
+      operationId: getStudentRisk
+      x-permission: view_early_warning
+      summary: One student's risk signals and the reasons behind the level
+      parameters:
+        - { name: studentId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Detail
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StudentRiskDetail" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /v1/analytics/policy:
+    get:
+      tags: [analytics]
+      operationId: getEarlyWarningPolicy
+      x-permission: view_early_warning
+      summary: Tenant's early-warning thresholds and weights
+      responses:
+        "200":
+          description: Policy
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EarlyWarningPolicy" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    put:
+      tags: [analytics]
+      operationId: updateEarlyWarningPolicy
+      x-permission: manage_early_warning_rules
+      summary: Replace the early-warning policy (new policy version)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/EarlyWarningPolicyWrite" }
+      responses:
+        "200":
+          description: Policy
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EarlyWarningPolicy" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+components:
+  schemas:
+    RiskLevel:
+      type: string
+      enum: [none, watch, at_risk]
+    RiskReason:
+      type: object
+      required: [code, weight, params]
+      description: >-
+        One observation that contributed to the level: a stable code plus
+        the exact numbers observed (e.g. absent_days, considered_days),
+        never a characterisation of the student. The UI renders the code
+        as localized text with the params filled in.
+      properties:
+        code: { type: string }
+        weight: { type: integer }
+        params:
+          type: object
+          additionalProperties: true
+    RiskSignals:
+      type: object
+      required:
+        [
+          has_attendance,
+          considered_days,
+          absent_days,
+          active_violation_count,
+          discipline_points,
+          warning_letter_count,
+          has_grade_trend,
+          previous_average,
+          current_average,
+        ]
+      properties:
+        has_attendance: { type: boolean }
+        considered_days: { type: integer }
+        absent_days: { type: integer }
+        active_violation_count: { type: integer }
+        discipline_points: { type: integer }
+        warning_letter_count: { type: integer }
+        has_grade_trend: { type: boolean }
+        previous_average: { type: number }
+        current_average: { type: number }
+    StudentRisk:
+      type: object
+      required: [student_user_id, class_id, level, score, computed_at]
+      properties:
+        student_user_id: { type: string, format: uuid }
+        class_id: { type: string, format: uuid }
+        level: { $ref: "#/components/schemas/RiskLevel" }
+        score: { type: integer }
+        computed_at: { type: string, format: date-time }
+    StudentRiskDetail:
+      type: object
+      required: [student_user_id, class_id, level, score, signals, reasons, computed_at]
+      properties:
+        student_user_id: { type: string, format: uuid }
+        class_id: { type: string, format: uuid }
+        level: { $ref: "#/components/schemas/RiskLevel" }
+        score: { type: integer }
+        signals: { $ref: "#/components/schemas/RiskSignals" }
+        reasons: { type: array, items: { $ref: "#/components/schemas/RiskReason" } }
+        computed_at: { type: string, format: date-time }
+    EarlyWarningPolicy:
+      type: object
+      required:
+        [
+          version,
+          window_days,
+          attendance_watch_rate,
+          attendance_at_risk_rate,
+          discipline_watch_points,
+          discipline_at_risk_points,
+          warning_letter_watch_count,
+          warning_letter_at_risk_count,
+          grade_drop_watch_points,
+          grade_drop_at_risk_points,
+          attendance_weight,
+          discipline_weight,
+          warning_weight,
+          grade_weight,
+          watch_score,
+          at_risk_score,
+        ]
+      properties:
+        version: { type: integer }
+        window_days: { type: integer, minimum: 1 }
+        attendance_watch_rate: { type: number, minimum: 0, maximum: 1 }
+        attendance_at_risk_rate: { type: number, minimum: 0, maximum: 1 }
+        discipline_watch_points: { type: integer, minimum: 1 }
+        discipline_at_risk_points: { type: integer, minimum: 1 }
+        warning_letter_watch_count: { type: integer, minimum: 1 }
+        warning_letter_at_risk_count: { type: integer, minimum: 1 }
+        grade_drop_watch_points: { type: number, minimum: 0 }
+        grade_drop_at_risk_points: { type: number, minimum: 0 }
+        attendance_weight: { type: integer, minimum: 1 }
+        discipline_weight: { type: integer, minimum: 1 }
+        warning_weight: { type: integer, minimum: 1 }
+        grade_weight: { type: integer, minimum: 1 }
+        watch_score: { type: integer, minimum: 1 }
+        at_risk_score: { type: integer, minimum: 1 }
+    EarlyWarningPolicyWrite:
+      allOf:
+        - $ref: "#/components/schemas/EarlyWarningPolicy"
