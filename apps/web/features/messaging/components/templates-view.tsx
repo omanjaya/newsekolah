@@ -142,12 +142,15 @@ export function TemplatesView(): ReactElement {
       ) : (
         <ul className="flex flex-col divide-y divide-border">
           {templates.map((template) => (
-            <li key={template.id} className="flex items-center justify-between gap-4 py-3">
-              <div>
-                <p className="text-[14px] font-medium text-fg">{template.name}</p>
-                <p className="text-[13px] text-fg-muted">{template.meta_template_name}</p>
+            <li
+              key={template.id}
+              className="flex flex-wrap items-center justify-between gap-4 py-3"
+            >
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[14px] font-medium text-fg">{template.name}</p>
+                <p className="truncate text-[13px] text-fg-muted">{template.meta_template_name}</p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex shrink-0 gap-2">
                 <Button
                   variant="ghost"
                   onClick={() => {
