@@ -1,12 +1,15 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { ReactElement, ReactNode } from "react";
 
 import { navigation, filterNavigation } from "../lib/navigation";
+import { permissionForPath } from "../lib/navigation-permissions";
 import { useSession } from "../lib/session/session-provider";
 
 import { CommandPaletteProvider } from "./command-palette-provider";
+import { ForbiddenPage } from "./forbidden-page";
 import { Header } from "./header";
 import { ImpersonationBanner } from "./impersonation-banner";
 import { MobileTabBar } from "./mobile-tab-bar";
@@ -22,11 +25,21 @@ import { UpdateAvailable } from "./update-available";
 export function AppShell({ children }: { children: ReactNode }): ReactElement {
   const { me } = useSession();
   const t = useTranslations("app.shell");
+  const pathname = usePathname();
   const items = filterNavigation(
     navigation,
     (permission) => me?.permissions.includes(permission) ?? false,
     me?.profile_kind,
   );
+
+  // A page the reader cannot use would otherwise render its own empty
+  // state, because the API refuses each query separately and the screen
+  // reads that as "nothing here yet". The permission comes from the
+  // navigation registry, where every page already declares it. This sits
+  // inside the shell rather than around it, so a refusal still leaves the
+  // reader somewhere to go.
+  const required = permissionForPath(pathname);
+  const allowed = !required || (me?.permissions.includes(required) ?? false);
 
   return (
     <CommandPaletteProvider>
@@ -40,7 +53,7 @@ export function AppShell({ children }: { children: ReactNode }): ReactElement {
           <ImpersonationBanner />
           <OfflineIndicator />
           <main id="main-content" className="flex-1 pb-20 md:pb-0">
-            {children}
+            {allowed ? children : <ForbiddenPage />}
           </main>
         </div>
       </div>
