@@ -25,6 +25,7 @@ export function AppShell({ children }: { children: ReactNode }): ReactElement {
   const items = filterNavigation(
     navigation,
     (permission) => me?.permissions.includes(permission) ?? false,
+    me?.profile_kind,
   );
 
   return (
