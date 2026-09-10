@@ -34,7 +34,7 @@ export function NotificationPanel({ onNavigate }: { onNavigate: () => void }): R
   const hasUnread = items.some((n) => !n.read_at);
 
   return (
-    <div className="flex w-80 max-w-[calc(100vw-2rem)] flex-col">
+    <div className="flex w-full flex-col">
       <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-2">
         <span className="text-[13px] font-medium text-fg">{t("title")}</span>
         <Button

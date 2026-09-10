@@ -39,7 +39,12 @@ export function NotificationBell(): ReactElement {
           </span>
         )}
       </span>
-      <PopoverContent align="end" className="p-0">
+      {/*
+        The width belongs on the popover itself. Setting it on the content
+        inside made it wider than the box it sits in, so the text spilled
+        past the panel's own background and onto the page behind it.
+      */}
+      <PopoverContent align="end" className="w-80 max-w-[calc(100vw-2rem)] p-0">
         <NotificationPanel
           onNavigate={() => {
             setOpen(false);
