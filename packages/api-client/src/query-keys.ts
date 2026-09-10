@@ -76,6 +76,15 @@ export const queryKeys = {
   documentTemplates: () => ["documents", "templates"] as const,
   tenantNotificationDefault: (kind: string) => ["tenant", "notification-defaults", kind] as const,
 
+  staffAttendanceRoster: () => ["staff-attendance", "roster"] as const,
+  staffAttendanceSchedule: (employeeId: string) =>
+    ["staff-attendance", "schedule", employeeId] as const,
+  staffAttendanceToday: (date: string) => ["staff-attendance", "today", date] as const,
+  staffAttendanceHistory: (employeeId: string, from: string, to: string) =>
+    ["staff-attendance", "history", employeeId, from, to] as const,
+  staffAttendanceRecap: (employeeId: string, month: string) =>
+    ["staff-attendance", "recap", employeeId, month] as const,
+
   apiKeys: () => ["integrations", "api-keys"] as const,
   webhookEndpoints: () => ["integrations", "webhook-endpoints"] as const,
   webhookEventTypes: () => ["integrations", "event-types"] as const,

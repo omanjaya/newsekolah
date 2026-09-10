@@ -1,0 +1,105 @@
+{
+  "navLabel": "Presensi Pegawai",
+  "title": "Presensi Pegawai",
+  "tabs": {
+    "today": "Hari Ini",
+    "schedule": "Jadwal Kerja",
+    "recap": "Rekap Bulanan"
+  },
+  "statuses": {
+    "present": "Hadir",
+    "late": "Terlambat",
+    "absent": "Tidak hadir",
+    "on_leave": "Cuti atau izin",
+    "holiday": "Libur",
+    "incomplete": "Belum lengkap"
+  },
+  "sources": {
+    "qr": "Pindai QR",
+    "manual": "Entri manual",
+    "import": "Impor perangkat"
+  },
+  "today": {
+    "title": "Papan Hari Ini",
+    "subtitle": "Status kehadiran setiap pegawai yang memiliki jadwal kerja",
+    "empty": "Belum ada pegawai dengan jadwal kerja. Atur jadwal kerja terlebih dahulu.",
+    "scan": "Catat Kehadiran Saya",
+    "scanSuccess": "Kehadiran tercatat",
+    "alreadyScanned": "Kedatangan dan kepulangan hari ini sudah tercatat",
+    "manualEntry": "Entri Manual",
+    "columns": {
+      "employee": "Pegawai",
+      "status": "Status",
+      "arrival": "Datang",
+      "departure": "Pulang",
+      "late": "Terlambat (menit)",
+      "early": "Pulang cepat (menit)",
+      "source": "Sumber",
+      "actions": "Aksi"
+    },
+    "correct": "Koreksi"
+  },
+  "manualForm": {
+    "title": "Entri Manual",
+    "employee": "Pegawai",
+    "employeePlaceholder": "Pilih pegawai",
+    "date": "Tanggal",
+    "arrival": "Waktu datang",
+    "departure": "Waktu pulang",
+    "notes": "Catatan",
+    "save": "Simpan",
+    "cancel": "Batal",
+    "saved": "Catatan tersimpan"
+  },
+  "schedule": {
+    "title": "Jadwal Kerja",
+    "subtitle": "Jam kerja yang diharapkan untuk setiap hari dalam seminggu",
+    "employee": "Pegawai",
+    "employeePlaceholder": "Pilih pegawai",
+    "isWorkingDay": "Hari kerja",
+    "start": "Mulai",
+    "end": "Selesai",
+    "grace": "Toleransi (menit)",
+    "endHint": "Isi jam selesai lebih awal dari jam mulai untuk shift yang melewati tengah malam",
+    "save": "Simpan Jadwal",
+    "saved": "Jadwal tersimpan",
+    "weekdays": {
+      "1": "Senin",
+      "2": "Selasa",
+      "3": "Rabu",
+      "4": "Kamis",
+      "5": "Jumat",
+      "6": "Sabtu",
+      "7": "Minggu"
+    }
+  },
+  "history": {
+    "title": "Riwayat Kehadiran",
+    "from": "Dari",
+    "to": "Sampai",
+    "empty": "Tidak ada catatan pada rentang tanggal ini",
+    "date": "Tanggal"
+  },
+  "recap": {
+    "title": "Rekap Bulanan",
+    "month": "Bulan",
+    "download": "Unduh XLSX",
+    "totalLate": "Total keterlambatan (menit)",
+    "totalEarly": "Total pulang cepat (menit)",
+    "empty": "Tidak ada catatan pada bulan ini"
+  },
+  "correction": {
+    "title": "Koreksi Catatan",
+    "body": "Perubahan ini tercatat sebagai koreksi beserta alasannya.",
+    "arrival": "Waktu datang",
+    "departure": "Waktu pulang",
+    "clearArrival": "Hapus waktu datang",
+    "clearDeparture": "Hapus waktu pulang",
+    "notes": "Catatan",
+    "reason": "Alasan koreksi",
+    "reasonRequired": "Alasan wajib diisi",
+    "save": "Simpan Koreksi",
+    "cancel": "Batal",
+    "saved": "Koreksi tersimpan"
+  }
+}

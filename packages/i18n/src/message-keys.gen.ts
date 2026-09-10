@@ -86,6 +86,7 @@ export type MessageKey =
   | "errors.LIBRARY_STOCKTAKE_CLOSED"
   | "errors.LIBRARY_STOCKTAKE_NOT_FOUND"
   | "errors.LIBRARY_TITLE_NOT_FOUND"
+  | "errors.MODULE_DISABLED"
   | "errors.NETWORK"
   | "errors.NOT_FOUND"
   | "errors.NOT_IMPERSONATING"
@@ -99,6 +100,10 @@ export type MessageKey =
   | "errors.SSO_CLIENT_SECRET_REQUIRED"
   | "errors.SSO_INVALID_TOKEN"
   | "errors.SSO_NOT_CONFIGURED"
+  | "errors.STAFF_ATTENDANCE_ALREADY_SCANNED"
+  | "errors.STAFF_ATTENDANCE_CORRECTION_REASON_REQUIRED"
+  | "errors.STAFF_ATTENDANCE_INVALID_MONTH"
+  | "errors.STAFF_ATTENDANCE_SCHEDULE_DAY_INVALID"
   | "errors.TENANT_NOT_FOUND"
   | "errors.UNKNOWN"
   | "errors.UPLOAD_FILE_TOO_LARGE"
@@ -266,6 +271,7 @@ export const MESSAGE_KEYS: readonly MessageKey[] = [
   "errors.LIBRARY_STOCKTAKE_CLOSED",
   "errors.LIBRARY_STOCKTAKE_NOT_FOUND",
   "errors.LIBRARY_TITLE_NOT_FOUND",
+  "errors.MODULE_DISABLED",
   "errors.NETWORK",
   "errors.NOT_FOUND",
   "errors.NOT_IMPERSONATING",
@@ -279,6 +285,10 @@ export const MESSAGE_KEYS: readonly MessageKey[] = [
   "errors.SSO_CLIENT_SECRET_REQUIRED",
   "errors.SSO_INVALID_TOKEN",
   "errors.SSO_NOT_CONFIGURED",
+  "errors.STAFF_ATTENDANCE_ALREADY_SCANNED",
+  "errors.STAFF_ATTENDANCE_CORRECTION_REASON_REQUIRED",
+  "errors.STAFF_ATTENDANCE_INVALID_MONTH",
+  "errors.STAFF_ATTENDANCE_SCHEDULE_DAY_INVALID",
   "errors.TENANT_NOT_FOUND",
   "errors.UNKNOWN",
   "errors.UPLOAD_FILE_TOO_LARGE",

@@ -5,6 +5,7 @@ import {
   CalendarDays,
   ClipboardList,
   FileBarChart,
+  Fingerprint,
   GraduationCap,
   Home,
   MonitorSmartphone,
@@ -113,6 +114,14 @@ export const navigation: NavItem[] = [
     href: "/attendance/reports",
     icon: FileBarChart,
     permission: "view_reports",
+    group: GROUP.academic,
+  },
+  {
+    key: "staff-attendance",
+    labelKey: "app.staffAttendance.navLabel",
+    href: "/staff-attendance",
+    icon: Fingerprint,
+    permission: "view_staff_attendance",
     group: GROUP.academic,
   },
   {

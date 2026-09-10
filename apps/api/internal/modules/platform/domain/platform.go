@@ -75,17 +75,21 @@ const (
 type Module string
 
 const (
-	ModuleLibrary       Module = "library"
-	ModuleDiscipline    Module = "discipline"
-	ModuleGrading       Module = "grading"
-	ModulePermits       Module = "permits"
-	ModuleAnnouncements Module = "announcements"
-	ModuleReports       Module = "reports"
+	ModuleLibrary         Module = "library"
+	ModuleDiscipline      Module = "discipline"
+	ModuleGrading         Module = "grading"
+	ModulePermits         Module = "permits"
+	ModuleAnnouncements   Module = "announcements"
+	ModuleReports         Module = "reports"
+	ModuleStaffAttendance Module = "staff_attendance"
 )
 
 // AllModules lists every module the console can toggle, in the fixed order
 // a tenant detail view renders them.
-var AllModules = []Module{ModuleLibrary, ModuleDiscipline, ModuleGrading, ModulePermits, ModuleAnnouncements, ModuleReports}
+var AllModules = []Module{
+	ModuleLibrary, ModuleDiscipline, ModuleGrading, ModulePermits, ModuleAnnouncements, ModuleReports,
+	ModuleStaffAttendance,
+}
 
 func (m Module) Valid() bool {
 	for _, v := range AllModules {

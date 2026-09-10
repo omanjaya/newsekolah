@@ -239,6 +239,7 @@ type Querier interface {
 	CreateScanToken(ctx context.Context, arg CreateScanTokenParams) (ScanToken, error)
 	CreateSchedule(ctx context.Context, arg CreateScheduleParams) (Schedule, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error)
+	CreateStaffAttendanceCorrection(ctx context.Context, arg CreateStaffAttendanceCorrectionParams) (StaffAttendanceCorrection, error)
 	CreateStocktake(ctx context.Context, arg CreateStocktakeParams) (LibraryStocktake, error)
 	CreateSubstitutionRequest(ctx context.Context, arg CreateSubstitutionRequestParams) (SubstitutionRequest, error)
 	CreateTenant(ctx context.Context, arg CreateTenantParams) (Tenant, error)
@@ -401,6 +402,8 @@ type Querier interface {
 	GetSessionByID(ctx context.Context, arg GetSessionByIDParams) (Session, error)
 	GetSessionByRefreshHash(ctx context.Context, arg GetSessionByRefreshHashParams) (Session, error)
 	GetSingleTenant(ctx context.Context) (Tenant, error)
+	GetStaffAttendanceRecord(ctx context.Context, arg GetStaffAttendanceRecordParams) (StaffAttendanceRecord, error)
+	GetStaffAttendanceRecordByEmployeeDate(ctx context.Context, arg GetStaffAttendanceRecordByEmployeeDateParams) (StaffAttendanceRecord, error)
 	GetStaffProfile(ctx context.Context, arg GetStaffProfileParams) (StaffProfile, error)
 	GetStocktake(ctx context.Context, arg GetStocktakeParams) (LibraryStocktake, error)
 	GetStudentGuardianName(ctx context.Context, arg GetStudentGuardianNameParams) (string, error)
@@ -619,6 +622,15 @@ type Querier interface {
 	ListSchedulesByClass(ctx context.Context, arg ListSchedulesByClassParams) ([]Schedule, error)
 	ListSchedulesByDay(ctx context.Context, arg ListSchedulesByDayParams) ([]Schedule, error)
 	ListSchedulesByTeacher(ctx context.Context, arg ListSchedulesByTeacherParams) ([]Schedule, error)
+	ListStaffAttendanceCorrectionsByRecord(ctx context.Context, arg ListStaffAttendanceCorrectionsByRecordParams) ([]StaffAttendanceCorrection, error)
+	ListStaffAttendanceRecordsByDate(ctx context.Context, arg ListStaffAttendanceRecordsByDateParams) ([]StaffAttendanceRecord, error)
+	ListStaffAttendanceRecordsByEmployeeRange(ctx context.Context, arg ListStaffAttendanceRecordsByEmployeeRangeParams) ([]StaffAttendanceRecord, error)
+	// The module's own roster: every user who has at least one schedule day
+	// configured, per apps/api/migrations/0070_staff_attendance.up.sql's
+	// header note that the schedule table is the source of "who counts as
+	// staff" for this module.
+	ListStaffAttendanceRosterEmployees(ctx context.Context, tenantID uuid.UUID) ([]ListStaffAttendanceRosterEmployeesRow, error)
+	ListStaffAttendanceScheduleDays(ctx context.Context, arg ListStaffAttendanceScheduleDaysParams) ([]StaffAttendanceSchedule, error)
 	ListStarBalancesForClass(ctx context.Context, arg ListStarBalancesForClassParams) ([]ListStarBalancesForClassRow, error)
 	ListStarEventsForStudent(ctx context.Context, arg ListStarEventsForStudentParams) ([]StarEvent, error)
 	ListStocktakeScans(ctx context.Context, arg ListStocktakeScansParams) ([]LibraryStocktakeScan, error)
@@ -716,6 +728,10 @@ type Querier interface {
 	RecordStocktakeScan(ctx context.Context, arg RecordStocktakeScanParams) (LibraryStocktakeScan, error)
 	RenameWebAuthnCredential(ctx context.Context, arg RenameWebAuthnCredentialParams) (WebauthnCredential, error)
 	RenewLoan(ctx context.Context, arg RenewLoanParams) (LibraryLoan, error)
+	// Used by a correction: writes the corrected fields directly (as opposed
+	// to UpsertStaffAttendanceRecord's coalesce-on-conflict, which never
+	// clears a timestamp back to NULL).
+	ReplaceStaffAttendanceRecordFields(ctx context.Context, arg ReplaceStaffAttendanceRecordFieldsParams) (StaffAttendanceRecord, error)
 	ResetWebhookEndpointFailure(ctx context.Context, arg ResetWebhookEndpointFailureParams) error
 	RespondSubstitutionRequest(ctx context.Context, arg RespondSubstitutionRequestParams) (SubstitutionRequest, error)
 	RestoreUser(ctx context.Context, arg RestoreUserParams) error
@@ -739,6 +755,14 @@ type Querier interface {
 	// where the table has one.
 	SetupCounts(ctx context.Context, arg SetupCountsParams) (SetupCountsRow, error)
 	SoftDeleteDutyType(ctx context.Context, arg SoftDeleteDutyTypeParams) error
+	StaffAttendanceGetEmployeeName(ctx context.Context, arg StaffAttendanceGetEmployeeNameParams) (string, error)
+	// Reads the shared feature_flags table (owned by platform, migration
+	// 0001) directly within the caller's ordinary tenant-scoped transaction:
+	// the tenant_isolation policy on feature_flags already allows this, no
+	// platform_admin escalation needed, per
+	// docs/03-layered-architecture.md section 5 ("setiap modul ... memeriksa
+	// school.feature_flags").
+	StaffAttendanceGetFeatureFlag(ctx context.Context, arg StaffAttendanceGetFeatureFlagParams) (bool, error)
 	StarBalance(ctx context.Context, arg StarBalanceParams) (int32, error)
 	SubmitAttendanceSession(ctx context.Context, arg SubmitAttendanceSessionParams) (AttendanceSession, error)
 	SumActivePoints(ctx context.Context, arg SumActivePointsParams) (int32, error)
@@ -782,6 +806,8 @@ type Querier interface {
 	UpsertPublication(ctx context.Context, arg UpsertPublicationParams) (GradePublication, error)
 	UpsertPushDevice(ctx context.Context, arg UpsertPushDeviceParams) (PushDevice, error)
 	UpsertReportScore(ctx context.Context, arg UpsertReportScoreParams) (ReportScore, error)
+	UpsertStaffAttendanceRecord(ctx context.Context, arg UpsertStaffAttendanceRecordParams) (StaffAttendanceRecord, error)
+	UpsertStaffAttendanceScheduleDay(ctx context.Context, arg UpsertStaffAttendanceScheduleDayParams) (StaffAttendanceSchedule, error)
 	UpsertStaffProfile(ctx context.Context, arg UpsertStaffProfileParams) error
 	UpsertStudentProfile(ctx context.Context, arg UpsertStudentProfileParams) error
 	UpsertTPMapping(ctx context.Context, arg UpsertTPMappingParams) (ReportTpMapping, error)

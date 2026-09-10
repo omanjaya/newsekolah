@@ -233,6 +233,11 @@
     "LIBRARY_RESERVATION_NOT_WAITING": "Reservasi ini sudah tidak dalam antrean",
     "LIBRARY_COPY_AVAILABLE_FOR_LOAN": "Eksemplar ini belum dipinjam",
     "LIBRARY_STOCKTAKE_NOT_FOUND": "Sesi opname tidak ditemukan",
-    "LIBRARY_STOCKTAKE_CLOSED": "Sesi opname ini sudah ditutup"
+    "LIBRARY_STOCKTAKE_CLOSED": "Sesi opname ini sudah ditutup",
+    "MODULE_DISABLED": "Modul ini tidak aktif untuk sekolah Anda",
+    "STAFF_ATTENDANCE_SCHEDULE_DAY_INVALID": "Jadwal kerja yang dimasukkan tidak valid",
+    "STAFF_ATTENDANCE_ALREADY_SCANNED": "Kedatangan dan kepulangan hari ini sudah tercatat",
+    "STAFF_ATTENDANCE_CORRECTION_REASON_REQUIRED": "Koreksi memerlukan alasan",
+    "STAFF_ATTENDANCE_INVALID_MONTH": "Format bulan tidak valid"
   }
 }

@@ -21,6 +21,7 @@ import (
 	reportshttp "github.com/omanjaya/newsekolah/apps/api/internal/modules/reports/transport/http"
 	schedulinghttp "github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling/transport/http"
 	schoolhttp "github.com/omanjaya/newsekolah/apps/api/internal/modules/school/transport/http"
+	staffattendancehttp "github.com/omanjaya/newsekolah/apps/api/internal/modules/staffattendance/transport/http"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
 )
 
@@ -44,6 +45,7 @@ type combinedServer struct {
 	*libraryhttp.LibraryHandler
 	*integrationshttp.IntegrationsHandler
 	*analyticshttp.AnalyticsHandler
+	*staffattendancehttp.StaffAttendanceHandler
 	*healthHandler
 }
 

@@ -32,6 +32,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/reports"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/school"
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/staffattendance"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/auth"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/authz"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
@@ -134,6 +135,12 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		Blocker: permitsBlocker{svc: permitsModule.Service}, Overrider: permitsOverrider{svc: permitsModule.Service},
 	})
 	sync.inner = attendanceSyncAdapter{force: attendanceModule.Service.ForceStatus}
+
+	staffAttendanceModule := staffattendance.Register(staffattendance.Dependencies{
+		Pool: pool, Years: schoolModule.Service,
+		Calendar: wiring.StaffAttendanceCalendar{Academic: academicModule.Service},
+		Leave:    wiring.StaffAttendanceLeave{Permits: permitsModule.Service},
+	})
 
 	gradingModule := grading.Register(grading.Dependencies{
 		Pool: pool, Years: schoolModule.Service, Perms: identityModule.Service, Clock: clock.Real{},
@@ -253,23 +260,24 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	}
 
 	server := &combinedServer{
-		Handler:              identityModule.Handler,
-		TenantHandler:        schoolModule.Handler,
-		SchedulingHandler:    schedulingModule.Handler,
-		AttendanceHandler:    attendanceModule.Handler,
-		AcademicHandler:      academicModule.Handler,
-		PermitsHandler:       permitsModule.Handler,
-		NotificationsHandler: notificationsModule.Handler,
-		AnnouncementsHandler: announcementsModule.Handler,
-		DisciplineHandler:    disciplineModule.Handler,
-		GradingHandler:       gradingModule.Handler,
-		ReportsHandler:       reportsModule.Handler,
-		FamilyHandler:        familyModule.Handler,
-		PlatformHandler:      platformModule.Handler,
-		LibraryHandler:       libraryModule.Handler,
-		IntegrationsHandler:  integrationsModule.Handler,
-		AnalyticsHandler:     analyticsModule.Handler,
-		healthHandler:        &healthHandler{version: version, pool: pool, redis: redisClient},
+		Handler:                identityModule.Handler,
+		TenantHandler:          schoolModule.Handler,
+		SchedulingHandler:      schedulingModule.Handler,
+		AttendanceHandler:      attendanceModule.Handler,
+		AcademicHandler:        academicModule.Handler,
+		PermitsHandler:         permitsModule.Handler,
+		NotificationsHandler:   notificationsModule.Handler,
+		AnnouncementsHandler:   announcementsModule.Handler,
+		DisciplineHandler:      disciplineModule.Handler,
+		GradingHandler:         gradingModule.Handler,
+		ReportsHandler:         reportsModule.Handler,
+		FamilyHandler:          familyModule.Handler,
+		PlatformHandler:        platformModule.Handler,
+		LibraryHandler:         libraryModule.Handler,
+		IntegrationsHandler:    integrationsModule.Handler,
+		AnalyticsHandler:       analyticsModule.Handler,
+		StaffAttendanceHandler: staffAttendanceModule.Handler,
+		healthHandler:          &healthHandler{version: version, pool: pool, redis: redisClient},
 	}
 
 	strict := api.NewStrictHandlerWithOptions(

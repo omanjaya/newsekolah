@@ -17,6 +17,7 @@ sql:
       - "internal/modules/platform/queries"
       - "internal/modules/integrations/queries"
       - "internal/modules/analytics/queries"
+      - "internal/modules/staffattendance/queries"
     schema: "migrations"
     gen:
       go:

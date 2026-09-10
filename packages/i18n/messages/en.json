@@ -233,6 +233,11 @@
     "LIBRARY_RESERVATION_NOT_WAITING": "This reservation is no longer in the queue",
     "LIBRARY_COPY_AVAILABLE_FOR_LOAN": "This copy has not been borrowed",
     "LIBRARY_STOCKTAKE_NOT_FOUND": "Stocktake session not found",
-    "LIBRARY_STOCKTAKE_CLOSED": "This stocktake session is already closed"
+    "LIBRARY_STOCKTAKE_CLOSED": "This stocktake session is already closed",
+    "MODULE_DISABLED": "This module is not enabled for your school",
+    "STAFF_ATTENDANCE_SCHEDULE_DAY_INVALID": "The work schedule you entered is not valid",
+    "STAFF_ATTENDANCE_ALREADY_SCANNED": "Today's arrival and departure are already recorded",
+    "STAFF_ATTENDANCE_CORRECTION_REASON_REQUIRED": "A correction requires a reason",
+    "STAFF_ATTENDANCE_INVALID_MONTH": "Invalid month format"
   }
 }
