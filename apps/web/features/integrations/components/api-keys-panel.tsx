@@ -106,11 +106,11 @@ export function APIKeysPanel(): ReactElement {
         <p className="text-[13px] text-fg-muted">{t("description")}</p>
         <Button
           size="sm"
+          icon={<Plus />}
           onClick={() => {
             setCreateOpen(true);
           }}
         >
-          <Plus aria-hidden="true" />
           {t("createButton")}
         </Button>
       </div>

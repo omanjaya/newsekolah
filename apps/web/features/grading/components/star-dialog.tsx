@@ -82,7 +82,7 @@ export function StarDialog({
                 setDelta(1);
               }}
               className={cn(
-                "flex flex-1 items-center justify-center gap-1.5 rounded-xs border border-border px-3 py-2 text-[13px] font-medium",
+                "flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xs border border-border px-3 py-2 text-[13px] font-medium md:min-h-0",
                 delta === 1 ? "border-accent bg-accent/10 text-accent" : "text-fg hover:bg-bg",
               )}
             >
@@ -97,7 +97,7 @@ export function StarDialog({
                 setDelta(-1);
               }}
               className={cn(
-                "flex flex-1 items-center justify-center gap-1.5 rounded-xs border border-border px-3 py-2 text-[13px] font-medium",
+                "flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xs border border-border px-3 py-2 text-[13px] font-medium md:min-h-0",
                 delta === -1
                   ? "border-status-absent bg-status-absent/10 text-status-absent"
                   : "text-fg hover:bg-bg",

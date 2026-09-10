@@ -91,8 +91,12 @@ export function WebhookDeliveriesPanel({
       header: "",
       cell: ({ row }) =>
         row.original.status === "failed" ? (
-          <Button variant="secondary" size="sm" onClick={() => void handleRetry(row.original)}>
-            <RotateCw aria-hidden="true" />
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={<RotateCw />}
+            onClick={() => void handleRetry(row.original)}
+          >
             {t("retry")}
           </Button>
         ) : null,

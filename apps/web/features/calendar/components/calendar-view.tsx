@@ -66,8 +66,20 @@ export function CalendarView(): ReactElement {
   const updateMutation = useUpdateCalendarEventMutation();
   const deleteMutation = useDeleteCalendarEventMutation();
 
-  const events = query.data?.data ?? [];
+  const events = useMemo(() => query.data?.data ?? [], [query.data]);
   const days = useMemo(() => buildMonthGrid(month), [month]);
+  const agendaDays = useMemo(
+    () =>
+      days
+        .filter((d) => d.inMonth)
+        .map(({ date }) => ({
+          date,
+          iso: toISODate(date),
+          dayEvents: eventsForDay(events, toISODate(date)),
+        }))
+        .filter((d) => d.dayEvents.length > 0),
+    [days, events],
+  );
 
   function handleError(error: unknown) {
     toast.error(
@@ -121,45 +133,90 @@ export function CalendarView(): ReactElement {
       {query.isLoading ? (
         <Skeleton className="h-96 w-full" aria-busy="true" />
       ) : (
-        <div className="grid grid-cols-7 gap-px overflow-hidden rounded-xs border border-border bg-border text-[13px]">
-          {(t.raw("weekdays") as string[]).map((label) => (
-            <div key={label} className="bg-surface px-2 py-1 text-center font-medium text-fg-muted">
-              {label}
-            </div>
-          ))}
-          {days.map(({ date, inMonth }) => {
-            const iso = toISODate(date);
-            const dayEvents = eventsForDay(events, iso);
-            return (
+        <>
+          {/* Desktop and tablet: full month grid. Seven columns need real width to stay legible,
+              so this stays hidden below md and the agenda list below takes over. */}
+          <div className="hidden grid-cols-7 gap-px overflow-hidden rounded-xs border border-border bg-border text-[13px] md:grid">
+            {(t.raw("weekdays") as string[]).map((label) => (
               <div
-                key={iso}
-                className={`flex min-h-24 flex-col gap-1 bg-surface p-1.5 ${inMonth ? "" : "opacity-40"}`}
+                key={label}
+                className="bg-surface px-2 py-1 text-center font-medium text-fg-muted"
               >
-                <span className="text-[12px] text-fg-muted">{date.getDate()}</span>
-                {dayEvents.map((e) => (
-                  <button
-                    key={e.id}
-                    type="button"
-                    disabled={!canManage}
-                    onClick={() => {
-                      setEditing(e);
-                      setDefaultDate(iso);
-                      setFormOpen(true);
-                    }}
-                    className="text-left"
-                  >
-                    <Badge
-                      variant={NON_TEACHING_KINDS.includes(e.kind) ? "accent" : "neutral"}
-                      className="w-full truncate"
-                    >
-                      {e.name}
-                    </Badge>
-                  </button>
-                ))}
+                {label}
               </div>
-            );
-          })}
-        </div>
+            ))}
+            {days.map(({ date, inMonth }) => {
+              const iso = toISODate(date);
+              const dayEvents = eventsForDay(events, iso);
+              return (
+                <div
+                  key={iso}
+                  className={`flex min-h-24 flex-col gap-1 bg-surface p-1.5 ${inMonth ? "" : "opacity-40"}`}
+                >
+                  <span className="text-[12px] text-fg-muted">{date.getDate()}</span>
+                  {dayEvents.map((e) => (
+                    <button
+                      key={e.id}
+                      type="button"
+                      disabled={!canManage}
+                      onClick={() => {
+                        setEditing(e);
+                        setDefaultDate(iso);
+                        setFormOpen(true);
+                      }}
+                      className="text-left"
+                    >
+                      <Badge
+                        variant={NON_TEACHING_KINDS.includes(e.kind) ? "accent" : "neutral"}
+                        className="w-full truncate"
+                      >
+                        {e.name}
+                      </Badge>
+                    </button>
+                  ))}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Mobile: agenda list of days that have events. A day's worth of chips reflows into
+              full-width rows instead of the grid, which has no room for touch targets or text
+              on a phone. */}
+          <div className="flex flex-col md:hidden">
+            {agendaDays.map(({ date, iso, dayEvents }) => (
+              <div key={iso} className="flex gap-3 border-b border-border py-3 last:border-b-0">
+                <div className="flex w-12 shrink-0 flex-col items-center pt-2">
+                  <span className="text-[12px] text-fg-muted">
+                    {date.toLocaleDateString(t("locale"), { weekday: "short" })}
+                  </span>
+                  <span className="text-[16px] font-medium">{date.getDate()}</span>
+                </div>
+                <div className="flex min-w-0 flex-1 flex-col gap-2">
+                  {dayEvents.map((e) => (
+                    <button
+                      key={e.id}
+                      type="button"
+                      disabled={!canManage}
+                      onClick={() => {
+                        setEditing(e);
+                        setDefaultDate(iso);
+                        setFormOpen(true);
+                      }}
+                      className="min-h-11 w-full rounded-xs border border-border px-3 py-2 text-left"
+                    >
+                      <Badge
+                        variant={NON_TEACHING_KINDS.includes(e.kind) ? "accent" : "neutral"}
+                        className="w-full truncate"
+                      >
+                        {e.name}
+                      </Badge>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
       )}
 
       {!query.isLoading && events.length === 0 && (

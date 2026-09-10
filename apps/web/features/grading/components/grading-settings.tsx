@@ -86,7 +86,7 @@ function ScaleForm(): ReactElement {
     <section className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-4">
       <h2 className="text-[16px] font-medium text-fg">{t("scaleTitle")}</h2>
       <form
-        className="grid max-w-md grid-cols-2 gap-4"
+        className="grid max-w-md grid-cols-1 gap-4 sm:grid-cols-2"
         onSubmit={(e) => {
           e.preventDefault();
           void save();
@@ -144,7 +144,7 @@ function ScaleForm(): ReactElement {
             }}
           />
         </label>
-        <div className="col-span-2 flex justify-end">
+        <div className="flex justify-end sm:col-span-2">
           <Button type="submit" loading={update.isPending}>
             {t("scaleSave")}
           </Button>
