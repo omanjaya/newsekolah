@@ -233,6 +233,23 @@
     "LIBRARY_RESERVATION_NOT_WAITING": "This reservation is no longer in the queue",
     "LIBRARY_COPY_AVAILABLE_FOR_LOAN": "This copy has not been borrowed",
     "LIBRARY_STOCKTAKE_NOT_FOUND": "Stocktake session not found",
-    "LIBRARY_STOCKTAKE_CLOSED": "This stocktake session is already closed"
+    "LIBRARY_STOCKTAKE_CLOSED": "This stocktake session is already closed",
+    "MENTOR_GROUP_NOT_FOUND": "Mentor group not found",
+    "MENTOR_GROUP_FULL": "This group has reached its member limit",
+    "MENTOR_MEMBER_ALREADY_IN_GROUP": "This student already belongs to a mentor group this academic year",
+    "MENTOR_NOTE_NOT_FOUND": "Meeting note not found",
+    "MENTOR_NOTE_FORBIDDEN": "You do not have access to this meeting note",
+    "MENTOR_SUMMARY_NOT_FOUND": "Term summary not found",
+    "MENTORING_MODULE_DISABLED": "Mentoring is not enabled for this school",
+    "SUPERVISION_CYCLE_NOT_FOUND": "Supervision cycle not found",
+    "SUPERVISION_INSTRUMENT_INVALID": "The instrument needs a name, at least one criterion, and a valid scale",
+    "SUPERVISION_SCHEDULED_NOT_FOUND": "Scheduled observation not found",
+    "SUPERVISION_SCHEDULED_ALREADY_DONE": "This scheduled observation is already completed",
+    "SUPERVISION_OBSERVATION_NOT_FOUND": "Observation not found",
+    "SUPERVISION_OBSERVATION_FORBIDDEN": "You do not have access to this observation",
+    "SUPERVISION_SCORE_COUNT_MISMATCH": "Every criterion needs exactly one score",
+    "SUPERVISION_SCORE_OUT_OF_RANGE": "A score is outside the instrument's scale",
+    "SUPERVISION_LESSON_NOT_RESOLVED": "The scheduled lesson could not be found",
+    "SUPERVISION_MODULE_DISABLED": "Supervision is not enabled for this school"
   }
 }

@@ -1,0 +1,158 @@
+{
+  "navGroupLabel": "Mentoring",
+  "navLabelGroups": "Mentor groups",
+  "navLabelMyGroups": "My groups",
+  "groups": {
+    "eyebrow": "Mentoring",
+    "title": "Mentor groups",
+    "add": "Create group",
+    "columns": {
+      "name": "Group name",
+      "mentor": "Mentor teacher",
+      "actions": "Actions"
+    },
+    "edit": "Edit",
+    "delete": "Delete",
+    "unknownMentor": "Unknown mentor",
+    "emptyTitle": "No mentor groups yet",
+    "emptyBody": "Create a group to start placing students under a mentor teacher.",
+    "tabs": {
+      "groups": "Groups",
+      "limit": "Member limit"
+    },
+    "form": {
+      "createTitle": "Create mentor group",
+      "editTitle": "Edit mentor group",
+      "mentor": "Mentor teacher",
+      "mentorPlaceholder": "Select a mentor teacher",
+      "name": "Group name",
+      "namePlaceholder": "e.g. Homeroom 10 Science 1",
+      "cancel": "Cancel",
+      "submit": "Save",
+      "saved": "Mentor group saved"
+    },
+    "deleteTitle": "Delete mentor group",
+    "deleteBody": "\"{name}\" will be deleted permanently and cannot be undone.",
+    "deleteConfirm": "Delete",
+    "deleted": "Mentor group deleted"
+  },
+  "groupSizeLimit": {
+    "label": "Member limit per group",
+    "hint": "Applies to every mentor group at this school.",
+    "submit": "Save",
+    "saved": "Member limit saved"
+  },
+  "myGroups": {
+    "eyebrow": "Mentoring",
+    "title": "My groups",
+    "columns": {
+      "name": "Group name"
+    },
+    "emptyTitle": "You are not mentoring any group yet",
+    "emptyBody": "Groups you mentor will show up here."
+  },
+  "groupDetail": {
+    "eyebrow": "Mentoring",
+    "mentorLabel": "Mentor teacher: {name}",
+    "unknownMentor": "Unknown mentor",
+    "tabs": {
+      "members": "Members",
+      "notes": "Meeting notes"
+    }
+  },
+  "members": {
+    "columns": {
+      "student": "Student"
+    },
+    "view": "View student",
+    "remove": "Remove",
+    "add": "Add member",
+    "addTitle": "Add a group member",
+    "addPlaceholder": "Select a student",
+    "addConfirm": "Add",
+    "added": "Student added to the group",
+    "cancel": "Cancel",
+    "countOfLimit": "{count} of {limit} members",
+    "atCapacity": "This group has reached its member limit. Remove another member or raise the limit to add one.",
+    "emptyTitle": "No members yet",
+    "emptyBody": "Add students to start building this group.",
+    "removeTitle": "Remove member",
+    "removeBody": "\"{name}\" will be removed from this group.",
+    "removed": "Member removed from the group",
+    "unknownStudent": "Unknown student"
+  },
+  "notes": {
+    "add": "Record a meeting",
+    "columns": {
+      "metAt": "Date",
+      "kind": "Kind",
+      "topic": "Topic",
+      "attendees": "Attendees"
+    },
+    "emptyTitle": "No meeting notes yet",
+    "emptyBody": "Mentoring meeting notes will show up here. Click a row to open it.",
+    "deleteTitle": "Delete meeting note",
+    "deleteBody": "This note will be deleted permanently and cannot be undone.",
+    "deleteConfirm": "Delete",
+    "deleted": "Meeting note deleted",
+    "unknownStudent": "Unknown student",
+    "detail": {
+      "title": "Meeting note",
+      "edit": "Edit",
+      "delete": "Delete",
+      "content": "Note content",
+      "agreedActions": "Agreed follow-up"
+    },
+    "form": {
+      "createTitle": "Record a mentoring meeting",
+      "editTitle": "Edit meeting note",
+      "metAt": "Meeting date",
+      "kind": "Meeting kind",
+      "kindOptions": {
+        "group": "Group",
+        "individual": "Individual"
+      },
+      "attendees": "Attendees",
+      "attendeesRequired": "Select at least one attendee.",
+      "topic": "Topic",
+      "topicPlaceholder": "A short summary of the topic",
+      "content": "Note content",
+      "contentPlaceholder": "What was discussed",
+      "agreedActions": "Agreed follow-up",
+      "agreedActionsPlaceholder": "Optional",
+      "cancel": "Cancel",
+      "submit": "Save",
+      "saved": "Meeting note saved",
+      "unknownStudent": "Unknown student"
+    }
+  },
+  "studentView": {
+    "eyebrow": "Mentoring",
+    "attendance": {
+      "title": "This month's attendance",
+      "empty": "No attendance recorded this month yet."
+    },
+    "discipline": {
+      "title": "Discipline",
+      "points": "Discipline points",
+      "active": "Active violations"
+    },
+    "grades": {
+      "title": "Published report grades",
+      "empty": "No published grades yet.",
+      "unknownSubject": "Unknown subject"
+    },
+    "termSummary": {
+      "title": "Term summary"
+    }
+  },
+  "termSummary": {
+    "term": "Term",
+    "termPlaceholder": "Select a term",
+    "selectTermFirst": "Select a term to read or write its summary.",
+    "empty": "No term summary has been written for this student yet.",
+    "placeholder": "Write this student's progress summary for this term",
+    "saved": "Term summary saved",
+    "submit": "Save"
+  }
+}

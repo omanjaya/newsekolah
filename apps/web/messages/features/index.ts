@@ -33,6 +33,8 @@ import journalEn from "./journal.en.json";
 import journalId from "./journal.id.json";
 import libraryEn from "./library.en.json";
 import libraryId from "./library.id.json";
+import mentoringEn from "./mentoring.en.json";
+import mentoringId from "./mentoring.id.json";
 import messagingEn from "./messaging.en.json";
 import messagingId from "./messaging.id.json";
 import monitorEn from "./monitor.en.json";
@@ -49,6 +51,8 @@ import securityEn from "./security.en.json";
 import securityId from "./security.id.json";
 import ssoEn from "./sso.en.json";
 import ssoId from "./sso.id.json";
+import supervisionEn from "./supervision.en.json";
+import supervisionId from "./supervision.id.json";
 import workflowsEn from "./workflows.en.json";
 import workflowsId from "./workflows.id.json";
 
@@ -79,3 +83,5 @@ registerFeatureMessages({ namespace: "workflows", id: workflowsId, en: workflows
 registerFeatureMessages({ namespace: "messaging", id: messagingId, en: messagingEn });
 registerFeatureMessages({ namespace: "journal", id: journalId, en: journalEn });
 registerFeatureMessages({ namespace: "monitor", id: monitorId, en: monitorEn });
+registerFeatureMessages({ namespace: "mentoring", id: mentoringId, en: mentoringEn });
+registerFeatureMessages({ namespace: "supervision", id: supervisionId, en: supervisionEn });

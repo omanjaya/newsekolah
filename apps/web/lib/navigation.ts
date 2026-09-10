@@ -65,6 +65,8 @@ const GROUP = {
   schoolData: "nav.schoolData.label",
   settings: "nav.settings.label",
   platform: "nav.platform.label",
+  mentoring: "app.mentoring.navGroupLabel",
+  supervision: "app.supervision.navGroupLabel",
 } as const;
 
 /**
@@ -364,6 +366,39 @@ export const navigation: NavItem[] = [
     permission: "manage_enrollments",
     group: GROUP.schoolData,
   },
+  {
+    key: "mentoring-groups",
+    labelKey: "app.mentoring.navLabelGroups",
+    href: "/mentoring/groups",
+    icon: domainIcons.mentoring,
+    permission: "view_mentoring",
+    group: GROUP.mentoring,
+  },
+  {
+    key: "mentoring-my-groups",
+    labelKey: "app.mentoring.navLabelMyGroups",
+    href: "/mentoring/my-groups",
+    icon: domainIcons.mentoring,
+    permission: "view_mentoring",
+    group: GROUP.mentoring,
+  },
+  {
+    key: "supervision-cycles",
+    labelKey: "app.supervision.navLabelCycles",
+    href: "/supervision/cycles",
+    icon: domainIcons.supervision,
+    permission: "view_supervision",
+    group: GROUP.supervision,
+  },
+  {
+    key: "supervision-my-report",
+    labelKey: "app.supervision.navLabelMyReport",
+    href: "/supervision/my-report",
+    icon: domainIcons.supervision,
+    permission: "view_supervision",
+    group: GROUP.supervision,
+  },
+
   ...academicNavItems,
   ...settingsNavItems,
 ];

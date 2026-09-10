@@ -1,0 +1,118 @@
+{
+  "navGroupLabel": "Supervision",
+  "navLabelCycles": "Supervision cycles",
+  "navLabelMyReport": "My supervision",
+  "instrument": {
+    "name": "Instrument name",
+    "namePlaceholder": "e.g. Classroom Supervision Instrument",
+    "scaleMin": "Scale minimum",
+    "scaleMax": "Scale maximum",
+    "criteria": "Criteria",
+    "criterionKeyPlaceholder": "Key",
+    "criterionNamePlaceholder": "Criterion name",
+    "removeCriterion": "Remove criterion",
+    "addCriterion": "Add criterion"
+  },
+  "cycles": {
+    "eyebrow": "Supervision",
+    "title": "Supervision cycles",
+    "add": "Create cycle",
+    "edit": "Edit",
+    "columns": {
+      "name": "Cycle name",
+      "criteria": "Criteria",
+      "scale": "Scale"
+    },
+    "emptyTitle": "No supervision cycles yet",
+    "emptyBody": "Create a cycle and define its instrument to start scheduling observations.",
+    "form": {
+      "createTitle": "Create supervision cycle",
+      "editTitle": "Edit supervision cycle",
+      "name": "Cycle name",
+      "namePlaceholder": "e.g. Fall Semester 2025/2026",
+      "cancel": "Cancel",
+      "submit": "Save",
+      "saved": "Supervision cycle saved"
+    }
+  },
+  "cycleDetail": {
+    "eyebrow": "Supervision",
+    "columns": {
+      "lessonDate": "Lesson date",
+      "teacher": "Teacher"
+    },
+    "unknownTeacher": "Unknown teacher",
+    "complete": "Complete observation",
+    "viewReport": "View cycle report",
+    "schedule": "Schedule observation",
+    "emptyTitle": "No observations scheduled yet",
+    "emptyBody": "Schedule an observation against one of a teacher's lessons to start this cycle.",
+    "scheduleTitle": "Schedule an observation",
+    "completeTitle": "Complete observation"
+  },
+  "cycleReport": {
+    "eyebrow": "Supervision",
+    "title": "Cycle report: {cycle}",
+    "columns": {
+      "teacher": "Teacher",
+      "scheduledCount": "Scheduled observations"
+    },
+    "unknownTeacher": "Unknown teacher",
+    "emptyTitle": "No teacher scheduled yet",
+    "emptyBody": "Teachers scheduled for observation in this cycle will show up here."
+  },
+  "schedule": {
+    "form": {
+      "teacher": "Teacher",
+      "teacherPlaceholder": "Select a teacher",
+      "lesson": "Lesson",
+      "lessonPlaceholder": "Select a lesson block",
+      "selectTeacherFirst": "Select a teacher first",
+      "lessonDate": "Observation date",
+      "cancel": "Cancel",
+      "submit": "Schedule",
+      "saved": "Observation scheduled"
+    }
+  },
+  "observationForm": {
+    "observedAt": "Observed at",
+    "scores": "Score per criterion (scale {min}–{max})",
+    "observerNotes": "Observer notes",
+    "observerNotesPlaceholder": "What was observed during the lesson",
+    "cancel": "Cancel",
+    "submit": "Save",
+    "saved": "Observation saved"
+  },
+  "teacherReport": {
+    "eyebrow": "Cycle: {cycle}",
+    "export": "Download",
+    "overallAverage": "Overall average",
+    "byCriterion": "Average by criterion",
+    "observations": "Observations",
+    "noObservations": "No completed observations in this cycle yet.",
+    "scoreCount": "{count} scores"
+  },
+  "observationDetail": {
+    "eyebrow": "Cycle: {cycle}",
+    "scores": "Scores",
+    "observerNotes": "Observer notes",
+    "teacherResponse": "Teacher response",
+    "responseLabel": "Response",
+    "responsePlaceholder": "Response to the observation",
+    "followUpLabel": "Agreed follow-up",
+    "followUpPlaceholder": "Optional",
+    "cancel": "Cancel",
+    "submit": "Save",
+    "saved": "Response saved",
+    "noResponseYet": "No response yet.",
+    "editResponse": "Edit response",
+    "addResponse": "Add response"
+  },
+  "myReport": {
+    "eyebrow": "Supervision",
+    "title": "My supervision",
+    "cycle": "Cycle",
+    "cyclePlaceholder": "Select a cycle",
+    "noCycles": "No supervision cycles yet."
+  }
+}
