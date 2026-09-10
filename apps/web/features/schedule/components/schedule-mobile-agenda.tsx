@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@newsekolah/ui";
-import { Trash2 } from "lucide-react";
+import { Copy, Pencil, Trash2 } from "lucide-react";
 import type { ReactElement } from "react";
 
 import type { ScheduleBlock } from "../api";
@@ -23,6 +23,33 @@ interface Period {
  * or forces sideways scroll through the whole week -- so this shows one day
  * at a time as a vertical list instead.
  */
+/** A labelled action on an agenda row, thumb-sized because it is tapped. */
+function AgendaAction({
+  label,
+  icon,
+  danger,
+  onClick,
+}: {
+  label: string;
+  icon: ReactElement;
+  danger?: boolean;
+  onClick: () => void;
+}): ReactElement {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "flex min-h-11 items-center gap-1 px-1 text-[12px] text-fg-muted",
+        danger ? "hover:text-status-absent" : "hover:text-fg",
+      )}
+    >
+      {icon}
+      {label}
+    </button>
+  );
+}
+
 export function ScheduleMobileAgenda({
   activeDays,
   lessonPeriods,
@@ -35,7 +62,11 @@ export function ScheduleMobileAgenda({
   mobileDay,
   onSelectDay,
   onAdd,
+  onPaste,
+  onCopy,
+  onEdit,
   onDelete,
+  copied,
   t,
   tDays,
 }: {
@@ -50,7 +81,11 @@ export function ScheduleMobileAgenda({
   mobileDay: number;
   onSelectDay: (day: number) => void;
   onAdd: (day: number, startSeq: number) => void;
+  onPaste: (day: number, startSeq: number) => void;
+  onCopy: (block: ScheduleBlock) => void;
+  onEdit: (block: ScheduleBlock) => void;
   onDelete: (block: ScheduleBlock) => void;
+  copied: ScheduleBlock | null;
   t: (key: string) => string;
   tDays: (key: string) => string;
 }): ReactElement {
@@ -103,11 +138,15 @@ export function ScheduleMobileAgenda({
                   <button
                     type="button"
                     onClick={() => {
+                      if (copied) {
+                        onPaste(mobileDay, period.sequence);
+                        return;
+                      }
                       onAdd(mobileDay, period.sequence);
                     }}
                     className="mt-2 flex min-h-11 w-full items-center justify-center rounded-xs border border-dashed border-border text-[12px] text-fg-muted hover:bg-bg"
                   >
-                    {t("addHere")}
+                    {copied ? t("pasteHere") : t("addHere")}
                   </button>
                 )}
               </li>
@@ -133,17 +172,34 @@ export function ScheduleMobileAgenda({
               </span>
               <span className="text-[12px] text-fg-muted">{title}</span>
               {canManage && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    onDelete(block);
-                  }}
-                  aria-label={t("deleteBlock")}
-                  className="mt-1 flex min-h-11 items-center gap-1 self-start px-1 text-[12px] text-fg-muted hover:text-status-absent"
-                >
-                  <Trash2 className="size-3.5" aria-hidden="true" />
-                  {t("deleteBlock")}
-                </button>
+                // The same three actions the wide grid offers. A phone is
+                // where a teacher fixes one lesson between classes, so
+                // leaving copy and edit out of it made the small screen the
+                // only place the job could not be done.
+                <div className="mt-1 flex flex-wrap items-center gap-2">
+                  <AgendaAction
+                    label={t("copyBlock")}
+                    icon={<Copy className="size-3.5" aria-hidden="true" />}
+                    onClick={() => {
+                      onCopy(block);
+                    }}
+                  />
+                  <AgendaAction
+                    label={t("editBlock")}
+                    icon={<Pencil className="size-3.5" aria-hidden="true" />}
+                    onClick={() => {
+                      onEdit(block);
+                    }}
+                  />
+                  <AgendaAction
+                    label={t("deleteBlock")}
+                    danger
+                    icon={<Trash2 className="size-3.5" aria-hidden="true" />}
+                    onClick={() => {
+                      onDelete(block);
+                    }}
+                  />
+                </div>
               )}
             </li>
           );

@@ -44,6 +44,7 @@ import { CopyBanner } from "./copy-banner";
 import { ScheduleDayGrid } from "./schedule-day-grid";
 import { ScheduleDialogs } from "./schedule-dialogs";
 import { ScheduleMobileAgenda } from "./schedule-mobile-agenda";
+import { ScheduleMobileDayList } from "./schedule-mobile-day-list";
 import { ScheduleWeekGrid } from "./schedule-week-grid";
 
 type Mode = "class" | "teacher" | "day";
@@ -312,27 +313,55 @@ export function ScheduleView(): ReactElement {
               collapses columns to slivers or forces sideways scroll through the
               whole week. A day-at-a-time agenda keeps every block readable with
               a thumb, so mobile gets its own view instead of a shrunk table. */}
-          {/* The day view is a wide table for building a timetable; on a
-              phone the agenda already answers the same question one day at
-              a time, so mobile keeps it whichever tab is chosen. */}
-          <ScheduleMobileAgenda
-            activeDays={activeDays}
-            lessonPeriods={lessonPeriods}
-            blockAt={blockAt}
-            mode={mode === "teacher" ? "teacher" : "class"}
-            teacherMap={teacherMap}
-            classMap={classMap}
-            subjectMap={subjectMap}
-            canManage={canManage}
-            mobileDay={mobileDay}
-            onSelectDay={setMobileDayOverride}
-            onAdd={(day, startSeq) => {
-              setCreating({ day, startSeq });
-            }}
-            onDelete={setPendingDelete}
-            t={t}
-            tDays={tDays}
-          />
+          {mode === "day" ? (
+            <ScheduleMobileDayList
+              classes={classes.data?.data ?? []}
+              lessonPeriods={lessonPeriods}
+              blockAt={blockInClass}
+              teacherMap={teacherMap}
+              subjectMap={subjectMap}
+              canManage={canManage}
+              copied={copied}
+              onAdd={(cls, startSeq) => {
+                setClassId(cls);
+                setCreating({ day: dayFilter, startSeq });
+              }}
+              onPaste={(cls, startSeq) => {
+                void pasteInto(dayFilter, startSeq, cls);
+              }}
+              onCopy={setCopied}
+              onEdit={setEditing}
+              onDelete={setPendingDelete}
+              t={t}
+            />
+          ) : (
+            // Outside the day view the agenda answers the same question a
+            // day at a time, which is the readable shape on a phone.
+            <ScheduleMobileAgenda
+              activeDays={activeDays}
+              lessonPeriods={lessonPeriods}
+              blockAt={blockAt}
+              mode={mode === "teacher" ? "teacher" : "class"}
+              teacherMap={teacherMap}
+              classMap={classMap}
+              subjectMap={subjectMap}
+              canManage={canManage}
+              mobileDay={mobileDay}
+              onSelectDay={setMobileDayOverride}
+              onAdd={(day, startSeq) => {
+                setCreating({ day, startSeq });
+              }}
+              onPaste={(day, startSeq) => {
+                void pasteInto(day, startSeq);
+              }}
+              onCopy={setCopied}
+              onEdit={setEditing}
+              onDelete={setPendingDelete}
+              copied={copied}
+              t={t}
+              tDays={tDays}
+            />
+          )}
 
           {mode === "day" ? (
             <ScheduleDayGrid
