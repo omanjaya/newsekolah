@@ -38,6 +38,7 @@ import {
   useDeleteScheduleBlockMutation,
   useSchedulesQuery,
 } from "../api";
+import { conflictMessage } from "../conflict-message";
 
 import { CopyBanner } from "./copy-banner";
 import { ScheduleDayGrid } from "./schedule-day-grid";
@@ -171,8 +172,22 @@ export function ScheduleView(): ReactElement {
       });
       toast.success(t("pasted"));
     } catch (err) {
-      toast.error(err instanceof ApiError ? apiErrorMessage(err.code) : apiErrorMessage("UNKNOWN"));
+      toast.error(scheduleError(err));
     }
+  }
+
+  /**
+   * A clash names what it clashed with when the server said which, and
+   * falls back to the plain message for that code when it did not.
+   */
+  function scheduleError(err: unknown): string {
+    const named = conflictMessage(
+      err,
+      { classMap, subjectMap, teacherMap, periods: lessonPeriods },
+      t,
+    );
+    if (named) return named;
+    return err instanceof ApiError ? apiErrorMessage(err.code) : apiErrorMessage("UNKNOWN");
   }
 
   function blockAt(day: number, seq: number): ScheduleBlock | undefined {

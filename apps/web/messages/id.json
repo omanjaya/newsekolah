@@ -393,7 +393,9 @@
       "pasteNoRoom": "Tidak cukup jam pelajaran di slot ini.",
       "copyingHint": "Menyalin {subject} kelas {class}. Klik slot kosong untuk menempel.",
       "byDay": "Per hari",
-      "pickDay": "Pilih hari"
+      "pickDay": "Pilih hari",
+      "conflictClassDetail": "{period} di kelas {class} sudah dipakai {teacher} untuk {subject}.",
+      "conflictTeacherDetail": "{teacher} sudah mengajar {subject} di kelas {class} pada {period}."
     },
     "attendance": {
       "eyebrow": "Akademik",

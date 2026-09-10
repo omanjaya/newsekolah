@@ -393,7 +393,9 @@
       "pasteNoRoom": "Not enough periods left in this slot.",
       "copyingHint": "Copying {subject} for {class}. Click an empty slot to paste.",
       "byDay": "By day",
-      "pickDay": "Pick a day"
+      "pickDay": "Pick a day",
+      "conflictClassDetail": "{period} in {class} is already taken by {teacher} for {subject}.",
+      "conflictTeacherDetail": "{teacher} already teaches {subject} in {class} at {period}."
     },
     "attendance": {
       "eyebrow": "Academic",

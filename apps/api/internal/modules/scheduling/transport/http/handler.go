@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"strconv"
 
 	"github.com/google/uuid"
 	openapi_types "github.com/oapi-codegen/runtime/types"
@@ -72,6 +73,25 @@ var (
 // mapScheduleError translates a scheduling/domain sentinel error into the
 // stable *httpx.Error the API contract promises; anything unrecognized
 // (a raw database error that escaped mapConstraintError, for instance)
+// withConflictDetails names the schedule that stands in the way, so the
+// reader is told what to go and look at rather than only that something
+// clashed. IDs travel rather than names: the caller already resolves
+// every one of them for the timetable it is drawing.
+func withConflictDetails(base *httpx.Error, err error) error {
+	var conflict *domain.ConflictError
+	if !errors.As(err, &conflict) {
+		return base
+	}
+	with := conflict.With
+	return httpx.NewError(base.Status, base.Code).WithDetails(
+		httpx.ErrorDetail{Field: "class_id", Code: with.ClassID.String()},
+		httpx.ErrorDetail{Field: "subject_id", Code: with.SubjectID.String()},
+		httpx.ErrorDetail{Field: "teacher_user_id", Code: with.TeacherUserID.String()},
+		httpx.ErrorDetail{Field: "start_seq", Code: strconv.Itoa(int(with.StartSeq))},
+		httpx.ErrorDetail{Field: "end_seq", Code: strconv.Itoa(int(with.EndSeq))},
+	)
+}
+
 // becomes a generic 500 rather than leaking internals.
 func mapScheduleError(err error) error {
 	switch {
@@ -80,9 +100,9 @@ func mapScheduleError(err error) error {
 	case errors.Is(err, domain.ErrScheduleNotFound):
 		return httpx.ErrNotFound
 	case errors.Is(err, domain.ErrConflictClass):
-		return errScheduleConflictClass
+		return withConflictDetails(errScheduleConflictClass, err)
 	case errors.Is(err, domain.ErrConflictTeacher):
-		return errScheduleConflictTeacher
+		return withConflictDetails(errScheduleConflictTeacher, err)
 	case errors.Is(err, domain.ErrTeacherEditForbidden), errors.Is(err, domain.ErrTeacherEditDeadline), errors.Is(err, domain.ErrAdminOnlySource):
 		return httpx.ErrForbidden
 	case errors.Is(err, domain.ErrInvalidPeriodRange), errors.Is(err, domain.ErrDayNotSchoolDay),

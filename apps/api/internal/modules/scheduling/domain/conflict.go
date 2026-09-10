@@ -1,6 +1,27 @@
 package domain
 
-import "github.com/google/uuid"
+import (
+	"fmt"
+
+	"github.com/google/uuid"
+)
+
+// ConflictError names the schedule that stands in the way. A bare "this
+// clashes" leaves the person to hunt the timetable for what it clashed
+// with; the old system named the class, teacher, subject and periods, and
+// so does this. The IDs travel rather than the names, because resolving a
+// name is the reading side's job and it already has every lookup.
+type ConflictError struct {
+	// Kind is either ErrConflictClass or ErrConflictTeacher.
+	Kind error
+	With Schedule
+}
+
+func (e *ConflictError) Error() string {
+	return fmt.Sprintf("%s (schedule %s)", e.Kind, e.With.ID)
+}
+
+func (e *ConflictError) Unwrap() error { return e.Kind }
 
 // DetectConflict is the domain-level half of the anti-clash rule: the
 // schedules table's two GiST exclusion constraints (docs/06-database-schema.md
@@ -25,10 +46,10 @@ func DetectConflict(existing []Schedule, candidate Schedule, selfID uuid.UUID) e
 			continue
 		}
 		if other.ClassID == candidate.ClassID {
-			return ErrConflictClass
+			return &ConflictError{Kind: ErrConflictClass, With: other}
 		}
 		if other.TeacherUserID == candidate.TeacherUserID {
-			return ErrConflictTeacher
+			return &ConflictError{Kind: ErrConflictTeacher, With: other}
 		}
 	}
 	return nil
