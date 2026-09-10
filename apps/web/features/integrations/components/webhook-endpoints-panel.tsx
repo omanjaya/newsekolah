@@ -120,11 +120,11 @@ export function WebhookEndpointsPanel({
         <p className="text-[13px] text-fg-muted">{t("description")}</p>
         <Button
           size="sm"
+          icon={<Plus />}
           onClick={() => {
             setDialogTarget("create");
           }}
         >
-          <Plus aria-hidden="true" />
           {t("create")}
         </Button>
       </div>

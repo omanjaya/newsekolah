@@ -78,48 +78,98 @@ export function DisciplinePolicyEditor({
         />
       ) : (
         <div className="flex flex-col gap-2">
-          <div className="grid grid-cols-[3rem_1fr_10rem_2.5rem] gap-2 text-[12px] font-medium text-fg-muted">
-            <span>{t("columns.level")}</span>
-            <span>{t("columns.label")}</span>
-            <span>{t("columns.minPoints")}</span>
-            <span className="sr-only">{t("remove")}</span>
-          </div>
-          {levels.map((level, index) => (
-            <div key={index} className="grid grid-cols-[3rem_1fr_10rem_2.5rem] items-center gap-2">
-              <span className="text-[14px] tabular-nums text-fg">{level.level}</span>
-              <label className="sr-only" htmlFor={`sp-level-label-${index}`}>
-                {t("columns.label")}
-              </label>
-              <Input
-                id={`sp-level-label-${index}`}
-                value={level.label}
-                placeholder={t("levelPlaceholder")}
-                onChange={(e) => {
-                  updateLevel(index, { label: e.target.value });
-                }}
-              />
-              <label className="sr-only" htmlFor={`sp-level-points-${index}`}>
-                {t("columns.minPoints")}
-              </label>
-              <Input
-                id={`sp-level-points-${index}`}
-                type="number"
-                min={0}
-                value={level.minPoints}
-                onChange={(e) => {
-                  updateLevel(index, { minPoints: e.target.value });
-                }}
-              />
-              <IconButton
-                icon={<Trash2 />}
-                aria-label={t("remove")}
-                variant="ghost"
-                onClick={() => {
-                  removeLevel(index);
-                }}
-              />
+          {/* Desktop and tablet: aligned columns. The fixed 10rem points column leaves too
+              little room for the label input on a phone, so mobile gets its own stacked card
+              below instead of squeezing this grid. */}
+          <div className="hidden sm:flex sm:flex-col sm:gap-2">
+            <div className="grid grid-cols-[3rem_1fr_10rem_2.5rem] gap-2 text-[12px] font-medium text-fg-muted">
+              <span>{t("columns.level")}</span>
+              <span>{t("columns.label")}</span>
+              <span>{t("columns.minPoints")}</span>
+              <span className="sr-only">{t("remove")}</span>
             </div>
-          ))}
+            {levels.map((level, index) => (
+              <div
+                key={index}
+                className="grid grid-cols-[3rem_1fr_10rem_2.5rem] items-center gap-2"
+              >
+                <span className="text-[14px] tabular-nums text-fg">{level.level}</span>
+                <label className="sr-only" htmlFor={`sp-level-label-${index}`}>
+                  {t("columns.label")}
+                </label>
+                <Input
+                  id={`sp-level-label-${index}`}
+                  value={level.label}
+                  placeholder={t("levelPlaceholder")}
+                  onChange={(e) => {
+                    updateLevel(index, { label: e.target.value });
+                  }}
+                />
+                <label className="sr-only" htmlFor={`sp-level-points-${index}`}>
+                  {t("columns.minPoints")}
+                </label>
+                <Input
+                  id={`sp-level-points-${index}`}
+                  type="number"
+                  min={0}
+                  value={level.minPoints}
+                  onChange={(e) => {
+                    updateLevel(index, { minPoints: e.target.value });
+                  }}
+                />
+                <IconButton
+                  icon={<Trash2 />}
+                  aria-label={t("remove")}
+                  variant="ghost"
+                  onClick={() => {
+                    removeLevel(index);
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+
+          {/* Mobile: one card per level, fields stacked full width. */}
+          <div className="flex flex-col gap-3 sm:hidden">
+            {levels.map((level, index) => (
+              <div key={index} className="flex flex-col gap-2 rounded-sm border border-border p-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-[14px] font-medium tabular-nums text-fg">
+                    {t("columns.level")} {level.level}
+                  </span>
+                  <IconButton
+                    icon={<Trash2 />}
+                    aria-label={t("remove")}
+                    variant="ghost"
+                    onClick={() => {
+                      removeLevel(index);
+                    }}
+                  />
+                </div>
+                <label className="flex flex-col gap-1 text-[13px]">
+                  <span className="text-fg-muted">{t("columns.label")}</span>
+                  <Input
+                    value={level.label}
+                    placeholder={t("levelPlaceholder")}
+                    onChange={(e) => {
+                      updateLevel(index, { label: e.target.value });
+                    }}
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-[13px]">
+                  <span className="text-fg-muted">{t("columns.minPoints")}</span>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={level.minPoints}
+                    onChange={(e) => {
+                      updateLevel(index, { minPoints: e.target.value });
+                    }}
+                  />
+                </label>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
