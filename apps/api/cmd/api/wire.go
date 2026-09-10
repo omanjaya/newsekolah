@@ -14,6 +14,7 @@ import (
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/api"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/academic"
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/activities"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/analytics"
 	analyticsjobs "github.com/omanjaya/newsekolah/apps/api/internal/modules/analytics/transport/jobs"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/announcements"
@@ -243,6 +244,10 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		Grading:    wiring.FamilyGrading{Svc: gradingModule.Service},
 		Discipline: wiring.FamilyDiscipline{Svc: disciplineModule.Service},
 	})
+
+	activitiesModule := activities.Register(activities.Dependencies{
+		Pool: pool, Years: schoolModule.Service, Clock: clock.Real{},
+	})
 	doc, err := api.GetSpec()
 	if err != nil {
 		return nil, nil, err
@@ -269,6 +274,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		LibraryHandler:       libraryModule.Handler,
 		IntegrationsHandler:  integrationsModule.Handler,
 		AnalyticsHandler:     analyticsModule.Handler,
+		ActivitiesHandler:    activitiesModule.Handler,
 		healthHandler:        &healthHandler{version: version, pool: pool, redis: redisClient},
 	}
 

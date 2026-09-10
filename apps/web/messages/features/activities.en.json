@@ -1,0 +1,148 @@
+{
+  "navGroupLabel": "Activities",
+  "navLabelClubs": "Extracurriculars",
+  "navLabelEvents": "Activity Calendar",
+  "navLabelAchievements": "Achievements",
+  "clubs": {
+    "eyebrow": "Activities",
+    "title": "Extracurriculars",
+    "includeInactive": "Show inactive",
+    "add": "Add extracurricular",
+    "edit": "Edit",
+    "saved": "Extracurricular saved",
+    "noLimit": "No limit",
+    "emptyTitle": "No extracurriculars yet",
+    "emptyBody": "This year's extracurriculars will appear here.",
+    "columns": {
+      "name": "Name",
+      "schedule": "Schedule",
+      "capacity": "Capacity",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "weekdays": {
+      "sunday": "Sunday",
+      "monday": "Monday",
+      "tuesday": "Tuesday",
+      "wednesday": "Wednesday",
+      "thursday": "Thursday",
+      "friday": "Friday",
+      "saturday": "Saturday"
+    },
+    "form": {
+      "createTitle": "Add extracurricular",
+      "editTitle": "Edit extracurricular",
+      "name": "Name",
+      "description": "Description",
+      "capacity": "Member capacity",
+      "location": "Location",
+      "meetingDay": "Meeting day",
+      "meetingDayNone": "Not set",
+      "meetingStart": "Start time",
+      "meetingEnd": "End time",
+      "cancel": "Cancel",
+      "submit": "Save"
+    }
+  },
+  "clubDetail": {
+    "eyebrow": "Extracurricular",
+    "tabs": {
+      "members": "Members",
+      "meetings": "Meetings"
+    },
+    "members": {
+      "studentId": "Student ID",
+      "studentIdPlaceholder": "Paste the student's ID",
+      "joinedOn": "Joined on",
+      "join": "Enroll",
+      "joined": "Student enrolled",
+      "includeLeft": "Show former members",
+      "empty": "No members yet.",
+      "status": {
+        "active": "Active",
+        "left": "Left"
+      },
+      "leave": "Remove",
+      "left": "Membership ended"
+    },
+    "meetings": {
+      "meetingDate": "Meeting date",
+      "schedule": "Schedule",
+      "scheduled": "Meeting scheduled",
+      "empty": "No meetings scheduled yet.",
+      "roster": {
+        "studentId": "Student ID",
+        "status": "Attendance status",
+        "save": "Save",
+        "recorded": "Attendance saved",
+        "statuses": {
+          "H": "Present",
+          "I": "Excused",
+          "S": "Sick",
+          "A": "Absent"
+        }
+      }
+    }
+  },
+  "events": {
+    "eyebrow": "Activities",
+    "title": "Activity Calendar",
+    "add": "Add activity",
+    "saved": "Activity saved",
+    "emptyTitle": "No activities yet",
+    "emptyBody": "This year's school activities will appear here.",
+    "columns": {
+      "name": "Activity",
+      "dates": "Dates",
+      "location": "Location"
+    },
+    "form": {
+      "title": "Add activity",
+      "name": "Activity name",
+      "description": "Description",
+      "location": "Location",
+      "startDate": "Start date",
+      "endDate": "End date",
+      "cancel": "Cancel",
+      "submit": "Save"
+    }
+  },
+  "achievements": {
+    "eyebrow": "Activities",
+    "title": "Student Achievements",
+    "add": "Record achievement",
+    "saved": "Achievement saved",
+    "emptyTitle": "No achievements recorded yet",
+    "emptyBody": "This year's student achievements will appear here.",
+    "columns": {
+      "student": "Student",
+      "competition": "Competition",
+      "level": "Level",
+      "placement": "Placement",
+      "date": "Date"
+    },
+    "levels": {
+      "school": "School",
+      "district": "District",
+      "city": "City/Regency",
+      "province": "Province",
+      "national": "National",
+      "international": "International"
+    },
+    "form": {
+      "title": "Record achievement",
+      "studentId": "Student ID",
+      "competitionName": "Competition name",
+      "level": "Level",
+      "placement": "Placement",
+      "achievedOn": "Date",
+      "notes": "Notes",
+      "cancel": "Cancel",
+      "submit": "Save"
+    }
+  }
+}

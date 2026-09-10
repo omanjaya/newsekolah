@@ -63,3 +63,5 @@ tags:
     description: API keys and outgoing webhooks for machine access to the API
   - name: analytics
     description: Early-warning risk signals per student
+  - name: activities
+    description: Extracurricular clubs and membership, meeting attendance, school activities, and student achievements

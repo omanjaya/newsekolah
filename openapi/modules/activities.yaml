@@ -1,0 +1,708 @@
+paths:
+  /v1/activities/extracurriculars:
+    get:
+      tags: [activities]
+      operationId: listExtracurriculars
+      x-permission: view_activities
+      summary: Extracurricular club catalogue for the active academic year
+      parameters:
+        - { name: include_inactive, in: query, schema: { type: boolean, default: false } }
+      responses:
+        "200":
+          description: Clubs
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/Extracurricular" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: [activities]
+      operationId: createExtracurricular
+      x-permission: manage_extracurriculars
+      summary: Add a club
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ExtracurricularWrite" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Extracurricular" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /v1/activities/extracurriculars/{clubId}:
+    get:
+      tags: [activities]
+      operationId: getExtracurricular
+      x-permission: view_activities
+      summary: One club
+      parameters:
+        - { name: clubId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Club
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Extracurricular" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: [activities]
+      operationId: updateExtracurricular
+      x-permission: manage_extracurriculars
+      summary: Edit a club
+      parameters:
+        - { name: clubId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ExtracurricularWrite" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Extracurricular" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+    delete:
+      tags: [activities]
+      operationId: deleteExtracurricular
+      x-permission: manage_extracurriculars
+      summary: Retire a club
+      parameters:
+        - { name: clubId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "204": { description: Deleted }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /v1/activities/membership-policy:
+    get:
+      tags: [activities]
+      operationId: getMembershipPolicy
+      x-permission: view_activities
+      summary: Per-student club limit (0 means no limit)
+      responses:
+        "200":
+          description: Policy
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MembershipPolicy" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    put:
+      tags: [activities]
+      operationId: updateMembershipPolicy
+      x-permission: manage_settings
+      summary: Replace the per-student club limit (new policy version)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [max_clubs_per_student]
+              properties:
+                max_clubs_per_student: { type: integer, minimum: 0 }
+      responses:
+        "200":
+          description: Policy
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MembershipPolicy" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /v1/activities/extracurriculars/{clubId}/members:
+    get:
+      tags: [activities]
+      operationId: listClubMembers
+      x-permission: view_activities
+      summary: A club's roster
+      parameters:
+        - { name: clubId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: include_left, in: query, schema: { type: boolean, default: false } }
+      responses:
+        "200":
+          description: Members
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/Membership" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: [activities]
+      operationId: joinClub
+      x-permission: manage_extracurriculars
+      summary: Enroll a student, subject to capacity and the per-student club limit
+      parameters:
+        - { name: clubId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [student_user_id, joined_on]
+              properties:
+                student_user_id: { type: string, format: uuid }
+                joined_on: { type: string, format: date }
+      responses:
+        "201":
+          description: Joined
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Membership" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /v1/activities/memberships/{membershipId}/leave:
+    post:
+      tags: [activities]
+      operationId: leaveClub
+      x-permission: manage_extracurriculars
+      summary: End an active membership
+      parameters:
+        - { name: membershipId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [left_on]
+              properties:
+                left_on: { type: string, format: date }
+      responses:
+        "200":
+          description: Left
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Membership" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /v1/me/clubs:
+    get:
+      tags: [activities]
+      operationId: listMyClubs
+      x-permission: authenticated
+      summary: The current student's own club memberships
+      responses:
+        "200":
+          description: Memberships
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/StudentMembership" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /v1/activities/extracurriculars/{clubId}/meetings:
+    get:
+      tags: [activities]
+      operationId: listMeetings
+      x-permission: view_activities
+      summary: A club's scheduled meetings
+      parameters:
+        - { name: clubId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Meetings
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/Meeting" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: [activities]
+      operationId: createMeeting
+      x-permission: record_extracurricular_attendance
+      summary: Schedule a meeting
+      parameters:
+        - { name: clubId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [meeting_date]
+              properties:
+                meeting_date: { type: string, format: date }
+                notes: { type: string, maxLength: 1000 }
+      responses:
+        "201":
+          description: Scheduled
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Meeting" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /v1/activities/meetings/{meetingId}/roster:
+    get:
+      tags: [activities]
+      operationId: getMeetingRoster
+      x-permission: record_extracurricular_attendance
+      summary: A meeting plus any attendance already recorded, for the take-attendance screen
+      parameters:
+        - { name: meetingId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Roster
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MeetingRoster" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /v1/activities/meetings/{meetingId}/attendance:
+    post:
+      tags: [activities]
+      operationId: recordExtracurricularAttendance
+      x-permission: record_extracurricular_attendance
+      summary: Record one student's status for a meeting
+      parameters:
+        - { name: meetingId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AttendanceWrite" }
+      responses:
+        "200":
+          description: Recorded
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AttendanceEntry" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /v1/activities/extracurriculars/{clubId}/reports/membership:
+    get:
+      tags: [activities]
+      operationId: getClubMembershipReport
+      x-permission: view_activities
+      summary: Who was a member of this club during a date range
+      parameters:
+        - { name: clubId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: from, in: query, required: true, schema: { type: string, format: date } }
+        - { name: to, in: query, required: true, schema: { type: string, format: date } }
+      responses:
+        "200":
+          description: Members active during the period
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/Membership" } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/activities/extracurriculars/{clubId}/reports/attendance:
+    get:
+      tags: [activities]
+      operationId: getClubAttendanceReport
+      x-permission: view_activities
+      summary: Attendance across every meeting of this club
+      parameters:
+        - { name: clubId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Attendance entries
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/AttendanceEntry" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /v1/activities/events:
+    get:
+      tags: [activities]
+      operationId: listActivityEvents
+      x-permission: view_activities
+      summary: One-off school activities in the active academic year
+      parameters:
+        - { name: from, in: query, schema: { type: string, format: date } }
+        - { name: to, in: query, schema: { type: string, format: date } }
+      responses:
+        "200":
+          description: Events
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/ActivityEvent" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: [activities]
+      operationId: createActivityEvent
+      x-permission: manage_activity_events
+      summary: Create a one-off activity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ActivityEventWrite" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ActivityEvent" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/activities/events/{activityId}:
+    get:
+      tags: [activities]
+      operationId: getActivityEvent
+      x-permission: view_activities
+      summary: One activity with its participants
+      parameters:
+        - { name: activityId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Event
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ActivityEvent" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: [activities]
+      operationId: updateActivityEvent
+      x-permission: manage_activity_events
+      summary: Edit an activity
+      parameters:
+        - { name: activityId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ActivityEventWrite" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ActivityEvent" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: [activities]
+      operationId: deleteActivityEvent
+      x-permission: manage_activity_events
+      summary: Delete an activity
+      parameters:
+        - { name: activityId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "204": { description: Deleted }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/activities/events/{activityId}/participants:
+    post:
+      tags: [activities]
+      operationId: addActivityParticipant
+      x-permission: manage_activity_events
+      summary: Add a class, grade level, or student to an activity's audience
+      parameters:
+        - { name: activityId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ParticipantWrite" }
+      responses:
+        "201":
+          description: Added
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Participant" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /v1/activities/participants/{participantId}:
+    delete:
+      tags: [activities]
+      operationId: removeActivityParticipant
+      x-permission: manage_activity_events
+      summary: Remove a participant from an activity
+      parameters:
+        - { name: participantId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "204": { description: Removed }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /v1/activities/achievements:
+    get:
+      tags: [activities]
+      operationId: listAchievements
+      x-permission: view_activities
+      summary: Achievement records this year, filterable by student or class
+      parameters:
+        - { name: student_id, in: query, schema: { type: string, format: uuid } }
+        - { name: class_id, in: query, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Achievements
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/Achievement" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: [activities]
+      operationId: createAchievement
+      x-permission: manage_achievements
+      summary: Record a competition result for a student
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AchievementWrite" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Achievement" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/activities/achievements/{achievementId}:
+    put:
+      tags: [activities]
+      operationId: updateAchievement
+      x-permission: manage_achievements
+      summary: Edit an achievement record
+      parameters:
+        - { name: achievementId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AchievementWrite" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Achievement" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: [activities]
+      operationId: deleteAchievement
+      x-permission: manage_achievements
+      summary: Delete an achievement record
+      parameters:
+        - { name: achievementId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "204": { description: Deleted }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+components:
+  schemas:
+    Extracurricular:
+      type: object
+      required: [id, academic_year_id, name, description, location, is_active]
+      properties:
+        id: { type: string, format: uuid }
+        academic_year_id: { type: string, format: uuid }
+        name: { type: string }
+        description: { type: string }
+        coach_user_id: { type: string, format: uuid }
+        capacity: { type: integer }
+        meeting_day: { type: integer, minimum: 0, maximum: 6 }
+        meeting_start: { type: string, example: "15:30" }
+        meeting_end: { type: string, example: "17:00" }
+        location: { type: string }
+        is_active: { type: boolean }
+    ExtracurricularWrite:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 150 }
+        description: { type: string, maxLength: 2000 }
+        coach_user_id: { type: string, format: uuid }
+        capacity: { type: integer, minimum: 1 }
+        meeting_day: { type: integer, minimum: 0, maximum: 6 }
+        meeting_start: { type: string }
+        meeting_end: { type: string }
+        location: { type: string, maxLength: 150 }
+        is_active: { type: boolean, default: true }
+    MembershipPolicy:
+      type: object
+      required: [version, max_clubs_per_student]
+      properties:
+        version: { type: integer }
+        max_clubs_per_student: { type: integer }
+    Membership:
+      type: object
+      required: [id, extracurricular_id, student_user_id, joined_on, status]
+      properties:
+        id: { type: string, format: uuid }
+        extracurricular_id: { type: string, format: uuid }
+        student_user_id: { type: string, format: uuid }
+        joined_on: { type: string, format: date }
+        left_on: { type: string, format: date }
+        status: { type: string, enum: [active, left] }
+    StudentMembership:
+      allOf:
+        - $ref: "#/components/schemas/Membership"
+        - type: object
+          required: [club_name]
+          properties:
+            club_name: { type: string }
+    Meeting:
+      type: object
+      required: [id, extracurricular_id, meeting_date, notes]
+      properties:
+        id: { type: string, format: uuid }
+        extracurricular_id: { type: string, format: uuid }
+        meeting_date: { type: string, format: date }
+        notes: { type: string }
+    AttendanceStatus:
+      type: string
+      enum: [H, I, S, A]
+    AttendanceWrite:
+      type: object
+      required: [student_user_id, status_code]
+      properties:
+        student_user_id: { type: string, format: uuid }
+        status_code: { $ref: "#/components/schemas/AttendanceStatus" }
+        notes: { type: string, maxLength: 500 }
+    AttendanceEntry:
+      type: object
+      required: [id, meeting_id, student_user_id, status_code, notes]
+      properties:
+        id: { type: string, format: uuid }
+        meeting_id: { type: string, format: uuid }
+        student_user_id: { type: string, format: uuid }
+        status_code: { $ref: "#/components/schemas/AttendanceStatus" }
+        notes: { type: string }
+    MeetingRoster:
+      type: object
+      required: [meeting, entries]
+      properties:
+        meeting: { $ref: "#/components/schemas/Meeting" }
+        entries: { type: array, items: { $ref: "#/components/schemas/AttendanceEntry" } }
+    ParticipantScope:
+      type: string
+      enum: [class, grade_level, student]
+    ParticipantWrite:
+      type: object
+      properties:
+        class_id: { type: string, format: uuid }
+        grade_level_id: { type: string, format: uuid }
+        student_user_id: { type: string, format: uuid }
+    Participant:
+      type: object
+      required: [id, scope]
+      properties:
+        id: { type: string, format: uuid }
+        scope: { $ref: "#/components/schemas/ParticipantScope" }
+        class_id: { type: string, format: uuid }
+        grade_level_id: { type: string, format: uuid }
+        student_user_id: { type: string, format: uuid }
+    ActivityEventWrite:
+      type: object
+      required: [name, start_date, end_date]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 200 }
+        description: { type: string, maxLength: 4000 }
+        location: { type: string, maxLength: 200 }
+        start_date: { type: string, format: date }
+        end_date: { type: string, format: date }
+        organiser_user_id: { type: string, format: uuid }
+    ActivityEvent:
+      type: object
+      required: [id, academic_year_id, name, description, location, start_date, end_date]
+      properties:
+        id: { type: string, format: uuid }
+        academic_year_id: { type: string, format: uuid }
+        name: { type: string }
+        description: { type: string }
+        location: { type: string }
+        start_date: { type: string, format: date }
+        end_date: { type: string, format: date }
+        organiser_user_id: { type: string, format: uuid }
+        participants: { type: array, items: { $ref: "#/components/schemas/Participant" } }
+    AchievementLevel:
+      type: string
+      enum: [school, district, city, province, national, international]
+    AchievementWrite:
+      type: object
+      required: [student_user_id, competition_name, level, placement, achieved_on]
+      properties:
+        student_user_id: { type: string, format: uuid }
+        competition_name: { type: string, minLength: 1, maxLength: 200 }
+        level: { $ref: "#/components/schemas/AchievementLevel" }
+        placement: { type: string, minLength: 1, maxLength: 100 }
+        achieved_on: { type: string, format: date }
+        notes: { type: string, maxLength: 1000 }
+    Achievement:
+      type: object
+      required: [id, student_user_id, competition_name, level, placement, achieved_on]
+      properties:
+        id: { type: string, format: uuid }
+        student_user_id: { type: string, format: uuid }
+        competition_name: { type: string }
+        level: { $ref: "#/components/schemas/AchievementLevel" }
+        placement: { type: string }
+        achieved_on: { type: string, format: date }
+        notes: { type: string }

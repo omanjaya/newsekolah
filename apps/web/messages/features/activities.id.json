@@ -1,0 +1,148 @@
+{
+  "navGroupLabel": "Kegiatan",
+  "navLabelClubs": "Ekstrakurikuler",
+  "navLabelEvents": "Kalender Kegiatan",
+  "navLabelAchievements": "Prestasi",
+  "clubs": {
+    "eyebrow": "Kegiatan",
+    "title": "Ekstrakurikuler",
+    "includeInactive": "Tampilkan yang tidak aktif",
+    "add": "Tambah ekstrakurikuler",
+    "edit": "Ubah",
+    "saved": "Ekstrakurikuler tersimpan",
+    "noLimit": "Tanpa batas",
+    "emptyTitle": "Belum ada ekstrakurikuler",
+    "emptyBody": "Ekstrakurikuler tahun ajaran ini akan muncul di sini.",
+    "columns": {
+      "name": "Nama",
+      "schedule": "Jadwal",
+      "capacity": "Kuota",
+      "status": "Status",
+      "actions": "Aksi"
+    },
+    "status": {
+      "active": "Aktif",
+      "inactive": "Tidak aktif"
+    },
+    "weekdays": {
+      "sunday": "Minggu",
+      "monday": "Senin",
+      "tuesday": "Selasa",
+      "wednesday": "Rabu",
+      "thursday": "Kamis",
+      "friday": "Jumat",
+      "saturday": "Sabtu"
+    },
+    "form": {
+      "createTitle": "Tambah ekstrakurikuler",
+      "editTitle": "Ubah ekstrakurikuler",
+      "name": "Nama",
+      "description": "Deskripsi",
+      "capacity": "Kuota anggota",
+      "location": "Lokasi",
+      "meetingDay": "Hari pertemuan",
+      "meetingDayNone": "Belum ditentukan",
+      "meetingStart": "Jam mulai",
+      "meetingEnd": "Jam selesai",
+      "cancel": "Batal",
+      "submit": "Simpan"
+    }
+  },
+  "clubDetail": {
+    "eyebrow": "Ekstrakurikuler",
+    "tabs": {
+      "members": "Anggota",
+      "meetings": "Pertemuan"
+    },
+    "members": {
+      "studentId": "ID siswa",
+      "studentIdPlaceholder": "Tempel ID siswa",
+      "joinedOn": "Tanggal bergabung",
+      "join": "Daftarkan",
+      "joined": "Siswa terdaftar sebagai anggota",
+      "includeLeft": "Tampilkan yang sudah keluar",
+      "empty": "Belum ada anggota.",
+      "status": {
+        "active": "Aktif",
+        "left": "Keluar"
+      },
+      "leave": "Keluarkan",
+      "left": "Keanggotaan diakhiri"
+    },
+    "meetings": {
+      "meetingDate": "Tanggal pertemuan",
+      "schedule": "Jadwalkan",
+      "scheduled": "Pertemuan dijadwalkan",
+      "empty": "Belum ada pertemuan yang dijadwalkan.",
+      "roster": {
+        "studentId": "ID siswa",
+        "status": "Status kehadiran",
+        "save": "Simpan",
+        "recorded": "Kehadiran tersimpan",
+        "statuses": {
+          "H": "Hadir",
+          "I": "Izin",
+          "S": "Sakit",
+          "A": "Alpha"
+        }
+      }
+    }
+  },
+  "events": {
+    "eyebrow": "Kegiatan",
+    "title": "Kalender Kegiatan",
+    "add": "Tambah kegiatan",
+    "saved": "Kegiatan tersimpan",
+    "emptyTitle": "Belum ada kegiatan",
+    "emptyBody": "Kegiatan sekolah tahun ajaran ini akan muncul di sini.",
+    "columns": {
+      "name": "Nama kegiatan",
+      "dates": "Tanggal",
+      "location": "Lokasi"
+    },
+    "form": {
+      "title": "Tambah kegiatan",
+      "name": "Nama kegiatan",
+      "description": "Deskripsi",
+      "location": "Lokasi",
+      "startDate": "Tanggal mulai",
+      "endDate": "Tanggal selesai",
+      "cancel": "Batal",
+      "submit": "Simpan"
+    }
+  },
+  "achievements": {
+    "eyebrow": "Kegiatan",
+    "title": "Prestasi Siswa",
+    "add": "Catat prestasi",
+    "saved": "Prestasi tersimpan",
+    "emptyTitle": "Belum ada catatan prestasi",
+    "emptyBody": "Prestasi siswa tahun ajaran ini akan muncul di sini.",
+    "columns": {
+      "student": "Siswa",
+      "competition": "Lomba",
+      "level": "Tingkat",
+      "placement": "Capaian",
+      "date": "Tanggal"
+    },
+    "levels": {
+      "school": "Sekolah",
+      "district": "Kecamatan",
+      "city": "Kota/Kabupaten",
+      "province": "Provinsi",
+      "national": "Nasional",
+      "international": "Internasional"
+    },
+    "form": {
+      "title": "Catat prestasi",
+      "studentId": "ID siswa",
+      "competitionName": "Nama lomba",
+      "level": "Tingkat",
+      "placement": "Capaian",
+      "achievedOn": "Tanggal",
+      "notes": "Catatan",
+      "cancel": "Batal",
+      "submit": "Simpan"
+    }
+  }
+}
