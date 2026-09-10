@@ -94,8 +94,8 @@ function AssignmentsEditor({
     <>
       <ul className="divide-y divide-border rounded-xs border border-border text-[14px]">
         {pairs.map((pair) => (
-          <li key={pairKey(pair)} className="flex items-center justify-between px-3 py-2">
-            <span>
+          <li key={pairKey(pair)} className="flex items-center justify-between gap-2 px-3 py-2">
+            <span className="min-w-0 truncate">
               {subjectMap.get(pair.subject_id)?.name ?? "-"}{" "}
               <span className="text-fg-muted">· {classMap.get(pair.class_id)?.name ?? "-"}</span>
             </span>

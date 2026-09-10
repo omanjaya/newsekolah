@@ -283,7 +283,7 @@ function ClubForm({
           />
         </label>
       </div>
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <label className="flex flex-col gap-1 text-[13px]">
           <span className="font-medium">{t("meetingDay")}</span>
           <select

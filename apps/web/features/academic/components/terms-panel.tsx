@@ -131,17 +131,17 @@ export function TermsPanel({
           ) : (
             <ul className="divide-y divide-border rounded-xs border border-border text-[14px]">
               {rows.map((term) => (
-                <li key={term.id} className="flex items-center justify-between px-3 py-2">
-                  <div className="flex flex-col">
+                <li key={term.id} className="flex items-center justify-between gap-2 px-3 py-2">
+                  <div className="flex min-w-0 flex-col">
                     <span className="flex items-center gap-2">
-                      {term.name}
+                      <span className="truncate">{term.name}</span>
                       {term.is_active && <Badge variant="accent">{t("active")}</Badge>}
                     </span>
                     <span className="text-[12px] text-fg-muted">
                       {term.starts_on} - {term.ends_on}
                     </span>
                   </div>
-                  <div className="flex gap-1">
+                  <div className="flex shrink-0 gap-1">
                     {!term.is_active && (
                       <IconButton
                         icon={<CircleCheck />}

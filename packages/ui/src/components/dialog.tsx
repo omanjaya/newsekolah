@@ -44,7 +44,10 @@ export const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(func
       <DialogPrimitive.Content
         ref={ref}
         className={cn(
-          "fixed left-1/2 top-1/2 z-(--z-modal) w-full max-w-md -translate-x-1/2 -translate-y-1/2",
+          // The width leaves a margin on a phone: a dialog flush against
+          // both screen edges reads as a page, not as something on top of
+          // one, and leaves nowhere to tap to dismiss it.
+          "fixed left-1/2 top-1/2 z-(--z-modal) w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2",
           // A form long enough to outgrow the screen would otherwise run
           // off the top and bottom with no way to reach either end, since
           // the dialog is centred rather than anchored. Cap it and let its

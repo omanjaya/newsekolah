@@ -125,9 +125,9 @@ export function NewYearSetupView(): ReactElement {
                 {plan.subject_offerings.map((offering, i) => (
                   <li
                     key={`${offering.subject_id}-${offering.grade_level_id ?? "all"}-${i}`}
-                    className="flex items-center justify-between px-3 py-2"
+                    className="flex items-center justify-between gap-2 px-3 py-2"
                   >
-                    <span>
+                    <span className="min-w-0 truncate">
                       {subjectMap.get(offering.subject_id)?.name ?? offering.subject_id}
                       {offering.grade_level_id && (
                         <span className="text-fg-muted">
@@ -136,7 +136,10 @@ export function NewYearSetupView(): ReactElement {
                         </span>
                       )}
                     </span>
-                    <Badge variant={offering.already_exists ? "neutral" : "accent"}>
+                    <Badge
+                      className="shrink-0"
+                      variant={offering.already_exists ? "neutral" : "accent"}
+                    >
                       {offering.already_exists ? t("alreadyExists") : t("willCopy")}
                     </Badge>
                   </li>
@@ -155,10 +158,10 @@ export function NewYearSetupView(): ReactElement {
                 {plan.classes.map((cls, i) => (
                   <li
                     key={`${cls.name}-${i}`}
-                    className="flex items-center justify-between px-3 py-2"
+                    className="flex items-center justify-between gap-2 px-3 py-2"
                   >
-                    <span>{cls.name}</span>
-                    <Badge variant={cls.already_exists ? "neutral" : "accent"}>
+                    <span className="min-w-0 truncate">{cls.name}</span>
+                    <Badge className="shrink-0" variant={cls.already_exists ? "neutral" : "accent"}>
                       {cls.already_exists ? t("alreadyExists") : t("willCopy")}
                     </Badge>
                   </li>
