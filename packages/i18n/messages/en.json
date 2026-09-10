@@ -199,6 +199,18 @@
         "incidents": "Incidents",
         "reports": "Visitor Recap"
       }
+    },
+    "activities": {
+      "label": "Activities"
+    },
+    "finance": {
+      "label": "Finance"
+    },
+    "mentoring": {
+      "label": "Mentoring"
+    },
+    "supervision": {
+      "label": "Supervision"
     }
   },
   "errors": {

@@ -151,6 +151,7 @@ export type MessageKey =
   | "nav.academic.items.schedule"
   | "nav.academic.items.substituteTeacher"
   | "nav.academic.label"
+  | "nav.activities.label"
   | "nav.communication.items.announcements"
   | "nav.communication.items.notifications"
   | "nav.communication.label"
@@ -165,6 +166,7 @@ export type MessageKey =
   | "nav.discipline.items.violations"
   | "nav.discipline.items.warningLetters"
   | "nav.discipline.label"
+  | "nav.finance.label"
   | "nav.home"
   | "nav.library.items.catalog"
   | "nav.library.items.circulation"
@@ -174,6 +176,7 @@ export type MessageKey =
   | "nav.library.items.stockOpname"
   | "nav.library.items.visits"
   | "nav.library.label"
+  | "nav.mentoring.label"
   | "nav.permits.items.exitPermit"
   | "nav.permits.items.gate"
   | "nav.permits.items.late"
@@ -207,6 +210,7 @@ export type MessageKey =
   | "nav.settings.items.schoolProfile"
   | "nav.settings.items.sessionsAndSecurity"
   | "nav.settings.label"
+  | "nav.supervision.label"
   | "nav.visitors.items.board"
   | "nav.visitors.items.expected"
   | "nav.visitors.items.incidents"
@@ -374,6 +378,7 @@ export const MESSAGE_KEYS: readonly MessageKey[] = [
   "nav.academic.items.schedule",
   "nav.academic.items.substituteTeacher",
   "nav.academic.label",
+  "nav.activities.label",
   "nav.communication.items.announcements",
   "nav.communication.items.notifications",
   "nav.communication.label",
@@ -388,6 +393,7 @@ export const MESSAGE_KEYS: readonly MessageKey[] = [
   "nav.discipline.items.violations",
   "nav.discipline.items.warningLetters",
   "nav.discipline.label",
+  "nav.finance.label",
   "nav.home",
   "nav.library.items.catalog",
   "nav.library.items.circulation",
@@ -397,6 +403,7 @@ export const MESSAGE_KEYS: readonly MessageKey[] = [
   "nav.library.items.stockOpname",
   "nav.library.items.visits",
   "nav.library.label",
+  "nav.mentoring.label",
   "nav.permits.items.exitPermit",
   "nav.permits.items.gate",
   "nav.permits.items.late",
@@ -430,6 +437,7 @@ export const MESSAGE_KEYS: readonly MessageKey[] = [
   "nav.settings.items.schoolProfile",
   "nav.settings.items.sessionsAndSecurity",
   "nav.settings.label",
+  "nav.supervision.label",
   "nav.visitors.items.board",
   "nav.visitors.items.expected",
   "nav.visitors.items.incidents",

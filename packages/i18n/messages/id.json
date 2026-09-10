@@ -199,6 +199,18 @@
         "incidents": "Insiden",
         "reports": "Rekap Kunjungan"
       }
+    },
+    "activities": {
+      "label": "Kegiatan"
+    },
+    "finance": {
+      "label": "Keuangan"
+    },
+    "mentoring": {
+      "label": "Guru Wali"
+    },
+    "supervision": {
+      "label": "Supervisi"
     }
   },
   "errors": {

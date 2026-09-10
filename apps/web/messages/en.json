@@ -391,7 +391,9 @@
       "cancelCopy": "Cancel copy",
       "pasted": "Lesson pasted.",
       "pasteNoRoom": "Not enough periods left in this slot.",
-      "copyingHint": "Copying {subject} for {class}. Click an empty slot to paste."
+      "copyingHint": "Copying {subject} for {class}. Click an empty slot to paste.",
+      "byDay": "By day",
+      "pickDay": "Pick a day"
     },
     "attendance": {
       "eyebrow": "Academic",

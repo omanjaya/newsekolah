@@ -12,16 +12,23 @@ export interface ScheduleFilter {
   academicYearId: string;
   classId?: string;
   teacherUserId?: string;
+  /** 1 (Monday) through 7 (Sunday). Set for the whole-school day view. */
+  dayOfWeek?: number;
 }
 
 export function useSchedulesQuery(filter: ScheduleFilter) {
   const client = useApiClient();
-  const enabled = filter.academicYearId !== "" && Boolean(filter.classId ?? filter.teacherUserId);
+  // A day view asks for every class at once, so a day alone is enough to
+  // run the query; the other two views still need their own subject.
+  const enabled =
+    filter.academicYearId !== "" &&
+    Boolean(filter.classId ?? filter.teacherUserId ?? filter.dayOfWeek);
   return useQuery({
     queryKey: queryKeys.schedules({
       year: filter.academicYearId,
       class: filter.classId,
       teacher: filter.teacherUserId,
+      day: filter.dayOfWeek,
     }),
     queryFn: () =>
       client.GET("/v1/schedules", {
@@ -30,6 +37,7 @@ export function useSchedulesQuery(filter: ScheduleFilter) {
             academic_year_id: filter.academicYearId,
             ...(filter.classId ? { class_id: filter.classId } : {}),
             ...(filter.teacherUserId ? { teacher_user_id: filter.teacherUserId } : {}),
+            ...(filter.dayOfWeek ? { day_of_week: filter.dayOfWeek } : {}),
           },
         },
       }),
