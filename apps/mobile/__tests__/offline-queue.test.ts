@@ -26,6 +26,14 @@ function conflictError(): ApiError {
   return new ApiError({ status: 409, code: "CONFLICT", message: "already submitted" });
 }
 
+function unknownBarcodeError(): ApiError {
+  return new ApiError({
+    status: 404,
+    code: "LIBRARY_COPY_NOT_FOUND",
+    message: "no copy matches this barcode",
+  });
+}
+
 /** In-memory stand-in for expo-sqlite: real SQL parsing is overkill for a
  * unit test, so this matches the handful of fixed statements queue.ts
  * actually issues. */
@@ -282,6 +290,113 @@ describe("offline mutation queue", () => {
       await queue.enqueueOrReplace("PUT", "/v1/attendance/sessions/s2/entries", { entries: [] });
 
       expect(await queue.pending()).toHaveLength(2);
+    });
+  });
+
+  /**
+   * A library stocktake session walks the shelves scanning barcodes with
+   * no expectation of a live connection (docs/12-roadmap.md Fase 4) --
+   * app/library/opname/[stocktakeId].tsx enqueues every scan through this
+   * same queue instead of a second offline mechanism. These tests cover
+   * that path end to end: a scan persists locally immediately, and one the
+   * server rejects because its barcode matches no copy (404,
+   * LIBRARY_COPY_NOT_FOUND) is parked for a person instead of retried
+   * forever, exactly like a 409 attendance conflict.
+   */
+  describe("library stocktake scans", () => {
+    const STOCKTAKE_PATH = "/v1/library/stocktakes/st-1/scans";
+
+    it("persists a scan locally the moment it is made, marked pending", async () => {
+      const queue = new MutationQueue(createFakeDatabase());
+
+      await queue.enqueue("POST", STOCKTAKE_PATH, { barcode: "BC-001" });
+
+      const pending = await queue.pending();
+      expect(pending).toHaveLength(1);
+      expect(pending[0]?.path).toBe(STOCKTAKE_PATH);
+      expect(pending[0]?.body).toEqual({ barcode: "BC-001" });
+      expect(pending[0]?.status).toBe("pending");
+    });
+
+    it("sends every queued scan once the connection returns", async () => {
+      const queue = new MutationQueue(createFakeDatabase());
+      (rawMutate as jest.Mock).mockResolvedValueOnce({ id: "scan-1" });
+
+      await queue.enqueue("POST", STOCKTAKE_PATH, { barcode: "BC-001" });
+      const result = await queue.flush(() => Promise.resolve(true));
+
+      expect(result).toEqual({ sent: 1, failed: 0, conflicted: 0 });
+      expect(await queue.pending()).toHaveLength(0);
+    });
+
+    it("parks a scan of an unrecognised barcode as a conflict instead of retrying it forever", async () => {
+      const queue = new MutationQueue(createFakeDatabase());
+      (rawMutate as jest.Mock).mockRejectedValueOnce(unknownBarcodeError());
+
+      await queue.enqueue("POST", STOCKTAKE_PATH, { barcode: "NOT-A-COPY" });
+      const result = await queue.flush(() => Promise.resolve(true));
+
+      expect(result).toEqual({ sent: 0, failed: 0, conflicted: 1 });
+      expect(await queue.pending()).toHaveLength(0);
+      const [conflict] = await queue.conflicts();
+      expect(conflict?.status).toBe("conflict");
+      expect(conflict?.body).toEqual({ barcode: "NOT-A-COPY" });
+      expect(conflict?.lastError).toContain("no copy matches this barcode");
+    });
+
+    it("does not keep retrying a rejected scan on later flushes", async () => {
+      const queue = new MutationQueue(createFakeDatabase());
+      (rawMutate as jest.Mock).mockRejectedValueOnce(unknownBarcodeError());
+
+      await queue.enqueue("POST", STOCKTAKE_PATH, { barcode: "NOT-A-COPY" });
+      await queue.flush(() => Promise.resolve(true));
+      jest.clearAllMocks();
+
+      const result = await queue.flush(() => Promise.resolve(true));
+
+      expect(result).toEqual({ sent: 0, failed: 0, conflicted: 0 });
+      expect(rawMutate).not.toHaveBeenCalled();
+    });
+
+    it("lets a person retry a rejected scan once the underlying problem is fixed", async () => {
+      const queue = new MutationQueue(createFakeDatabase());
+      (rawMutate as jest.Mock).mockRejectedValueOnce(unknownBarcodeError());
+
+      const scan = await queue.enqueue("POST", STOCKTAKE_PATH, { barcode: "BC-002" });
+      await queue.flush(() => Promise.resolve(true));
+
+      await queue.resolveConflict(scan.id, "retry");
+      expect(await queue.conflicts()).toHaveLength(0);
+
+      (rawMutate as jest.Mock).mockResolvedValueOnce({ id: "scan-2" });
+      const result = await queue.flush(() => Promise.resolve(true));
+      expect(result).toEqual({ sent: 1, failed: 0, conflicted: 0 });
+    });
+
+    it("does not confuse a plain network failure while scanning with a rejected barcode", async () => {
+      const queue = new MutationQueue(createFakeDatabase());
+      (rawMutate as jest.Mock).mockRejectedValueOnce(new TypeError("Network request failed"));
+
+      await queue.enqueue("POST", STOCKTAKE_PATH, { barcode: "BC-003" });
+      const result = await queue.flush(() => Promise.resolve(true));
+
+      expect(result).toEqual({ sent: 0, failed: 1, conflicted: 0 });
+      expect(await queue.conflicts()).toHaveLength(0);
+      expect(await queue.pending()).toHaveLength(1);
+    });
+
+    it("keeps two distinct scans in the same session independent of each other", async () => {
+      const queue = new MutationQueue(createFakeDatabase());
+
+      await queue.enqueue("POST", STOCKTAKE_PATH, { barcode: "BC-001" });
+      await queue.enqueue("POST", STOCKTAKE_PATH, { barcode: "BC-002" });
+
+      const pending = await queue.pending();
+      expect(pending).toHaveLength(2);
+      expect(pending.map((m) => (m.body as { barcode: string }).barcode).sort()).toEqual([
+        "BC-001",
+        "BC-002",
+      ]);
     });
   });
 });

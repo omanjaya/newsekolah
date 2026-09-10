@@ -98,12 +98,15 @@ export function computeBackoffMs(attempts: number): number {
   return Math.min(delay, MAX_BACKOFF_MS);
 }
 
-/** A 409 means the request reached the server and the server has its own
- * say on the record already (e.g. someone else submitted the same
- * attendance session first) -- retrying the identical body can never
- * resolve that, unlike a timeout or a 5xx. */
+/** A 409 or 404 both mean the request reached the server and the server has
+ * already made up its mind about this exact body -- someone else submitted
+ * the same attendance session first (409), or a library stocktake scan
+ * named a barcode that matches no copy (404, LIBRARY_COPY_NOT_FOUND).
+ * Retrying the identical body can never resolve either case, unlike a
+ * timeout or a 5xx, so both are parked as a conflict for a person to look
+ * at instead of burning through backoff forever. */
 function isConflict(error: unknown): boolean {
-  return error instanceof ApiError && error.status === 409;
+  return error instanceof ApiError && (error.status === 409 || error.status === 404);
 }
 
 function errorMessage(error: unknown): string {

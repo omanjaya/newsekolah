@@ -18,10 +18,14 @@ export interface OfflineQueueCounts {
   conflicted: number;
 }
 
-async function readCounts(): Promise<OfflineQueueCounts> {
+async function readCounts(pathPrefix?: string): Promise<OfflineQueueCounts> {
   const queue = getOfflineQueue();
   const [pending, conflicts] = await Promise.all([queue.pending(), queue.conflicts()]);
-  return { pending: pending.length, conflicted: conflicts.length };
+  const matches = (path: string) => (pathPrefix ? path.startsWith(pathPrefix) : true);
+  return {
+    pending: pending.filter((m) => matches(m.path)).length,
+    conflicted: conflicts.filter((m) => matches(m.path)).length,
+  };
 }
 
 /** Read-only: current pending/conflict counts, refreshed whenever the sync
@@ -30,7 +34,21 @@ async function readCounts(): Promise<OfflineQueueCounts> {
 export function useOfflineQueueCounts(): OfflineQueueCounts {
   const { data } = useQuery({
     queryKey: QUEUE_COUNTS_KEY,
-    queryFn: readCounts,
+    queryFn: () => readCounts(),
+    initialData: { pending: 0, conflicted: 0 },
+    refetchInterval: AUTO_FLUSH_INTERVAL_MS,
+  });
+  return data;
+}
+
+/** Same as useOfflineQueueCounts, scoped to mutations whose path starts
+ * with `pathPrefix` -- e.g. one stocktake session's own scans, so its
+ * screen can show "N menunggu sinkron" for itself rather than the whole
+ * app's queue. */
+export function useOfflineQueueCountsFor(pathPrefix: string): OfflineQueueCounts {
+  const { data } = useQuery({
+    queryKey: [...QUEUE_COUNTS_KEY, pathPrefix],
+    queryFn: () => readCounts(pathPrefix),
     initialData: { pending: 0, conflicted: 0 },
     refetchInterval: AUTO_FLUSH_INTERVAL_MS,
   });
@@ -49,6 +67,7 @@ export function useFlushOfflineQueue(): () => Promise<void> {
     const result = await getOfflineQueue().flush(isOnline);
     if (result.sent > 0 || result.conflicted > 0) {
       void queryClient.invalidateQueries({ queryKey: ["attendance"] });
+      void queryClient.invalidateQueries({ queryKey: ["library"] });
     }
     void queryClient.invalidateQueries({ queryKey: QUEUE_COUNTS_KEY });
   }, [queryClient]);

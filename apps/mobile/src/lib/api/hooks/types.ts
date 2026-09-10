@@ -29,4 +29,11 @@ export type ChildCalendarDay = components["schemas"]["ChildCalendarDay"];
 export type ChildGrades = components["schemas"]["ChildGrades"];
 export type ChildDiscipline = components["schemas"]["ChildDiscipline"];
 
+export type LibraryTitle = components["schemas"]["LibraryTitle"];
+export type LibraryCopy = components["schemas"]["LibraryCopy"];
+export type LibraryCopyCondition = components["schemas"]["LibraryCopyCondition"];
+export type LibraryLoan = components["schemas"]["LibraryLoan"];
+export type LibraryStocktake = components["schemas"]["LibraryStocktake"];
+export type LibraryStocktakeResult = components["schemas"]["LibraryStocktakeResult"];
+
 export const REFERENCE_STALE_MS = 5 * 60 * 1000;

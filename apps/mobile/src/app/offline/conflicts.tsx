@@ -11,15 +11,18 @@ import { getOfflineQueue, type QueuedMutation } from "@/lib/offline/queue";
 import { t } from "@/i18n/t";
 
 const SESSION_ENTRIES_PATH = /^\/v1\/attendance\/sessions\/([^/]+)\/entries$/;
+const STOCKTAKE_SCAN_PATH = /^\/v1\/library\/stocktakes\/([^/]+)\/scans$/;
 
 /**
- * Offline attendance saves that reached the server but were rejected with
- * 409 -- the session already has a record, almost always because someone
- * else submitted it while this device was offline (see
- * src/lib/offline/queue.ts). Retrying the exact same body would only 409
- * again, so this screen puts the decision back with a person: reopen the
- * session to redo it as a correction, or discard the local attempt and
- * keep whatever the server already has.
+ * Every mutation the shared offline queue (lib/offline/queue.ts) parked as
+ * a conflict instead of retrying forever: an attendance save the server
+ * rejected with 409 because someone else already submitted that session,
+ * or a library stocktake scan rejected with 404 because its barcode
+ * matches no copy (a mis-scan, a damaged label, or a book never
+ * catalogued). Both need a person's decision, not another automatic
+ * retry -- reopen the session to redo it as a correction, retry once the
+ * underlying problem is fixed (the copy gets added to the catalogue), or
+ * discard the local attempt.
  */
 export default function OfflineConflictsRoute(): React.JSX.Element {
   const [items, setItems] = useState<QueuedMutation[] | null>(null);
@@ -34,6 +37,12 @@ export default function OfflineConflictsRoute(): React.JSX.Element {
   async function discard(id: string): Promise<void> {
     await getOfflineQueue().resolveConflict(id, "discard");
     showToast(t("offline.discarded"), "default");
+    reload();
+  }
+
+  async function retry(id: string): Promise<void> {
+    await getOfflineQueue().resolveConflict(id, "retry");
+    showToast(t("offline.retried"), "default");
     reload();
   }
 
@@ -56,23 +65,35 @@ export default function OfflineConflictsRoute(): React.JSX.Element {
         <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
           {items.map((item) => {
             const isSession = SESSION_ENTRIES_PATH.test(item.path);
+            const stocktakeScan = STOCKTAKE_SCAN_PATH.exec(item.path);
+            const barcode = stocktakeScan ? (item.body as { barcode?: string }).barcode : undefined;
+            const label = isSession
+              ? t("offline.conflict_attendance")
+              : stocktakeScan
+                ? t("offline.conflict_stocktake_scan").replace("{barcode}", barcode ?? "-")
+                : item.path;
             return (
               <View
                 key={item.id}
                 className="gap-2 rounded-input border border-status-late bg-status-late/5 p-4"
               >
-                <Text className="text-base text-ink dark:text-ink-dark">
-                  {isSession ? t("offline.conflict_attendance") : item.path}
-                </Text>
+                <Text className="text-base text-ink dark:text-ink-dark">{label}</Text>
                 <Text className="text-sm text-ink/60 dark:text-ink-dark/60">
                   {item.lastError ?? t("offline.conflict_unknown")}
                 </Text>
-                <View className="flex-row gap-2 pt-1">
+                <View className="flex-row flex-wrap gap-2 pt-1">
                   {isSession ? (
                     <Button
                       label={t("offline.open_session")}
                       variant="secondary"
                       onPress={() => openSession(item.path)}
+                    />
+                  ) : null}
+                  {stocktakeScan ? (
+                    <Button
+                      label={t("offline.retry")}
+                      variant="secondary"
+                      onPress={() => void retry(item.id)}
                     />
                   ) : null}
                   <Button

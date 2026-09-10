@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Text, TextInput, View } from "react-native";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { ScreenHeader } from "@/components/ui/ScreenHeader";
 import { Button } from "@/components/ui/Button";
@@ -16,17 +16,29 @@ import {
   useScanLateArrivalStage,
 } from "@/lib/api/hooks";
 import { decodeScanPayload } from "@/features/scan/payload";
+import {
+  isLibraryScanMode,
+  useLibraryScanHandler,
+  type LibraryScanParams,
+} from "@/features/scan/library-scan";
 import { t } from "@/i18n/t";
 
 type Pending = { token: string; kind?: string; instanceId?: string } | null;
 
 /**
- * Full-screen scanner (docs/07-ui-ux.md "Scanner"): the QR's kind decides
- * the action. Codes typed by hand have no kind, so the student picks one.
+ * Full-screen scanner (docs/07-ui-ux.md "Scanner"), shared by every role
+ * that scans something: a QR's kind decides the attendance action, and a
+ * `mode` route param switches the whole screen into a library flow
+ * (borrow, return, or stocktake -- see features/scan/library-scan.ts)
+ * instead of adding a second scanner. Codes typed by hand with no kind and
+ * no mode fall to the attendance action picker below.
  */
 export default function ScanRoute(): React.JSX.Element {
   const { activeTabGroup } = useAuth();
   const isStudent = activeTabGroup === "student";
+  const params = useLocalSearchParams<LibraryScanParams>();
+  const libraryMode = isLibraryScanMode(params.mode);
+  const library = useLibraryScanHandler(params);
   const [permission, requestPermission] = useCameraPermissions();
   const [manual, setManual] = useState("");
   const [pending, setPending] = useState<Pending>(null);
@@ -78,7 +90,10 @@ export default function ScanRoute(): React.JSX.Element {
         }
         case "gate":
         case "gate_exit":
-          if (!instanceId) { showToast(t("scan.unknown"), "error"); return; }
+          if (!instanceId) {
+            showToast(t("scan.unknown"), "error");
+            return;
+          }
           await gate.mutateAsync({ id: instanceId, token });
           showToast(t("scan.success_gate"), "success");
           break;
@@ -95,9 +110,16 @@ export default function ScanRoute(): React.JSX.Element {
   }
 
   function handleRaw(raw: string) {
+    if (libraryMode) {
+      void library.act(raw);
+      return;
+    }
     const decoded = decodeScanPayload(raw);
     void act(decoded.kind, decoded.token, decoded.instanceId);
   }
+
+  const effectiveBusy = libraryMode ? library.busy : busy;
+  const hint = libraryMode ? library.hint : t("scan.hint");
 
   return (
     <View className="flex-1 bg-bg dark:bg-bg-dark">
@@ -107,17 +129,23 @@ export default function ScanRoute(): React.JSX.Element {
           <CameraView
             style={{ flex: 1 }}
             facing="back"
-            barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
-            onBarcodeScanned={busy || pending ? undefined : ({ data }) => handleRaw(data)}
+            barcodeScannerSettings={{
+              barcodeTypes: libraryMode ? ["code39", "code128", "ean13", "qr"] : ["qr"],
+            }}
+            onBarcodeScanned={effectiveBusy || pending ? undefined : ({ data }) => handleRaw(data)}
           />
         </View>
       ) : (
         <View className="items-center gap-3 px-8 py-10">
-          <Text className="text-center text-sm text-ink/70 dark:text-ink-dark/70">{t("scan.permission")}</Text>
+          <Text className="text-center text-sm text-ink/70 dark:text-ink-dark/70">
+            {t("scan.permission")}
+          </Text>
           <Button label={t("scan.grant")} onPress={() => void requestPermission()} />
         </View>
       )}
-      <Text className="px-4 pt-3 text-center text-sm text-ink/60 dark:text-ink-dark/60">{t("scan.hint")}</Text>
+      <Text className="px-4 pt-3 text-center text-sm text-ink/60 dark:text-ink-dark/60">
+        {hint}
+      </Text>
       <View className="gap-2 px-4 pt-4">
         <Text className="text-sm text-ink dark:text-ink-dark">{t("scan.manual_entry")}</Text>
         <TextInput
@@ -128,14 +156,33 @@ export default function ScanRoute(): React.JSX.Element {
           autoCorrect={false}
           className="rounded-input border border-line bg-surface px-3 py-2 text-base text-ink dark:border-line-dark dark:bg-surface-dark dark:text-ink-dark"
         />
-        <Button label={t("scan.submit")} onPress={() => handleRaw(manual)} disabled={!manual.trim()} loading={busy} />
+        <Button
+          label={t("scan.submit")}
+          onPress={() => handleRaw(manual)}
+          disabled={!manual.trim()}
+          loading={effectiveBusy}
+        />
       </View>
       {pending ? (
         <View className="mx-4 mt-4 gap-2 rounded-input border border-line bg-surface p-4 dark:border-line-dark dark:bg-surface-dark">
-          <Text className="text-base font-medium text-ink dark:text-ink-dark">{t("scan.pick_action")}</Text>
-          <Button label={t("scan.action_entry")} variant="secondary" onPress={() => void act("classroom_entry", pending.token)} />
-          <Button label={t("scan.action_late")} variant="secondary" onPress={() => void act("late_arrival", pending.token)} />
-          <Button label={t("scan.action_stage")} variant="secondary" onPress={() => void act("approve", pending.token, pending.instanceId)} />
+          <Text className="text-base font-medium text-ink dark:text-ink-dark">
+            {t("scan.pick_action")}
+          </Text>
+          <Button
+            label={t("scan.action_entry")}
+            variant="secondary"
+            onPress={() => void act("classroom_entry", pending.token)}
+          />
+          <Button
+            label={t("scan.action_late")}
+            variant="secondary"
+            onPress={() => void act("late_arrival", pending.token)}
+          />
+          <Button
+            label={t("scan.action_stage")}
+            variant="secondary"
+            onPress={() => void act("approve", pending.token, pending.instanceId)}
+          />
           <Button label={t("scan.cancel")} variant="ghost" onPress={() => setPending(null)} />
         </View>
       ) : null}
