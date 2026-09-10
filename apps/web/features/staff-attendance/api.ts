@@ -168,3 +168,15 @@ export function todayInZone(timeZone?: string): string {
   const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
   return `${get("year")}-${get("month")}-${get("day")}`;
 }
+
+export function useImportStaffAttendanceMutation() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (entries: ManualEntry[]) =>
+      client.POST("/v1/staff-attendance/import", { body: { entries } }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["staff-attendance"] });
+    },
+  });
+}

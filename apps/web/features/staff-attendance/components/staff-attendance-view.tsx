@@ -9,6 +9,7 @@ import { useSession } from "../../../lib/session/session-provider";
 import { todayInZone, useStaffAttendanceRosterQuery } from "../api";
 
 import { EmployeeRecapView } from "./employee-recap-view";
+import { StaffAttendanceImportView } from "./import-view";
 import { ScheduleEditorView } from "./schedule-editor-view";
 import { TodayBoardView } from "./today-board-view";
 
@@ -29,6 +30,7 @@ export function StaffAttendanceView(): ReactElement {
           <TabsTrigger value="today">{t("tabs.today")}</TabsTrigger>
           <TabsTrigger value="schedule">{t("tabs.schedule")}</TabsTrigger>
           <TabsTrigger value="recap">{t("tabs.recap")}</TabsTrigger>
+          <TabsTrigger value="import">{t("tabs.import")}</TabsTrigger>
         </TabsList>
         <TabsContent value="today" className="pt-4">
           <TodayBoardView date={date} onDateChange={setDate} employees={employees} />
@@ -38,6 +40,9 @@ export function StaffAttendanceView(): ReactElement {
         </TabsContent>
         <TabsContent value="recap" className="pt-4">
           <EmployeeRecapView employees={employees} />
+        </TabsContent>
+        <TabsContent value="import" className="pt-4">
+          <StaffAttendanceImportView />
         </TabsContent>
       </Tabs>
     </div>

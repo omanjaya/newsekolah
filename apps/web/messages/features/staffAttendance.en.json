@@ -4,7 +4,8 @@
   "tabs": {
     "today": "Today",
     "schedule": "Work Schedule",
-    "recap": "Monthly Recap"
+    "recap": "Monthly Recap",
+    "import": "Import"
   },
   "statuses": {
     "present": "Present",
@@ -101,5 +102,33 @@
     "save": "Save Correction",
     "cancel": "Cancel",
     "saved": "Correction saved"
+  },
+  "import": {
+    "title": "Import from an attendance device",
+    "body": "Upload the device's export. Its contents are shown before anything is saved.",
+    "columns": "Recognised columns: staff number or name, date, arrival time, departure time, notes.",
+    "chooseFile": "Choose a file",
+    "emptyTitle": "No file yet",
+    "emptyBody": "Choose an attendance device export to see what it holds.",
+    "problemsTitle": "{count} rows could not be read",
+    "problemLine": "Row {line}: {reason} ({value})",
+    "mappingTitle": "Unrecognised staff",
+    "mappingBody": "These codes match no employee name. Pick the person once and it applies to all their rows.",
+    "mappingSelect": "Employee for {key}",
+    "mappingPlaceholder": "Choose an employee",
+    "previewTitle": "{count} rows ready to save",
+    "columnEmployee": "Employee",
+    "columnDate": "Date",
+    "columnArrival": "Arrival",
+    "columnDeparture": "Departure",
+    "apply": "Save {count} rows",
+    "applied": "{count} rows saved.",
+    "reasons": {
+      "missing_employee": "employee column empty",
+      "missing_date": "date column empty",
+      "bad_date": "date format not recognised",
+      "bad_time": "time format not recognised",
+      "unknown_employee": "employee not recognised"
+    }
   }
 }

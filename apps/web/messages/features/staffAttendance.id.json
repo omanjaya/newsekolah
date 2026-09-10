@@ -4,7 +4,8 @@
   "tabs": {
     "today": "Hari Ini",
     "schedule": "Jadwal Kerja",
-    "recap": "Rekap Bulanan"
+    "recap": "Rekap Bulanan",
+    "import": "Impor"
   },
   "statuses": {
     "present": "Hadir",
@@ -101,5 +102,33 @@
     "save": "Simpan Koreksi",
     "cancel": "Batal",
     "saved": "Koreksi tersimpan"
+  },
+  "import": {
+    "title": "Impor dari mesin absensi",
+    "body": "Unggah berkas ekspor mesin absensi. Isinya ditampilkan lebih dulu, tidak langsung disimpan.",
+    "columns": "Kolom yang dikenali: NIP atau nama pegawai, tanggal, jam masuk, jam pulang, catatan.",
+    "chooseFile": "Pilih berkas",
+    "emptyTitle": "Belum ada berkas",
+    "emptyBody": "Pilih berkas ekspor mesin absensi untuk melihat isinya.",
+    "problemsTitle": "{count} baris tidak bisa dibaca",
+    "problemLine": "Baris {line}: {reason} ({value})",
+    "mappingTitle": "Pegawai belum dikenali",
+    "mappingBody": "Kode berikut tidak cocok dengan nama pegawai mana pun. Pilih orangnya sekali, berlaku untuk semua barisnya.",
+    "mappingSelect": "Pegawai untuk {key}",
+    "mappingPlaceholder": "Pilih pegawai",
+    "previewTitle": "{count} baris siap disimpan",
+    "columnEmployee": "Pegawai",
+    "columnDate": "Tanggal",
+    "columnArrival": "Masuk",
+    "columnDeparture": "Pulang",
+    "apply": "Simpan {count} baris",
+    "applied": "{count} baris tersimpan.",
+    "reasons": {
+      "missing_employee": "kolom pegawai kosong",
+      "missing_date": "kolom tanggal kosong",
+      "bad_date": "format tanggal tidak dikenali",
+      "bad_time": "format jam tidak dikenali",
+      "unknown_employee": "pegawai tidak dikenali"
+    }
   }
 }
