@@ -24,10 +24,14 @@ function readCollapsedGroups(): Record<string, boolean> {
   }
 }
 
+function isActive(pathname: string, href: string): boolean {
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
 function NavLink({ item }: { item: NavItem }): ReactElement {
   const pathname = usePathname();
   const t = useTranslations();
-  const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+  const active = isActive(pathname, item.href);
 
   return (
     <Link
@@ -60,14 +64,16 @@ export function Sidebar({
   className?: string;
 }): ReactElement {
   const t = useTranslations();
-  // Starts empty (all groups open) to match the server-rendered pass; the
-  // effect below applies the stored preference right after mount, the same
-  // trade-off as ThemeProvider and OfflineIndicator make for the same reason.
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const pathname = usePathname();
+  // Stored preferences only, and only for groups the reader has actually
+  // toggled. Starts empty to match the server-rendered pass, then the
+  // effect applies what was stored, the same trade-off ThemeProvider and
+  // OfflineIndicator make for the same reason.
+  const [stored, setStored] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- see the note above `collapsed`'s useState.
-    setCollapsed(readCollapsedGroups());
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- see the note above `stored`'s useState.
+    setStored(readCollapsedGroups());
   }, []);
 
   const ungrouped = items.filter((item) => !item.group);
@@ -79,9 +85,19 @@ export function Sidebar({
     groups.set(item.group, list);
   }
 
+  // With every module shipped the registry runs past a screen and a half,
+  // so opening all seven groups buries Settings below the fold on a laptop.
+  // Only the group holding the current page opens by default; the reader's
+  // own choice, once made, wins over that.
+  const activeGroup = items.find((item) => item.group && isActive(pathname, item.href))?.group;
+
+  function isCollapsed(group: string): boolean {
+    return stored[group] ?? group !== activeGroup;
+  }
+
   function toggleGroup(group: string) {
-    setCollapsed((prev) => {
-      const next = { ...prev, [group]: !prev[group] };
+    setStored((prev) => {
+      const next = { ...prev, [group]: !isCollapsed(group) };
       try {
         localStorage.setItem(COLLAPSE_STORAGE_KEY, JSON.stringify(next));
       } catch {
@@ -116,16 +132,16 @@ export function Sidebar({
               onClick={() => {
                 toggleGroup(group);
               }}
-              aria-expanded={!collapsed[group]}
+              aria-expanded={!isCollapsed(group)}
               className="flex h-8 items-center justify-between px-3 text-[12px] font-medium text-fg-muted"
             >
               {t(group)}
               <ChevronDown
-                className={cn("size-4 transition-transform", collapsed[group] && "-rotate-90")}
+                className={cn("size-4 transition-transform", isCollapsed(group) && "-rotate-90")}
                 aria-hidden="true"
               />
             </button>
-            {!collapsed[group] && (
+            {!isCollapsed(group) && (
               <div className="flex flex-col gap-1">
                 {groupItems.map((item) => (
                   <NavLink key={item.key} item={item} />
