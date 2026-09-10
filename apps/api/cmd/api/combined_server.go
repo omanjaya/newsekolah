@@ -25,6 +25,7 @@ import (
 	schoolhttp "github.com/omanjaya/newsekolah/apps/api/internal/modules/school/transport/http"
 	staffattendancehttp "github.com/omanjaya/newsekolah/apps/api/internal/modules/staffattendance/transport/http"
 	supervisionhttp "github.com/omanjaya/newsekolah/apps/api/internal/modules/supervision/transport/http"
+	visitorshttp "github.com/omanjaya/newsekolah/apps/api/internal/modules/visitors/transport/http"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
 )
 
@@ -52,6 +53,7 @@ type combinedServer struct {
 	*mentoringhttp.MentoringHandler
 	*supervisionhttp.SupervisionHandler
 	*staffattendancehttp.StaffAttendanceHandler
+	*visitorshttp.VisitorsHandler
 	*healthHandler
 }
 

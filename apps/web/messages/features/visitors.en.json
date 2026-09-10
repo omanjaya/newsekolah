@@ -1,0 +1,169 @@
+{
+  "board": {
+    "eyebrow": "Visitors & Incidents",
+    "title": "Gate Board",
+    "count": "{count, plural, one {# visitor on campus} other {# visitors on campus}}",
+    "newVisitor": "New Visitor",
+    "overdue": "Not Signed Out",
+    "purpose": "Purpose",
+    "noPurpose": "Not recorded",
+    "arrivedAt": "Arrived",
+    "badgeNumber": "Badge No.",
+    "noBadge": "None yet",
+    "checkOut": "Sign Out",
+    "signedOut": "{name} has been signed out",
+    "emptyTitle": "No visitors yet",
+    "emptyBody": "Guests signed in at the gate will appear here."
+  },
+  "checkIn": {
+    "fullName": "Full name",
+    "fullNamePlaceholder": "Visitor's name",
+    "organization": "Organization",
+    "organizationPlaceholder": "Optional",
+    "host": "Visiting",
+    "hostPlaceholder": "Select a teacher or staff member",
+    "purpose": "Purpose",
+    "purposePlaceholder": "Optional",
+    "idChecked": "Identification sighted",
+    "idCheckedHint": "Only records the kind of identification, never a photo or its number.",
+    "idTypePlaceholder": "Identification type",
+    "idTypes": {
+      "none": "Not selected",
+      "ktp": "National ID (KTP)",
+      "sim": "Driver's License",
+      "kartu_pelajar": "Student Card",
+      "kartu_pegawai": "Staff Card",
+      "other": "Other"
+    },
+    "cancel": "Cancel",
+    "submit": "Sign In",
+    "signedIn": "Visitor signed in"
+  },
+  "expected": {
+    "eyebrow": "Visitors & Incidents",
+    "title": "Expected Guests",
+    "filters": {
+      "date": "Date"
+    },
+    "add": "Add Guest",
+    "checkIn": "Sign In",
+    "cancel": "Withdraw",
+    "cancelled": "Expected guest entry withdrawn",
+    "unknownHost": "Unknown",
+    "columns": {
+      "name": "Name",
+      "organization": "Organization",
+      "host": "Visiting",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "status": {
+      "pending": "Pending",
+      "arrived": "Arrived",
+      "expired": "Expired",
+      "cancelled": "Cancelled"
+    },
+    "emptyTitle": "No guests expected",
+    "emptyBody": "Add the names of guests expected today.",
+    "form": {
+      "fullName": "Full name",
+      "organization": "Organization",
+      "host": "Visiting",
+      "hostPlaceholder": "Select a teacher or staff member",
+      "date": "Expected date",
+      "purpose": "Purpose",
+      "notes": "Notes",
+      "cancel": "Cancel",
+      "submit": "Save",
+      "added": "Expected guest added"
+    }
+  },
+  "incidents": {
+    "eyebrow": "Visitors & Incidents",
+    "title": "Incidents",
+    "record": "Record Incident",
+    "open": "Open",
+    "filters": {
+      "includeClosed": "Show closed incidents"
+    },
+    "columns": {
+      "occurredAt": "Occurred at",
+      "severity": "Severity",
+      "description": "Summary",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "status": {
+      "open": "Open",
+      "closed": "Closed"
+    },
+    "severities": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "critical": "Critical"
+    },
+    "emptyTitle": "No incidents yet",
+    "emptyBody": "Incidents recorded in the last 30 days will appear here.",
+    "detail": {
+      "title": "Incident Detail",
+      "loading": "Loading...",
+      "status": {
+        "open": "Open",
+        "closed": "Closed"
+      },
+      "severity": "Severity",
+      "severities": {
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High",
+        "critical": "Critical"
+      },
+      "description": "Summary",
+      "personsInvolved": "Persons involved",
+      "actionTaken": "Action taken",
+      "edit": "Edit",
+      "close": "Close Incident",
+      "closed": "Incident closed"
+    },
+    "form": {
+      "occurredAt": "Occurred at",
+      "severity": "Severity",
+      "severities": {
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High",
+        "critical": "Critical"
+      },
+      "description": "Summary",
+      "personsInvolved": "Persons involved",
+      "personsInvolvedPlaceholder": "Optional",
+      "actionTaken": "Action taken",
+      "cancel": "Cancel",
+      "submit": "Save",
+      "recorded": "Incident recorded",
+      "updated": "Incident updated"
+    }
+  },
+  "recap": {
+    "eyebrow": "Visitors & Incidents",
+    "title": "Visitor Recap",
+    "tabs": {
+      "daily": "Daily",
+      "monthly": "Monthly"
+    },
+    "dateLabel": "Date",
+    "monthLabel": "Month",
+    "export": "Download Excel",
+    "totalVisits": "Total visits",
+    "stillOnCampus": "Still on campus",
+    "avgStayMinutes": "Average stay (minutes)",
+    "incidentsBySeverity": "Incidents by severity",
+    "severities": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "critical": "Critical"
+    }
+  }
+}

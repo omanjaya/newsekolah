@@ -68,8 +68,13 @@ export type MessageKey =
   | "errors.AUTH_INVALID_CREDENTIALS"
   | "errors.AUTH_TOKEN_EXPIRED"
   | "errors.DUTY_TYPE_IN_USE"
+  | "errors.EXPECTED_GUEST_NOT_FOUND"
+  | "errors.EXPECTED_GUEST_RESOLVED"
   | "errors.FORBIDDEN"
   | "errors.IMPERSONATION_NOT_ALLOWED"
+  | "errors.INCIDENT_ALREADY_CLOSED"
+  | "errors.INCIDENT_FORBIDDEN"
+  | "errors.INCIDENT_NOT_FOUND"
   | "errors.LIBRARY_COPY_AVAILABLE_FOR_LOAN"
   | "errors.LIBRARY_COPY_BARCODE_EXISTS"
   | "errors.LIBRARY_COPY_NOT_AVAILABLE"
@@ -111,6 +116,9 @@ export type MessageKey =
   | "errors.UPLOAD_NOT_CONFIGURED"
   | "errors.USER_ALREADY_EXISTS"
   | "errors.VALIDATION_FAILED"
+  | "errors.VISITORS_MODULE_DISABLED"
+  | "errors.VISIT_ALREADY_CHECKED_OUT"
+  | "errors.VISIT_NOT_FOUND"
   | "nav.academic.items.attendance"
   | "nav.academic.items.grading"
   | "nav.academic.items.homeroomClass"
@@ -174,6 +182,11 @@ export type MessageKey =
   | "nav.settings.items.schoolProfile"
   | "nav.settings.items.sessionsAndSecurity"
   | "nav.settings.label"
+  | "nav.visitors.items.board"
+  | "nav.visitors.items.expected"
+  | "nav.visitors.items.incidents"
+  | "nav.visitors.items.reports"
+  | "nav.visitors.label"
   | "validation.email"
   | "validation.maxLength"
   | "validation.minLength"
@@ -253,8 +266,13 @@ export const MESSAGE_KEYS: readonly MessageKey[] = [
   "errors.AUTH_INVALID_CREDENTIALS",
   "errors.AUTH_TOKEN_EXPIRED",
   "errors.DUTY_TYPE_IN_USE",
+  "errors.EXPECTED_GUEST_NOT_FOUND",
+  "errors.EXPECTED_GUEST_RESOLVED",
   "errors.FORBIDDEN",
   "errors.IMPERSONATION_NOT_ALLOWED",
+  "errors.INCIDENT_ALREADY_CLOSED",
+  "errors.INCIDENT_FORBIDDEN",
+  "errors.INCIDENT_NOT_FOUND",
   "errors.LIBRARY_COPY_AVAILABLE_FOR_LOAN",
   "errors.LIBRARY_COPY_BARCODE_EXISTS",
   "errors.LIBRARY_COPY_NOT_AVAILABLE",
@@ -296,6 +314,9 @@ export const MESSAGE_KEYS: readonly MessageKey[] = [
   "errors.UPLOAD_NOT_CONFIGURED",
   "errors.USER_ALREADY_EXISTS",
   "errors.VALIDATION_FAILED",
+  "errors.VISITORS_MODULE_DISABLED",
+  "errors.VISIT_ALREADY_CHECKED_OUT",
+  "errors.VISIT_NOT_FOUND",
   "nav.academic.items.attendance",
   "nav.academic.items.grading",
   "nav.academic.items.homeroomClass",
@@ -359,6 +380,11 @@ export const MESSAGE_KEYS: readonly MessageKey[] = [
   "nav.settings.items.schoolProfile",
   "nav.settings.items.sessionsAndSecurity",
   "nav.settings.label",
+  "nav.visitors.items.board",
+  "nav.visitors.items.expected",
+  "nav.visitors.items.incidents",
+  "nav.visitors.items.reports",
+  "nav.visitors.label",
   "validation.email",
   "validation.maxLength",
   "validation.minLength",

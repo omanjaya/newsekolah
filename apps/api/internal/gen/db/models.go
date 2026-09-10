@@ -1420,6 +1420,57 @@ type ViolationType struct {
 	DeletedAt pgtype.Timestamptz `json:"deleted_at"`
 }
 
+type VisitorExpectedGuest struct {
+	ID           uuid.UUID          `json:"id"`
+	TenantID     uuid.UUID          `json:"tenant_id"`
+	FullName     string             `json:"full_name"`
+	Organization string             `json:"organization"`
+	HostUserID   uuid.UUID          `json:"host_user_id"`
+	Purpose      string             `json:"purpose"`
+	ExpectedDate pgtype.Date        `json:"expected_date"`
+	Notes        string             `json:"notes"`
+	Status       string             `json:"status"`
+	CreatedBy    uuid.UUID          `json:"created_by"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+}
+
+type VisitorIncident struct {
+	ID              uuid.UUID          `json:"id"`
+	TenantID        uuid.UUID          `json:"tenant_id"`
+	OccurredAt      pgtype.Timestamptz `json:"occurred_at"`
+	Severity        string             `json:"severity"`
+	Description     string             `json:"description"`
+	PersonsInvolved string             `json:"persons_involved"`
+	ActionTaken     string             `json:"action_taken"`
+	ReportedBy      uuid.UUID          `json:"reported_by"`
+	IsClosed        bool               `json:"is_closed"`
+	ClosedAt        pgtype.Timestamptz `json:"closed_at"`
+	ClosedBy        pgtype.UUID        `json:"closed_by"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+}
+
+type VisitorVisit struct {
+	ID              uuid.UUID          `json:"id"`
+	TenantID        uuid.UUID          `json:"tenant_id"`
+	ExpectedGuestID pgtype.UUID        `json:"expected_guest_id"`
+	FullName        string             `json:"full_name"`
+	Organization    string             `json:"organization"`
+	HostUserID      uuid.UUID          `json:"host_user_id"`
+	Purpose         string             `json:"purpose"`
+	IDChecked       bool               `json:"id_checked"`
+	IDType          string             `json:"id_type"`
+	BadgeNumber     string             `json:"badge_number"`
+	BadgeAssetID    pgtype.UUID        `json:"badge_asset_id"`
+	ArrivedAt       pgtype.Timestamptz `json:"arrived_at"`
+	DepartedAt      pgtype.Timestamptz `json:"departed_at"`
+	CheckedInBy     uuid.UUID          `json:"checked_in_by"`
+	CheckedOutBy    pgtype.UUID        `json:"checked_out_by"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+}
+
 type WarningLetter struct {
 	ID              uuid.UUID          `json:"id"`
 	TenantID        uuid.UUID          `json:"tenant_id"`

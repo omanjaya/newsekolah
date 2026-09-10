@@ -190,6 +190,15 @@
       "library": "Perpustakaan",
       "announcements": "Pengumuman",
       "profile": "Profil"
+    },
+    "visitors": {
+      "label": "Tamu & Insiden",
+      "items": {
+        "board": "Papan Tamu",
+        "expected": "Tamu Dijadwalkan",
+        "incidents": "Insiden",
+        "reports": "Rekap Kunjungan"
+      }
     }
   },
   "errors": {
@@ -238,6 +247,14 @@
     "STAFF_ATTENDANCE_SCHEDULE_DAY_INVALID": "Jadwal kerja yang dimasukkan tidak valid",
     "STAFF_ATTENDANCE_ALREADY_SCANNED": "Kedatangan dan kepulangan hari ini sudah tercatat",
     "STAFF_ATTENDANCE_CORRECTION_REASON_REQUIRED": "Koreksi memerlukan alasan",
-    "STAFF_ATTENDANCE_INVALID_MONTH": "Format bulan tidak valid"
+    "STAFF_ATTENDANCE_INVALID_MONTH": "Format bulan tidak valid",
+    "EXPECTED_GUEST_NOT_FOUND": "Tamu yang dijadwalkan tidak ditemukan",
+    "EXPECTED_GUEST_RESOLVED": "Entri tamu ini sudah diproses",
+    "VISIT_NOT_FOUND": "Kunjungan tidak ditemukan",
+    "VISIT_ALREADY_CHECKED_OUT": "Tamu ini sudah keluar kampus",
+    "INCIDENT_NOT_FOUND": "Catatan insiden tidak ditemukan",
+    "INCIDENT_ALREADY_CLOSED": "Insiden ini sudah ditutup",
+    "INCIDENT_FORBIDDEN": "Anda tidak berwenang membaca insiden ini",
+    "VISITORS_MODULE_DISABLED": "Modul kunjungan tamu belum diaktifkan untuk sekolah ini"
   }
 }

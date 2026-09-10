@@ -51,6 +51,8 @@ import ssoEn from "./sso.en.json";
 import ssoId from "./sso.id.json";
 import staffAttendanceEn from "./staffAttendance.en.json";
 import staffAttendanceId from "./staffAttendance.id.json";
+import visitorsEn from "./visitors.en.json";
+import visitorsId from "./visitors.id.json";
 import workflowsEn from "./workflows.en.json";
 import workflowsId from "./workflows.id.json";
 
@@ -86,3 +88,4 @@ registerFeatureMessages({
   id: staffAttendanceId,
   en: staffAttendanceEn,
 });
+registerFeatureMessages({ namespace: "visitors", id: visitorsId, en: visitorsEn });

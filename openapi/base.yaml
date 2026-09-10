@@ -71,3 +71,5 @@ tags:
     description: Leadership observing a teacher's lesson against a scored instrument
   - name: staff-attendance
     description: Working attendance of teachers and staff -- schedules, daily records, corrections, monthly recap
+  - name: visitors
+    description: Guests at the gate (expected list, board, sign-in/out, badge) and campus incidents

@@ -1,0 +1,169 @@
+{
+  "board": {
+    "eyebrow": "Tamu & Insiden",
+    "title": "Papan Tamu",
+    "count": "{count, plural, other {# tamu di kampus}}",
+    "newVisitor": "Tamu Baru",
+    "overdue": "Belum Keluar",
+    "purpose": "Keperluan",
+    "noPurpose": "Tidak dicatat",
+    "arrivedAt": "Masuk",
+    "badgeNumber": "No. Badge",
+    "noBadge": "Belum ada",
+    "checkOut": "Catat Keluar",
+    "signedOut": "{name} sudah dicatat keluar",
+    "emptyTitle": "Belum ada tamu",
+    "emptyBody": "Tamu yang masuk lewat gerbang akan muncul di sini."
+  },
+  "checkIn": {
+    "fullName": "Nama lengkap",
+    "fullNamePlaceholder": "Nama tamu",
+    "organization": "Instansi/organisasi",
+    "organizationPlaceholder": "Opsional",
+    "host": "Ditemui",
+    "hostPlaceholder": "Pilih guru atau pegawai",
+    "purpose": "Keperluan",
+    "purposePlaceholder": "Opsional",
+    "idChecked": "Identitas sudah diperiksa",
+    "idCheckedHint": "Hanya mencatat jenis identitasnya, bukan foto atau nomornya.",
+    "idTypePlaceholder": "Jenis identitas",
+    "idTypes": {
+      "none": "Belum dipilih",
+      "ktp": "KTP",
+      "sim": "SIM",
+      "kartu_pelajar": "Kartu Pelajar",
+      "kartu_pegawai": "Kartu Pegawai",
+      "other": "Lainnya"
+    },
+    "cancel": "Batal",
+    "submit": "Catat Masuk",
+    "signedIn": "Tamu sudah dicatat masuk"
+  },
+  "expected": {
+    "eyebrow": "Tamu & Insiden",
+    "title": "Tamu Dijadwalkan",
+    "filters": {
+      "date": "Tanggal"
+    },
+    "add": "Tambah Tamu",
+    "checkIn": "Catat Masuk",
+    "cancel": "Batalkan",
+    "cancelled": "Entri tamu dibatalkan",
+    "unknownHost": "Tidak diketahui",
+    "columns": {
+      "name": "Nama",
+      "organization": "Instansi",
+      "host": "Ditemui",
+      "status": "Status",
+      "actions": "Aksi"
+    },
+    "status": {
+      "pending": "Menunggu",
+      "arrived": "Sudah datang",
+      "expired": "Kedaluwarsa",
+      "cancelled": "Dibatalkan"
+    },
+    "emptyTitle": "Belum ada tamu dijadwalkan",
+    "emptyBody": "Tambahkan nama tamu yang diharapkan datang hari ini.",
+    "form": {
+      "fullName": "Nama lengkap",
+      "organization": "Instansi/organisasi",
+      "host": "Ditemui",
+      "hostPlaceholder": "Pilih guru atau pegawai",
+      "date": "Tanggal diharapkan",
+      "purpose": "Keperluan",
+      "notes": "Catatan",
+      "cancel": "Batal",
+      "submit": "Simpan",
+      "added": "Tamu dijadwalkan ditambahkan"
+    }
+  },
+  "incidents": {
+    "eyebrow": "Tamu & Insiden",
+    "title": "Insiden",
+    "record": "Catat Insiden",
+    "open": "Buka",
+    "filters": {
+      "includeClosed": "Tampilkan yang sudah ditutup"
+    },
+    "columns": {
+      "occurredAt": "Waktu kejadian",
+      "severity": "Tingkat",
+      "description": "Ringkasan",
+      "status": "Status",
+      "actions": "Aksi"
+    },
+    "status": {
+      "open": "Terbuka",
+      "closed": "Ditutup"
+    },
+    "severities": {
+      "low": "Rendah",
+      "medium": "Sedang",
+      "high": "Tinggi",
+      "critical": "Kritis"
+    },
+    "emptyTitle": "Belum ada insiden",
+    "emptyBody": "Insiden yang tercatat dalam 30 hari terakhir akan muncul di sini.",
+    "detail": {
+      "title": "Detail Insiden",
+      "loading": "Memuat...",
+      "status": {
+        "open": "Terbuka",
+        "closed": "Ditutup"
+      },
+      "severity": "Tingkat keparahan",
+      "severities": {
+        "low": "Rendah",
+        "medium": "Sedang",
+        "high": "Tinggi",
+        "critical": "Kritis"
+      },
+      "description": "Ringkasan kejadian",
+      "personsInvolved": "Orang yang terlibat",
+      "actionTaken": "Tindakan yang diambil",
+      "edit": "Ubah",
+      "close": "Tutup Insiden",
+      "closed": "Insiden ditutup"
+    },
+    "form": {
+      "occurredAt": "Waktu kejadian",
+      "severity": "Tingkat keparahan",
+      "severities": {
+        "low": "Rendah",
+        "medium": "Sedang",
+        "high": "Tinggi",
+        "critical": "Kritis"
+      },
+      "description": "Ringkasan kejadian",
+      "personsInvolved": "Orang yang terlibat",
+      "personsInvolvedPlaceholder": "Opsional",
+      "actionTaken": "Tindakan yang diambil",
+      "cancel": "Batal",
+      "submit": "Simpan",
+      "recorded": "Insiden dicatat",
+      "updated": "Insiden diperbarui"
+    }
+  },
+  "recap": {
+    "eyebrow": "Tamu & Insiden",
+    "title": "Rekap Kunjungan",
+    "tabs": {
+      "daily": "Harian",
+      "monthly": "Bulanan"
+    },
+    "dateLabel": "Tanggal",
+    "monthLabel": "Bulan",
+    "export": "Unduh Excel",
+    "totalVisits": "Total kunjungan",
+    "stillOnCampus": "Masih di kampus",
+    "avgStayMinutes": "Rata-rata durasi (menit)",
+    "incidentsBySeverity": "Insiden per tingkat keparahan",
+    "severities": {
+      "low": "Rendah",
+      "medium": "Sedang",
+      "high": "Tinggi",
+      "critical": "Kritis"
+    }
+  }
+}

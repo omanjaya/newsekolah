@@ -10,9 +10,9 @@ import (
 
 // TemplateKind is a document_templates.kind value. permits only issues
 // leave_letter today; the others are reserved for the discipline
-// (warning_letter), journal (class_journal) and library
-// (member_card/item_label/clearance_letter) modules built later, sharing
-// this same table.
+// (warning_letter), journal (class_journal), library
+// (member_card/item_label/clearance_letter) and visitors (visitor_badge)
+// modules, sharing this same table.
 type TemplateKind string
 
 const (
@@ -23,6 +23,7 @@ const (
 	TemplateKindItemLabel       TemplateKind = "item_label"
 	TemplateKindClearanceLetter TemplateKind = "clearance_letter"
 	TemplateKindReport          TemplateKind = "report"
+	TemplateKindVisitorBadge    TemplateKind = "visitor_badge"
 )
 
 type Engine string

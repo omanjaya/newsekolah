@@ -1,0 +1,503 @@
+paths:
+  /v1/visitors/expected-guests:
+    get:
+      tags: [visitors]
+      operationId: listExpectedGuests
+      x-permission: view_visitors
+      summary: The guard's lookup list of guests expected on a given day
+      parameters:
+        - { name: date, in: query, required: true, schema: { type: string, format: date } }
+        - { name: include_resolved, in: query, schema: { type: boolean, default: false } }
+      responses:
+        "200":
+          description: Expected guests
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/ExpectedGuest" } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: [visitors]
+      operationId: createExpectedGuest
+      x-permission: manage_visitors
+      summary: Enter a guest an office expects ahead of their visit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ExpectedGuestWrite" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ExpectedGuest" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/visitors/expected-guests/{expectedGuestId}:
+    delete:
+      tags: [visitors]
+      operationId: cancelExpectedGuest
+      x-permission: manage_visitors
+      summary: Withdraw an expected-guest entry the office no longer expects
+      parameters:
+        - {
+            name: expectedGuestId,
+            in: path,
+            required: true,
+            schema: { type: string, format: uuid },
+          }
+      responses:
+        "204": { description: Cancelled }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /v1/visitors/board:
+    get:
+      tags: [visitors]
+      operationId: getVisitorBoard
+      x-permission: view_visitors
+      summary: Everyone on campus right now, the screen a guard works from
+      responses:
+        "200":
+          description: Gate board
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/BoardEntry" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /v1/visitors/visits:
+    get:
+      tags: [visitors]
+      operationId: listVisits
+      x-permission: view_visitors
+      summary: Visit history for a date range
+      parameters:
+        - { name: from, in: query, required: true, schema: { type: string, format: date-time } }
+        - { name: to, in: query, required: true, schema: { type: string, format: date-time } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 200 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0 } }
+      responses:
+        "200":
+          description: Visits
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/Visit" } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: [visitors]
+      operationId: checkInVisit
+      x-permission: manage_visitors
+      summary: Sign a guest in at the gate and print their badge
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CheckInInput" }
+      responses:
+        "201":
+          description: Signed in
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Visit" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /v1/visitors/visits/{visitId}:
+    get:
+      tags: [visitors]
+      operationId: getVisit
+      x-permission: view_visitors
+      summary: One visit's detail
+      parameters:
+        - { name: visitId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Visit
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Visit" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /v1/visitors/visits/{visitId}/check-out:
+    post:
+      tags: [visitors]
+      operationId: checkOutVisit
+      x-permission: manage_visitors
+      summary: Sign a guest out, the one action the gate board offers for them
+      parameters:
+        - { name: visitId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Signed out
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Visit" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /v1/visitors/visits/{visitId}/badge-url:
+    get:
+      tags: [visitors]
+      operationId: getVisitBadgeUrl
+      x-permission: view_visitors
+      summary: A presigned link to the printable badge PDF
+      parameters:
+        - { name: visitId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Badge link
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [url]
+                properties:
+                  url: { type: string }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /v1/visitors/incidents:
+    get:
+      tags: [visitors]
+      operationId: listIncidents
+      x-permission: view_visitor_incidents
+      summary: Incident log for a date range, narrowed to what this reader may open
+      parameters:
+        - { name: from, in: query, required: true, schema: { type: string, format: date-time } }
+        - { name: to, in: query, required: true, schema: { type: string, format: date-time } }
+        - { name: include_closed, in: query, schema: { type: boolean, default: true } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 200 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0 } }
+      responses:
+        "200":
+          description: Incidents
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/Incident" } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: [visitors]
+      operationId: createIncident
+      x-permission: manage_visitor_incidents
+      summary: Record something that happened on campus
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/IncidentWrite" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Incident" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/visitors/incidents/{incidentId}:
+    get:
+      tags: [visitors]
+      operationId: getIncident
+      x-permission: view_visitor_incidents
+      summary: One incident's detail; restricted to its reporter, security or leadership, and audited on every read
+      parameters:
+        - { name: incidentId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Incident
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Incident" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: [visitors]
+      operationId: updateIncident
+      x-permission: manage_visitor_incidents
+      summary: Edit an open incident
+      parameters:
+        - { name: incidentId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/IncidentWrite" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Incident" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /v1/visitors/incidents/{incidentId}/close:
+    post:
+      tags: [visitors]
+      operationId: closeIncident
+      x-permission: manage_visitor_incidents
+      summary: Close a resolved incident
+      parameters:
+        - { name: incidentId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Closed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Incident" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /v1/visitors/recap/daily:
+    get:
+      tags: [visitors]
+      operationId: getDailyVisitorRecap
+      x-permission: view_visitor_reports
+      summary: The security office's recap for one day
+      parameters:
+        - { name: date, in: query, required: true, schema: { type: string, format: date } }
+      responses:
+        "200":
+          description: Recap
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/VisitorRecap" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/visitors/recap/daily/export:
+    get:
+      tags: [visitors]
+      operationId: exportDailyVisitorRecap
+      x-permission: view_visitor_reports
+      summary: The daily recap as a workbook
+      parameters:
+        - { name: date, in: query, required: true, schema: { type: string, format: date } }
+      responses:
+        "200":
+          description: Workbook
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: { type: string, format: binary }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/visitors/recap/monthly:
+    get:
+      tags: [visitors]
+      operationId: getMonthlyVisitorRecap
+      x-permission: view_visitor_reports
+      summary: The security office's recap for one month
+      parameters:
+        - {
+            name: month,
+            in: query,
+            required: true,
+            schema: { type: string, format: date },
+            description: Any date within the target month,
+          }
+      responses:
+        "200":
+          description: Recap
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/VisitorRecap" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/visitors/recap/monthly/export:
+    get:
+      tags: [visitors]
+      operationId: exportMonthlyVisitorRecap
+      x-permission: view_visitor_reports
+      summary: The monthly recap as a workbook
+      parameters:
+        - {
+            name: month,
+            in: query,
+            required: true,
+            schema: { type: string, format: date },
+            description: Any date within the target month,
+          }
+      responses:
+        "200":
+          description: Workbook
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: { type: string, format: binary }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+components:
+  schemas:
+    ExpectedGuest:
+      type: object
+      required:
+        [
+          id,
+          full_name,
+          organization,
+          host_user_id,
+          purpose,
+          expected_date,
+          notes,
+          status,
+          created_by,
+          created_at,
+        ]
+      properties:
+        id: { type: string, format: uuid }
+        full_name: { type: string }
+        organization: { type: string }
+        host_user_id: { type: string, format: uuid }
+        purpose: { type: string }
+        expected_date: { type: string, format: date }
+        notes: { type: string }
+        status: { type: string, enum: [pending, arrived, expired, cancelled] }
+        created_by: { type: string, format: uuid }
+        created_at: { type: string, format: date-time }
+    ExpectedGuestWrite:
+      type: object
+      required: [full_name, host_user_id, expected_date]
+      properties:
+        full_name: { type: string, minLength: 1, maxLength: 160 }
+        organization: { type: string, maxLength: 160 }
+        host_user_id: { type: string, format: uuid }
+        purpose: { type: string, maxLength: 300 }
+        expected_date: { type: string, format: date }
+        notes: { type: string, maxLength: 500 }
+    Visit:
+      type: object
+      required:
+        [
+          id,
+          full_name,
+          organization,
+          host_user_id,
+          purpose,
+          id_checked,
+          id_type,
+          badge_number,
+          arrived_at,
+          checked_in_by,
+          on_campus,
+        ]
+      properties:
+        id: { type: string, format: uuid }
+        expected_guest_id: { type: string, format: uuid }
+        full_name: { type: string }
+        organization: { type: string }
+        host_user_id: { type: string, format: uuid }
+        purpose: { type: string }
+        id_checked: { type: boolean }
+        id_type: { type: string, enum: ["", ktp, sim, kartu_pelajar, kartu_pegawai, other] }
+        badge_number: { type: string }
+        arrived_at: { type: string, format: date-time }
+        departed_at: { type: string, format: date-time }
+        checked_in_by: { type: string, format: uuid }
+        checked_out_by: { type: string, format: uuid }
+        on_campus: { type: boolean }
+    CheckInInput:
+      type: object
+      required: [full_name, host_user_id, id_checked, id_type]
+      properties:
+        expected_guest_id: { type: string, format: uuid }
+        full_name: { type: string, minLength: 1, maxLength: 160 }
+        organization: { type: string, maxLength: 160 }
+        host_user_id: { type: string, format: uuid }
+        purpose: { type: string, maxLength: 300 }
+        id_checked:
+          type: boolean
+          description: Whether the guard sighted an identification document. Its number is never recorded.
+        id_type: { type: string, enum: ["", ktp, sim, kartu_pelajar, kartu_pegawai, other] }
+    BoardEntry:
+      type: object
+      required: [visit, overdue]
+      properties:
+        visit: { $ref: "#/components/schemas/Visit" }
+        overdue:
+          type: boolean
+          description: Arrived more than a normal campus day ago and still has not signed out.
+    Incident:
+      type: object
+      required:
+        [
+          id,
+          occurred_at,
+          severity,
+          description,
+          persons_involved,
+          action_taken,
+          reported_by,
+          is_closed,
+          created_at,
+        ]
+      properties:
+        id: { type: string, format: uuid }
+        occurred_at: { type: string, format: date-time }
+        severity: { type: string, enum: [low, medium, high, critical] }
+        description: { type: string }
+        persons_involved: { type: string }
+        action_taken: { type: string }
+        reported_by: { type: string, format: uuid }
+        is_closed: { type: boolean }
+        closed_at: { type: string, format: date-time }
+        closed_by: { type: string, format: uuid }
+        created_at: { type: string, format: date-time }
+    IncidentWrite:
+      type: object
+      required: [occurred_at, severity, description]
+      properties:
+        occurred_at: { type: string, format: date-time }
+        severity: { type: string, enum: [low, medium, high, critical] }
+        description: { type: string, minLength: 1, maxLength: 2000 }
+        persons_involved: { type: string, maxLength: 1000 }
+        action_taken: { type: string, maxLength: 2000 }
+    VisitorRecap:
+      type: object
+      required: [from, to, total_visits, still_on_campus, avg_stay_minutes, incidents_by_severity]
+      properties:
+        from: { type: string, format: date }
+        to: { type: string, format: date }
+        total_visits: { type: integer }
+        still_on_campus: { type: integer }
+        avg_stay_minutes: { type: number }
+        incidents_by_severity:
+          type: object
+          additionalProperties: { type: integer }

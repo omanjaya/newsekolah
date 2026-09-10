@@ -85,6 +85,7 @@ const (
 	ModuleMentoring       Module = "mentoring"
 	ModuleSupervision     Module = "supervision"
 	ModuleStaffAttendance Module = "staff_attendance"
+	ModuleVisitors        Module = "visitors"
 )
 
 // AllModules lists every module the console can toggle, in the fixed order
@@ -92,7 +93,7 @@ const (
 // (docs/12-roadmap.md) ship behind these flags from day one.
 var AllModules = []Module{
 	ModuleLibrary, ModuleDiscipline, ModuleGrading, ModulePermits, ModuleAnnouncements, ModuleReports,
-	ModuleActivities, ModuleMentoring, ModuleSupervision, ModuleStaffAttendance,
+	ModuleActivities, ModuleMentoring, ModuleSupervision, ModuleStaffAttendance, ModuleVisitors,
 }
 
 func (m Module) Valid() bool {

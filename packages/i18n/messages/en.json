@@ -190,6 +190,15 @@
       "library": "Library",
       "announcements": "Announcements",
       "profile": "Profile"
+    },
+    "visitors": {
+      "label": "Visitors & Incidents",
+      "items": {
+        "board": "Gate Board",
+        "expected": "Expected Guests",
+        "incidents": "Incidents",
+        "reports": "Visitor Recap"
+      }
     }
   },
   "errors": {
@@ -238,6 +247,14 @@
     "STAFF_ATTENDANCE_SCHEDULE_DAY_INVALID": "The work schedule you entered is not valid",
     "STAFF_ATTENDANCE_ALREADY_SCANNED": "Today's arrival and departure are already recorded",
     "STAFF_ATTENDANCE_CORRECTION_REASON_REQUIRED": "A correction requires a reason",
-    "STAFF_ATTENDANCE_INVALID_MONTH": "Invalid month format"
+    "STAFF_ATTENDANCE_INVALID_MONTH": "Invalid month format",
+    "EXPECTED_GUEST_NOT_FOUND": "Expected guest not found",
+    "EXPECTED_GUEST_RESOLVED": "This expected-guest entry was already resolved",
+    "VISIT_NOT_FOUND": "Visit not found",
+    "VISIT_ALREADY_CHECKED_OUT": "This visitor has already checked out",
+    "INCIDENT_NOT_FOUND": "Incident record not found",
+    "INCIDENT_ALREADY_CLOSED": "This incident is already closed",
+    "INCIDENT_FORBIDDEN": "You are not authorized to read this incident",
+    "VISITORS_MODULE_DISABLED": "The visitors module is not enabled for this school"
   }
 }
