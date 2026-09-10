@@ -35,6 +35,8 @@ import journalEn from "./journal.en.json";
 import journalId from "./journal.id.json";
 import libraryEn from "./library.en.json";
 import libraryId from "./library.id.json";
+import mentoringEn from "./mentoring.en.json";
+import mentoringId from "./mentoring.id.json";
 import messagingEn from "./messaging.en.json";
 import messagingId from "./messaging.id.json";
 import monitorEn from "./monitor.en.json";
@@ -53,6 +55,8 @@ import ssoEn from "./sso.en.json";
 import ssoId from "./sso.id.json";
 import staffAttendanceEn from "./staffAttendance.en.json";
 import staffAttendanceId from "./staffAttendance.id.json";
+import supervisionEn from "./supervision.en.json";
+import supervisionId from "./supervision.id.json";
 import visitorsEn from "./visitors.en.json";
 import visitorsId from "./visitors.id.json";
 import workflowsEn from "./workflows.en.json";
@@ -92,3 +96,5 @@ registerFeatureMessages({
   en: staffAttendanceEn,
 });
 registerFeatureMessages({ namespace: "visitors", id: visitorsId, en: visitorsEn });
+registerFeatureMessages({ namespace: "mentoring", id: mentoringId, en: mentoringEn });
+registerFeatureMessages({ namespace: "supervision", id: supervisionId, en: supervisionEn });

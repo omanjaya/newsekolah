@@ -3,10 +3,12 @@ import {
   BookOpen,
   CalendarCheck,
   CalendarDays,
+  ClipboardCheck,
   ClockAlert,
   DoorOpen,
   FileText,
   GraduationCap,
+  Handshake,
   Megaphone,
   QrCode,
   Receipt,
@@ -46,6 +48,8 @@ export const domainIcons = {
   incident: AlertTriangle,
   billing: Wallet,
   receipt: Receipt,
+  mentoring: Handshake,
+  supervision: ClipboardCheck,
 } satisfies Record<string, LucideIcon>;
 
 export type DomainIconName = keyof typeof domainIcons;

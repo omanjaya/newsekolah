@@ -1,0 +1,158 @@
+{
+  "navGroupLabel": "Mentoring",
+  "navLabelGroups": "Kelompok mentoring",
+  "navLabelMyGroups": "Kelompok saya",
+  "groups": {
+    "eyebrow": "Mentoring",
+    "title": "Kelompok mentoring",
+    "add": "Buat kelompok",
+    "columns": {
+      "name": "Nama kelompok",
+      "mentor": "Guru wali",
+      "actions": "Aksi"
+    },
+    "edit": "Ubah",
+    "delete": "Hapus",
+    "unknownMentor": "Guru wali tidak diketahui",
+    "emptyTitle": "Belum ada kelompok mentoring",
+    "emptyBody": "Buat kelompok untuk mulai menempatkan siswa di bawah bimbingan seorang guru wali.",
+    "tabs": {
+      "groups": "Kelompok",
+      "limit": "Batas anggota"
+    },
+    "form": {
+      "createTitle": "Buat kelompok mentoring",
+      "editTitle": "Ubah kelompok mentoring",
+      "mentor": "Guru wali",
+      "mentorPlaceholder": "Pilih guru wali",
+      "name": "Nama kelompok",
+      "namePlaceholder": "Misalnya Wali X IPA 1",
+      "cancel": "Batal",
+      "submit": "Simpan",
+      "saved": "Kelompok mentoring tersimpan"
+    },
+    "deleteTitle": "Hapus kelompok mentoring",
+    "deleteBody": "Kelompok \"{name}\" akan dihapus permanen dan tidak bisa dikembalikan.",
+    "deleteConfirm": "Hapus",
+    "deleted": "Kelompok mentoring dihapus"
+  },
+  "groupSizeLimit": {
+    "label": "Batas jumlah anggota per kelompok",
+    "hint": "Berlaku untuk semua kelompok mentoring di sekolah ini.",
+    "submit": "Simpan",
+    "saved": "Batas anggota tersimpan"
+  },
+  "myGroups": {
+    "eyebrow": "Mentoring",
+    "title": "Kelompok saya",
+    "columns": {
+      "name": "Nama kelompok"
+    },
+    "emptyTitle": "Anda belum menjadi guru wali kelompok manapun",
+    "emptyBody": "Kelompok yang Anda bimbing akan muncul di sini."
+  },
+  "groupDetail": {
+    "eyebrow": "Mentoring",
+    "mentorLabel": "Guru wali: {name}",
+    "unknownMentor": "Guru wali tidak diketahui",
+    "tabs": {
+      "members": "Anggota",
+      "notes": "Catatan pertemuan"
+    }
+  },
+  "members": {
+    "columns": {
+      "student": "Siswa"
+    },
+    "view": "Lihat siswa",
+    "remove": "Keluarkan",
+    "add": "Tambah anggota",
+    "addTitle": "Tambah anggota kelompok",
+    "addPlaceholder": "Pilih siswa",
+    "addConfirm": "Tambahkan",
+    "added": "Siswa ditambahkan ke kelompok",
+    "cancel": "Batal",
+    "countOfLimit": "{count} dari {limit} anggota",
+    "atCapacity": "Kelompok ini sudah mencapai batas anggota. Keluarkan anggota lain atau naikkan batas untuk menambah.",
+    "emptyTitle": "Belum ada anggota",
+    "emptyBody": "Tambahkan siswa untuk mulai membentuk kelompok ini.",
+    "removeTitle": "Keluarkan anggota",
+    "removeBody": "\"{name}\" akan dikeluarkan dari kelompok ini.",
+    "removed": "Anggota dikeluarkan dari kelompok",
+    "unknownStudent": "Siswa tidak diketahui"
+  },
+  "notes": {
+    "add": "Catat pertemuan",
+    "columns": {
+      "metAt": "Tanggal",
+      "kind": "Jenis",
+      "topic": "Topik",
+      "attendees": "Peserta"
+    },
+    "emptyTitle": "Belum ada catatan pertemuan",
+    "emptyBody": "Catatan pertemuan mentoring akan muncul di sini. Klik baris untuk membuka isinya.",
+    "deleteTitle": "Hapus catatan pertemuan",
+    "deleteBody": "Catatan ini akan dihapus permanen dan tidak bisa dikembalikan.",
+    "deleteConfirm": "Hapus",
+    "deleted": "Catatan pertemuan dihapus",
+    "unknownStudent": "Siswa tidak diketahui",
+    "detail": {
+      "title": "Catatan pertemuan",
+      "edit": "Ubah",
+      "delete": "Hapus",
+      "content": "Isi catatan",
+      "agreedActions": "Kesepakatan tindak lanjut"
+    },
+    "form": {
+      "createTitle": "Catat pertemuan mentoring",
+      "editTitle": "Ubah catatan pertemuan",
+      "metAt": "Tanggal pertemuan",
+      "kind": "Jenis pertemuan",
+      "kindOptions": {
+        "group": "Kelompok",
+        "individual": "Individu"
+      },
+      "attendees": "Peserta",
+      "attendeesRequired": "Pilih minimal satu peserta.",
+      "topic": "Topik",
+      "topicPlaceholder": "Ringkasan singkat topik",
+      "content": "Isi catatan",
+      "contentPlaceholder": "Uraian pertemuan",
+      "agreedActions": "Kesepakatan tindak lanjut",
+      "agreedActionsPlaceholder": "Opsional",
+      "cancel": "Batal",
+      "submit": "Simpan",
+      "saved": "Catatan pertemuan tersimpan",
+      "unknownStudent": "Siswa tidak diketahui"
+    }
+  },
+  "studentView": {
+    "eyebrow": "Mentoring",
+    "attendance": {
+      "title": "Presensi bulan ini",
+      "empty": "Belum ada data presensi bulan ini."
+    },
+    "discipline": {
+      "title": "Disiplin",
+      "points": "Poin disiplin",
+      "active": "Pelanggaran aktif"
+    },
+    "grades": {
+      "title": "Nilai rapor terbit",
+      "empty": "Belum ada nilai rapor yang terbit.",
+      "unknownSubject": "Mata pelajaran tidak diketahui"
+    },
+    "termSummary": {
+      "title": "Rangkuman semester"
+    }
+  },
+  "termSummary": {
+    "term": "Semester",
+    "termPlaceholder": "Pilih semester",
+    "selectTermFirst": "Pilih semester untuk melihat atau menulis rangkuman.",
+    "empty": "Rangkuman semester untuk siswa ini belum ditulis.",
+    "placeholder": "Tulis rangkuman perkembangan siswa pada semester ini",
+    "saved": "Rangkuman semester tersimpan",
+    "submit": "Simpan"
+  }
+}

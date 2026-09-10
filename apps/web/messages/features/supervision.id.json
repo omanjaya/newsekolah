@@ -1,0 +1,118 @@
+{
+  "navGroupLabel": "Supervisi",
+  "navLabelCycles": "Siklus supervisi",
+  "navLabelMyReport": "Supervisi saya",
+  "instrument": {
+    "name": "Nama instrumen",
+    "namePlaceholder": "Misalnya Instrumen Supervisi Kelas",
+    "scaleMin": "Skala minimum",
+    "scaleMax": "Skala maksimum",
+    "criteria": "Kriteria",
+    "criterionKeyPlaceholder": "Kode",
+    "criterionNamePlaceholder": "Nama kriteria",
+    "removeCriterion": "Hapus kriteria",
+    "addCriterion": "Tambah kriteria"
+  },
+  "cycles": {
+    "eyebrow": "Supervisi",
+    "title": "Siklus supervisi",
+    "add": "Buat siklus",
+    "edit": "Ubah",
+    "columns": {
+      "name": "Nama siklus",
+      "criteria": "Jumlah kriteria",
+      "scale": "Skala"
+    },
+    "emptyTitle": "Belum ada siklus supervisi",
+    "emptyBody": "Buat siklus dan tentukan instrumennya untuk mulai menjadwalkan observasi.",
+    "form": {
+      "createTitle": "Buat siklus supervisi",
+      "editTitle": "Ubah siklus supervisi",
+      "name": "Nama siklus",
+      "namePlaceholder": "Misalnya Semester Ganjil 2025/2026",
+      "cancel": "Batal",
+      "submit": "Simpan",
+      "saved": "Siklus supervisi tersimpan"
+    }
+  },
+  "cycleDetail": {
+    "eyebrow": "Supervisi",
+    "columns": {
+      "lessonDate": "Tanggal pelajaran",
+      "teacher": "Guru"
+    },
+    "unknownTeacher": "Guru tidak diketahui",
+    "complete": "Isi hasil observasi",
+    "viewReport": "Lihat laporan siklus",
+    "schedule": "Jadwalkan observasi",
+    "emptyTitle": "Belum ada observasi terjadwal",
+    "emptyBody": "Jadwalkan observasi terhadap pelajaran seorang guru untuk memulai siklus ini.",
+    "scheduleTitle": "Jadwalkan observasi",
+    "completeTitle": "Isi hasil observasi"
+  },
+  "cycleReport": {
+    "eyebrow": "Supervisi",
+    "title": "Laporan siklus: {cycle}",
+    "columns": {
+      "teacher": "Guru",
+      "scheduledCount": "Observasi terjadwal"
+    },
+    "unknownTeacher": "Guru tidak diketahui",
+    "emptyTitle": "Belum ada guru yang dijadwalkan",
+    "emptyBody": "Guru yang dijadwalkan untuk diobservasi pada siklus ini akan muncul di sini."
+  },
+  "schedule": {
+    "form": {
+      "teacher": "Guru",
+      "teacherPlaceholder": "Pilih guru",
+      "lesson": "Pelajaran",
+      "lessonPlaceholder": "Pilih jadwal pelajaran",
+      "selectTeacherFirst": "Pilih guru terlebih dahulu",
+      "lessonDate": "Tanggal observasi",
+      "cancel": "Batal",
+      "submit": "Jadwalkan",
+      "saved": "Observasi terjadwal"
+    }
+  },
+  "observationForm": {
+    "observedAt": "Waktu observasi",
+    "scores": "Skor per kriteria (skala {min}–{max})",
+    "observerNotes": "Catatan pengamat",
+    "observerNotesPlaceholder": "Uraian yang diamati selama pelajaran",
+    "cancel": "Batal",
+    "submit": "Simpan",
+    "saved": "Hasil observasi tersimpan"
+  },
+  "teacherReport": {
+    "eyebrow": "Siklus: {cycle}",
+    "export": "Unduh",
+    "overallAverage": "Rata-rata keseluruhan",
+    "byCriterion": "Rata-rata per kriteria",
+    "observations": "Observasi",
+    "noObservations": "Belum ada observasi yang selesai pada siklus ini.",
+    "scoreCount": "{count} skor"
+  },
+  "observationDetail": {
+    "eyebrow": "Siklus: {cycle}",
+    "scores": "Skor",
+    "observerNotes": "Catatan pengamat",
+    "teacherResponse": "Tanggapan guru",
+    "responseLabel": "Tanggapan",
+    "responsePlaceholder": "Tanggapan atas hasil observasi",
+    "followUpLabel": "Kesepakatan tindak lanjut",
+    "followUpPlaceholder": "Opsional",
+    "cancel": "Batal",
+    "submit": "Simpan",
+    "saved": "Tanggapan tersimpan",
+    "noResponseYet": "Belum ada tanggapan.",
+    "editResponse": "Ubah tanggapan",
+    "addResponse": "Tambah tanggapan"
+  },
+  "myReport": {
+    "eyebrow": "Supervisi",
+    "title": "Supervisi saya",
+    "cycle": "Siklus",
+    "cyclePlaceholder": "Pilih siklus",
+    "noCycles": "Belum ada siklus supervisi."
+  }
+}

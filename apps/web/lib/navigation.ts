@@ -3,7 +3,6 @@ import type { LucideIcon } from "lucide-react";
 import {
   Bell,
   CalendarDays,
-  CalendarRange,
   ClipboardList,
   FileBarChart,
   Fingerprint,
@@ -14,13 +13,13 @@ import {
   Repeat,
   ShieldAlert,
   ShieldCheck,
-  Trophy,
   UserRound,
   Users,
   UsersRound,
 } from "lucide-react";
 
 import { academicNavItems } from "./navigation-academic";
+import { moduleNavItems } from "./navigation-modules";
 import { settingsNavItems } from "./navigation-settings";
 
 /** Profile kinds a nav item can be restricted to, mirroring `Me["profile_kind"]`. */
@@ -76,6 +75,8 @@ const GROUP = {
   schoolData: "nav.schoolData.label",
   settings: "nav.settings.label",
   platform: "nav.platform.label",
+  mentoring: "app.mentoring.navGroupLabel",
+  supervision: "app.supervision.navGroupLabel",
 } as const;
 
 /**
@@ -218,38 +219,6 @@ export const navigation: NavItem[] = [
     group: GROUP.discipline,
   },
   {
-    key: "visitors-board",
-    labelKey: "nav.visitors.items.board",
-    href: "/visitors/board",
-    icon: domainIcons.visitor,
-    permission: "view_visitors",
-    group: GROUP.visitors,
-  },
-  {
-    key: "visitors-expected",
-    labelKey: "nav.visitors.items.expected",
-    href: "/visitors/expected",
-    icon: domainIcons.visitor,
-    permission: "view_visitors",
-    group: GROUP.visitors,
-  },
-  {
-    key: "visitors-incidents",
-    labelKey: "nav.visitors.items.incidents",
-    href: "/visitors/incidents",
-    icon: domainIcons.incident,
-    permission: "view_visitor_incidents",
-    group: GROUP.visitors,
-  },
-  {
-    key: "visitors-recap",
-    labelKey: "nav.visitors.items.reports",
-    href: "/visitors/recap",
-    icon: FileBarChart,
-    permission: "view_visitor_reports",
-    group: GROUP.visitors,
-  },
-  {
     key: "library-catalogue",
     labelKey: "nav.library.items.catalog",
     href: "/library/catalogue",
@@ -290,30 +259,6 @@ export const navigation: NavItem[] = [
     group: GROUP.library,
   },
   {
-    key: "activities-clubs",
-    labelKey: "app.activities.navLabelClubs",
-    href: "/activities/clubs",
-    icon: UsersRound,
-    permission: "view_activities",
-    group: GROUP.activities,
-  },
-  {
-    key: "activities-events",
-    labelKey: "app.activities.navLabelEvents",
-    href: "/activities/events",
-    icon: CalendarRange,
-    permission: "view_activities",
-    group: GROUP.activities,
-  },
-  {
-    key: "activities-achievements",
-    labelKey: "app.activities.navLabelAchievements",
-    href: "/activities/achievements",
-    icon: Trophy,
-    permission: "view_activities",
-    group: GROUP.activities,
-  },
-  {
     key: "leave-requests",
     labelKey: "nav.permits.items.plannedLeave",
     href: "/leave-requests",
@@ -342,15 +287,6 @@ export const navigation: NavItem[] = [
     icon: domainIcons.qr,
     permission: "issue_scan_tokens",
     group: GROUP.permits,
-  },
-
-  {
-    key: "billing",
-    labelKey: "app.billing.navLabel",
-    href: "/billing",
-    icon: domainIcons.billing,
-    permission: "view_billing",
-    group: GROUP.finance,
   },
 
   {
@@ -424,7 +360,9 @@ export const navigation: NavItem[] = [
     permission: "manage_enrollments",
     group: GROUP.schoolData,
   },
+
   ...academicNavItems,
+  ...moduleNavItems,
   ...settingsNavItems,
 ];
 

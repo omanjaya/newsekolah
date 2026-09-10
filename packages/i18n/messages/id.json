@@ -263,6 +263,23 @@
     "BILL_ALREADY_PAID": "Tagihan ini sudah lunas",
     "PAYMENT_NOT_FOUND": "Pembayaran tidak ditemukan",
     "PAYMENT_ALREADY_VOIDED": "Pembayaran ini sudah dibatalkan",
-    "PAYMENT_EXCEEDS_OUTSTANDING": "Jumlah pembayaran melebihi sisa tagihan"
+    "PAYMENT_EXCEEDS_OUTSTANDING": "Jumlah pembayaran melebihi sisa tagihan",
+    "MENTOR_GROUP_NOT_FOUND": "Kelompok mentoring tidak ditemukan",
+    "MENTOR_GROUP_FULL": "Kelompok ini sudah mencapai batas jumlah anggota",
+    "MENTOR_MEMBER_ALREADY_IN_GROUP": "Siswa ini sudah masuk kelompok mentoring lain tahun ajaran ini",
+    "MENTOR_NOTE_NOT_FOUND": "Catatan pertemuan tidak ditemukan",
+    "MENTOR_NOTE_FORBIDDEN": "Anda tidak punya akses ke catatan pertemuan ini",
+    "MENTOR_SUMMARY_NOT_FOUND": "Rangkuman semester tidak ditemukan",
+    "MENTORING_MODULE_DISABLED": "Modul mentoring belum diaktifkan untuk sekolah ini",
+    "SUPERVISION_CYCLE_NOT_FOUND": "Siklus supervisi tidak ditemukan",
+    "SUPERVISION_INSTRUMENT_INVALID": "Instrumen perlu nama, minimal satu kriteria, dan skala yang valid",
+    "SUPERVISION_SCHEDULED_NOT_FOUND": "Jadwal observasi tidak ditemukan",
+    "SUPERVISION_SCHEDULED_ALREADY_DONE": "Jadwal observasi ini sudah diselesaikan",
+    "SUPERVISION_OBSERVATION_NOT_FOUND": "Observasi tidak ditemukan",
+    "SUPERVISION_OBSERVATION_FORBIDDEN": "Anda tidak punya akses ke observasi ini",
+    "SUPERVISION_SCORE_COUNT_MISMATCH": "Setiap kriteria wajib diberi tepat satu skor",
+    "SUPERVISION_SCORE_OUT_OF_RANGE": "Ada skor di luar skala instrumen",
+    "SUPERVISION_LESSON_NOT_RESOLVED": "Jadwal pelajaran yang dituju tidak ditemukan",
+    "SUPERVISION_MODULE_DISABLED": "Modul supervisi belum diaktifkan untuk sekolah ini"
   }
 }
