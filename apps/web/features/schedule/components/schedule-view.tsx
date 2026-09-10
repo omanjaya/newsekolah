@@ -38,6 +38,7 @@ import {
 import { type ScheduleBlock, useDeleteScheduleBlockMutation, useSchedulesQuery } from "../api";
 
 import { ScheduleForm } from "./schedule-form";
+import { ScheduleMobileAgenda } from "./schedule-mobile-agenda";
 
 type Mode = "class" | "teacher";
 
@@ -63,6 +64,7 @@ export function ScheduleView(): ReactElement {
   const [teacherId, setTeacherId] = useState(isTeacher ? (me?.id ?? "") : "");
   const [creating, setCreating] = useState<{ day: number; startSeq: number } | null>(null);
   const [pendingDelete, setPendingDelete] = useState<ScheduleBlock | null>(null);
+  const [mobileDayOverride, setMobileDayOverride] = useState<number | null>(null);
 
   const classes = useClassesQuery();
   const subjects = useSubjectsQuery();
@@ -106,6 +108,7 @@ export function ScheduleView(): ReactElement {
     return blocksByDay.get(day)?.find((b) => b.start_seq <= seq && seq <= b.end_seq);
   }
 
+  const mobileDay = mobileDayOverride ?? activeDays[0] ?? 1;
   const loading = periods.isLoading || schedules.isLoading || classes.isLoading;
   const classOptions = (classes.data?.data ?? []).map((c) => ({ value: c.id, label: c.name }));
   const teacherOptions = (teachers.data?.data ?? []).map((u) => ({ value: u.id, label: u.name }));
@@ -197,109 +200,134 @@ export function ScheduleView(): ReactElement {
           description={t("noPeriodsBody")}
         />
       ) : (
-        <div className="overflow-x-auto rounded-sm border border-border bg-surface">
-          <table className="w-full min-w-[720px] border-collapse text-[13px]">
-            <thead>
-              <tr className="bg-bg text-left text-fg-muted">
-                <th scope="col" className="w-28 border-b border-border px-3 py-2 font-medium">
-                  {t("periodColumn")}
-                </th>
-                {activeDays.map((day) => (
-                  <th
-                    key={day}
-                    scope="col"
-                    className="border-b border-l border-border px-3 py-2 font-medium"
-                  >
-                    {tDays(String(day))}
+        <>
+          {/* Below md, a 7-column-by-N-row grid has no honest reflow: it either
+              collapses columns to slivers or forces sideways scroll through the
+              whole week. A day-at-a-time agenda keeps every block readable with
+              a thumb, so mobile gets its own view instead of a shrunk table. */}
+          <ScheduleMobileAgenda
+            activeDays={activeDays}
+            lessonPeriods={lessonPeriods}
+            blockAt={blockAt}
+            mode={mode}
+            teacherMap={teacherMap}
+            classMap={classMap}
+            subjectMap={subjectMap}
+            canManage={canManage}
+            mobileDay={mobileDay}
+            onSelectDay={setMobileDayOverride}
+            onAdd={(day, startSeq) => {
+              setCreating({ day, startSeq });
+            }}
+            onDelete={setPendingDelete}
+            t={t}
+            tDays={tDays}
+          />
+
+          <div className="hidden overflow-x-auto rounded-sm border border-border bg-surface md:block">
+            <table className="w-full min-w-[720px] border-collapse text-[13px]">
+              <thead>
+                <tr className="bg-bg text-left text-fg-muted">
+                  <th scope="col" className="w-28 border-b border-border px-3 py-2 font-medium">
+                    {t("periodColumn")}
                   </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {lessonPeriods.map((period) => (
-                <tr key={period.id} className={cn(period.is_break && "bg-bg/60")}>
-                  <th
-                    scope="row"
-                    className="border-b border-border px-3 py-2 text-left font-normal"
-                  >
-                    <div className="flex flex-col">
-                      <span className="text-fg">{period.name}</span>
-                      <span className="text-[12px] text-fg-muted">
-                        {period.starts_at.slice(0, 5)}-{period.ends_at.slice(0, 5)}
-                      </span>
-                    </div>
-                  </th>
-                  {activeDays.map((day) => {
-                    if (period.is_break) {
+                  {activeDays.map((day) => (
+                    <th
+                      key={day}
+                      scope="col"
+                      className="border-b border-l border-border px-3 py-2 font-medium"
+                    >
+                      {tDays(String(day))}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {lessonPeriods.map((period) => (
+                  <tr key={period.id} className={cn(period.is_break && "bg-bg/60")}>
+                    <th
+                      scope="row"
+                      className="border-b border-border px-3 py-2 text-left font-normal"
+                    >
+                      <div className="flex flex-col">
+                        <span className="text-fg">{period.name}</span>
+                        <span className="text-[12px] text-fg-muted">
+                          {period.starts_at.slice(0, 5)}-{period.ends_at.slice(0, 5)}
+                        </span>
+                      </div>
+                    </th>
+                    {activeDays.map((day) => {
+                      if (period.is_break) {
+                        return (
+                          <td
+                            key={day}
+                            className="border-b border-l border-border px-3 py-2 text-fg-muted"
+                          />
+                        );
+                      }
+                      const block = blockAt(day, period.sequence);
+                      if (block && block.start_seq !== period.sequence) {
+                        return null;
+                      }
+                      if (!block) {
+                        return (
+                          <td
+                            key={day}
+                            className="border-b border-l border-border px-2 py-1 align-top"
+                          >
+                            {canManage && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setCreating({ day, startSeq: period.sequence });
+                                }}
+                                className="h-full min-h-10 w-full rounded-xs text-[12px] text-fg-muted opacity-0 hover:bg-bg hover:opacity-100 focus-visible:opacity-100"
+                              >
+                                {t("addHere")}
+                              </button>
+                            )}
+                          </td>
+                        );
+                      }
+                      const span = block.end_seq - block.start_seq + 1;
+                      const title =
+                        mode === "class"
+                          ? (teacherMap.get(block.teacher_user_id)?.name ?? t("unknownTeacher"))
+                          : (classMap.get(block.class_id)?.name ?? t("unknownClass"));
                       return (
                         <td
                           key={day}
-                          className="border-b border-l border-border px-3 py-2 text-fg-muted"
-                        />
-                      );
-                    }
-                    const block = blockAt(day, period.sequence);
-                    if (block && block.start_seq !== period.sequence) {
-                      return null;
-                    }
-                    if (!block) {
-                      return (
-                        <td
-                          key={day}
+                          rowSpan={span}
                           className="border-b border-l border-border px-2 py-1 align-top"
                         >
-                          {canManage && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setCreating({ day, startSeq: period.sequence });
-                              }}
-                              className="h-full min-h-10 w-full rounded-xs text-[12px] text-fg-muted opacity-0 hover:bg-bg hover:opacity-100 focus-visible:opacity-100"
-                            >
-                              {t("addHere")}
-                            </button>
-                          )}
+                          <div className="group flex h-full min-h-10 flex-col gap-0.5 rounded-xs border border-accent/30 bg-accent/10 px-2 py-1.5">
+                            <span className="font-medium text-fg">
+                              {subjectMap.get(block.subject_id)?.name ?? t("unknownSubject")}
+                            </span>
+                            <span className="text-[12px] text-fg-muted">{title}</span>
+                            {canManage && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setPendingDelete(block);
+                                }}
+                                aria-label={t("deleteBlock")}
+                                className="mt-1 inline-flex items-center gap-1 self-start text-[12px] text-fg-muted hover:text-status-absent"
+                              >
+                                <Trash2 className="size-3.5" aria-hidden="true" />
+                                {t("deleteBlock")}
+                              </button>
+                            )}
+                          </div>
                         </td>
                       );
-                    }
-                    const span = block.end_seq - block.start_seq + 1;
-                    const title =
-                      mode === "class"
-                        ? (teacherMap.get(block.teacher_user_id)?.name ?? t("unknownTeacher"))
-                        : (classMap.get(block.class_id)?.name ?? t("unknownClass"));
-                    return (
-                      <td
-                        key={day}
-                        rowSpan={span}
-                        className="border-b border-l border-border px-2 py-1 align-top"
-                      >
-                        <div className="group flex h-full min-h-10 flex-col gap-0.5 rounded-xs border border-accent/30 bg-accent/10 px-2 py-1.5">
-                          <span className="font-medium text-fg">
-                            {subjectMap.get(block.subject_id)?.name ?? t("unknownSubject")}
-                          </span>
-                          <span className="text-[12px] text-fg-muted">{title}</span>
-                          {canManage && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setPendingDelete(block);
-                              }}
-                              aria-label={t("deleteBlock")}
-                              className="mt-1 inline-flex items-center gap-1 self-start text-[12px] text-fg-muted hover:text-status-absent"
-                            >
-                              <Trash2 className="size-3.5" aria-hidden="true" />
-                              {t("deleteBlock")}
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
 
       <Dialog
