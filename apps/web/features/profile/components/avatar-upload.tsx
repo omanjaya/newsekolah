@@ -62,7 +62,7 @@ export function AvatarUpload(): ReactElement | null {
   return (
     <div className="flex items-center gap-4">
       <Avatar name={me.name} src={me.avatar_url} className="size-16 text-[20px]" />
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col items-start gap-2">
         {progress !== null ? (
           <Progress
             value={progress}

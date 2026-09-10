@@ -21,7 +21,11 @@ export function ProfileView(): ReactElement | null {
   if (!me) return null;
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
+    // One column with a width of its own. Left full-bleed, a page of
+    // short forms strands each field beside an acre of empty space on a
+    // wide monitor, and the eye has to travel the whole screen to read a
+    // label and its value.
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-4 md:p-6">
       <PageHeader title={t("title")} />
 
       <section className="flex flex-col gap-4 rounded-sm border border-border bg-surface p-4 md:flex-row md:items-center">
@@ -46,27 +50,27 @@ export function ProfileView(): ReactElement | null {
         </div>
       </section>
 
-      <section className="flex flex-col gap-3">
+      <section className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-4">
         <h2 className="text-[16px] font-medium text-fg">{t("avatar.title")}</h2>
         <AvatarUpload />
       </section>
 
-      <section className="flex flex-col gap-3">
+      <section className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-4">
         <h2 className="text-[16px] font-medium text-fg">{t("edit.title")}</h2>
         <EditProfileForm />
       </section>
 
-      <section className="flex flex-col gap-3">
+      <section className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-4">
         <h2 className="text-[16px] font-medium text-fg">{tAudit("accountSecurity.title")}</h2>
         <AccountSecurity />
       </section>
 
-      <section className="flex flex-col gap-3">
+      <section className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-4">
         <h2 className="text-[16px] font-medium text-fg">{tAuth("title")}</h2>
         <SessionsTable />
       </section>
 
-      <section className="flex flex-col gap-3">
+      <section className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-4">
         <h2 className="text-[16px] font-medium text-fg">{t("changePasswordTitle")}</h2>
         <ChangePasswordForm />
       </section>
