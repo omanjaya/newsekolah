@@ -1,0 +1,59 @@
+{
+  "navLabel": "Laporan Presensi",
+  "eyebrow": "Presensi",
+  "title": "Laporan Presensi",
+  "tabs": {
+    "daily": "Harian",
+    "monthly": "Bulanan"
+  },
+  "daily": {
+    "class": "Kelas",
+    "classPlaceholder": "Pilih kelas",
+    "date": "Tanggal",
+    "download": "Unduh",
+    "pickClassTitle": "Pilih kelas dan tanggal",
+    "pickClassBody": "Laporan harian menampilkan status kehadiran satu kelas pada satu tanggal.",
+    "emptyTitle": "Belum ada siswa pada kelas ini",
+    "summarySubmitted": "Sesi tercatat",
+    "columns": {
+      "name": "Nama siswa",
+      "status": "Status",
+      "sessions": "Sesi"
+    },
+    "codes": {
+      "H": "Hadir",
+      "S": "Sakit",
+      "I": "Izin",
+      "D": "Dispensasi",
+      "A": "Alpha",
+      "INCOMPLETE": "Belum lengkap",
+      "MIXED": "Campuran",
+      "NONE": "Tidak ada jadwal"
+    }
+  },
+  "monthly": {
+    "class": "Kelas",
+    "classPlaceholder": "Pilih kelas",
+    "student": "Siswa",
+    "studentPlaceholder": "Pilih siswa",
+    "month": "Bulan",
+    "pickStudentTitle": "Pilih kelas dan siswa",
+    "pickStudentBody": "Laporan bulanan menampilkan status kehadiran satu siswa selama satu bulan.",
+    "emptyTitle": "Tidak ada hari sekolah pada bulan ini",
+    "columns": {
+      "date": "Tanggal",
+      "status": "Status",
+      "sessions": "Sesi"
+    },
+    "codes": {
+      "H": "Hadir",
+      "S": "Sakit",
+      "I": "Izin",
+      "D": "Dispensasi",
+      "A": "Alpha",
+      "INCOMPLETE": "Belum lengkap",
+      "MIXED": "Campuran",
+      "NONE": "Tidak ada jadwal"
+    }
+  }
+}

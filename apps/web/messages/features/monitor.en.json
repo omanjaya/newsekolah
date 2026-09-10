@@ -1,0 +1,35 @@
+{
+  "navLabel": "Live Monitor",
+  "eyebrow": "Attendance",
+  "title": "Attendance Monitor",
+  "tokenLabel": "Display token",
+  "tokenPlaceholder": "Enter the school's monitor token",
+  "tokenHint": "Asked once per device. Get this token from the school admin (the monitor.display_token setting).",
+  "tokenSubmit": "Show display",
+  "tokenForget": "Change token",
+  "tokenInvalidTitle": "Invalid token",
+  "tokenInvalidBody": "The token entered does not match this school's monitor setting. Check it with the school admin.",
+  "pollingTitle": "Live connection lost",
+  "pollingBody": "This page still refreshes periodically, but no longer live.",
+  "connectionLive": "Live",
+  "connectionPolling": "Refreshing periodically",
+  "connectionConnecting": "Connecting",
+  "presenceCount": "{count} users connected",
+  "codes": {
+    "H": "Present",
+    "S": "Sick",
+    "I": "Excused",
+    "D": "Dispensation",
+    "A": "Absent",
+    "INCOMPLETE": "Incomplete",
+    "MIXED": "Mixed",
+    "NONE": "No schedule"
+  },
+  "sessionStatus": {
+    "not_started": "Not started",
+    "in_progress": "In progress",
+    "submitted": "Submitted"
+  },
+  "noSessionsTitle": "No sessions running",
+  "noSessionsBody": "No period is currently in progress."
+}

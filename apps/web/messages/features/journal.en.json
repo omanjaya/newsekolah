@@ -1,0 +1,41 @@
+{
+  "navLabel": "Teaching Journal",
+  "eyebrow": "Class",
+  "title": "Teaching Journal",
+  "new": "New entry",
+  "edit": "Edit entry",
+  "delete": "Delete",
+  "deleted": "Journal entry deleted.",
+  "deleteTitle": "Delete this entry?",
+  "deleteBody": "\"{topic}\" will be permanently deleted. This cannot be undone.",
+  "filterClass": "Class",
+  "filterClassAll": "All classes",
+  "exportXlsx": "Download Excel",
+  "exportDocx": "Download Word",
+  "emptyTitle": "No journal entries yet",
+  "emptyBody": "Log the topic and activities each time a lesson is taught.",
+  "unknown": "-",
+  "columns": {
+    "date": "Date",
+    "class": "Class",
+    "subject": "Subject",
+    "topic": "Topic",
+    "actions": "Actions"
+  },
+  "form": {
+    "class": "Class",
+    "classPlaceholder": "Choose a class",
+    "subject": "Subject",
+    "subjectPlaceholder": "Choose a subject",
+    "date": "Date",
+    "topic": "Topic",
+    "topicPlaceholder": "What was taught",
+    "activities": "Activities",
+    "activitiesPlaceholder": "Summary of the lesson's activities",
+    "reflection": "Reflection",
+    "reflectionPlaceholder": "Reflection notes (optional)",
+    "cancel": "Cancel",
+    "submit": "Save",
+    "saved": "Journal entry saved."
+  }
+}

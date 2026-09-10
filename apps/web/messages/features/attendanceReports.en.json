@@ -1,0 +1,59 @@
+{
+  "navLabel": "Attendance Reports",
+  "eyebrow": "Attendance",
+  "title": "Attendance Reports",
+  "tabs": {
+    "daily": "Daily",
+    "monthly": "Monthly"
+  },
+  "daily": {
+    "class": "Class",
+    "classPlaceholder": "Choose a class",
+    "date": "Date",
+    "download": "Download",
+    "pickClassTitle": "Choose a class and a date",
+    "pickClassBody": "The daily report shows one class's attendance status for one date.",
+    "emptyTitle": "No students in this class",
+    "summarySubmitted": "Sessions recorded",
+    "columns": {
+      "name": "Student name",
+      "status": "Status",
+      "sessions": "Sessions"
+    },
+    "codes": {
+      "H": "Present",
+      "S": "Sick",
+      "I": "Excused",
+      "D": "Dispensation",
+      "A": "Absent",
+      "INCOMPLETE": "Incomplete",
+      "MIXED": "Mixed",
+      "NONE": "No schedule"
+    }
+  },
+  "monthly": {
+    "class": "Class",
+    "classPlaceholder": "Choose a class",
+    "student": "Student",
+    "studentPlaceholder": "Choose a student",
+    "month": "Month",
+    "pickStudentTitle": "Choose a class and a student",
+    "pickStudentBody": "The monthly report shows one student's attendance status across one month.",
+    "emptyTitle": "No school days this month",
+    "columns": {
+      "date": "Date",
+      "status": "Status",
+      "sessions": "Sessions"
+    },
+    "codes": {
+      "H": "Present",
+      "S": "Sick",
+      "I": "Excused",
+      "D": "Dispensation",
+      "A": "Absent",
+      "INCOMPLETE": "Incomplete",
+      "MIXED": "Mixed",
+      "NONE": "No schedule"
+    }
+  }
+}

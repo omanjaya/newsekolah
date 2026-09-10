@@ -5,6 +5,8 @@
  */
 import { registerFeatureMessages } from "../../lib/i18n/get-messages";
 
+import attendanceReportsEn from "./attendanceReports.en.json";
+import attendanceReportsId from "./attendanceReports.id.json";
 import auditEn from "./audit.en.json";
 import auditId from "./audit.id.json";
 import calendarEn from "./calendar.en.json";
@@ -15,10 +17,14 @@ import gradingEn from "./grading.en.json";
 import gradingId from "./grading.id.json";
 import integrationsEn from "./integrations.en.json";
 import integrationsId from "./integrations.id.json";
+import journalEn from "./journal.en.json";
+import journalId from "./journal.id.json";
 import libraryEn from "./library.en.json";
 import libraryId from "./library.id.json";
 import messagingEn from "./messaging.en.json";
 import messagingId from "./messaging.id.json";
+import monitorEn from "./monitor.en.json";
+import monitorId from "./monitor.id.json";
 import onboardingEn from "./onboarding.en.json";
 import onboardingId from "./onboarding.id.json";
 import platformEn from "./platform.en.json";
@@ -32,6 +38,11 @@ import securityId from "./security.id.json";
 import ssoEn from "./sso.en.json";
 import ssoId from "./sso.id.json";
 
+registerFeatureMessages({
+  namespace: "attendanceReports",
+  id: attendanceReportsId,
+  en: attendanceReportsEn,
+});
 registerFeatureMessages({ namespace: "calendar", id: calendarId, en: calendarEn });
 registerFeatureMessages({ namespace: "discipline", id: disciplineId, en: disciplineEn });
 registerFeatureMessages({ namespace: "grading", id: gradingId, en: gradingEn });
@@ -45,3 +56,5 @@ registerFeatureMessages({ namespace: "sso", id: ssoId, en: ssoEn });
 registerFeatureMessages({ namespace: "platform", id: platformId, en: platformEn });
 registerFeatureMessages({ namespace: "library", id: libraryId, en: libraryEn });
 registerFeatureMessages({ namespace: "messaging", id: messagingId, en: messagingEn });
+registerFeatureMessages({ namespace: "journal", id: journalId, en: journalEn });
+registerFeatureMessages({ namespace: "monitor", id: monitorId, en: monitorEn });

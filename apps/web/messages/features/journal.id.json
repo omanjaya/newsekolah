@@ -1,0 +1,41 @@
+{
+  "navLabel": "Jurnal Mengajar",
+  "eyebrow": "Kelas",
+  "title": "Jurnal Mengajar",
+  "new": "Jurnal baru",
+  "edit": "Ubah jurnal",
+  "delete": "Hapus",
+  "deleted": "Jurnal dihapus.",
+  "deleteTitle": "Hapus jurnal ini?",
+  "deleteBody": "\"{topic}\" akan dihapus permanen. Tindakan ini tidak bisa dibatalkan.",
+  "filterClass": "Kelas",
+  "filterClassAll": "Semua kelas",
+  "exportXlsx": "Unduh Excel",
+  "exportDocx": "Unduh Word",
+  "emptyTitle": "Belum ada jurnal",
+  "emptyBody": "Catat topik dan kegiatan setiap kali selesai mengajar.",
+  "unknown": "-",
+  "columns": {
+    "date": "Tanggal",
+    "class": "Kelas",
+    "subject": "Mata pelajaran",
+    "topic": "Topik",
+    "actions": "Aksi"
+  },
+  "form": {
+    "class": "Kelas",
+    "classPlaceholder": "Pilih kelas",
+    "subject": "Mata pelajaran",
+    "subjectPlaceholder": "Pilih mata pelajaran",
+    "date": "Tanggal",
+    "topic": "Topik",
+    "topicPlaceholder": "Topik yang diajarkan",
+    "activities": "Kegiatan",
+    "activitiesPlaceholder": "Ringkasan kegiatan pembelajaran",
+    "reflection": "Refleksi",
+    "reflectionPlaceholder": "Catatan refleksi (opsional)",
+    "cancel": "Batal",
+    "submit": "Simpan",
+    "saved": "Jurnal disimpan."
+  }
+}
