@@ -10,6 +10,10 @@
     "emptyTitle": "No child linked yet",
     "emptyBody": "The school has not linked your account to a student yet. Contact the school office to have it linked.",
     "pickChild": "Pick a child",
+    "pendingApprovals": {
+      "title": "{count, plural, one {One leave request awaits your decision} other {# leave requests await your decision}}",
+      "link": "Review now"
+    },
     "attendance": {
       "title": "This month's attendance",
       "pickMonth": "Pick a month",

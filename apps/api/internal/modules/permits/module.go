@@ -21,15 +21,16 @@ import (
 )
 
 type Dependencies struct {
-	Pool     *pgxpool.Pool
-	Years    service.AcademicYearReader
-	Schedule service.ScheduleLookup // nil until scheduling is wired: teacher_of_class_now then never matches
-	Sync     service.AttendanceSync // nil until attendance is wired
-	Bus      *events.Bus
-	Storage  service.Storage // nil disables uploads and PDF storage
-	Clock    clock.Clock
-	Config   service.Config
-	Logger   *slog.Logger
+	Pool      *pgxpool.Pool
+	Years     service.AcademicYearReader
+	Schedule  service.ScheduleLookup // nil until scheduling is wired: teacher_of_class_now then never matches
+	Sync      service.AttendanceSync // nil until attendance is wired
+	Guardians service.GuardianLinks  // nil disables guardian_of_student: it then never matches
+	Bus       *events.Bus
+	Storage   service.Storage // nil disables uploads and PDF storage
+	Clock     clock.Clock
+	Config    service.Config
+	Logger    *slog.Logger
 }
 
 type Module struct {
@@ -52,6 +53,19 @@ func (noSync) ForceStatus(context.Context, uuid.UUID, uuid.UUID, time.Time, time
 	return nil
 }
 
+// noGuardians stands in when no identity adapter is wired: the
+// guardian_of_student rule then never matches (fails closed) and a
+// guardian's queue is always empty.
+type noGuardians struct{}
+
+func (noGuardians) IsApprovingGuardianOf(context.Context, uuid.UUID, uuid.UUID, uuid.UUID) (bool, error) {
+	return false, nil
+}
+
+func (noGuardians) ApprovingChildrenOf(context.Context, uuid.UUID, uuid.UUID) ([]uuid.UUID, error) {
+	return nil, nil
+}
+
 func Register(deps Dependencies) *Module {
 	clk := deps.Clock
 	if clk == nil {
@@ -69,7 +83,11 @@ func Register(deps Dependencies) *Module {
 	if sync == nil {
 		sync = noSync{}
 	}
-	svc := service.New(deps.Pool, repository.New(deps.Pool), deps.Years, schedule, sync, publisher, deps.Storage,
+	guardians := deps.Guardians
+	if guardians == nil {
+		guardians = noGuardians{}
+	}
+	svc := service.New(deps.Pool, repository.New(deps.Pool), deps.Years, schedule, sync, guardians, publisher, deps.Storage,
 		documents.NewHTMLPDFRenderer(), clk, deps.Config)
 	return &Module{Service: svc, Handler: transporthttp.New(svc, clk)}
 }

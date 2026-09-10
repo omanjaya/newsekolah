@@ -10,6 +10,10 @@
     "emptyTitle": "Belum ada anak yang tertaut",
     "emptyBody": "Sekolah belum menautkan akun Anda ke data siswa. Hubungi tata usaha untuk menautkannya.",
     "pickChild": "Pilih anak",
+    "pendingApprovals": {
+      "title": "{count, plural, other {Ada # pengajuan izin yang menunggu keputusan Anda}}",
+      "link": "Tinjau sekarang"
+    },
     "attendance": {
       "title": "Presensi bulan ini",
       "pickMonth": "Pilih bulan",

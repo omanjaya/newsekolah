@@ -73,6 +73,22 @@ type AttendanceBlocker interface {
 	HasBlockingLateArrival(ctx context.Context, tenantID, studentUserID uuid.UUID, date time.Time) (bool, error)
 }
 
+// GuardianLinks is what permits needs from the identity module to
+// evaluate the "guardian_of_student" approver rule and build a guardian's
+// review queue: whether a guardian is linked to a student with
+// leave-approval rights, and which students a guardian holds that right
+// for. Implemented in internal/wiring as an adapter over identity's own
+// service.Service (MyChildren, GuardiansOf) -- permits never queries
+// identity's tables directly, per docs/03-layered-architecture.md.
+type GuardianLinks interface {
+	// IsApprovingGuardianOf reports whether guardianUserID is linked to
+	// studentUserID with can_approve_leave set.
+	IsApprovingGuardianOf(ctx context.Context, tenantID, guardianUserID, studentUserID uuid.UUID) (bool, error)
+	// ApprovingChildrenOf returns the student user IDs guardianUserID
+	// holds leave-approval rights for.
+	ApprovingChildrenOf(ctx context.Context, tenantID, guardianUserID uuid.UUID) ([]uuid.UUID, error)
+}
+
 // EventPublisher matches platform/events.Bus's Publish method
 // structurally, so this package does not need to import platform/events
 // beyond the Event interface itself.
@@ -127,16 +143,17 @@ func DefaultConfig(documentSigningKey []byte, bucket string) Config {
 }
 
 type Service struct {
-	pool     *pgxpool.Pool
-	repo     Repository
-	years    AcademicYearReader
-	schedule ScheduleLookup
-	sync     AttendanceSync
-	events   EventPublisher
-	storage  Storage
-	renderer documents.Renderer
-	clock    clock.Clock
-	cfg      Config
+	pool      *pgxpool.Pool
+	repo      Repository
+	years     AcademicYearReader
+	schedule  ScheduleLookup
+	sync      AttendanceSync
+	guardians GuardianLinks
+	events    EventPublisher
+	storage   Storage
+	renderer  documents.Renderer
+	clock     clock.Clock
+	cfg       Config
 }
 
 func New(
@@ -145,6 +162,7 @@ func New(
 	years AcademicYearReader,
 	schedule ScheduleLookup,
 	sync AttendanceSync,
+	guardians GuardianLinks,
 	publisher EventPublisher,
 	storage Storage,
 	renderer documents.Renderer,
@@ -152,7 +170,7 @@ func New(
 	cfg Config,
 ) *Service {
 	return &Service{
-		pool: pool, repo: repo, years: years, schedule: schedule, sync: sync,
+		pool: pool, repo: repo, years: years, schedule: schedule, sync: sync, guardians: guardians,
 		events: publisher, storage: storage, renderer: renderer, clock: clk, cfg: cfg,
 	}
 }

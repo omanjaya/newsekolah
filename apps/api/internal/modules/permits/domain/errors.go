@@ -28,6 +28,7 @@ var (
 	ErrLeaveRequestDateRangeInvalid = errors.New("leave request end date must not be before start date")
 	ErrLeaveRequestNotReviewable    = errors.New("leave request is not awaiting review")
 	ErrLeaveRequestNotIssuable      = errors.New("leave request is not awaiting issuance")
+	ErrLeaveRejectionReasonRequired = errors.New("rejecting a leave request requires a reason")
 	ErrEvidenceTooLarge             = errors.New("evidence file exceeds the size limit")
 	ErrEvidenceInvalidType          = errors.New("evidence file is not a supported image type")
 

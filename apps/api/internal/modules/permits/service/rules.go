@@ -16,6 +16,7 @@ type ruleContext struct {
 	tenantID       uuid.UUID
 	academicYearID uuid.UUID
 	classID        uuid.NullUUID
+	subjectUserID  uuid.UUID
 	actorUserID    uuid.UUID
 	date           time.Time
 	lookaheadSlots int
@@ -30,6 +31,7 @@ func (s *Service) evaluateApproverRule(ctx context.Context, _ domain.Definition,
 		tenantID:       inst.TenantID,
 		academicYearID: inst.AcademicYearID,
 		classID:        inst.ClassID,
+		subjectUserID:  inst.SubjectUserID,
 		actorUserID:    actorUserID,
 		date:           s.clock.Now(),
 		lookaheadSlots: stage.LookaheadSlots,
@@ -70,6 +72,12 @@ func (s *Service) checkApproverRule(ctx context.Context, rule string, rc ruleCon
 
 	case domain.RuleHomeroomOfStudent:
 		return s.repo.HasActiveDuty(ctx, rc.tenantID, rc.academicYearID, rc.actorUserID, "homeroom", rc.classID)
+
+	case domain.RuleGuardianOfStudent:
+		if s.guardians == nil {
+			return false, nil
+		}
+		return s.guardians.IsApprovingGuardianOf(ctx, rc.tenantID, rc.actorUserID, rc.subjectUserID)
 
 	default:
 		if slug, ok := domain.ParseDutyRule(rule); ok {

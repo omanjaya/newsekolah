@@ -329,6 +329,34 @@ func (h *PermitsHandler) ListLeaveRequestsForReview(ctx context.Context, request
 	return api.ListLeaveRequestsForReview200JSONResponse{Data: data}, nil
 }
 
+func (h *PermitsHandler) ListLeaveRequestsForGuardianReview(ctx context.Context, _ api.ListLeaveRequestsForGuardianReviewRequestObject) (api.ListLeaveRequestsForGuardianReviewResponseObject, error) {
+	items, err := h.service.ListLeaveRequestsForGuardianReview(ctx, tenantID(ctx), userID(ctx))
+	if err != nil {
+		return nil, mapError(err)
+	}
+	data := make([]api.LeaveRequestSummary, len(items))
+	for i, it := range items {
+		data[i] = toAPILeaveSummary(it)
+	}
+	return api.ListLeaveRequestsForGuardianReview200JSONResponse{Data: data}, nil
+}
+
+func (h *PermitsHandler) ReviewLeaveRequestAsGuardian(ctx context.Context, request api.ReviewLeaveRequestAsGuardianRequestObject) (api.ReviewLeaveRequestAsGuardianResponseObject, error) {
+	tenant := tenantID(ctx)
+	note := ""
+	if request.Body.Note != nil {
+		note = *request.Body.Note
+	}
+	if _, err := h.service.ReviewLeaveRequestAsGuardian(ctx, tenant, request.InstanceId, userID(ctx), request.Body.Approve, note); err != nil {
+		return nil, mapError(err)
+	}
+	detail, err := h.service.GetLeaveRequest(ctx, tenant, request.InstanceId)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return api.ReviewLeaveRequestAsGuardian200JSONResponse(toAPILeaveRequest(detail)), nil
+}
+
 func (h *PermitsHandler) GetLeaveRequest(ctx context.Context, request api.GetLeaveRequestRequestObject) (api.GetLeaveRequestResponseObject, error) {
 	detail, err := h.service.GetLeaveRequest(ctx, tenantID(ctx), request.InstanceId)
 	if err != nil {

@@ -23,6 +23,7 @@ import { useState } from "react";
 import { useCan, useSession } from "../../../lib/session/session-provider";
 import {
   type LeaveRequestSummary,
+  useGuardianLeaveQueueQuery,
   useLeaveReviewQueueQuery,
   useMyLeaveRequestsQuery,
 } from "../api";
@@ -35,29 +36,42 @@ export function LeaveRequestsView(): ReactElement {
   const canSubmit = useCan("submit_leave_requests");
   const canReviewStage = useCan("review_leave_requests");
   const canIssueLetter = useCan("issue_leave_letters");
+  const canApproveAsGuardian = useCan("approve_child_leave_requests");
   const canReview = canReviewStage || canIssueLetter;
-  const [tab, setTab] = useState(canReview ? "queue" : "mine");
+
+  const tabs = [
+    canReview && { value: "queue", label: t("tabQueue"), content: <ReviewQueue /> },
+    canApproveAsGuardian && {
+      value: "guardianQueue",
+      label: t("tabGuardianQueue"),
+      content: <GuardianQueue />,
+    },
+    canSubmit && { value: "mine", label: t("tabMine"), content: <MyLeaveRequests /> },
+  ].filter((entry): entry is { value: string; label: string; content: ReactElement } =>
+    Boolean(entry),
+  );
+  const [tab, setTab] = useState(tabs[0]?.value ?? "mine");
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
       <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
-      {canSubmit && canReview ? (
+      {tabs.length > 1 ? (
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList>
-            <TabsTrigger value="queue">{t("tabQueue")}</TabsTrigger>
-            <TabsTrigger value="mine">{t("tabMine")}</TabsTrigger>
+            {tabs.map((entry) => (
+              <TabsTrigger key={entry.value} value={entry.value}>
+                {entry.label}
+              </TabsTrigger>
+            ))}
           </TabsList>
-          <TabsContent value="queue" className="pt-4">
-            <ReviewQueue />
-          </TabsContent>
-          <TabsContent value="mine" className="pt-4">
-            <MyLeaveRequests />
-          </TabsContent>
+          {tabs.map((entry) => (
+            <TabsContent key={entry.value} value={entry.value} className="pt-4">
+              {entry.content}
+            </TabsContent>
+          ))}
         </Tabs>
-      ) : canReview ? (
-        <ReviewQueue />
-      ) : canSubmit ? (
-        <MyLeaveRequests />
+      ) : tabs.length === 1 ? (
+        tabs[0]?.content
       ) : (
         <EmptyState
           icon={<domainIcons.exitPermit aria-hidden="true" />}
@@ -192,6 +206,50 @@ function ReviewQueue(): ReactElement {
           icon={<domainIcons.exitPermit aria-hidden="true" />}
           title={t("queueEmptyTitle")}
           description={t("queueEmptyBody")}
+        />
+      ) : (
+        <ul className="flex flex-col gap-2">
+          {items.map((item) => (
+            <SummaryRow
+              key={item.instance_id}
+              item={item}
+              nameFirst
+              onOpen={() => {
+                setOpenId(item.instance_id);
+              }}
+            />
+          ))}
+        </ul>
+      )}
+      <Dialog
+        open={openId !== null}
+        onOpenChange={(open) => {
+          if (!open) setOpenId(null);
+        }}
+      >
+        <DialogContent title={t("detailTitle")} className="max-w-xl">
+          {openId && <LeaveRequestDetail id={openId} />}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+/** A guardian's queue: their children's requests awaiting their decision. */
+function GuardianQueue(): ReactElement {
+  const t = useTranslations("app.permits.leave");
+  const { data, isLoading } = useGuardianLeaveQueueQuery();
+  const [openId, setOpenId] = useState<string | null>(null);
+  const items = data?.data ?? [];
+  return (
+    <div className="flex flex-col gap-4">
+      {isLoading ? (
+        <Skeleton className="h-40 w-full" aria-busy="true" />
+      ) : items.length === 0 ? (
+        <EmptyState
+          icon={<domainIcons.exitPermit aria-hidden="true" />}
+          title={t("guardian.queueEmptyTitle")}
+          description={t("guardian.queueEmptyBody")}
         />
       ) : (
         <ul className="flex flex-col gap-2">

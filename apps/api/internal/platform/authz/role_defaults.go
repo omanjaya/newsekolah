@@ -35,7 +35,7 @@ func RoleDefaults() []RoleDefault {
 		}},
 		{"parent", "Orang Tua", []string{
 			PermViewDashboard, PermViewAnnouncements, PermViewNotifications,
-			PermViewChildAttendance, PermViewChildGrades,
+			PermViewChildAttendance, PermViewChildGrades, PermApproveChildLeaveRequests,
 		}},
 		{"librarian", "Pustakawan", []string{
 			PermViewDashboard, PermViewNotifications, PermViewLibrary,

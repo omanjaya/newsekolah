@@ -614,6 +614,7 @@
         "title": "Izin terencana",
         "tabQueue": "Antrean",
         "tabMine": "Pengajuan saya",
+        "tabGuardianQueue": "Anak saya",
         "noAccessTitle": "Tidak ada akses",
         "noAccessBody": "Peran Anda tidak terlibat dalam alur izin terencana.",
         "submit": "Ajukan izin",
@@ -644,6 +645,16 @@
         "issuedBody": "Presensi pada tanggal izin diisi otomatis. Surat bisa diunduh di atas.",
         "queueEmptyTitle": "Tidak ada pengajuan menunggu",
         "queueEmptyBody": "Pengajuan dari kelas binaan Anda, atau yang menunggu penerbitan surat, tampil di sini.",
+        "guardian": {
+          "reviewNote": "Alasan (wajib diisi jika menolak)",
+          "reject": "Tolak",
+          "approve": "Setujui",
+          "rejected": "Pengajuan ditolak",
+          "approved": "Pengajuan disetujui",
+          "reasonRequired": "Alasan wajib diisi untuk menolak.",
+          "queueEmptyTitle": "Tidak ada yang menunggu keputusan Anda",
+          "queueEmptyBody": "Pengajuan izin anak akan tampil di sini saat sampai pada tahap yang membutuhkan persetujuan Anda."
+        },
         "form": {
           "category": "Jenis izin",
           "startsOn": "Mulai",
