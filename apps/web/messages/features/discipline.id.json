@@ -204,5 +204,16 @@
       "submit": "Simpan",
       "saved": "Catatan konseling tersimpan"
     }
+  },
+  "myDiscipline": {
+    "eyebrow": "Kesiswaan",
+    "title": "Poin kedisiplinan",
+    "loadError": "Data kedisiplinan gagal dimuat.",
+    "emptyTitle": "Belum ada catatan",
+    "emptyBody": "Tidak ada pelanggaran atau surat peringatan yang tercatat.",
+    "totalPoints": "Total poin: {points}",
+    "letters": "Surat peringatan",
+    "records": "Riwayat catatan",
+    "recordsEmpty": "Belum ada catatan pelanggaran"
   }
 }

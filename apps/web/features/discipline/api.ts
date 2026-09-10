@@ -31,6 +31,7 @@ const keys = {
   violations: (params: { classId: string; from: string; to: string; includeVoided: boolean }) =>
     ["discipline", "violations", params] as const,
   studentDiscipline: (studentId: string) => ["discipline", "student", studentId] as const,
+  myDiscipline: () => ["discipline", "me"] as const,
   pointTotals: (classId: string) => ["discipline", "point-totals", classId] as const,
   warningLetters: (classId: string) => ["discipline", "warning-letters", classId] as const,
   myCounselings: () => ["discipline", "counselings", "mine"] as const,
@@ -171,6 +172,15 @@ export function useStudentDisciplineQuery(studentId: string, enabled = true) {
     queryFn: () =>
       client.GET("/v1/discipline/students/{studentId}", { params: { path: { studentId } } }),
     enabled: enabled && studentId !== "",
+  });
+}
+
+/** The signed-in student's own points, records, and warning letters. */
+export function useMyDisciplineQuery() {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: keys.myDiscipline(),
+    queryFn: () => client.GET("/v1/me/discipline"),
   });
 }
 

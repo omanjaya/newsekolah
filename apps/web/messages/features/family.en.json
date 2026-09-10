@@ -1,0 +1,78 @@
+{
+  "nav": {
+    "myChildren": "Children",
+    "myDiscipline": "Discipline points"
+  },
+  "myChildren": {
+    "eyebrow": "Family",
+    "title": "My children",
+    "loadError": "Could not load your children's data.",
+    "emptyTitle": "No child linked yet",
+    "emptyBody": "The school has not linked your account to a student yet. Contact the school office to have it linked.",
+    "pickChild": "Pick a child",
+    "attendance": {
+      "title": "This month's attendance",
+      "pickMonth": "Pick a month",
+      "empty": "No attendance recorded this month",
+      "codes": {
+        "H": "Present",
+        "S": "Sick",
+        "I": "Excused",
+        "D": "Dispensation",
+        "A": "Absent"
+      },
+      "incomplete": "{count} days incomplete"
+    },
+    "grades": {
+      "title": "Grades",
+      "stars": "{count} stars",
+      "emptyTitle": "No grades published yet",
+      "emptyBody": "Grades will appear here once a teacher publishes them.",
+      "unknownSubject": "Subject",
+      "average": "Average {score}",
+      "reportScore": "Report score {score}"
+    },
+    "discipline": {
+      "title": "Discipline points",
+      "emptyTitle": "No records yet",
+      "emptyBody": "No violations or warning letters on file.",
+      "totalPoints": "Total points: {points}"
+    }
+  },
+  "guardianLinks": {
+    "menu": {
+      "manageChildren": "Manage linked children",
+      "guardians": "Parents/guardians"
+    },
+    "manageChildren": {
+      "title": "Children linked to {name}",
+      "empty": "No children linked yet.",
+      "unlink": "Unlink",
+      "linkNew": "Link a new child",
+      "searchStudent": "Search student name",
+      "noMatch": "No matching student.",
+      "relationLabel": "Relation",
+      "relation": {
+        "father": "Father",
+        "mother": "Mother",
+        "guardian": "Guardian"
+      },
+      "canApproveLeave": "Can approve leave",
+      "link": "Link",
+      "linked": "Child linked",
+      "unlinkConfirmTitle": "Unlink child",
+      "unlinkConfirmBody": "The link between {parent} and {student} will be removed. {parent} will no longer see {student}'s data.",
+      "unlinked": "Link removed"
+    },
+    "guardians": {
+      "title": "{name}'s parents/guardians",
+      "empty": "No parent or guardian linked yet.",
+      "relation": {
+        "father": "Father",
+        "mother": "Mother",
+        "guardian": "Guardian"
+      },
+      "canApproveLeave": "Can approve leave"
+    }
+  }
+}

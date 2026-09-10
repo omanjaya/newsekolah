@@ -15,8 +15,12 @@ import {
   Settings,
   ShieldCheck,
   UserRound,
+  Users,
   UsersRound,
 } from "lucide-react";
+
+/** Profile kinds a nav item can be restricted to, mirroring `Me["profile_kind"]`. */
+export type NavProfileKind = "student" | "teacher" | "staff" | "parent";
 
 export interface NavItem {
   key: string;
@@ -32,6 +36,13 @@ export interface NavItem {
   icon: LucideIcon;
   /** Permission code required to see this item; omitted means "any signed-in user". */
   permission?: string;
+  /**
+   * Restricts this item to specific profile kinds, for a screen scoped by
+   * account type rather than by a permission code (e.g. a student's own
+   * discipline record, which every authenticated user can technically
+   * call). Omitted means "any profile kind with the permission".
+   */
+  profileKinds?: NavProfileKind[];
   /** Shown in the mobile bottom tab bar in addition to the sidebar. */
   showInTabBar?: boolean;
   /**
@@ -113,11 +124,27 @@ export const navigation: NavItem[] = [
     group: GROUP.academic,
   },
   {
+    key: "children",
+    labelKey: "app.family.nav.myChildren",
+    href: "/children",
+    icon: Users,
+    permission: "view_child_attendance",
+    group: GROUP.academic,
+  },
+  {
     key: "violations",
     labelKey: "nav.discipline.items.violations",
     href: "/discipline/violations",
     icon: domainIcons.violation,
     permission: "view_discipline",
+    group: GROUP.discipline,
+  },
+  {
+    key: "my-discipline",
+    labelKey: "app.family.nav.myDiscipline",
+    href: "/my-discipline",
+    icon: domainIcons.violation,
+    profileKinds: ["student"],
     group: GROUP.discipline,
   },
   {
@@ -362,6 +389,13 @@ export const navigation: NavItem[] = [
 export function filterNavigation(
   items: NavItem[],
   can: (permission: string) => boolean,
+  profileKind?: NavProfileKind,
 ): NavItem[] {
-  return items.filter((item) => !item.permission || can(item.permission));
+  return items.filter((item) => {
+    if (item.permission && !can(item.permission)) return false;
+    if (item.profileKinds && (!profileKind || !item.profileKinds.includes(profileKind))) {
+      return false;
+    }
+    return true;
+  });
 }

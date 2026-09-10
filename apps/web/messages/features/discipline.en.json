@@ -204,5 +204,16 @@
       "submit": "Save",
       "saved": "Counseling note saved"
     }
+  },
+  "myDiscipline": {
+    "eyebrow": "Student affairs",
+    "title": "Discipline points",
+    "loadError": "Could not load your discipline record.",
+    "emptyTitle": "No records yet",
+    "emptyBody": "No violations or warning letters on file.",
+    "totalPoints": "Total points: {points}",
+    "letters": "Warning letters",
+    "records": "Record history",
+    "recordsEmpty": "No violations recorded"
   }
 }

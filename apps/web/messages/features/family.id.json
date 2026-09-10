@@ -1,0 +1,78 @@
+{
+  "nav": {
+    "myChildren": "Anak",
+    "myDiscipline": "Poin kedisiplinan"
+  },
+  "myChildren": {
+    "eyebrow": "Keluarga",
+    "title": "Anak saya",
+    "loadError": "Data anak gagal dimuat.",
+    "emptyTitle": "Belum ada anak yang tertaut",
+    "emptyBody": "Sekolah belum menautkan akun Anda ke data siswa. Hubungi tata usaha untuk menautkannya.",
+    "pickChild": "Pilih anak",
+    "attendance": {
+      "title": "Presensi bulan ini",
+      "pickMonth": "Pilih bulan",
+      "empty": "Belum ada presensi bulan ini",
+      "codes": {
+        "H": "Hadir",
+        "S": "Sakit",
+        "I": "Izin",
+        "D": "Dispensasi",
+        "A": "Alpha"
+      },
+      "incomplete": "{count} hari belum lengkap"
+    },
+    "grades": {
+      "title": "Nilai",
+      "stars": "{count} bintang",
+      "emptyTitle": "Belum ada nilai yang diterbitkan",
+      "emptyBody": "Nilai akan muncul di sini setelah guru menerbitkannya.",
+      "unknownSubject": "Mapel",
+      "average": "Rata-rata {score}",
+      "reportScore": "Nilai rapor {score}"
+    },
+    "discipline": {
+      "title": "Poin kedisiplinan",
+      "emptyTitle": "Belum ada catatan",
+      "emptyBody": "Tidak ada pelanggaran atau surat peringatan yang tercatat.",
+      "totalPoints": "Total poin: {points}"
+    }
+  },
+  "guardianLinks": {
+    "menu": {
+      "manageChildren": "Kelola anak tertaut",
+      "guardians": "Orang tua/wali"
+    },
+    "manageChildren": {
+      "title": "Anak tertaut untuk {name}",
+      "empty": "Belum ada anak yang tertaut.",
+      "unlink": "Lepas tautan",
+      "linkNew": "Tautkan anak baru",
+      "searchStudent": "Cari nama siswa",
+      "noMatch": "Tidak ada siswa yang cocok.",
+      "relationLabel": "Hubungan",
+      "relation": {
+        "father": "Ayah",
+        "mother": "Ibu",
+        "guardian": "Wali"
+      },
+      "canApproveLeave": "Bisa menyetujui izin",
+      "link": "Tautkan",
+      "linked": "Anak ditautkan",
+      "unlinkConfirmTitle": "Lepas tautan anak",
+      "unlinkConfirmBody": "Tautan antara {parent} dan {student} akan dihapus. {parent} tidak akan lagi bisa melihat data {student}.",
+      "unlinked": "Tautan dilepas"
+    },
+    "guardians": {
+      "title": "Orang tua/wali {name}",
+      "empty": "Belum ada orang tua/wali yang tertaut.",
+      "relation": {
+        "father": "Ayah",
+        "mother": "Ibu",
+        "guardian": "Wali"
+      },
+      "canApproveLeave": "Bisa menyetujui izin"
+    }
+  }
+}
