@@ -49,6 +49,12 @@ export interface NavItem {
   /** Shown in the mobile bottom tab bar in addition to the sidebar. */
   showInTabBar?: boolean;
   /**
+   * Shorter label for the tab bar, where a full sidebar label wraps to two
+   * lines and makes that one tab taller than its neighbours. Falls back to
+   * `labelKey`.
+   */
+  tabLabelKey?: string;
+  /**
    * Sidebar group, as a message key (e.g. "nav.academic.label"), translated
    * by the sidebar. Omitted items render flat above the groups.
    */
@@ -261,6 +267,7 @@ export const navigation: NavItem[] = [
   {
     key: "leave-requests",
     labelKey: "nav.permits.items.plannedLeave",
+    tabLabelKey: "nav.compact.permits",
     href: "/leave-requests",
     icon: ClipboardList,
     group: GROUP.permits,

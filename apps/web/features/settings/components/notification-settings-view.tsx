@@ -75,7 +75,7 @@ export function NotificationSettingsView(): ReactElement {
         {prefs.isLoading ? (
           <Skeleton className="h-64 w-full" />
         ) : (
-          <div className="overflow-x-auto">
+          <div className="hidden overflow-x-auto md:block">
             <table className="w-full min-w-[560px] text-[13px]">
               <thead>
                 <tr className="text-left text-fg-muted">
@@ -115,6 +115,38 @@ export function NotificationSettingsView(): ReactElement {
               </tbody>
             </table>
           </div>
+        )}
+        {!prefs.isLoading && (
+          // A four-column matrix on a phone shows one column and hides the
+          // rest behind a sideways scroll nothing announces. Stacked per
+          // kind, every channel for that kind is on screen at once.
+          <ul className="flex flex-col gap-3 md:hidden">
+            {NOTIFICATION_KINDS.map((kind) => {
+              const row = prefs.data?.[kind] ?? {};
+              return (
+                <li key={kind} className="flex flex-col gap-2 rounded-sm border border-border p-3">
+                  <span className="text-[13px] font-medium text-fg">{tKinds(kind)}</span>
+                  <div className="flex flex-col gap-2">
+                    {NOTIFICATION_CHANNELS.map((channel) => (
+                      <div key={channel} className="flex items-center justify-between gap-3">
+                        <span className="text-[13px] text-fg-muted">
+                          {t(`channels.${channel}`)}
+                        </span>
+                        <Switch
+                          checked={row[channel] ?? false}
+                          disabled={channel === "inapp"}
+                          aria-label={`${tKinds(kind)}: ${t(`channels.${channel}`)}`}
+                          onCheckedChange={(checked) => {
+                            toggle(kind, channel, checked);
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
         )}
       </section>
 

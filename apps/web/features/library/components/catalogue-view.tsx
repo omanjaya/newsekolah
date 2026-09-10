@@ -69,15 +69,7 @@ export function CatalogueView(): ReactElement {
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
       <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <Input
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-          }}
-          placeholder={t("searchPlaceholder")}
-          className="max-w-sm"
-        />
+      <div className="flex flex-wrap items-center justify-end gap-2">
         <Button
           size="sm"
           icon={<Plus />}
@@ -97,8 +89,9 @@ export function CatalogueView(): ReactElement {
         onPaginationChange={() => undefined}
         sorting={[]}
         onSortingChange={() => undefined}
-        globalFilter=""
-        onGlobalFilterChange={() => undefined}
+        globalFilter={search}
+        onGlobalFilterChange={setSearch}
+        toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
         isLoading={isLoading}
         getRowId={(item) => item.id}
         emptyState={

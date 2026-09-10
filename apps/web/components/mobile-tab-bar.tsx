@@ -46,8 +46,10 @@ export function MobileTabBar({
           active ? "text-accent" : "text-fg-muted",
         )}
       >
-        <item.icon className="size-5" aria-hidden="true" />
-        {t(item.labelKey)}
+        <item.icon className="size-5 shrink-0" aria-hidden="true" />
+        <span className="w-full truncate px-1 text-center">
+          {t(item.tabLabelKey ?? item.labelKey)}
+        </span>
       </Link>
     );
   }

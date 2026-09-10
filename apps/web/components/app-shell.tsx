@@ -49,7 +49,14 @@ export function AppShell({ children }: { children: ReactNode }): ReactElement {
       <div className="flex min-h-dvh">
         <Sidebar items={items} className="hidden md:flex" />
         <div className="flex min-w-0 flex-1 flex-col">
-          <Header />
+          {/*
+            Sticky like the sidebar: search and the notification bell are
+            reached from wherever the reader is on a long page, not only
+            from the top of it.
+          */}
+          <div className="sticky top-0 z-(--z-sticky)">
+            <Header />
+          </div>
           <ImpersonationBanner />
           <OfflineIndicator />
           <main id="main-content" className="flex-1 pb-20 md:pb-0">

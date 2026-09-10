@@ -15,6 +15,7 @@ import { cn } from "../../utils/cn.js";
 import { Checkbox } from "../checkbox.js";
 import { Skeleton } from "../skeleton.js";
 
+import { DataTableCards } from "./data-table-cards.js";
 import { DataTablePagination, type DataTablePaginationLabels } from "./data-table-pagination.js";
 import { DataTableToolbar, type DataTableToolbarLabels } from "./data-table-toolbar.js";
 import { useDebouncedCallback } from "./use-debounced-callback.js";
@@ -128,6 +129,19 @@ export function DataTable<TData>({
   const selectedCount = Object.keys(rowSelection ?? {}).length;
   const skeletonRowCount = Math.min(pagination.pageSize, 8);
 
+  // Rendered once from the header groups, because a header cell needs a
+  // header context and a body cell cannot supply one.
+  const cardHeaders: Record<string, ReactNode> = {};
+  for (const headerGroup of table.getHeaderGroups()) {
+    for (const header of headerGroup.headers) {
+      if (header.isPlaceholder) continue;
+      cardHeaders[header.column.id] = flexRender(
+        header.column.columnDef.header,
+        header.getContext(),
+      );
+    }
+  }
+
   return (
     <div className="flex flex-col gap-3">
       <DataTableToolbar
@@ -140,7 +154,22 @@ export function DataTable<TData>({
         selectedCount={selectedCount}
         labels={toolbarLabels}
       />
-      <div className="overflow-x-auto rounded-sm border border-border">
+      {/*
+        Below md the same rows render as cards: a table that only scrolls
+        sideways on a phone hides the columns carrying the answer, with
+        nothing on screen to say they exist.
+      */}
+      <div className="md:hidden">
+        <DataTableCards
+          rows={rows}
+          headers={cardHeaders}
+          isLoading={isLoading}
+          skeletonRowCount={skeletonRowCount}
+          emptyState={emptyState}
+          onRowActivate={onRowActivate}
+        />
+      </div>
+      <div className="hidden overflow-x-auto rounded-sm border border-border md:block">
         <table className="w-full border-collapse text-[13px] tabular-nums">
           <thead>
             {table.getHeaderGroups().map((headerGroup) => (

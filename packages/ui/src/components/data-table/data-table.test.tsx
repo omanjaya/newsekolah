@@ -56,15 +56,24 @@ function Harness(props: {
 }
 
 describe("DataTable", () => {
+  // Every row renders twice: once in the table for wide screens and once
+  // as a card for narrow ones, with CSS deciding which is shown. jsdom
+  // applies no media query, so both are in the document here.
   it("renders rows from `data`", () => {
     render(<Harness data={ROWS} rowCount={ROWS.length} />);
-    expect(screen.getByText("Siti Aminah")).toBeInTheDocument();
-    expect(screen.getByText("Budi Santoso")).toBeInTheDocument();
+    expect(screen.getAllByText("Siti Aminah").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Budi Santoso").length).toBeGreaterThan(0);
+  });
+
+  it("renders the same rows as cards for a narrow screen", () => {
+    render(<Harness data={ROWS} rowCount={ROWS.length} />);
+    // The card list carries one item per row, each labelled by its header.
+    expect(screen.getAllByRole("listitem")).toHaveLength(ROWS.length);
   });
 
   it("shows the empty state slot when there are no rows and not loading", () => {
     render(<Harness data={[]} rowCount={0} />);
-    expect(screen.getByText("Belum ada data")).toBeInTheDocument();
+    expect(screen.getAllByText("Belum ada data").length).toBeGreaterThan(0);
   });
 
   it("renders skeleton rows instead of data while loading", () => {
