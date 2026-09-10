@@ -4,6 +4,18 @@ export { domainIcons, type DomainIconName } from "./icons.js";
 export { Button, type ButtonProps } from "./components/button.js";
 export { IconButton, type IconButtonProps } from "./components/icon-button.js";
 export { Input, type InputProps } from "./components/input.js";
+export {
+  BarcodeScannerField,
+  type BarcodeScannerFieldProps,
+  type BarcodeScanEvent,
+  type BarcodeScanSource,
+} from "./components/barcode-scanner-field.js";
+export {
+  useBarcodeScanner,
+  isScanBurst,
+  type UseBarcodeScannerOptions,
+} from "./hooks/use-barcode-scanner.js";
+export { createDuplicateScanGuard, type DuplicateScanGuard } from "./hooks/duplicate-scan-guard.js";
 export { Textarea, type TextareaProps } from "./components/textarea.js";
 export { Select, type SelectOption, type SelectProps } from "./components/select.js";
 export { Checkbox, type CheckboxProps } from "./components/checkbox.js";

@@ -217,6 +217,22 @@
     "PASSWORD_RESET_TOKEN_INVALID": "This link is invalid or has expired",
     "UPLOAD_INVALID_FILE_TYPE": "This file type is not supported",
     "UPLOAD_FILE_TOO_LARGE": "The file exceeds the allowed size",
-    "UPLOAD_NOT_CONFIGURED": "File storage is not configured on this server"
+    "UPLOAD_NOT_CONFIGURED": "File storage is not configured on this server",
+    "LIBRARY_TITLE_NOT_FOUND": "Title not found",
+    "LIBRARY_COPY_NOT_FOUND": "This barcode is not in the library catalogue",
+    "LIBRARY_COPY_BARCODE_EXISTS": "That copy barcode is already in use",
+    "LIBRARY_COPY_NOT_AVAILABLE": "This copy is not available to borrow",
+    "LIBRARY_COPY_ON_LOAN": "This copy is already on loan",
+    "LIBRARY_LOAN_NOT_FOUND": "Loan not found",
+    "LIBRARY_LOAN_ALREADY_RETURNED": "This loan is already closed",
+    "LIBRARY_LOAN_LIMIT_REACHED": "This member has reached their active loan limit",
+    "LIBRARY_RENEWAL_LIMIT_REACHED": "This loan has reached its renewal limit",
+    "LIBRARY_RENEWAL_BLOCKED_OVERDUE": "An overdue loan cannot be renewed",
+    "LIBRARY_RENEWAL_BLOCKED_RESERVED": "Another member is waiting for this title, so it cannot be renewed",
+    "LIBRARY_RESERVATION_NOT_FOUND": "Reservation not found",
+    "LIBRARY_RESERVATION_NOT_WAITING": "This reservation is no longer in the queue",
+    "LIBRARY_COPY_AVAILABLE_FOR_LOAN": "This copy has not been borrowed",
+    "LIBRARY_STOCKTAKE_NOT_FOUND": "Stocktake session not found",
+    "LIBRARY_STOCKTAKE_CLOSED": "This stocktake session is already closed"
   }
 }

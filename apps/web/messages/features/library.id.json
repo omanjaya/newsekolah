@@ -71,6 +71,7 @@
       "heading": "Pinjam",
       "barcode": "Barcode eksemplar",
       "memberId": "ID anggota",
+      "memberIdRequired": "Isi ID anggota sebelum memindai eksemplar",
       "submit": "Pinjamkan",
       "success": "Peminjaman berhasil dicatat"
     },
@@ -132,6 +133,7 @@
     "emptyTitle": "Belum ada sesi opname",
     "scan": {
       "heading": "Pindai barcode",
+      "label": "Barcode",
       "placeholder": "Pindai atau ketik barcode",
       "submit": "Catat"
     },
@@ -202,6 +204,30 @@
     "unavailable": "Sedang dipinjam semua",
     "emptyTitle": "Tidak ditemukan",
     "emptyBody": "Coba kata kunci lain."
+  },
+  "kiosk": {
+    "navLabel": "Kios mandiri",
+    "eyebrow": "Perpustakaan",
+    "idle": {
+      "title": "Kios perpustakaan",
+      "instructions": "Tempelkan atau pindai kartu anggota untuk mulai",
+      "scanLabel": "Kartu anggota",
+      "submit": "Masuk"
+    },
+    "active": {
+      "title": "Pindai buku untuk pinjam atau kembalikan",
+      "done": "Selesai",
+      "dueOn": "Jatuh tempo",
+      "limit": "{count} dari {max} batas pinjaman terpakai",
+      "empty": "Belum ada buku yang sedang dipinjam",
+      "scanLabel": "Barcode buku",
+      "submit": "Catat"
+    },
+    "feedback": {
+      "unknownCard": "Kartu anggota tidak dikenali",
+      "borrowed": "Peminjaman berhasil dicatat",
+      "returned": "Pengembalian berhasil dicatat"
+    }
   },
   "policy": {
     "title": "Kebijakan peminjaman",

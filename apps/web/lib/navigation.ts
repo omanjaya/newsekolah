@@ -219,6 +219,14 @@ export const navigation: NavItem[] = [
     group: GROUP.library,
   },
   {
+    key: "library-kiosk",
+    labelKey: "app.library.kiosk.navLabel",
+    href: "/library/kiosk",
+    icon: domainIcons.library,
+    permission: "manage_library_circulation",
+    group: GROUP.library,
+  },
+  {
     key: "leave-requests",
     labelKey: "nav.permits.items.plannedLeave",
     href: "/leave-requests",

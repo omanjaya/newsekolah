@@ -1,7 +1,8 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Alert, Button, Input, PageHeader, useToast } from "@newsekolah/ui";
+import { Alert, BarcodeScannerField, Button, PageHeader, useToast } from "@newsekolah/ui";
+import type { BarcodeScanEvent } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -22,11 +23,26 @@ export function StocktakeSessionView({ stocktakeId }: { stocktakeId: string }): 
   const scan = useScanStocktakeMutation();
   const close = useCloseStocktakeMutation();
 
-  const [barcode, setBarcode] = useState("");
   const [scannedCount, setScannedCount] = useState(0);
   const [result, setResult] = useState<LibraryStocktakeResult | null>(null);
 
   const isOpen = session.data?.status === "open";
+
+  const handleScan = (event: BarcodeScanEvent) => {
+    scan.mutate(
+      { stocktakeId, barcode: event.code },
+      {
+        onSuccess: () => {
+          setScannedCount((count) => count + 1);
+        },
+        onError: (error) => {
+          toast.error(
+            error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
+          );
+        },
+      },
+    );
+  };
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
@@ -34,44 +50,17 @@ export function StocktakeSessionView({ stocktakeId }: { stocktakeId: string }): 
 
       {isOpen ? (
         <>
-          <form
-            className="flex flex-wrap items-end gap-3 rounded-sm border border-border bg-surface p-4"
-            onSubmit={(e) => {
-              e.preventDefault();
-              scan.mutate(
-                { stocktakeId, barcode: barcode.trim() },
-                {
-                  onSuccess: () => {
-                    setScannedCount((count) => count + 1);
-                    setBarcode("");
-                  },
-                  onError: (error) => {
-                    toast.error(
-                      error instanceof ApiError
-                        ? apiErrorMessage(error.code)
-                        : apiErrorMessage("UNKNOWN"),
-                    );
-                  },
-                },
-              );
-            }}
-          >
+          <div className="flex flex-wrap items-end gap-3 rounded-sm border border-border bg-surface p-4">
             <h2 className="w-full text-[15px] font-semibold text-fg">{t("scan.heading")}</h2>
-            <Input
-              value={barcode}
-              onChange={(e) => {
-                setBarcode(e.target.value);
-              }}
+            <BarcodeScannerField
+              label={t("scan.label")}
+              onScan={handleScan}
               placeholder={t("scan.placeholder")}
-              required
-              maxLength={64}
-              className="max-w-xs"
+              submitLabel={t("scan.submit")}
+              disabled={scan.isPending}
             />
-            <Button type="submit" loading={scan.isPending}>
-              {t("scan.submit")}
-            </Button>
             <span className="text-[13px] text-fg-muted">{scannedCount}</span>
-          </form>
+          </div>
 
           <Button
             onClick={() => {

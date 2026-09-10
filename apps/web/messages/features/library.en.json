@@ -71,6 +71,7 @@
       "heading": "Borrow",
       "barcode": "Copy barcode",
       "memberId": "Member ID",
+      "memberIdRequired": "Enter the member ID before scanning a copy",
       "submit": "Lend",
       "success": "Loan recorded"
     },
@@ -132,6 +133,7 @@
     "emptyTitle": "No stocktake sessions yet",
     "scan": {
       "heading": "Scan barcode",
+      "label": "Barcode",
       "placeholder": "Scan or type a barcode",
       "submit": "Record"
     },
@@ -202,6 +204,30 @@
     "unavailable": "All copies out",
     "emptyTitle": "Nothing found",
     "emptyBody": "Try a different search term."
+  },
+  "kiosk": {
+    "navLabel": "Self-service kiosk",
+    "eyebrow": "Library",
+    "idle": {
+      "title": "Library kiosk",
+      "instructions": "Tap or scan your member card to begin",
+      "scanLabel": "Member card",
+      "submit": "Start"
+    },
+    "active": {
+      "title": "Scan a book to borrow or return it",
+      "done": "Done",
+      "dueOn": "Due on",
+      "limit": "{count} of {max} loan slots used",
+      "empty": "No books on loan right now",
+      "scanLabel": "Book barcode",
+      "submit": "Record"
+    },
+    "feedback": {
+      "unknownCard": "Member card not recognized",
+      "borrowed": "Loan recorded",
+      "returned": "Return recorded"
+    }
   },
   "policy": {
     "title": "Circulation policy",

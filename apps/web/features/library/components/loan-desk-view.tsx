@@ -4,6 +4,7 @@ import { ApiError } from "@newsekolah/api-client";
 import { formatDate } from "@newsekolah/i18n";
 import type { Locale } from "@newsekolah/i18n";
 import {
+  BarcodeScannerField,
   Button,
   DataTable,
   EmptyState,
@@ -12,6 +13,7 @@ import {
   domainIcons,
   useToast,
 } from "@newsekolah/ui";
+import type { BarcodeScanEvent } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -34,7 +36,6 @@ export function LoanDeskView(): ReactElement {
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
 
-  const [barcode, setBarcode] = useState("");
   const [memberId, setMemberId] = useState("");
   const [markingLost, setMarkingLost] = useState<string | null>(null);
   const borrow = useBorrowLoanMutation();
@@ -42,6 +43,26 @@ export function LoanDeskView(): ReactElement {
   const renew = useRenewLoanMutation();
   const { data, isLoading } = useOverdueLoansQuery();
   const overdue = data?.data ?? [];
+
+  const handleScan = (event: BarcodeScanEvent) => {
+    if (!memberId.trim()) {
+      toast.error(t("borrow.memberIdRequired"));
+      return;
+    }
+    borrow.mutate(
+      { barcode: event.code, member_user_id: memberId.trim() },
+      {
+        onSuccess: () => {
+          toast.success(t("borrow.success"));
+        },
+        onError: (error) => {
+          toast.error(
+            error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
+          );
+        },
+      },
+    );
+  };
 
   const columns = useMemo<ColumnDef<LibraryLoan>[]>(
     () => [
@@ -115,41 +136,8 @@ export function LoanDeskView(): ReactElement {
     <div className="flex flex-col gap-6 p-4 md:p-6">
       <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
 
-      <form
-        className="flex flex-wrap items-end gap-3 rounded-sm border border-border bg-surface p-4"
-        onSubmit={(e) => {
-          e.preventDefault();
-          borrow.mutate(
-            { barcode: barcode.trim(), member_user_id: memberId.trim() },
-            {
-              onSuccess: () => {
-                toast.success(t("borrow.success"));
-                setBarcode("");
-                setMemberId("");
-              },
-              onError: (error) => {
-                toast.error(
-                  error instanceof ApiError
-                    ? apiErrorMessage(error.code)
-                    : apiErrorMessage("UNKNOWN"),
-                );
-              },
-            },
-          );
-        }}
-      >
+      <div className="flex flex-wrap items-end gap-3 rounded-sm border border-border bg-surface p-4">
         <h2 className="w-full text-[15px] font-semibold text-fg">{t("borrow.heading")}</h2>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("borrow.barcode")}</span>
-          <Input
-            value={barcode}
-            onChange={(e) => {
-              setBarcode(e.target.value);
-            }}
-            required
-            maxLength={64}
-          />
-        </label>
         <label className="flex flex-col gap-1 text-[13px]">
           <span className="font-medium">{t("borrow.memberId")}</span>
           <Input
@@ -161,10 +149,13 @@ export function LoanDeskView(): ReactElement {
             maxLength={64}
           />
         </label>
-        <Button type="submit" loading={borrow.isPending}>
-          {t("borrow.submit")}
-        </Button>
-      </form>
+        <BarcodeScannerField
+          label={t("borrow.barcode")}
+          onScan={handleScan}
+          submitLabel={t("borrow.submit")}
+          disabled={borrow.isPending}
+        />
+      </div>
 
       <div className="flex flex-col gap-3">
         <h2 className="text-[15px] font-semibold text-fg">{t("overdue.heading")}</h2>

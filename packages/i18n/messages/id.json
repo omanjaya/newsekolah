@@ -217,6 +217,22 @@
     "PASSWORD_RESET_TOKEN_INVALID": "Tautan ini tidak valid atau sudah kedaluwarsa",
     "UPLOAD_INVALID_FILE_TYPE": "Jenis berkas ini tidak didukung",
     "UPLOAD_FILE_TOO_LARGE": "Ukuran berkas melebihi batas yang diizinkan",
-    "UPLOAD_NOT_CONFIGURED": "Penyimpanan berkas belum dikonfigurasi di server ini"
+    "UPLOAD_NOT_CONFIGURED": "Penyimpanan berkas belum dikonfigurasi di server ini",
+    "LIBRARY_TITLE_NOT_FOUND": "Judul tidak ditemukan",
+    "LIBRARY_COPY_NOT_FOUND": "Barcode ini tidak dikenali di katalog perpustakaan",
+    "LIBRARY_COPY_BARCODE_EXISTS": "Barcode eksemplar ini sudah dipakai",
+    "LIBRARY_COPY_NOT_AVAILABLE": "Eksemplar ini sedang tidak tersedia untuk dipinjam",
+    "LIBRARY_COPY_ON_LOAN": "Eksemplar ini sedang dipinjam",
+    "LIBRARY_LOAN_NOT_FOUND": "Peminjaman tidak ditemukan",
+    "LIBRARY_LOAN_ALREADY_RETURNED": "Peminjaman ini sudah ditutup",
+    "LIBRARY_LOAN_LIMIT_REACHED": "Anggota sudah mencapai batas pinjaman aktif",
+    "LIBRARY_RENEWAL_LIMIT_REACHED": "Peminjaman ini sudah mencapai batas perpanjangan",
+    "LIBRARY_RENEWAL_BLOCKED_OVERDUE": "Peminjaman yang sudah terlambat tidak bisa diperpanjang",
+    "LIBRARY_RENEWAL_BLOCKED_RESERVED": "Ada anggota lain menunggu judul ini, tidak bisa diperpanjang",
+    "LIBRARY_RESERVATION_NOT_FOUND": "Reservasi tidak ditemukan",
+    "LIBRARY_RESERVATION_NOT_WAITING": "Reservasi ini sudah tidak dalam antrean",
+    "LIBRARY_COPY_AVAILABLE_FOR_LOAN": "Eksemplar ini belum dipinjam",
+    "LIBRARY_STOCKTAKE_NOT_FOUND": "Sesi opname tidak ditemukan",
+    "LIBRARY_STOCKTAKE_CLOSED": "Sesi opname ini sudah ditutup"
   }
 }
