@@ -82,3 +82,25 @@ export function formatRelative(
 export function formatNumber(value: number, options: FormatOptions): string {
   return new Intl.NumberFormat(INTL_LOCALE[options.locale]).format(value);
 }
+
+/**
+ * Locale-aware money formatting for an integer amount already in the
+ * currency's smallest unit ("Rp 250.000" for 250000 IDR minor units).
+ * Rupiah has no subunit in everyday use, so this always renders a whole
+ * number with `maximumFractionDigits: 0` regardless of currency, matching
+ * how the billing module stores every amount (docs/04-clean-code.md:
+ * money is an integer, never a float, so its display never invents
+ * fraction digits the source data does not have).
+ */
+export function formatCurrency(
+  amountMinor: number,
+  currency: string,
+  options: FormatOptions,
+): string {
+  return new Intl.NumberFormat(INTL_LOCALE[options.locale], {
+    style: "currency",
+    currency,
+    maximumFractionDigits: 0,
+    minimumFractionDigits: 0,
+  }).format(amountMinor);
+}

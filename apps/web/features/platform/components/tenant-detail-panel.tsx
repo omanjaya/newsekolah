@@ -25,6 +25,7 @@ const MODULES: PlatformModule[] = [
   "permits",
   "announcements",
   "reports",
+  "billing",
 ];
 
 export function TenantDetailPanel({ tenantId }: { tenantId: string }): ReactElement {

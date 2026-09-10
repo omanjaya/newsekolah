@@ -255,6 +255,14 @@
     "INCIDENT_NOT_FOUND": "Catatan insiden tidak ditemukan",
     "INCIDENT_ALREADY_CLOSED": "Insiden ini sudah ditutup",
     "INCIDENT_FORBIDDEN": "Anda tidak berwenang membaca insiden ini",
-    "VISITORS_MODULE_DISABLED": "Modul kunjungan tamu belum diaktifkan untuk sekolah ini"
+    "VISITORS_MODULE_DISABLED": "Modul kunjungan tamu belum diaktifkan untuk sekolah ini",
+    "BILLING_MODULE_DISABLED": "Modul pembayaran SPP belum diaktifkan untuk sekolah ini",
+    "FEE_TYPE_NOT_FOUND": "Jenis biaya tidak ditemukan",
+    "DISCOUNT_NOT_FOUND": "Potongan tidak ditemukan",
+    "BILL_NOT_FOUND": "Tagihan tidak ditemukan",
+    "BILL_ALREADY_PAID": "Tagihan ini sudah lunas",
+    "PAYMENT_NOT_FOUND": "Pembayaran tidak ditemukan",
+    "PAYMENT_ALREADY_VOIDED": "Pembayaran ini sudah dibatalkan",
+    "PAYMENT_EXCEEDS_OUTSTANDING": "Jumlah pembayaran melebihi sisa tagihan"
   }
 }

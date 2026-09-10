@@ -1552,6 +1552,282 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/children/{studentId}/billing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One linked child's bills and payment history, read-only */
+        get: operations["getChildBilling"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/billing/fee-types": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Fee types for the active academic year */
+        get: operations["listFeeTypes"];
+        put?: never;
+        /** Add a fee type */
+        post: operations["createFeeType"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/billing/fee-types/{feeTypeId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One fee type */
+        get: operations["getFeeType"];
+        /** Edit a fee type */
+        put: operations["updateFeeType"];
+        post?: never;
+        /** Retire a fee type (bills already generated keep their snapshot) */
+        delete: operations["deleteFeeType"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/billing/fee-types/{feeTypeId}/discounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Discounts configured for one fee type */
+        get: operations["listFeeTypeDiscounts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/billing/discounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add a per-student discount or waiver */
+        post: operations["createDiscount"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/billing/discounts/{discountId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Edit a discount */
+        put: operations["updateDiscount"];
+        post?: never;
+        /** Remove a discount */
+        delete: operations["deleteDiscount"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/billing/students/{studentId}/discounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Discounts configured for one student */
+        get: operations["listStudentDiscounts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/billing/generation/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Compute what generating bills for a period would create, without saving anything */
+        post: operations["previewBillGeneration"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/billing/generation/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Generate bills for a period (idempotent, safe to repeat) */
+        post: operations["runBillGeneration"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/billing/bills": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Bills for the active academic year, filterable by period, status and class */
+        get: operations["listBills"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/billing/bills/{billId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One bill */
+        get: operations["getBill"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/billing/students/{studentId}/bills": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One student's bills and payments this year */
+        get: operations["getStudentBillHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/billing/payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Record a payment against a bill and issue its receipt */
+        post: operations["recordPayment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/billing/payments/{paymentId}/void": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Void a recorded payment (kept, never deleted) */
+        post: operations["voidPayment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/billing/payments/{paymentId}/receipt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Short-lived download URL for the receipt PDF */
+        get: operations["getPaymentReceiptUrl"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/billing/arrears": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Outstanding balances per student and per class, for the finance office */
+        get: operations["getArrearsReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/discipline/violation-types": {
         parameters: {
             query?: never;
@@ -6459,6 +6735,176 @@ export interface components {
             count: number;
             keys: string[];
         };
+        /** @enum {string} */
+        Recurrence: "monthly" | "one_off";
+        FeeTypeWrite: {
+            name: string;
+            description?: string;
+            /** Format: int64 */
+            amount_minor: number;
+            /** @default IDR */
+            currency: string;
+            recurrence: components["schemas"]["Recurrence"];
+            /** @description Required when recurrence is one_off; ignored for monthly. */
+            period?: string;
+            /** @default true */
+            is_active: boolean;
+        };
+        FeeType: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            description?: string;
+            /** Format: int64 */
+            amount_minor: number;
+            currency: string;
+            recurrence: components["schemas"]["Recurrence"];
+            period?: string;
+            is_active: boolean;
+        };
+        /** @enum {string} */
+        DiscountKind: "percentage" | "fixed" | "waiver";
+        DiscountWrite: {
+            /** Format: uuid */
+            fee_type_id: string;
+            /** Format: uuid */
+            student_user_id: string;
+            kind: components["schemas"]["DiscountKind"];
+            /** @description Basis points (1/100 of a percent); required when kind is percentage. */
+            percentage_bp?: number;
+            /**
+             * Format: int64
+             * @description Required when kind is fixed.
+             */
+            amount_minor?: number;
+            reason: string;
+            /** @default true */
+            is_active: boolean;
+        };
+        Discount: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            fee_type_id: string;
+            /** Format: uuid */
+            student_user_id: string;
+            kind: components["schemas"]["DiscountKind"];
+            percentage_bp?: number;
+            /** Format: int64 */
+            amount_minor?: number;
+            reason: string;
+            is_active: boolean;
+        };
+        GenerationRequest: {
+            /** @description Billing period key, e.g. "2026-07" for a monthly charge; ignored by one-off fee types, which always use their own fixed period. */
+            period: string;
+        };
+        BillCandidate: {
+            /** Format: uuid */
+            student_user_id: string;
+            /** Format: uuid */
+            fee_type_id: string;
+            fee_type_name: string;
+            period: string;
+            /** Format: int64 */
+            original_amount_minor: number;
+            /** Format: int64 */
+            discount_amount_minor: number;
+            /** Format: int64 */
+            amount_minor: number;
+        };
+        GenerationSummary: {
+            created: components["schemas"]["BillCandidate"][];
+            /** @description Candidates that already had a bill for this fee type, student and period, and were left untouched. */
+            skipped: number;
+        };
+        /** @enum {string} */
+        BillStatus: "unpaid" | "partial" | "paid";
+        Bill: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            student_user_id: string;
+            /** Format: uuid */
+            fee_type_id: string;
+            fee_type_name: string;
+            currency: string;
+            period: string;
+            /** Format: date */
+            due_date: string;
+            /** Format: int64 */
+            original_amount_minor: number;
+            /** Format: int64 */
+            discount_amount_minor: number;
+            /** Format: int64 */
+            amount_minor: number;
+            /** Format: int64 */
+            paid_amount_minor: number;
+            status: components["schemas"]["BillStatus"];
+            /** Format: date-time */
+            generated_at: string;
+        };
+        /** @enum {string} */
+        PaymentMethod: "cash" | "bank_transfer" | "other";
+        PaymentWrite: {
+            /** Format: uuid */
+            bill_id: string;
+            /** Format: int64 */
+            amount_minor: number;
+            method: components["schemas"]["PaymentMethod"];
+            /** Format: date */
+            paid_on: string;
+            reference?: string;
+        };
+        Payment: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            bill_id: string;
+            /** Format: int64 */
+            amount_minor: number;
+            method: components["schemas"]["PaymentMethod"];
+            /** Format: date */
+            paid_on: string;
+            /** Format: uuid */
+            received_by_user_id: string;
+            reference?: string;
+            receipt_number?: string;
+            has_receipt?: boolean;
+            /** Format: date-time */
+            created_at: string;
+            is_voided: boolean;
+            /** Format: date-time */
+            voided_at?: string;
+            void_reason?: string;
+        };
+        StudentBillHistoryEntry: {
+            bill: components["schemas"]["Bill"];
+            payments: components["schemas"]["Payment"][];
+        };
+        StudentBillHistory: {
+            data: components["schemas"]["StudentBillHistoryEntry"][];
+        };
+        ArrearsStudentLine: {
+            /** Format: uuid */
+            student_user_id: string;
+            /** Format: uuid */
+            class_id?: string;
+            /** Format: int64 */
+            outstanding_minor: number;
+            bill_count: number;
+        };
+        ArrearsClassLine: {
+            /** Format: uuid */
+            class_id?: string;
+            /** Format: int64 */
+            outstanding_minor: number;
+            student_count: number;
+        };
+        ArrearsReport: {
+            by_student: components["schemas"]["ArrearsStudentLine"][];
+            by_class: components["schemas"]["ArrearsClassLine"][];
+        };
         ViolationType: {
             /** Format: uuid */
             id: string;
@@ -7798,7 +8244,7 @@ export interface components {
         /** @enum {string} */
         PlatformTenantStatus: "trial" | "active" | "suspended" | "offboarding";
         /** @enum {string} */
-        PlatformModule: "library" | "discipline" | "grading" | "permits" | "announcements" | "reports";
+        PlatformModule: "library" | "discipline" | "grading" | "permits" | "announcements" | "reports" | "billing";
         PlatformTenant: {
             /** Format: uuid */
             id: string;
@@ -11850,6 +12296,533 @@ export interface operations {
                 content?: never;
             };
             401: components["responses"]["Unauthorized"];
+        };
+    };
+    getChildBilling: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description History */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentBillHistory"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    listFeeTypes: {
+        parameters: {
+            query?: {
+                include_inactive?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Fee types */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["FeeType"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createFeeType: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FeeTypeWrite"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeeType"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    getFeeType: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                feeTypeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Fee type */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeeType"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateFeeType: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                feeTypeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FeeTypeWrite"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeeType"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteFeeType: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                feeTypeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    listFeeTypeDiscounts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                feeTypeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Discounts */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Discount"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createDiscount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiscountWrite"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Discount"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateDiscount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                discountId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiscountWrite"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Discount"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteDiscount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                discountId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    listStudentDiscounts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Discounts */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Discount"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    previewBillGeneration: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GenerationRequest"];
+            };
+        };
+        responses: {
+            /** @description Preview */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenerationSummary"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    runBillGeneration: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GenerationRequest"];
+            };
+        };
+        responses: {
+            /** @description Result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenerationSummary"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    listBills: {
+        parameters: {
+            query?: {
+                period?: string;
+                status?: components["schemas"]["BillStatus"];
+                class_id?: string;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Bills */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Bill"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    getBill: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                billId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Bill */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Bill"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getStudentBillHistory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description History */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentBillHistory"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    recordPayment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PaymentWrite"];
+            };
+        };
+        responses: {
+            /** @description Recorded */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Payment"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    voidPayment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                paymentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    reason: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Voided */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Payment"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getPaymentReceiptUrl: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                paymentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description URL */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        url: string;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getArrearsReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Report */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArrearsReport"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
         };
     };
     listViolationTypes: {

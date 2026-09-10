@@ -22,6 +22,7 @@ sql:
       - "internal/modules/supervision/queries"
       - "internal/modules/staffattendance/queries"
       - "internal/modules/visitors/queries"
+      - "internal/modules/billing/queries"
     schema: "migrations"
     gen:
       go:

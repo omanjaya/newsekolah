@@ -73,3 +73,5 @@ tags:
     description: Working attendance of teachers and staff -- schedules, daily records, corrections, monthly recap
   - name: visitors
     description: Guests at the gate (expected list, board, sign-in/out, badge) and campus incidents
+  - name: billing
+    description: Fee types, discounts, bill generation, payments, receipts and arrears

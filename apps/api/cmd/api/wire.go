@@ -19,6 +19,7 @@ import (
 	analyticsjobs "github.com/omanjaya/newsekolah/apps/api/internal/modules/analytics/transport/jobs"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/announcements"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance"
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/billing"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/discipline"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/family"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/grading"
@@ -232,6 +233,10 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		Pool: pool, Years: schoolModule.Service, Docs: wiring.VisitorsDocuments{Permits: permitsModule.Service},
 		Flags: wiring.VisitorsFlags{Platform: platformModule.Service}, Audit: wiring.VisitorsAudit{}, Clock: clock.Real{},
 	})
+	billingModule := billing.Register(billing.Dependencies{
+		Pool: pool, Years: schoolModule.Service, Docs: wiring.BillingDocuments{Permits: permitsModule.Service},
+		Flags: wiring.BillingFlags{Platform: platformModule.Service}, Links: identityModule.Service, Clock: clock.Real{},
+	})
 
 	var (
 		workers  *river.Workers
@@ -311,6 +316,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		SupervisionHandler:     supervisionModule.Handler,
 		StaffAttendanceHandler: staffAttendanceModule.Handler,
 		VisitorsHandler:        visitorsModule.Handler,
+		BillingHandler:         billingModule.Handler,
 		healthHandler:          &healthHandler{version: version, pool: pool, redis: redisClient},
 	}
 

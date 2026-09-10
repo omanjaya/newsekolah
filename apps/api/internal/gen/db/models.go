@@ -225,6 +225,27 @@ type AuditLogsDefault struct {
 	OccurredAt     pgtype.Timestamptz `json:"occurred_at"`
 }
 
+type Bill struct {
+	ID                  uuid.UUID          `json:"id"`
+	TenantID            uuid.UUID          `json:"tenant_id"`
+	AcademicYearID      uuid.UUID          `json:"academic_year_id"`
+	StudentUserID       uuid.UUID          `json:"student_user_id"`
+	FeeTypeID           uuid.UUID          `json:"fee_type_id"`
+	FeeTypeName         string             `json:"fee_type_name"`
+	Currency            string             `json:"currency"`
+	Period              string             `json:"period"`
+	DueDate             pgtype.Date        `json:"due_date"`
+	OriginalAmountMinor int64              `json:"original_amount_minor"`
+	DiscountAmountMinor int64              `json:"discount_amount_minor"`
+	AmountMinor         int64              `json:"amount_minor"`
+	PaidAmountMinor     int64              `json:"paid_amount_minor"`
+	Status              string             `json:"status"`
+	GeneratedAt         pgtype.Timestamptz `json:"generated_at"`
+	GeneratedBy         pgtype.UUID        `json:"generated_by"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
+}
+
 type Class struct {
 	ID                uuid.UUID          `json:"id"`
 	TenantID          uuid.UUID          `json:"tenant_id"`
@@ -430,6 +451,39 @@ type FeatureFlag struct {
 	Module   string    `json:"module"`
 	Enabled  bool      `json:"enabled"`
 	Config   []byte    `json:"config"`
+}
+
+type FeeDiscount struct {
+	ID            uuid.UUID          `json:"id"`
+	TenantID      uuid.UUID          `json:"tenant_id"`
+	FeeTypeID     uuid.UUID          `json:"fee_type_id"`
+	StudentUserID uuid.UUID          `json:"student_user_id"`
+	Kind          string             `json:"kind"`
+	PercentageBp  pgtype.Int4        `json:"percentage_bp"`
+	AmountMinor   pgtype.Int8        `json:"amount_minor"`
+	Reason        string             `json:"reason"`
+	IsActive      bool               `json:"is_active"`
+	CreatedBy     pgtype.UUID        `json:"created_by"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
+}
+
+type FeeType struct {
+	ID             uuid.UUID          `json:"id"`
+	TenantID       uuid.UUID          `json:"tenant_id"`
+	AcademicYearID uuid.UUID          `json:"academic_year_id"`
+	Name           string             `json:"name"`
+	Description    string             `json:"description"`
+	AmountMinor    int64              `json:"amount_minor"`
+	Currency       string             `json:"currency"`
+	Recurrence     string             `json:"recurrence"`
+	Period         pgtype.Text        `json:"period"`
+	IsActive       bool               `json:"is_active"`
+	CreatedBy      pgtype.UUID        `json:"created_by"`
+	UpdatedBy      pgtype.UUID        `json:"updated_by"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+	DeletedAt      pgtype.Timestamptz `json:"deleted_at"`
 }
 
 type Grade struct {
@@ -833,6 +887,23 @@ type PasswordReset struct {
 	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
 	UsedAt    pgtype.Timestamptz `json:"used_at"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
+type Payment struct {
+	ID             uuid.UUID          `json:"id"`
+	TenantID       uuid.UUID          `json:"tenant_id"`
+	BillID         uuid.UUID          `json:"bill_id"`
+	AmountMinor    int64              `json:"amount_minor"`
+	Method         string             `json:"method"`
+	PaidOn         pgtype.Date        `json:"paid_on"`
+	ReceivedBy     uuid.UUID          `json:"received_by"`
+	Reference      string             `json:"reference"`
+	ReceiptNumber  pgtype.Text        `json:"receipt_number"`
+	ReceiptAssetID pgtype.UUID        `json:"receipt_asset_id"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	VoidedAt       pgtype.Timestamptz `json:"voided_at"`
+	VoidedBy       pgtype.UUID        `json:"voided_by"`
+	VoidReason     pgtype.Text        `json:"void_reason"`
 }
 
 type Period struct {

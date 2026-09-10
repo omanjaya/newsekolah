@@ -69,7 +69,8 @@
         "grading": "Penilaian",
         "permits": "Perizinan",
         "announcements": "Pengumuman",
-        "reports": "Laporan"
+        "reports": "Laporan",
+        "billing": "Pembayaran SPP"
       },
       "flagUpdated": "Modul diperbarui",
       "exportTitle": "Ekspor data sekolah",

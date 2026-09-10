@@ -41,6 +41,18 @@
       "emptyTitle": "Belum ada catatan",
       "emptyBody": "Tidak ada pelanggaran atau surat peringatan yang tercatat.",
       "totalPoints": "Total poin: {points}"
+    },
+    "billing": {
+      "title": "Tagihan SPP",
+      "outstanding": "Sisa tagihan: {amount}",
+      "dueDate": "jatuh tempo {date}",
+      "emptyTitle": "Belum ada tagihan",
+      "emptyBody": "Tagihan tahun ajaran ini akan muncul di sini setelah diterbitkan sekolah.",
+      "status": {
+        "unpaid": "Belum dibayar",
+        "partial": "Dibayar sebagian",
+        "paid": "Lunas"
+      }
     }
   },
   "guardianLinks": {

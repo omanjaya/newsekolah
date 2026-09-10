@@ -13,6 +13,7 @@ export type ChildGrades = components["schemas"]["ChildGrades"];
 export type ChildViolation = components["schemas"]["ChildViolation"];
 export type ChildWarningLetter = components["schemas"]["ChildWarningLetter"];
 export type ChildDiscipline = components["schemas"]["ChildDiscipline"];
+export type StudentBillHistory = components["schemas"]["StudentBillHistory"];
 
 /**
  * Query keys local to this feature (packages/api-client/src/query-keys.ts
@@ -24,6 +25,7 @@ const keys = {
     ["family", "child", studentId, "attendance", month] as const,
   grades: (studentId: string) => ["family", "child", studentId, "grades"] as const,
   discipline: (studentId: string) => ["family", "child", studentId, "discipline"] as const,
+  billing: (studentId: string) => ["family", "child", studentId, "billing"] as const,
 };
 
 export function useMyChildrenQuery() {
@@ -62,6 +64,17 @@ export function useChildDisciplineQuery(studentId: string) {
     queryKey: keys.discipline(studentId),
     queryFn: () =>
       client.GET("/v1/children/{studentId}/discipline", { params: { path: { studentId } } }),
+    enabled: studentId !== "",
+  });
+}
+
+/** A linked child's bills and payment history this year, read-only. */
+export function useChildBillingQuery(studentId: string) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: keys.billing(studentId),
+    queryFn: () =>
+      client.GET("/v1/children/{studentId}/billing", { params: { path: { studentId } } }),
     enabled: studentId !== "",
   });
 }

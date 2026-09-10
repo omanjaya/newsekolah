@@ -86,6 +86,7 @@ const (
 	ModuleSupervision     Module = "supervision"
 	ModuleStaffAttendance Module = "staff_attendance"
 	ModuleVisitors        Module = "visitors"
+	ModuleBilling         Module = "billing"
 )
 
 // AllModules lists every module the console can toggle, in the fixed order
@@ -94,6 +95,7 @@ const (
 var AllModules = []Module{
 	ModuleLibrary, ModuleDiscipline, ModuleGrading, ModulePermits, ModuleAnnouncements, ModuleReports,
 	ModuleActivities, ModuleMentoring, ModuleSupervision, ModuleStaffAttendance, ModuleVisitors,
+	ModuleBilling,
 }
 
 func (m Module) Valid() bool {

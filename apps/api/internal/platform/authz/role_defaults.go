@@ -29,6 +29,7 @@ func RoleDefaults() []RoleDefault {
 			PermCreateAnnouncements, PermEditAnnouncements, PermPublishAnnouncements,
 			PermViewDiscipline, PermRecordViolations, PermViewEarlyWarning,
 			PermViewVisitors, PermManageVisitors, PermViewVisitorIncidents, PermManageVisitorIncidents, PermViewVisitorReports,
+			PermViewBilling, PermRecordPayments,
 		}},
 		{"student", "Siswa", []string{
 			PermViewDashboard, PermViewAnnouncements, PermViewNotifications, PermViewSchedules, PermViewAcademicData,
@@ -36,7 +37,7 @@ func RoleDefaults() []RoleDefault {
 		}},
 		{"parent", "Orang Tua", []string{
 			PermViewDashboard, PermViewAnnouncements, PermViewNotifications,
-			PermViewChildAttendance, PermViewChildGrades, PermApproveChildLeaveRequests,
+			PermViewChildAttendance, PermViewChildGrades, PermApproveChildLeaveRequests, PermViewChildBilling,
 		}},
 		{"librarian", "Pustakawan", []string{
 			PermViewDashboard, PermViewNotifications, PermViewLibrary,

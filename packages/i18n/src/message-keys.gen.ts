@@ -67,9 +67,14 @@ export type MessageKey =
   | "common.table.rowsSelected"
   | "errors.AUTH_INVALID_CREDENTIALS"
   | "errors.AUTH_TOKEN_EXPIRED"
+  | "errors.BILLING_MODULE_DISABLED"
+  | "errors.BILL_ALREADY_PAID"
+  | "errors.BILL_NOT_FOUND"
+  | "errors.DISCOUNT_NOT_FOUND"
   | "errors.DUTY_TYPE_IN_USE"
   | "errors.EXPECTED_GUEST_NOT_FOUND"
   | "errors.EXPECTED_GUEST_RESOLVED"
+  | "errors.FEE_TYPE_NOT_FOUND"
   | "errors.FORBIDDEN"
   | "errors.IMPERSONATION_NOT_ALLOWED"
   | "errors.INCIDENT_ALREADY_CLOSED"
@@ -100,6 +105,9 @@ export type MessageKey =
   | "errors.PASSKEY_NOT_CONFIGURED"
   | "errors.PASSKEY_NOT_FOUND"
   | "errors.PASSWORD_RESET_TOKEN_INVALID"
+  | "errors.PAYMENT_ALREADY_VOIDED"
+  | "errors.PAYMENT_EXCEEDS_OUTSTANDING"
+  | "errors.PAYMENT_NOT_FOUND"
   | "errors.RATE_LIMITED"
   | "errors.SSO_ACCOUNT_NOT_FOUND"
   | "errors.SSO_CLIENT_SECRET_REQUIRED"
@@ -265,9 +273,14 @@ export const MESSAGE_KEYS: readonly MessageKey[] = [
   "common.table.rowsSelected",
   "errors.AUTH_INVALID_CREDENTIALS",
   "errors.AUTH_TOKEN_EXPIRED",
+  "errors.BILLING_MODULE_DISABLED",
+  "errors.BILL_ALREADY_PAID",
+  "errors.BILL_NOT_FOUND",
+  "errors.DISCOUNT_NOT_FOUND",
   "errors.DUTY_TYPE_IN_USE",
   "errors.EXPECTED_GUEST_NOT_FOUND",
   "errors.EXPECTED_GUEST_RESOLVED",
+  "errors.FEE_TYPE_NOT_FOUND",
   "errors.FORBIDDEN",
   "errors.IMPERSONATION_NOT_ALLOWED",
   "errors.INCIDENT_ALREADY_CLOSED",
@@ -298,6 +311,9 @@ export const MESSAGE_KEYS: readonly MessageKey[] = [
   "errors.PASSKEY_NOT_CONFIGURED",
   "errors.PASSKEY_NOT_FOUND",
   "errors.PASSWORD_RESET_TOKEN_INVALID",
+  "errors.PAYMENT_ALREADY_VOIDED",
+  "errors.PAYMENT_EXCEEDS_OUTSTANDING",
+  "errors.PAYMENT_NOT_FOUND",
   "errors.RATE_LIMITED",
   "errors.SSO_ACCOUNT_NOT_FOUND",
   "errors.SSO_CLIENT_SECRET_REQUIRED",

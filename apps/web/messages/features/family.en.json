@@ -41,6 +41,18 @@
       "emptyTitle": "No records yet",
       "emptyBody": "No violations or warning letters on file.",
       "totalPoints": "Total points: {points}"
+    },
+    "billing": {
+      "title": "School fees",
+      "outstanding": "Outstanding: {amount}",
+      "dueDate": "due {date}",
+      "emptyTitle": "No bills yet",
+      "emptyBody": "Bills for this academic year will appear here once the school issues them.",
+      "status": {
+        "unpaid": "Unpaid",
+        "partial": "Partially paid",
+        "paid": "Paid"
+      }
     }
   },
   "guardianLinks": {

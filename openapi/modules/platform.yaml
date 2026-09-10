@@ -233,7 +233,7 @@ components:
       enum: [trial, active, suspended, offboarding]
     PlatformModule:
       type: string
-      enum: [library, discipline, grading, permits, announcements, reports]
+      enum: [library, discipline, grading, permits, announcements, reports, billing]
     PlatformTenant:
       type: object
       required: [id, slug, name, education_level, timezone, status, created_at]
