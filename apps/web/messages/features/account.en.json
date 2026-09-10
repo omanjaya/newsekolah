@@ -1,0 +1,23 @@
+{
+  "forgotPassword": {
+    "title": "Forgot your password",
+    "body": "Enter your username or email. If an account matches, we will send a reset link.",
+    "usernameOrEmailLabel": "Username or email",
+    "submit": "Send reset link",
+    "submitting": "Sending",
+    "successTitle": "Check your inbox",
+    "successBody": "If an account matches, a reset link is on its way. The link expires in 30 minutes.",
+    "backToLogin": "Back to sign in"
+  },
+  "resetPassword": {
+    "title": "Set a new password",
+    "body": "Choose a new password for your account.",
+    "newLabel": "New password",
+    "confirmLabel": "Confirm new password",
+    "submit": "Set new password",
+    "success": "Password changed, sign in with your new password",
+    "invalidTitle": "This link no longer works",
+    "invalidBody": "The link is invalid, already used, or has expired. Request a new one.",
+    "requestNew": "Request a new link"
+  }
+}

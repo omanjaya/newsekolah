@@ -1,12 +1,16 @@
 export {
   changePasswordSchema,
   clientKindSchema,
+  forgotPasswordSchema,
   loginSchema,
+  resetPasswordSchema,
   tenantLookupQuerySchema,
   toChangePasswordRequest,
   type ChangePasswordInput,
   type ClientKind,
+  type ForgotPasswordInput,
   type LoginInput,
+  type ResetPasswordInput,
   type TenantLookupQuery,
 } from "./auth.js";
 

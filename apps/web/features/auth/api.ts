@@ -34,6 +34,31 @@ export function useLoginMutation() {
   };
 }
 
+/**
+ * POST /v1/auth/impersonation/stop. The impersonation session is revoked
+ * server-side (not swapped back to the admin's own session -- there is
+ * none to swap to, since starting impersonation opened a brand new
+ * session), so this always ends in a normal logout: clear the token and
+ * let the caller send the admin back to sign in.
+ */
+export function useStopImpersonationMutation() {
+  const client = useApiClient();
+  const mutation = useMutation({
+    mutationFn: () => client.POST("/v1/auth/impersonation/stop"),
+  });
+
+  return {
+    ...mutation,
+    mutateAsync: async () => {
+      try {
+        await mutation.mutateAsync();
+      } finally {
+        setAccessToken(null);
+      }
+    },
+  };
+}
+
 export function useLogoutMutation() {
   const client = useApiClient();
   const mutation = useLogoutBase(client);
@@ -103,6 +128,36 @@ export function usePasskeyLoginMutation() {
     },
   });
   return mutation;
+}
+
+/**
+ * POST /v1/auth/password-reset/request. Always resolves to 202 whether or
+ * not the address exists (see the endpoint doc comment in the OpenAPI
+ * contract), so the caller must show the same generic message either way
+ * and only ever surface a genuine client-side failure (network, rate limit).
+ */
+export function useRequestPasswordResetMutation() {
+  const client = useApiClient();
+  return useMutation({
+    mutationFn: (usernameOrEmail: string) =>
+      client.POST("/v1/auth/password-reset/request", {
+        body: { username_or_email: usernameOrEmail },
+      }),
+  });
+}
+
+/**
+ * POST /v1/auth/password-reset/confirm. Accepts both a self-service reset
+ * token and an admin-issued set-password token (see
+ * features/school/components/users-view.tsx's reset-password link), so this
+ * one mutation backs both the forgot-password flow and that admin flow.
+ */
+export function useConfirmPasswordResetMutation() {
+  const client = useApiClient();
+  return useMutation({
+    mutationFn: (body: { token: string; new_password: string }) =>
+      client.POST("/v1/auth/password-reset/confirm", { body }),
+  });
 }
 
 export function useChangePasswordMutation() {

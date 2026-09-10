@@ -17,7 +17,8 @@
         "logout": "Log out"
       },
       "impersonation": {
-        "banner": "Operated by {adminName} as {name}, session ends automatically in 30 minutes"
+        "banner": "Operated by {adminName} as {name}, session ends automatically in 30 minutes",
+        "stop": "Stop impersonating"
       },
       "offline": {
         "banner": "No connection, changes are saved on this device for now"
@@ -78,7 +79,27 @@
       "sessionsEmptyTitle": "No other sessions",
       "sessionsEmptyBody": "Other sessions will show up here after signing in from another device.",
       "revokeSuccess": "Session ended",
-      "changePasswordTitle": "Change password"
+      "changePasswordTitle": "Change password",
+      "avatar": {
+        "title": "Photo",
+        "change": "Change photo",
+        "hint": "JPEG, PNG or WebP, up to 2 MB",
+        "uploading": "Uploading, {percent, number}%",
+        "updated": "Photo updated"
+      },
+      "edit": {
+        "title": "Edit profile",
+        "nameLabel": "Full name",
+        "emailLabel": "Email",
+        "phoneLabel": "Phone",
+        "phonePlaceholder": "Not set",
+        "localeLabel": "Preferred language",
+        "localeId": "Indonesian",
+        "localeEn": "English",
+        "requiredError": "Full name is required.",
+        "save": "Save changes",
+        "saved": "Profile updated"
+      }
     },
     "settings": {
       "appearance": {
@@ -633,7 +654,9 @@
           "archive": "Archive",
           "restore": "Restore",
           "archived": "User archived",
-          "restored": "User restored"
+          "restored": "User restored",
+          "impersonate": "Sign in as this user",
+          "impersonateBody": "You will act as {name} for up to 30 minutes. Everything done during that time is logged."
         },
         "form": {
           "createTitle": "New user",
@@ -777,7 +800,30 @@
         "requiredError": "Duty, holder and class (when needed) are required.",
         "assigned": "Duty assigned",
         "cancel": "Cancel",
-        "save": "Save"
+        "save": "Save",
+        "tabs": {
+          "assignments": "Assignments"
+        },
+        "types": {
+          "title": "Duty types",
+          "empty": "No duty types yet",
+          "inactive": "Inactive",
+          "name": "Name",
+          "scope": "Scope",
+          "scopeKinds": {
+            "school": "Whole school",
+            "class": "One class",
+            "student": "One student"
+          },
+          "active": "Active",
+          "save": "Save",
+          "saved": "Changes saved",
+          "delete": "Delete duty type",
+          "deleteBody": "{name} can only be deleted once it has no assignments.",
+          "deleted": "Duty type deleted",
+          "permissionsTitle": "Permissions while active",
+          "permissionsBody": "Granted only to whoever holds this duty, on top of their role, and only while the assignment is active."
+        }
       }
     },
     "roles": {

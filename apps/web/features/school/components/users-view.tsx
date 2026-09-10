@@ -4,6 +4,7 @@ import { ApiError } from "@newsekolah/api-client";
 import {
   Badge,
   Button,
+  ConfirmDialog,
   DataTable,
   Dialog,
   DialogContent,
@@ -20,12 +21,13 @@ import {
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { MoreHorizontal, Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { useCan } from "../../../lib/session/session-provider";
+import { useCan, useSession } from "../../../lib/session/session-provider";
 import {
   type AdminUser,
   type ProfileKind,
@@ -33,6 +35,7 @@ import {
   useResetPasswordMutation,
   useUsersQuery,
 } from "../api";
+import { useImpersonateUserMutation } from "../duties-api";
 
 import { GuardiansDialog } from "./guardians-dialog";
 import { ManageChildrenDialog } from "./manage-children-dialog";
@@ -45,9 +48,14 @@ export function UsersView(): ReactElement {
   const tFamily = useTranslations("app.family.guardianLinks");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
+  const router = useRouter();
+  const { me } = useSession();
   const canCreate = useCan("create_users");
   const canEdit = useCan("edit_users");
   const canArchive = useCan("delete_users");
+  const canImpersonate = useCan("impersonate_users");
+  const impersonate = useImpersonateUserMutation();
+  const [impersonating, setImpersonating] = useState<AdminUser | null>(null);
 
   const [search, setSearch] = useState("");
   const [kind, setKind] = useState<ProfileKind | "">("");
@@ -190,6 +198,15 @@ export function UsersView(): ReactElement {
                     {user.status === "inactive" ? t("actions.restore") : t("actions.archive")}
                   </DropdownMenuItem>
                 )}
+                {canImpersonate && user.status === "active" && user.id !== me?.id && (
+                  <DropdownMenuItem
+                    onSelect={() => {
+                      setImpersonating(user);
+                    }}
+                  >
+                    {t("actions.impersonate")}
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           );
@@ -197,7 +214,7 @@ export function UsersView(): ReactElement {
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps -- fail/reset/archive are stable enough per render
-    [t, tFamily, canEdit, canArchive],
+    [t, tFamily, canEdit, canArchive, canImpersonate, me?.id],
   );
 
   const items = data?.data ?? [];
@@ -345,6 +362,29 @@ export function UsersView(): ReactElement {
         }}
         studentUserId={guardiansFor?.id ?? ""}
         studentName={guardiansFor?.name ?? ""}
+      />
+      <ConfirmDialog
+        open={impersonating !== null}
+        onOpenChange={(open) => {
+          if (!open) setImpersonating(null);
+        }}
+        title={t("actions.impersonate")}
+        description={
+          impersonating ? t("actions.impersonateBody", { name: impersonating.name }) : ""
+        }
+        confirmLabel={t("actions.impersonate")}
+        destructive
+        confirming={impersonate.isPending}
+        onConfirm={async () => {
+          if (!impersonating) return;
+          try {
+            await impersonate.mutateAsync(impersonating.id);
+            router.replace("/dashboard");
+          } catch (error) {
+            fail(error);
+            setImpersonating(null);
+          }
+        }}
       />
     </div>
   );

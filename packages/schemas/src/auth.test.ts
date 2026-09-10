@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { changePasswordSchema, loginSchema, tenantLookupQuerySchema } from "./auth.js";
+import {
+  changePasswordSchema,
+  forgotPasswordSchema,
+  loginSchema,
+  resetPasswordSchema,
+  tenantLookupQuerySchema,
+} from "./auth.js";
 
 describe("loginSchema", () => {
   it("accepts a valid payload", () => {
@@ -68,6 +74,55 @@ describe("changePasswordSchema", () => {
 
   it("rejects mismatched confirmation with the mismatch key on confirm_password", () => {
     const result = changePasswordSchema.safeParse({ ...base, confirm_password: "different1" });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      const issue = result.error.issues.find((i) => i.path.join(".") === "confirm_password");
+      expect(issue?.message).toBe("validation.passwordMismatch");
+    }
+  });
+});
+
+describe("forgotPasswordSchema", () => {
+  it("accepts a username or email", () => {
+    expect(forgotPasswordSchema.safeParse({ username_or_email: "guru01" }).success).toBe(true);
+  });
+
+  it("rejects an empty value with an i18n key", () => {
+    const result = forgotPasswordSchema.safeParse({ username_or_email: "" });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues[0]?.message).toBe("validation.usernameRequired");
+    }
+  });
+});
+
+describe("resetPasswordSchema", () => {
+  it("accepts matching passwords of sufficient length", () => {
+    const result = resetPasswordSchema.safeParse({
+      new_password: "newpassword1",
+      confirm_password: "newpassword1",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects a new password shorter than 8 characters", () => {
+    const result = resetPasswordSchema.safeParse({
+      new_password: "short",
+      confirm_password: "short",
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues.some((issue) => issue.message === "validation.passwordMin")).toBe(
+        true,
+      );
+    }
+  });
+
+  it("rejects mismatched confirmation with the mismatch key on confirm_password", () => {
+    const result = resetPasswordSchema.safeParse({
+      new_password: "newpassword1",
+      confirm_password: "different1",
+    });
     expect(result.success).toBe(false);
     if (!result.success) {
       const issue = result.error.issues.find((i) => i.path.join(".") === "confirm_password");

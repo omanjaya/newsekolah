@@ -8,6 +8,7 @@ export type MessageKey =
   | "auth.changePassword.success"
   | "auth.changePassword.title"
   | "auth.login.backToPassword"
+  | "auth.login.forgotPasswordLink"
   | "auth.login.googleButton"
   | "auth.login.orDivider"
   | "auth.login.passkeyButton"
@@ -66,13 +67,17 @@ export type MessageKey =
   | "common.table.rowsSelected"
   | "errors.AUTH_INVALID_CREDENTIALS"
   | "errors.AUTH_TOKEN_EXPIRED"
+  | "errors.DUTY_TYPE_IN_USE"
   | "errors.FORBIDDEN"
+  | "errors.IMPERSONATION_NOT_ALLOWED"
   | "errors.NETWORK"
   | "errors.NOT_FOUND"
+  | "errors.NOT_IMPERSONATING"
   | "errors.PASSKEY_CHALLENGE_EXPIRED"
   | "errors.PASSKEY_INVALID_RESPONSE"
   | "errors.PASSKEY_NOT_CONFIGURED"
   | "errors.PASSKEY_NOT_FOUND"
+  | "errors.PASSWORD_RESET_TOKEN_INVALID"
   | "errors.RATE_LIMITED"
   | "errors.SSO_ACCOUNT_NOT_FOUND"
   | "errors.SSO_CLIENT_SECRET_REQUIRED"
@@ -80,6 +85,10 @@ export type MessageKey =
   | "errors.SSO_NOT_CONFIGURED"
   | "errors.TENANT_NOT_FOUND"
   | "errors.UNKNOWN"
+  | "errors.UPLOAD_FILE_TOO_LARGE"
+  | "errors.UPLOAD_INVALID_FILE_TYPE"
+  | "errors.UPLOAD_NOT_CONFIGURED"
+  | "errors.USER_ALREADY_EXISTS"
   | "errors.VALIDATION_FAILED"
   | "nav.academic.items.attendance"
   | "nav.academic.items.grading"
@@ -163,6 +172,7 @@ export const MESSAGE_KEYS: readonly MessageKey[] = [
   "auth.changePassword.success",
   "auth.changePassword.title",
   "auth.login.backToPassword",
+  "auth.login.forgotPasswordLink",
   "auth.login.googleButton",
   "auth.login.orDivider",
   "auth.login.passkeyButton",
@@ -221,13 +231,17 @@ export const MESSAGE_KEYS: readonly MessageKey[] = [
   "common.table.rowsSelected",
   "errors.AUTH_INVALID_CREDENTIALS",
   "errors.AUTH_TOKEN_EXPIRED",
+  "errors.DUTY_TYPE_IN_USE",
   "errors.FORBIDDEN",
+  "errors.IMPERSONATION_NOT_ALLOWED",
   "errors.NETWORK",
   "errors.NOT_FOUND",
+  "errors.NOT_IMPERSONATING",
   "errors.PASSKEY_CHALLENGE_EXPIRED",
   "errors.PASSKEY_INVALID_RESPONSE",
   "errors.PASSKEY_NOT_CONFIGURED",
   "errors.PASSKEY_NOT_FOUND",
+  "errors.PASSWORD_RESET_TOKEN_INVALID",
   "errors.RATE_LIMITED",
   "errors.SSO_ACCOUNT_NOT_FOUND",
   "errors.SSO_CLIENT_SECRET_REQUIRED",
@@ -235,6 +249,10 @@ export const MESSAGE_KEYS: readonly MessageKey[] = [
   "errors.SSO_NOT_CONFIGURED",
   "errors.TENANT_NOT_FOUND",
   "errors.UNKNOWN",
+  "errors.UPLOAD_FILE_TOO_LARGE",
+  "errors.UPLOAD_INVALID_FILE_TYPE",
+  "errors.UPLOAD_NOT_CONFIGURED",
+  "errors.USER_ALREADY_EXISTS",
   "errors.VALIDATION_FAILED",
   "nav.academic.items.attendance",
   "nav.academic.items.grading",
