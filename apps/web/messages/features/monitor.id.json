@@ -1,0 +1,35 @@
+{
+  "navLabel": "Monitor Langsung",
+  "eyebrow": "Presensi",
+  "title": "Monitor Presensi",
+  "tokenLabel": "Token tampilan",
+  "tokenPlaceholder": "Masukkan token monitor sekolah",
+  "tokenHint": "Diminta sekali per perangkat. Minta token ini dari admin sekolah (pengaturan monitor.display_token).",
+  "tokenSubmit": "Tampilkan",
+  "tokenForget": "Ganti token",
+  "tokenInvalidTitle": "Token tidak berlaku",
+  "tokenInvalidBody": "Token yang dimasukkan tidak cocok dengan pengaturan monitor sekolah ini. Periksa kembali dengan admin sekolah.",
+  "pollingTitle": "Koneksi langsung terputus",
+  "pollingBody": "Halaman ini masih memperbarui data secara berkala, tetapi tidak lagi secara langsung.",
+  "connectionLive": "Langsung",
+  "connectionPolling": "Memperbarui berkala",
+  "connectionConnecting": "Menyambungkan",
+  "presenceCount": "{count} pengguna terhubung",
+  "codes": {
+    "H": "Hadir",
+    "S": "Sakit",
+    "I": "Izin",
+    "D": "Dispensasi",
+    "A": "Alpha",
+    "INCOMPLETE": "Belum lengkap",
+    "MIXED": "Campuran",
+    "NONE": "Tidak ada jadwal"
+  },
+  "sessionStatus": {
+    "not_started": "Belum mulai",
+    "in_progress": "Sedang berlangsung",
+    "submitted": "Presensi selesai"
+  },
+  "noSessionsTitle": "Tidak ada sesi yang berlangsung",
+  "noSessionsBody": "Belum ada jam pelajaran yang sedang berjalan saat ini."
+}

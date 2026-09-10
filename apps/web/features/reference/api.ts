@@ -99,6 +99,22 @@ export function useSchoolDaysQuery(enabled = true) {
   });
 }
 
+export type Enrollment = components["schemas"]["Enrollment"];
+
+/** Active enrollments of one class, for pickers that narrow a student list by class. */
+export function useClassEnrollmentsQuery(classId: string, enabled = true) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: queryKeys.enrollments(classId),
+    queryFn: () =>
+      client.GET("/v1/academic/classes/{classId}/enrollments", {
+        params: { path: { classId }, query: { page_size: 200 } },
+      }),
+    enabled: enabled && classId !== "",
+    staleTime: REFERENCE_STALE_MS,
+  });
+}
+
 export function useLookup<T extends { id: string }>(items: T[] | undefined): Map<string, T> {
   return useMemo(() => new Map((items ?? []).map((item) => [item.id, item])), [items]);
 }
