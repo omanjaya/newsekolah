@@ -38,14 +38,23 @@ type Client struct {
 	// from every topic and clear presence without repeating that on every
 	// call site that might end a connection.
 	onClose func()
+	// closed is closed once, right before onClose runs, so an external
+	// watcher (e.g. cmd/api's periodic session-validity check) can stop
+	// itself via Done() instead of polling a closed connection forever.
+	closed chan struct{}
 }
 
 func newClient(conn *websocket.Conn, logger *slog.Logger, onClose func()) *Client {
 	if logger == nil {
 		logger = slog.Default()
 	}
-	return &Client{conn: conn, outbox: make(chan []byte, outboxSize), logger: logger, onClose: onClose}
+	return &Client{conn: conn, outbox: make(chan []byte, outboxSize), logger: logger, onClose: onClose, closed: make(chan struct{})}
 }
+
+// Done returns a channel that closes when this connection's pumps finish,
+// for a caller that runs its own goroutine alongside a client's lifetime
+// (e.g. a periodic revocation check) and needs to know when to stop.
+func (c *Client) Done() <-chan struct{} { return c.closed }
 
 // Send enqueues payload for delivery, dropping the client if its buffer is
 // full rather than blocking the publisher goroutine.
@@ -67,6 +76,7 @@ func (c *Client) serve() {
 	go c.writePump(done)
 	c.readPump()
 	close(done)
+	close(c.closed)
 	if c.onClose != nil {
 		c.onClose()
 	}

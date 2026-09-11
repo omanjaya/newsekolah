@@ -1,12 +1,15 @@
 package main
 
 import (
+	"context"
 	"crypto/subtle"
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/db"
@@ -14,6 +17,34 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/realtime"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/tenant"
 )
+
+// sessionRevocationCheckInterval bounds how long a revoked or expired
+// session can keep its socket open after logout/refresh-reuse/password
+// change: worst case, this interval, on top of however long the browser
+// takes to notice the close (docs/analysis/backend-inventory.md section
+// 1.6.1 -- the old app checked on connect only, never again).
+const sessionRevocationCheckInterval = 60 * time.Second
+
+// watchSessionValidity closes client the moment sessionID stops being
+// active (revoked, expired) or the connection itself ends, whichever
+// comes first. Runs in its own goroutine for the life of one WebSocket
+// connection.
+func watchSessionValidity(client *realtime.Client, sessions auth.SessionLookup, tenantID, sessionID uuid.UUID) {
+	ticker := time.NewTicker(sessionRevocationCheckInterval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-client.Done():
+			return
+		case <-ticker.C:
+			active, err := sessions.IsSessionActive(context.Background(), tenantID, sessionID)
+			if err != nil || !active {
+				client.Close()
+				return
+			}
+		}
+	}
+}
 
 // mountRealtimeRoutes wires the two WebSocket upgrade endpoints directly
 // onto router, bypassing the strict handler chain entirely: a strict
@@ -29,16 +60,20 @@ import (
 // the real upgrade -- no double registration, and the routes still run
 // behind every middleware already attached to router (tenant resolution
 // in particular, which both handlers below depend on).
-func mountRealtimeRoutes(router chi.Router, pool *pgxpool.Pool, tokenIssuer *auth.TokenIssuer, hub *realtime.Hub, appOrigins []string, logger *slog.Logger) {
-	router.Get("/ws/me", wsMeHandler(tokenIssuer, hub, appOrigins, logger))
+func mountRealtimeRoutes(router chi.Router, pool *pgxpool.Pool, tokenIssuer *auth.TokenIssuer, sessions auth.SessionLookup, hub *realtime.Hub, appOrigins []string, logger *slog.Logger) {
+	router.Get("/ws/me", wsMeHandler(tokenIssuer, sessions, hub, appOrigins, logger))
 	router.Get("/ws/monitor", wsMonitorHandler(pool, hub, appOrigins, logger))
 }
 
 // wsMeHandler authenticates the caller's access token (header or
-// subprotocol -- see realtime.ExtractBearer) and subscribes them to their
-// own per-user topic, so any module can later push to "user:<tenant>:<user>"
-// without knowing how the socket was opened.
-func wsMeHandler(tokenIssuer *auth.TokenIssuer, hub *realtime.Hub, appOrigins []string, logger *slog.Logger) http.HandlerFunc {
+// subprotocol -- see realtime.ExtractBearer), checks the session it names
+// is still active (a logged-out or revoked session must not get a live
+// socket just because its access token has not expired yet), and
+// subscribes them to their own per-user topic, so any module can later
+// push to "user:<tenant>:<user>" without knowing how the socket was
+// opened. watchSessionValidity keeps checking for the life of the
+// connection so a revocation after connect closes it too.
+func wsMeHandler(tokenIssuer *auth.TokenIssuer, sessions auth.SessionLookup, hub *realtime.Hub, appOrigins []string, logger *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		token, _, ok := realtime.ExtractBearer(r)
 		if !ok {
@@ -57,10 +92,24 @@ func wsMeHandler(tokenIssuer *auth.TokenIssuer, hub *realtime.Hub, appOrigins []
 			return
 		}
 
-		topic := "user:" + claims.TenantID + ":" + claims.Subject
-		if _, err := realtime.Upgrade(w, r, hub, topic, appOrigins, logger); err != nil {
-			logger.Warn("ws/me upgrade failed", "error", err)
+		sessionID, err := uuid.Parse(claims.SessionID)
+		if err != nil {
+			http.Error(w, "invalid session", http.StatusUnauthorized)
+			return
 		}
+		active, err := sessions.IsSessionActive(r.Context(), t.ID, sessionID)
+		if err != nil || !active {
+			http.Error(w, "session is no longer active", http.StatusUnauthorized)
+			return
+		}
+
+		topic := "user:" + claims.TenantID + ":" + claims.Subject
+		client, err := realtime.Upgrade(w, r, hub, topic, appOrigins, logger)
+		if err != nil {
+			logger.Warn("ws/me upgrade failed", "error", err)
+			return
+		}
+		go watchSessionValidity(client, sessions, t.ID, sessionID)
 	}
 }
 

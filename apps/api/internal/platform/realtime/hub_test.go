@@ -1,10 +1,12 @@
 package realtime_test
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -113,6 +115,79 @@ func TestUnsubscribeOnDisconnect(t *testing.T) {
 	require.Eventually(t, func() bool {
 		return hub.TopicSize("user:a") == 0
 	}, time.Second, 10*time.Millisecond)
+}
+
+// fakeBroadcaster simulates Redis pub-sub: unlike a real single-process
+// nil-broadcaster setup, a subscriber here receives every message
+// published to its topic -- including the ones this same process just
+// published -- exactly like a real Redis SUBSCRIBE does for its own
+// PUBLISH. It exists to exercise Hub's source-id dedup logic, which a
+// nil-broadcaster test (every other test in this file) never touches.
+type fakeBroadcaster struct {
+	mu       sync.Mutex
+	handlers map[string][]func(payload []byte)
+}
+
+func newFakeBroadcaster() *fakeBroadcaster {
+	return &fakeBroadcaster{handlers: make(map[string][]func(payload []byte))}
+}
+
+func (b *fakeBroadcaster) Publish(_ context.Context, topic string, payload []byte) error {
+	b.mu.Lock()
+	handlers := append([]func([]byte){}, b.handlers[topic]...)
+	b.mu.Unlock()
+	for _, h := range handlers {
+		h(payload)
+	}
+	return nil
+}
+
+func (b *fakeBroadcaster) Subscribe(ctx context.Context, topic string, handle func(payload []byte)) {
+	b.mu.Lock()
+	b.handlers[topic] = append(b.handlers[topic], handle)
+	b.mu.Unlock()
+	<-ctx.Done()
+}
+
+// TestHubDedupesOwnMessagesInMultiReplicaMode reproduces the bug a
+// multi-replica deployment would hit without the source-id tag: a
+// Broadcaster that echoes a publisher's own message back (as Redis
+// pub-sub does) must not cause that publisher's local clients to receive
+// the message twice.
+func TestHubDedupesOwnMessagesInMultiReplicaMode(t *testing.T) {
+	hub := realtime.NewHub(newFakeBroadcaster())
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, err := realtime.Upgrade(w, r, hub, "user:a", nil, nil)
+		require.NoError(t, err)
+	}))
+	defer server.Close()
+
+	wsURL := "ws" + strings.TrimPrefix(server.URL, "http")
+	conn, resp, err := websocket.DefaultDialer.Dial(wsURL, nil) //nolint:bodyclose // closed below
+	require.NoError(t, err)
+	if resp != nil && resp.Body != nil {
+		_ = resp.Body.Close()
+	}
+	defer func() { _ = conn.Close() }()
+
+	require.Eventually(t, func() bool {
+		return hub.TopicSize("user:a") == 1
+	}, time.Second, 10*time.Millisecond)
+
+	require.NoError(t, hub.Publish("user:a", map[string]string{"kind": "notification_created"}))
+
+	require.NoError(t, conn.SetReadDeadline(time.Now().Add(2*time.Second)))
+	_, _, err = conn.ReadMessage()
+	require.NoError(t, err, "must receive the message once")
+
+	// A second read must time out: the broadcaster echoed the same
+	// message back (simulating Redis delivering a publisher's own
+	// message to its own subscription), and Hub must have dropped it by
+	// source id instead of delivering it again.
+	require.NoError(t, conn.SetReadDeadline(time.Now().Add(200*time.Millisecond)))
+	_, _, err = conn.ReadMessage()
+	require.Error(t, err, "must not receive the same message twice")
 }
 
 func TestExtractBearer(t *testing.T) {
