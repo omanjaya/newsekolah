@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/announcements"
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/identity"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/integrations"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/notifications"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/permits"
@@ -90,6 +91,13 @@ func run(logger *slog.Logger) error {
 		Pool: pool, Perms: nil, Sealer: sealer, Jobs: nil, Clock: clock.Real{}, Logger: logger,
 	})
 	integrationsModule.RegisterJobs(workers, clock.Real{})
+
+	// Only PruneSessions is exercised here (it touches nothing but the
+	// repository), so every other dependency -- login, MFA, SSO, passkeys --
+	// is left nil rather than pulling in schoolModule and the rest of what
+	// cmd/api wires up for a call path this process never serves.
+	identityModule := identity.Register(identity.Dependencies{Pool: pool, Clock: clock.Real{}})
+	periodic = append(periodic, identityModule.RegisterJobs(workers, logger)...)
 
 	// The export job has no dependency on identity: RunExport only reads
 	// tenant tables and writes to object storage, so this process never
