@@ -26,6 +26,7 @@ type GradebookStudent struct {
 	Name          string
 	Scores        map[uuid.UUID]float64
 	Average       *float64
+	FinalKKTP     *float64
 	ReportScore   *float64
 }
 
@@ -35,7 +36,10 @@ type GradebookQuery struct {
 	TermID    uuid.NullUUID
 }
 
-func (s *Service) Gradebook(ctx context.Context, tenantID uuid.UUID, q GradebookQuery) (Gradebook, error) {
+func (s *Service) Gradebook(ctx context.Context, tenantID, actorID uuid.UUID, canManageAny bool, q GradebookQuery) (Gradebook, error) {
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return Gradebook{}, err
+	}
 	var out Gradebook
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		yearID, err := s.activeYear(ctx, tenantID)
@@ -44,6 +48,9 @@ func (s *Service) Gradebook(ctx context.Context, tenantID uuid.UUID, q Gradebook
 		}
 		term, err := s.resolveTerm(ctx, tenantID, yearID, q.TermID)
 		if err != nil {
+			return err
+		}
+		if err := s.requireTeaches(ctx, tenantID, yearID, actorID, q.ClassID, q.SubjectID, canManageAny); err != nil {
 			return err
 		}
 		scale, err := s.loadScale(ctx, tenantID)
@@ -68,9 +75,20 @@ type ComponentInput struct {
 	Sequence    int
 }
 
+// normalize applies the same trimming and casing the old app did before
+// validating (grading.go:154-158), so ValidateComponent sees the final
+// values and the caller does not have to remember to do it twice.
+func (in ComponentInput) normalize() (code, description string) {
+	return strings.ToUpper(strings.TrimSpace(in.Code)), strings.TrimSpace(in.Description)
+}
+
 func (s *Service) CreateComponent(ctx context.Context, tenantID, actorID uuid.UUID, canManageAny bool, in ComponentInput) (domain.Component, error) {
-	if strings.TrimSpace(in.Code) == "" || !in.Kind.Valid() || in.Weight <= 0 {
-		return domain.Component{}, domain.ErrInvalidInput
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return domain.Component{}, err
+	}
+	code, description := in.normalize()
+	if err := domain.ValidateComponent(code, description, in.Kind, in.Weight, in.KKTP); err != nil {
+		return domain.Component{}, err
 	}
 	var out domain.Component
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
@@ -87,8 +105,8 @@ func (s *Service) CreateComponent(ctx context.Context, tenantID, actorID uuid.UU
 		}
 		out, err = s.repo.CreateComponent(ctx, domain.Component{
 			TenantID: tenantID, AcademicYearID: yearID, TermID: term.ID, TeacherUserID: actorID,
-			ClassID: in.ClassID, SubjectID: in.SubjectID, Code: strings.ToUpper(strings.TrimSpace(in.Code)), Kind: in.Kind,
-			Description: strings.TrimSpace(in.Description), KKTP: in.KKTP, Weight: in.Weight, Sequence: in.Sequence,
+			ClassID: in.ClassID, SubjectID: in.SubjectID, Code: code, Kind: in.Kind,
+			Description: description, KKTP: in.KKTP, Weight: in.Weight, Sequence: in.Sequence,
 		})
 		return err
 	})
@@ -96,8 +114,12 @@ func (s *Service) CreateComponent(ctx context.Context, tenantID, actorID uuid.UU
 }
 
 func (s *Service) UpdateComponent(ctx context.Context, tenantID, componentID, actorID uuid.UUID, canManageAny bool, in ComponentInput) (domain.Component, error) {
-	if strings.TrimSpace(in.Code) == "" || !in.Kind.Valid() || in.Weight <= 0 {
-		return domain.Component{}, domain.ErrInvalidInput
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return domain.Component{}, err
+	}
+	code, description := in.normalize()
+	if err := domain.ValidateComponent(code, description, in.Kind, in.Weight, in.KKTP); err != nil {
+		return domain.Component{}, err
 	}
 	var out domain.Component
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
@@ -111,15 +133,23 @@ func (s *Service) UpdateComponent(ctx context.Context, tenantID, componentID, ac
 		if err := s.requireTeaches(ctx, tenantID, current.AcademicYearID, actorID, current.ClassID, current.SubjectID, canManageAny); err != nil {
 			return err
 		}
-		current.Code = strings.ToUpper(strings.TrimSpace(in.Code))
-		current.Kind, current.Description, current.KKTP, current.Weight, current.Sequence = in.Kind, strings.TrimSpace(in.Description), in.KKTP, in.Weight, in.Sequence
+		current.Code = code
+		current.Kind, current.Description, current.KKTP, current.Weight, current.Sequence = in.Kind, description, in.KKTP, in.Weight, in.Sequence
 		out, err = s.repo.UpdateComponent(ctx, current)
 		return err
 	})
 	return out, err
 }
 
+// DeleteComponent refuses with ErrComponentHasGrades once any student has
+// a score on the component (grading.go:229-252): the old app checked this
+// before deleting rather than letting the foreign key cascade the scores
+// away, and this restores that check as the actual enforcement point --
+// the cascade on `grades.component_id` never fires through this path.
 func (s *Service) DeleteComponent(ctx context.Context, tenantID, componentID, actorID uuid.UUID, canManageAny bool) error {
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return err
+	}
 	return s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		current, ok, err := s.repo.GetComponent(ctx, tenantID, componentID)
 		if err != nil {
@@ -131,19 +161,34 @@ func (s *Service) DeleteComponent(ctx context.Context, tenantID, componentID, ac
 		if err := s.requireTeaches(ctx, tenantID, current.AcademicYearID, actorID, current.ClassID, current.SubjectID, canManageAny); err != nil {
 			return err
 		}
+		hasGrades, err := s.repo.ComponentHasGrades(ctx, tenantID, componentID)
+		if err != nil {
+			return err
+		}
+		if hasGrades {
+			return domain.ErrComponentHasGrades
+		}
 		return s.repo.DeleteComponent(ctx, tenantID, componentID)
 	})
 }
 
+// ScoreEntry is one student's new score for a component; Score nil deletes
+// the grade (grading.go:341-342's "e.Score == nil" clears the row rather
+// than treating it as zero).
 type ScoreEntry struct {
 	StudentUserID uuid.UUID
-	Score         float64
+	Score         *float64
 }
 
 // SaveScores writes one component's column and recomputes every affected
 // student's report score in the same transaction, so the sheet and the
-// report never disagree.
+// report never disagree. Every entry's student must be an active member
+// of the component's class (grading.go:325,337-338's classStudentSet
+// check).
 func (s *Service) SaveScores(ctx context.Context, tenantID, componentID, actorID uuid.UUID, canManageAny bool, entries []ScoreEntry) (Gradebook, error) {
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return Gradebook{}, err
+	}
 	var out Gradebook
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		component, ok, err := s.repo.GetComponent(ctx, tenantID, componentID)
@@ -160,11 +205,24 @@ func (s *Service) SaveScores(ctx context.Context, tenantID, componentID, actorID
 		if err != nil {
 			return err
 		}
+		members, err := s.classMemberSet(ctx, tenantID, component.AcademicYearID, component.ClassID)
+		if err != nil {
+			return err
+		}
 		for _, e := range entries {
-			if !scale.InRange(e.Score) {
+			if !members[e.StudentUserID] {
+				return domain.ErrStudentNotInClass
+			}
+			if e.Score == nil {
+				if err := s.repo.DeleteGrade(ctx, tenantID, componentID, e.StudentUserID); err != nil {
+					return err
+				}
+				continue
+			}
+			if !scale.InRange(*e.Score) {
 				return domain.ErrScoreOutOfRange
 			}
-			if _, err := s.repo.UpsertGrade(ctx, tenantID, componentID, e.StudentUserID, scale.Round(e.Score), actorID); err != nil {
+			if _, err := s.repo.UpsertGrade(ctx, tenantID, componentID, e.StudentUserID, scale.Round(*e.Score), actorID); err != nil {
 				return err
 			}
 		}
@@ -177,8 +235,20 @@ func (s *Service) SaveScores(ctx context.Context, tenantID, componentID, actorID
 	return out, err
 }
 
-// gradebookInTx rebuilds the sheet without reopening a transaction, for
-// callers that already hold one.
+// classMemberSet is the active-enrollment lookup SaveScores and GiveStar
+// both need before trusting a student ID from the request body.
+func (s *Service) classMemberSet(ctx context.Context, tenantID, yearID, classID uuid.UUID) (map[uuid.UUID]bool, error) {
+	ids, err := s.repo.ClassStudentIDs(ctx, tenantID, yearID, classID)
+	if err != nil {
+		return nil, err
+	}
+	set := make(map[uuid.UUID]bool, len(ids))
+	for _, id := range ids {
+		set[id] = true
+	}
+	return set, nil
+}
+
 // gradebookInTx rebuilds the sheet without reopening a transaction, for
 // callers that already hold one.
 func (s *Service) gradebookInTx(ctx context.Context, tenantID, yearID, termID, classID, subjectID uuid.UUID, scale domain.Scale) (Gradebook, error) {
@@ -265,6 +335,10 @@ func (s *Service) gradebookStudents(ctx context.Context, tenantID, yearID, class
 		if avg, ok := domain.WeightedAverage(components, row); ok {
 			rounded := scale.Round(avg)
 			student.Average = &rounded
+		}
+		if kktp, ok := domain.WeightedKKTPAverage(components, row); ok {
+			rounded := scale.Round(kktp)
+			student.FinalKKTP = &rounded
 		}
 		if final, ok := finals[id]; ok {
 			value := final

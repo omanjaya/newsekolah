@@ -12,6 +12,22 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const componentHasGrades = `-- name: ComponentHasGrades :one
+select exists (select 1 from grades where tenant_id = $1 and component_id = $2)::bool as has_grades
+`
+
+type ComponentHasGradesParams struct {
+	TenantID    uuid.UUID `json:"tenant_id"`
+	ComponentID uuid.UUID `json:"component_id"`
+}
+
+func (q *Queries) ComponentHasGrades(ctx context.Context, arg ComponentHasGradesParams) (bool, error) {
+	row := q.db.QueryRow(ctx, componentHasGrades, arg.TenantID, arg.ComponentID)
+	var has_grades bool
+	err := row.Scan(&has_grades)
+	return has_grades, err
+}
+
 const createComponent = `-- name: CreateComponent :one
 insert into assessment_components (tenant_id, academic_year_id, term_id, teacher_user_id, class_id, subject_id, code, kind, description, kktp, weight, sequence)
 values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
@@ -80,6 +96,21 @@ type DeleteComponentParams struct {
 
 func (q *Queries) DeleteComponent(ctx context.Context, arg DeleteComponentParams) error {
 	_, err := q.db.Exec(ctx, deleteComponent, arg.TenantID, arg.ID)
+	return err
+}
+
+const deleteGrade = `-- name: DeleteGrade :exec
+delete from grades where tenant_id = $1 and component_id = $2 and student_user_id = $3
+`
+
+type DeleteGradeParams struct {
+	TenantID      uuid.UUID `json:"tenant_id"`
+	ComponentID   uuid.UUID `json:"component_id"`
+	StudentUserID uuid.UUID `json:"student_user_id"`
+}
+
+func (q *Queries) DeleteGrade(ctx context.Context, arg DeleteGradeParams) error {
+	_, err := q.db.Exec(ctx, deleteGrade, arg.TenantID, arg.ComponentID, arg.StudentUserID)
 	return err
 }
 

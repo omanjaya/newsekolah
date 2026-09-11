@@ -671,7 +671,7 @@ func (q *Queries) GradingStudentClassID(ctx context.Context, arg GradingStudentC
 }
 
 const gradingStudentNISNs = `-- name: GradingStudentNISNs :many
-select u.id, u.name, coalesce(sp.nisn, '') as nisn
+select u.id, u.name, coalesce(sp.nis, '') as nis, coalesce(sp.nisn, '') as nisn
 from users u
 left join student_profiles sp on sp.user_id = u.id and sp.tenant_id = u.tenant_id
 where u.tenant_id = $1 and u.id = any($2::uuid[])
@@ -685,11 +685,14 @@ type GradingStudentNISNsParams struct {
 type GradingStudentNISNsRow struct {
 	ID   uuid.UUID `json:"id"`
 	Name string    `json:"name"`
+	Nis  string    `json:"nis"`
 	Nisn string    `json:"nisn"`
 }
 
-// cross-module read: student_profiles is owned by the identity module. NISN
-// (Nomor Induk Siswa Nasional) is the key e-Rapor imports students by.
+// cross-module read: student_profiles is owned by the identity module.
+// NISN (Nomor Induk Siswa Nasional) is the key the current e-Rapor export
+// imports students by; NIS (Nomor Induk Siswa) is what the legacy
+// per-subject sheet keys rows on instead.
 func (q *Queries) GradingStudentNISNs(ctx context.Context, arg GradingStudentNISNsParams) ([]GradingStudentNISNsRow, error) {
 	rows, err := q.db.Query(ctx, gradingStudentNISNs, arg.TenantID, arg.UserIds)
 	if err != nil {
@@ -699,7 +702,12 @@ func (q *Queries) GradingStudentNISNs(ctx context.Context, arg GradingStudentNIS
 	items := []GradingStudentNISNsRow{}
 	for rows.Next() {
 		var i GradingStudentNISNsRow
-		if err := rows.Scan(&i.ID, &i.Name, &i.Nisn); err != nil {
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Nis,
+			&i.Nisn,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -767,6 +775,35 @@ func (q *Queries) GradingTeacherTeaches(ctx context.Context, arg GradingTeacherT
 		arg.TeacherUserID,
 		arg.ClassID,
 		arg.SubjectID,
+	)
+	var teaches bool
+	err := row.Scan(&teaches)
+	return teaches, err
+}
+
+const gradingTeacherTeachesClass = `-- name: GradingTeacherTeachesClass :one
+select exists (
+  select 1 from teaching_assignments
+  where tenant_id = $1 and academic_year_id = $2 and teacher_user_id = $3 and class_id = $4 and is_active
+)::bool as teaches
+`
+
+type GradingTeacherTeachesClassParams struct {
+	TenantID       uuid.UUID `json:"tenant_id"`
+	AcademicYearID uuid.UUID `json:"academic_year_id"`
+	TeacherUserID  uuid.UUID `json:"teacher_user_id"`
+	ClassID        uuid.UUID `json:"class_id"`
+}
+
+// Same as GradingTeacherTeaches without a specific subject, for endpoints
+// scoped to a whole class (the star ledger and class balances): true when
+// the teacher has any active assignment in this class.
+func (q *Queries) GradingTeacherTeachesClass(ctx context.Context, arg GradingTeacherTeachesClassParams) (bool, error) {
+	row := q.db.QueryRow(ctx, gradingTeacherTeachesClass,
+		arg.TenantID,
+		arg.AcademicYearID,
+		arg.TeacherUserID,
+		arg.ClassID,
 	)
 	var teaches bool
 	err := row.Scan(&teaches)

@@ -19,11 +19,17 @@ returning *;
 -- name: DeleteComponent :exec
 delete from assessment_components where tenant_id = $1 and id = $2;
 
+-- name: ComponentHasGrades :one
+select exists (select 1 from grades where tenant_id = $1 and component_id = $2)::bool as has_grades;
+
 -- name: UpsertGrade :one
 insert into grades (tenant_id, component_id, student_user_id, score, recorded_by)
 values ($1, $2, $3, $4, $5)
 on conflict (component_id, student_user_id) do update set score = excluded.score, recorded_by = excluded.recorded_by
 returning *;
+
+-- name: DeleteGrade :exec
+delete from grades where tenant_id = $1 and component_id = $2 and student_user_id = $3;
 
 -- name: ListGradesForComponents :many
 select g.* from grades g

@@ -16,6 +16,7 @@ type Dependencies struct {
 	Pool  *pgxpool.Pool
 	Years service.AcademicYearReader
 	Perms transporthttp.PermissionChecker // nil: only the assigned teacher may write
+	Flags service.FlagReader              // nil: module is always enabled
 	Clock clock.Clock
 }
 
@@ -25,6 +26,6 @@ type Module struct {
 }
 
 func Register(deps Dependencies) *Module {
-	svc := service.New(deps.Pool, repository.New(deps.Pool), deps.Years, deps.Clock)
+	svc := service.New(deps.Pool, repository.New(deps.Pool), deps.Years, deps.Flags, deps.Clock)
 	return &Module{Service: svc, Handler: transporthttp.New(svc, deps.Perms)}
 }

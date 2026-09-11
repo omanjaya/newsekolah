@@ -193,6 +193,7 @@ type Querier interface {
 	CloseIncident(ctx context.Context, arg CloseIncidentParams) (VisitorIncident, error)
 	CloseStocktake(ctx context.Context, arg CloseStocktakeParams) (LibraryStocktake, error)
 	CompleteReportScheduleRun(ctx context.Context, arg CompleteReportScheduleRunParams) error
+	ComponentHasGrades(ctx context.Context, arg ComponentHasGradesParams) (bool, error)
 	ConfirmMfaTotp(ctx context.Context, arg ConfirmMfaTotpParams) (MfaTotp, error)
 	// Bug fix vs. the old app (docs/08-security.md section 7): single atomic
 	// UPDATE guarded by consumed_at IS NULL AND expires_at > now(), so two
@@ -306,6 +307,7 @@ type Querier interface {
 	DeleteExtracurricular(ctx context.Context, arg DeleteExtracurricularParams) error
 	DeleteFeeType(ctx context.Context, arg DeleteFeeTypeParams) error
 	DeleteGoogleSSOConfig(ctx context.Context, tenantID uuid.UUID) error
+	DeleteGrade(ctx context.Context, arg DeleteGradeParams) error
 	DeleteGradeRange(ctx context.Context, arg DeleteGradeRangeParams) error
 	DeleteJournal(ctx context.Context, arg DeleteJournalParams) error
 	DeleteMfaTotp(ctx context.Context, arg DeleteMfaTotpParams) error
@@ -322,6 +324,7 @@ type Querier interface {
 	DeleteRolePermissions(ctx context.Context, arg DeleteRolePermissionsParams) error
 	DeleteSchedule(ctx context.Context, arg DeleteScheduleParams) error
 	DeleteSchedulesByAcademicYear(ctx context.Context, arg DeleteSchedulesByAcademicYearParams) error
+	DeleteTPMapping(ctx context.Context, arg DeleteTPMappingParams) error
 	DeleteUserRoles(ctx context.Context, arg DeleteUserRolesParams) error
 	DeleteViolationType(ctx context.Context, arg DeleteViolationTypeParams) error
 	DeleteWebAuthnCredential(ctx context.Context, arg DeleteWebAuthnCredentialParams) error
@@ -464,6 +467,7 @@ type Querier interface {
 	GetStudentProfile(ctx context.Context, arg GetStudentProfileParams) (StudentProfile, error)
 	GetSubjectRefForSchedule(ctx context.Context, arg GetSubjectRefForScheduleParams) (GetSubjectRefForScheduleRow, error)
 	GetSubstitutionByID(ctx context.Context, arg GetSubstitutionByIDParams) (SubstitutionRequest, error)
+	GetTPMapping(ctx context.Context, arg GetTPMappingParams) (ReportTpMapping, error)
 	GetTeacherProfile(ctx context.Context, arg GetTeacherProfileParams) (TeacherProfile, error)
 	GetTeachingAssignmentRef(ctx context.Context, arg GetTeachingAssignmentRefParams) (GetTeachingAssignmentRefRow, error)
 	GetTenantByDomain(ctx context.Context, primaryDomain pgtype.Text) (Tenant, error)
@@ -510,12 +514,18 @@ type Querier interface {
 	GradingGetTerm(ctx context.Context, arg GradingGetTermParams) (GradingGetTermRow, error)
 	GradingPreviousTerm(ctx context.Context, arg GradingPreviousTermParams) (uuid.UUID, error)
 	GradingStudentClassID(ctx context.Context, arg GradingStudentClassIDParams) (uuid.UUID, error)
-	// cross-module read: student_profiles is owned by the identity module. NISN
-	// (Nomor Induk Siswa Nasional) is the key e-Rapor imports students by.
+	// cross-module read: student_profiles is owned by the identity module.
+	// NISN (Nomor Induk Siswa Nasional) is the key the current e-Rapor export
+	// imports students by; NIS (Nomor Induk Siswa) is what the legacy
+	// per-subject sheet keys rows on instead.
 	GradingStudentNISNs(ctx context.Context, arg GradingStudentNISNsParams) ([]GradingStudentNISNsRow, error)
 	GradingStudentNames(ctx context.Context, arg GradingStudentNamesParams) ([]GradingStudentNamesRow, error)
 	// cross-module read: teaching_assignments is owned by the academic module.
 	GradingTeacherTeaches(ctx context.Context, arg GradingTeacherTeachesParams) (bool, error)
+	// Same as GradingTeacherTeaches without a specific subject, for endpoints
+	// scoped to a whole class (the star ledger and class balances): true when
+	// the teacher has any active assignment in this class.
+	GradingTeacherTeachesClass(ctx context.Context, arg GradingTeacherTeachesClassParams) (bool, error)
 	// Evaluates the "duty:<slug>" approver rule: does user_id currently hold
 	// an active duty of this slug, and (for a class-scoped duty) does it cover
 	// class_id (NULL class_id matches only a school-scoped duty).
@@ -764,6 +774,11 @@ type Querier interface {
 	ListWorkflowEventsByInstance(ctx context.Context, arg ListWorkflowEventsByInstanceParams) ([]WorkflowEvent, error)
 	ListWorkflowInstancesByClassAndKind(ctx context.Context, arg ListWorkflowInstancesByClassAndKindParams) ([]WorkflowInstance, error)
 	ListWorkflowInstancesBySubject(ctx context.Context, arg ListWorkflowInstancesBySubjectParams) ([]WorkflowInstance, error)
+	// A per-student advisory lock held for the rest of the transaction
+	// (docs/06 section 9: "constraint saldo >= 0 ditegakkan service dengan
+	// advisory lock per siswa"), so two concurrent star deductions cannot
+	// both read the same balance and both pass the "stays >= 0" check.
+	LockStarBalance(ctx context.Context, arg LockStarBalanceParams) error
 	// Transaction-scoped advisory lock so two concurrent late-arrival opens
 	// for the same student cannot both read the same
 	// CountWorkflowInstancesForSubjectYear result and mint the same
@@ -812,6 +827,9 @@ type Querier interface {
 	// e.g. attaching a late arrival review's opaque violation_ids list.
 	MergeWorkflowInstancePayload(ctx context.Context, arg MergeWorkflowInstancePayloadParams) (WorkflowInstance, error)
 	MostBorrowedTitles(ctx context.Context, arg MostBorrowedTitlesParams) ([]MostBorrowedTitlesRow, error)
+	// The student's own star breakdown (grading_extended.go:653's myStars):
+	// visible events only, grouped by subject and teacher.
+	MyStarsGrouped(ctx context.Context, arg MyStarsGroupedParams) ([]MyStarsGroupedRow, error)
 	// Bug fix vs. the old app (docs/analysis/backend-inventory.md 1.14/1.17):
 	// the issued number comes from this single atomic UPDATE ... RETURNING
 	// (implemented as an upsert since the row may not exist yet), never a
@@ -840,6 +858,12 @@ type Querier interface {
 	RemoveParticipant(ctx context.Context, arg RemoveParticipantParams) error
 	RenameWebAuthnCredential(ctx context.Context, arg RenameWebAuthnCredentialParams) (WebauthnCredential, error)
 	RenewLoan(ctx context.Context, arg RenewLoanParams) (LibraryLoan, error)
+	// Deletes every range of one subject-teacher scope before the caller
+	// re-inserts the replacement set (the "aturan nilai rapor" save action,
+	// grading_extended.go:140). `is not distinct from` treats a null
+	// teacher_user_id (a school-wide range) as its own scope rather than
+	// matching every teacher's ranges.
+	ReplaceGradeRangesScope(ctx context.Context, arg ReplaceGradeRangesScopeParams) error
 	// Used by a correction: writes the corrected fields directly (as opposed
 	// to UpsertStaffAttendanceRecord's coalesce-on-conflict, which never
 	// clears a timestamp back to NULL).
@@ -945,6 +969,11 @@ type Querier interface {
 	UpsertPermission(ctx context.Context, arg UpsertPermissionParams) error
 	UpsertPublication(ctx context.Context, arg UpsertPublicationParams) (GradePublication, error)
 	UpsertPushDevice(ctx context.Context, arg UpsertPushDeviceParams) (PushDevice, error)
+	// automatic_score always reflects the latest weighted-average
+	// computation; final_score is the manual override when one is set
+	// (either passed here or already on the row), otherwise it mirrors
+	// automatic_score. This is what lets SetManualReportScore restore the
+	// automatic value by clearing the override, without a full recompute.
 	UpsertReportScore(ctx context.Context, arg UpsertReportScoreParams) (ReportScore, error)
 	UpsertStaffAttendanceRecord(ctx context.Context, arg UpsertStaffAttendanceRecordParams) (StaffAttendanceRecord, error)
 	UpsertStaffAttendanceScheduleDay(ctx context.Context, arg UpsertStaffAttendanceScheduleDayParams) (StaffAttendanceSchedule, error)
@@ -959,6 +988,11 @@ type Querier interface {
 	UsernameExists(ctx context.Context, arg UsernameExistsParams) (bool, error)
 	// cross-module read: users table is owned by the identity module.
 	ValidateUserIDsBelongToTenant(ctx context.Context, arg ValidateUserIDsBelongToTenantParams) ([]uuid.UUID, error)
+	// The balance a student (or MyGrades) may see: events the teacher marked
+	// visible_to_student only (grading_extended.go:653's "AND
+	// e.visible_to_student=TRUE"). Hidden adjustments still count toward the
+	// real (StarBalance) total a teacher works from.
+	VisibleStarBalance(ctx context.Context, arg VisibleStarBalanceParams) (int32, error)
 	// cross-module read: duty_assignments/duty_types (identity/school), to
 	// decide whether a reader may open an incident as campus security or
 	// school leadership rather than only its reporter.
