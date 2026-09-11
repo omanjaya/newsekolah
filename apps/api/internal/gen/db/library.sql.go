@@ -13,9 +13,9 @@ import (
 )
 
 const cancelReservation = `-- name: CancelReservation :one
-update library_reservations set status = 'cancelled'
+update library_reservations set status = 'cancelled', held_copy_id = null
 where tenant_id = $1 and id = $2 and status in ('waiting', 'ready')
-returning id, tenant_id, title_id, member_user_id, status, requested_at, ready_at, expires_at, fulfilled_loan_id, created_at, updated_at
+returning id, tenant_id, title_id, member_user_id, status, requested_at, ready_at, expires_at, fulfilled_loan_id, created_at, updated_at, held_copy_id
 `
 
 type CancelReservationParams struct {
@@ -38,6 +38,7 @@ func (q *Queries) CancelReservation(ctx context.Context, arg CancelReservationPa
 		&i.FulfilledLoanID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.HeldCopyID,
 	)
 	return i, err
 }
@@ -129,7 +130,7 @@ func (q *Queries) CountTitleCopies(ctx context.Context, arg CountTitleCopiesPara
 const createCopy = `-- name: CreateCopy :one
 insert into library_copies (tenant_id, title_id, barcode, condition, notes, acquired_on)
 values ($1, $2, $3, $4, $5, $6)
-returning id, tenant_id, title_id, barcode, condition, status, acquired_on, notes, created_at, updated_at
+returning id, tenant_id, title_id, barcode, condition, status, acquired_on, notes, created_at, updated_at, is_opac
 `
 
 type CreateCopyParams struct {
@@ -162,6 +163,48 @@ func (q *Queries) CreateCopy(ctx context.Context, arg CreateCopyParams) (Library
 		&i.Notes,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.IsOpac,
+	)
+	return i, err
+}
+
+const createItemEvent = `-- name: CreateItemEvent :one
+insert into library_item_events (tenant_id, copy_id, loan_id, member_user_id, event_type, notes, created_by)
+values ($1, $2, $5::uuid, $6::uuid, $3, $4, $7::uuid)
+returning id, tenant_id, copy_id, loan_id, member_user_id, event_type, notes, created_by, created_at
+`
+
+type CreateItemEventParams struct {
+	TenantID     uuid.UUID   `json:"tenant_id"`
+	CopyID       uuid.UUID   `json:"copy_id"`
+	EventType    string      `json:"event_type"`
+	Notes        string      `json:"notes"`
+	LoanID       pgtype.UUID `json:"loan_id"`
+	MemberUserID pgtype.UUID `json:"member_user_id"`
+	CreatedBy    pgtype.UUID `json:"created_by"`
+}
+
+func (q *Queries) CreateItemEvent(ctx context.Context, arg CreateItemEventParams) (LibraryItemEvent, error) {
+	row := q.db.QueryRow(ctx, createItemEvent,
+		arg.TenantID,
+		arg.CopyID,
+		arg.EventType,
+		arg.Notes,
+		arg.LoanID,
+		arg.MemberUserID,
+		arg.CreatedBy,
+	)
+	var i LibraryItemEvent
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.CopyID,
+		&i.LoanID,
+		&i.MemberUserID,
+		&i.EventType,
+		&i.Notes,
+		&i.CreatedBy,
+		&i.CreatedAt,
 	)
 	return i, err
 }
@@ -191,9 +234,9 @@ func (q *Queries) CreateLibraryPolicy(ctx context.Context, arg CreateLibraryPoli
 }
 
 const createLoan = `-- name: CreateLoan :one
-insert into library_loans (tenant_id, copy_id, title_id, member_user_id, checked_out_by, borrowed_at, due_on)
-values ($1, $2, $3, $4, $5, $6, $7)
-returning id, tenant_id, copy_id, title_id, member_user_id, checked_out_by, borrowed_at, due_on, returned_at, checked_in_by, renewal_count, status, fine_amount, fine_paid_at, active_copy_id, created_at, updated_at
+insert into library_loans (tenant_id, copy_id, title_id, member_user_id, checked_out_by, borrowed_at, due_on, channel)
+values ($1, $2, $3, $4, $5, $6, $7, $8)
+returning id, tenant_id, copy_id, title_id, member_user_id, checked_out_by, borrowed_at, due_on, returned_at, checked_in_by, renewal_count, status, fine_amount, fine_paid_at, active_copy_id, created_at, updated_at, channel
 `
 
 type CreateLoanParams struct {
@@ -204,6 +247,7 @@ type CreateLoanParams struct {
 	CheckedOutBy uuid.UUID          `json:"checked_out_by"`
 	BorrowedAt   pgtype.Timestamptz `json:"borrowed_at"`
 	DueOn        pgtype.Date        `json:"due_on"`
+	Channel      string             `json:"channel"`
 }
 
 func (q *Queries) CreateLoan(ctx context.Context, arg CreateLoanParams) (LibraryLoan, error) {
@@ -215,6 +259,7 @@ func (q *Queries) CreateLoan(ctx context.Context, arg CreateLoanParams) (Library
 		arg.CheckedOutBy,
 		arg.BorrowedAt,
 		arg.DueOn,
+		arg.Channel,
 	)
 	var i LibraryLoan
 	err := row.Scan(
@@ -235,6 +280,44 @@ func (q *Queries) CreateLoan(ctx context.Context, arg CreateLoanParams) (Library
 		&i.ActiveCopyID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Channel,
+	)
+	return i, err
+}
+
+const createLoanRenewal = `-- name: CreateLoanRenewal :one
+insert into library_loan_renewals (tenant_id, loan_id, renewed_at, previous_due_on, new_due_on, renewed_by)
+values ($1, $2, $3, $4, $5, $6)
+returning id, tenant_id, loan_id, renewed_at, previous_due_on, new_due_on, renewed_by
+`
+
+type CreateLoanRenewalParams struct {
+	TenantID      uuid.UUID          `json:"tenant_id"`
+	LoanID        uuid.UUID          `json:"loan_id"`
+	RenewedAt     pgtype.Timestamptz `json:"renewed_at"`
+	PreviousDueOn pgtype.Date        `json:"previous_due_on"`
+	NewDueOn      pgtype.Date        `json:"new_due_on"`
+	RenewedBy     uuid.UUID          `json:"renewed_by"`
+}
+
+func (q *Queries) CreateLoanRenewal(ctx context.Context, arg CreateLoanRenewalParams) (LibraryLoanRenewal, error) {
+	row := q.db.QueryRow(ctx, createLoanRenewal,
+		arg.TenantID,
+		arg.LoanID,
+		arg.RenewedAt,
+		arg.PreviousDueOn,
+		arg.NewDueOn,
+		arg.RenewedBy,
+	)
+	var i LibraryLoanRenewal
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.LoanID,
+		&i.RenewedAt,
+		&i.PreviousDueOn,
+		&i.NewDueOn,
+		&i.RenewedBy,
 	)
 	return i, err
 }
@@ -242,7 +325,7 @@ func (q *Queries) CreateLoan(ctx context.Context, arg CreateLoanParams) (Library
 const createReservation = `-- name: CreateReservation :one
 insert into library_reservations (tenant_id, title_id, member_user_id, requested_at)
 values ($1, $2, $3, $4)
-returning id, tenant_id, title_id, member_user_id, status, requested_at, ready_at, expires_at, fulfilled_loan_id, created_at, updated_at
+returning id, tenant_id, title_id, member_user_id, status, requested_at, ready_at, expires_at, fulfilled_loan_id, created_at, updated_at, held_copy_id
 `
 
 type CreateReservationParams struct {
@@ -272,6 +355,7 @@ func (q *Queries) CreateReservation(ctx context.Context, arg CreateReservationPa
 		&i.FulfilledLoanID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.HeldCopyID,
 	)
 	return i, err
 }
@@ -317,7 +401,7 @@ func (q *Queries) CreateStocktake(ctx context.Context, arg CreateStocktakeParams
 const createTitle = `-- name: CreateTitle :one
 insert into library_titles (tenant_id, title, subtitle, author, publisher, publish_year, isbn, classification, language, cover_asset_id)
 values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-returning id, tenant_id, title, subtitle, author, publisher, publish_year, isbn, classification, language, cover_asset_id, created_at, updated_at, deleted_at
+returning id, tenant_id, title, subtitle, author, publisher, publish_year, isbn, classification, language, cover_asset_id, created_at, updated_at, deleted_at, is_opac, search_vector
 `
 
 type CreateTitleParams struct {
@@ -362,14 +446,63 @@ func (q *Queries) CreateTitle(ctx context.Context, arg CreateTitleParams) (Libra
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.IsOpac,
+		&i.SearchVector,
 	)
 	return i, err
+}
+
+const expireReadyReservations = `-- name: ExpireReadyReservations :many
+update library_reservations set status = 'expired'
+where tenant_id = $1 and status = 'ready' and expires_at < $2
+returning id, tenant_id, title_id, member_user_id, status, requested_at, ready_at, expires_at, fulfilled_loan_id, created_at, updated_at, held_copy_id
+`
+
+type ExpireReadyReservationsParams struct {
+	TenantID  uuid.UUID          `json:"tenant_id"`
+	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
+}
+
+// Ready holds past their expires_at, for the periodic expiry job
+// (old app: hourly job, library_circulation.go:1909-1993). copy_id lets
+// the caller release each held copy without a second lookup.
+func (q *Queries) ExpireReadyReservations(ctx context.Context, arg ExpireReadyReservationsParams) ([]LibraryReservation, error) {
+	rows, err := q.db.Query(ctx, expireReadyReservations, arg.TenantID, arg.ExpiresAt)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []LibraryReservation{}
+	for rows.Next() {
+		var i LibraryReservation
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.TitleID,
+			&i.MemberUserID,
+			&i.Status,
+			&i.RequestedAt,
+			&i.ReadyAt,
+			&i.ExpiresAt,
+			&i.FulfilledLoanID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.HeldCopyID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const fulfillReservation = `-- name: FulfillReservation :one
 update library_reservations set status = 'fulfilled', fulfilled_loan_id = $3
 where tenant_id = $1 and id = $2
-returning id, tenant_id, title_id, member_user_id, status, requested_at, ready_at, expires_at, fulfilled_loan_id, created_at, updated_at
+returning id, tenant_id, title_id, member_user_id, status, requested_at, ready_at, expires_at, fulfilled_loan_id, created_at, updated_at, held_copy_id
 `
 
 type FulfillReservationParams struct {
@@ -393,12 +526,13 @@ func (q *Queries) FulfillReservation(ctx context.Context, arg FulfillReservation
 		&i.FulfilledLoanID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.HeldCopyID,
 	)
 	return i, err
 }
 
 const getActiveLoanForCopy = `-- name: GetActiveLoanForCopy :one
-select id, tenant_id, copy_id, title_id, member_user_id, checked_out_by, borrowed_at, due_on, returned_at, checked_in_by, renewal_count, status, fine_amount, fine_paid_at, active_copy_id, created_at, updated_at from library_loans where tenant_id = $1 and copy_id = $2 and status = 'active'
+select id, tenant_id, copy_id, title_id, member_user_id, checked_out_by, borrowed_at, due_on, returned_at, checked_in_by, renewal_count, status, fine_amount, fine_paid_at, active_copy_id, created_at, updated_at, channel from library_loans where tenant_id = $1 and copy_id = $2 and status = 'active'
 `
 
 type GetActiveLoanForCopyParams struct {
@@ -427,12 +561,13 @@ func (q *Queries) GetActiveLoanForCopy(ctx context.Context, arg GetActiveLoanFor
 		&i.ActiveCopyID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Channel,
 	)
 	return i, err
 }
 
 const getCopy = `-- name: GetCopy :one
-select id, tenant_id, title_id, barcode, condition, status, acquired_on, notes, created_at, updated_at from library_copies where tenant_id = $1 and id = $2
+select id, tenant_id, title_id, barcode, condition, status, acquired_on, notes, created_at, updated_at, is_opac from library_copies where tenant_id = $1 and id = $2
 `
 
 type GetCopyParams struct {
@@ -454,12 +589,13 @@ func (q *Queries) GetCopy(ctx context.Context, arg GetCopyParams) (LibraryCopy, 
 		&i.Notes,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.IsOpac,
 	)
 	return i, err
 }
 
 const getCopyByBarcode = `-- name: GetCopyByBarcode :one
-select id, tenant_id, title_id, barcode, condition, status, acquired_on, notes, created_at, updated_at from library_copies where tenant_id = $1 and barcode = $2
+select id, tenant_id, title_id, barcode, condition, status, acquired_on, notes, created_at, updated_at, is_opac from library_copies where tenant_id = $1 and barcode = $2
 `
 
 type GetCopyByBarcodeParams struct {
@@ -481,6 +617,7 @@ func (q *Queries) GetCopyByBarcode(ctx context.Context, arg GetCopyByBarcodePara
 		&i.Notes,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.IsOpac,
 	)
 	return i, err
 }
@@ -504,7 +641,7 @@ func (q *Queries) GetLatestLibraryPolicy(ctx context.Context, tenantID uuid.UUID
 }
 
 const getLoan = `-- name: GetLoan :one
-select id, tenant_id, copy_id, title_id, member_user_id, checked_out_by, borrowed_at, due_on, returned_at, checked_in_by, renewal_count, status, fine_amount, fine_paid_at, active_copy_id, created_at, updated_at from library_loans where tenant_id = $1 and id = $2
+select id, tenant_id, copy_id, title_id, member_user_id, checked_out_by, borrowed_at, due_on, returned_at, checked_in_by, renewal_count, status, fine_amount, fine_paid_at, active_copy_id, created_at, updated_at, channel from library_loans where tenant_id = $1 and id = $2
 `
 
 type GetLoanParams struct {
@@ -533,12 +670,85 @@ func (q *Queries) GetLoan(ctx context.Context, arg GetLoanParams) (LibraryLoan, 
 		&i.ActiveCopyID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Channel,
+	)
+	return i, err
+}
+
+const getLoanByBarcode = `-- name: GetLoanByBarcode :one
+select l.id, l.tenant_id, l.copy_id, l.title_id, l.member_user_id, l.checked_out_by, l.borrowed_at, l.due_on, l.returned_at, l.checked_in_by, l.renewal_count, l.status, l.fine_amount, l.fine_paid_at, l.active_copy_id, l.created_at, l.updated_at, l.channel from library_loans l
+join library_copies c on c.id = l.copy_id
+where l.tenant_id = $1 and c.barcode = $2 and l.status = 'active'
+`
+
+type GetLoanByBarcodeParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	Barcode  string    `json:"barcode"`
+}
+
+// Return-by-barcode (old app libraryReturnOneCode): the active loan on the
+// copy currently holding that barcode.
+func (q *Queries) GetLoanByBarcode(ctx context.Context, arg GetLoanByBarcodeParams) (LibraryLoan, error) {
+	row := q.db.QueryRow(ctx, getLoanByBarcode, arg.TenantID, arg.Barcode)
+	var i LibraryLoan
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.CopyID,
+		&i.TitleID,
+		&i.MemberUserID,
+		&i.CheckedOutBy,
+		&i.BorrowedAt,
+		&i.DueOn,
+		&i.ReturnedAt,
+		&i.CheckedInBy,
+		&i.RenewalCount,
+		&i.Status,
+		&i.FineAmount,
+		&i.FinePaidAt,
+		&i.ActiveCopyID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Channel,
+	)
+	return i, err
+}
+
+const getOpacTitle = `-- name: GetOpacTitle :one
+select id, tenant_id, title, subtitle, author, publisher, publish_year, isbn, classification, language, cover_asset_id, created_at, updated_at, deleted_at, is_opac, search_vector from library_titles where tenant_id = $1 and id = $2 and deleted_at is null and is_opac
+`
+
+type GetOpacTitleParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	ID       uuid.UUID `json:"id"`
+}
+
+func (q *Queries) GetOpacTitle(ctx context.Context, arg GetOpacTitleParams) (LibraryTitle, error) {
+	row := q.db.QueryRow(ctx, getOpacTitle, arg.TenantID, arg.ID)
+	var i LibraryTitle
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.Title,
+		&i.Subtitle,
+		&i.Author,
+		&i.Publisher,
+		&i.PublishYear,
+		&i.Isbn,
+		&i.Classification,
+		&i.Language,
+		&i.CoverAssetID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+		&i.IsOpac,
+		&i.SearchVector,
 	)
 	return i, err
 }
 
 const getReservation = `-- name: GetReservation :one
-select id, tenant_id, title_id, member_user_id, status, requested_at, ready_at, expires_at, fulfilled_loan_id, created_at, updated_at from library_reservations where tenant_id = $1 and id = $2
+select id, tenant_id, title_id, member_user_id, status, requested_at, ready_at, expires_at, fulfilled_loan_id, created_at, updated_at, held_copy_id from library_reservations where tenant_id = $1 and id = $2
 `
 
 type GetReservationParams struct {
@@ -561,6 +771,39 @@ func (q *Queries) GetReservation(ctx context.Context, arg GetReservationParams) 
 		&i.FulfilledLoanID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.HeldCopyID,
+	)
+	return i, err
+}
+
+const getReservationForHeldCopy = `-- name: GetReservationForHeldCopy :one
+select id, tenant_id, title_id, member_user_id, status, requested_at, ready_at, expires_at, fulfilled_loan_id, created_at, updated_at, held_copy_id from library_reservations where tenant_id = $1 and held_copy_id = $2 and status = 'ready'
+`
+
+type GetReservationForHeldCopyParams struct {
+	TenantID   uuid.UUID   `json:"tenant_id"`
+	HeldCopyID pgtype.UUID `json:"held_copy_id"`
+}
+
+// The ready reservation currently holding this copy, if any -- lets Borrow
+// tell whether a status='reserved' copy is being borrowed by the member it
+// was set aside for (regression fix, see migrations/0094).
+func (q *Queries) GetReservationForHeldCopy(ctx context.Context, arg GetReservationForHeldCopyParams) (LibraryReservation, error) {
+	row := q.db.QueryRow(ctx, getReservationForHeldCopy, arg.TenantID, arg.HeldCopyID)
+	var i LibraryReservation
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.TitleID,
+		&i.MemberUserID,
+		&i.Status,
+		&i.RequestedAt,
+		&i.ReadyAt,
+		&i.ExpiresAt,
+		&i.FulfilledLoanID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.HeldCopyID,
 	)
 	return i, err
 }
@@ -593,7 +836,7 @@ func (q *Queries) GetStocktake(ctx context.Context, arg GetStocktakeParams) (Lib
 }
 
 const getTitle = `-- name: GetTitle :one
-select id, tenant_id, title, subtitle, author, publisher, publish_year, isbn, classification, language, cover_asset_id, created_at, updated_at, deleted_at from library_titles where tenant_id = $1 and id = $2 and deleted_at is null
+select id, tenant_id, title, subtitle, author, publisher, publish_year, isbn, classification, language, cover_asset_id, created_at, updated_at, deleted_at, is_opac, search_vector from library_titles where tenant_id = $1 and id = $2 and deleted_at is null
 `
 
 type GetTitleParams struct {
@@ -619,12 +862,14 @@ func (q *Queries) GetTitle(ctx context.Context, arg GetTitleParams) (LibraryTitl
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.IsOpac,
+		&i.SearchVector,
 	)
 	return i, err
 }
 
 const listCopiesForStocktake = `-- name: ListCopiesForStocktake :many
-select id, tenant_id, title_id, barcode, condition, status, acquired_on, notes, created_at, updated_at from library_copies where tenant_id = $1 and status != 'on_loan' order by barcode
+select id, tenant_id, title_id, barcode, condition, status, acquired_on, notes, created_at, updated_at, is_opac from library_copies where tenant_id = $1 and status != 'on_loan' order by barcode
 `
 
 // Every copy not currently on loan is expected on the shelf during a stocktake.
@@ -648,6 +893,7 @@ func (q *Queries) ListCopiesForStocktake(ctx context.Context, tenantID uuid.UUID
 			&i.Notes,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.IsOpac,
 		); err != nil {
 			return nil, err
 		}
@@ -660,7 +906,7 @@ func (q *Queries) ListCopiesForStocktake(ctx context.Context, tenantID uuid.UUID
 }
 
 const listCopiesForTitle = `-- name: ListCopiesForTitle :many
-select id, tenant_id, title_id, barcode, condition, status, acquired_on, notes, created_at, updated_at from library_copies where tenant_id = $1 and title_id = $2 order by barcode
+select id, tenant_id, title_id, barcode, condition, status, acquired_on, notes, created_at, updated_at, is_opac from library_copies where tenant_id = $1 and title_id = $2 order by barcode
 `
 
 type ListCopiesForTitleParams struct {
@@ -688,6 +934,83 @@ func (q *Queries) ListCopiesForTitle(ctx context.Context, arg ListCopiesForTitle
 			&i.Notes,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.IsOpac,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listItemEventsForCopy = `-- name: ListItemEventsForCopy :many
+select id, tenant_id, copy_id, loan_id, member_user_id, event_type, notes, created_by, created_at from library_item_events where tenant_id = $1 and copy_id = $2 order by created_at desc
+`
+
+type ListItemEventsForCopyParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	CopyID   uuid.UUID `json:"copy_id"`
+}
+
+func (q *Queries) ListItemEventsForCopy(ctx context.Context, arg ListItemEventsForCopyParams) ([]LibraryItemEvent, error) {
+	rows, err := q.db.Query(ctx, listItemEventsForCopy, arg.TenantID, arg.CopyID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []LibraryItemEvent{}
+	for rows.Next() {
+		var i LibraryItemEvent
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.CopyID,
+			&i.LoanID,
+			&i.MemberUserID,
+			&i.EventType,
+			&i.Notes,
+			&i.CreatedBy,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listLoanRenewalsForLoan = `-- name: ListLoanRenewalsForLoan :many
+select id, tenant_id, loan_id, renewed_at, previous_due_on, new_due_on, renewed_by from library_loan_renewals where tenant_id = $1 and loan_id = $2 order by renewed_at
+`
+
+type ListLoanRenewalsForLoanParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	LoanID   uuid.UUID `json:"loan_id"`
+}
+
+func (q *Queries) ListLoanRenewalsForLoan(ctx context.Context, arg ListLoanRenewalsForLoanParams) ([]LibraryLoanRenewal, error) {
+	rows, err := q.db.Query(ctx, listLoanRenewalsForLoan, arg.TenantID, arg.LoanID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []LibraryLoanRenewal{}
+	for rows.Next() {
+		var i LibraryLoanRenewal
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.LoanID,
+			&i.RenewedAt,
+			&i.PreviousDueOn,
+			&i.NewDueOn,
+			&i.RenewedBy,
 		); err != nil {
 			return nil, err
 		}
@@ -700,7 +1023,7 @@ func (q *Queries) ListCopiesForTitle(ctx context.Context, arg ListCopiesForTitle
 }
 
 const listLoansForMember = `-- name: ListLoansForMember :many
-select id, tenant_id, copy_id, title_id, member_user_id, checked_out_by, borrowed_at, due_on, returned_at, checked_in_by, renewal_count, status, fine_amount, fine_paid_at, active_copy_id, created_at, updated_at from library_loans
+select id, tenant_id, copy_id, title_id, member_user_id, checked_out_by, borrowed_at, due_on, returned_at, checked_in_by, renewal_count, status, fine_amount, fine_paid_at, active_copy_id, created_at, updated_at, channel from library_loans
 where tenant_id = $1 and member_user_id = $2 and ($5::bool or status = 'active')
 order by borrowed_at desc
 limit $3 offset $4
@@ -747,6 +1070,7 @@ func (q *Queries) ListLoansForMember(ctx context.Context, arg ListLoansForMember
 			&i.ActiveCopyID,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.Channel,
 		); err != nil {
 			return nil, err
 		}
@@ -759,7 +1083,7 @@ func (q *Queries) ListLoansForMember(ctx context.Context, arg ListLoansForMember
 }
 
 const listLoansInPeriod = `-- name: ListLoansInPeriod :many
-select id, tenant_id, copy_id, title_id, member_user_id, checked_out_by, borrowed_at, due_on, returned_at, checked_in_by, renewal_count, status, fine_amount, fine_paid_at, active_copy_id, created_at, updated_at from library_loans
+select id, tenant_id, copy_id, title_id, member_user_id, checked_out_by, borrowed_at, due_on, returned_at, checked_in_by, renewal_count, status, fine_amount, fine_paid_at, active_copy_id, created_at, updated_at, channel from library_loans
 where tenant_id = $1 and borrowed_at >= $2 and borrowed_at < $3
 order by borrowed_at
 `
@@ -797,6 +1121,167 @@ func (q *Queries) ListLoansInPeriod(ctx context.Context, arg ListLoansInPeriodPa
 			&i.ActiveCopyID,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.Channel,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listOpacCopiesForTitle = `-- name: ListOpacCopiesForTitle :many
+select id, tenant_id, title_id, barcode, condition, status, acquired_on, notes, created_at, updated_at, is_opac from library_copies where tenant_id = $1 and title_id = $2 and is_opac order by barcode
+`
+
+type ListOpacCopiesForTitleParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	TitleID  uuid.UUID `json:"title_id"`
+}
+
+func (q *Queries) ListOpacCopiesForTitle(ctx context.Context, arg ListOpacCopiesForTitleParams) ([]LibraryCopy, error) {
+	rows, err := q.db.Query(ctx, listOpacCopiesForTitle, arg.TenantID, arg.TitleID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []LibraryCopy{}
+	for rows.Next() {
+		var i LibraryCopy
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.TitleID,
+			&i.Barcode,
+			&i.Condition,
+			&i.Status,
+			&i.AcquiredOn,
+			&i.Notes,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.IsOpac,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listOpacMostBorrowedTitles = `-- name: ListOpacMostBorrowedTitles :many
+select t.id, t.tenant_id, t.title, t.subtitle, t.author, t.publisher, t.publish_year, t.isbn, t.classification, t.language, t.cover_asset_id, t.created_at, t.updated_at, t.deleted_at, t.is_opac, t.search_vector, count(l.id)::int as loan_count
+from library_titles t
+join library_loans l on l.title_id = t.id
+where t.tenant_id = $1 and t.deleted_at is null and t.is_opac
+group by t.id
+order by loan_count desc, t.title
+limit $2
+`
+
+type ListOpacMostBorrowedTitlesParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	Limit    int32     `json:"limit"`
+}
+
+type ListOpacMostBorrowedTitlesRow struct {
+	ID             uuid.UUID          `json:"id"`
+	TenantID       uuid.UUID          `json:"tenant_id"`
+	Title          string             `json:"title"`
+	Subtitle       string             `json:"subtitle"`
+	Author         string             `json:"author"`
+	Publisher      string             `json:"publisher"`
+	PublishYear    pgtype.Int4        `json:"publish_year"`
+	Isbn           string             `json:"isbn"`
+	Classification string             `json:"classification"`
+	Language       string             `json:"language"`
+	CoverAssetID   pgtype.UUID        `json:"cover_asset_id"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+	DeletedAt      pgtype.Timestamptz `json:"deleted_at"`
+	IsOpac         bool               `json:"is_opac"`
+	SearchVector   interface{}        `json:"search_vector"`
+	LoanCount      int32              `json:"loan_count"`
+}
+
+func (q *Queries) ListOpacMostBorrowedTitles(ctx context.Context, arg ListOpacMostBorrowedTitlesParams) ([]ListOpacMostBorrowedTitlesRow, error) {
+	rows, err := q.db.Query(ctx, listOpacMostBorrowedTitles, arg.TenantID, arg.Limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListOpacMostBorrowedTitlesRow{}
+	for rows.Next() {
+		var i ListOpacMostBorrowedTitlesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.Title,
+			&i.Subtitle,
+			&i.Author,
+			&i.Publisher,
+			&i.PublishYear,
+			&i.Isbn,
+			&i.Classification,
+			&i.Language,
+			&i.CoverAssetID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+			&i.IsOpac,
+			&i.SearchVector,
+			&i.LoanCount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listOpacNewestTitles = `-- name: ListOpacNewestTitles :many
+select id, tenant_id, title, subtitle, author, publisher, publish_year, isbn, classification, language, cover_asset_id, created_at, updated_at, deleted_at, is_opac, search_vector from library_titles where tenant_id = $1 and deleted_at is null and is_opac order by created_at desc limit $2
+`
+
+type ListOpacNewestTitlesParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	Limit    int32     `json:"limit"`
+}
+
+func (q *Queries) ListOpacNewestTitles(ctx context.Context, arg ListOpacNewestTitlesParams) ([]LibraryTitle, error) {
+	rows, err := q.db.Query(ctx, listOpacNewestTitles, arg.TenantID, arg.Limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []LibraryTitle{}
+	for rows.Next() {
+		var i LibraryTitle
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.Title,
+			&i.Subtitle,
+			&i.Author,
+			&i.Publisher,
+			&i.PublishYear,
+			&i.Isbn,
+			&i.Classification,
+			&i.Language,
+			&i.CoverAssetID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+			&i.IsOpac,
+			&i.SearchVector,
 		); err != nil {
 			return nil, err
 		}
@@ -809,7 +1294,7 @@ func (q *Queries) ListLoansInPeriod(ctx context.Context, arg ListLoansInPeriodPa
 }
 
 const listOverdueLoans = `-- name: ListOverdueLoans :many
-select id, tenant_id, copy_id, title_id, member_user_id, checked_out_by, borrowed_at, due_on, returned_at, checked_in_by, renewal_count, status, fine_amount, fine_paid_at, active_copy_id, created_at, updated_at from library_loans
+select id, tenant_id, copy_id, title_id, member_user_id, checked_out_by, borrowed_at, due_on, returned_at, checked_in_by, renewal_count, status, fine_amount, fine_paid_at, active_copy_id, created_at, updated_at, channel from library_loans
 where tenant_id = $1 and status = 'active' and due_on < $2
 order by due_on
 `
@@ -846,6 +1331,7 @@ func (q *Queries) ListOverdueLoans(ctx context.Context, arg ListOverdueLoansPara
 			&i.ActiveCopyID,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.Channel,
 		); err != nil {
 			return nil, err
 		}
@@ -858,7 +1344,7 @@ func (q *Queries) ListOverdueLoans(ctx context.Context, arg ListOverdueLoansPara
 }
 
 const listReservationsForMember = `-- name: ListReservationsForMember :many
-select id, tenant_id, title_id, member_user_id, status, requested_at, ready_at, expires_at, fulfilled_loan_id, created_at, updated_at from library_reservations where tenant_id = $1 and member_user_id = $2 order by requested_at desc
+select id, tenant_id, title_id, member_user_id, status, requested_at, ready_at, expires_at, fulfilled_loan_id, created_at, updated_at, held_copy_id from library_reservations where tenant_id = $1 and member_user_id = $2 order by requested_at desc
 `
 
 type ListReservationsForMemberParams struct {
@@ -887,6 +1373,7 @@ func (q *Queries) ListReservationsForMember(ctx context.Context, arg ListReserva
 			&i.FulfilledLoanID,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.HeldCopyID,
 		); err != nil {
 			return nil, err
 		}
@@ -899,7 +1386,7 @@ func (q *Queries) ListReservationsForMember(ctx context.Context, arg ListReserva
 }
 
 const listReservationsForTitle = `-- name: ListReservationsForTitle :many
-select id, tenant_id, title_id, member_user_id, status, requested_at, ready_at, expires_at, fulfilled_loan_id, created_at, updated_at from library_reservations where tenant_id = $1 and title_id = $2 and status = 'waiting' order by requested_at
+select id, tenant_id, title_id, member_user_id, status, requested_at, ready_at, expires_at, fulfilled_loan_id, created_at, updated_at, held_copy_id from library_reservations where tenant_id = $1 and title_id = $2 and status = 'waiting' order by requested_at
 `
 
 type ListReservationsForTitleParams struct {
@@ -928,6 +1415,7 @@ func (q *Queries) ListReservationsForTitle(ctx context.Context, arg ListReservat
 			&i.FulfilledLoanID,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.HeldCopyID,
 		); err != nil {
 			return nil, err
 		}
@@ -1019,7 +1507,7 @@ func (q *Queries) ListStocktakes(ctx context.Context, arg ListStocktakesParams) 
 }
 
 const listTitles = `-- name: ListTitles :many
-select id, tenant_id, title, subtitle, author, publisher, publish_year, isbn, classification, language, cover_asset_id, created_at, updated_at, deleted_at from library_titles
+select id, tenant_id, title, subtitle, author, publisher, publish_year, isbn, classification, language, cover_asset_id, created_at, updated_at, deleted_at, is_opac, search_vector from library_titles
 where tenant_id = $1 and deleted_at is null
   and ($4::text is null or lower(title) like '%' || lower($4::text) || '%'
     or lower(author) like '%' || lower($4::text) || '%' or isbn = $4::text)
@@ -1063,6 +1551,8 @@ func (q *Queries) ListTitles(ctx context.Context, arg ListTitlesParams) ([]Libra
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.DeletedAt,
+			&i.IsOpac,
+			&i.SearchVector,
 		); err != nil {
 			return nil, err
 		}
@@ -1075,7 +1565,7 @@ func (q *Queries) ListTitles(ctx context.Context, arg ListTitlesParams) ([]Libra
 }
 
 const markLoanFinePaid = `-- name: MarkLoanFinePaid :one
-update library_loans set fine_paid_at = $3 where tenant_id = $1 and id = $2 returning id, tenant_id, copy_id, title_id, member_user_id, checked_out_by, borrowed_at, due_on, returned_at, checked_in_by, renewal_count, status, fine_amount, fine_paid_at, active_copy_id, created_at, updated_at
+update library_loans set fine_paid_at = $3 where tenant_id = $1 and id = $2 returning id, tenant_id, copy_id, title_id, member_user_id, checked_out_by, borrowed_at, due_on, returned_at, checked_in_by, renewal_count, status, fine_amount, fine_paid_at, active_copy_id, created_at, updated_at, channel
 `
 
 type MarkLoanFinePaidParams struct {
@@ -1105,6 +1595,7 @@ func (q *Queries) MarkLoanFinePaid(ctx context.Context, arg MarkLoanFinePaidPara
 		&i.ActiveCopyID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Channel,
 	)
 	return i, err
 }
@@ -1112,7 +1603,7 @@ func (q *Queries) MarkLoanFinePaid(ctx context.Context, arg MarkLoanFinePaidPara
 const markLoanLost = `-- name: MarkLoanLost :one
 update library_loans set status = 'lost', returned_at = $3, checked_in_by = $4, fine_amount = $5
 where tenant_id = $1 and id = $2 and status = 'active'
-returning id, tenant_id, copy_id, title_id, member_user_id, checked_out_by, borrowed_at, due_on, returned_at, checked_in_by, renewal_count, status, fine_amount, fine_paid_at, active_copy_id, created_at, updated_at
+returning id, tenant_id, copy_id, title_id, member_user_id, checked_out_by, borrowed_at, due_on, returned_at, checked_in_by, renewal_count, status, fine_amount, fine_paid_at, active_copy_id, created_at, updated_at, channel
 `
 
 type MarkLoanLostParams struct {
@@ -1150,21 +1641,23 @@ func (q *Queries) MarkLoanLost(ctx context.Context, arg MarkLoanLostParams) (Lib
 		&i.ActiveCopyID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Channel,
 	)
 	return i, err
 }
 
 const markReservationReady = `-- name: MarkReservationReady :one
-update library_reservations set status = 'ready', ready_at = $3, expires_at = $4
+update library_reservations set status = 'ready', ready_at = $3, expires_at = $4, held_copy_id = $5
 where tenant_id = $1 and id = $2 and status = 'waiting'
-returning id, tenant_id, title_id, member_user_id, status, requested_at, ready_at, expires_at, fulfilled_loan_id, created_at, updated_at
+returning id, tenant_id, title_id, member_user_id, status, requested_at, ready_at, expires_at, fulfilled_loan_id, created_at, updated_at, held_copy_id
 `
 
 type MarkReservationReadyParams struct {
-	TenantID  uuid.UUID          `json:"tenant_id"`
-	ID        uuid.UUID          `json:"id"`
-	ReadyAt   pgtype.Timestamptz `json:"ready_at"`
-	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
+	TenantID   uuid.UUID          `json:"tenant_id"`
+	ID         uuid.UUID          `json:"id"`
+	ReadyAt    pgtype.Timestamptz `json:"ready_at"`
+	ExpiresAt  pgtype.Timestamptz `json:"expires_at"`
+	HeldCopyID pgtype.UUID        `json:"held_copy_id"`
 }
 
 func (q *Queries) MarkReservationReady(ctx context.Context, arg MarkReservationReadyParams) (LibraryReservation, error) {
@@ -1173,6 +1666,7 @@ func (q *Queries) MarkReservationReady(ctx context.Context, arg MarkReservationR
 		arg.ID,
 		arg.ReadyAt,
 		arg.ExpiresAt,
+		arg.HeldCopyID,
 	)
 	var i LibraryReservation
 	err := row.Scan(
@@ -1187,6 +1681,7 @@ func (q *Queries) MarkReservationReady(ctx context.Context, arg MarkReservationR
 		&i.FulfilledLoanID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.HeldCopyID,
 	)
 	return i, err
 }
@@ -1279,7 +1774,7 @@ func (q *Queries) RecordStocktakeScan(ctx context.Context, arg RecordStocktakeSc
 const renewLoan = `-- name: RenewLoan :one
 update library_loans set due_on = $3, renewal_count = renewal_count + 1
 where tenant_id = $1 and id = $2 and status = 'active'
-returning id, tenant_id, copy_id, title_id, member_user_id, checked_out_by, borrowed_at, due_on, returned_at, checked_in_by, renewal_count, status, fine_amount, fine_paid_at, active_copy_id, created_at, updated_at
+returning id, tenant_id, copy_id, title_id, member_user_id, checked_out_by, borrowed_at, due_on, returned_at, checked_in_by, renewal_count, status, fine_amount, fine_paid_at, active_copy_id, created_at, updated_at, channel
 `
 
 type RenewLoanParams struct {
@@ -1309,6 +1804,7 @@ func (q *Queries) RenewLoan(ctx context.Context, arg RenewLoanParams) (LibraryLo
 		&i.ActiveCopyID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Channel,
 	)
 	return i, err
 }
@@ -1316,7 +1812,7 @@ func (q *Queries) RenewLoan(ctx context.Context, arg RenewLoanParams) (LibraryLo
 const returnLoan = `-- name: ReturnLoan :one
 update library_loans set status = 'returned', returned_at = $3, checked_in_by = $4, fine_amount = $5
 where tenant_id = $1 and id = $2 and status = 'active'
-returning id, tenant_id, copy_id, title_id, member_user_id, checked_out_by, borrowed_at, due_on, returned_at, checked_in_by, renewal_count, status, fine_amount, fine_paid_at, active_copy_id, created_at, updated_at
+returning id, tenant_id, copy_id, title_id, member_user_id, checked_out_by, borrowed_at, due_on, returned_at, checked_in_by, renewal_count, status, fine_amount, fine_paid_at, active_copy_id, created_at, updated_at, channel
 `
 
 type ReturnLoanParams struct {
@@ -1354,14 +1850,145 @@ func (q *Queries) ReturnLoan(ctx context.Context, arg ReturnLoanParams) (Library
 		&i.ActiveCopyID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Channel,
 	)
 	return i, err
+}
+
+const searchOpacTitlesFulltext = `-- name: SearchOpacTitlesFulltext :many
+select id, tenant_id, title, subtitle, author, publisher, publish_year, isbn, classification, language, cover_asset_id, created_at, updated_at, deleted_at, is_opac, search_vector from library_titles
+where tenant_id = $1 and deleted_at is null and is_opac
+  and ($4::text is null or classification like $4::text || '%')
+  and search_vector @@ plainto_tsquery('simple', $5::text)
+order by ts_rank(search_vector, plainto_tsquery('simple', $5::text)) desc, title
+limit $2 offset $3
+`
+
+type SearchOpacTitlesFulltextParams struct {
+	TenantID             uuid.UUID   `json:"tenant_id"`
+	Limit                int32       `json:"limit"`
+	Offset               int32       `json:"offset"`
+	ClassificationPrefix pgtype.Text `json:"classification_prefix"`
+	Search               string      `json:"search"`
+}
+
+// For a query of 3+ characters: Postgres fulltext against search_vector
+// (migrations/0094), the old app's MATCH AGAINST equivalent.
+func (q *Queries) SearchOpacTitlesFulltext(ctx context.Context, arg SearchOpacTitlesFulltextParams) ([]LibraryTitle, error) {
+	rows, err := q.db.Query(ctx, searchOpacTitlesFulltext,
+		arg.TenantID,
+		arg.Limit,
+		arg.Offset,
+		arg.ClassificationPrefix,
+		arg.Search,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []LibraryTitle{}
+	for rows.Next() {
+		var i LibraryTitle
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.Title,
+			&i.Subtitle,
+			&i.Author,
+			&i.Publisher,
+			&i.PublishYear,
+			&i.Isbn,
+			&i.Classification,
+			&i.Language,
+			&i.CoverAssetID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+			&i.IsOpac,
+			&i.SearchVector,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const searchOpacTitlesShort = `-- name: SearchOpacTitlesShort :many
+select id, tenant_id, title, subtitle, author, publisher, publish_year, isbn, classification, language, cover_asset_id, created_at, updated_at, deleted_at, is_opac, search_vector from library_titles
+where tenant_id = $1 and deleted_at is null and is_opac
+  and ($4::text is null or classification like $4::text || '%')
+  and (
+    $5::text is null
+    or lower(title) like '%' || lower($5::text) || '%'
+    or lower(author) like '%' || lower($5::text) || '%'
+    or isbn = $5::text
+  )
+order by title
+limit $2 offset $3
+`
+
+type SearchOpacTitlesShortParams struct {
+	TenantID             uuid.UUID   `json:"tenant_id"`
+	Limit                int32       `json:"limit"`
+	Offset               int32       `json:"offset"`
+	ClassificationPrefix pgtype.Text `json:"classification_prefix"`
+	Search               pgtype.Text `json:"search"`
+}
+
+// For a query under 3 characters: a plain LIKE over title/author, plus an
+// exact ISBN match, matching the old app's short-query fallback
+// (library_opac.go).
+func (q *Queries) SearchOpacTitlesShort(ctx context.Context, arg SearchOpacTitlesShortParams) ([]LibraryTitle, error) {
+	rows, err := q.db.Query(ctx, searchOpacTitlesShort,
+		arg.TenantID,
+		arg.Limit,
+		arg.Offset,
+		arg.ClassificationPrefix,
+		arg.Search,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []LibraryTitle{}
+	for rows.Next() {
+		var i LibraryTitle
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.Title,
+			&i.Subtitle,
+			&i.Author,
+			&i.Publisher,
+			&i.PublishYear,
+			&i.Isbn,
+			&i.Classification,
+			&i.Language,
+			&i.CoverAssetID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+			&i.IsOpac,
+			&i.SearchVector,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const updateCopyStatus = `-- name: UpdateCopyStatus :one
 update library_copies set status = $3, condition = coalesce($4::text, condition)
 where tenant_id = $1 and id = $2
-returning id, tenant_id, title_id, barcode, condition, status, acquired_on, notes, created_at, updated_at
+returning id, tenant_id, title_id, barcode, condition, status, acquired_on, notes, created_at, updated_at, is_opac
 `
 
 type UpdateCopyStatusParams struct {
@@ -1390,6 +2017,7 @@ func (q *Queries) UpdateCopyStatus(ctx context.Context, arg UpdateCopyStatusPara
 		&i.Notes,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.IsOpac,
 	)
 	return i, err
 }
@@ -1398,7 +2026,7 @@ const updateTitle = `-- name: UpdateTitle :one
 update library_titles set title = $3, subtitle = $4, author = $5, publisher = $6, publish_year = $7,
   isbn = $8, classification = $9, language = $10, cover_asset_id = $11
 where tenant_id = $1 and id = $2 and deleted_at is null
-returning id, tenant_id, title, subtitle, author, publisher, publish_year, isbn, classification, language, cover_asset_id, created_at, updated_at, deleted_at
+returning id, tenant_id, title, subtitle, author, publisher, publish_year, isbn, classification, language, cover_asset_id, created_at, updated_at, deleted_at, is_opac, search_vector
 `
 
 type UpdateTitleParams struct {
@@ -1445,6 +2073,8 @@ func (q *Queries) UpdateTitle(ctx context.Context, arg UpdateTitleParams) (Libra
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.IsOpac,
+		&i.SearchVector,
 	)
 	return i, err
 }

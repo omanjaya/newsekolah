@@ -50,6 +50,26 @@ func (q *Queries) CountDailySummaryStatusesForAttendance(ctx context.Context, ar
 	return items, nil
 }
 
+const getActiveClassNameForStudent = `-- name: GetActiveClassNameForStudent :one
+select c.name from enrollments e
+join classes c on c.id = e.class_id
+where e.tenant_id = $1 and e.student_user_id = $2 and e.status = 'active'
+order by e.joined_on desc
+limit 1
+`
+
+type GetActiveClassNameForStudentParams struct {
+	TenantID      uuid.UUID `json:"tenant_id"`
+	StudentUserID uuid.UUID `json:"student_user_id"`
+}
+
+func (q *Queries) GetActiveClassNameForStudent(ctx context.Context, arg GetActiveClassNameForStudentParams) (string, error) {
+	row := q.db.QueryRow(ctx, getActiveClassNameForStudent, arg.TenantID, arg.StudentUserID)
+	var name string
+	err := row.Scan(&name)
+	return name, err
+}
+
 const getEnrolledClassForAttendance = `-- name: GetEnrolledClassForAttendance :one
 select class_id
 from enrollments
@@ -116,6 +136,36 @@ func (q *Queries) GetTenantTimezoneForAttendance(ctx context.Context, id uuid.UU
 	return timezone, err
 }
 
+const getTenantTimezoneForLibrary = `-- name: GetTenantTimezoneForLibrary :one
+select timezone from tenants where id = $1
+`
+
+func (q *Queries) GetTenantTimezoneForLibrary(ctx context.Context, id uuid.UUID) (string, error) {
+	row := q.db.QueryRow(ctx, getTenantTimezoneForLibrary, id)
+	var timezone string
+	err := row.Scan(&timezone)
+	return timezone, err
+}
+
+const hasActiveLoanForMemberAndTitle = `-- name: HasActiveLoanForMemberAndTitle :one
+select exists(
+  select 1 from library_loans where tenant_id = $1 and title_id = $2 and member_user_id = $3 and status = 'active'
+)::bool
+`
+
+type HasActiveLoanForMemberAndTitleParams struct {
+	TenantID     uuid.UUID `json:"tenant_id"`
+	TitleID      uuid.UUID `json:"title_id"`
+	MemberUserID uuid.UUID `json:"member_user_id"`
+}
+
+func (q *Queries) HasActiveLoanForMemberAndTitle(ctx context.Context, arg HasActiveLoanForMemberAndTitleParams) (bool, error) {
+	row := q.db.QueryRow(ctx, hasActiveLoanForMemberAndTitle, arg.TenantID, arg.TitleID, arg.MemberUserID)
+	var column_1 bool
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const listActiveEnrollmentsForAttendance = `-- name: ListActiveEnrollmentsForAttendance :many
 
 select
@@ -161,6 +211,82 @@ func (q *Queries) ListActiveEnrollmentsForAttendance(ctx context.Context, arg Li
 	for rows.Next() {
 		var i ListActiveEnrollmentsForAttendanceRow
 		if err := rows.Scan(&i.StudentUserID, &i.Name, &i.Nis); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listActiveEnrollmentsForLibraryClass = `-- name: ListActiveEnrollmentsForLibraryClass :many
+select e.student_user_id as user_id, u.name as user_name
+from enrollments e
+join users u on u.id = e.student_user_id
+where e.tenant_id = $1 and e.class_id = $2 and e.status = 'active'
+order by u.name
+`
+
+type ListActiveEnrollmentsForLibraryClassParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	ClassID  uuid.UUID `json:"class_id"`
+}
+
+type ListActiveEnrollmentsForLibraryClassRow struct {
+	UserID   uuid.UUID `json:"user_id"`
+	UserName string    `json:"user_name"`
+}
+
+func (q *Queries) ListActiveEnrollmentsForLibraryClass(ctx context.Context, arg ListActiveEnrollmentsForLibraryClassParams) ([]ListActiveEnrollmentsForLibraryClassRow, error) {
+	rows, err := q.db.Query(ctx, listActiveEnrollmentsForLibraryClass, arg.TenantID, arg.ClassID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListActiveEnrollmentsForLibraryClassRow{}
+	for rows.Next() {
+		var i ListActiveEnrollmentsForLibraryClassRow
+		if err := rows.Scan(&i.UserID, &i.UserName); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listActiveTenantsForLibrary = `-- name: ListActiveTenantsForLibrary :many
+
+select id, timezone from tenants where status in ('trial', 'active')
+`
+
+type ListActiveTenantsForLibraryRow struct {
+	ID       uuid.UUID `json:"id"`
+	Timezone string    `json:"timezone"`
+}
+
+// Cross-module reads: every query below reads a table owned by another
+// module (academic: academic_calendar_events/enrollments/classes; identity:
+// users/user_profiles/student_profiles), the same convention
+// internal/modules/attendance/queries/cross_reads.sql already established.
+// tenants carries no RLS policy (see modules/school/repository.go), so this
+// is safe to run off the pool directly for the platform-wide reservation
+// expiry and daily reminder jobs, which must iterate every tenant (same
+// convention as internal/modules/permits/queries/cross_module.sql).
+func (q *Queries) ListActiveTenantsForLibrary(ctx context.Context) ([]ListActiveTenantsForLibraryRow, error) {
+	rows, err := q.db.Query(ctx, listActiveTenantsForLibrary)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListActiveTenantsForLibraryRow{}
+	for rows.Next() {
+		var i ListActiveTenantsForLibraryRow
+		if err := rows.Scan(&i.ID, &i.Timezone); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -241,6 +367,287 @@ func (q *Queries) ListCurrentPeriodScheduleCardsForAttendance(ctx context.Contex
 			&i.TeacherName,
 			&i.SessionID,
 			&i.SubmittedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listLibraryHolidaysInRange = `-- name: ListLibraryHolidaysInRange :many
+select date, end_date from academic_calendar_events
+where tenant_id = $1 and kind = 'holiday' and date <= $3 and end_date >= $2
+`
+
+type ListLibraryHolidaysInRangeParams struct {
+	TenantID uuid.UUID   `json:"tenant_id"`
+	EndDate  pgtype.Date `json:"end_date"`
+	Date     pgtype.Date `json:"date"`
+}
+
+type ListLibraryHolidaysInRangeRow struct {
+	Date    pgtype.Date `json:"date"`
+	EndDate pgtype.Date `json:"end_date"`
+}
+
+// Holiday date ranges overlapping [from, to] (docs/06-database-schema.md:246,
+// "library_holidays digabung ke academic_calendar_events"): each row can
+// span multiple days (migrations/0060_academic_calendar.up.sql end_date),
+// the caller expands it into individual dates.
+func (q *Queries) ListLibraryHolidaysInRange(ctx context.Context, arg ListLibraryHolidaysInRangeParams) ([]ListLibraryHolidaysInRangeRow, error) {
+	rows, err := q.db.Query(ctx, listLibraryHolidaysInRange, arg.TenantID, arg.EndDate, arg.Date)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListLibraryHolidaysInRangeRow{}
+	for rows.Next() {
+		var i ListLibraryHolidaysInRangeRow
+		if err := rows.Scan(&i.Date, &i.EndDate); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listLoansDueForReminder = `-- name: ListLoansDueForReminder :many
+select id, tenant_id, copy_id, title_id, member_user_id, checked_out_by, borrowed_at, due_on, returned_at, checked_in_by, renewal_count, status, fine_amount, fine_paid_at, active_copy_id, created_at, updated_at, channel from library_loans
+where tenant_id = $1 and status = 'active' and due_on >= $2 and due_on <= $3
+order by due_on
+`
+
+type ListLoansDueForReminderParams struct {
+	TenantID uuid.UUID   `json:"tenant_id"`
+	DueOn    pgtype.Date `json:"due_on"`
+	DueOn_2  pgtype.Date `json:"due_on_2"`
+}
+
+// Active loans due within due_reminder_days from today, not yet overdue --
+// the daily reminder job's source list (old app: reminders/send,
+// library_circulation.go:1998-2090 daily 07:00 job).
+func (q *Queries) ListLoansDueForReminder(ctx context.Context, arg ListLoansDueForReminderParams) ([]LibraryLoan, error) {
+	rows, err := q.db.Query(ctx, listLoansDueForReminder, arg.TenantID, arg.DueOn, arg.DueOn_2)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []LibraryLoan{}
+	for rows.Next() {
+		var i LibraryLoan
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.CopyID,
+			&i.TitleID,
+			&i.MemberUserID,
+			&i.CheckedOutBy,
+			&i.BorrowedAt,
+			&i.DueOn,
+			&i.ReturnedAt,
+			&i.CheckedInBy,
+			&i.RenewalCount,
+			&i.Status,
+			&i.FineAmount,
+			&i.FinePaidAt,
+			&i.ActiveCopyID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Channel,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listOverdueLoansDetailed = `-- name: ListOverdueLoansDetailed :many
+select l.id, l.tenant_id, l.copy_id, l.title_id, l.member_user_id, l.checked_out_by, l.borrowed_at, l.due_on, l.returned_at, l.checked_in_by, l.renewal_count, l.status, l.fine_amount, l.fine_paid_at, l.active_copy_id, l.created_at, l.updated_at, l.channel, coalesce(c.name, '') as class_name, coalesce(sp.guardian_phone, '') as guardian_phone
+from library_loans l
+left join lateral (
+  select e.class_id from enrollments e
+  where e.tenant_id = l.tenant_id and e.student_user_id = l.member_user_id and e.status = 'active'
+  order by e.joined_on desc limit 1
+) e on true
+left join classes c on c.id = e.class_id
+left join student_profiles sp on sp.user_id = l.member_user_id
+where l.tenant_id = $1 and l.status = 'active' and l.due_on < $2
+order by l.due_on
+`
+
+type ListOverdueLoansDetailedParams struct {
+	TenantID uuid.UUID   `json:"tenant_id"`
+	DueOn    pgtype.Date `json:"due_on"`
+}
+
+type ListOverdueLoansDetailedRow struct {
+	ID            uuid.UUID          `json:"id"`
+	TenantID      uuid.UUID          `json:"tenant_id"`
+	CopyID        uuid.UUID          `json:"copy_id"`
+	TitleID       uuid.UUID          `json:"title_id"`
+	MemberUserID  uuid.UUID          `json:"member_user_id"`
+	CheckedOutBy  uuid.UUID          `json:"checked_out_by"`
+	BorrowedAt    pgtype.Timestamptz `json:"borrowed_at"`
+	DueOn         pgtype.Date        `json:"due_on"`
+	ReturnedAt    pgtype.Timestamptz `json:"returned_at"`
+	CheckedInBy   pgtype.UUID        `json:"checked_in_by"`
+	RenewalCount  int32              `json:"renewal_count"`
+	Status        string             `json:"status"`
+	FineAmount    int32              `json:"fine_amount"`
+	FinePaidAt    pgtype.Timestamptz `json:"fine_paid_at"`
+	ActiveCopyID  pgtype.UUID        `json:"active_copy_id"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
+	Channel       string             `json:"channel"`
+	ClassName     string             `json:"class_name"`
+	GuardianPhone string             `json:"guardian_phone"`
+}
+
+// The overdue report the old app showed with class and guardian phone
+// (library_circulation_v2.go:634-678), dropped from the rebuild's first
+// pass overdue endpoint.
+func (q *Queries) ListOverdueLoansDetailed(ctx context.Context, arg ListOverdueLoansDetailedParams) ([]ListOverdueLoansDetailedRow, error) {
+	rows, err := q.db.Query(ctx, listOverdueLoansDetailed, arg.TenantID, arg.DueOn)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListOverdueLoansDetailedRow{}
+	for rows.Next() {
+		var i ListOverdueLoansDetailedRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.CopyID,
+			&i.TitleID,
+			&i.MemberUserID,
+			&i.CheckedOutBy,
+			&i.BorrowedAt,
+			&i.DueOn,
+			&i.ReturnedAt,
+			&i.CheckedInBy,
+			&i.RenewalCount,
+			&i.Status,
+			&i.FineAmount,
+			&i.FinePaidAt,
+			&i.ActiveCopyID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Channel,
+			&i.ClassName,
+			&i.GuardianPhone,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const lookupLibraryCopies = `-- name: LookupLibraryCopies :many
+select c.id as copy_id, c.barcode, c.status, t.id as title_id, t.title
+from library_copies c
+join library_titles t on t.id = c.title_id and t.deleted_at is null
+where c.tenant_id = $1 and (c.barcode ilike '%' || $3::text || '%' or t.title ilike '%' || $3::text || '%')
+order by t.title
+limit $2
+`
+
+type LookupLibraryCopiesParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	Limit    int32     `json:"limit"`
+	Query    string    `json:"query"`
+}
+
+type LookupLibraryCopiesRow struct {
+	CopyID  uuid.UUID `json:"copy_id"`
+	Barcode string    `json:"barcode"`
+	Status  string    `json:"status"`
+	TitleID uuid.UUID `json:"title_id"`
+	Title   string    `json:"title"`
+}
+
+func (q *Queries) LookupLibraryCopies(ctx context.Context, arg LookupLibraryCopiesParams) ([]LookupLibraryCopiesRow, error) {
+	rows, err := q.db.Query(ctx, lookupLibraryCopies, arg.TenantID, arg.Limit, arg.Query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []LookupLibraryCopiesRow{}
+	for rows.Next() {
+		var i LookupLibraryCopiesRow
+		if err := rows.Scan(
+			&i.CopyID,
+			&i.Barcode,
+			&i.Status,
+			&i.TitleID,
+			&i.Title,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const lookupLibraryMembers = `-- name: LookupLibraryMembers :many
+select u.id as user_id, u.name as user_name, u.username, coalesce(sp.nis, '') as nis, coalesce(lm.member_no, '') as member_no
+from users u
+left join student_profiles sp on sp.user_id = u.id
+left join library_members lm on lm.user_id = u.id and lm.tenant_id = u.tenant_id
+where u.tenant_id = $1 and u.deleted_at is null
+  and (u.name ilike '%' || $3::text || '%' or u.username ilike '%' || $3::text || '%'
+    or sp.nis ilike '%' || $3::text || '%' or lm.member_no ilike '%' || $3::text || '%')
+order by u.name
+limit $2
+`
+
+type LookupLibraryMembersParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	Limit    int32     `json:"limit"`
+	Query    string    `json:"query"`
+}
+
+type LookupLibraryMembersRow struct {
+	UserID   uuid.UUID `json:"user_id"`
+	UserName string    `json:"user_name"`
+	Username string    `json:"username"`
+	Nis      string    `json:"nis"`
+	MemberNo string    `json:"member_no"`
+}
+
+func (q *Queries) LookupLibraryMembers(ctx context.Context, arg LookupLibraryMembersParams) ([]LookupLibraryMembersRow, error) {
+	rows, err := q.db.Query(ctx, lookupLibraryMembers, arg.TenantID, arg.Limit, arg.Query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []LookupLibraryMembersRow{}
+	for rows.Next() {
+		var i LookupLibraryMembersRow
+		if err := rows.Scan(
+			&i.UserID,
+			&i.UserName,
+			&i.Username,
+			&i.Nis,
+			&i.MemberNo,
 		); err != nil {
 			return nil, err
 		}

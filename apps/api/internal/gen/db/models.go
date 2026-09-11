@@ -635,6 +635,19 @@ type LibraryCopy struct {
 	Notes      string             `json:"notes"`
 	CreatedAt  pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
+	IsOpac     bool               `json:"is_opac"`
+}
+
+type LibraryItemEvent struct {
+	ID           uuid.UUID          `json:"id"`
+	TenantID     uuid.UUID          `json:"tenant_id"`
+	CopyID       uuid.UUID          `json:"copy_id"`
+	LoanID       pgtype.UUID        `json:"loan_id"`
+	MemberUserID pgtype.UUID        `json:"member_user_id"`
+	EventType    string             `json:"event_type"`
+	Notes        string             `json:"notes"`
+	CreatedBy    pgtype.UUID        `json:"created_by"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 }
 
 type LibraryLoan struct {
@@ -655,6 +668,65 @@ type LibraryLoan struct {
 	ActiveCopyID pgtype.UUID        `json:"active_copy_id"`
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+	Channel      string             `json:"channel"`
+}
+
+type LibraryLoanRenewal struct {
+	ID            uuid.UUID          `json:"id"`
+	TenantID      uuid.UUID          `json:"tenant_id"`
+	LoanID        uuid.UUID          `json:"loan_id"`
+	RenewedAt     pgtype.Timestamptz `json:"renewed_at"`
+	PreviousDueOn pgtype.Date        `json:"previous_due_on"`
+	NewDueOn      pgtype.Date        `json:"new_due_on"`
+	RenewedBy     uuid.UUID          `json:"renewed_by"`
+}
+
+type LibraryLoanRule struct {
+	ID           uuid.UUID          `json:"id"`
+	TenantID     uuid.UUID          `json:"tenant_id"`
+	MemberTypeID pgtype.UUID        `json:"member_type_id"`
+	StartsOn     pgtype.Date        `json:"starts_on"`
+	EndsOn       pgtype.Date        `json:"ends_on"`
+	AllowLoans   bool               `json:"allow_loans"`
+	MaxLoanItems pgtype.Int4        `json:"max_loan_items"`
+	MaxLoanDays  pgtype.Int4        `json:"max_loan_days"`
+	Notes        string             `json:"notes"`
+	CreatedBy    pgtype.UUID        `json:"created_by"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+}
+
+type LibraryMember struct {
+	UserID          uuid.UUID          `json:"user_id"`
+	TenantID        uuid.UUID          `json:"tenant_id"`
+	MemberNo        string             `json:"member_no"`
+	MemberTypeID    uuid.UUID          `json:"member_type_id"`
+	RegisteredOn    pgtype.Date        `json:"registered_on"`
+	ValidUntil      pgtype.Date        `json:"valid_until"`
+	Status          string             `json:"status"`
+	SuspendedUntil  pgtype.Date        `json:"suspended_until"`
+	LateReturnCount int32              `json:"late_return_count"`
+	Notes           string             `json:"notes"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+}
+
+type LibraryMemberType struct {
+	ID             uuid.UUID          `json:"id"`
+	TenantID       uuid.UUID          `json:"tenant_id"`
+	Name           string             `json:"name"`
+	MaxLoanItems   int32              `json:"max_loan_items"`
+	MaxLoanDays    int32              `json:"max_loan_days"`
+	RenewalDays    int32              `json:"renewal_days"`
+	MaxRenewals    int32              `json:"max_renewals"`
+	FineType       string             `json:"fine_type"`
+	FinePerTenor   int32              `json:"fine_per_tenor"`
+	TenorDays      int32              `json:"tenor_days"`
+	SuspendDays    int32              `json:"suspend_days"`
+	ValidityMonths int32              `json:"validity_months"`
+	DefaultForRole pgtype.Text        `json:"default_for_role"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+	DeletedAt      pgtype.Timestamptz `json:"deleted_at"`
 }
 
 type LibraryPolicy struct {
@@ -664,6 +736,18 @@ type LibraryPolicy struct {
 	EffectiveFrom pgtype.Date        `json:"effective_from"`
 	CreatedBy     pgtype.UUID        `json:"created_by"`
 	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+}
+
+type LibraryReadInPlace struct {
+	ID           uuid.UUID          `json:"id"`
+	TenantID     uuid.UUID          `json:"tenant_id"`
+	CopyID       uuid.UUID          `json:"copy_id"`
+	MemberUserID pgtype.UUID        `json:"member_user_id"`
+	VisitorName  string             `json:"visitor_name"`
+	StartedAt    pgtype.Timestamptz `json:"started_at"`
+	EndedAt      pgtype.Timestamptz `json:"ended_at"`
+	CreatedBy    pgtype.UUID        `json:"created_by"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 }
 
 type LibraryReservation struct {
@@ -678,6 +762,7 @@ type LibraryReservation struct {
 	FulfilledLoanID pgtype.UUID        `json:"fulfilled_loan_id"`
 	CreatedAt       pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+	HeldCopyID      pgtype.UUID        `json:"held_copy_id"`
 }
 
 type LibraryStocktake struct {
@@ -719,6 +804,39 @@ type LibraryTitle struct {
 	CreatedAt      pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
 	DeletedAt      pgtype.Timestamptz `json:"deleted_at"`
+	IsOpac         bool               `json:"is_opac"`
+	SearchVector   interface{}        `json:"search_vector"`
+}
+
+type LibraryViolation struct {
+	ID           uuid.UUID          `json:"id"`
+	TenantID     uuid.UUID          `json:"tenant_id"`
+	LoanID       pgtype.UUID        `json:"loan_id"`
+	MemberUserID uuid.UUID          `json:"member_user_id"`
+	Kind         string             `json:"kind"`
+	Penalty      string             `json:"penalty"`
+	Amount       int32              `json:"amount"`
+	SuspendDays  int32              `json:"suspend_days"`
+	Status       string             `json:"status"`
+	Notes        string             `json:"notes"`
+	CreatedBy    uuid.UUID          `json:"created_by"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	SettledAt    pgtype.Timestamptz `json:"settled_at"`
+	SettledBy    pgtype.UUID        `json:"settled_by"`
+}
+
+type LibraryVisit struct {
+	ID           uuid.UUID          `json:"id"`
+	TenantID     uuid.UUID          `json:"tenant_id"`
+	MemberUserID pgtype.UUID        `json:"member_user_id"`
+	VisitorName  string             `json:"visitor_name"`
+	Kind         string             `json:"kind"`
+	Purpose      string             `json:"purpose"`
+	GroupSize    int32              `json:"group_size"`
+	Source       string             `json:"source"`
+	VisitedAt    pgtype.Timestamptz `json:"visited_at"`
+	CreatedBy    pgtype.UUID        `json:"created_by"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 }
 
 type LoginAttempt struct {

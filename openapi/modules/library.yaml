@@ -236,6 +236,7 @@ paths:
               properties:
                 barcode: { type: string, minLength: 1, maxLength: 64 }
                 member_user_id: { type: string, format: uuid }
+                channel: { type: string, enum: [desk, self_service, mobile], default: desk }
       responses:
         "201":
           description: Borrowed
@@ -310,6 +311,8 @@ paths:
               required: [replacement_cost]
               properties:
                 replacement_cost: { type: integer, minimum: 0 }
+                penalty: { type: string, enum: [fine, replace_book], default: fine }
+                notes: { type: string, maxLength: 500 }
       responses:
         "200":
           description: Closed
@@ -345,8 +348,8 @@ paths:
     get:
       tags: [library]
       operationId: listMemberLoanHistory
-      x-permission: view_library
-      summary: One member's loan history
+      x-permission: authenticated
+      summary: One member's loan history (self, or view_library staff)
       parameters:
         - { name: userId, in: path, required: true, schema: { type: string, format: uuid } }
         - { name: include_returned, in: query, schema: { type: boolean, default: true } }
@@ -373,8 +376,8 @@ paths:
     get:
       tags: [library]
       operationId: listMemberReservations
-      x-permission: view_library
-      summary: One member's reservations
+      x-permission: authenticated
+      summary: One member's reservations (self, or view_library staff)
       parameters:
         - { name: userId, in: path, required: true, schema: { type: string, format: uuid } }
       responses:
@@ -641,10 +644,11 @@ paths:
       operationId: searchOpacTitles
       x-public: true
       security: []
-      summary: Public catalogue search (OPAC), no session required
+      summary: Public catalogue search (OPAC), no session required. Fulltext for a 3+ character query, LIKE below that.
       parameters:
         - $ref: "#/components/parameters/TenantHeader"
         - { name: search, in: query, schema: { type: string, maxLength: 200 } }
+        - { name: classification_prefix, in: query, schema: { type: string, maxLength: 60 } }
         - {
             name: limit,
             in: query,
@@ -658,9 +662,10 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [data]
+                required: [data, library_name]
                 properties:
                   data: { type: array, items: { $ref: "#/components/schemas/LibraryTitle" } }
+                  library_name: { type: string }
         "400": { $ref: "#/components/responses/BadRequest" }
 
 components:
@@ -676,6 +681,15 @@ components:
           renewal_days,
           fine_per_day,
           reservation_hold_days,
+          name,
+          saturday_closed,
+          sunday_closed,
+          booking_enabled,
+          booking_max,
+          fine_currency_enabled,
+          block_loans_with_unpaid_fines,
+          due_reminder_days,
+          auto_register_members,
         ]
       properties:
         version: { type: integer }
@@ -685,6 +699,19 @@ components:
         renewal_days: { type: integer }
         fine_per_day: { type: integer }
         reservation_hold_days: { type: integer }
+        name: { type: string }
+        npp: { type: string }
+        barcode_source: { type: string, enum: [no_induk, item_id] }
+        accession_format: { type: string }
+        member_no_format: { type: string }
+        saturday_closed: { type: boolean }
+        sunday_closed: { type: boolean }
+        booking_enabled: { type: boolean }
+        booking_max: { type: integer }
+        fine_currency_enabled: { type: boolean }
+        block_loans_with_unpaid_fines: { type: boolean }
+        due_reminder_days: { type: integer }
+        auto_register_members: { type: boolean }
     LibraryPolicyWrite:
       type: object
       required:
@@ -703,6 +730,19 @@ components:
         renewal_days: { type: integer, minimum: 1 }
         fine_per_day: { type: integer, minimum: 0 }
         reservation_hold_days: { type: integer, minimum: 1 }
+        name: { type: string, minLength: 1, maxLength: 150 }
+        npp: { type: string, maxLength: 60 }
+        barcode_source: { type: string, enum: [no_induk, item_id] }
+        accession_format: { type: string, maxLength: 60 }
+        member_no_format: { type: string, maxLength: 60 }
+        saturday_closed: { type: boolean }
+        sunday_closed: { type: boolean }
+        booking_enabled: { type: boolean }
+        booking_max: { type: integer, minimum: 0 }
+        fine_currency_enabled: { type: boolean }
+        block_loans_with_unpaid_fines: { type: boolean }
+        due_reminder_days: { type: integer, minimum: 0 }
+        auto_register_members: { type: boolean }
 
     LibraryTitle:
       type: object
@@ -800,6 +840,7 @@ components:
         status: { $ref: "#/components/schemas/LibraryLoanStatus" }
         fine_amount: { type: integer }
         fine_paid_at: { type: string, format: date-time }
+        channel: { type: string, enum: [desk, self_service, mobile] }
 
     LibraryReservationStatus:
       type: string
@@ -815,6 +856,12 @@ components:
         requested_at: { type: string, format: date-time }
         ready_at: { type: string, format: date-time }
         expires_at: { type: string, format: date-time }
+        held_copy_id:
+          {
+            type: string,
+            format: uuid,
+            description: "the copy set aside for this hold, once ready",
+          }
         position:
           { type: integer, description: "1-based queue position, present only while waiting" }
 
