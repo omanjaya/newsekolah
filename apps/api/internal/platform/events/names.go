@@ -2,12 +2,15 @@ package events
 
 import "github.com/google/uuid"
 
-// Event name constants for domain events other modules publish once merged
+// Event name constants for domain events published across modules
 // (docs/03-layered-architecture.md section 1: domain events are one of the
 // two allowed cross-module communication paths). The notifications module
-// subscribes to every one of these through RegisterEventHandlers; no
-// publisher exists yet in this branch, so each handler is exercised by
-// unit tests calling Bus.Publish directly until the owning module merges.
+// subscribes to every one of these through RegisterEventHandlers.
+// Attendance publishes AttendanceSubmitted (service/entries.go) and
+// scheduling publishes SubstitutionRequested/SubstitutionResponded
+// (service/substitution.go); a constant without an owning module yet is
+// still exercised by unit tests calling Bus.Publish directly until that
+// module merges.
 const (
 	AttendanceSubmitted        = "attendance.submitted"
 	SubstitutionRequested      = "substitution.requested"

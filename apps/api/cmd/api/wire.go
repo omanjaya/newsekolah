@@ -586,12 +586,40 @@ func (l *lateBoundViolations) ReplaceSessionViolations(ctx context.Context, tena
 }
 
 // lateBoundDisciplineReader breaks the same attendance <-> discipline
-// construction cycle for the homeroom roster's violation summary.
-type lateBoundDisciplineReader struct{ inner attendance.DisciplineReader }
+// construction cycle for the homeroom roster's violation summary. inner is
+// the concrete discipline service rather than attendance.DisciplineReader
+// so ViolationSummaryForClass can be built here, over discipline's
+// existing PointTotals, without the discipline module needing a batch
+// query of its own -- discipline's repository has no
+// ListPointTotalsForStudents(student_user_id = any($n)) query, only the
+// per-class ListStudentPointTotals PointTotals already uses, but a
+// homeroom roster is always exactly one class, so scoping by classID
+// instead of by student ID list gets the same one-query result.
+type lateBoundDisciplineReader struct{ inner *disciplineservice.Service }
 
 func (l *lateBoundDisciplineReader) ViolationSummary(ctx context.Context, tenantID, academicYearID, studentUserID uuid.UUID) (int, int, error) {
 	if l.inner == nil {
 		return 0, 0, nil
 	}
 	return l.inner.ViolationSummary(ctx, tenantID, academicYearID, studentUserID)
+}
+
+// homeroomClassPointTotalsLimit is passed to PointTotals in place of a
+// per-student ID list: it must cover every student a homeroom class can
+// hold, which is always far below PointTotals' own cap of 500.
+const homeroomClassPointTotalsLimit = 500
+
+func (l *lateBoundDisciplineReader) ViolationSummaryForClass(ctx context.Context, tenantID, classID uuid.UUID) (map[uuid.UUID]attendance.ViolationSummary, error) {
+	if l.inner == nil {
+		return nil, nil
+	}
+	totals, err := l.inner.PointTotals(ctx, tenantID, uuid.NullUUID{UUID: classID, Valid: true}, homeroomClassPointTotalsLimit)
+	if err != nil {
+		return nil, err
+	}
+	out := make(map[uuid.UUID]attendance.ViolationSummary, len(totals))
+	for _, t := range totals {
+		out[t.StudentUserID] = attendance.ViolationSummary{Count: t.RecordCount, Points: t.Total}
+	}
+	return out, nil
 }

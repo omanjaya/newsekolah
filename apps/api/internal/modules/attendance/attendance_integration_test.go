@@ -75,14 +75,40 @@ func (noopPerms) EffectivePermissions(context.Context, uuid.UUID, uuid.UUID) (au
 // cmd/api/wire.go does, so this test exercises the same composition
 // production uses instead of a hand-rolled substitute.
 func buildService(pool *pgxpool.Pool) *service.Service {
+	return buildServiceWithDiscipline(pool, NoOpDisciplineReader{})
+}
+
+// buildServiceWithDiscipline is buildService with a caller-supplied
+// DisciplineReader, for tests that need to observe how the homeroom
+// roster calls it (TestHomeroomAttendanceBatchesViolationSummary).
+func buildServiceWithDiscipline(pool *pgxpool.Pool, discipline service.DisciplineReader) *service.Service {
 	schoolModule := school.Register(pool, tenant.ModeSingle, nil)
 	eventBus := events.NewBus()
 	schedulingModule := scheduling.Register(pool, eventBus, noopPerms{})
 	repo := repository.New(pool)
 	return service.New(
 		pool, repo, schoolModule.Service, schedulingModule.ScheduleReader, schedulingModule.AccessChecker, schedulingModule.JournalService,
-		NoOpBlocker{}, NoOpOverrider{}, NoOpViolationRecorder{}, NoOpDisciplineReader{}, nil, nil, nil,
+		NoOpBlocker{}, NoOpOverrider{}, NoOpViolationRecorder{}, discipline, nil, nil, nil,
 	)
+}
+
+// spyDisciplineReader counts calls to each DisciplineReader method so a
+// test can assert the homeroom roster fetches violation summaries in one
+// batched call instead of one per student.
+type spyDisciplineReader struct {
+	batchCalls  int
+	singleCalls int
+	summaries   map[uuid.UUID]service.ViolationSummary
+}
+
+func (s *spyDisciplineReader) ViolationSummary(context.Context, uuid.UUID, uuid.UUID, uuid.UUID) (int, int, error) {
+	s.singleCalls++
+	return 0, 0, nil
+}
+
+func (s *spyDisciplineReader) ViolationSummaryForClass(context.Context, uuid.UUID, uuid.UUID) (map[uuid.UUID]service.ViolationSummary, error) {
+	s.batchCalls++
+	return s.summaries, nil
 }
 
 // world is one fully seeded tenant: a class with two students, a subject,
@@ -360,6 +386,41 @@ func TestHomeroomScopeForbidden(t *testing.T) {
 
 	_, err = svc.GetHomeroomAttendance(ctx, w.tenantID, service.Actor{UserID: w.otherTeacherID}, w.today, service.HomeroomFilter{})
 	require.True(t, errors.Is(err, domain.ErrNotHomeroomTeacher), "a teacher without the homeroom duty must be forbidden, got %v", err)
+}
+
+// TestHomeroomAttendanceBatchesViolationSummary guards against the
+// homeroom roster's N+1 regressing: GetHomeroomAttendance must read every
+// student's violation summary through one ViolationSummaryForClass call,
+// never by calling ViolationSummary per student in the roster loop.
+func TestHomeroomAttendanceBatchesViolationSummary(t *testing.T) {
+	pool := startTestPostgres(t)
+	ctx := context.Background()
+	w := seedWorld(t, ctx, pool, "homeroom-violation-batch")
+
+	spy := &spyDisciplineReader{summaries: map[uuid.UUID]service.ViolationSummary{
+		w.student1ID: {Count: 2, Points: 15},
+	}}
+	svc := buildServiceWithDiscipline(pool, spy)
+
+	roster, err := svc.GetHomeroomAttendance(ctx, w.tenantID, service.Actor{UserID: w.teacherID}, w.today, service.HomeroomFilter{})
+	require.NoError(t, err)
+	require.Len(t, roster.Students, 2)
+
+	require.Equal(t, 1, spy.batchCalls, "the roster must fetch every student's violation summary in one call, not one per student")
+	require.Equal(t, 0, spy.singleCalls, "ViolationSummary must not be called from the roster loop")
+
+	var student1Entry, student2Entry service.HomeroomEntry
+	for _, e := range roster.Students {
+		switch e.StudentUserID {
+		case w.student1ID:
+			student1Entry = e
+		case w.student2ID:
+			student2Entry = e
+		}
+	}
+	require.Equal(t, 2, student1Entry.ViolationCount)
+	require.Equal(t, 15, student1Entry.ViolationPoints)
+	require.Zero(t, student2Entry.ViolationCount, "a student absent from the batch result has no violations")
 }
 
 func TestTenantIsolation(t *testing.T) {

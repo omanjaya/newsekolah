@@ -228,6 +228,21 @@ type ViolationRecorder interface {
 // count and total points without this package importing discipline.
 type DisciplineReader interface {
 	ViolationSummary(ctx context.Context, tenantID, academicYearID, studentUserID uuid.UUID) (count, points int, err error)
+
+	// ViolationSummaryForClass is ViolationSummary for every student
+	// currently enrolled in one class at once, keyed by student user ID. A
+	// student with no violations is simply absent from the map rather than
+	// present with a zero entry. The homeroom roster (calendar.go's
+	// GetHomeroomAttendance) uses this instead of calling ViolationSummary
+	// once per student, which was one query per roster row.
+	ViolationSummaryForClass(ctx context.Context, tenantID, classID uuid.UUID) (map[uuid.UUID]ViolationSummary, error)
+}
+
+// ViolationSummary is one student's violation count and total points, as
+// returned in bulk by DisciplineReader.ViolationSummaryForClass.
+type ViolationSummary struct {
+	Count  int
+	Points int
 }
 
 // RealtimePublisher lets the service push a live update to the monitor

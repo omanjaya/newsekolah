@@ -15,6 +15,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance/service"
 )
 
 // Blocker reports whether studentUserID has an unresolved workflow (e.g. a
@@ -69,10 +70,19 @@ func (NoOpViolationRecorder) ReplaceSessionViolations(context.Context, uuid.UUID
 
 // DisciplineReader lets the homeroom roster show each student's violation
 // count and total points, mirroring Blocker/Overrider/ViolationRecorder's
-// rationale.
+// rationale. Kept identical to service.DisciplineReader (down to
+// service.ViolationSummary) so a value of this type is also accepted where
+// service.New expects the latter.
 type DisciplineReader interface {
 	ViolationSummary(ctx context.Context, tenantID, academicYearID, studentUserID uuid.UUID) (count, points int, err error)
+	ViolationSummaryForClass(ctx context.Context, tenantID, classID uuid.UUID) (map[uuid.UUID]ViolationSummary, error)
 }
+
+// ViolationSummary aliases service.ViolationSummary so a Dependencies.
+// Discipline implementation built outside this module (cmd/api's
+// late-bound adapter) does not need its own import of attendance/service
+// just to name the result type.
+type ViolationSummary = service.ViolationSummary
 
 // NoOpDisciplineReader always reports zero; it is the default until
 // discipline is wired in.
@@ -80,4 +90,8 @@ type NoOpDisciplineReader struct{}
 
 func (NoOpDisciplineReader) ViolationSummary(context.Context, uuid.UUID, uuid.UUID, uuid.UUID) (int, int, error) {
 	return 0, 0, nil
+}
+
+func (NoOpDisciplineReader) ViolationSummaryForClass(context.Context, uuid.UUID, uuid.UUID) (map[uuid.UUID]service.ViolationSummary, error) {
+	return nil, nil
 }

@@ -243,13 +243,17 @@ func (s *Service) GetHomeroomAttendance(ctx context.Context, tenantID uuid.UUID,
 			byStudent[st.ID] = st
 		}
 
+		violations, err := s.discipline.ViolationSummaryForClass(ctx, tenantID, classID)
+		if err != nil {
+			return err
+		}
+
 		entries := make([]HomeroomEntry, 0, len(roster))
 		for _, r := range roster {
 			st := byStudent[r.StudentUserID]
 			entry := HomeroomEntry{RosterEntry: r, NIS: st.NIS, GuardianName: st.GuardianName, GuardianPhone: st.GuardianPhone}
-			entry.ViolationCount, entry.ViolationPoints, err = s.discipline.ViolationSummary(ctx, tenantID, yearID, r.StudentUserID)
-			if err != nil {
-				return err
+			if v, ok := violations[r.StudentUserID]; ok {
+				entry.ViolationCount, entry.ViolationPoints = v.Count, v.Points
 			}
 			entries = append(entries, entry)
 		}
