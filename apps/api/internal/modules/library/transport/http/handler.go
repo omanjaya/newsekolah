@@ -70,6 +70,10 @@ var errorMap = map[error]*httpx.Error{
 	domain.ErrViolationAlreadySettled: httpx.ErrLibraryViolationAlreadySettled,
 
 	domain.ErrVisitNotFound: httpx.ErrLibraryVisitNotFound,
+
+	domain.ErrCoverTooLarge:      httpx.ErrLibraryCoverTooLarge,
+	domain.ErrCoverInvalidType:   httpx.ErrLibraryCoverInvalidType,
+	domain.ErrStorageUnavailable: httpx.ErrLibraryStorageUnavailable,
 }
 
 func mapError(err error) error {

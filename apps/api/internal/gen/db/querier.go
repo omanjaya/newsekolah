@@ -324,6 +324,12 @@ type Querier interface {
 	CreateLateArrival(ctx context.Context, arg CreateLateArrivalParams) (LateArrival, error)
 	CreateLeaveDocument(ctx context.Context, arg CreateLeaveDocumentParams) (LeaveDocument, error)
 	CreateLeaveRequest(ctx context.Context, arg CreateLeaveRequestParams) (LeaveRequest, error)
+	// The assets table is shared platform infrastructure
+	// (migrations/0001_platform_core.up.sql), not owned by any single
+	// module. Library writes here for covers downloaded from an external
+	// ISBN lookup, the same way permits writes evidence images and rendered
+	// letters (internal/modules/permits/queries/assets.sql).
+	CreateLibraryAsset(ctx context.Context, arg CreateLibraryAssetParams) (uuid.UUID, error)
 	CreateLibraryPolicy(ctx context.Context, arg CreateLibraryPolicyParams) error
 	CreateLibraryVisit(ctx context.Context, arg CreateLibraryVisitParams) (LibraryVisit, error)
 	CreateLoan(ctx context.Context, arg CreateLoanParams) (LibraryLoan, error)

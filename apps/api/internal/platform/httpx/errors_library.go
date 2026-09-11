@@ -48,4 +48,8 @@ var (
 	ErrLibraryViolationAlreadySettled = NewError(http.StatusConflict, "LIBRARY_VIOLATION_ALREADY_SETTLED")
 
 	ErrLibraryVisitNotFound = NewError(http.StatusNotFound, "LIBRARY_VISIT_NOT_FOUND")
+
+	ErrLibraryCoverTooLarge      = NewError(http.StatusBadRequest, "LIBRARY_COVER_TOO_LARGE")
+	ErrLibraryCoverInvalidType   = NewError(http.StatusBadRequest, "LIBRARY_COVER_INVALID_TYPE")
+	ErrLibraryStorageUnavailable = NewError(http.StatusServiceUnavailable, "LIBRARY_STORAGE_UNAVAILABLE")
 )

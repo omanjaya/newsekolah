@@ -10554,6 +10554,74 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
+  /v1/library/titles/isbn-lookup:
+    get:
+      tags:
+        - library
+      operationId: lookupExternalIsbn
+      x-permission: manage_library_catalog
+      summary: "Look up bibliographic data for an ISBN: the local catalogue first, then Open Library, then Google Books. Never
+        fails on an upstream outage -- found=false just means no source had it."
+      parameters:
+        - name: isbn
+          in: query
+          required: true
+          schema:
+            type: string
+            maxLength: 32
+      responses:
+        "200":
+          description: Lookup result (found may be false)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryIsbnLookupResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/library/covers/download:
+    post:
+      tags:
+        - library
+      operationId: downloadLibraryCover
+      x-permission: manage_library_catalog
+      summary: Download a cover image from an external URL (http/https, <=3MB, jpeg/png/webp) and store it as an asset; pass
+        the returned asset_id as a title's cover_asset_id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - url
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  maxLength: 2000
+      responses:
+        "201":
+          description: Stored
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - asset_id
+                properties:
+                  asset_id:
+                    type: string
+                    format: uuid
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /v1/library/titles/{titleId}:
     get:
       tags:
@@ -22922,6 +22990,67 @@ components:
           minimum: 0
         auto_register_members:
           type: boolean
+    LibraryExternalBibliography:
+      type: object
+      required:
+        - title
+        - subtitle
+        - main_author
+        - additional_authors
+        - publisher
+        - publish_place
+        - pages
+        - isbn
+        - subjects
+        - language
+        - abstract
+        - cover_image_url
+      properties:
+        title:
+          type: string
+        subtitle:
+          type: string
+        main_author:
+          type: string
+        additional_authors:
+          type: string
+        publisher:
+          type: string
+        publish_place:
+          type: string
+        publish_year:
+          type: integer
+          description: 0 when unknown
+        pages:
+          type: string
+        isbn:
+          type: string
+        subjects:
+          type: string
+        language:
+          type: string
+        abstract:
+          type: string
+        cover_image_url:
+          type: string
+    LibraryIsbnLookupResult:
+      type: object
+      required:
+        - found
+      properties:
+        found:
+          type: boolean
+        source:
+          type: string
+          enum:
+            - local
+            - openlibrary
+            - googlebooks
+        bibliography:
+          $ref: "#/components/schemas/LibraryExternalBibliography"
+        local_title_id:
+          type: string
+          format: uuid
     LibraryTitle:
       type: object
       required:

@@ -4625,6 +4625,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/library/titles/isbn-lookup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Look up bibliographic data for an ISBN: the local catalogue first, then Open Library, then Google Books. Never fails on an upstream outage -- found=false just means no source had it. */
+        get: operations["lookupExternalIsbn"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/covers/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Download a cover image from an external URL (http/https, <=3MB, jpeg/png/webp) and store it as an asset; pass the returned asset_id as a title's cover_asset_id */
+        post: operations["downloadLibraryCover"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/library/titles/{titleId}": {
         parameters: {
             query?: never;
@@ -9819,6 +9853,30 @@ export interface components {
             block_loans_with_unpaid_fines?: boolean;
             due_reminder_days?: number;
             auto_register_members?: boolean;
+        };
+        LibraryExternalBibliography: {
+            title: string;
+            subtitle: string;
+            main_author: string;
+            additional_authors: string;
+            publisher: string;
+            publish_place: string;
+            /** @description 0 when unknown */
+            publish_year?: number;
+            pages: string;
+            isbn: string;
+            subjects: string;
+            language: string;
+            abstract: string;
+            cover_image_url: string;
+        };
+        LibraryIsbnLookupResult: {
+            found: boolean;
+            /** @enum {string} */
+            source?: "local" | "openlibrary" | "googlebooks";
+            bibliography?: components["schemas"]["LibraryExternalBibliography"];
+            /** Format: uuid */
+            local_title_id?: string;
         };
         LibraryTitle: {
             /** Format: uuid */
@@ -20938,6 +20996,64 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    lookupExternalIsbn: {
+        parameters: {
+            query: {
+                isbn: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Lookup result (found may be false) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryIsbnLookupResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    downloadLibraryCover: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uri */
+                    url: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Stored */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        asset_id: string;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
         };
     };
     getLibraryTitle: {

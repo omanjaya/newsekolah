@@ -46,4 +46,8 @@ func init() {
 	catalog["LIBRARY_VIOLATION_ALREADY_SETTLED"] = map[string]string{Indonesian: "Pelanggaran ini sudah diselesaikan.", English: "This violation is already settled."}
 
 	catalog["LIBRARY_VISIT_NOT_FOUND"] = map[string]string{Indonesian: "Kunjungan tidak ditemukan.", English: "Visit not found."}
+
+	catalog["LIBRARY_COVER_TOO_LARGE"] = map[string]string{Indonesian: "Ukuran sampul melebihi 3 MB.", English: "Cover image exceeds 3 MB."}
+	catalog["LIBRARY_COVER_INVALID_TYPE"] = map[string]string{Indonesian: "Tipe berkas sampul tidak didukung. Gunakan JPEG, PNG, atau WebP.", English: "Unsupported cover file type. Use JPEG, PNG, or WebP."}
+	catalog["LIBRARY_STORAGE_UNAVAILABLE"] = map[string]string{Indonesian: "Penyimpanan berkas belum dikonfigurasi.", English: "File storage is not configured."}
 }
