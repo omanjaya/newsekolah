@@ -365,8 +365,8 @@ where lr.tenant_id = $1 and wi.status = 'in_progress'
       and da.is_active
       and dt.is_active
       and dt.deleted_at is null
-      and da.starts_on <= current_date
-      and (da.ends_on is null or da.ends_on >= current_date)
+      and da.starts_on <= $4::date
+      and (da.ends_on is null or da.ends_on >= $4::date)
       and (
         (dt.slug = 'homeroom' and da.scope_class_id = wi.class_id
           and (wd.stages -> wi.current_stage_index ->> 'approver_rule') = 'homeroom_of_student')
@@ -381,6 +381,7 @@ type ListLeaveRequestsForReviewParams struct {
 	TenantID uuid.UUID   `json:"tenant_id"`
 	UserID   uuid.UUID   `json:"user_id"`
 	ClassID  pgtype.UUID `json:"class_id"`
+	Today    pgtype.Date `json:"today"`
 }
 
 type ListLeaveRequestsForReviewRow struct {
@@ -414,8 +415,16 @@ type ListLeaveRequestsForReviewRow struct {
 // counselor/leadership stage's is "duty:<slug>" (domain.DefaultStages) --
 // so a homeroom teacher no longer sees requests that already moved past
 // their stage to counselor, and vice versa.
+//
+// sqlc.arg('today') is the tenant-local date (s.tenantNow), not
+// current_date: the Postgres session timezone is never set per tenant.
 func (q *Queries) ListLeaveRequestsForReview(ctx context.Context, arg ListLeaveRequestsForReviewParams) ([]ListLeaveRequestsForReviewRow, error) {
-	rows, err := q.db.Query(ctx, listLeaveRequestsForReview, arg.TenantID, arg.UserID, arg.ClassID)
+	rows, err := q.db.Query(ctx, listLeaveRequestsForReview,
+		arg.TenantID,
+		arg.UserID,
+		arg.ClassID,
+		arg.Today,
+	)
 	if err != nil {
 		return nil, err
 	}

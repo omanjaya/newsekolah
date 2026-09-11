@@ -49,8 +49,11 @@ func (s *Service) CreateExitPermit(ctx context.Context, in CreateExitPermitInput
 		// ones that already exited -- the DB unique index enforces this
 		// too (ux_workflow_instances_one_exit_permit_per_day now covers
 		// 'completed'), but this turns the race into a friendly 409
-		// instead of a raw unique-violation.
-		if _, ok, err := s.repo.GetExitPermitInstanceForSubjectToday(ctx, in.TenantID, in.StudentUserID); err != nil {
+		// instead of a raw unique-violation. Tenant-local "today", not
+		// the index's fixed-UTC opened_date, so the common case agrees
+		// with the school's own calendar day; the index stays the
+		// backstop for the timezone edge the pre-check cannot close.
+		if _, ok, err := s.repo.GetExitPermitInstanceForSubjectToday(ctx, in.TenantID, in.StudentUserID, s.tenantNow(ctx, in.TenantID)); err != nil {
 			return err
 		} else if ok {
 			return domain.ErrExitPermitAlreadyToday
@@ -303,7 +306,7 @@ func (s *Service) ListExitPermitsForApproval(ctx context.Context, tenantID, call
 	var out []ExitPermitReviewItem
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error
-		out, err = s.repo.ListExitPermitsForApproval(ctx, tenantID, callerUserID)
+		out, err = s.repo.ListExitPermitsForApproval(ctx, tenantID, callerUserID, s.tenantNow(ctx, tenantID))
 		return err
 	})
 	return out, err

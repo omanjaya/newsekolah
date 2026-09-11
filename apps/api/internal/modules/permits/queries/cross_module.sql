@@ -37,6 +37,10 @@ select exists (
 -- Evaluates the "duty:<slug>" approver rule: does user_id currently hold
 -- an active duty of this slug, and (for a class-scoped duty) does it cover
 -- class_id (NULL class_id matches only a school-scoped duty).
+-- today is the tenant-local calendar date (s.tenantNow), not current_date:
+-- the Postgres session timezone is never set per tenant, so comparing
+-- against bare current_date would evaluate the duty window in whatever
+-- timezone the connection happens to be in.
 select exists (
   select 1
   from duty_assignments da
@@ -48,8 +52,8 @@ select exists (
     and da.is_active
     and dt.is_active
     and dt.deleted_at is null
-    and da.starts_on <= current_date
-    and (da.ends_on is null or da.ends_on >= current_date)
+    and da.starts_on <= sqlc.arg('today')::date
+    and (da.ends_on is null or da.ends_on >= sqlc.arg('today')::date)
     and (
       dt.scope_kind = 'school'
       or (dt.scope_kind = 'class' and sqlc.narg('class_id')::uuid is not null and da.scope_class_id = sqlc.narg('class_id')::uuid)
@@ -79,7 +83,8 @@ select timezone from tenants where id = $1;
 -- the HTTP layer, reimplemented here for the service-level ownership
 -- checks permits itself must make on detail endpoints that carry no
 -- per-instance duty scope to check against (see RequireCanViewLeaveRequest
--- and its exit-permit/late-arrival counterparts).
+-- and its exit-permit/late-arrival counterparts). today is the
+-- tenant-local date, same reasoning as HasActiveDuty above.
 select exists (
   select 1
   from user_roles ur
@@ -97,8 +102,8 @@ select exists (
     and da.is_active
     and dt.is_active
     and dt.deleted_at is null
-    and da.starts_on <= current_date
-    and (da.ends_on is null or da.ends_on >= current_date)
+    and da.starts_on <= sqlc.arg('today')::date
+    and (da.ends_on is null or da.ends_on >= sqlc.arg('today')::date)
 )::bool as has_permission;
 
 -- name: HasRolePermission :one

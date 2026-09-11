@@ -235,8 +235,10 @@ func (r *Repository) ListLeaveRequestsBySubject(ctx context.Context, tenantID, s
 	return out, nil
 }
 
-func (r *Repository) ListLeaveRequestsForReview(ctx context.Context, tenantID, reviewerUserID uuid.UUID, classID uuid.NullUUID) ([]service.LeaveRequestItem, error) {
-	rows, err := r.queries(ctx).ListLeaveRequestsForReview(ctx, db.ListLeaveRequestsForReviewParams{TenantID: tenantID, UserID: reviewerUserID, ClassID: pdatabase.NullUUID(classID)})
+func (r *Repository) ListLeaveRequestsForReview(ctx context.Context, tenantID, reviewerUserID uuid.UUID, classID uuid.NullUUID, today time.Time) ([]service.LeaveRequestItem, error) {
+	rows, err := r.queries(ctx).ListLeaveRequestsForReview(ctx, db.ListLeaveRequestsForReviewParams{
+		TenantID: tenantID, UserID: reviewerUserID, ClassID: pdatabase.NullUUID(classID), Today: pdatabase.Date(today),
+	})
 	if err != nil {
 		return nil, fmt.Errorf("list leave requests for review: %w", err)
 	}
@@ -505,8 +507,10 @@ func (r *Repository) IsActiveTeacher(ctx context.Context, tenantID, userID uuid.
 	return r.queries(ctx).IsActiveTeacher(ctx, db.IsActiveTeacherParams{TenantID: tenantID, UserID: userID})
 }
 
-func (r *Repository) HasActiveDuty(ctx context.Context, tenantID, academicYearID, userID uuid.UUID, slug string, classID uuid.NullUUID) (bool, error) {
-	return r.queries(ctx).HasActiveDuty(ctx, db.HasActiveDutyParams{TenantID: tenantID, AcademicYearID: academicYearID, UserID: userID, Slug: slug, ClassID: pdatabase.NullUUID(classID)})
+func (r *Repository) HasActiveDuty(ctx context.Context, tenantID, academicYearID, userID uuid.UUID, slug string, classID uuid.NullUUID, today time.Time) (bool, error) {
+	return r.queries(ctx).HasActiveDuty(ctx, db.HasActiveDutyParams{
+		TenantID: tenantID, AcademicYearID: academicYearID, UserID: userID, Slug: slug, ClassID: pdatabase.NullUUID(classID), Today: pdatabase.Date(today),
+	})
 }
 
 func (r *Repository) GetPeriod(ctx context.Context, tenantID, periodID uuid.UUID) (service.PeriodInfo, error) {
@@ -554,9 +558,9 @@ func (r *Repository) GetTenantTimezone(ctx context.Context, tenantID uuid.UUID) 
 	return r.queries(ctx).GetTenantTimezoneForPermits(ctx, tenantID)
 }
 
-func (r *Repository) HasPermission(ctx context.Context, tenantID, academicYearID, userID uuid.UUID, permissionCode string) (bool, error) {
+func (r *Repository) HasPermission(ctx context.Context, tenantID, academicYearID, userID uuid.UUID, permissionCode string, today time.Time) (bool, error) {
 	return r.queries(ctx).HasPermission(ctx, db.HasPermissionParams{
-		TenantID: tenantID, UserID: userID, PermissionCode: permissionCode, AcademicYearID: academicYearID,
+		TenantID: tenantID, UserID: userID, PermissionCode: permissionCode, AcademicYearID: academicYearID, Today: pdatabase.Date(today),
 	})
 }
 
@@ -579,8 +583,10 @@ func (r *Repository) GetStudentNISAndAddress(ctx context.Context, tenantID, stud
 	return row.Nis, row.Address, nil
 }
 
-func (r *Repository) GetExitPermitInstanceForSubjectToday(ctx context.Context, tenantID, studentUserID uuid.UUID) (domain.Instance, bool, error) {
-	row, err := r.queries(ctx).GetExitPermitInstanceForSubjectToday(ctx, db.GetExitPermitInstanceForSubjectTodayParams{TenantID: tenantID, SubjectUserID: studentUserID})
+func (r *Repository) GetExitPermitInstanceForSubjectToday(ctx context.Context, tenantID, studentUserID uuid.UUID, today time.Time) (domain.Instance, bool, error) {
+	row, err := r.queries(ctx).GetExitPermitInstanceForSubjectToday(ctx, db.GetExitPermitInstanceForSubjectTodayParams{
+		TenantID: tenantID, SubjectUserID: studentUserID, Today: pdatabase.Date(today),
+	})
 	if notFound(err) {
 		return domain.Instance{}, false, nil
 	}
@@ -590,8 +596,8 @@ func (r *Repository) GetExitPermitInstanceForSubjectToday(ctx context.Context, t
 	return toInstance(row), true, nil
 }
 
-func (r *Repository) ListExitPermitsForApproval(ctx context.Context, tenantID, callerUserID uuid.UUID) ([]service.ExitPermitReviewItem, error) {
-	rows, err := r.queries(ctx).ListExitPermitsForApproval(ctx, db.ListExitPermitsForApprovalParams{TenantID: tenantID, UserID: callerUserID})
+func (r *Repository) ListExitPermitsForApproval(ctx context.Context, tenantID, callerUserID uuid.UUID, today time.Time) ([]service.ExitPermitReviewItem, error) {
+	rows, err := r.queries(ctx).ListExitPermitsForApproval(ctx, db.ListExitPermitsForApprovalParams{TenantID: tenantID, UserID: callerUserID, Today: pdatabase.Date(today)})
 	if err != nil {
 		return nil, fmt.Errorf("list exit permits for approval: %w", err)
 	}

@@ -33,6 +33,9 @@ limit $3 offset $4;
 -- counselor/leadership stage's is "duty:<slug>" (domain.DefaultStages) --
 -- so a homeroom teacher no longer sees requests that already moved past
 -- their stage to counselor, and vice versa.
+--
+-- sqlc.arg('today') is the tenant-local date (s.tenantNow), not
+-- current_date: the Postgres session timezone is never set per tenant.
 select lr.*, wi.status, wi.opened_at, wi.current_stage_index, wi.class_id, wi.subject_user_id
 from leave_requests lr
 join workflow_instances wi on wi.id = lr.instance_id
@@ -49,8 +52,8 @@ where lr.tenant_id = $1 and wi.status = 'in_progress'
       and da.is_active
       and dt.is_active
       and dt.deleted_at is null
-      and da.starts_on <= current_date
-      and (da.ends_on is null or da.ends_on >= current_date)
+      and da.starts_on <= sqlc.arg('today')::date
+      and (da.ends_on is null or da.ends_on >= sqlc.arg('today')::date)
       and (
         (dt.slug = 'homeroom' and da.scope_class_id = wi.class_id
           and (wd.stages -> wi.current_stage_index ->> 'approver_rule') = 'homeroom_of_student')

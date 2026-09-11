@@ -28,6 +28,8 @@ returning *;
 -- the counselor/leadership approval stages (the duty_teacher/class_teacher
 -- stages are QR-scan only, same as the old app -- no listing needed there)
 -- plus security, who see every 'approved' permit awaiting their gate scan.
+-- sqlc.arg('today') is the tenant-local date (s.tenantNow), not
+-- current_date: the Postgres session timezone is never set per tenant.
 select ep.*, wi.status, wi.opened_at, wi.current_stage_index, wi.class_id, wi.subject_user_id
 from exit_permits ep
 join workflow_instances wi on wi.id = ep.instance_id
@@ -53,7 +55,7 @@ where ep.tenant_id = $1
             and da.user_id = $2
             and dp.permission_code = 'scan_exit_permits'
             and da.is_active and dt.is_active and dt.deleted_at is null
-            and da.starts_on <= current_date and (da.ends_on is null or da.ends_on >= current_date)
+            and da.starts_on <= sqlc.arg('today')::date and (da.ends_on is null or da.ends_on >= sqlc.arg('today')::date)
         )
       )
     )
@@ -67,7 +69,7 @@ where ep.tenant_id = $1
           and da.academic_year_id = wi.academic_year_id
           and da.user_id = $2
           and da.is_active and dt.is_active and dt.deleted_at is null
-          and da.starts_on <= current_date and (da.ends_on is null or da.ends_on >= current_date)
+          and da.starts_on <= sqlc.arg('today')::date and (da.ends_on is null or da.ends_on >= sqlc.arg('today')::date)
           and dt.scope_kind = 'school'
           and dt.slug in ('counselor', 'leadership')
           and (wd.stages -> wi.current_stage_index ->> 'approver_rule') = 'duty:' || dt.slug

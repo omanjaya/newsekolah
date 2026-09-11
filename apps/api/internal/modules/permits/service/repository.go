@@ -62,7 +62,7 @@ type Repository interface {
 	UpsertLeaveDocument(ctx context.Context, tenantID, leaveRequestID uuid.UUID, kind domain.DocumentKind, assetID, createdBy uuid.UUID) (LeaveDocumentInfo, error)
 	GetLeaveDocument(ctx context.Context, tenantID, leaveRequestID uuid.UUID, kind domain.DocumentKind) (LeaveDocumentInfo, bool, error)
 	ListLeaveRequestsBySubject(ctx context.Context, tenantID, subjectUserID uuid.UUID, limit, offset int) ([]LeaveRequestItem, error)
-	ListLeaveRequestsForReview(ctx context.Context, tenantID, reviewerUserID uuid.UUID, classID uuid.NullUUID) ([]LeaveRequestItem, error)
+	ListLeaveRequestsForReview(ctx context.Context, tenantID, reviewerUserID uuid.UUID, classID uuid.NullUUID, today time.Time) ([]LeaveRequestItem, error)
 
 	// Scan tokens.
 	CreateScanToken(ctx context.Context, t domain.ScanToken) (domain.ScanToken, error)
@@ -90,7 +90,7 @@ type Repository interface {
 	GetUserName(ctx context.Context, tenantID, userID uuid.UUID) (string, error)
 	GetStudentGuardianName(ctx context.Context, tenantID, userID uuid.UUID) (string, error)
 	IsActiveTeacher(ctx context.Context, tenantID, userID uuid.UUID) (bool, error)
-	HasActiveDuty(ctx context.Context, tenantID, academicYearID, userID uuid.UUID, slug string, classID uuid.NullUUID) (bool, error)
+	HasActiveDuty(ctx context.Context, tenantID, academicYearID, userID uuid.UUID, slug string, classID uuid.NullUUID, today time.Time) (bool, error)
 	GetPeriod(ctx context.Context, tenantID, periodID uuid.UUID) (PeriodInfo, error)
 	ListActiveTenants(ctx context.Context) ([]TenantInfo, error)
 	// GetTenantTimezone is the IANA name permits itself must compute
@@ -102,7 +102,7 @@ type Repository interface {
 	// service-level ownership checks permits itself must make on detail
 	// endpoints (RequireCanViewLeaveRequest and its exit-permit/
 	// late-arrival counterparts).
-	HasPermission(ctx context.Context, tenantID, academicYearID, userID uuid.UUID, permissionCode string) (bool, error)
+	HasPermission(ctx context.Context, tenantID, academicYearID, userID uuid.UUID, permissionCode string, today time.Time) (bool, error)
 	// HasRolePermission is HasPermission narrowed to a directly assigned
 	// role, excluding duty-granted permissions -- the distinction the
 	// late-arrival review "admins as fallback" rule needs (see
@@ -117,11 +117,11 @@ type Repository interface {
 	// GetExitPermitInstanceForSubjectToday backs the "one exit permit per
 	// day regardless of status" rule with a friendly domain error instead
 	// of a raw unique-violation from ux_workflow_instances_one_exit_permit_per_day.
-	GetExitPermitInstanceForSubjectToday(ctx context.Context, tenantID, studentUserID uuid.UUID) (domain.Instance, bool, error)
+	GetExitPermitInstanceForSubjectToday(ctx context.Context, tenantID, studentUserID uuid.UUID, today time.Time) (domain.Instance, bool, error)
 	// ListExitPermitsForApproval is the counselor/leadership/security
 	// queue: in-progress permits at a duty-scoped approval stage, plus
 	// every approved permit visible to scan_exit_permits holders.
-	ListExitPermitsForApproval(ctx context.Context, tenantID, callerUserID uuid.UUID) ([]ExitPermitReviewItem, error)
+	ListExitPermitsForApproval(ctx context.Context, tenantID, callerUserID uuid.UUID, today time.Time) ([]ExitPermitReviewItem, error)
 	// ListExitPermitsForYear backs the counselor's yearly exit-permit
 	// report: every permit opened within academicYearID's own calendar
 	// bounds, regardless of status.

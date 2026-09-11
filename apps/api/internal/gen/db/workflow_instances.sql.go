@@ -214,24 +214,27 @@ func (q *Queries) ExpireHangingWorkflowInstances(ctx context.Context, arg Expire
 const getExitPermitInstanceForSubjectToday = `-- name: GetExitPermitInstanceForSubjectToday :one
 select id, tenant_id, academic_year_id, definition_id, kind, subject_user_id, class_id, current_stage_index, status, payload, opened_date, opened_at, closed_at, created_by, created_at, updated_at from workflow_instances
 where tenant_id = $1 and kind = 'exit_permit' and subject_user_id = $2
-  and opened_date = (now() at time zone 'utc')::date
+  and opened_date = $3::date
   and status in ('in_progress', 'approved', 'completed')
 limit 1
 `
 
 type GetExitPermitInstanceForSubjectTodayParams struct {
-	TenantID      uuid.UUID `json:"tenant_id"`
-	SubjectUserID uuid.UUID `json:"subject_user_id"`
+	TenantID      uuid.UUID   `json:"tenant_id"`
+	SubjectUserID uuid.UUID   `json:"subject_user_id"`
+	Today         pgtype.Date `json:"today"`
 }
 
 // Regression fix (docs/analysis/backend-inventory.md 1.15): the old app
 // capped a student at one exit-permit request per day "apa pun
-// statusnya" -- including ones that already exited. opened_date mirrors
-// the fixed-UTC approximation ux_workflow_instances_one_exit_permit_per_day
-// itself uses, so this pre-check agrees with the constraint it exists to
-// turn into a friendly 409 instead of a raw unique-violation error.
+// statusnya" -- including ones that already exited. sqlc.arg('today') is
+// the tenant-local date (s.tenantNow), so this pre-check turns the common
+// case into a friendly 409 in the timezone the school actually operates
+// in; opened_date itself stays the fixed-UTC approximation
+// ux_workflow_instances_one_exit_permit_per_day enforces (see that
+// migration), which still backstops the race this pre-check cannot close.
 func (q *Queries) GetExitPermitInstanceForSubjectToday(ctx context.Context, arg GetExitPermitInstanceForSubjectTodayParams) (WorkflowInstance, error) {
-	row := q.db.QueryRow(ctx, getExitPermitInstanceForSubjectToday, arg.TenantID, arg.SubjectUserID)
+	row := q.db.QueryRow(ctx, getExitPermitInstanceForSubjectToday, arg.TenantID, arg.SubjectUserID, arg.Today)
 	var i WorkflowInstance
 	err := row.Scan(
 		&i.ID,

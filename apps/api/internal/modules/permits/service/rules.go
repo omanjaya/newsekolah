@@ -75,7 +75,7 @@ func (s *Service) checkApproverRule(ctx context.Context, rule string, rc ruleCon
 		return s.schedule.IsTeacherAssignedNowOrNext(ctx, rc.tenantID, rc.actorUserID, rc.classID.UUID, rc.date, rc.lookaheadSlots)
 
 	case domain.RuleHomeroomOfStudent:
-		return s.repo.HasActiveDuty(ctx, rc.tenantID, rc.academicYearID, rc.actorUserID, "homeroom", rc.classID)
+		return s.repo.HasActiveDuty(ctx, rc.tenantID, rc.academicYearID, rc.actorUserID, "homeroom", rc.classID, rc.date)
 
 	case domain.RuleGuardianOfStudent:
 		if s.guardians == nil {
@@ -85,7 +85,7 @@ func (s *Service) checkApproverRule(ctx context.Context, rule string, rc ruleCon
 
 	default:
 		if slug, ok := domain.ParseDutyRule(rule); ok {
-			return s.repo.HasActiveDuty(ctx, rc.tenantID, rc.academicYearID, rc.actorUserID, slug, uuid.NullUUID{})
+			return s.repo.HasActiveDuty(ctx, rc.tenantID, rc.academicYearID, rc.actorUserID, slug, uuid.NullUUID{}, rc.date)
 		}
 		return false, domain.ErrDefinitionInvalid
 	}

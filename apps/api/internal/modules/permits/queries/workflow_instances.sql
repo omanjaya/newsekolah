@@ -35,13 +35,15 @@ limit 1;
 -- name: GetExitPermitInstanceForSubjectToday :one
 -- Regression fix (docs/analysis/backend-inventory.md 1.15): the old app
 -- capped a student at one exit-permit request per day "apa pun
--- statusnya" -- including ones that already exited. opened_date mirrors
--- the fixed-UTC approximation ux_workflow_instances_one_exit_permit_per_day
--- itself uses, so this pre-check agrees with the constraint it exists to
--- turn into a friendly 409 instead of a raw unique-violation error.
+-- statusnya" -- including ones that already exited. sqlc.arg('today') is
+-- the tenant-local date (s.tenantNow), so this pre-check turns the common
+-- case into a friendly 409 in the timezone the school actually operates
+-- in; opened_date itself stays the fixed-UTC approximation
+-- ux_workflow_instances_one_exit_permit_per_day enforces (see that
+-- migration), which still backstops the race this pre-check cannot close.
 select * from workflow_instances
 where tenant_id = $1 and kind = 'exit_permit' and subject_user_id = $2
-  and opened_date = (now() at time zone 'utc')::date
+  and opened_date = sqlc.arg('today')::date
   and status in ('in_progress', 'approved', 'completed')
 limit 1;
 

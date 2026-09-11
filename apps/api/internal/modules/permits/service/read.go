@@ -113,9 +113,9 @@ var reportPermissions = []string{"manage_attendance", "view_reports"}
 // manage_attendance or view_reports holder (role- or duty-granted) may
 // read any instance of the kind they are checking, on top of its own
 // relevant approvers.
-func (s *Service) hasReportPermission(ctx context.Context, tenantID, academicYearID, userID uuid.UUID) (bool, error) {
+func (s *Service) hasReportPermission(ctx context.Context, tenantID, academicYearID, userID uuid.UUID, today time.Time) (bool, error) {
 	for _, code := range reportPermissions {
-		ok, err := s.repo.HasPermission(ctx, tenantID, academicYearID, userID, code)
+		ok, err := s.repo.HasPermission(ctx, tenantID, academicYearID, userID, code, today)
 		if err != nil {
 			return false, err
 		}
@@ -141,12 +141,13 @@ func (s *Service) RequireCanViewLeaveRequest(ctx context.Context, tenantID, inst
 		if inst.SubjectUserID == userID {
 			return nil
 		}
+		today := s.tenantNow(ctx, tenantID)
 		for _, slug := range []string{"homeroom", "counselor", "leadership"} {
 			scope := uuid.NullUUID{}
 			if slug == "homeroom" {
 				scope = inst.ClassID
 			}
-			ok, err := s.repo.HasActiveDuty(ctx, tenantID, inst.AcademicYearID, userID, slug, scope)
+			ok, err := s.repo.HasActiveDuty(ctx, tenantID, inst.AcademicYearID, userID, slug, scope, today)
 			if err != nil {
 				return err
 			}
@@ -154,7 +155,7 @@ func (s *Service) RequireCanViewLeaveRequest(ctx context.Context, tenantID, inst
 				return nil
 			}
 		}
-		if ok, err := s.hasReportPermission(ctx, tenantID, inst.AcademicYearID, userID); err != nil {
+		if ok, err := s.hasReportPermission(ctx, tenantID, inst.AcademicYearID, userID, today); err != nil {
 			return err
 		} else if ok {
 			return nil
@@ -182,12 +183,13 @@ func (s *Service) RequireCanViewExitPermit(ctx context.Context, tenantID, instan
 		if inst.SubjectUserID == userID {
 			return nil
 		}
+		today := s.tenantNow(ctx, tenantID)
 		for _, slug := range []string{"homeroom", "counselor", "leadership", "security"} {
 			scope := uuid.NullUUID{}
 			if slug == "homeroom" {
 				scope = inst.ClassID
 			}
-			ok, err := s.repo.HasActiveDuty(ctx, tenantID, inst.AcademicYearID, userID, slug, scope)
+			ok, err := s.repo.HasActiveDuty(ctx, tenantID, inst.AcademicYearID, userID, slug, scope, today)
 			if err != nil {
 				return err
 			}
@@ -200,7 +202,7 @@ func (s *Service) RequireCanViewExitPermit(ctx context.Context, tenantID, instan
 		} else if ok {
 			return nil
 		}
-		if ok, err := s.hasReportPermission(ctx, tenantID, inst.AcademicYearID, userID); err != nil {
+		if ok, err := s.hasReportPermission(ctx, tenantID, inst.AcademicYearID, userID, today); err != nil {
 			return err
 		} else if ok {
 			return nil
@@ -232,12 +234,13 @@ func (s *Service) RequireCanViewLateArrival(ctx context.Context, tenantID, insta
 		if ok && late.DutyTeacherUserID.Valid && late.DutyTeacherUserID.UUID == userID {
 			return nil
 		}
-		if ok, err := s.repo.HasActiveDuty(ctx, tenantID, inst.AcademicYearID, userID, "leadership", uuid.NullUUID{}); err != nil {
+		today := s.tenantNow(ctx, tenantID)
+		if ok, err := s.repo.HasActiveDuty(ctx, tenantID, inst.AcademicYearID, userID, "leadership", uuid.NullUUID{}, today); err != nil {
 			return err
 		} else if ok {
 			return nil
 		}
-		if ok, err := s.hasReportPermission(ctx, tenantID, inst.AcademicYearID, userID); err != nil {
+		if ok, err := s.hasReportPermission(ctx, tenantID, inst.AcademicYearID, userID, today); err != nil {
 			return err
 		} else if ok {
 			return nil

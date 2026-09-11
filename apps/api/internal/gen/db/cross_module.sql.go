@@ -995,11 +995,11 @@ select exists (
     and da.is_active
     and dt.is_active
     and dt.deleted_at is null
-    and da.starts_on <= current_date
-    and (da.ends_on is null or da.ends_on >= current_date)
+    and da.starts_on <= $5::date
+    and (da.ends_on is null or da.ends_on >= $5::date)
     and (
       dt.scope_kind = 'school'
-      or (dt.scope_kind = 'class' and $5::uuid is not null and da.scope_class_id = $5::uuid)
+      or (dt.scope_kind = 'class' and $6::uuid is not null and da.scope_class_id = $6::uuid)
     )
 )::bool as has_duty
 `
@@ -1009,18 +1009,24 @@ type HasActiveDutyParams struct {
 	AcademicYearID uuid.UUID   `json:"academic_year_id"`
 	UserID         uuid.UUID   `json:"user_id"`
 	Slug           string      `json:"slug"`
+	Today          pgtype.Date `json:"today"`
 	ClassID        pgtype.UUID `json:"class_id"`
 }
 
 // Evaluates the "duty:<slug>" approver rule: does user_id currently hold
 // an active duty of this slug, and (for a class-scoped duty) does it cover
 // class_id (NULL class_id matches only a school-scoped duty).
+// today is the tenant-local calendar date (s.tenantNow), not current_date:
+// the Postgres session timezone is never set per tenant, so comparing
+// against bare current_date would evaluate the duty window in whatever
+// timezone the connection happens to be in.
 func (q *Queries) HasActiveDuty(ctx context.Context, arg HasActiveDutyParams) (bool, error) {
 	row := q.db.QueryRow(ctx, hasActiveDuty,
 		arg.TenantID,
 		arg.AcademicYearID,
 		arg.UserID,
 		arg.Slug,
+		arg.Today,
 		arg.ClassID,
 	)
 	var has_duty bool
@@ -1046,16 +1052,17 @@ select exists (
     and da.is_active
     and dt.is_active
     and dt.deleted_at is null
-    and da.starts_on <= current_date
-    and (da.ends_on is null or da.ends_on >= current_date)
+    and da.starts_on <= $5::date
+    and (da.ends_on is null or da.ends_on >= $5::date)
 )::bool as has_permission
 `
 
 type HasPermissionParams struct {
-	TenantID       uuid.UUID `json:"tenant_id"`
-	UserID         uuid.UUID `json:"user_id"`
-	PermissionCode string    `json:"permission_code"`
-	AcademicYearID uuid.UUID `json:"academic_year_id"`
+	TenantID       uuid.UUID   `json:"tenant_id"`
+	UserID         uuid.UUID   `json:"user_id"`
+	PermissionCode string      `json:"permission_code"`
+	AcademicYearID uuid.UUID   `json:"academic_year_id"`
+	Today          pgtype.Date `json:"today"`
 }
 
 // Whether user_id holds permission_code in the tenant, from either a
@@ -1064,13 +1071,15 @@ type HasPermissionParams struct {
 // the HTTP layer, reimplemented here for the service-level ownership
 // checks permits itself must make on detail endpoints that carry no
 // per-instance duty scope to check against (see RequireCanViewLeaveRequest
-// and its exit-permit/late-arrival counterparts).
+// and its exit-permit/late-arrival counterparts). today is the
+// tenant-local date, same reasoning as HasActiveDuty above.
 func (q *Queries) HasPermission(ctx context.Context, arg HasPermissionParams) (bool, error) {
 	row := q.db.QueryRow(ctx, hasPermission,
 		arg.TenantID,
 		arg.UserID,
 		arg.PermissionCode,
 		arg.AcademicYearID,
+		arg.Today,
 	)
 	var has_permission bool
 	err := row.Scan(&has_permission)

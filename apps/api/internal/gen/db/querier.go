@@ -535,10 +535,12 @@ type Querier interface {
 	GetExitPermit(ctx context.Context, arg GetExitPermitParams) (ExitPermit, error)
 	// Regression fix (docs/analysis/backend-inventory.md 1.15): the old app
 	// capped a student at one exit-permit request per day "apa pun
-	// statusnya" -- including ones that already exited. opened_date mirrors
-	// the fixed-UTC approximation ux_workflow_instances_one_exit_permit_per_day
-	// itself uses, so this pre-check agrees with the constraint it exists to
-	// turn into a friendly 409 instead of a raw unique-violation error.
+	// statusnya" -- including ones that already exited. sqlc.arg('today') is
+	// the tenant-local date (s.tenantNow), so this pre-check turns the common
+	// case into a friendly 409 in the timezone the school actually operates
+	// in; opened_date itself stays the fixed-UTC approximation
+	// ux_workflow_instances_one_exit_permit_per_day enforces (see that
+	// migration), which still backstops the race this pre-check cannot close.
 	GetExitPermitInstanceForSubjectToday(ctx context.Context, arg GetExitPermitInstanceForSubjectTodayParams) (WorkflowInstance, error)
 	GetExpectedGuest(ctx context.Context, arg GetExpectedGuestParams) (VisitorExpectedGuest, error)
 	GetExtracurricular(ctx context.Context, arg GetExtracurricularParams) (Extracurricular, error)
@@ -713,6 +715,10 @@ type Querier interface {
 	// Evaluates the "duty:<slug>" approver rule: does user_id currently hold
 	// an active duty of this slug, and (for a class-scoped duty) does it cover
 	// class_id (NULL class_id matches only a school-scoped duty).
+	// today is the tenant-local calendar date (s.tenantNow), not current_date:
+	// the Postgres session timezone is never set per tenant, so comparing
+	// against bare current_date would evaluate the duty window in whatever
+	// timezone the connection happens to be in.
 	HasActiveDuty(ctx context.Context, arg HasActiveDutyParams) (bool, error)
 	HasActiveLoanForMemberAndTitle(ctx context.Context, arg HasActiveLoanForMemberAndTitleParams) (bool, error)
 	HasLoanHistory(ctx context.Context, arg HasLoanHistoryParams) (bool, error)
@@ -722,7 +728,8 @@ type Querier interface {
 	// the HTTP layer, reimplemented here for the service-level ownership
 	// checks permits itself must make on detail endpoints that carry no
 	// per-instance duty scope to check against (see RequireCanViewLeaveRequest
-	// and its exit-permit/late-arrival counterparts).
+	// and its exit-permit/late-arrival counterparts). today is the
+	// tenant-local date, same reasoning as HasActiveDuty above.
 	HasPermission(ctx context.Context, arg HasPermissionParams) (bool, error)
 	// Whether user_id holds permission_code through a directly assigned role,
 	// specifically excluding duty-granted permissions -- the distinction the
@@ -918,6 +925,8 @@ type Querier interface {
 	// the counselor/leadership approval stages (the duty_teacher/class_teacher
 	// stages are QR-scan only, same as the old app -- no listing needed there)
 	// plus security, who see every 'approved' permit awaiting their gate scan.
+	// sqlc.arg('today') is the tenant-local date (s.tenantNow), not
+	// current_date: the Postgres session timezone is never set per tenant.
 	ListExitPermitsForApproval(ctx context.Context, arg ListExitPermitsForApprovalParams) ([]ListExitPermitsForApprovalRow, error)
 	ListExitPermitsForReport(ctx context.Context, arg ListExitPermitsForReportParams) ([]ListExitPermitsForReportRow, error)
 	// The guard's lookup list: everyone expected on a given day, soonest first.
@@ -962,6 +971,9 @@ type Querier interface {
 	// counselor/leadership stage's is "duty:<slug>" (domain.DefaultStages) --
 	// so a homeroom teacher no longer sees requests that already moved past
 	// their stage to counselor, and vice versa.
+	//
+	// sqlc.arg('today') is the tenant-local date (s.tenantNow), not
+	// current_date: the Postgres session timezone is never set per tenant.
 	ListLeaveRequestsForReview(ctx context.Context, arg ListLeaveRequestsForReviewParams) ([]ListLeaveRequestsForReviewRow, error)
 	// Holiday date ranges overlapping [from, to] (docs/06-database-schema.md:246,
 	// "library_holidays digabung ke academic_calendar_events"): each row can

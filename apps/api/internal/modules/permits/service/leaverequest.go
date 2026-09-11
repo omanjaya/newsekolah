@@ -540,7 +540,7 @@ func (s *Service) ListLeaveRequestsForReview(ctx context.Context, tenantID, revi
 	var out []LeaveRequestItem
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error
-		out, err = s.repo.ListLeaveRequestsForReview(ctx, tenantID, reviewerUserID, classID)
+		out, err = s.repo.ListLeaveRequestsForReview(ctx, tenantID, reviewerUserID, classID, s.tenantNow(ctx, tenantID))
 		return err
 	})
 	return out, err
