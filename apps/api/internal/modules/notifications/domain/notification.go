@@ -16,21 +16,22 @@ import (
 type Kind string
 
 const (
-	KindAttendanceSubmitted     Kind = "attendance_submitted"
-	KindSubstitutionRequested   Kind = "substitution_requested"
-	KindSubstitutionResponded   Kind = "substitution_responded"
-	KindLeaveRequestSubmitted   Kind = "leave_request_submitted"
-	KindLeaveRequestReviewed    Kind = "leave_request_reviewed"
-	KindLeaveRequestIssued      Kind = "leave_request_issued"
-	KindExitPermitStageChanged  Kind = "exit_permit_stage_changed"
-	KindExitPermitIssued        Kind = "exit_permit_issued"
-	KindExitPermitExited        Kind = "exit_permit_exited"
-	KindLateArrivalOpened       Kind = "late_arrival_opened"
-	KindLateArrivalUpdated      Kind = "late_arrival_updated"
-	KindWarningLetterIssued     Kind = "warning_letter_issued"
-	KindAnnouncementPublished   Kind = "announcement_published"
-	KindLibraryReservationReady Kind = "library_reservation_ready"
-	KindLibraryLoanDueReminder  Kind = "library_loan_due_reminder"
+	KindAttendanceSubmitted        Kind = "attendance_submitted"
+	KindSubstitutionRequested      Kind = "substitution_requested"
+	KindSubstitutionResponded      Kind = "substitution_responded"
+	KindLeaveRequestSubmitted      Kind = "leave_request_submitted"
+	KindLeaveRequestReviewed       Kind = "leave_request_reviewed"
+	KindLeaveRequestIssued         Kind = "leave_request_issued"
+	KindExitPermitStageChanged     Kind = "exit_permit_stage_changed"
+	KindExitPermitIssued           Kind = "exit_permit_issued"
+	KindExitPermitExited           Kind = "exit_permit_exited"
+	KindLateArrivalOpened          Kind = "late_arrival_opened"
+	KindLateArrivalUpdated         Kind = "late_arrival_updated"
+	KindWarningLetterIssued        Kind = "warning_letter_issued"
+	KindDisciplineThresholdReached Kind = "discipline_threshold_reached"
+	KindAnnouncementPublished      Kind = "announcement_published"
+	KindLibraryReservationReady    Kind = "library_reservation_ready"
+	KindLibraryLoanDueReminder     Kind = "library_loan_due_reminder"
 )
 
 // Channel is a delivery channel a preference can enable or disable.

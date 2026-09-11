@@ -94,6 +94,12 @@ var eventMappings = map[string]eventMapping{
 			return "Surat peringatan diterbitkan", fieldOr(e, "summary", "Surat peringatan telah diterbitkan."), fieldOr(e, "href", "")
 		},
 	},
+	events.DisciplineThresholdReached: {
+		domain.KindDisciplineThresholdReached,
+		func(e events.Envelope) (string, string, string) {
+			return "Ambang batas disiplin tercapai", fieldOr(e, "summary", "Seorang siswa mencapai ambang batas poin disiplin."), fieldOr(e, "href", "")
+		},
+	},
 	events.LibraryReservationReady: {
 		domain.KindLibraryReservationReady,
 		func(e events.Envelope) (string, string, string) {
