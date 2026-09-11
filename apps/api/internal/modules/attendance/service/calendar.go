@@ -216,7 +216,8 @@ func (s *Service) buildRoster(ctx context.Context, tenantID, academicYearID, cla
 			roster = append(roster, RosterEntry{
 				StudentUserID: student.ID, Name: student.Name, StatusCode: row.StatusCode,
 				ExpectedSessions: row.ExpectedSessions, SubmittedSessions: row.SubmittedSessions,
-				Complete: row.ExpectedSessions == 0 || row.SubmittedSessions >= row.ExpectedSessions,
+				Complete:       row.ExpectedSessions == 0 || row.SubmittedSessions >= row.ExpectedSessions,
+				PartialAbsence: row.PartialAbsence,
 			})
 			continue
 		}
@@ -228,6 +229,7 @@ func (s *Service) buildRoster(ctx context.Context, tenantID, academicYearID, cla
 		roster = append(roster, RosterEntry{
 			StudentUserID: student.ID, Name: student.Name, StatusCode: result.StatusCode,
 			ExpectedSessions: result.Expected, SubmittedSessions: result.Submitted, Complete: result.Complete,
+			PartialAbsence: result.PartialAbsence,
 		})
 	}
 	return roster, expected, submitted, nil

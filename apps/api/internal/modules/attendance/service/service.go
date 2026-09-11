@@ -38,6 +38,25 @@ type DailySummaryRow struct {
 	StatusCode        string
 	ExpectedSessions  int
 	SubmittedSessions int
+	PartialAbsence    bool
+}
+
+// SessionDetailRow is one session's subject/teacher/period names, the raw
+// input to a DailyReportSession row (its per-student Entries are read
+// separately, via ListEntriesBySession).
+//
+// -- cross-module read; replace with academic/identity reader interface after merge --
+type SessionDetailRow struct {
+	SessionID       uuid.UUID
+	ClassID         uuid.UUID
+	ClassName       string
+	SubjectID       uuid.UUID
+	SubjectName     string
+	TeacherUserID   uuid.UUID
+	TeacherName     string
+	StartPeriodName string
+	EndPeriodName   string
+	SubmittedAt     *time.Time
 }
 
 // MonitorCardRow is one schedule occurrence currently in its period, the
@@ -82,7 +101,7 @@ type Repository interface {
 
 	CreateCorrection(ctx context.Context, c domain.Correction) (domain.Correction, error)
 
-	UpsertDailySummary(ctx context.Context, tenantID, academicYearID, studentUserID uuid.UUID, date time.Time, statusCode string, expected, submitted int) error
+	UpsertDailySummary(ctx context.Context, tenantID, academicYearID, studentUserID uuid.UUID, date time.Time, statusCode string, expected, submitted int, partialAbsence bool) error
 	GetDailySummary(ctx context.Context, tenantID, academicYearID, studentUserID uuid.UUID, date time.Time) (row DailySummaryRow, found bool, err error)
 	ListDailySummaryForStudentMonth(ctx context.Context, tenantID, academicYearID, studentUserID uuid.UUID, from, to time.Time) ([]DailySummaryRow, error)
 	ListDailySummaryForClassDate(ctx context.Context, tenantID, academicYearID, classID uuid.UUID, date time.Time) ([]DailySummaryRow, error)
@@ -124,6 +143,18 @@ type Repository interface {
 	//
 	// -- cross-module read; replace with identity reader interface after merge --
 	ListGuardianUserIDs(ctx context.Context, tenantID, studentUserID uuid.UUID) ([]uuid.UUID, error)
+
+	// ListSessionDetailsForClassDate and ListOwnSubmittedSessionDetails
+	// back the daily report's per-session rows and the "own sessions"
+	// scope respectively -- both cross-module reads for the same reason
+	// as ListCurrentPeriodScheduleCards above.
+	ListSessionDetailsForClassDate(ctx context.Context, tenantID, classID uuid.UUID, date time.Time) ([]SessionDetailRow, error)
+	ListOwnSubmittedSessionDetails(ctx context.Context, tenantID, teacherUserID uuid.UUID, date time.Time) ([]SessionDetailRow, error)
+	// GetUserName resolves a display name for a session-detail row's
+	// students, since ListEntriesBySession returns only IDs.
+	//
+	// -- cross-module read; replace with identity reader interface after merge --
+	GetUserName(ctx context.Context, tenantID, userID uuid.UUID) (string, error)
 }
 
 // AcademicYearReader is the narrow interface attendance needs from the

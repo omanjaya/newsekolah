@@ -484,6 +484,7 @@ type Querier interface {
 	GetUserByUsername(ctx context.Context, arg GetUserByUsernameParams) (User, error)
 	GetUserByUsernameOrEmail(ctx context.Context, arg GetUserByUsernameOrEmailParams) (User, error)
 	GetUserName(ctx context.Context, arg GetUserNameParams) (string, error)
+	GetUserNameForAttendance(ctx context.Context, arg GetUserNameForAttendanceParams) (string, error)
 	// The display name backing a teacher/writer column in the journal XLSX
 	// export -- users is owned by the identity module, not scheduling.
 	GetUserNameRefForSchedule(ctx context.Context, arg GetUserNameRefForScheduleParams) (string, error)
@@ -695,6 +696,11 @@ type Querier interface {
 	ListOnCampus(ctx context.Context, tenantID uuid.UUID) ([]VisitorVisit, error)
 	ListOutstandingBills(ctx context.Context, arg ListOutstandingBillsParams) ([]Bill, error)
 	ListOverdueLoans(ctx context.Context, arg ListOverdueLoansParams) ([]LibraryLoan, error)
+	// The "own sessions" report scope (docs/analysis/backend-inventory.md
+	// section 1.10): every session teacherUserID submitted on a date, whether
+	// as the schedule's own teacher or an accepted substitute, with the
+	// class/subject/period names a report needs.
+	ListOwnSubmittedSessionDetailsForAttendance(ctx context.Context, arg ListOwnSubmittedSessionDetailsForAttendanceParams) ([]ListOwnSubmittedSessionDetailsForAttendanceRow, error)
 	ListParentsForStudent(ctx context.Context, arg ListParentsForStudentParams) ([]ListParentsForStudentRow, error)
 	ListParticipants(ctx context.Context, arg ListParticipantsParams) ([]ActivityParticipant, error)
 	ListPaymentsForBill(ctx context.Context, arg ListPaymentsForBillParams) ([]Payment, error)
@@ -722,6 +728,11 @@ type Querier interface {
 	ListSchedulesByClass(ctx context.Context, arg ListSchedulesByClassParams) ([]Schedule, error)
 	ListSchedulesByDay(ctx context.Context, arg ListSchedulesByDayParams) ([]Schedule, error)
 	ListSchedulesByTeacher(ctx context.Context, arg ListSchedulesByTeacherParams) ([]Schedule, error)
+	// The per-session detail rows behind the daily report (docs/analysis/
+	// backend-inventory.md section 1.10's "detail per jadwal x siswa"): every
+	// session already opened for a class on a date, with the subject/teacher/
+	// period names a report needs, ordered by when the period runs.
+	ListSessionDetailsForClassDateAttendance(ctx context.Context, arg ListSessionDetailsForClassDateAttendanceParams) ([]ListSessionDetailsForClassDateAttendanceRow, error)
 	ListStaffAttendanceCorrectionsByRecord(ctx context.Context, arg ListStaffAttendanceCorrectionsByRecordParams) ([]StaffAttendanceCorrection, error)
 	ListStaffAttendanceRecordsByDate(ctx context.Context, arg ListStaffAttendanceRecordsByDateParams) ([]StaffAttendanceRecord, error)
 	ListStaffAttendanceRecordsByEmployeeRange(ctx context.Context, arg ListStaffAttendanceRecordsByEmployeeRangeParams) ([]StaffAttendanceRecord, error)

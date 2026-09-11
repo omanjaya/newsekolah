@@ -61,7 +61,7 @@ func TestComputeDailyStatus(t *testing.T) {
 			// A (priority 1) outranks H (priority 5) when there is no
 			// majority: an unexcused absence in even one session must
 			// surface over a merely-present one.
-			want: domain.DailyStatus{StatusCode: "A", Expected: 2, Submitted: 2, Complete: true},
+			want: domain.DailyStatus{StatusCode: "A", Expected: 2, Submitted: 2, Complete: true, PartialAbsence: true},
 		},
 		{
 			name:              "three-way split resolved by priority, not entry order",
@@ -76,7 +76,24 @@ func TestComputeDailyStatus(t *testing.T) {
 			expectedSessions:  3,
 			submittedSessions: 3,
 			entries:           []string{"A", "A", "H"},
-			want:              domain.DailyStatus{StatusCode: "A", Expected: 3, Submitted: 3, Complete: true},
+			want:              domain.DailyStatus{StatusCode: "A", Expected: 3, Submitted: 3, Complete: true, PartialAbsence: true},
+		},
+		{
+			name:              "alpha outvoted by a majority still flags partial absence",
+			expectedSessions:  3,
+			submittedSessions: 3,
+			entries:           []string{"H", "H", "A"},
+			// H has a strict majority (2/3) and wins StatusCode, but the
+			// old system's A_SEBAGIAN signal must still surface: one
+			// session that day was an unexcused absence.
+			want: domain.DailyStatus{StatusCode: "H", Expected: 3, Submitted: 3, Complete: true, PartialAbsence: true},
+		},
+		{
+			name:              "every session alpha is not partial",
+			expectedSessions:  2,
+			submittedSessions: 2,
+			entries:           []string{"A", "A"},
+			want:              domain.DailyStatus{StatusCode: "A", Expected: 2, Submitted: 2, Complete: true, PartialAbsence: false},
 		},
 	}
 

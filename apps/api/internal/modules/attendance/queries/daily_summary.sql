@@ -1,12 +1,13 @@
 -- name: UpsertAttendanceDailySummary :exec
 insert into attendance_daily_summary (
-  tenant_id, academic_year_id, student_user_id, date, status_code, expected_sessions, submitted_sessions, computed_at
+  tenant_id, academic_year_id, student_user_id, date, status_code, expected_sessions, submitted_sessions,
+  partial_absence, computed_at
 ) values (
-  $1, $2, $3, $4, $5, $6, $7, now()
+  $1, $2, $3, $4, $5, $6, $7, $8, now()
 )
 on conflict (academic_year_id, student_user_id, date)
 do update set status_code = excluded.status_code, expected_sessions = excluded.expected_sessions,
-  submitted_sessions = excluded.submitted_sessions, computed_at = now();
+  submitted_sessions = excluded.submitted_sessions, partial_absence = excluded.partial_absence, computed_at = now();
 
 -- name: GetAttendanceDailySummary :one
 select * from attendance_daily_summary

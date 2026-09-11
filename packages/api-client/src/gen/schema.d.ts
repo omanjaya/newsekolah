@@ -1334,7 +1334,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Today's sessions for the current teacher (own schedules plus accepted substitutions) */
+        /** Sessions for one day for the current teacher (own schedules plus accepted substitutions) */
         get: operations["listMyAttendanceToday"];
         put?: never;
         post?: never;
@@ -1442,6 +1442,23 @@ export interface paths {
         };
         /** One class's expected vs. submitted sessions and per-student status for one day */
         get: operations["getDailyAttendanceReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/attendance/reports/daily/mine": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The "own sessions" report scope for a teacher without view_reports -- every session they submitted on a date, as the schedule's own teacher or an accepted substitute, across every class they taught that day. */
+        get: operations["getOwnDailyAttendanceReport"];
         put?: never;
         post?: never;
         delete?: never;
@@ -6706,6 +6723,32 @@ export interface components {
             expected_sessions: number;
             submitted_sessions: number;
             complete: boolean;
+            /** @description At least one submitted session that day was Alpha, even when status_code resolved to something else. */
+            partial_absence?: boolean;
+        };
+        AttendanceDailyReportSessionEntry: {
+            /** Format: uuid */
+            student_user_id: string;
+            name: string;
+            status_code: string;
+            notes?: string;
+        };
+        AttendanceDailyReportSession: {
+            /** Format: uuid */
+            session_id: string;
+            /** Format: uuid */
+            class_id: string;
+            class_name: string;
+            /** Format: uuid */
+            subject_id: string;
+            subject_name: string;
+            /** Format: uuid */
+            teacher_user_id: string;
+            teacher_name: string;
+            period_label: string;
+            /** Format: date-time */
+            submitted_at?: string;
+            entries: components["schemas"]["AttendanceDailyReportSessionEntry"][];
         };
         AttendanceDailyReport: {
             /** Format: uuid */
@@ -6719,6 +6762,7 @@ export interface components {
             status_counts: {
                 [key: string]: number;
             };
+            sessions?: components["schemas"]["AttendanceDailyReportSession"][];
         };
         MonitorSessionCard: {
             class_name: string;
@@ -11972,7 +12016,14 @@ export interface operations {
     };
     listMyAttendanceToday: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Defaults to today in the tenant's timezone. */
+                date?: string;
+                /** @description Restrict to occurrences whose period is running right now. */
+                current_only?: boolean;
+                /** @description List another teacher's day instead of the caller's own. Requires manage_attendance. */
+                teacher_user_id?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -12007,6 +12058,12 @@ export interface operations {
                     schedule_id: string;
                     /** Format: date */
                     date: string;
+                    /**
+                     * @description correction lets a global corrector or the class's homeroom teacher open a session neither taught nor substituted for.
+                     * @default normal
+                     * @enum {string}
+                     */
+                    mode?: "normal" | "correction";
                 };
             };
         };
@@ -12158,6 +12215,31 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AttendanceDailyReport"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+        };
+    };
+    getOwnDailyAttendanceReport: {
+        parameters: {
+            query: {
+                date: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Own submitted sessions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AttendanceDailyReportSession"][];
+                    };
                 };
             };
             400: components["responses"]["BadRequest"];

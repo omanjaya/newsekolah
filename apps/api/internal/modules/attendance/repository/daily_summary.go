@@ -13,10 +13,11 @@ import (
 	pdatabase "github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
 )
 
-func (r *Repository) UpsertDailySummary(ctx context.Context, tenantID, academicYearID, studentUserID uuid.UUID, date time.Time, statusCode string, expected, submitted int) error {
+func (r *Repository) UpsertDailySummary(ctx context.Context, tenantID, academicYearID, studentUserID uuid.UUID, date time.Time, statusCode string, expected, submitted int, partialAbsence bool) error {
 	return r.queries(ctx).UpsertAttendanceDailySummary(ctx, db.UpsertAttendanceDailySummaryParams{
 		TenantID: tenantID, AcademicYearID: academicYearID, StudentUserID: studentUserID, Date: pdatabase.Date(date),
 		StatusCode: statusCode, ExpectedSessions: int32(expected), SubmittedSessions: int32(submitted), //nolint:gosec // session counts are tiny
+		PartialAbsence: partialAbsence,
 	})
 }
 

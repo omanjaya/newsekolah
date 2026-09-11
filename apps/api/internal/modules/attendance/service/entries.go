@@ -273,7 +273,7 @@ func (s *Service) recomputeDailySummaryForClassDate(
 			return err
 		}
 		result := domain.ComputeDailyStatus(expected, submitted, statuses, policy)
-		if err := s.repo.UpsertDailySummary(ctx, tenantID, academicYearID, studentID, date, result.StatusCode, result.Expected, result.Submitted); err != nil {
+		if err := s.repo.UpsertDailySummary(ctx, tenantID, academicYearID, studentID, date, result.StatusCode, result.Expected, result.Submitted, result.PartialAbsence); err != nil {
 			return err
 		}
 	}

@@ -4,14 +4,37 @@ import (
 	"context"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/api"
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
 )
 
-func (h *AttendanceHandler) ListMyAttendanceToday(ctx context.Context, _ api.ListMyAttendanceTodayRequestObject) (api.ListMyAttendanceTodayResponseObject, error) {
+func (h *AttendanceHandler) ListMyAttendanceToday(ctx context.Context, request api.ListMyAttendanceTodayRequestObject) (api.ListMyAttendanceTodayResponseObject, error) {
 	tenantID := tenantIDFromContext(ctx)
 	userID, _ := httpx.UserIDFromContext(ctx)
+	params := request.Params
 
-	sessions, err := h.service.ListToday(ctx, tenantID, userID)
+	teacherID := userID
+	if params.TeacherUserId != nil {
+		actor, err := h.actorFor(ctx, tenantID, userID)
+		if err != nil {
+			return nil, err
+		}
+		if !actor.CanManage {
+			return nil, httpx.ErrForbidden
+		}
+		teacherID = *params.TeacherUserId
+	}
+
+	opts := service.ListSessionsOptions{}
+	if params.Date != nil {
+		opts.Date = &params.Date.Time
+	}
+	if params.CurrentOnly != nil {
+		opts.CurrentOnly = *params.CurrentOnly
+	}
+
+	sessions, err := h.service.ListSessions(ctx, tenantID, teacherID, opts)
 	if err != nil {
 		return nil, mapAttendanceError(err)
 	}
@@ -35,7 +58,12 @@ func (h *AttendanceHandler) OpenAttendanceSession(ctx context.Context, request a
 		return nil, err
 	}
 
-	detail, err := h.service.OpenSession(ctx, tenantID, actor, request.Body.ScheduleId, request.Body.Date.Time)
+	mode := domain.SaveModeNormal
+	if request.Body.Mode != nil {
+		mode = domain.SaveMode(*request.Body.Mode)
+	}
+
+	detail, err := h.service.OpenSession(ctx, tenantID, actor, request.Body.ScheduleId, request.Body.Date.Time, mode)
 	if err != nil {
 		return nil, mapAttendanceError(err)
 	}

@@ -136,6 +136,46 @@ func (r *Repository) ListGuardianUserIDs(ctx context.Context, tenantID, studentU
 	})
 }
 
+func (r *Repository) GetUserName(ctx context.Context, tenantID, userID uuid.UUID) (string, error) {
+	return r.queries(ctx).GetUserNameForAttendance(ctx, db.GetUserNameForAttendanceParams{TenantID: tenantID, ID: userID})
+}
+
+func (r *Repository) ListSessionDetailsForClassDate(ctx context.Context, tenantID, classID uuid.UUID, date time.Time) ([]service.SessionDetailRow, error) {
+	rows, err := r.queries(ctx).ListSessionDetailsForClassDateAttendance(ctx, db.ListSessionDetailsForClassDateAttendanceParams{
+		TenantID: tenantID, ClassID: classID, Date: pdatabase.Date(date),
+	})
+	if err != nil {
+		return nil, err
+	}
+	out := make([]service.SessionDetailRow, len(rows))
+	for i, row := range rows {
+		out[i] = service.SessionDetailRow{
+			SessionID: row.SessionID, ClassID: classID, SubjectID: row.SubjectID, SubjectName: row.SubjectName,
+			TeacherUserID: row.TeacherUserID, TeacherName: row.TeacherName,
+			StartPeriodName: row.StartPeriodName, EndPeriodName: row.EndPeriodName, SubmittedAt: pdatabase.TimePtr(row.SubmittedAt),
+		}
+	}
+	return out, nil
+}
+
+func (r *Repository) ListOwnSubmittedSessionDetails(ctx context.Context, tenantID, teacherUserID uuid.UUID, date time.Time) ([]service.SessionDetailRow, error) {
+	rows, err := r.queries(ctx).ListOwnSubmittedSessionDetailsForAttendance(ctx, db.ListOwnSubmittedSessionDetailsForAttendanceParams{
+		TenantID: tenantID, Date: pdatabase.Date(date), TeacherUserID: teacherUserID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	out := make([]service.SessionDetailRow, len(rows))
+	for i, row := range rows {
+		out[i] = service.SessionDetailRow{
+			SessionID: row.SessionID, ClassID: row.ClassID, ClassName: row.ClassName, SubjectID: row.SubjectID, SubjectName: row.SubjectName,
+			TeacherUserID: row.TeacherUserID, TeacherName: row.TeacherName,
+			StartPeriodName: row.StartPeriodName, EndPeriodName: row.EndPeriodName, SubmittedAt: pdatabase.TimePtr(row.SubmittedAt),
+		}
+	}
+	return out, nil
+}
+
 func (r *Repository) getStringSetting(ctx context.Context, tenantID uuid.UUID, key string) (string, bool, error) {
 	raw, err := r.queries(ctx).GetTenantSettingValue(ctx, db.GetTenantSettingValueParams{TenantID: tenantID, Key: key})
 	if err != nil {

@@ -13,7 +13,7 @@ import (
 )
 
 const getAttendanceDailySummary = `-- name: GetAttendanceDailySummary :one
-select tenant_id, academic_year_id, student_user_id, date, status_code, expected_sessions, submitted_sessions, computed_at from attendance_daily_summary
+select tenant_id, academic_year_id, student_user_id, date, status_code, expected_sessions, submitted_sessions, computed_at, partial_absence from attendance_daily_summary
 where tenant_id = $1 and academic_year_id = $2 and student_user_id = $3 and date = $4
 `
 
@@ -41,12 +41,13 @@ func (q *Queries) GetAttendanceDailySummary(ctx context.Context, arg GetAttendan
 		&i.ExpectedSessions,
 		&i.SubmittedSessions,
 		&i.ComputedAt,
+		&i.PartialAbsence,
 	)
 	return i, err
 }
 
 const listAttendanceDailySummaryForClassDate = `-- name: ListAttendanceDailySummaryForClassDate :many
-select ds.tenant_id, ds.academic_year_id, ds.student_user_id, ds.date, ds.status_code, ds.expected_sessions, ds.submitted_sessions, ds.computed_at from attendance_daily_summary ds
+select ds.tenant_id, ds.academic_year_id, ds.student_user_id, ds.date, ds.status_code, ds.expected_sessions, ds.submitted_sessions, ds.computed_at, ds.partial_absence from attendance_daily_summary ds
 join enrollments en on en.student_user_id = ds.student_user_id and en.academic_year_id = ds.academic_year_id
 where ds.tenant_id = $1 and ds.academic_year_id = $2 and en.class_id = $3 and ds.date = $4 and en.status = 'active'
 `
@@ -81,6 +82,7 @@ func (q *Queries) ListAttendanceDailySummaryForClassDate(ctx context.Context, ar
 			&i.ExpectedSessions,
 			&i.SubmittedSessions,
 			&i.ComputedAt,
+			&i.PartialAbsence,
 		); err != nil {
 			return nil, err
 		}
@@ -93,7 +95,7 @@ func (q *Queries) ListAttendanceDailySummaryForClassDate(ctx context.Context, ar
 }
 
 const listAttendanceDailySummaryForStudentMonth = `-- name: ListAttendanceDailySummaryForStudentMonth :many
-select tenant_id, academic_year_id, student_user_id, date, status_code, expected_sessions, submitted_sessions, computed_at from attendance_daily_summary
+select tenant_id, academic_year_id, student_user_id, date, status_code, expected_sessions, submitted_sessions, computed_at, partial_absence from attendance_daily_summary
 where tenant_id = $1 and academic_year_id = $2 and student_user_id = $3
   and date >= $4 and date < $5
 order by date
@@ -131,6 +133,7 @@ func (q *Queries) ListAttendanceDailySummaryForStudentMonth(ctx context.Context,
 			&i.ExpectedSessions,
 			&i.SubmittedSessions,
 			&i.ComputedAt,
+			&i.PartialAbsence,
 		); err != nil {
 			return nil, err
 		}
@@ -144,13 +147,14 @@ func (q *Queries) ListAttendanceDailySummaryForStudentMonth(ctx context.Context,
 
 const upsertAttendanceDailySummary = `-- name: UpsertAttendanceDailySummary :exec
 insert into attendance_daily_summary (
-  tenant_id, academic_year_id, student_user_id, date, status_code, expected_sessions, submitted_sessions, computed_at
+  tenant_id, academic_year_id, student_user_id, date, status_code, expected_sessions, submitted_sessions,
+  partial_absence, computed_at
 ) values (
-  $1, $2, $3, $4, $5, $6, $7, now()
+  $1, $2, $3, $4, $5, $6, $7, $8, now()
 )
 on conflict (academic_year_id, student_user_id, date)
 do update set status_code = excluded.status_code, expected_sessions = excluded.expected_sessions,
-  submitted_sessions = excluded.submitted_sessions, computed_at = now()
+  submitted_sessions = excluded.submitted_sessions, partial_absence = excluded.partial_absence, computed_at = now()
 `
 
 type UpsertAttendanceDailySummaryParams struct {
@@ -161,6 +165,7 @@ type UpsertAttendanceDailySummaryParams struct {
 	StatusCode        string      `json:"status_code"`
 	ExpectedSessions  int32       `json:"expected_sessions"`
 	SubmittedSessions int32       `json:"submitted_sessions"`
+	PartialAbsence    bool        `json:"partial_absence"`
 }
 
 func (q *Queries) UpsertAttendanceDailySummary(ctx context.Context, arg UpsertAttendanceDailySummaryParams) error {
@@ -172,6 +177,7 @@ func (q *Queries) UpsertAttendanceDailySummary(ctx context.Context, arg UpsertAt
 		arg.StatusCode,
 		arg.ExpectedSessions,
 		arg.SubmittedSessions,
+		arg.PartialAbsence,
 	)
 	return err
 }

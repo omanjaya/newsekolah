@@ -24,6 +24,11 @@ type Actor struct {
 	// SaveModeCorrection for any class, not just their own or their
 	// homeroom's.
 	IsGlobalCorrector bool
+	// CanManage lets ListSessions list another teacher's day (the
+	// "teacher_user_id" query parameter) and OpenSession open a session
+	// nobody has opened yet on behalf of that teacher, for a role holding
+	// manage_attendance -- e.g. an admin preparing a substitute's day.
+	CanManage bool
 }
 
 // RosterItem is one student's row in a session's recording payload.
@@ -91,6 +96,36 @@ type RosterEntry struct {
 	ExpectedSessions  int
 	SubmittedSessions int
 	Complete          bool
+	// PartialAbsence is the "A_SEBAGIAN" signal: at least one submitted
+	// session that day was Alpha, even when StatusCode resolved to
+	// something else. See domain.DailyStatus.PartialAbsence.
+	PartialAbsence bool
+}
+
+// DailyReportSessionEntry is one student's recorded status within one
+// session, for a daily report's per-session detail rows.
+type DailyReportSessionEntry struct {
+	StudentUserID uuid.UUID
+	Name          string
+	StatusCode    string
+	Notes         string
+}
+
+// DailyReportSession is one session's detail row in a daily report or the
+// "own sessions" scope: subject/teacher/period names plus every student's
+// recorded status, mirroring the old system's "detail per jadwal x siswa"
+// (docs/analysis/backend-inventory.md section 1.10).
+type DailyReportSession struct {
+	SessionID     uuid.UUID
+	ClassID       uuid.UUID
+	ClassName     string
+	SubjectID     uuid.UUID
+	SubjectName   string
+	TeacherUserID uuid.UUID
+	TeacherName   string
+	PeriodLabel   string
+	SubmittedAt   *time.Time
+	Entries       []DailyReportSessionEntry
 }
 
 // DailyReport is one class's full daily report.
@@ -102,6 +137,7 @@ type DailyReport struct {
 	Complete          bool
 	Students          []RosterEntry
 	StatusCounts      map[string]int
+	Sessions          []DailyReportSession
 }
 
 // MonitorCard is one class's current-period card on the monitor snapshot.

@@ -123,10 +123,15 @@ func toAPICalendarDays(days []service.CalendarDay) []api.AttendanceCalendarDay {
 }
 
 func toAPIRosterEntry(r service.RosterEntry) api.AttendanceRosterEntry {
-	return api.AttendanceRosterEntry{
+	out := api.AttendanceRosterEntry{
 		StudentUserId: r.StudentUserID, Name: r.Name, StatusCode: r.StatusCode,
 		ExpectedSessions: r.ExpectedSessions, SubmittedSessions: r.SubmittedSessions, Complete: r.Complete,
 	}
+	if r.PartialAbsence {
+		partial := true
+		out.PartialAbsence = &partial
+	}
+	return out
 }
 
 func toAPIRosterEntries(entries []service.RosterEntry) []api.AttendanceRosterEntry {
@@ -137,10 +142,39 @@ func toAPIRosterEntries(entries []service.RosterEntry) []api.AttendanceRosterEnt
 	return out
 }
 
+func toAPIDailyReportSessionEntry(e service.DailyReportSessionEntry) api.AttendanceDailyReportSessionEntry {
+	out := api.AttendanceDailyReportSessionEntry{StudentUserId: e.StudentUserID, Name: e.Name, StatusCode: e.StatusCode}
+	if e.Notes != "" {
+		out.Notes = &e.Notes
+	}
+	return out
+}
+
+func toAPIDailyReportSession(s service.DailyReportSession) api.AttendanceDailyReportSession {
+	entries := make([]api.AttendanceDailyReportSessionEntry, len(s.Entries))
+	for i, e := range s.Entries {
+		entries[i] = toAPIDailyReportSessionEntry(e)
+	}
+	return api.AttendanceDailyReportSession{
+		SessionId: s.SessionID, ClassId: s.ClassID, ClassName: s.ClassName, SubjectId: s.SubjectID, SubjectName: s.SubjectName,
+		TeacherUserId: s.TeacherUserID, TeacherName: s.TeacherName, PeriodLabel: s.PeriodLabel, SubmittedAt: s.SubmittedAt, Entries: entries,
+	}
+}
+
+func toAPIDailyReportSessions(sessions []service.DailyReportSession) []api.AttendanceDailyReportSession {
+	out := make([]api.AttendanceDailyReportSession, len(sessions))
+	for i, s := range sessions {
+		out[i] = toAPIDailyReportSession(s)
+	}
+	return out
+}
+
 func toAPIDailyReport(r service.DailyReport) api.AttendanceDailyReport {
+	sessions := toAPIDailyReportSessions(r.Sessions)
 	return api.AttendanceDailyReport{
 		ClassId: r.ClassID, Date: openapi_types.Date{Time: r.Date}, ExpectedSessions: r.ExpectedSessions,
 		SubmittedSessions: r.SubmittedSessions, Complete: r.Complete, Students: toAPIRosterEntries(r.Students), StatusCounts: r.StatusCounts,
+		Sessions: &sessions,
 	}
 }
 

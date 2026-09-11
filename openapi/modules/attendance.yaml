@@ -4,7 +4,20 @@ paths:
       tags: [attendance]
       operationId: listMyAttendanceToday
       x-permission: view_attendance
-      summary: Today's sessions for the current teacher (own schedules plus accepted substitutions)
+      summary: Sessions for one day for the current teacher (own schedules plus accepted substitutions)
+      parameters:
+        - name: date
+          in: query
+          description: Defaults to today in the tenant's timezone.
+          schema: { type: string, format: date }
+        - name: current_only
+          in: query
+          description: Restrict to occurrences whose period is running right now.
+          schema: { type: boolean, default: false }
+        - name: teacher_user_id
+          in: query
+          description: List another teacher's day instead of the caller's own. Requires manage_attendance.
+          schema: { type: string, format: uuid }
       responses:
         "200":
           description: Sessions
@@ -34,6 +47,13 @@ paths:
               properties:
                 schedule_id: { type: string, format: uuid }
                 date: { type: string, format: date }
+                mode:
+                  type: string
+                  enum: [normal, correction]
+                  default: normal
+                  description:
+                    correction lets a global corrector or the class's homeroom teacher open a session neither
+                    taught nor substituted for.
       responses:
         "200":
           description: Session payload
@@ -162,6 +182,32 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/AttendanceDailyReport" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+  /v1/attendance/reports/daily/mine:
+    get:
+      tags: [attendance]
+      operationId: getOwnDailyAttendanceReport
+      x-permission: view_attendance
+      summary:
+        The "own sessions" report scope for a teacher without view_reports -- every session they submitted on a
+        date, as the schedule's own teacher or an accepted substitute, across every class they taught that day.
+      parameters:
+        - name: date
+          in: query
+          required: true
+          schema: { type: string, format: date }
+      responses:
+        "200":
+          description: Own submitted sessions
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/AttendanceDailyReportSession" }
         "400": { $ref: "#/components/responses/BadRequest" }
   /v1/attendance/reports/daily/export:
     get:
@@ -409,6 +455,44 @@ components:
         expected_sessions: { type: integer }
         submitted_sessions: { type: integer }
         complete: { type: boolean }
+        partial_absence:
+          type: boolean
+          description: At least one submitted session that day was Alpha, even when status_code resolved to something else.
+    AttendanceDailyReportSessionEntry:
+      type: object
+      required: [student_user_id, name, status_code]
+      properties:
+        student_user_id: { type: string, format: uuid }
+        name: { type: string }
+        status_code: { type: string }
+        notes: { type: string }
+    AttendanceDailyReportSession:
+      type: object
+      required:
+        [
+          session_id,
+          class_id,
+          class_name,
+          subject_id,
+          subject_name,
+          teacher_user_id,
+          teacher_name,
+          period_label,
+          entries,
+        ]
+      properties:
+        session_id: { type: string, format: uuid }
+        class_id: { type: string, format: uuid }
+        class_name: { type: string }
+        subject_id: { type: string, format: uuid }
+        subject_name: { type: string }
+        teacher_user_id: { type: string, format: uuid }
+        teacher_name: { type: string }
+        period_label: { type: string }
+        submitted_at: { type: string, format: date-time }
+        entries:
+          type: array
+          items: { $ref: "#/components/schemas/AttendanceDailyReportSessionEntry" }
     AttendanceDailyReport:
       type: object
       required:
@@ -425,6 +509,9 @@ components:
         status_counts:
           type: object
           additionalProperties: { type: integer }
+        sessions:
+          type: array
+          items: { $ref: "#/components/schemas/AttendanceDailyReportSession" }
     MonitorSessionCard:
       type: object
       required: [class_name, subject_name, teacher_name, status]
