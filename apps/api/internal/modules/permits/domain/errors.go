@@ -39,7 +39,6 @@ var (
 	ErrDocumentRevoked  = errors.New("issued document has been revoked")
 
 	ErrExitPermitAlreadyToday  = errors.New("student already has an exit permit for today")
-	ErrPeriodInactive          = errors.New("period is not active")
 	ErrLateArrivalReviewerOnly = errors.New("only the teacher whose token opened this late arrival, or a manage_attendance administrator, may review it")
 	ErrViolationInvalid        = errors.New("one or more violation ids are not valid active violation types")
 

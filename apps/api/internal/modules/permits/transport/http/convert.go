@@ -36,7 +36,6 @@ var (
 	errEvidenceRequired    = httpx.NewError(http.StatusBadRequest, "EVIDENCE_REQUIRED")
 	errHomeroomRequired    = httpx.NewError(http.StatusConflict, "HOMEROOM_TEACHER_REQUIRED")
 	errExitPermitToday     = httpx.NewError(http.StatusConflict, "EXIT_PERMIT_ALREADY_TODAY")
-	errPeriodInactive      = httpx.NewError(http.StatusBadRequest, "PERIOD_INACTIVE")
 	errLateArrivalReviewer = httpx.NewError(http.StatusForbidden, "LATE_ARRIVAL_REVIEWER_ONLY")
 	errViolationInvalid    = httpx.NewError(http.StatusBadRequest, "VIOLATION_INVALID")
 	errScanConsumerStudent = httpx.NewError(http.StatusForbidden, "SCAN_TOKEN_CONSUMER_NOT_STUDENT")
@@ -74,7 +73,6 @@ var permitErrorMap = map[error]error{
 	domain.ErrEvidenceRequired:             errEvidenceRequired,
 	domain.ErrHomeroomTeacherRequired:      errHomeroomRequired,
 	domain.ErrExitPermitAlreadyToday:       errExitPermitToday,
-	domain.ErrPeriodInactive:               errPeriodInactive,
 	domain.ErrLateArrivalReviewerOnly:      errLateArrivalReviewer,
 	domain.ErrViolationInvalid:             errViolationInvalid,
 	domain.ErrScanTokenConsumerNotStudent:  errScanConsumerStudent,
