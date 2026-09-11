@@ -63,14 +63,23 @@ func TestComputeReportScoreAddsIncreaseToThePreviousScore(t *testing.T) {
 	require.InDelta(t, 83, result.Automatic, 0.001, "the increase adds to the previous score, not to the raw average")
 }
 
-func TestComputeReportScoreCapsAtTheScaleIncreaseAndMaximum(t *testing.T) {
+func TestComputeReportScoreUsesTheConfiguredIncreaseInFull(t *testing.T) {
 	scale := domain.DefaultScale()
-	scale.IncreaseMax = 2
+	scale.IncreaseMax = 2 // report_increase_max no longer bounds a range's increase at computation time
+	ranges := []domain.GradeRange{{MinScore: 0, MaxScore: 100, IncreaseAmount: 8}}
+	previous := 80.0
+
+	result := domain.ComputeReportScore(scale, 50, &previous, nil, ranges)
+	require.InDelta(t, 88, result.Automatic, 0.001, "the full saved increase applies, not scale.IncreaseMax")
+}
+
+func TestComputeReportScoreClampsTheResultToTheScaleMaximum(t *testing.T) {
+	scale := domain.DefaultScale()
 	ranges := []domain.GradeRange{{MinScore: 0, MaxScore: 100, IncreaseAmount: 10}}
 	previous := 99.0
 
 	result := domain.ComputeReportScore(scale, 50, &previous, nil, ranges)
-	require.InDelta(t, 100, result.Automatic, 0.001, "the school-wide increase cap wins, and the result never exceeds the scale maximum")
+	require.InDelta(t, 100, result.Automatic, 0.001, "the increase applies in full, but the final score never exceeds the scale maximum")
 }
 
 func TestComputeReportScoreManualOverrideWinsAsFinal(t *testing.T) {
@@ -129,18 +138,21 @@ func TestValidateGradeRangesAcceptsAdjacentRanges(t *testing.T) {
 	require.NoError(t, domain.ValidateGradeRanges(scale, ranges))
 }
 
-func TestValidateGradeRangesRejectsIncreaseAboveTheDefaultCap(t *testing.T) {
+func TestValidateGradeRangesRejectsIncreaseAboveTen(t *testing.T) {
 	scale := domain.DefaultScale()
-	scale.IncreaseMax = 3
 	ranges := []domain.GradeRange{{MinScore: 0, MaxScore: 100, IncreaseAmount: 11}}
-	require.ErrorIs(t, domain.ValidateGradeRanges(scale, ranges), domain.ErrInvalidInput, "the cap is max(10, scale.IncreaseMax) and the scale here is only 3")
+	require.ErrorIs(t, domain.ValidateGradeRanges(scale, ranges), domain.ErrInvalidInput, "the bound is a fixed 10, like the old app")
 }
 
-func TestValidateGradeRangesAllowsAScaleIncreaseCapAboveTen(t *testing.T) {
+func TestValidateGradeRangesBoundIsFixedAtTenRegardlessOfScaleIncreaseMax(t *testing.T) {
 	scale := domain.DefaultScale()
 	scale.IncreaseMax = 15
 	ranges := []domain.GradeRange{{MinScore: 0, MaxScore: 100, IncreaseAmount: 12}}
-	require.NoError(t, domain.ValidateGradeRanges(scale, ranges))
+	require.ErrorIs(t, domain.ValidateGradeRanges(scale, ranges), domain.ErrInvalidInput, "scale.IncreaseMax no longer widens the bound, matching ComputeReportScore ignoring it too")
+
+	scale.IncreaseMax = 3
+	ranges = []domain.GradeRange{{MinScore: 0, MaxScore: 100, IncreaseAmount: 10}}
+	require.NoError(t, domain.ValidateGradeRanges(scale, ranges), "scale.IncreaseMax no longer narrows the bound either")
 }
 
 func TestValidateGradeRangesRejectsOutOfScaleBounds(t *testing.T) {

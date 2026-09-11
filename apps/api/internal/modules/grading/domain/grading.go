@@ -199,21 +199,22 @@ type GradeRange struct {
 	IncreaseAmount float64
 }
 
+// maxGradeRangeIncrease is the old app's fixed "aturan nilai rapor" bound
+// (grading_extended.go:96-109): an increase is 0 to 10, independent of the
+// tenant's scale. ComputeReportScore applies the configured increase as
+// saved with no further per-scale cap, so this is the only bound in force.
+const maxGradeRangeIncrease = 10
+
 // ValidateGradeRanges enforces the old app's "aturan nilai rapor" rules
 // (grading_extended.go:96-109): every range must sit inside the tenant's
-// scale, its increase must be 0 to 10 (or the scale's own increase cap
-// when that is set higher), and no two ranges in the same batch may
-// overlap.
+// scale, its increase must be 0 to 10, and no two ranges in the same batch
+// may overlap.
 func ValidateGradeRanges(scale Scale, ranges []GradeRange) error {
-	maxIncrease := scale.IncreaseMax
-	if maxIncrease < 10 {
-		maxIncrease = 10
-	}
 	for i, r := range ranges {
 		if r.MinScore < scale.Min || r.MaxScore > scale.Max || r.MinScore > r.MaxScore {
 			return ErrInvalidInput
 		}
-		if r.IncreaseAmount < 0 || r.IncreaseAmount > maxIncrease {
+		if r.IncreaseAmount < 0 || r.IncreaseAmount > maxGradeRangeIncrease {
 			return ErrInvalidInput
 		}
 		for j := 0; j < i; j++ {
@@ -267,19 +268,22 @@ type ReportScoreResult struct {
 // when the student already has a previous-term score above zero -- a
 // range is a promotion floor carried from last term, not a first-term
 // bonus -- and when it applies, the raise adds to the previous score
-// rather than to the raw average. Without a positive previous score the
-// automatic value is simply the raw average. A manual override always
-// wins as the final value; the automatic value survives alongside it so
-// clearing the override later restores it without a recompute. Warnings
-// mirror the old app: "danger" when the final score drops below the
-// previous term, "warning" when it strays more than 10 points from the
-// raw average.
+// rather than to the raw average. The configured increase is applied in
+// full, exactly as saved (ValidateGradeRanges is the only place that
+// bounds it, at maxGradeRangeIncrease); only the final score is clamped
+// to the scale, matching the old app's single "cap at 100" on the result.
+// Without a positive previous score the automatic value is simply the raw
+// average. A manual override always wins as the final value; the
+// automatic value survives alongside it so clearing the override later
+// restores it without a recompute. Warnings mirror the old app: "danger"
+// when the final score drops below the previous term, "warning" when it
+// strays more than 10 points from the raw average.
 func ComputeReportScore(scale Scale, raw float64, previous, manual *float64, ranges []GradeRange) ReportScoreResult {
 	automatic := raw
 	if previous != nil && *previous > 0 {
 		for _, r := range ranges {
 			if raw >= r.MinScore && raw <= r.MaxScore {
-				automatic = *previous + math.Min(r.IncreaseAmount, scale.IncreaseMax)
+				automatic = *previous + r.IncreaseAmount
 				break
 			}
 		}
