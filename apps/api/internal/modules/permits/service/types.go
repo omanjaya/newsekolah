@@ -57,6 +57,17 @@ type LateArrivalReviewItem struct {
 	OpenedAt          time.Time
 }
 
+// ExitPermitReviewItem is an exit permit joined with its workflow state,
+// for the counselor/leadership/security approval queue.
+type ExitPermitReviewItem struct {
+	domain.ExitPermit
+	SubjectUserID     uuid.UUID
+	ClassID           uuid.NullUUID
+	CurrentStageIndex int
+	Status            domain.Status
+	OpenedAt          time.Time
+}
+
 // LeaveRequestItem is a leave request joined with its workflow state.
 type LeaveRequestItem struct {
 	domain.LeaveRequest

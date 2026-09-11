@@ -33,7 +33,11 @@ func (s *Service) evaluateApproverRule(ctx context.Context, _ domain.Definition,
 		classID:        inst.ClassID,
 		subjectUserID:  inst.SubjectUserID,
 		actorUserID:    actorUserID,
-		date:           s.clock.Now(),
+		// Tenant-local, not s.clock.Now() directly: "teacher_of_class_now"
+		// reads date's weekday and hour/minute to match against a
+		// schedule, which is always expressed in the tenant's own
+		// timezone (docs/analysis/backend-inventory.md 1.15/1.16).
+		date:           s.tenantNow(ctx, inst.TenantID),
 		lookaheadSlots: stage.LookaheadSlots,
 	}
 

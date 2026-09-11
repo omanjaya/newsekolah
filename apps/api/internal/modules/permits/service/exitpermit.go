@@ -44,6 +44,18 @@ func (s *Service) CreateExitPermit(ctx context.Context, in CreateExitPermitInput
 			return domain.ErrEnrollmentNotFound
 		}
 
+		// Regression fix (docs/analysis/backend-inventory.md 1.15): at
+		// most one exit permit per day regardless of status, including
+		// ones that already exited -- the DB unique index enforces this
+		// too (ux_workflow_instances_one_exit_permit_per_day now covers
+		// 'completed'), but this turns the race into a friendly 409
+		// instead of a raw unique-violation.
+		if _, ok, err := s.repo.GetExitPermitInstanceForSubjectToday(ctx, in.TenantID, in.StudentUserID); err != nil {
+			return err
+		} else if ok {
+			return domain.ErrExitPermitAlreadyToday
+		}
+
 		if err := s.validatePeriodRange(ctx, in.TenantID, in.StartPeriodID, in.EndPeriodID); err != nil {
 			return err
 		}
@@ -187,7 +199,11 @@ func (s *Service) IssueGateToken(ctx context.Context, tenantID, instanceID, issu
 		if err != nil {
 			return err
 		}
-		periodEndsAt := combineDateAndDuration(s.clock.Now(), endPeriod.EndsAt)
+		// Tenant-local, not s.clock.Now() directly: EndsAt is a
+		// wall-clock time of day in the tenant's own timezone, and
+		// combineDateAndDuration needs a same-timezone date to combine it
+		// with (docs/analysis/backend-inventory.md 1.15).
+		periodEndsAt := combineDateAndDuration(s.tenantNow(ctx, tenantID), endPeriod.EndsAt)
 
 		result, err = s.IssueScanToken(ctx, IssueScanTokenInput{
 			TenantID: tenantID, Purpose: domain.PurposeGateExit,
@@ -261,7 +277,9 @@ func (s *Service) GateScan(ctx context.Context, tenantID, instanceID, securityUs
 		}
 		// Bug fix vs. the old app: forced attendance status only overrides
 		// sessions within the permit's own period range, not the whole day.
-		day := s.clock.Now()
+		// Tenant-local, not s.clock.Now() directly, for the same reason as
+		// IssueGateToken's periodEndsAt above.
+		day := s.tenantNow(ctx, tenantID)
 		from := combineDateAndDuration(day, startPeriod.StartsAt)
 		to := combineDateAndDuration(day, endPeriod.EndsAt)
 		// "D" (dispensasi) matches tenant_policies(kind='attendance_statuses')
@@ -274,4 +292,19 @@ func (s *Service) GateScan(ctx context.Context, tenantID, instanceID, securityUs
 	}
 	s.publish(ctx, ExitPermitExited{TenantID: tenantID, InstanceID: instanceID, StudentUserID: updated.SubjectUserID, SecurityUserID: securityUserID})
 	return updated, nil
+}
+
+// ListExitPermitsForApproval is the counselor/leadership/security queue:
+// missing feature (docs/analysis/backend-inventory.md 1.15) -- in-progress
+// permits at a duty-scoped approval stage the caller may act on, plus
+// every approved permit visible to scan_exit_permits holders awaiting
+// their gate scan.
+func (s *Service) ListExitPermitsForApproval(ctx context.Context, tenantID, callerUserID uuid.UUID) ([]ExitPermitReviewItem, error) {
+	var out []ExitPermitReviewItem
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		out, err = s.repo.ListExitPermitsForApproval(ctx, tenantID, callerUserID)
+		return err
+	})
+	return out, err
 }

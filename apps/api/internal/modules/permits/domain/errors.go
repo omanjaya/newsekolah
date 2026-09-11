@@ -31,8 +31,17 @@ var (
 	ErrLeaveRejectionReasonRequired = errors.New("rejecting a leave request requires a reason")
 	ErrEvidenceTooLarge             = errors.New("evidence file exceeds the size limit")
 	ErrEvidenceInvalidType          = errors.New("evidence file is not a supported image type")
+	ErrEvidenceRequired             = errors.New("evidence is required before this leave request can be submitted or issued")
+	ErrHomeroomTeacherRequired      = errors.New("the student's class has no active homeroom teacher to review this request")
 
 	ErrTemplateNotFound = errors.New("document template not found")
 	ErrDocumentNotFound = errors.New("issued document not found")
 	ErrDocumentRevoked  = errors.New("issued document has been revoked")
+
+	ErrExitPermitAlreadyToday  = errors.New("student already has an exit permit for today")
+	ErrPeriodInactive          = errors.New("period is not active")
+	ErrLateArrivalReviewerOnly = errors.New("only the teacher whose token opened this late arrival, or a manage_attendance administrator, may review it")
+	ErrViolationInvalid        = errors.New("one or more violation ids are not valid active violation types")
+
+	ErrScanTokenConsumerNotStudent = errors.New("only a student profile may consume this token")
 )

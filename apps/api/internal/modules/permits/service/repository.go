@@ -51,7 +51,7 @@ type Repository interface {
 	GetLateArrival(ctx context.Context, tenantID, instanceID uuid.UUID) (domain.LateArrival, bool, error)
 	UpdateLateArrivalReview(ctx context.Context, tenantID, instanceID uuid.UUID, reason string, action domain.RequiredAction, homeroomReported bool) (domain.LateArrival, error)
 	MarkLateArrivalCompleted(ctx context.Context, tenantID, instanceID uuid.UUID, completedAt time.Time) (domain.LateArrival, error)
-	ListLateArrivalsForReview(ctx context.Context, tenantID uuid.UUID) ([]LateArrivalReviewItem, error)
+	ListLateArrivalsForReview(ctx context.Context, tenantID, callerUserID uuid.UUID) ([]LateArrivalReviewItem, error)
 
 	// Leave requests.
 	CreateLeaveRequest(ctx context.Context, r domain.LeaveRequest) (domain.LeaveRequest, error)
@@ -74,7 +74,7 @@ type Repository interface {
 	GetTemplateByID(ctx context.Context, tenantID, id uuid.UUID) (domain.Template, bool, error)
 	ListTemplates(ctx context.Context, tenantID uuid.UUID) ([]domain.Template, error)
 	CreateTemplate(ctx context.Context, t domain.Template) (domain.Template, error)
-	UpdateTemplate(ctx context.Context, tenantID, id uuid.UUID, name, body string, variables []string) (domain.Template, error)
+	UpdateTemplate(ctx context.Context, tenantID, id uuid.UUID, name, body string, variables []string, letterheadAssetID uuid.NullUUID) (domain.Template, error)
 	SetDefaultTemplate(ctx context.Context, tenantID, id uuid.UUID, kind domain.TemplateKind) (domain.Template, error)
 	NextSequenceValue(ctx context.Context, tenantID uuid.UUID, kind string, academicYearID uuid.UUID) (int64, error)
 	CreateIssuedDocument(ctx context.Context, d domain.IssuedDocument) (domain.IssuedDocument, error)
@@ -92,6 +92,40 @@ type Repository interface {
 	HasActiveDuty(ctx context.Context, tenantID, academicYearID, userID uuid.UUID, slug string, classID uuid.NullUUID) (bool, error)
 	GetPeriod(ctx context.Context, tenantID, periodID uuid.UUID) (PeriodInfo, error)
 	ListActiveTenants(ctx context.Context) ([]TenantInfo, error)
+	// GetTenantTimezone is the IANA name permits itself must compute
+	// wall-clock instants in (gate-token expiry, forced attendance
+	// windows, teacher_of_class_now) -- see tenantLocation.
+	GetTenantTimezone(ctx context.Context, tenantID uuid.UUID) (string, error)
+	// HasPermission is the union authz.EffectivePermissions computes for
+	// the HTTP layer (role-granted or duty-granted), reused by the
+	// service-level ownership checks permits itself must make on detail
+	// endpoints (RequireCanViewLeaveRequest and its exit-permit/
+	// late-arrival counterparts).
+	HasPermission(ctx context.Context, tenantID, academicYearID, userID uuid.UUID, permissionCode string) (bool, error)
+	// HasRolePermission is HasPermission narrowed to a directly assigned
+	// role, excluding duty-granted permissions -- the distinction the
+	// late-arrival review "admins as fallback" rule needs (see
+	// ReviewLateArrival).
+	HasRolePermission(ctx context.Context, tenantID, userID uuid.UUID, permissionCode string) (bool, error)
+	// IsStudentProfile backs the classroom-entry rule that a token may
+	// only be consumed by a student.
+	IsStudentProfile(ctx context.Context, tenantID, userID uuid.UUID) (bool, error)
+	// GetStudentNISAndAddress backs the leave-letter template's {{nis}}
+	// and {{address}} placeholders.
+	GetStudentNISAndAddress(ctx context.Context, tenantID, studentUserID uuid.UUID) (nis, address string, err error)
+	// GetExitPermitInstanceForSubjectToday backs the "one exit permit per
+	// day regardless of status" rule with a friendly domain error instead
+	// of a raw unique-violation from ux_workflow_instances_one_exit_permit_per_day.
+	GetExitPermitInstanceForSubjectToday(ctx context.Context, tenantID, studentUserID uuid.UUID) (domain.Instance, bool, error)
+	// ListExitPermitsForApproval is the counselor/leadership/security
+	// queue: in-progress permits at a duty-scoped approval stage, plus
+	// every approved permit visible to scan_exit_permits holders.
+	ListExitPermitsForApproval(ctx context.Context, tenantID, callerUserID uuid.UUID) ([]ExitPermitReviewItem, error)
+	// GetLatestPolicy/CreatePolicy read and seed tenant_policies rows for
+	// permits' own kinds ("permits", "late_arrival_actions"), mirroring
+	// attendance/service.Repository's identically-named pair.
+	GetLatestPolicy(ctx context.Context, tenantID uuid.UUID, kind string) (config []byte, version int, found bool, err error)
+	CreatePolicy(ctx context.Context, tenantID uuid.UUID, kind string, version int, config []byte, effectiveFrom time.Time, createdBy uuid.NullUUID) error
 
 	// CreateAsset records an object permits itself put into storage
 	// (evidence after re-encoding, a rendered letter) as an assets row,

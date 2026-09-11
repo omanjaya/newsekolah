@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"html"
 	"html/template"
+	"net/http"
 	"regexp"
 	"strings"
 
@@ -39,6 +40,13 @@ const EngineHTML Engine = "html"
 type Template struct {
 	Engine Engine
 	Body   string
+	// Letterhead, when non-empty, is a JPEG or PNG image (tenant branding
+	// asset) placed above the body -- the kop surat a school letter
+	// conventionally carries. It is placed directly through fpdf rather
+	// than as an <img> tag in Body: htmlToPDF strips all markup down to
+	// plain text (see its doc comment), so a tag here would render
+	// nothing.
+	Letterhead []byte
 }
 
 // Rendered is the pair of representations a rendering produces: HTML for
@@ -75,7 +83,7 @@ func (r *HTMLPDFRenderer) Render(_ context.Context, tmpl Template, vars map[stri
 	}
 	renderedHTML := buf.Bytes()
 
-	pdf, err := htmlToPDF(renderedHTML)
+	pdf, err := htmlToPDF(renderedHTML, tmpl.Letterhead)
 	if err != nil {
 		return Rendered{}, fmt.Errorf("render document pdf: %w", err)
 	}
@@ -91,9 +99,10 @@ var (
 
 // htmlToPDF extracts the block-separated plain text from rendered HTML and
 // lays it out as a single A4 page of left-aligned, word-wrapped
-// paragraphs. See the package doc comment for why this is not a full HTML
-// layout engine.
-func htmlToPDF(renderedHTML []byte) ([]byte, error) {
+// paragraphs, with letterhead (if non-empty, a JPEG or PNG) placed at the
+// top of the page above the text. See the package doc comment for why
+// this is not a full HTML layout engine.
+func htmlToPDF(renderedHTML, letterhead []byte) ([]byte, error) {
 	text := string(renderedHTML)
 	text = brTag.ReplaceAllString(text, "\n")
 	text = blockCloseTag.ReplaceAllString(text, "\n")
@@ -104,6 +113,12 @@ func htmlToPDF(renderedHTML []byte) ([]byte, error) {
 	pdf.AddPage()
 	pdf.SetFont("Helvetica", "", 12)
 	pdf.SetMargins(20, 20, 20)
+
+	if len(letterhead) > 0 {
+		if err := placeLetterhead(pdf, letterhead); err != nil {
+			return nil, err
+		}
+	}
 
 	for _, line := range strings.Split(text, "\n") {
 		line = strings.TrimSpace(line)
@@ -119,4 +134,32 @@ func htmlToPDF(renderedHTML []byte) ([]byte, error) {
 		return nil, fmt.Errorf("write pdf output: %w", err)
 	}
 	return buf.Bytes(), nil
+}
+
+// letterheadHeightMM is a fixed height for the kop surat image, wide
+// enough for a typical school header strip without needing to decode the
+// image's own aspect ratio first; fpdf scales width to the page's
+// printable area automatically when only one dimension is given.
+const letterheadHeightMM = 25.0
+
+// placeLetterhead registers imageBytes (JPEG or PNG, sniffed by content)
+// and draws it at the top margin, then advances the cursor below it so
+// the body text that follows does not overlap it.
+func placeLetterhead(pdf *fpdf.Fpdf, imageBytes []byte) error {
+	format := ""
+	switch http.DetectContentType(imageBytes) {
+	case "image/png":
+		format = "PNG"
+	case "image/jpeg":
+		format = "JPG"
+	default:
+		return fmt.Errorf("render document pdf: letterhead must be JPEG or PNG")
+	}
+	const imageID = "letterhead"
+	pdf.RegisterImageOptionsReader(imageID, fpdf.ImageOptions{ImageType: format}, bytes.NewReader(imageBytes))
+	left, top, _, _ := pdf.GetMargins()
+	pageWidth, _ := pdf.GetPageSize()
+	pdf.ImageOptions(imageID, left, top, pageWidth-2*left, letterheadHeightMM, false, fpdf.ImageOptions{ImageType: format}, 0, "")
+	pdf.SetY(top + letterheadHeightMM + 4)
+	return nil
 }

@@ -53,13 +53,18 @@ func (h *PermitsHandler) IssueScanToken(ctx context.Context, request api.IssueSc
 }
 
 func (h *PermitsHandler) ScanClassroomEntry(ctx context.Context, request api.ScanClassroomEntryRequestObject) (api.ScanClassroomEntryResponseObject, error) {
-	token, err := h.service.ConsumeScanToken(ctx, service.ConsumeScanTokenInput{
-		TenantID: tenantID(ctx), RawValue: request.Body.Token, Purpose: domain.PurposeClassroomEntry, ConsumedByUserID: userID(ctx),
+	reason := ""
+	if request.Body.Reason != nil {
+		reason = *request.Body.Reason
+	}
+	tenant, student := tenantID(ctx), userID(ctx)
+	result, err := h.service.ScanClassroomEntry(ctx, service.ScanClassroomEntryInput{
+		TenantID: tenant, StudentUserID: student, RawToken: request.Body.Token, Reason: reason,
 	})
 	if err != nil {
 		return nil, mapError(err)
 	}
-	return api.ScanClassroomEntry200JSONResponse{TeacherUserId: token.IssuedByUserID, ScannedAt: h.clock.Now()}, nil
+	return api.ScanClassroomEntry200JSONResponse{TeacherUserId: result.TeacherUserID, TeacherName: result.TeacherName, ScannedAt: h.clock.Now()}, nil
 }
 
 // Workflow definitions.
@@ -121,6 +126,18 @@ func (h *PermitsHandler) ListMyExitPermits(ctx context.Context, request api.List
 	return api.ListMyExitPermits200JSONResponse{Data: data}, nil
 }
 
+func (h *PermitsHandler) ListExitPermitsForApproval(ctx context.Context, _ api.ListExitPermitsForApprovalRequestObject) (api.ListExitPermitsForApprovalResponseObject, error) {
+	items, err := h.service.ListExitPermitsForApproval(ctx, tenantID(ctx), userID(ctx))
+	if err != nil {
+		return nil, mapError(err)
+	}
+	data := make([]api.ExitPermitSummary, len(items))
+	for i, it := range items {
+		data[i] = toAPIExitPermitSummary(it)
+	}
+	return api.ListExitPermitsForApproval200JSONResponse{Data: data}, nil
+}
+
 func (h *PermitsHandler) CreateExitPermit(ctx context.Context, request api.CreateExitPermitRequestObject) (api.CreateExitPermitResponseObject, error) {
 	tenant := tenantID(ctx)
 	inst, _, err := h.service.CreateExitPermit(ctx, service.CreateExitPermitInput{
@@ -138,7 +155,11 @@ func (h *PermitsHandler) CreateExitPermit(ctx context.Context, request api.Creat
 }
 
 func (h *PermitsHandler) GetExitPermit(ctx context.Context, request api.GetExitPermitRequestObject) (api.GetExitPermitResponseObject, error) {
-	detail, err := h.exitPermitDetail(ctx, tenantID(ctx), request.InstanceId)
+	tenant := tenantID(ctx)
+	if err := h.service.RequireCanViewExitPermit(ctx, tenant, request.InstanceId, userID(ctx)); err != nil {
+		return nil, mapError(err)
+	}
+	detail, err := h.exitPermitDetail(ctx, tenant, request.InstanceId)
 	if err != nil {
 		return nil, err
 	}
@@ -224,7 +245,7 @@ func (h *PermitsHandler) GetCurrentLateArrival(ctx context.Context, _ api.GetCur
 }
 
 func (h *PermitsHandler) ListLateArrivalsForReview(ctx context.Context, _ api.ListLateArrivalsForReviewRequestObject) (api.ListLateArrivalsForReviewResponseObject, error) {
-	items, err := h.service.ListLateArrivalsForReview(ctx, tenantID(ctx))
+	items, err := h.service.ListLateArrivalsForReview(ctx, tenantID(ctx), userID(ctx))
 	if err != nil {
 		return nil, mapError(err)
 	}
@@ -236,7 +257,11 @@ func (h *PermitsHandler) ListLateArrivalsForReview(ctx context.Context, _ api.Li
 }
 
 func (h *PermitsHandler) GetLateArrival(ctx context.Context, request api.GetLateArrivalRequestObject) (api.GetLateArrivalResponseObject, error) {
-	detail, err := h.service.GetLateArrival(ctx, tenantID(ctx), request.InstanceId)
+	tenant := tenantID(ctx)
+	if err := h.service.RequireCanViewLateArrival(ctx, tenant, request.InstanceId, userID(ctx)); err != nil {
+		return nil, mapError(err)
+	}
+	detail, err := h.service.GetLateArrival(ctx, tenant, request.InstanceId)
 	if err != nil {
 		return nil, mapError(err)
 	}
@@ -358,7 +383,11 @@ func (h *PermitsHandler) ReviewLeaveRequestAsGuardian(ctx context.Context, reque
 }
 
 func (h *PermitsHandler) GetLeaveRequest(ctx context.Context, request api.GetLeaveRequestRequestObject) (api.GetLeaveRequestResponseObject, error) {
-	detail, err := h.service.GetLeaveRequest(ctx, tenantID(ctx), request.InstanceId)
+	tenant := tenantID(ctx)
+	if err := h.service.RequireCanViewLeaveRequest(ctx, tenant, request.InstanceId, userID(ctx)); err != nil {
+		return nil, mapError(err)
+	}
+	detail, err := h.service.GetLeaveRequest(ctx, tenant, request.InstanceId)
 	if err != nil {
 		return nil, mapError(err)
 	}
@@ -450,6 +479,7 @@ func (h *PermitsHandler) CreateDocumentTemplate(ctx context.Context, request api
 	t := domain.Template{
 		TenantID: tenantID(ctx), Kind: domain.TemplateKind(b.Kind), Name: b.Name, Engine: domain.EngineHTML, Body: b.Body,
 		IsDefault: b.IsDefault != nil && *b.IsDefault, CreatedBy: uuid.NullUUID{UUID: userID(ctx), Valid: true},
+		LetterheadAssetID: nullUUIDFromPtr(b.LetterheadAssetId),
 	}
 	if b.Variables != nil {
 		t.Variables = *b.Variables
@@ -466,7 +496,7 @@ func (h *PermitsHandler) UpdateDocumentTemplate(ctx context.Context, request api
 	if request.Body.Variables != nil {
 		vars = *request.Body.Variables
 	}
-	updated, err := h.service.UpdateTemplate(ctx, tenantID(ctx), request.TemplateId, request.Body.Name, request.Body.Body, vars)
+	updated, err := h.service.UpdateTemplate(ctx, tenantID(ctx), request.TemplateId, request.Body.Name, request.Body.Body, vars, nullUUIDFromPtr(request.Body.LetterheadAssetId))
 	if err != nil {
 		return nil, mapError(err)
 	}

@@ -43,13 +43,21 @@ const (
 	leaveEntityType         = "leave_request"
 )
 
-// SubmitLeaveRequest opens the planned-leave flow for a student.
+// SubmitLeaveRequest opens the planned-leave flow for a student. Two rules
+// from the old app (student_leave_api.go) that had no equivalent in the
+// rebuilt version: the reason is forced to the category's fixed label for
+// every category but "other" (a student cannot free-type over "Sakit"),
+// and the class must already have an active homeroom teacher or the
+// request would hang forever with nobody able to review it.
 func (s *Service) SubmitLeaveRequest(ctx context.Context, in SubmitLeaveRequestInput) (LeaveRequestDetail, error) {
 	if !in.Category.Valid() {
 		return LeaveRequestDetail{}, fmt.Errorf("%w: category %q", domain.ErrDefinitionInvalid, in.Category)
 	}
 	if in.EndsOn.Before(in.StartsOn) {
 		return LeaveRequestDetail{}, domain.ErrLeaveRequestDateRangeInvalid
+	}
+	if label, ok := domain.DefaultReasonFor(in.Category); ok {
+		in.Reason = label
 	}
 
 	var detail LeaveRequestDetail
@@ -64,6 +72,9 @@ func (s *Service) SubmitLeaveRequest(ctx context.Context, in SubmitLeaveRequestI
 		}
 		if !ok {
 			return domain.ErrEnrollmentNotFound
+		}
+		if !enrollment.HomeroomTeacherID.Valid {
+			return domain.ErrHomeroomTeacherRequired
 		}
 		studentName, err := s.repo.GetUserName(ctx, in.TenantID, in.StudentUserID)
 		if err != nil {
@@ -207,6 +218,29 @@ func (s *Service) requireOwnInstance(ctx context.Context, tenantID, instanceID, 
 	})
 }
 
+// requireEvidenceIfNeeded enforces tenant policy "permits.evidence_required"
+// (default true, matching the old app -- docs/02-system-design.md:67) at
+// every gate the old app's single synchronous multipart submit collapsed
+// into one check: a reviewer must not approve, and a counselor must not
+// issue, a request that still has no evidence attached.
+func (s *Service) requireEvidenceIfNeeded(ctx context.Context, tenantID, instanceID uuid.UUID) error {
+	required, err := s.evidenceRequired(ctx, tenantID)
+	if err != nil {
+		return err
+	}
+	if !required {
+		return nil
+	}
+	_, hasEvidence, err := s.repo.GetLeaveDocument(ctx, tenantID, instanceID, domain.DocumentKindEvidence)
+	if err != nil {
+		return err
+	}
+	if !hasEvidence {
+		return domain.ErrEvidenceRequired
+	}
+	return nil
+}
+
 // ReviewLeaveRequest is the homeroom teacher's approve/reject of the first
 // stage. Approval of the final stage is IssueLeaveLetter, never this.
 func (s *Service) ReviewLeaveRequest(ctx context.Context, tenantID, instanceID, reviewerUserID uuid.UUID, approve bool, note string) (LeaveRequestDetail, error) {
@@ -225,6 +259,11 @@ func (s *Service) ReviewLeaveRequest(ctx context.Context, tenantID, instanceID, 
 		}
 		if _, isLast := def.NextIndex(inst.CurrentStageIndex); isLast && approve {
 			return domain.ErrLeaveRequestNotReviewable
+		}
+		if approve {
+			if err := s.requireEvidenceIfNeeded(ctx, tenantID, instanceID); err != nil {
+				return err
+			}
 		}
 
 		var updated domain.Instance
@@ -288,6 +327,9 @@ func (s *Service) IssueLeaveLetter(ctx context.Context, tenantID, instanceID, is
 		if _, isLast := def.NextIndex(inst.CurrentStageIndex); !isLast {
 			return domain.ErrLeaveRequestNotIssuable
 		}
+		if err := s.requireEvidenceIfNeeded(ctx, tenantID, instanceID); err != nil {
+			return err
+		}
 
 		updated, def, _, err := s.approveCurrentStage(ctx, stageTransitionInput{
 			tenantID: tenantID, instanceID: instanceID, actorUserID: issuerUserID, note: "letter issued", onLastStageStatus: domain.StatusApproved,
@@ -311,12 +353,31 @@ func (s *Service) IssueLeaveLetter(ctx context.Context, tenantID, instanceID, is
 		if err != nil {
 			return err
 		}
+
+		// docs/analysis/backend-inventory.md 1.14: the old app's template
+		// carried the student's nis/address and the homeroom teacher's
+		// and issuer's names too -- placeholders the rebuilt template had
+		// dropped.
+		nis, address, err := s.repo.GetStudentNISAndAddress(ctx, tenantID, inst.SubjectUserID)
+		if err != nil {
+			return err
+		}
+		homeroomName := ""
+		if enrollment, ok, err := s.repo.GetActiveEnrollment(ctx, tenantID, inst.AcademicYearID, inst.SubjectUserID); err == nil && ok && enrollment.HomeroomTeacherID.Valid {
+			homeroomName, _ = s.repo.GetUserName(ctx, tenantID, enrollment.HomeroomTeacherID.UUID)
+		}
+		issuerName, err := s.repo.GetUserName(ctx, tenantID, issuerUserID)
+		if err != nil {
+			return err
+		}
+
 		tmpl := s.leaveLetterTemplate(ctx, tenantID)
 		rendered, err := s.renderer.Render(ctx, tmpl, map[string]any{
 			"letter_number": number, "student_name": lr.StudentNameSnapshot, "class_name": lr.ClassNameSnapshot,
 			"guardian_name": lr.GuardianNameSnapshot, "category": string(lr.Category), "reason": lr.Reason,
 			"starts_on": lr.StartsOn.Format("02-01-2006"), "ends_on": lr.EndsOn.Format("02-01-2006"),
 			"days": lr.Days(), "issued_at": now.Format("02-01-2006"), "verification_code": code,
+			"nis": nis, "address": address, "homeroom_name": homeroomName, "issuer_name": issuerName,
 		})
 		if err != nil {
 			return fmt.Errorf("render leave letter: %w", err)
@@ -379,12 +440,23 @@ func attendanceStatusFor(c domain.Category) string {
 }
 
 // leaveLetterTemplate returns the tenant's default template or the
-// built-in one so issuance never fails for lack of configuration.
+// built-in one so issuance never fails for lack of configuration, with its
+// letterhead image bytes loaded (if the template names one) so Render can
+// place it above the body -- see documents.Template.Letterhead.
 func (s *Service) leaveLetterTemplate(ctx context.Context, tenantID uuid.UUID) documents.Template {
-	if t, ok, err := s.repo.GetDefaultTemplate(ctx, tenantID, domain.TemplateKindLeaveLetter); err == nil && ok {
-		return documents.Template{Engine: documents.Engine(t.Engine), Body: t.Body}
+	t, ok, err := s.repo.GetDefaultTemplate(ctx, tenantID, domain.TemplateKindLeaveLetter)
+	if err != nil || !ok {
+		return documents.Template{Engine: documents.EngineHTML, Body: builtinLeaveLetterHTML}
 	}
-	return documents.Template{Engine: documents.EngineHTML, Body: builtinLeaveLetterHTML}
+	out := documents.Template{Engine: documents.Engine(t.Engine), Body: t.Body}
+	if s.storage != nil && t.LetterheadAssetID.Valid {
+		if key, err := s.repo.GetAssetObjectKey(ctx, tenantID, t.LetterheadAssetID.UUID); err == nil {
+			if bytes, err := s.storage.GetObject(ctx, key); err == nil {
+				out.Letterhead = bytes
+			}
+		}
+	}
+	return out
 }
 
 const builtinLeaveLetterHTML = `<html><body style="font-family: serif; font-size: 12pt; margin: 40px;">
@@ -393,12 +465,24 @@ const builtinLeaveLetterHTML = `<html><body style="font-family: serif; font-size
 <p>Dengan ini menerangkan bahwa:</p>
 <table>
 <tr><td>Nama</td><td>: {{.student_name}}</td></tr>
+<tr><td>NIS</td><td>: {{.nis}}</td></tr>
 <tr><td>Kelas</td><td>: {{.class_name}}</td></tr>
+<tr><td>Alamat</td><td>: {{.address}}</td></tr>
 <tr><td>Wali</td><td>: {{.guardian_name}}</td></tr>
 </table>
 <p>diizinkan tidak mengikuti kegiatan belajar mengajar pada tanggal {{.starts_on}} sampai {{.ends_on}} ({{.days}} hari) dengan keterangan {{.category}}: {{.reason}}.</p>
-<p>Surat ini diterbitkan pada {{.issued_at}}. Kode verifikasi: <strong>{{.verification_code}}</strong></p>
+<p>Surat ini diterbitkan pada {{.issued_at}} oleh {{.issuer_name}}, diketahui oleh wali kelas {{.homeroom_name}}. Kode verifikasi: <strong>{{.verification_code}}</strong></p>
 </body></html>`
+
+// leaveLetterTemplateVariables lists every placeholder the default leave
+// letter template understands, for a tenant editing a custom template to
+// discover them from (also the set the discipline warning letter's
+// renderer shares -- keep names in sync with
+// discipline/service.BuiltinWarningLetterHTML if either changes).
+var leaveLetterTemplateVariables = []string{
+	"letter_number", "student_name", "nis", "class_name", "address", "guardian_name",
+	"category", "reason", "starts_on", "ends_on", "days", "issued_at", "issuer_name", "homeroom_name", "verification_code",
+}
 
 func (s *Service) GetLeaveRequest(ctx context.Context, tenantID, instanceID uuid.UUID) (LeaveRequestDetail, error) {
 	var detail LeaveRequestDetail
@@ -594,6 +678,9 @@ func (s *Service) CreateTemplate(ctx context.Context, t domain.Template) (domain
 	if t.Engine == "" {
 		t.Engine = domain.EngineHTML
 	}
+	if t.Kind == domain.TemplateKindLeaveLetter && len(t.Variables) == 0 {
+		t.Variables = leaveLetterTemplateVariables
+	}
 	var out domain.Template
 	err := s.withTx(ctx, t.TenantID, func(ctx context.Context) error {
 		var err error
@@ -603,7 +690,7 @@ func (s *Service) CreateTemplate(ctx context.Context, t domain.Template) (domain
 	return out, err
 }
 
-func (s *Service) UpdateTemplate(ctx context.Context, tenantID, id uuid.UUID, name, body string, variables []string) (domain.Template, error) {
+func (s *Service) UpdateTemplate(ctx context.Context, tenantID, id uuid.UUID, name, body string, variables []string, letterheadAssetID uuid.NullUUID) (domain.Template, error) {
 	var out domain.Template
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		if _, ok, err := s.repo.GetTemplateByID(ctx, tenantID, id); err != nil {
@@ -612,7 +699,7 @@ func (s *Service) UpdateTemplate(ctx context.Context, tenantID, id uuid.UUID, na
 			return domain.ErrTemplateNotFound
 		}
 		var err error
-		out, err = s.repo.UpdateTemplate(ctx, tenantID, id, name, body, variables)
+		out, err = s.repo.UpdateTemplate(ctx, tenantID, id, name, body, variables, letterheadAssetID)
 		return err
 	})
 	return out, err
