@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -68,11 +69,23 @@ func (s *Service) GetMonitorSnapshot(ctx context.Context, tenantID uuid.UUID) (M
 // GetMonitorPresence reports who currently has a realtime socket open, per
 // the injected PresenceReader -- platform/realtime's Presence tracker if
 // the caller wired one in, or a plain hub connection count otherwise (see
-// module.go's hubPresence). Touches no database, so it needs no tenant
-// transaction.
-func (s *Service) GetMonitorPresence(tenantID uuid.UUID) (count int, keys []string) {
+// module.go's hubPresence). byRole is parsed from each key's "role:userID"
+// shape (module.go's livePresence); a key that does not carry a role
+// (the hub-count fallback's synthetic "monitor" key) is dropped from
+// byRole but still counted in count, so the total never undercounts.
+// Touches no database, so it needs no tenant transaction.
+func (s *Service) GetMonitorPresence(tenantID uuid.UUID) (count int, keys []string, byRole map[string]int) {
 	if s.presence == nil {
-		return 0, nil
+		return 0, nil, nil
 	}
-	return s.presence.Snapshot(tenantID)
+	count, keys = s.presence.Snapshot(tenantID)
+	byRole = make(map[string]int, len(keys))
+	for _, key := range keys {
+		role, _, ok := strings.Cut(key, ":")
+		if !ok {
+			continue
+		}
+		byRole[role]++
+	}
+	return count, keys, byRole
 }

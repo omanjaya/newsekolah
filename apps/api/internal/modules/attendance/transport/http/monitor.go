@@ -28,9 +28,12 @@ func (h *AttendanceHandler) GetMonitorSnapshot(ctx context.Context, request api.
 func (h *AttendanceHandler) GetMonitorPresence(ctx context.Context, _ api.GetMonitorPresenceRequestObject) (api.GetMonitorPresenceResponseObject, error) {
 	tenantID := tenantIDFromContext(ctx)
 
-	count, keys := h.service.GetMonitorPresence(tenantID)
+	count, keys, byRole := h.service.GetMonitorPresence(tenantID)
 	if keys == nil {
 		keys = []string{}
 	}
-	return api.GetMonitorPresence200JSONResponse{Count: count, Keys: keys}, nil
+	if byRole == nil {
+		byRole = map[string]int{}
+	}
+	return api.GetMonitorPresence200JSONResponse{Count: count, Keys: keys, ByRole: byRole}, nil
 }

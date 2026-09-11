@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -29,16 +30,20 @@ import (
 // the real upgrade -- no double registration, and the routes still run
 // behind every middleware already attached to router (tenant resolution
 // in particular, which both handlers below depend on).
-func mountRealtimeRoutes(router chi.Router, pool *pgxpool.Pool, tokenIssuer *auth.TokenIssuer, hub *realtime.Hub, appOrigins []string, logger *slog.Logger) {
-	router.Get("/ws/me", wsMeHandler(tokenIssuer, hub, appOrigins, logger))
+func mountRealtimeRoutes(router chi.Router, pool *pgxpool.Pool, tokenIssuer *auth.TokenIssuer, hub *realtime.Hub, presence *realtime.Presence, appOrigins []string, logger *slog.Logger) {
+	router.Get("/ws/me", wsMeHandler(tokenIssuer, hub, presence, appOrigins, logger))
 	router.Get("/ws/monitor", wsMonitorHandler(pool, hub, appOrigins, logger))
 }
 
 // wsMeHandler authenticates the caller's access token (header or
 // subprotocol -- see realtime.ExtractBearer) and subscribes them to their
 // own per-user topic, so any module can later push to "user:<tenant>:<user>"
-// without knowing how the socket was opened.
-func wsMeHandler(tokenIssuer *auth.TokenIssuer, hub *realtime.Hub, appOrigins []string, logger *slog.Logger) http.HandlerFunc {
+// without knowing how the socket was opened. It also heartbeats presence
+// (docs/analysis/backend-inventory.md section 1.14, GET
+// /v1/monitor/presence): the key is "<tenant>:<role>:<user>" so
+// attendance/module.go's livePresence can both scope a snapshot to one
+// tenant and recover each connection's role for the per-role counts.
+func wsMeHandler(tokenIssuer *auth.TokenIssuer, hub *realtime.Hub, presence *realtime.Presence, appOrigins []string, logger *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		token, _, ok := realtime.ExtractBearer(r)
 		if !ok {
@@ -57,9 +62,17 @@ func wsMeHandler(tokenIssuer *auth.TokenIssuer, hub *realtime.Hub, appOrigins []
 			return
 		}
 
+		role := "unknown"
+		if len(claims.Roles) > 0 {
+			role = claims.Roles[0]
+		}
+		presenceKey := claims.TenantID + ":" + role + ":" + claims.Subject
+		presence.Heartbeat(r.Context(), presenceKey, time.Now())
+
 		topic := "user:" + claims.TenantID + ":" + claims.Subject
-		if _, err := realtime.Upgrade(w, r, hub, topic, appOrigins, logger); err != nil {
+		if _, err := realtime.Upgrade(w, r, hub, topic, appOrigins, logger, func() { presence.Remove(presenceKey) }); err != nil {
 			logger.Warn("ws/me upgrade failed", "error", err)
+			presence.Remove(presenceKey)
 		}
 	}
 }

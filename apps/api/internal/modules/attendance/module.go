@@ -10,6 +10,8 @@ package attendance
 
 import (
 	"context"
+	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -64,10 +66,9 @@ func (p hubPublisher) PublishMonitor(tenantID uuid.UUID, event any) error {
 }
 
 // hubPresence is the fallback PresenceReader ("hub connection counts")
-// used because no dedicated realtime.Presence tracker is wired anywhere
-// yet: cmd/api/ws.go's wsMonitorHandler never calls Presence.Heartbeat, so
-// there is no per-role attribution to report. This simply counts open
-// sockets on the tenant's monitor topic.
+// used when no realtime.Presence tracker is wired in. This simply counts
+// open sockets on the tenant's monitor topic; it has no per-role
+// attribution to report.
 type hubPresence struct{ hub *realtime.Hub }
 
 func (p hubPresence) Snapshot(tenantID uuid.UUID) (int, []string) {
@@ -76,6 +77,27 @@ func (p hubPresence) Snapshot(tenantID uuid.UUID) (int, []string) {
 		return 0, nil
 	}
 	return n, []string{"monitor"}
+}
+
+// livePresence adapts platform/realtime's Presence tracker (fed by every
+// GET /ws/me connection's heartbeat, see cmd/api/ws.go) to
+// service.PresenceReader. Presence has no notion of tenant, so every key
+// carries "<tenantID>:<role>:<userID>" (see wsMeHandler), and Snapshot here
+// filters to tenantID's prefix and strips it back off before returning --
+// the "<role>:<userID>" remainder is what GetMonitorPresence parses for
+// its per-role counts.
+type livePresence struct{ presence *realtime.Presence }
+
+func (p livePresence) Snapshot(tenantID uuid.UUID) (int, []string) {
+	prefix := tenantID.String() + ":"
+	all := p.presence.Snapshot(context.Background(), time.Now())
+	out := make([]string, 0, len(all))
+	for _, key := range all {
+		if rest, ok := strings.CutPrefix(key, prefix); ok {
+			out = append(out, rest)
+		}
+	}
+	return len(out), out
 }
 
 // Dependencies is everything Register needs from other modules and
@@ -90,6 +112,10 @@ type Dependencies struct {
 	Journals  scheduling.JournalService
 	Perms     authz.PermissionsProvider
 	Hub       *realtime.Hub
+	// Presence is optional: when set, GetMonitorPresence reports real
+	// per-user/per-role heartbeats from GET /ws/me instead of falling
+	// back to a plain monitor-topic socket count.
+	Presence *realtime.Presence
 	// Blocker, Overrider, Violations and Discipline are optional; permits
 	// and discipline supply them after wiring.
 	Blocker    Blocker
@@ -116,10 +142,14 @@ func Register(deps Dependencies) *Module {
 	if deps.Discipline != nil {
 		discipline = deps.Discipline
 	}
+	var presence service.PresenceReader = hubPresence{hub: deps.Hub}
+	if deps.Presence != nil {
+		presence = livePresence{presence: deps.Presence}
+	}
 	svc := service.New(
 		deps.Pool, repo, deps.Years, deps.Schedules, deps.Access, deps.Journals,
 		blocker, overrider, violations, discipline,
-		busPublisher{bus: deps.Bus}, hubPublisher{hub: deps.Hub}, hubPresence{hub: deps.Hub},
+		busPublisher{bus: deps.Bus}, hubPublisher{hub: deps.Hub}, presence,
 	)
 	handler := transporthttp.New(svc, deps.Perms)
 

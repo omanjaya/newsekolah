@@ -119,6 +119,10 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	schedulingModule := scheduling.Register(pool, eventBus, identityModule.Service)
 
 	hub := realtime.NewHub(broadcasterFor(redisClient))
+	// presenceTTL mirrors the old system's presence.go (teacher_attendance
+	// dashboard): a connection not heard from in 90s is presumed gone.
+	const presenceTTL = 90 * time.Second
+	presence := realtime.NewPresence(presenceStoreFor(redisClient), presenceTTL)
 
 	// permits and attendance depend on each other only through adapters:
 	// permits is built first with a late-bound attendance sync, then
@@ -140,7 +144,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		Schedules: schedulingModule.ScheduleReader, Access: schedulingModule.AccessChecker, Journals: schedulingModule.JournalService,
 		Perms: identityModule.Service, Hub: hub,
 		Blocker: permitsBlocker{svc: permitsModule.Service}, Overrider: permitsOverrider{svc: permitsModule.Service},
-		Violations: lateViolations, Discipline: lateDiscipline,
+		Violations: lateViolations, Discipline: lateDiscipline, Presence: presence,
 	})
 	sync.inner = attendanceSyncAdapter{force: attendanceModule.Service.ForceStatus}
 
@@ -353,7 +357,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	// why a strict handler can never serve these itself. hub is the same
 	// instance passed into attendance.Register above, so a socket opened
 	// here is visible to the attendance module's monitor presence count.
-	mountRealtimeRoutes(router, pool, tokenIssuer, hub, cfg.AppOrigins, logger)
+	mountRealtimeRoutes(router, pool, tokenIssuer, hub, presence, cfg.AppOrigins, logger)
 
 	return router, bg, nil
 }
@@ -389,6 +393,16 @@ func broadcasterFor(redisClient *redis.Client) realtime.Broadcaster {
 		return nil
 	}
 	return realtime.NewRedisBroadcaster(redisClient)
+}
+
+// presenceStoreFor is broadcasterFor's counterpart for presence: nil in
+// single-instance mode (REDIS_URL unset), where realtime.Presence keeps its
+// heartbeats in-memory only.
+func presenceStoreFor(redisClient *redis.Client) realtime.PresenceStore {
+	if redisClient == nil {
+		return nil
+	}
+	return realtime.NewRedisPresenceStore(redisClient, "presence:ws-me")
 }
 
 func kvStoreFor(redisClient *redis.Client) auth.KVStore {

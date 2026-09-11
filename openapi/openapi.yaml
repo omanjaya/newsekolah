@@ -15673,6 +15673,7 @@ components:
       required:
         - count
         - keys
+        - by_role
       properties:
         count:
           type: integer
@@ -15680,6 +15681,11 @@ components:
           type: array
           items:
             type: string
+        by_role:
+          type: object
+          additionalProperties:
+            type: integer
+          description: Open connections grouped by role, parsed from each key's "role:userID" shape.
     Recurrence:
       type: string
       enum:

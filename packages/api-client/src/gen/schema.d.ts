@@ -6815,6 +6815,10 @@ export interface components {
         PresenceSnapshot: {
             count: number;
             keys: string[];
+            /** @description Open connections grouped by role, parsed from each key's "role:userID" shape. */
+            by_role: {
+                [key: string]: number;
+            };
         };
         /** @enum {string} */
         Recurrence: "monthly" | "one_off";
