@@ -89,13 +89,46 @@ func (q *Queries) GetAssetByID(ctx context.Context, arg GetAssetByIDParams) (Ass
 	return i, err
 }
 
+const getUserProfile = `-- name: GetUserProfile :one
+select user_id, tenant_id, kind, nik, gender, birth_place, birth_date, religion, address, district, city, blood_type, extra, created_at, updated_at from user_profiles where tenant_id = $1 and user_id = $2
+`
+
+type GetUserProfileParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	UserID   uuid.UUID `json:"user_id"`
+}
+
+func (q *Queries) GetUserProfile(ctx context.Context, arg GetUserProfileParams) (UserProfile, error) {
+	row := q.db.QueryRow(ctx, getUserProfile, arg.TenantID, arg.UserID)
+	var i UserProfile
+	err := row.Scan(
+		&i.UserID,
+		&i.TenantID,
+		&i.Kind,
+		&i.Nik,
+		&i.Gender,
+		&i.BirthPlace,
+		&i.BirthDate,
+		&i.Religion,
+		&i.Address,
+		&i.District,
+		&i.City,
+		&i.BloodType,
+		&i.Extra,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const updateOwnProfile = `-- name: UpdateOwnProfile :exec
-update users set name = $3, email = $4, phone = $5, locale = $6 where tenant_id = $1 and id = $2
+update users set username = $3, name = $4, email = $5, phone = $6, locale = $7 where tenant_id = $1 and id = $2
 `
 
 type UpdateOwnProfileParams struct {
 	TenantID uuid.UUID   `json:"tenant_id"`
 	ID       uuid.UUID   `json:"id"`
+	Username string      `json:"username"`
 	Name     string      `json:"name"`
 	Email    pgtype.Text `json:"email"`
 	Phone    pgtype.Text `json:"phone"`
@@ -106,6 +139,7 @@ func (q *Queries) UpdateOwnProfile(ctx context.Context, arg UpdateOwnProfilePara
 	_, err := q.db.Exec(ctx, updateOwnProfile,
 		arg.TenantID,
 		arg.ID,
+		arg.Username,
 		arg.Name,
 		arg.Email,
 		arg.Phone,

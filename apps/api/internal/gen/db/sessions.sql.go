@@ -565,10 +565,26 @@ func (q *Queries) OpenAttendanceSession(ctx context.Context, arg OpenAttendanceS
 	return i, err
 }
 
-const revokeOtherUserSessions = `-- name: RevokeOtherUserSessions :exec
+const pruneOldSessions = `-- name: PruneOldSessions :execrows
+delete from sessions
+where tenant_id = $1
+  and ((revoked_at is not null and revoked_at < now() - interval '30 days')
+    or (expires_at < now() - interval '30 days'))
+`
+
+func (q *Queries) PruneOldSessions(ctx context.Context, tenantID uuid.UUID) (int64, error) {
+	result, err := q.db.Exec(ctx, pruneOldSessions, tenantID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const revokeOtherUserSessions = `-- name: RevokeOtherUserSessions :many
 update sessions
 set revoked_at = now(), revoked_reason = $4
 where tenant_id = $1 and user_id = $2 and id != $3 and revoked_at is null
+returning id
 `
 
 type RevokeOtherUserSessionsParams struct {
@@ -578,14 +594,29 @@ type RevokeOtherUserSessionsParams struct {
 	RevokedReason pgtype.Text `json:"revoked_reason"`
 }
 
-func (q *Queries) RevokeOtherUserSessions(ctx context.Context, arg RevokeOtherUserSessionsParams) error {
-	_, err := q.db.Exec(ctx, revokeOtherUserSessions,
+func (q *Queries) RevokeOtherUserSessions(ctx context.Context, arg RevokeOtherUserSessionsParams) ([]uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, revokeOtherUserSessions,
 		arg.TenantID,
 		arg.UserID,
 		arg.ID,
 		arg.RevokedReason,
 	)
-	return err
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []uuid.UUID{}
+	for rows.Next() {
+		var id uuid.UUID
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const revokeSession = `-- name: RevokeSession :exec
@@ -603,8 +634,10 @@ func (q *Queries) RevokeSession(ctx context.Context, arg RevokeSessionParams) er
 	return err
 }
 
-const revokeSessionFamily = `-- name: RevokeSessionFamily :exec
-update sessions set revoked_at = now(), revoked_reason = $3 where tenant_id = $1 and family_id = $2 and revoked_at is null
+const revokeSessionFamily = `-- name: RevokeSessionFamily :many
+update sessions set revoked_at = now(), revoked_reason = $3
+where tenant_id = $1 and family_id = $2 and revoked_at is null
+returning id
 `
 
 type RevokeSessionFamilyParams struct {
@@ -613,9 +646,24 @@ type RevokeSessionFamilyParams struct {
 	RevokedReason pgtype.Text `json:"revoked_reason"`
 }
 
-func (q *Queries) RevokeSessionFamily(ctx context.Context, arg RevokeSessionFamilyParams) error {
-	_, err := q.db.Exec(ctx, revokeSessionFamily, arg.TenantID, arg.FamilyID, arg.RevokedReason)
-	return err
+func (q *Queries) RevokeSessionFamily(ctx context.Context, arg RevokeSessionFamilyParams) ([]uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, revokeSessionFamily, arg.TenantID, arg.FamilyID, arg.RevokedReason)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []uuid.UUID{}
+	for rows.Next() {
+		var id uuid.UUID
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const submitAttendanceSession = `-- name: SubmitAttendanceSession :one

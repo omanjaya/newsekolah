@@ -7,6 +7,9 @@ var (
 	ErrPushDeviceNotFound   = errors.New("push device not found")
 	ErrInvalidChannel       = errors.New("invalid notification channel")
 	ErrInvalidPlatform      = errors.New("invalid push device platform")
+	ErrInvalidPushEndpoint  = errors.New("web push endpoint is not https or not on an allowed provider host")
+	ErrDeviceTokenTooLong   = errors.New("device token exceeds 255 characters")
+	ErrApnsNotConfigured    = errors.New("apns is not configured on this server")
 
 	ErrMissingTemplateVariable  = errors.New("missing template variable")
 	ErrWhatsAppTemplateNotFound = errors.New("whatsapp template not found")

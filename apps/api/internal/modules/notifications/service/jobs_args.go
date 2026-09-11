@@ -21,6 +21,11 @@ type DeliverPushArgs struct {
 	Title                 string
 	Body                  string
 	Href                  string
+	// NotificationKind becomes the web push collapse key (Topic), so a
+	// device that is offline for a while only ever shows the provider's
+	// most recent notification of a given kind rather than a backlog of
+	// every one sent while it was unreachable.
+	NotificationKind string
 }
 
 func (DeliverPushArgs) Kind() string { return "notifications.deliver_push" }

@@ -36,10 +36,14 @@ type Handler struct {
 	branding     BrandingReader
 	sessionCache SessionCache
 	isProduction bool
+	// appOrigins is the allowlist a cookie-based refresh's Origin header
+	// is checked against (docs/08-security.md section 7). Empty disables
+	// the check, same as an unconfigured APP_ORIGINS in dev.
+	appOrigins []string
 }
 
-func New(svc *service.Service, branding BrandingReader, sessionCache SessionCache, isProduction bool) *Handler {
-	return &Handler{service: svc, branding: branding, sessionCache: sessionCache, isProduction: isProduction}
+func New(svc *service.Service, branding BrandingReader, sessionCache SessionCache, isProduction bool, appOrigins []string) *Handler {
+	return &Handler{service: svc, branding: branding, sessionCache: sessionCache, isProduction: isProduction, appOrigins: appOrigins}
 }
 
 // deviceInfoFromContext reads the client IP and User-Agent captured by
@@ -128,6 +132,11 @@ func (h *Handler) toAPIMe(ctx context.Context, tenantID uuid.UUID, me service.Me
 	if me.AvatarURL != "" {
 		avatar := me.AvatarURL
 		result.AvatarUrl = &avatar
+	}
+	if me.ProfileKind != "" {
+		kind := api.MeProfileKind(me.ProfileKind)
+		result.ProfileKind = &kind
+		result.Detail = toAPIProfile(me.Detail)
 	}
 
 	if branded, err := h.branding.Branding(ctx, tenantID); err == nil {

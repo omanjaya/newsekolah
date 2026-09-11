@@ -38,10 +38,20 @@ func (w *DeliverPushWorker) Work(ctx context.Context, job *river.Job[service.Del
 		return nil
 	}
 
+	payload := notify.PushPayload{Title: args.Title, Body: args.Body, Href: args.Href, Topic: args.NotificationKind}
+	if device.Platform == domain.PlatformIOS {
+		// APNs shows this as the app icon's badge count -- the old app's
+		// behavior (apns.go) that the rewrite had dropped.
+		if unread, err := w.svc.UnreadCount(ctx, args.TenantID, device.UserID); err == nil {
+			badge := int(unread)
+			payload.Badge = &badge
+		}
+	}
+
 	sendErr := w.push.Send(ctx, notify.PushDevice{
 		Platform: notify.Platform(device.Platform), TokenOrEndpoint: device.TokenOrEndpoint,
 		P256dh: device.P256dh, AuthKey: device.AuthKey,
-	}, notify.PushPayload{Title: args.Title, Body: args.Body, Href: args.Href})
+	}, payload)
 
 	if sendErr != nil {
 		return w.handleFailure(ctx, args, sendErr)

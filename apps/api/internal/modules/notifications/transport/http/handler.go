@@ -39,6 +39,9 @@ var errorMap = map[error]*httpx.Error{
 	domain.ErrPushDeviceNotFound:   httpx.ErrPushDeviceNotFound,
 	domain.ErrInvalidChannel:       httpx.ErrValidation,
 	domain.ErrInvalidPlatform:      httpx.ErrValidation,
+	domain.ErrInvalidPushEndpoint:  httpx.ErrPushEndpointNotAllowed,
+	domain.ErrDeviceTokenTooLong:   httpx.ErrValidation,
+	domain.ErrApnsNotConfigured:    httpx.ErrApnsNotConfigured,
 }
 
 func mapError(err error) error {
@@ -57,9 +60,15 @@ func mapError(err error) error {
 // Inbox.
 
 func (h *NotificationsHandler) ListNotifications(ctx context.Context, request api.ListNotificationsRequestObject) (api.ListNotificationsResponseObject, error) {
-	unreadOnly, cursor, limit := false, "", 0
+	unreadOnly, search, kind, cursor, limit := false, "", "", "", 0
 	if request.Params.UnreadOnly != nil {
 		unreadOnly = *request.Params.UnreadOnly
+	}
+	if request.Params.Q != nil {
+		search = *request.Params.Q
+	}
+	if request.Params.Kind != nil {
+		kind = *request.Params.Kind
 	}
 	if request.Params.Cursor != nil {
 		cursor = *request.Params.Cursor
@@ -67,7 +76,7 @@ func (h *NotificationsHandler) ListNotifications(ctx context.Context, request ap
 	if request.Params.Limit != nil {
 		limit = *request.Params.Limit
 	}
-	page, err := h.service.List(ctx, tenantID(ctx), userID(ctx), unreadOnly, cursor, limit)
+	page, err := h.service.List(ctx, tenantID(ctx), userID(ctx), unreadOnly, search, kind, cursor, limit)
 	if err != nil {
 		return nil, mapError(err)
 	}

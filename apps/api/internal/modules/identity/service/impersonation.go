@@ -31,7 +31,7 @@ type NewImpersonationSession struct {
 type ImpersonationRepository interface {
 	CreateImpersonationSessionRecord(ctx context.Context, in NewImpersonationSession) (domain.Session, error)
 	GetSessionByID(ctx context.Context, tenantID, sessionID uuid.UUID) (domain.Session, error)
-	InsertImpersonationActionRecord(ctx context.Context, tenantID, sessionID uuid.UUID, method, path string) error
+	InsertImpersonationActionRecord(ctx context.Context, tenantID, sessionID uuid.UUID, method, path, ip string) error
 }
 
 // StartImpersonation opens a 30-minute impersonation session as targetID,
@@ -126,10 +126,12 @@ func (s *Service) StopImpersonation(ctx context.Context, tenantID, sessionID uui
 
 // RecordImpersonationAction logs one request made under an impersonation
 // session to impersonation_actions. It is best-effort by design (called
-// from a middleware hook, not from within the request's own transaction),
-// so a logging failure never fails the request it is describing.
-func (s *Service) RecordImpersonationAction(ctx context.Context, tenantID, sessionID uuid.UUID, method, path string) {
+// from a middleware hook, in its own goroutine and its own detached
+// context, after the response has already been written), so a logging
+// failure never fails the request it is describing and never adds latency
+// to it either (docs/analysis/backend-inventory.md section 1.2).
+func (s *Service) RecordImpersonationAction(ctx context.Context, tenantID, sessionID uuid.UUID, method, path, ip string) {
 	_ = s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		return s.repo.InsertImpersonationActionRecord(ctx, tenantID, sessionID, method, path)
+		return s.repo.InsertImpersonationActionRecord(ctx, tenantID, sessionID, method, path, ip)
 	})
 }

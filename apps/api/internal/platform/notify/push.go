@@ -31,6 +31,16 @@ type PushPayload struct {
 	Body  string
 	Href  string
 	Data  map[string]string
+	// Badge is the app icon badge count APNs should show. nil on a
+	// platform that does not use it (web, Android); the caller (the
+	// delivery worker) fills it in with the recipient's unread inbox
+	// count for iOS (reference/sion-rebuild-go apns.go).
+	Badge *int
+	// Topic is the web push collapse key: the notification kind, so a
+	// browser that only just reconnected shows the latest notification of
+	// that kind rather than every one queued while it was offline
+	// (reference/sion-rebuild-go notifications.go).
+	Topic string
 }
 
 // ErrDeviceGone is returned when the provider reports a device's

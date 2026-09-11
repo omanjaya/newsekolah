@@ -16,6 +16,7 @@ import (
 // replaces).
 func (s *Service) resolveNewUsername(ctx context.Context, tenantID uuid.UUID, explicit, name string) (string, error) {
 	if explicit != "" {
+		explicit = domain.NormalizeUsername(explicit)
 		exists, err := s.repo.UsernameExists(ctx, tenantID, explicit)
 		if err != nil {
 			return "", fmt.Errorf("check username exists: %w", err)
@@ -136,7 +137,7 @@ func (s *Service) prepareRoleGrants(ctx context.Context, tenantID, actorID uuid.
 		if err != nil {
 			return nil, fmt.Errorf("role %q/%s: %w", g.Slug, g.RoleID, domain.ErrRoleNotFound)
 		}
-		resolved[i] = domain.RoleGrant{RoleID: role.ID, Slug: role.Slug, IsPrimary: g.IsPrimary}
+		resolved[i] = domain.RoleGrant{RoleID: role.ID, Slug: role.Slug, IsPrimary: g.IsPrimary, IsSystem: role.IsSystem}
 	}
 
 	if err := domain.ValidateRoleGrants(actorIsSuper, resolved); err != nil {

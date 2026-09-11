@@ -183,3 +183,16 @@ func (l *lateBoundJobs) InsertTx(ctx context.Context, tx pgx.Tx, args river.JobA
 	}
 	return l.client.InsertTx(ctx, tx, args, opts)
 }
+
+// lateBoundPushDevices lets the identity module (built first) call into
+// the notifications module (built after it) to delete a user's push
+// devices on logout/revoke-all, the same construction-order problem
+// lateBoundJobs solves for the River client.
+type lateBoundPushDevices struct{ svc *notificationsservice.Service }
+
+func (l *lateBoundPushDevices) RemoveAllPushDevicesForUser(ctx context.Context, tenantID, userID uuid.UUID) error {
+	if l.svc == nil {
+		return nil
+	}
+	return l.svc.RemoveAllPushDevicesForUser(ctx, tenantID, userID)
+}

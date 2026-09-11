@@ -17,6 +17,7 @@ import (
 // so platform/auth (which modules depend on) never imports a module back.
 type SessionLookup interface {
 	IsSessionActive(ctx context.Context, tenantID, sessionID uuid.UUID) (bool, error)
+	TouchSessionLastSeen(ctx context.Context, tenantID, sessionID uuid.UUID) error
 }
 
 type Authenticator struct {
@@ -170,6 +171,10 @@ func (a *Authenticator) authenticate(r *http.Request, token string) (authz.Ident
 	}
 	if !active {
 		return authz.Identity{Err: httpx.ErrSessionRevoked}, ctx
+	}
+
+	if a.cache.ShouldTouchLastSeen(ctx, sessionID) {
+		_ = a.sessions.TouchSessionLastSeen(ctx, tenantID, sessionID)
 	}
 
 	ctx = httpx.WithUserID(ctx, userID)

@@ -57,7 +57,7 @@ func seedPhase2(ctx context.Context, pool *pgxpool.Pool, q *db.Queries, tenantID
 	if err != nil {
 		return fmt.Errorf("seed sealer: %w", err)
 	}
-	schoolModule := school.Register(pool, tenant.ModeSingle)
+	schoolModule := school.Register(pool, tenant.ModeSingle, nil)
 	disciplineModule := discipline.Register(discipline.Dependencies{Pool: pool, Years: schoolModule.Service, Sealer: sealer, Clock: clock.Real{}})
 	if err := ensureViolationTypes(ctx, disciplineModule, tenantID); err != nil {
 		return err

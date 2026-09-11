@@ -43,7 +43,8 @@ func (s *Service) GetMonitorSnapshot(ctx context.Context, tenantID uuid.UUID) (M
 		if err != nil {
 			return err
 		}
-		sessions := make([]MonitorCard, 0, len(cards))
+		sessions := make([]MonitorCard, 0, len(cards)+4)
+		var currentPeriod *MonitorPeriod
 		for _, c := range cards {
 			status := "not_started"
 			switch {
@@ -52,7 +53,24 @@ func (s *Service) GetMonitorSnapshot(ctx context.Context, tenantID uuid.UUID) (M
 			case c.SessionOpen:
 				status = "in_progress"
 			}
-			sessions = append(sessions, MonitorCard{ClassName: c.ClassName, SubjectName: c.SubjectName, TeacherName: c.TeacherName, Status: status})
+			sessions = append(sessions, MonitorCard{
+				ClassName: c.ClassName, SubjectName: c.SubjectName, TeacherName: c.TeacherName,
+				SubstituteName: c.SubstituteName, Status: status,
+			})
+			if currentPeriod == nil && c.PeriodName != "" {
+				// Every card resolved against the same now_time, so they
+				// all share one governing period; the first one found is
+				// as good as any for the snapshot-wide banner.
+				currentPeriod = &MonitorPeriod{Name: c.PeriodName, StartsAt: c.PeriodStartsAt, EndsAt: c.PeriodEndsAt}
+			}
+		}
+
+		noSchedule, err := s.repo.ListClassesWithoutCurrentSchedule(ctx, tenantID, yearID, dayOfWeek, now)
+		if err != nil {
+			return err
+		}
+		for _, c := range noSchedule {
+			sessions = append(sessions, MonitorCard{ClassName: c.ClassName, Status: "no_schedule"})
 		}
 
 		counts, err := s.repo.CountDailySummaryStatuses(ctx, tenantID, yearID, today)
@@ -60,7 +78,10 @@ func (s *Service) GetMonitorSnapshot(ctx context.Context, tenantID uuid.UUID) (M
 			return err
 		}
 
-		out = MonitorSnapshot{GeneratedAt: s.clock.Now(), StatusCounts: counts, Sessions: sessions}
+		out = MonitorSnapshot{
+			GeneratedAt: s.clock.Now(), Date: today, DayName: now.Weekday().String(),
+			CurrentPeriod: currentPeriod, StatusCounts: counts, Sessions: sessions,
+		}
 		return nil
 	})
 	return out, err

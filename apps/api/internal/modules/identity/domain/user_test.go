@@ -28,6 +28,39 @@ func TestValidatePasswordPolicy(t *testing.T) {
 	}
 }
 
+func TestNormalizeUsername(t *testing.T) {
+	tests := []struct {
+		in   string
+		want string
+	}{
+		{"Budi", "budi"},
+		{"  budi  ", "budi"},
+		{"BUDI.SANTOSO", "budi.santoso"},
+		{"budi", "budi"},
+	}
+	for _, tt := range tests {
+		if got := NormalizeUsername(tt.in); got != tt.want {
+			t.Errorf("NormalizeUsername(%q) = %q, want %q", tt.in, got, tt.want)
+		}
+	}
+}
+
+func TestNormalizeEmail(t *testing.T) {
+	tests := []struct {
+		in   string
+		want string
+	}{
+		{"Budi@Example.com", "budi@example.com"},
+		{"  budi@example.com ", "budi@example.com"},
+		{"", ""},
+	}
+	for _, tt := range tests {
+		if got := NormalizeEmail(tt.in); got != tt.want {
+			t.Errorf("NormalizeEmail(%q) = %q, want %q", tt.in, got, tt.want)
+		}
+	}
+}
+
 func TestUserCanAuthenticate(t *testing.T) {
 	tests := []struct {
 		status UserStatus

@@ -12,6 +12,20 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const deleteAllPushDevicesForUser = `-- name: DeleteAllPushDevicesForUser :exec
+delete from push_devices where tenant_id = $1 and user_id = $2
+`
+
+type DeleteAllPushDevicesForUserParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	UserID   uuid.UUID `json:"user_id"`
+}
+
+func (q *Queries) DeleteAllPushDevicesForUser(ctx context.Context, arg DeleteAllPushDevicesForUserParams) error {
+	_, err := q.db.Exec(ctx, deleteAllPushDevicesForUser, arg.TenantID, arg.UserID)
+	return err
+}
+
 const deleteExpiredOrFailedPushDevices = `-- name: DeleteExpiredOrFailedPushDevices :execrows
 delete from push_devices
 where tenant_id = $1::uuid

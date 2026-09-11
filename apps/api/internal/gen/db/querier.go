@@ -226,6 +226,8 @@ type Querier interface {
 	CountActiveLoansAndUnpaidFinesForClearance(ctx context.Context, arg CountActiveLoansAndUnpaidFinesForClearanceParams) (CountActiveLoansAndUnpaidFinesForClearanceRow, error)
 	CountActiveLoansForMember(ctx context.Context, arg CountActiveLoansForMemberParams) (int32, error)
 	CountActiveMembers(ctx context.Context, arg CountActiveMembersParams) (int32, error)
+	// Backs the admin dashboard's "active users per profile kind" panel.
+	CountActiveUsersByProfileKind(ctx context.Context, tenantID uuid.UUID) ([]CountActiveUsersByProfileKindRow, error)
 	CountAnnouncementReads(ctx context.Context, arg CountAnnouncementReadsParams) (int64, error)
 	CountAssignmentsForDutyType(ctx context.Context, arg CountAssignmentsForDutyTypeParams) (int64, error)
 	// The input to "meeting_number" in the session payload: how many prior
@@ -236,6 +238,10 @@ type Querier interface {
 	CountCopiesByStatus(ctx context.Context, arg CountCopiesByStatusParams) (int32, error)
 	CountCopiesTotal(ctx context.Context, tenantID uuid.UUID) (int32, error)
 	CountDailySummaryStatusesForAttendance(ctx context.Context, arg CountDailySummaryStatusesForAttendanceParams) ([]CountDailySummaryStatusesForAttendanceRow, error)
+	// Backs the admin dashboard's pending queues (leave requests, exit
+	// permits, late arrivals all share this table -- see the kind check
+	// constraint).
+	CountInProgressWorkflowInstances(ctx context.Context, arg CountInProgressWorkflowInstancesParams) (int64, error)
 	CountIncidentsBySeverityInRange(ctx context.Context, arg CountIncidentsBySeverityInRangeParams) ([]CountIncidentsBySeverityInRangeRow, error)
 	CountJournalsFiltered(ctx context.Context, arg CountJournalsFilteredParams) (int64, error)
 	CountLoansBetween(ctx context.Context, arg CountLoansBetweenParams) (int32, error)
@@ -373,6 +379,7 @@ type Querier interface {
 	DeleteAchievement(ctx context.Context, arg DeleteAchievementParams) error
 	DeleteAcquisitionSource(ctx context.Context, arg DeleteAcquisitionSourceParams) (int64, error)
 	DeleteActivity(ctx context.Context, arg DeleteActivityParams) error
+	DeleteAllPushDevicesForUser(ctx context.Context, arg DeleteAllPushDevicesForUserParams) error
 	DeleteAnnouncement(ctx context.Context, arg DeleteAnnouncementParams) error
 	DeleteCollectionCategory(ctx context.Context, arg DeleteCollectionCategoryParams) (int64, error)
 	DeleteComponent(ctx context.Context, arg DeleteComponentParams) error
@@ -647,6 +654,7 @@ type Querier interface {
 	// The display name backing a teacher/writer column in the journal XLSX
 	// export -- users is owned by the identity module, not scheduling.
 	GetUserNameRefForSchedule(ctx context.Context, arg GetUserNameRefForScheduleParams) (string, error)
+	GetUserProfile(ctx context.Context, arg GetUserProfileParams) (UserProfile, error)
 	GetUserRefForSchedule(ctx context.Context, arg GetUserRefForScheduleParams) (GetUserRefForScheduleRow, error)
 	GetValidPasswordResetByHash(ctx context.Context, arg GetValidPasswordResetByHashParams) (PasswordReset, error)
 	GetViolation(ctx context.Context, arg GetViolationParams) (LibraryViolation, error)
@@ -850,6 +858,10 @@ type Querier interface {
 	ListBills(ctx context.Context, arg ListBillsParams) ([]Bill, error)
 	ListBillsForStudent(ctx context.Context, arg ListBillsForStudentParams) ([]Bill, error)
 	ListChildrenForParent(ctx context.Context, arg ListChildrenForParentParams) ([]ListChildrenForParentRow, error)
+	// Every non-deleted class of the academic year that has no schedule row
+	// straddling now_time on day_of_week -- the monitor snapshot shows these
+	// as "no schedule" cards instead of silently omitting them.
+	ListClassesWithoutCurrentPeriodScheduleForAttendance(ctx context.Context, arg ListClassesWithoutCurrentPeriodScheduleForAttendanceParams) ([]ListClassesWithoutCurrentPeriodScheduleForAttendanceRow, error)
 	ListCollectionCategories(ctx context.Context, tenantID uuid.UUID) ([]LibraryCollectionCategory, error)
 	ListComponents(ctx context.Context, arg ListComponentsParams) ([]AssessmentComponent, error)
 	ListCopiesAcquiredInPeriod(ctx context.Context, arg ListCopiesAcquiredInPeriodParams) ([]LibraryCopy, error)
@@ -869,7 +881,10 @@ type Querier interface {
 	// period's starts_at through end period's ends_at straddle now_time, in
 	// the tenant's own timezone), left-joined with today's attendance session
 	// if one has been opened -- the raw input to the monitor snapshot's
-	// per-class submission cards.
+	// per-class submission cards. Also carries the governing period's own
+	// name/times (the monitor's "current period" banner is this period,
+	// shared by every card since they all resolved against the same
+	// now_time) and, when a substitute took the session, their name.
 	ListCurrentPeriodScheduleCardsForAttendance(ctx context.Context, arg ListCurrentPeriodScheduleCardsForAttendanceParams) ([]ListCurrentPeriodScheduleCardsForAttendanceRow, error)
 	// DDC classes: platform-wide, read-only.
 	ListDDCClasses(ctx context.Context) ([]LibraryDdcClass, error)
@@ -1117,6 +1132,12 @@ type Querier interface {
 	// occurrence_number (docs/analysis/database-inventory.md 1.5: the old
 	// app's per-student late-arrival numbering had exactly this race).
 	LockSubjectForInstanceCounting(ctx context.Context, arg LockSubjectForInstanceCountingParams) error
+	// Hour-of-day (0-23, UTC) histogram of successful logins in the last 7
+	// days, for the admin dashboard. UTC rather than tenant-local: unlike an
+	// attendance day boundary this is a rough usage-pattern chart, not a
+	// compliance cutoff, so it does not carry the "never compute in UTC"
+	// rule docs/03 attaches to school-day boundaries.
+	LoginHistogramByHour(ctx context.Context, arg LoginHistogramByHourParams) ([]LoginHistogramByHourRow, error)
 	LookupLibraryCopies(ctx context.Context, arg LookupLibraryCopiesParams) ([]LookupLibraryCopiesRow, error)
 	LookupLibraryMembers(ctx context.Context, arg LookupLibraryMembersParams) ([]LookupLibraryMembersRow, error)
 	MarkAllNotificationsRead(ctx context.Context, arg MarkAllNotificationsReadParams) error
@@ -1190,6 +1211,7 @@ type Querier interface {
 	PlatformUpdateTenantStatus(ctx context.Context, arg PlatformUpdateTenantStatusParams) (Tenant, error)
 	PlatformUpsertFeatureFlag(ctx context.Context, arg PlatformUpsertFeatureFlagParams) (FeatureFlag, error)
 	PopularTitlesAllTime(ctx context.Context, arg PopularTitlesAllTimeParams) ([]PopularTitlesAllTimeRow, error)
+	PruneOldSessions(ctx context.Context, tenantID uuid.UUID) (int64, error)
 	RecordDeliveryAttempt(ctx context.Context, arg RecordDeliveryAttemptParams) error
 	RecordStocktakeScan(ctx context.Context, arg RecordStocktakeScanParams) (LibraryStocktakeScan, error)
 	RemoveParticipant(ctx context.Context, arg RemoveParticipantParams) error
@@ -1210,9 +1232,9 @@ type Querier interface {
 	RestoreUser(ctx context.Context, arg RestoreUserParams) error
 	ReturnLoan(ctx context.Context, arg ReturnLoanParams) (LibraryLoan, error)
 	RevokeAPIKey(ctx context.Context, arg RevokeAPIKeyParams) (IntegrationApiKey, error)
-	RevokeOtherUserSessions(ctx context.Context, arg RevokeOtherUserSessionsParams) error
+	RevokeOtherUserSessions(ctx context.Context, arg RevokeOtherUserSessionsParams) ([]uuid.UUID, error)
 	RevokeSession(ctx context.Context, arg RevokeSessionParams) error
-	RevokeSessionFamily(ctx context.Context, arg RevokeSessionFamilyParams) error
+	RevokeSessionFamily(ctx context.Context, arg RevokeSessionFamilyParams) ([]uuid.UUID, error)
 	// For a query of 3+ characters: Postgres fulltext against search_vector
 	// (migrations/0094), the old app's MATCH AGAINST equivalent.
 	SearchOpacTitlesFulltext(ctx context.Context, arg SearchOpacTitlesFulltextParams) ([]LibraryTitle, error)

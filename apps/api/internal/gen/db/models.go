@@ -529,6 +529,7 @@ type ImpersonationAction struct {
 	Method     string             `json:"method"`
 	Path       string             `json:"path"`
 	OccurredAt pgtype.Timestamptz `json:"occurred_at"`
+	Ip         *netip.Addr        `json:"ip"`
 }
 
 type IntegrationApiKey struct {

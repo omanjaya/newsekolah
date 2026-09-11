@@ -26,6 +26,11 @@ const (
 type RequestMeta struct {
 	IP        string
 	UserAgent string
+	// Origin is the request's Origin header, empty for a non-browser
+	// client (native apps do not send one). Used by the refresh endpoint
+	// to check it against the tenant's allowlist on a cookie-based
+	// refresh (docs/08-security.md section 7).
+	Origin string
 }
 
 func WithRequestMeta(ctx context.Context, meta RequestMeta) context.Context {

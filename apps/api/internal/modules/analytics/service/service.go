@@ -70,6 +70,36 @@ type GradeTrend struct {
 	CurrentAverage  float64
 }
 
+// IdentityReader is a wiring adapter over the identity module's own
+// service, for the admin dashboard's user/login panels.
+type IdentityReader interface {
+	DashboardActiveUsers(ctx context.Context, tenantID uuid.UUID) (map[string]int, error)
+	DashboardLoginHistogram(ctx context.Context, tenantID uuid.UUID) ([24]int, error)
+}
+
+// PermitsReader is a wiring adapter over the permits module's own
+// service, for the admin dashboard's pending-queues panel. kind is one of
+// "leave_request", "exit_permit", "late_arrival" (permits/domain.Kind's
+// values, passed as a string so this package does not import that
+// module's domain package just for an enum).
+type PermitsReader interface {
+	PendingCount(ctx context.Context, tenantID uuid.UUID, kind string) (int, error)
+}
+
+// PresenceReader is a wiring adapter over platform/realtime.Presence, for
+// the admin dashboard's online-per-role panel. Optional: a nil
+// PresenceReader (or one with nothing recorded, which is the situation
+// today -- nothing calls Heartbeat yet) makes every count 0 rather than
+// failing the dashboard.
+type PresenceReader interface {
+	// OnlineByRole returns a count per role slug, keyed by whatever
+	// convention the caller that populates presence uses (see
+	// platform/realtime.Presence's doc comment: an arbitrary
+	// caller-defined key). Analytics does not itself define that
+	// convention; it only reports whatever this adapter resolves.
+	OnlineByRole(ctx context.Context, tenantID uuid.UUID) (map[string]int, error)
+}
+
 // StudentRef is one actively enrolled student the recompute job scores.
 type StudentRef struct {
 	StudentUserID uuid.UUID
@@ -123,14 +153,32 @@ type Service struct {
 	attendance AttendanceReader
 	discipline DisciplineReader
 	grading    GradingReader
+	identity   IdentityReader
+	permits    PermitsReader
+	presence   PresenceReader
 	clock      clock.Clock
 }
 
-func New(pool *pgxpool.Pool, repo Repository, years AcademicYearReader, attendance AttendanceReader, discipline DisciplineReader, grading GradingReader, clk clock.Clock) *Service {
+// DashboardDeps groups the admin dashboard's cross-module readers.
+// Identity and Permits are required (a nil Service.identity/permits makes
+// AdminDashboard return ErrDashboardUnavailable); Presence is optional
+// (see PresenceReader's doc comment) -- nil just makes every online count
+// 0, same as a PresenceReader with nothing recorded in it.
+type DashboardDeps struct {
+	Identity IdentityReader
+	Permits  PermitsReader
+	Presence PresenceReader
+}
+
+func New(pool *pgxpool.Pool, repo Repository, years AcademicYearReader, attendance AttendanceReader, discipline DisciplineReader, grading GradingReader, dashboard DashboardDeps, clk clock.Clock) *Service {
 	if clk == nil {
 		clk = clock.Real{}
 	}
-	return &Service{pool: pool, repo: repo, years: years, attendance: attendance, discipline: discipline, grading: grading, clock: clk}
+	return &Service{
+		pool: pool, repo: repo, years: years, attendance: attendance, discipline: discipline, grading: grading,
+		identity: dashboard.Identity, permits: dashboard.Permits, presence: dashboard.Presence,
+		clock: clk,
+	}
 }
 
 func (s *Service) withTx(ctx context.Context, tenantID uuid.UUID, fn func(ctx context.Context) error) error {

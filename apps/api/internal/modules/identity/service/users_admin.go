@@ -152,17 +152,43 @@ func (s *Service) toUserAdminView(ctx context.Context, tenantID uuid.UUID, row U
 	return view, nil
 }
 
+// loadProfileFields merges the shared user_profiles row (nik, gender,
+// birth_date, ...) with whichever kind-specific table applies, into the
+// one UserProfileFields shape both the admin user-detail view and GET
+// /v1/me's own detail record return.
 func (s *Service) loadProfileFields(ctx context.Context, tenantID, userID uuid.UUID, kind domain.ProfileKind) (UserProfileFields, bool, error) {
+	shared, sharedFound, err := s.repo.GetUserProfile(ctx, tenantID, userID)
+	if err != nil {
+		return UserProfileFields{}, false, err
+	}
+
+	var (
+		specific UserProfileFields
+		found    bool
+	)
 	switch kind {
 	case domain.ProfileStudent:
-		return s.repo.GetStudentProfile(ctx, tenantID, userID)
+		specific, found, err = s.repo.GetStudentProfile(ctx, tenantID, userID)
 	case domain.ProfileTeacher:
-		return s.repo.GetTeacherProfile(ctx, tenantID, userID)
+		specific, found, err = s.repo.GetTeacherProfile(ctx, tenantID, userID)
 	case domain.ProfileStaff:
-		return s.repo.GetStaffProfile(ctx, tenantID, userID)
-	default:
+		specific, found, err = s.repo.GetStaffProfile(ctx, tenantID, userID)
+	}
+	if err != nil {
+		return UserProfileFields{}, false, err
+	}
+	if !sharedFound && !found {
 		return UserProfileFields{}, false, nil
 	}
+
+	merged := shared
+	merged.NIS, merged.NISN, merged.EntryYear = specific.NIS, specific.NISN, specific.EntryYear
+	merged.PreviousSchool, merged.FatherName, merged.MotherName = specific.PreviousSchool, specific.FatherName, specific.MotherName
+	merged.GuardianName, merged.GuardianPhone, merged.ParentOccupation = specific.GuardianName, specific.GuardianPhone, specific.ParentOccupation
+	merged.NIP, merged.NUPTK, merged.EmploymentStatus = specific.NIP, specific.NUPTK, specific.EmploymentStatus
+	merged.LastEducation, merged.JoinedYear, merged.Specialization = specific.LastEducation, specific.JoinedYear, specific.Specialization
+	merged.EmployeeNumber, merged.Position = specific.EmployeeNumber, specific.Position
+	return merged, true, nil
 }
 
 // isSuperAdmin reports whether userID currently holds the super_admin role,

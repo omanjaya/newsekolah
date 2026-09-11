@@ -186,7 +186,7 @@ func (s *Service) GoogleLogin(ctx context.Context, in GoogleLoginInput) (AuthRes
 			return domain.ErrSSOInvalidToken
 		}
 
-		user, found, err := s.repo.GetUserByUsernameOrEmail(ctx, in.TenantID, claims.Email)
+		user, found, err := s.repo.GetUserByUsernameOrEmail(ctx, in.TenantID, domain.NormalizeEmail(claims.Email))
 		if err != nil {
 			return fmt.Errorf("look up sso user: %w", err)
 		}
@@ -206,7 +206,11 @@ func (s *Service) GoogleLogin(ctx context.Context, in GoogleLoginInput) (AuthRes
 		_ = s.repo.RecordLoginAttempt(ctx, in.TenantID, user.Username, in.IP, true)
 		_ = s.repo.UpdateLastLogin(ctx, in.TenantID, user.ID, now)
 
-		session, refreshToken, err := s.openSession(ctx, user, uuid.New(), in.Client, in.DeviceID, in.DeviceName, in.UserAgent, in.IP, now)
+		ttl, err := s.sessionTTL(ctx, in.TenantID)
+		if err != nil {
+			return err
+		}
+		session, refreshToken, err := s.openSessionWithTTL(ctx, user, uuid.New(), in.Client, in.DeviceID, in.DeviceName, in.UserAgent, in.IP, now, ttl)
 		if err != nil {
 			return err
 		}

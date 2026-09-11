@@ -1,4 +1,58 @@
 paths:
+  /v1/users/import/template:
+    get:
+      tags: [users]
+      operationId: downloadUserImportTemplate
+      x-permission: create_users
+      summary: Download the xlsx template (with a reference sheet of accepted codes) for bulk user import
+      responses:
+        "200":
+          description: Workbook
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: { type: string, format: binary }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/users/import/preview:
+    post:
+      tags: [users]
+      operationId: previewUserImport
+      x-permission: create_users
+      summary: Validate a batch of parsed import rows (up to 5000) without creating anything
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UserImportRequest" }
+      responses:
+        "200":
+          description: Row-by-row preview
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/UserImportResult" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /v1/users/import/commit:
+    post:
+      tags: [users]
+      operationId: commitUserImport
+      x-permission: create_users
+      summary: Re-validate the same batch and create every row in one transaction; any invalid row aborts the whole batch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UserImportRequest" }
+      responses:
+        "200":
+          description: Row-by-row result
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/UserImportResult" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
   /v1/users:
     get:
       tags: [users]
@@ -234,7 +288,7 @@ paths:
       tags: [me]
       operationId: updateMyProfile
       x-permission: authenticated
-      summary: Update own name, email, phone and locale
+      summary: Update own username, name, email, phone, locale, and detail record (student/teacher/staff fields)
       requestBody:
         required: true
         content:
@@ -242,10 +296,18 @@ paths:
             schema:
               type: object
               properties:
+                username:
+                  {
+                    type: string,
+                    minLength: 3,
+                    maxLength: 80,
+                    description: "Omit to keep the current username",
+                  }
                 name: { type: string, minLength: 1, maxLength: 150 }
                 email: { type: string, format: email }
                 phone: { type: string, maxLength: 30 }
                 locale: { type: string, enum: [id, en] }
+                detail: { $ref: "#/components/schemas/UserProfileFields" }
       responses:
         "200":
           description: Updated
@@ -660,6 +722,38 @@ paths:
                     type: array
                     items: { $ref: "#/components/schemas/UserOption" }
         "400": { $ref: "#/components/responses/BadRequest" }
+  /v1/auth/settings:
+    get:
+      tags: [auth]
+      operationId: getAuthSettings
+      x-permission: manage_settings
+      summary: Per-tenant session policy (session lifetime, single-device login)
+      responses:
+        "200":
+          description: Settings
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AuthSettings" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    put:
+      tags: [auth]
+      operationId: updateAuthSettings
+      x-permission: manage_settings
+      summary: Change the per-tenant session policy
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AuthSettingsWrite" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AuthSettings" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
 
   /v1/audit-logs:
@@ -902,6 +996,82 @@ paths:
 
 components:
   schemas:
+    UserImportRow:
+      type: object
+      required: [name, profile_kind, role_slug]
+      properties:
+        row_number:
+          {
+            type: integer,
+            description: "Optional; defaults to the row's position in the batch (1-based)",
+          }
+        username: { type: string }
+        email: { type: string }
+        password: { type: string }
+        profile_kind: { $ref: "#/components/schemas/ProfileKind" }
+        role_slug:
+          type: string
+          description: A system role slug, or an alias (e.g. "siswa", "guru", "pegawai", "wali") -- see the template's reference sheet
+        nik: { type: string }
+        name: { type: string, maxLength: 150 }
+        gender: { type: string, description: "L, P, male, or female" }
+        birth_place: { type: string }
+        birth_date: { type: string, description: "YYYY-MM-DD" }
+        religion: { type: string }
+        address: { type: string }
+        district: { type: string }
+        city: { type: string }
+        phone: { type: string }
+        blood_type: { type: string }
+        nis: { type: string }
+        nisn: { type: string }
+        entry_year: { type: string }
+        father_name: { type: string }
+        mother_name: { type: string }
+        guardian_name: { type: string }
+        guardian_phone: { type: string }
+        parent_occupation: { type: string }
+        previous_school: { type: string }
+        nip: { type: string }
+        nuptk: { type: string }
+        last_education: { type: string }
+        employment_status: { type: string }
+        joined_year: { type: string }
+        specialization: { type: string }
+        employee_number: { type: string }
+        position: { type: string }
+    UserImportRequest:
+      type: object
+      required: [rows]
+      properties:
+        rows:
+          type: array
+          maxItems: 5000
+          items: { $ref: "#/components/schemas/UserImportRow" }
+    UserImportRowResult:
+      type: object
+      required: [row_number, errors]
+      properties:
+        row_number: { type: integer }
+        username: { type: string }
+        errors: { type: array, items: { type: string } }
+    UserImportResult:
+      type: object
+      required: [data]
+      properties:
+        data: { type: array, items: { $ref: "#/components/schemas/UserImportRowResult" } }
+    AuthSettings:
+      type: object
+      required: [session_days, single_device]
+      properties:
+        session_days: { type: integer, minimum: 1, maximum: 365 }
+        single_device: { type: boolean }
+    AuthSettingsWrite:
+      type: object
+      required: [session_days, single_device]
+      properties:
+        session_days: { type: integer, minimum: 1, maximum: 365 }
+        single_device: { type: boolean }
     ParentRelation:
       type: string
       enum: [father, mother, guardian]

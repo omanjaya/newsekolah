@@ -18,6 +18,9 @@ delete from push_devices where tenant_id = $1 and user_id = $2 and endpoint_hash
 -- name: DeletePushDeviceByID :exec
 delete from push_devices where tenant_id = $1 and id = $2;
 
+-- name: DeleteAllPushDevicesForUser :exec
+delete from push_devices where tenant_id = $1 and user_id = $2;
+
 -- name: GetPushDeviceByID :one
 select * from push_devices where tenant_id = $1 and id = $2;
 

@@ -49,9 +49,9 @@ func (r *Repository) InsertNotification(ctx context.Context, tenantID, userID uu
 	return toNotification(row)
 }
 
-func (r *Repository) ListNotifications(ctx context.Context, tenantID, userID uuid.UUID, unreadOnly bool, cursor service.Cursor, limit int) ([]domain.Notification, error) {
+func (r *Repository) ListNotifications(ctx context.Context, tenantID, userID uuid.UUID, unreadOnly bool, search, kind string, cursor service.Cursor, limit int) ([]domain.Notification, error) {
 	rows, err := r.queries(ctx).ListNotificationsForUser(ctx, db.ListNotificationsForUserParams{
-		TenantID: tenantID, UserID: userID, UnreadOnly: unreadOnly,
+		TenantID: tenantID, UserID: userID, UnreadOnly: unreadOnly, Search: search, Kind: kind,
 		HasCursor: cursor.Present, CursorCreatedAt: pdatabase.Timestamptz(cursor.CreatedAt), CursorID: cursor.ID,
 		PageLimit: int32(limit), //nolint:gosec // limit is clamped to <=100 by the service before this call
 	})

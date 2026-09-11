@@ -42,6 +42,7 @@ type AuthResult struct {
 // itself happens before the transaction: it is Redis/in-memory state, not
 // tenant-scoped Postgres data.
 func (s *Service) Login(ctx context.Context, in LoginInput) (AuthResult, error) {
+	in.Username = domain.NormalizeUsername(in.Username)
 	allowed, err := s.limiter.Allow(ctx, in.TenantID.String(), in.Username, in.IP)
 	if err != nil {
 		return AuthResult{}, err
@@ -95,7 +96,25 @@ func (s *Service) login(ctx context.Context, in LoginInput) (AuthResult, error) 
 	now := s.clock.Now()
 	_ = s.repo.UpdateLastLogin(ctx, in.TenantID, user.ID, now)
 
-	session, refreshToken, err := s.openSession(ctx, user, uuid.New(), in.Client, in.DeviceID, in.DeviceName, in.UserAgent, in.IP, now)
+	authSettings, err := s.repo.GetAuthSettings(ctx, in.TenantID)
+	if err != nil {
+		return AuthResult{}, err
+	}
+	if authSettings.SingleDevice {
+		// uuid.Nil never matches a real session id: every existing session
+		// of this user is revoked, since the one being opened here does
+		// not exist yet to exempt (docs/analysis/backend-inventory.md
+		// section 1.8).
+		revokedIDs, err := s.repo.RevokeOtherSessions(ctx, in.TenantID, user.ID, uuid.Nil, "single_device_login")
+		if err != nil {
+			return AuthResult{}, err
+		}
+		s.invalidateSessions(ctx, revokedIDs)
+		s.revokePushDevices(ctx, in.TenantID, user.ID)
+	}
+
+	ttl := time.Duration(authSettings.SessionDays) * 24 * time.Hour
+	session, refreshToken, err := s.openSessionWithTTL(ctx, user, uuid.New(), in.Client, in.DeviceID, in.DeviceName, in.UserAgent, in.IP, now, ttl)
 	if err != nil {
 		return AuthResult{}, err
 	}
@@ -137,9 +156,13 @@ func (s *Service) refresh(ctx context.Context, tenantID uuid.UUID, refreshToken 
 		// It runs in its own, independent transaction (a separate pooled
 		// connection) so it commits even though the outer one will not.
 		familyID := session.FamilyID
+		var revokedIDs []uuid.UUID
 		_ = s.withTx(database.Detach(ctx), tenantID, func(ctx context.Context) error {
-			return s.repo.RevokeSessionFamily(ctx, tenantID, familyID, "reuse_detected")
+			var err error
+			revokedIDs, err = s.repo.RevokeSessionFamily(ctx, tenantID, familyID, "reuse_detected")
+			return err
 		})
+		s.invalidateSessions(ctx, revokedIDs)
 		return AuthResult{}, domain.ErrRefreshReuseDetected
 	case domain.RefreshExpired:
 		return AuthResult{}, domain.ErrSessionExpired
@@ -149,12 +172,19 @@ func (s *Service) refresh(ctx context.Context, tenantID uuid.UUID, refreshToken 
 	if err != nil {
 		return AuthResult{}, domain.ErrUserNotFound
 	}
+	if !user.CanAuthenticate() {
+		return AuthResult{}, domain.ErrAccountNotActive
+	}
 
 	if err := s.repo.RevokeSession(ctx, tenantID, session.ID, "rotated"); err != nil {
 		return AuthResult{}, err
 	}
 
-	newSession, refreshTokenPlain, err := s.openSession(ctx, user, session.FamilyID, session.Client, "", "", userAgent, ip, now)
+	ttl, err := s.sessionTTL(ctx, tenantID)
+	if err != nil {
+		return AuthResult{}, err
+	}
+	newSession, refreshTokenPlain, err := s.openSessionWithTTL(ctx, user, session.FamilyID, session.Client, "", "", userAgent, ip, now, ttl)
 	if err != nil {
 		return AuthResult{}, err
 	}
@@ -173,7 +203,11 @@ func (s *Service) recordLoginAttemptDurably(ctx context.Context, tenantID uuid.U
 	})
 }
 
-func (s *Service) openSession(ctx context.Context, user domain.User, familyID uuid.UUID, client domain.ClientKind, deviceID, deviceName, userAgent, ip string, now time.Time) (domain.Session, string, error) {
+// openSessionWithTTL opens a session with an explicit refresh-token
+// lifetime -- every caller (login, refresh, passkey login, Google SSO)
+// passes the tenant's own auth.session_days (see sessionTTL), not the
+// deployment-wide REFRESH_TOKEN_TTL default.
+func (s *Service) openSessionWithTTL(ctx context.Context, user domain.User, familyID uuid.UUID, client domain.ClientKind, deviceID, deviceName, userAgent, ip string, now time.Time, ttl time.Duration) (domain.Session, string, error) {
 	refreshToken, hash, err := s.newRefresh()
 	if err != nil {
 		return domain.Session{}, "", err
@@ -190,7 +224,7 @@ func (s *Service) openSession(ctx context.Context, user domain.User, familyID uu
 		DeviceName:       deviceName,
 		UserAgent:        userAgent,
 		IP:               ip,
-		ExpiresAt:        now.Add(s.cfg.RefreshTokenTTL),
+		ExpiresAt:        now.Add(ttl),
 	})
 	if err != nil {
 		return domain.Session{}, "", err
@@ -224,11 +258,21 @@ func (s *Service) buildAuthResult(ctx context.Context, user domain.User, session
 	}, nil
 }
 
-// Logout revokes exactly the current session.
-func (s *Service) Logout(ctx context.Context, tenantID, sessionID uuid.UUID) error {
-	return s.withTx(ctx, tenantID, func(ctx context.Context) error {
+// Logout revokes exactly the current session, and also deletes every push
+// device registered for the user: the schema has no session-to-device
+// link, so "the device this session logged out from" and "all of this
+// user's devices" cannot be told apart -- matching the old app's own
+// behavior of clearing every subscription on logout
+// (reference/sion-rebuild-go main.go).
+func (s *Service) Logout(ctx context.Context, tenantID, userID, sessionID uuid.UUID) error {
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		return s.repo.RevokeSession(ctx, tenantID, sessionID, "logout")
 	})
+	if err != nil {
+		return err
+	}
+	s.revokePushDevices(ctx, tenantID, userID)
+	return nil
 }
 
 func (s *Service) ListSessions(ctx context.Context, tenantID, userID uuid.UUID) ([]SessionView, error) {
@@ -287,6 +331,12 @@ func (s *Service) ChangePassword(ctx context.Context, tenantID, userID, currentS
 			return err
 		}
 
-		return s.repo.RevokeOtherSessions(ctx, tenantID, userID, currentSessionID, "password_changed")
+		revokedIDs, err := s.repo.RevokeOtherSessions(ctx, tenantID, userID, currentSessionID, "password_changed")
+		if err != nil {
+			return err
+		}
+		s.invalidateSessions(ctx, revokedIDs)
+		s.revokePushDevices(ctx, tenantID, userID)
+		return nil
 	})
 }

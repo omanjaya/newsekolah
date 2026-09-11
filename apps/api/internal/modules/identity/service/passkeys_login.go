@@ -33,7 +33,7 @@ func (s *Service) BeginPasskeyLogin(ctx context.Context, in PasskeyLoginInput) (
 		return protocol.CredentialAssertion{}, "", err
 	}
 
-	user, found, err := s.repo.GetUserByUsernameOrEmail(ctx, in.TenantID, in.Username)
+	user, found, err := s.repo.GetUserByUsernameOrEmail(ctx, in.TenantID, domain.NormalizeUsername(in.Username))
 	if err != nil {
 		return protocol.CredentialAssertion{}, "", fmt.Errorf("look up passkey login user: %w", err)
 	}
@@ -127,7 +127,11 @@ func (s *Service) FinishPasskeyLogin(ctx context.Context, in FinishPasskeyLoginI
 		_ = s.repo.RecordLoginAttempt(ctx, in.TenantID, user.Username, in.IP, true)
 		_ = s.repo.UpdateLastLogin(ctx, in.TenantID, user.ID, now)
 
-		session, refreshToken, err := s.openSession(ctx, user, uuid.New(), in.Client, in.DeviceID, in.DeviceName, in.UserAgent, in.IP, now)
+		ttl, err := s.sessionTTL(ctx, in.TenantID)
+		if err != nil {
+			return err
+		}
+		session, refreshToken, err := s.openSessionWithTTL(ctx, user, uuid.New(), in.Client, in.DeviceID, in.DeviceName, in.UserAgent, in.IP, now, ttl)
 		if err != nil {
 			return err
 		}

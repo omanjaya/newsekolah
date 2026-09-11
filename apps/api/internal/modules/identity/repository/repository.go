@@ -171,14 +171,27 @@ func (r *Repository) RevokeSession(ctx context.Context, tenantID, sessionID uuid
 	return r.queries(ctx).RevokeSession(ctx, db.RevokeSessionParams{TenantID: tenantID, ID: sessionID, RevokedReason: pdatabase.Text(reason)})
 }
 
-func (r *Repository) RevokeSessionFamily(ctx context.Context, tenantID, familyID uuid.UUID, reason string) error {
+// RevokeSessionFamily revokes every session sharing familyID and returns
+// the ids revoked, so the caller can evict them from the session cache
+// immediately instead of waiting out its TTL.
+func (r *Repository) RevokeSessionFamily(ctx context.Context, tenantID, familyID uuid.UUID, reason string) ([]uuid.UUID, error) {
 	return r.queries(ctx).RevokeSessionFamily(ctx, db.RevokeSessionFamilyParams{TenantID: tenantID, FamilyID: familyID, RevokedReason: pdatabase.Text(reason)})
 }
 
-func (r *Repository) RevokeOtherSessions(ctx context.Context, tenantID, userID, keepSessionID uuid.UUID, reason string) error {
+// RevokeOtherSessions revokes every session of userID except keepSessionID
+// and returns the ids revoked, for the same cache-eviction reason as
+// RevokeSessionFamily.
+func (r *Repository) RevokeOtherSessions(ctx context.Context, tenantID, userID, keepSessionID uuid.UUID, reason string) ([]uuid.UUID, error) {
 	return r.queries(ctx).RevokeOtherUserSessions(ctx, db.RevokeOtherUserSessionsParams{
 		TenantID: tenantID, UserID: userID, ID: keepSessionID, RevokedReason: pdatabase.Text(reason),
 	})
+}
+
+// PruneOldSessions deletes revoked/expired sessions older than 30 days, for
+// the periodic retention job (docs/analysis/backend-inventory.md section
+// 1.1: sessions must not accumulate forever).
+func (r *Repository) PruneOldSessions(ctx context.Context, tenantID uuid.UUID) (int64, error) {
+	return r.queries(ctx).PruneOldSessions(ctx, tenantID)
 }
 
 func (r *Repository) ListActiveSessions(ctx context.Context, tenantID, userID uuid.UUID) ([]service.SessionView, error) {
@@ -218,6 +231,17 @@ func (r *Repository) IsSessionActive(ctx context.Context, tenantID, sessionID uu
 		return nil
 	})
 	return active, err
+}
+
+// TouchSessionLastSeen updates sessionID's last_seen_at. Called from the
+// authn middleware (throttled to once per 5 minutes there), so, like
+// IsSessionActive, it opens its own short transaction rather than
+// participating in a service-level one.
+func (r *Repository) TouchSessionLastSeen(ctx context.Context, tenantID, sessionID uuid.UUID) error {
+	return pdatabase.WithTenantTx(ctx, r.pool, tenantID, func(ctx context.Context) error {
+		tx, _ := pdatabase.TxFromContext(ctx)
+		return db.New(tx).TouchSessionLastSeen(ctx, db.TouchSessionLastSeenParams{TenantID: tenantID, ID: sessionID})
+	})
 }
 
 func toDomainUser(row db.User) domain.User {

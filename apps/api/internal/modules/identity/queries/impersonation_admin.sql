@@ -7,5 +7,5 @@ insert into sessions (
 returning *;
 
 -- name: InsertImpersonationAction :exec
-insert into impersonation_actions (tenant_id, session_id, method, path)
-values ($1, $2, $3, $4);
+insert into impersonation_actions (tenant_id, session_id, method, path, ip)
+values ($1, $2, $3, $4, $5);

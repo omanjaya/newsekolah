@@ -84,12 +84,15 @@ type RoleGrant struct {
 	RoleID    uuid.UUID
 	Slug      string
 	IsPrimary bool
+	IsSystem  bool
 }
 
-// ValidateRoleGrants enforces the two admin invariants
+// ValidateRoleGrants enforces the admin invariants
 // docs/analysis/backend-inventory.md section 1.2 documents: exactly one
-// primary role, and only an existing super_admin can grant the super_admin
-// role to anyone (including themselves acting on someone else).
+// primary role, only an existing super_admin can grant the super_admin
+// role to anyone (including themselves acting on someone else), the
+// primary role must be a system role, and every additional role must be a
+// custom (tenant-defined) role.
 func ValidateRoleGrants(actorIsSuperAdmin bool, grants []RoleGrant) error {
 	if len(grants) == 0 {
 		return ErrNoPrimaryRole
@@ -99,6 +102,11 @@ func ValidateRoleGrants(actorIsSuperAdmin bool, grants []RoleGrant) error {
 	for _, g := range grants {
 		if g.IsPrimary {
 			primaryCount++
+			if !g.IsSystem {
+				return ErrPrimaryRoleNotSystem
+			}
+		} else if g.IsSystem {
+			return ErrAdditionalRoleSystem
 		}
 		if g.Slug == SuperAdminRoleSlug && !actorIsSuperAdmin {
 			return ErrOnlySuperAdminGrants

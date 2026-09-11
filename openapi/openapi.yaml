@@ -2791,6 +2791,26 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+  /v1/analytics/admin-dashboard:
+    get:
+      tags:
+        - analytics
+      operationId: getAdminDashboard
+      x-permission: view_dashboard
+      summary: "Operational snapshot for Admin/Super Admin: active users per profile kind, pending approval queues, online
+        presence per role, and a 7-day login histogram. Restricted to the admin/super_admin system roles regardless of
+        who else holds view_dashboard."
+      responses:
+        "200":
+          description: Dashboard
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminDashboard"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /v1/announcements:
     get:
       tags:
@@ -6089,6 +6109,77 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+  /v1/users/import/template:
+    get:
+      tags:
+        - users
+      operationId: downloadUserImportTemplate
+      x-permission: create_users
+      summary: Download the xlsx template (with a reference sheet of accepted codes) for bulk user import
+      responses:
+        "200":
+          description: Workbook
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/users/import/preview:
+    post:
+      tags:
+        - users
+      operationId: previewUserImport
+      x-permission: create_users
+      summary: Validate a batch of parsed import rows (up to 5000) without creating anything
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserImportRequest"
+      responses:
+        "200":
+          description: Row-by-row preview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserImportResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/users/import/commit:
+    post:
+      tags:
+        - users
+      operationId: commitUserImport
+      x-permission: create_users
+      summary: Re-validate the same batch and create every row in one transaction; any invalid row aborts the whole batch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserImportRequest"
+      responses:
+        "200":
+          description: Row-by-row result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserImportResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /v1/users:
     get:
       tags:
@@ -6440,7 +6531,7 @@ paths:
         - me
       operationId: updateMyProfile
       x-permission: authenticated
-      summary: Update own name, email, phone and locale
+      summary: Update own username, name, email, phone, locale, and detail record (student/teacher/staff fields)
       requestBody:
         required: true
         content:
@@ -6448,6 +6539,11 @@ paths:
             schema:
               type: object
               properties:
+                username:
+                  type: string
+                  minLength: 3
+                  maxLength: 80
+                  description: Omit to keep the current username
                 name:
                   type: string
                   minLength: 1
@@ -6463,6 +6559,8 @@ paths:
                   enum:
                     - id
                     - en
+                detail:
+                  $ref: "#/components/schemas/UserProfileFields"
       responses:
         "200":
           description: Updated
@@ -7051,6 +7149,47 @@ paths:
                       $ref: "#/components/schemas/UserOption"
         "400":
           $ref: "#/components/responses/BadRequest"
+  /v1/auth/settings:
+    get:
+      tags:
+        - auth
+      operationId: getAuthSettings
+      x-permission: manage_settings
+      summary: Per-tenant session policy (session lifetime, single-device login)
+      responses:
+        "200":
+          description: Settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthSettings"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    put:
+      tags:
+        - auth
+      operationId: updateAuthSettings
+      x-permission: manage_settings
+      summary: Change the per-tenant session policy
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthSettingsWrite"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthSettings"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
   /v1/audit-logs:
@@ -12287,6 +12426,17 @@ paths:
           schema:
             type: boolean
             default: false
+        - name: q
+          in: query
+          description: Case-insensitive substring match against title or body.
+          schema:
+            type: string
+            maxLength: 120
+        - name: kind
+          in: query
+          description: Exact notification kind (e.g. leave_request_submitted).
+          schema:
+            type: string
         - name: cursor
           in: query
           schema:
@@ -15961,6 +16111,31 @@ paths:
                 $ref: "#/components/schemas/TenantBranding"
         "404":
           $ref: "#/components/responses/NotFound"
+    put:
+      tags:
+        - tenant
+      operationId: updateTenantBranding
+      x-permission: manage_settings
+      summary: Change the school's name, short name, tagline, and accent color
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BrandingWrite"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TenantBranding"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /v1/tenants/lookup:
     get:
       tags:
@@ -16028,6 +16203,106 @@ paths:
       responses:
         "204":
           description: Saved
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/tenant/branding/logo/upload-url:
+    post:
+      tags:
+        - tenant
+      operationId: requestLogoUpload
+      x-permission: manage_settings
+      summary: Get a presigned upload URL for a new logo (PNG/WebP/SVG, max 2 MB)
+      responses:
+        "200":
+          description: Upload target
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AssetUploadTarget"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "503":
+          description: Object storage not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/tenant/branding/logo/confirm:
+    post:
+      tags:
+        - tenant
+      operationId: confirmLogoUpload
+      x-permission: manage_settings
+      summary: Confirm the uploaded object as the new logo (validated server-side)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConfirmAssetUpload"
+      responses:
+        "200":
+          description: Logo set
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TenantBranding"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/tenant/branding/favicon/upload-url:
+    post:
+      tags:
+        - tenant
+      operationId: requestFaviconUpload
+      x-permission: manage_settings
+      summary: Get a presigned upload URL for a new favicon (PNG/WebP/SVG, max 512 KB)
+      responses:
+        "200":
+          description: Upload target
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AssetUploadTarget"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "503":
+          description: Object storage not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/tenant/branding/favicon/confirm:
+    post:
+      tags:
+        - tenant
+      operationId: confirmFaviconUpload
+      x-permission: manage_settings
+      summary: Confirm the uploaded object as the new favicon (validated server-side)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConfirmAssetUpload"
+      responses:
+        "200":
+          description: Favicon set
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TenantBranding"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -18212,6 +18487,45 @@ components:
           format: date
         notes:
           type: string
+    AdminDashboard:
+      type: object
+      required:
+        - active_users
+        - pending
+        - online_by_role
+        - login_histogram
+      properties:
+        active_users:
+          type: object
+          description: Active user count per profile_kind (student/teacher/staff/parent); a kind with no active users is omitted.
+          additionalProperties:
+            type: integer
+        pending:
+          type: object
+          description: Count of in-progress instances per workflow kind.
+          required:
+            - leave_request
+            - exit_permit
+            - late_arrival
+          properties:
+            leave_request:
+              type: integer
+            exit_permit:
+              type: integer
+            late_arrival:
+              type: integer
+        online_by_role:
+          type: object
+          description: Online socket count per role slug. Always empty until something calls platform/realtime.Presence.Heartbeat.
+          additionalProperties:
+            type: integer
+        login_histogram:
+          type: array
+          description: Exactly 24 entries, index = UTC hour of day, value = successful logins in that hour over the last 7 days.
+          minItems: 24
+          maxItems: 24
+          items:
+            type: integer
     RiskLevel:
       type: string
       enum:
@@ -18908,24 +19222,56 @@ components:
           type: string
         subject_name:
           type: string
+          description: Empty when status is no_schedule.
         teacher_name:
           type: string
+          description: Empty when status is no_schedule.
+        substitute_name:
+          type: string
+          description: Set only when a substitute teacher actually took the session.
         status:
           type: string
           enum:
             - not_started
             - in_progress
             - submitted
+            - no_schedule
+    MonitorPeriod:
+      type: object
+      required:
+        - name
+        - starts_at
+        - ends_at
+      properties:
+        name:
+          type: string
+        starts_at:
+          type: string
+          format: date-time
+        ends_at:
+          type: string
+          format: date-time
     MonitorSnapshot:
       type: object
       required:
         - generated_at
+        - date
+        - day_name
         - status_counts
         - sessions
       properties:
         generated_at:
           type: string
           format: date-time
+        date:
+          type: string
+          format: date
+        day_name:
+          type: string
+          description: English weekday name (Monday, Tuesday, ...); the client localizes.
+        current_period:
+          $ref: "#/components/schemas/MonitorPeriod"
+          description: Omitted when no schedule anywhere is currently in its period.
         status_counts:
           type: object
           additionalProperties:
@@ -20389,6 +20735,144 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/EraporSkip"
+    UserImportRow:
+      type: object
+      required:
+        - name
+        - profile_kind
+        - role_slug
+      properties:
+        row_number:
+          type: integer
+          description: Optional; defaults to the row's position in the batch (1-based)
+        username:
+          type: string
+        email:
+          type: string
+        password:
+          type: string
+        profile_kind:
+          $ref: "#/components/schemas/ProfileKind"
+        role_slug:
+          type: string
+          description: A system role slug, or an alias (e.g. "siswa", "guru", "pegawai", "wali") -- see the template's reference
+            sheet
+        nik:
+          type: string
+        name:
+          type: string
+          maxLength: 150
+        gender:
+          type: string
+          description: L, P, male, or female
+        birth_place:
+          type: string
+        birth_date:
+          type: string
+          description: YYYY-MM-DD
+        religion:
+          type: string
+        address:
+          type: string
+        district:
+          type: string
+        city:
+          type: string
+        phone:
+          type: string
+        blood_type:
+          type: string
+        nis:
+          type: string
+        nisn:
+          type: string
+        entry_year:
+          type: string
+        father_name:
+          type: string
+        mother_name:
+          type: string
+        guardian_name:
+          type: string
+        guardian_phone:
+          type: string
+        parent_occupation:
+          type: string
+        previous_school:
+          type: string
+        nip:
+          type: string
+        nuptk:
+          type: string
+        last_education:
+          type: string
+        employment_status:
+          type: string
+        joined_year:
+          type: string
+        specialization:
+          type: string
+        employee_number:
+          type: string
+        position:
+          type: string
+    UserImportRequest:
+      type: object
+      required:
+        - rows
+      properties:
+        rows:
+          type: array
+          maxItems: 5000
+          items:
+            $ref: "#/components/schemas/UserImportRow"
+    UserImportRowResult:
+      type: object
+      required:
+        - row_number
+        - errors
+      properties:
+        row_number:
+          type: integer
+        username:
+          type: string
+        errors:
+          type: array
+          items:
+            type: string
+    UserImportResult:
+      type: object
+      required:
+        - data
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserImportRowResult"
+    AuthSettings:
+      type: object
+      required:
+        - session_days
+        - single_device
+      properties:
+        session_days:
+          type: integer
+          minimum: 1
+          maximum: 365
+        single_device:
+          type: boolean
+    AuthSettingsWrite:
+      type: object
+      required:
+        - session_days
+        - single_device
+      properties:
+        session_days:
+          type: integer
+          minimum: 1
+          maximum: 365
+        single_device:
+          type: boolean
     ParentRelation:
       type: string
       enum:
@@ -21084,6 +21568,9 @@ components:
               format: uuid
             name:
               type: string
+        detail:
+          $ref: "#/components/schemas/UserProfileFields"
+          description: Omitted when the account has no profile_kind (e.g. a role with no student/teacher/staff record).
     GoogleSSOConfig:
       type: object
       required:
@@ -25275,6 +25762,46 @@ components:
           enum:
             - id
             - en
+    BrandingWrite:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 160
+        short_name:
+          type: string
+          maxLength: 40
+        tagline:
+          type: string
+          maxLength: 200
+        accent_color:
+          type: string
+          pattern: ^#[0-9A-Fa-f]{6}$
+    AssetUploadTarget:
+      type: object
+      required:
+        - upload_url
+        - object_key
+        - expires_at
+      properties:
+        upload_url:
+          type: string
+          format: uri
+        object_key:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+    ConfirmAssetUpload:
+      type: object
+      required:
+        - object_key
+      properties:
+        object_key:
+          type: string
     TenantSummary:
       type: object
       required:

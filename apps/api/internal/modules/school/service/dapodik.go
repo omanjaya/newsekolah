@@ -13,6 +13,7 @@ import (
 	identitydomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/identity/domain"
 	identityservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/identity/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/school/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/authz"
 )
 
 // DapodikRowAction is what a Dapodik import row will do (preview) or did
@@ -28,7 +29,7 @@ const (
 // dapodikStudentRoleSlug is the role every student Dapodik creates gets.
 // It must already exist (roles are seeded per docs/analysis/backend-
 // inventory.md section 1.2); the import does not create roles.
-const dapodikStudentRoleSlug = "siswa"
+const dapodikStudentRoleSlug = authz.RoleSlugStudent
 
 // DapodikRowResult is one row's outcome, returned by both the dry-run
 // preview and the commit.

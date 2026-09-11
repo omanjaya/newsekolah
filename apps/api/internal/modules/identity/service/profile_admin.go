@@ -47,25 +47,71 @@ type NewAsset struct {
 // ProfileRepository is the data-access boundary for the self-service
 // profile and avatar endpoints.
 type ProfileRepository interface {
-	UpdateOwnProfileRecord(ctx context.Context, tenantID, userID uuid.UUID, name, email, phone, locale string) error
+	UpdateOwnProfileRecord(ctx context.Context, tenantID, userID uuid.UUID, username, name, email, phone, locale string) error
+	GetUserProfile(ctx context.Context, tenantID, userID uuid.UUID) (UserProfileFields, bool, error)
 	CreateAssetRecord(ctx context.Context, in NewAsset) (AssetRecord, error)
 }
 
-// UpdateMyProfile updates the caller's own name/email/phone/locale.
-func (s *Service) UpdateMyProfile(ctx context.Context, tenantID, userID uuid.UUID, name, email, phone, locale string) (MeResult, error) {
+// UpdateMyProfileInput is what a caller can change about their own
+// account: the same fields an admin can set via UpdateUser, minus roles
+// and status. Username is optional -- blank keeps the current one -- but
+// when given, it is normalized and checked for uniqueness exactly like an
+// admin-driven update (docs/analysis/backend-inventory.md section 1.5).
+type UpdateMyProfileInput struct {
+	Username string
+	Name     string
+	Email    string
+	Phone    string
+	Locale   string
+	// Detail is always applied in full (an upsert into user_profiles plus
+	// whichever kind-specific table applies to the caller's existing
+	// profile_kind), the same convention UpdateUser's Profile field uses.
+	Detail UserProfileFields
+}
+
+// UpdateMyProfile updates the caller's own username, name, email, phone,
+// locale, and detail record (student/teacher/staff fields).
+func (s *Service) UpdateMyProfile(ctx context.Context, tenantID, userID uuid.UUID, in UpdateMyProfileInput) (MeResult, error) {
 	var result MeResult
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		user, err := s.repo.GetUserByID(ctx, tenantID, userID)
 		if err != nil {
 			return domain.ErrUserNotFound
 		}
+		row, err := s.repo.GetUserAdminByID(ctx, tenantID, userID)
+		if err != nil {
+			return domain.ErrUserNotFound
+		}
+
+		username := user.Username
+		if in.Username != "" {
+			normalized := domain.NormalizeUsername(in.Username)
+			if normalized != user.Username {
+				exists, err := s.repo.UsernameExists(ctx, tenantID, normalized)
+				if err != nil {
+					return fmt.Errorf("check username exists: %w", err)
+				}
+				if exists {
+					return domain.ErrUserAlreadyExists
+				}
+			}
+			username = normalized
+		}
+
+		email := domain.NormalizeEmail(in.Email)
 		if email != user.Email {
 			if err := s.checkEmailFree(ctx, tenantID, email); err != nil {
 				return err
 			}
 		}
-		if err := s.repo.UpdateOwnProfileRecord(ctx, tenantID, userID, name, email, phone, locale); err != nil {
+
+		if err := s.repo.UpdateOwnProfileRecord(ctx, tenantID, userID, username, in.Name, email, in.Phone, in.Locale); err != nil {
 			return fmt.Errorf("update own profile: %w", err)
+		}
+		if row.ProfileKind.Valid() {
+			if err := s.writeProfile(ctx, tenantID, userID, row.ProfileKind, in.Detail); err != nil {
+				return err
+			}
 		}
 
 		updated, err := s.repo.GetUserByID(ctx, tenantID, userID)

@@ -734,6 +734,9 @@ components:
               format: uuid
             name:
               type: string
+        detail:
+          $ref: "#/components/schemas/UserProfileFields"
+          description: Omitted when the account has no profile_kind (e.g. a role with no student/teacher/staff record).
     GoogleSSOConfig:
       type: object
       required:

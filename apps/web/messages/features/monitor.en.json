@@ -28,8 +28,10 @@
   "sessionStatus": {
     "not_started": "Not started",
     "in_progress": "In progress",
-    "submitted": "Submitted"
+    "submitted": "Submitted",
+    "no_schedule": "No schedule"
   },
+  "substituteFor": "covering for",
   "noSessionsTitle": "No sessions running",
   "noSessionsBody": "No period is currently in progress."
 }

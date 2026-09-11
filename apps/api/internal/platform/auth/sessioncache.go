@@ -10,6 +10,12 @@ import (
 
 const sessionCacheTTL = 60 * time.Second
 
+// touchThrottle is how often the middleware is allowed to update a
+// session's last_seen_at (docs/analysis/backend-inventory.md section
+// 1.1): frequent enough for "list my sessions" to read as current, rare
+// enough not to write on every single request.
+const touchThrottle = 5 * time.Minute
+
 // SessionCache remembers whether a session was active the last time it was
 // checked against the database, so the authn middleware does not hit the
 // database on every request. Revoking a session (logout, password change,
@@ -47,4 +53,22 @@ func (c *SessionCache) SetActive(ctx context.Context, sessionID uuid.UUID, activ
 
 func (c *SessionCache) Invalidate(ctx context.Context, sessionID uuid.UUID) error {
 	return c.store.Del(ctx, sessionCacheKey(sessionID))
+}
+
+func touchCacheKey(sessionID uuid.UUID) string {
+	return fmt.Sprintf("session:touch:%s", sessionID)
+}
+
+// ShouldTouchLastSeen reports whether the caller is due to update
+// sessionID's last_seen_at now. It self-throttles to once per
+// touchThrottle by marking the key it just checked, so the check works the
+// same way across every API replica (the marker lives in the shared
+// KVStore, not in process memory).
+func (c *SessionCache) ShouldTouchLastSeen(ctx context.Context, sessionID uuid.UUID) bool {
+	_, found, err := c.store.Get(ctx, touchCacheKey(sessionID))
+	if err != nil || found {
+		return false
+	}
+	_ = c.store.Set(ctx, touchCacheKey(sessionID), "1", touchThrottle)
+	return true
 }

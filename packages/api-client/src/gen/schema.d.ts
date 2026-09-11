@@ -1224,6 +1224,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/analytics/admin-dashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Operational snapshot for Admin/Super Admin: active users per profile kind, pending approval queues, online presence per role, and a 7-day login histogram. Restricted to the admin/super_admin system roles regardless of who else holds view_dashboard. */
+        get: operations["getAdminDashboard"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/announcements": {
         parameters: {
             query?: never;
@@ -2661,6 +2678,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/users/import/template": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download the xlsx template (with a reference sheet of accepted codes) for bulk user import */
+        get: operations["downloadUserImportTemplate"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/users/import/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Validate a batch of parsed import rows (up to 5000) without creating anything */
+        post: operations["previewUserImport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/users/import/commit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Re-validate the same batch and create every row in one transaction; any invalid row aborts the whole batch */
+        post: operations["commitUserImport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/users": {
         parameters: {
             query?: never;
@@ -2826,7 +2894,7 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Update own name, email, phone and locale */
+        /** Update own username, name, email, phone, locale, and detail record (student/teacher/staff fields) */
         put: operations["updateMyProfile"];
         post?: never;
         delete?: never;
@@ -3044,6 +3112,24 @@ export interface paths {
         /** Active users with a teacher or staff profile, for a duty assignment form's assignee dropdown */
         get: operations["listStaffOptions"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Per-tenant session policy (session lifetime, single-device login) */
+        get: operations["getAuthSettings"];
+        /** Change the per-tenant session policy */
+        put: operations["updateAuthSettings"];
         post?: never;
         delete?: never;
         options?: never;
@@ -6864,7 +6950,8 @@ export interface paths {
         };
         /** Public branding for the resolved tenant (login screen, manifest) */
         get: operations["getTenantBranding"];
-        put?: never;
+        /** Change the school's name, short name, tagline, and accent color */
+        put: operations["updateTenantBranding"];
         post?: never;
         delete?: never;
         options?: never;
@@ -6917,6 +7004,74 @@ export interface paths {
         /** The school's name, level, timezone and default language */
         put: operations["updateSchoolProfile"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tenant/branding/logo/upload-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Get a presigned upload URL for a new logo (PNG/WebP/SVG, max 2 MB) */
+        post: operations["requestLogoUpload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tenant/branding/logo/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm the uploaded object as the new logo (validated server-side) */
+        post: operations["confirmLogoUpload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tenant/branding/favicon/upload-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Get a presigned upload URL for a new favicon (PNG/WebP/SVG, max 512 KB) */
+        post: operations["requestFaviconUpload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tenant/branding/favicon/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm the uploaded object as the new favicon (validated server-side) */
+        post: operations["confirmFaviconUpload"];
         delete?: never;
         options?: never;
         head?: never;
@@ -7847,6 +8002,24 @@ export interface components {
             achieved_on: string;
             notes?: string;
         };
+        AdminDashboard: {
+            /** @description Active user count per profile_kind (student/teacher/staff/parent); a kind with no active users is omitted. */
+            active_users: {
+                [key: string]: number;
+            };
+            /** @description Count of in-progress instances per workflow kind. */
+            pending: {
+                leave_request: number;
+                exit_permit: number;
+                late_arrival: number;
+            };
+            /** @description Online socket count per role slug. Always empty until something calls platform/realtime.Presence.Heartbeat. */
+            online_by_role: {
+                [key: string]: number;
+            };
+            /** @description Exactly 24 entries, index = UTC hour of day, value = successful logins in that hour over the last 7 days. */
+            login_histogram: number[];
+        };
         /** @enum {string} */
         RiskLevel: "none" | "watch" | "at_risk";
         /** @description One observation that contributed to the level: a stable code plus the exact numbers observed (e.g. absent_days, considered_days), never a characterisation of the student. The UI renders the code as localized text with the params filled in. */
@@ -8123,14 +8296,31 @@ export interface components {
         };
         MonitorSessionCard: {
             class_name: string;
+            /** @description Empty when status is no_schedule. */
             subject_name: string;
+            /** @description Empty when status is no_schedule. */
             teacher_name: string;
+            /** @description Set only when a substitute teacher actually took the session. */
+            substitute_name?: string;
             /** @enum {string} */
-            status: "not_started" | "in_progress" | "submitted";
+            status: "not_started" | "in_progress" | "submitted" | "no_schedule";
+        };
+        MonitorPeriod: {
+            name: string;
+            /** Format: date-time */
+            starts_at: string;
+            /** Format: date-time */
+            ends_at: string;
         };
         MonitorSnapshot: {
             /** Format: date-time */
             generated_at: string;
+            /** Format: date */
+            date: string;
+            /** @description English weekday name (Monday, Tuesday, ...); the client localizes. */
+            day_name: string;
+            /** @description Omitted when no schedule anywhere is currently in its period. */
+            current_period?: components["schemas"]["MonitorPeriod"];
             status_counts: {
                 [key: string]: number;
             };
@@ -8743,6 +8933,65 @@ export interface components {
             rows: components["schemas"]["EraporRow"][];
             skipped: components["schemas"]["EraporSkip"][];
         };
+        UserImportRow: {
+            /** @description Optional; defaults to the row's position in the batch (1-based) */
+            row_number?: number;
+            username?: string;
+            email?: string;
+            password?: string;
+            profile_kind: components["schemas"]["ProfileKind"];
+            /** @description A system role slug, or an alias (e.g. "siswa", "guru", "pegawai", "wali") -- see the template's reference sheet */
+            role_slug: string;
+            nik?: string;
+            name: string;
+            /** @description L, P, male, or female */
+            gender?: string;
+            birth_place?: string;
+            /** @description YYYY-MM-DD */
+            birth_date?: string;
+            religion?: string;
+            address?: string;
+            district?: string;
+            city?: string;
+            phone?: string;
+            blood_type?: string;
+            nis?: string;
+            nisn?: string;
+            entry_year?: string;
+            father_name?: string;
+            mother_name?: string;
+            guardian_name?: string;
+            guardian_phone?: string;
+            parent_occupation?: string;
+            previous_school?: string;
+            nip?: string;
+            nuptk?: string;
+            last_education?: string;
+            employment_status?: string;
+            joined_year?: string;
+            specialization?: string;
+            employee_number?: string;
+            position?: string;
+        };
+        UserImportRequest: {
+            rows: components["schemas"]["UserImportRow"][];
+        };
+        UserImportRowResult: {
+            row_number: number;
+            username?: string;
+            errors: string[];
+        };
+        UserImportResult: {
+            data: components["schemas"]["UserImportRowResult"][];
+        };
+        AuthSettings: {
+            session_days: number;
+            single_device: boolean;
+        };
+        AuthSettingsWrite: {
+            session_days: number;
+            single_device: boolean;
+        };
         /** @enum {string} */
         ParentRelation: "father" | "mother" | "guardian";
         LinkedChild: {
@@ -9034,6 +9283,8 @@ export interface components {
                 user_id?: string;
                 name?: string;
             };
+            /** @description Omitted when the account has no profile_kind (e.g. a role with no student/teacher/staff record). */
+            detail?: components["schemas"]["UserProfileFields"];
         };
         GoogleSSOConfig: {
             /** @description False when this school has never saved a configuration. */
@@ -10767,6 +11018,22 @@ export interface components {
             timezone: string;
             /** @enum {string} */
             locale: "id" | "en";
+        };
+        BrandingWrite: {
+            name: string;
+            short_name?: string;
+            tagline?: string;
+            accent_color?: string;
+        };
+        AssetUploadTarget: {
+            /** Format: uri */
+            upload_url: string;
+            object_key: string;
+            /** Format: date-time */
+            expires_at: string;
+        };
+        ConfirmAssetUpload: {
+            object_key: string;
         };
         TenantSummary: {
             /** Format: uuid */
@@ -13803,6 +14070,28 @@ export interface operations {
             403: components["responses"]["Forbidden"];
         };
     };
+    getAdminDashboard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Dashboard */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminDashboard"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
     listAnnouncements: {
         parameters: {
             query?: {
@@ -16644,6 +16933,82 @@ export interface operations {
             403: components["responses"]["Forbidden"];
         };
     };
+    downloadUserImportTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Workbook */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    previewUserImport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserImportRequest"];
+            };
+        };
+        responses: {
+            /** @description Row-by-row preview */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserImportResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    commitUserImport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserImportRequest"];
+            };
+        };
+        responses: {
+            /** @description Row-by-row result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserImportResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
     listUsers: {
         parameters: {
             query?: {
@@ -16959,12 +17324,15 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
+                    /** @description Omit to keep the current username */
+                    username?: string;
                     name?: string;
                     /** Format: email */
                     email?: string;
                     phone?: string;
                     /** @enum {string} */
                     locale?: "id" | "en";
+                    detail?: components["schemas"]["UserProfileFields"];
                 };
             };
         };
@@ -17498,6 +17866,54 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+        };
+    };
+    getAuthSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Settings */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthSettings"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    updateAuthSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AuthSettingsWrite"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthSettings"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
         };
     };
@@ -22069,6 +22485,10 @@ export interface operations {
         parameters: {
             query?: {
                 unread_only?: boolean;
+                /** @description Case-insensitive substring match against title or body. */
+                q?: string;
+                /** @description Exact notification kind (e.g. leave_request_submitted). */
+                kind?: string;
                 cursor?: string;
                 limit?: number;
             };
@@ -25304,6 +25724,33 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    updateTenantBranding: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BrandingWrite"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantBranding"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
     lookupTenants: {
         parameters: {
             query: {
@@ -25370,6 +25817,122 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    requestLogoUpload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Upload target */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssetUploadTarget"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description Object storage not configured */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    confirmLogoUpload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfirmAssetUpload"];
+            };
+        };
+        responses: {
+            /** @description Logo set */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantBranding"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    requestFaviconUpload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Upload target */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssetUploadTarget"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description Object storage not configured */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    confirmFaviconUpload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfirmAssetUpload"];
+            };
+        };
+        responses: {
+            /** @description Favicon set */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantBranding"];
+                };
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];

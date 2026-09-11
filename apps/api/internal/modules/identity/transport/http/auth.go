@@ -65,6 +65,8 @@ func (h *Handler) RefreshToken(ctx context.Context, request api.RefreshTokenRequ
 			return nil, httpx.ErrTokenInvalid
 		}
 		refreshToken = *request.Body.RefreshToken
+	} else if !httpx.OriginAllowed(httpx.RequestMetaFromContext(ctx).Origin, h.appOrigins) {
+		return nil, httpx.ErrOriginNotAllowed
 	}
 
 	ip, userAgent := deviceInfoFromContext(ctx)
@@ -89,8 +91,9 @@ func (h *Handler) Logout(ctx context.Context, _ api.LogoutRequestObject) (api.Lo
 	if !ok {
 		return nil, httpx.ErrTokenInvalid
 	}
+	userID, _ := httpx.UserIDFromContext(ctx)
 
-	if err := h.service.Logout(ctx, tenantID, sessionID); err != nil {
+	if err := h.service.Logout(ctx, tenantID, userID, sessionID); err != nil {
 		return nil, mapAuthError(err)
 	}
 	_ = h.sessionCache.Invalidate(ctx, sessionID)

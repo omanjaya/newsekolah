@@ -12,6 +12,14 @@ paths:
           schema:
             type: boolean
             default: false
+        - name: q
+          in: query
+          description: Case-insensitive substring match against title or body.
+          schema: { type: string, maxLength: 120 }
+        - name: kind
+          in: query
+          description: Exact notification kind (e.g. leave_request_submitted).
+          schema: { type: string }
         - name: cursor
           in: query
           schema:

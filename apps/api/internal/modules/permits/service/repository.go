@@ -29,6 +29,7 @@ type Repository interface {
 	GetInProgressInstance(ctx context.Context, tenantID uuid.UUID, kind domain.Kind, subjectUserID uuid.UUID) (domain.Instance, bool, error)
 	LockSubjectForInstanceCounting(ctx context.Context, tenantID, subjectUserID uuid.UUID) error
 	CountInstancesForSubjectYear(ctx context.Context, tenantID uuid.UUID, kind domain.Kind, subjectUserID, academicYearID uuid.UUID) (int64, error)
+	CountInProgressInstances(ctx context.Context, tenantID uuid.UUID, kind domain.Kind) (int64, error)
 	ListInstancesBySubject(ctx context.Context, tenantID uuid.UUID, kind domain.Kind, subjectUserID uuid.UUID, limit, offset int) ([]domain.Instance, error)
 	ExpireHangingInstances(ctx context.Context, tenantID uuid.UUID, openedBefore time.Time) ([]domain.Instance, error)
 	HasInProgressLateArrivalOn(ctx context.Context, tenantID, subjectUserID uuid.UUID, date time.Time) (bool, error)

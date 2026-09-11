@@ -24,14 +24,17 @@ var (
 	ErrCannotArchiveSelf    = errors.New("cannot archive own account")
 	ErrOnlySuperAdminGrants = errors.New("only a super admin can grant the super admin role")
 	ErrNoPrimaryRole        = errors.New("exactly one role must be marked primary")
+	ErrPrimaryRoleNotSystem = errors.New("the primary role must be a system role")
+	ErrAdditionalRoleSystem = errors.New("additional roles must be custom roles, not system roles")
 	ErrInvalidProfileKind   = errors.New("invalid profile kind")
 
 	// Roles and permissions
-	ErrRoleNotFound        = errors.New("role not found")
-	ErrInvalidRoleSlug     = errors.New("role slug must be 2-50 lowercase letters, digits, or underscores")
-	ErrRoleSystemImmutable = errors.New("system role slug and name cannot be changed")
-	ErrRoleInUse           = errors.New("role is still assigned to one or more users")
-	ErrUnknownPermission   = errors.New("unknown permission code")
+	ErrRoleNotFound          = errors.New("role not found")
+	ErrInvalidRoleSlug       = errors.New("role slug must be 2-50 lowercase letters, digits, or underscores")
+	ErrRoleSystemImmutable   = errors.New("system role slug and name cannot be changed")
+	ErrRoleInUse             = errors.New("role is still assigned to one or more users")
+	ErrUnknownPermission     = errors.New("unknown permission code")
+	ErrLeavePermissionDirect = errors.New("review_leave_requests and issue_leave_letters cannot be granted directly to the teacher role; they must come from a duty assignment")
 
 	// Duties
 	ErrDutyTypeNotFound       = errors.New("duty type not found")
@@ -50,6 +53,9 @@ var (
 	// Password reset
 	ErrPasswordResetTokenInvalid = errors.New("password reset token is invalid, used, or expired")
 
+	// Auth settings
+	ErrInvalidSessionDays = errors.New("session_days must be between 1 and 365")
+
 	// Avatar / upload
 	ErrUploadNotConfigured   = errors.New("file storage is not configured")
 	ErrUploadInvalidFileType = errors.New("unsupported file type")
@@ -57,7 +63,10 @@ var (
 	ErrUploadObjectNotOwned  = errors.New("uploaded object does not belong to this tenant/user")
 
 	// Import
-	ErrImportFileInvalid = errors.New("import file is unreadable or does not match the template")
+	ErrImportFileInvalid  = errors.New("import file is unreadable or does not match the template")
+	ErrImportEmpty        = errors.New("import batch has no rows")
+	ErrImportTooManyRows  = errors.New("import batch exceeds the 5000 row limit")
+	ErrImportHasRowErrors = errors.New("import batch has one or more invalid rows; nothing was committed")
 
 	// Google Workspace SSO
 	ErrSSONotConfigured        = errors.New("google sso is not configured for this school")

@@ -54,14 +54,19 @@ func NewAPNSSender(cfg APNSConfig) (PushSender, error) {
 }
 
 func (s *apnsSender) Send(ctx context.Context, device PushDevice, payload PushPayload) error {
+	aps := map[string]any{
+		"alert": map[string]string{"title": payload.Title, "body": payload.Body},
+		"sound": "default",
+	}
+	if payload.Badge != nil {
+		aps["badge"] = *payload.Badge
+	}
+
 	n := &apns2.Notification{
 		DeviceToken: device.TokenOrEndpoint,
 		Topic:       s.topic,
 		Payload: map[string]any{
-			"aps": map[string]any{
-				"alert": map[string]string{"title": payload.Title, "body": payload.Body},
-				"sound": "default",
-			},
+			"aps":  aps,
 			"href": payload.Href,
 			"data": payload.Data,
 		},
@@ -71,7 +76,13 @@ func (s *apnsSender) Send(ctx context.Context, device PushDevice, payload PushPa
 	if err != nil {
 		return fmt.Errorf("send APNs push: %w", err)
 	}
-	if resp.Reason == apns2.ReasonUnregistered || resp.Reason == apns2.ReasonBadDeviceToken {
+	// Unregistered/BadDeviceToken are permanently dead; ExpiredToken means
+	// the provider token itself expired for that device registration --
+	// APNs will never accept it again either, so it is device-gone too
+	// (reference/sion-rebuild-go apns.go), not just a transient failure to
+	// retry.
+	switch resp.Reason {
+	case apns2.ReasonUnregistered, apns2.ReasonBadDeviceToken, apns2.ReasonExpiredToken:
 		return ErrDeviceGone
 	}
 	if !resp.Sent() {

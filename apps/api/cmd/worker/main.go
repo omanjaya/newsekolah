@@ -54,7 +54,7 @@ func run(logger *slog.Logger) error {
 	defer pool.Close()
 
 	workers := jobs.NewWorkers()
-	schoolModule := school.Register(pool, tenantModeFor(cfg))
+	schoolModule := school.Register(pool, tenantModeFor(cfg), nil)
 	permitsModule := permits.Register(permits.Dependencies{
 		Pool: pool, Years: schoolModule.Service, Clock: clock.Real{},
 		Config: permitsservice.DefaultConfig([]byte(cfg.DocumentSigningKey), cfg.S3Bucket), Logger: logger,
@@ -70,6 +70,7 @@ func run(logger *slog.Logger) error {
 		Pool: pool, Jobs: nil, Clock: clock.Real{},
 		Push: senders.Push, Email: senders.Email, WhatsApp: senders.WhatsApp,
 		Sealer: sealer, WhatsAppAppSecret: cfg.WhatsAppAppSecret, WhatsAppWebhookVerifyToken: cfg.WhatsAppWebhookVerifyToken,
+		APNSConfigured: cfg.APNSKeyP8 != "",
 	})
 	notificationPeriodic, err := notificationsModule.RegisterJobs(workers)
 	if err != nil {

@@ -217,13 +217,27 @@ func toAPIDailyReport(r service.DailyReport) api.AttendanceDailyReport {
 	}
 }
 
-func toAPIMonitorSnapshot(m service.MonitorSnapshot) api.MonitorSnapshot {
+func ToAPIMonitorSnapshot(m service.MonitorSnapshot) api.MonitorSnapshot {
 	sessions := make([]api.MonitorSessionCard, len(m.Sessions))
 	for i, c := range m.Sessions {
-		sessions[i] = api.MonitorSessionCard{
+		card := api.MonitorSessionCard{
 			ClassName: c.ClassName, SubjectName: c.SubjectName, TeacherName: c.TeacherName,
 			Status: api.MonitorSessionCardStatus(c.Status),
 		}
+		if c.SubstituteName != "" {
+			substitute := c.SubstituteName
+			card.SubstituteName = &substitute
+		}
+		sessions[i] = card
 	}
-	return api.MonitorSnapshot{GeneratedAt: m.GeneratedAt, StatusCounts: m.StatusCounts, Sessions: sessions}
+	snapshot := api.MonitorSnapshot{
+		GeneratedAt: m.GeneratedAt, Date: openapi_types.Date{Time: m.Date}, DayName: m.DayName,
+		StatusCounts: m.StatusCounts, Sessions: sessions,
+	}
+	if m.CurrentPeriod != nil {
+		snapshot.CurrentPeriod = &api.MonitorPeriod{
+			Name: m.CurrentPeriod.Name, StartsAt: m.CurrentPeriod.StartsAt, EndsAt: m.CurrentPeriod.EndsAt,
+		}
+	}
+	return snapshot
 }

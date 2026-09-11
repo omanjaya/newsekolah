@@ -70,15 +70,16 @@ func (q *Queries) CreateImpersonationSession(ctx context.Context, arg CreateImpe
 }
 
 const insertImpersonationAction = `-- name: InsertImpersonationAction :exec
-insert into impersonation_actions (tenant_id, session_id, method, path)
-values ($1, $2, $3, $4)
+insert into impersonation_actions (tenant_id, session_id, method, path, ip)
+values ($1, $2, $3, $4, $5)
 `
 
 type InsertImpersonationActionParams struct {
-	TenantID  uuid.UUID `json:"tenant_id"`
-	SessionID uuid.UUID `json:"session_id"`
-	Method    string    `json:"method"`
-	Path      string    `json:"path"`
+	TenantID  uuid.UUID   `json:"tenant_id"`
+	SessionID uuid.UUID   `json:"session_id"`
+	Method    string      `json:"method"`
+	Path      string      `json:"path"`
+	Ip        *netip.Addr `json:"ip"`
 }
 
 func (q *Queries) InsertImpersonationAction(ctx context.Context, arg InsertImpersonationActionParams) error {
@@ -87,6 +88,7 @@ func (q *Queries) InsertImpersonationAction(ctx context.Context, arg InsertImper
 		arg.SessionID,
 		arg.Method,
 		arg.Path,
+		arg.Ip,
 	)
 	return err
 }

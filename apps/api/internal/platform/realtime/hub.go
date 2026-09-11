@@ -13,6 +13,8 @@ import (
 	"encoding/json"
 	"sync"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // Hub tracks every live WebSocket connection, grouped by topic. A topic is
@@ -23,6 +25,21 @@ type Hub struct {
 	topics map[string]map[*Client]struct{}
 
 	broadcaster Broadcaster
+	// source identifies this process among every API replica sharing the
+	// same Broadcaster. Publish tags every message it sends to Redis with
+	// this id; watchRemote drops a message whose Source matches it, since
+	// Publish already delivered that message to this process's own
+	// clients directly -- without the check, multi-replica mode would
+	// deliver every local message twice (docs/analysis/backend-inventory.md
+	// section 1.6.3).
+	source string
+}
+
+// remoteEnvelope wraps a Publish payload before it goes to the
+// Broadcaster, so watchRemote can tell which replica originated it.
+type remoteEnvelope struct {
+	Source  string          `json:"source"`
+	Payload json.RawMessage `json:"payload"`
 }
 
 // Broadcaster fans a published message out to every other API replica.
@@ -42,6 +59,7 @@ func NewHub(broadcaster Broadcaster) *Hub {
 	return &Hub{
 		topics:      make(map[string]map[*Client]struct{}),
 		broadcaster: broadcaster,
+		source:      uuid.NewString(),
 	}
 }
 
@@ -86,14 +104,27 @@ func (h *Hub) watchRemote(topic string) {
 		return
 	}
 	ctx := context.Background()
-	go h.broadcaster.Subscribe(ctx, topic, func(payload []byte) {
-		h.deliverLocal(topic, payload)
+	go h.broadcaster.Subscribe(ctx, topic, func(raw []byte) {
+		var env remoteEnvelope
+		if err := json.Unmarshal(raw, &env); err != nil {
+			return
+		}
+		if env.Source == h.source {
+			// This process already delivered the message to its own
+			// clients when it called Publish; the copy coming back from
+			// Redis is an echo, not a message from another replica.
+			return
+		}
+		h.deliverLocal(topic, env.Payload)
 	})
 }
 
 // Publish sends payload (marshaled as JSON) to every client subscribed to
 // topic on this process, and -- when a Broadcaster is configured -- to
-// every other replica's clients on that topic too.
+// every other replica's clients on that topic too (tagged with this
+// process's source id so watchRemote there does not deliver it a second
+// time on the replica that already got it locally, and this process
+// ignores it when its own tag comes back).
 func (h *Hub) Publish(topic string, event any) error {
 	payload, err := json.Marshal(event)
 	if err != nil {
@@ -103,7 +134,11 @@ func (h *Hub) Publish(topic string, event any) error {
 	h.deliverLocal(topic, payload)
 
 	if h.broadcaster != nil {
-		return h.broadcaster.Publish(context.Background(), topic, payload)
+		envelope, err := json.Marshal(remoteEnvelope{Source: h.source, Payload: payload})
+		if err != nil {
+			return err
+		}
+		return h.broadcaster.Publish(context.Background(), topic, envelope)
 	}
 	return nil
 }

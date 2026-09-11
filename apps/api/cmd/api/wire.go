@@ -76,12 +76,27 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		mode = tenant.ModeMulti
 	}
 
-	schoolModule := school.Register(pool, mode)
+	// Built before schoolModule (branding logo/favicon upload needs it)
+	// and reused by permits/attendance/... below. storageClientFor returns
+	// the narrower permits-owned interface so permits/platform's own
+	// `== nil` checks stay correct when S3 is not configured; school wants
+	// the concrete type instead (DownloadBounded/RemoveObject/Bucket, none
+	// of which that interface has), and a comma-ok type assertion recovers
+	// it without breaking that nil-interface-vs-nil-pointer safety: when
+	// sharedStorage is a genuinely nil interface the assertion still just
+	// yields a nil *storage.Client, not a panic.
+	sharedStorage := storageClientFor(cfg, logger)
+	sharedStorageClient, _ := sharedStorage.(*storage.Client)
+
+	schoolModule := school.Register(pool, mode, sharedStorageClient)
 	senders := wiring.SendersFromConfig(cfg, logger)
 	sealer, err := crypto.NewSealer("v1", cfg.EncryptionSecret())
 	if err != nil {
 		return nil, nil, err
 	}
+	// pushDevices is filled in once the notifications module exists below
+	// (identity is built first); see its type's comment.
+	pushDevices := &lateBoundPushDevices{}
 	identityModule := identity.Register(identity.Dependencies{
 		Pool:    pool,
 		Years:   schoolModule.Service,
@@ -102,6 +117,8 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		Branding:     schoolModule.Handler,
 		SessionCache: sessionCache,
 		IsProduction: cfg.IsProduction(),
+		AppOrigins:   cfg.AppOrigins,
+		PushDevices:  pushDevices,
 		Email:        senders.Email,
 		MfaSealer:    sealer,
 		Ceremony:     store,
@@ -131,8 +148,6 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	// permits and attendance depend on each other only through adapters:
 	// permits is built first with a late-bound attendance sync, then
 	// attendance receives permits' blocker/overrider.
-	sharedStorage := storageClientFor(cfg, logger)
-
 	sync := &lateBoundSync{}
 	// discipline also depends on permits (DisciplineDocuments, below), so
 	// its own RecordLateArrivalViolation adapter is late-bound the same
@@ -190,7 +205,15 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		Attendance: wiring.AnalyticsAttendance{Svc: attendanceModule.Service},
 		Discipline: wiring.AnalyticsDiscipline{Svc: disciplineModule.Service},
 		Grading:    wiring.AnalyticsGrading{Svc: gradingModule.Service},
-		Clock:      clock.Real{},
+		// Admin dashboard (identity/permits satisfy IdentityReader/
+		// PermitsReader structurally/via a small adapter -- see
+		// wiring/analytics.go). Presence is left nil: platform/realtime's
+		// Presence tracker has no tenant or role dimension today (nothing
+		// calls Heartbeat yet), so there is nothing honest to report but
+		// the online-per-role panel's documented "else 0".
+		Identity: identityModule.Service,
+		Permits:  wiring.AnalyticsPermits{Svc: permitsModule.Service},
+		Clock:    clock.Real{},
 	})
 
 	// Built before the jobs block below so its periodic due-schedule scan
@@ -217,7 +240,9 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		Contacts: identityContacts{svc: identityModule.Service}, Bus: eventBus, Clock: clock.Real{},
 		Push: senders.Push, Email: senders.Email, WhatsApp: senders.WhatsApp,
 		Sealer: sealer, WhatsAppAppSecret: cfg.WhatsAppAppSecret, WhatsAppWebhookVerifyToken: cfg.WhatsAppWebhookVerifyToken,
+		APNSConfigured: cfg.APNSKeyP8 != "",
 	})
+	pushDevices.svc = notificationsModule.Service
 	announcementsModule := announcements.Register(announcements.Dependencies{
 		Pool: pool, Notifier: wiring.AnnouncementNotifier{Svc: notificationsModule.Service}, Clock: clock.Real{}, Logger: logger,
 	})
@@ -279,6 +304,12 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	)
 	if cfg.WorkerInline {
 		workers = jobs.NewWorkers()
+		// Like analyticsjobs below, this only runs in the inline
+		// (WORKER_INLINE=true) path: cmd/worker deliberately does not
+		// construct the identity module (see its comment on Perms: nil),
+		// so a school running a separate worker process needs its own
+		// session-retention sweep until that changes.
+		periodic = append(periodic, identityModule.RegisterJobs(workers, logger)...)
 		periodic = append(periodic, permitsModule.RegisterJobs(workers, logger)...)
 		notificationPeriodic, err := notificationsModule.RegisterJobs(workers)
 		if err != nil {
@@ -370,6 +401,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	router.Use(tenant.Middleware(mode, schoolModule.Loader, cfg.BaseDomain))
 	router.Use(httpx.RefreshCookieMiddleware)
 	router.Use(authenticator.Middleware)
+	router.Use(impersonationActionLogger(identityModule.Service))
 
 	api.HandlerFromMux(strict, router)
 
@@ -380,7 +412,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	// why a strict handler can never serve these itself. hub is the same
 	// instance passed into attendance.Register above, so a socket opened
 	// here is visible to the attendance module's monitor presence count.
-	mountRealtimeRoutes(router, pool, tokenIssuer, hub, presence, cfg.AppOrigins, logger)
+	mountRealtimeRoutes(router, pool, tokenIssuer, identityModule.Service, hub, presence, attendanceModule.Service, cfg.AppOrigins, logger)
 
 	return router, bg, nil
 }
@@ -470,6 +502,35 @@ func storageClientFor(cfg config.Config, logger *slog.Logger) permitsservice.Sto
 		logger.Warn("S3 bucket not reachable; document storage may fail", "bucket", cfg.S3Bucket, "error", err)
 	}
 	return client
+}
+
+// impersonationActionLogger records every request made under an
+// impersonation session (docs/analysis/backend-inventory.md section 1.2:
+// impersonation_actions). It runs after the handler, in its own goroutine
+// and its own background context, so a slow or failing audit write never
+// adds latency to -- or ever fails -- the request it is describing.
+func impersonationActionLogger(svc *identityservice.Service) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			next.ServeHTTP(w, r)
+
+			ctx := r.Context()
+			if _, impersonating := httpx.ActorIDFromContext(ctx); !impersonating {
+				return
+			}
+			tenantID, ok := httpx.TenantIDFromContext(ctx)
+			if !ok {
+				return
+			}
+			sessionID, ok := httpx.SessionIDFromContext(ctx)
+			if !ok {
+				return
+			}
+			ip := httpx.RequestMetaFromContext(ctx).IP
+			method, path := r.Method, r.URL.Path
+			go svc.RecordImpersonationAction(context.Background(), tenantID, sessionID, method, path, ip)
+		})
+	}
 }
 
 // lateBoundSync breaks the permits <-> attendance construction cycle.

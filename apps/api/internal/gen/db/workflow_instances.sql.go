@@ -57,6 +57,26 @@ func (q *Queries) AdvanceWorkflowInstanceStage(ctx context.Context, arg AdvanceW
 	return i, err
 }
 
+const countInProgressWorkflowInstances = `-- name: CountInProgressWorkflowInstances :one
+select count(*)::bigint from workflow_instances
+where tenant_id = $1 and kind = $2 and status = 'in_progress'
+`
+
+type CountInProgressWorkflowInstancesParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	Kind     string    `json:"kind"`
+}
+
+// Backs the admin dashboard's pending queues (leave requests, exit
+// permits, late arrivals all share this table -- see the kind check
+// constraint).
+func (q *Queries) CountInProgressWorkflowInstances(ctx context.Context, arg CountInProgressWorkflowInstancesParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countInProgressWorkflowInstances, arg.TenantID, arg.Kind)
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const countWorkflowInstancesForSubjectYear = `-- name: CountWorkflowInstancesForSubjectYear :one
 select count(*)::bigint from workflow_instances
 where tenant_id = $1 and kind = $2 and subject_user_id = $3 and academic_year_id = $4

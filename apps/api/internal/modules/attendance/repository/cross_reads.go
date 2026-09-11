@@ -79,7 +79,27 @@ func (r *Repository) ListCurrentPeriodScheduleCards(ctx context.Context, tenantI
 			ClassID: row.ClassID, ClassName: row.ClassName, SubjectID: row.SubjectID, SubjectName: row.SubjectName,
 			TeacherUserID: row.TeacherUserID, TeacherName: row.TeacherName,
 			SessionOpen: row.SessionID.Valid, Submitted: row.SubmittedAt.Valid,
+			SubstituteName: pdatabase.TextOrEmpty(row.SubstituteName),
+			PeriodName:     row.PeriodName,
+			PeriodStartsAt: dateAtTimeOfDay(date, row.PeriodStartsAt),
+			PeriodEndsAt:   dateAtTimeOfDay(date, row.PeriodEndsAt),
 		}
+	}
+	return out, nil
+}
+
+// ListClassesWithoutCurrentSchedule backs the monitor snapshot's "no
+// schedule" cards.
+func (r *Repository) ListClassesWithoutCurrentSchedule(ctx context.Context, tenantID, academicYearID uuid.UUID, dayOfWeek int16, nowLocal time.Time) ([]service.NoScheduleClassRow, error) {
+	rows, err := r.queries(ctx).ListClassesWithoutCurrentPeriodScheduleForAttendance(ctx, db.ListClassesWithoutCurrentPeriodScheduleForAttendanceParams{
+		TenantID: tenantID, AcademicYearID: academicYearID, DayOfWeek: dayOfWeek, StartsAt: timeOfDay(nowLocal),
+	})
+	if err != nil {
+		return nil, err
+	}
+	out := make([]service.NoScheduleClassRow, len(rows))
+	for i, row := range rows {
+		out[i] = service.NoScheduleClassRow{ClassID: row.ClassID, ClassName: row.ClassName}
 	}
 	return out, nil
 }

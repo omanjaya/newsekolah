@@ -101,6 +101,35 @@ func (r *Repository) ListBrandingSettings(ctx context.Context, tenantID uuid.UUI
 	return out, nil
 }
 
+// SetBrandingSetting upserts one "branding.*" tenant_settings row.
+func (r *Repository) SetBrandingSetting(ctx context.Context, tenantID, actorID uuid.UUID, key, value string) error {
+	raw, err := json.Marshal(value)
+	if err != nil {
+		return fmt.Errorf("marshal branding setting %s: %w", key, err)
+	}
+	if err := r.queries(ctx).UpsertTenantSetting(ctx, db.UpsertTenantSettingParams{
+		TenantID: tenantID, Key: key, Value: raw,
+		UpdatedBy: pdatabase.NullUUID(uuid.NullUUID{UUID: actorID, Valid: actorID != uuid.Nil}),
+	}); err != nil {
+		return fmt.Errorf("upsert branding setting %s: %w", key, err)
+	}
+	return nil
+}
+
+// CreateAssetRecord records an uploaded branding logo/favicon in the
+// shared assets table (the same one identity's avatar upload uses).
+func (r *Repository) CreateAssetRecord(ctx context.Context, in service.NewAsset) (service.AssetRecord, error) {
+	row, err := r.queries(ctx).CreateAsset(ctx, db.CreateAssetParams{
+		TenantID: in.TenantID, Bucket: in.Bucket, ObjectKey: in.ObjectKey, Mime: in.Mime,
+		SizeBytes: in.SizeBytes, Sha256: in.SHA256, Kind: in.Kind, Visibility: in.Visibility,
+		CreatedBy: pdatabase.NullUUID(uuid.NullUUID{UUID: in.CreatedBy, Valid: true}),
+	})
+	if err != nil {
+		return service.AssetRecord{}, fmt.Errorf("create asset: %w", err)
+	}
+	return service.AssetRecord{ID: row.ID, Mime: row.Mime}, nil
+}
+
 // GetPlatformSetting reads a platform-level string setting off the pool;
 // platform_settings carries no tenant policy.
 func (r *Repository) GetPlatformSetting(ctx context.Context, key string) (string, bool, error) {

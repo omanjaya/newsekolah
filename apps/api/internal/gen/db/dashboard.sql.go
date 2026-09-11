@@ -12,6 +12,40 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countActiveUsersByProfileKind = `-- name: CountActiveUsersByProfileKind :many
+select up.kind, count(*)::bigint as total
+from users u
+join user_profiles up on up.user_id = u.id
+where u.tenant_id = $1 and u.status = 'active' and u.deleted_at is null
+group by up.kind
+`
+
+type CountActiveUsersByProfileKindRow struct {
+	Kind  string `json:"kind"`
+	Total int64  `json:"total"`
+}
+
+// Backs the admin dashboard's "active users per profile kind" panel.
+func (q *Queries) CountActiveUsersByProfileKind(ctx context.Context, tenantID uuid.UUID) ([]CountActiveUsersByProfileKindRow, error) {
+	rows, err := q.db.Query(ctx, countActiveUsersByProfileKind, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []CountActiveUsersByProfileKindRow{}
+	for rows.Next() {
+		var i CountActiveUsersByProfileKindRow
+		if err := rows.Scan(&i.Kind, &i.Total); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const countCopiesByStatus = `-- name: CountCopiesByStatus :one
 select count(*)::int from library_copies where tenant_id = $1 and status = $2
 `
@@ -253,6 +287,48 @@ func (q *Queries) ListLongestOverdueLoans(ctx context.Context, arg ListLongestOv
 			&i.UpdatedAt,
 			&i.Channel,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const loginHistogramByHour = `-- name: LoginHistogramByHour :many
+select extract(hour from occurred_at)::int as hour, count(*)::bigint as total
+from login_attempts
+where tenant_id = $1 and success = true and occurred_at >= $2
+group by hour
+`
+
+type LoginHistogramByHourParams struct {
+	TenantID   uuid.UUID          `json:"tenant_id"`
+	OccurredAt pgtype.Timestamptz `json:"occurred_at"`
+}
+
+type LoginHistogramByHourRow struct {
+	Hour  int32 `json:"hour"`
+	Total int64 `json:"total"`
+}
+
+// Hour-of-day (0-23, UTC) histogram of successful logins in the last 7
+// days, for the admin dashboard. UTC rather than tenant-local: unlike an
+// attendance day boundary this is a rough usage-pattern chart, not a
+// compliance cutoff, so it does not carry the "never compute in UTC"
+// rule docs/03 attaches to school-day boundaries.
+func (q *Queries) LoginHistogramByHour(ctx context.Context, arg LoginHistogramByHourParams) ([]LoginHistogramByHourRow, error) {
+	rows, err := q.db.Query(ctx, loginHistogramByHour, arg.TenantID, arg.OccurredAt)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []LoginHistogramByHourRow{}
+	for rows.Next() {
+		var i LoginHistogramByHourRow
+		if err := rows.Scan(&i.Hour, &i.Total); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

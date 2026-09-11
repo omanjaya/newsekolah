@@ -553,14 +553,35 @@ components:
       required: [class_name, subject_name, teacher_name, status]
       properties:
         class_name: { type: string }
-        subject_name: { type: string }
-        teacher_name: { type: string }
-        status: { type: string, enum: [not_started, in_progress, submitted] }
+        subject_name: { type: string, description: "Empty when status is no_schedule." }
+        teacher_name: { type: string, description: "Empty when status is no_schedule." }
+        substitute_name:
+          {
+            type: string,
+            description: "Set only when a substitute teacher actually took the session.",
+          }
+        status: { type: string, enum: [not_started, in_progress, submitted, no_schedule] }
+    MonitorPeriod:
+      type: object
+      required: [name, starts_at, ends_at]
+      properties:
+        name: { type: string }
+        starts_at: { type: string, format: date-time }
+        ends_at: { type: string, format: date-time }
     MonitorSnapshot:
       type: object
-      required: [generated_at, status_counts, sessions]
+      required: [generated_at, date, day_name, status_counts, sessions]
       properties:
         generated_at: { type: string, format: date-time }
+        date: { type: string, format: date }
+        day_name:
+          {
+            type: string,
+            description: "English weekday name (Monday, Tuesday, ...); the client localizes.",
+          }
+        current_period:
+          $ref: "#/components/schemas/MonitorPeriod"
+          description: Omitted when no schedule anywhere is currently in its period.
         status_counts:
           type: object
           additionalProperties: { type: integer }

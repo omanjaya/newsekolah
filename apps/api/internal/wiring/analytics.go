@@ -9,7 +9,18 @@ import (
 	attendanceservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance/service"
 	disciplineservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/discipline/service"
 	gradingservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/grading/service"
+	permitsdomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/domain"
+	permitsservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/service"
 )
+
+// AnalyticsPermits adapts permits' PendingCount (which takes its own
+// domain.Kind) to analytics' PermitsReader (which takes a plain string,
+// so analytics never imports permits/domain).
+type AnalyticsPermits struct{ Svc *permitsservice.Service }
+
+func (p AnalyticsPermits) PendingCount(ctx context.Context, tenantID uuid.UUID, kind string) (int, error) {
+	return p.Svc.PendingCount(ctx, tenantID, permitsdomain.Kind(kind))
+}
 
 // Analytics readers compose the early-warning signals from each owning
 // module's own service, following the same pattern as the family readers
