@@ -9,6 +9,19 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/domain"
 )
 
+// PendingCount is how many of kind (leave_request, exit_permit,
+// late_arrival) currently have status='in_progress'. Used by the admin
+// dashboard's pending-queues panel (analytics module).
+func (s *Service) PendingCount(ctx context.Context, tenantID uuid.UUID, kind domain.Kind) (int, error) {
+	var count int64
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		count, err = s.repo.CountInProgressInstances(ctx, tenantID, kind)
+		return err
+	})
+	return int(count), err
+}
+
 // ExitPermitDetail bundles an exit permit with its workflow state.
 type ExitPermitDetail struct {
 	Instance   domain.Instance

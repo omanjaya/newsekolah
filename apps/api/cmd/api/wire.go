@@ -178,7 +178,15 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		Attendance: wiring.AnalyticsAttendance{Svc: attendanceModule.Service},
 		Discipline: wiring.AnalyticsDiscipline{Svc: disciplineModule.Service},
 		Grading:    wiring.AnalyticsGrading{Svc: gradingModule.Service},
-		Clock:      clock.Real{},
+		// Admin dashboard (identity/permits satisfy IdentityReader/
+		// PermitsReader structurally/via a small adapter -- see
+		// wiring/analytics.go). Presence is left nil: platform/realtime's
+		// Presence tracker has no tenant or role dimension today (nothing
+		// calls Heartbeat yet), so there is nothing honest to report but
+		// the online-per-role panel's documented "else 0".
+		Identity: identityModule.Service,
+		Permits:  wiring.AnalyticsPermits{Svc: permitsModule.Service},
+		Clock:    clock.Real{},
 	})
 
 	// Built before the jobs block below so its periodic due-schedule scan

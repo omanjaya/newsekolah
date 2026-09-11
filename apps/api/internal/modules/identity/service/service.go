@@ -75,6 +75,13 @@ type AuthRepository interface {
 
 	GetAuthSettings(ctx context.Context, tenantID uuid.UUID) (domain.AuthSettings, error)
 	SetAuthSettings(ctx context.Context, tenantID, actorID uuid.UUID, in domain.AuthSettings) error
+
+	// ActiveUsersByProfileKind and LoginHistogramByHour back the admin
+	// dashboard (modules/analytics), which reaches them through
+	// DashboardCounts/DashboardLoginHistogram below rather than calling
+	// these directly.
+	ActiveUsersByProfileKind(ctx context.Context, tenantID uuid.UUID) (map[string]int, error)
+	LoginHistogramByHour(ctx context.Context, tenantID uuid.UUID, since time.Time) (map[int]int, error)
 }
 
 // NewSession is what the service asks the repository to persist when

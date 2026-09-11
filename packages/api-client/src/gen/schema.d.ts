@@ -1205,6 +1205,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/analytics/admin-dashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Operational snapshot for Admin/Super Admin: active users per profile kind, pending approval queues, online presence per role, and a 7-day login histogram. Restricted to the admin/super_admin system roles regardless of who else holds view_dashboard. */
+        get: operations["getAdminDashboard"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/announcements": {
         parameters: {
             query?: never;
@@ -6627,6 +6644,24 @@ export interface components {
             achieved_on: string;
             notes?: string;
         };
+        AdminDashboard: {
+            /** @description Active user count per profile_kind (student/teacher/staff/parent); a kind with no active users is omitted. */
+            active_users: {
+                [key: string]: number;
+            };
+            /** @description Count of in-progress instances per workflow kind. */
+            pending: {
+                leave_request: number;
+                exit_permit: number;
+                late_arrival: number;
+            };
+            /** @description Online socket count per role slug. Always empty until something calls platform/realtime.Presence.Heartbeat. */
+            online_by_role: {
+                [key: string]: number;
+            };
+            /** @description Exactly 24 entries, index = UTC hour of day, value = successful logins in that hour over the last 7 days. */
+            login_histogram: number[];
+        };
         /** @enum {string} */
         RiskLevel: "none" | "watch" | "at_risk";
         /** @description One observation that contributed to the level: a stable code plus the exact numbers observed (e.g. absent_days, considered_days), never a characterisation of the student. The UI renders the code as localized text with the params filled in. */
@@ -11897,6 +11932,28 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    getAdminDashboard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Dashboard */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminDashboard"];
+                };
+            };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
         };

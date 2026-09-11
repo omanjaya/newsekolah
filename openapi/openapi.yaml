@@ -2733,6 +2733,26 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+  /v1/analytics/admin-dashboard:
+    get:
+      tags:
+        - analytics
+      operationId: getAdminDashboard
+      x-permission: view_dashboard
+      summary: "Operational snapshot for Admin/Super Admin: active users per profile kind, pending approval queues, online
+        presence per role, and a 7-day login histogram. Restricted to the admin/super_admin system roles regardless of
+        who else holds view_dashboard."
+      responses:
+        "200":
+          description: Dashboard
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminDashboard"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /v1/announcements:
     get:
       tags:
@@ -14997,6 +15017,45 @@ components:
           format: date
         notes:
           type: string
+    AdminDashboard:
+      type: object
+      required:
+        - active_users
+        - pending
+        - online_by_role
+        - login_histogram
+      properties:
+        active_users:
+          type: object
+          description: Active user count per profile_kind (student/teacher/staff/parent); a kind with no active users is omitted.
+          additionalProperties:
+            type: integer
+        pending:
+          type: object
+          description: Count of in-progress instances per workflow kind.
+          required:
+            - leave_request
+            - exit_permit
+            - late_arrival
+          properties:
+            leave_request:
+              type: integer
+            exit_permit:
+              type: integer
+            late_arrival:
+              type: integer
+        online_by_role:
+          type: object
+          description: Online socket count per role slug. Always empty until something calls platform/realtime.Presence.Heartbeat.
+          additionalProperties:
+            type: integer
+        login_histogram:
+          type: array
+          description: Exactly 24 entries, index = UTC hour of day, value = successful logins in that hour over the last 7 days.
+          minItems: 24
+          maxItems: 24
+          items:
+            type: integer
     RiskLevel:
       type: string
       enum:

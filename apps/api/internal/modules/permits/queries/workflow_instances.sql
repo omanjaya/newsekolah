@@ -45,6 +45,13 @@ select count(*)::bigint from workflow_instances
 where tenant_id = $1 and kind = $2 and subject_user_id = $3 and academic_year_id = $4
   and status <> 'cancelled';
 
+-- name: CountInProgressWorkflowInstances :one
+-- Backs the admin dashboard's pending queues (leave requests, exit
+-- permits, late arrivals all share this table -- see the kind check
+-- constraint).
+select count(*)::bigint from workflow_instances
+where tenant_id = $1 and kind = $2 and status = 'in_progress';
+
 -- name: ExpireHangingWorkflowInstances :many
 -- Bug fix vs. the old app (docs/02-system-design.md section 6.2 step 4):
 -- any instance still in_progress past its opening day is force-closed so

@@ -20,7 +20,12 @@ type Dependencies struct {
 	Attendance service.AttendanceReader
 	Discipline service.DisciplineReader
 	Grading    service.GradingReader
-	Clock      clock.Clock
+	// Identity and Permits back the admin dashboard (Dependencies.Presence
+	// is optional; see service.PresenceReader's doc comment).
+	Identity service.IdentityReader
+	Permits  service.PermitsReader
+	Presence service.PresenceReader
+	Clock    clock.Clock
 }
 
 type Module struct {
@@ -29,6 +34,7 @@ type Module struct {
 }
 
 func Register(deps Dependencies) *Module {
-	svc := service.New(deps.Pool, repository.New(deps.Pool), deps.Years, deps.Attendance, deps.Discipline, deps.Grading, deps.Clock)
+	svc := service.New(deps.Pool, repository.New(deps.Pool), deps.Years, deps.Attendance, deps.Discipline, deps.Grading,
+		service.DashboardDeps{Identity: deps.Identity, Permits: deps.Permits, Presence: deps.Presence}, deps.Clock)
 	return &Module{Service: svc, Handler: transporthttp.New(svc)}
 }

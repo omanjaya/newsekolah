@@ -221,6 +221,13 @@ func (r *Repository) CountInstancesForSubjectYear(ctx context.Context, tenantID 
 	})
 }
 
+// CountInProgressInstances backs the admin dashboard's pending queues.
+func (r *Repository) CountInProgressInstances(ctx context.Context, tenantID uuid.UUID, kind domain.Kind) (int64, error) {
+	return r.queries(ctx).CountInProgressWorkflowInstances(ctx, db.CountInProgressWorkflowInstancesParams{
+		TenantID: tenantID, Kind: string(kind),
+	})
+}
+
 func (r *Repository) ListInstancesBySubject(ctx context.Context, tenantID uuid.UUID, kind domain.Kind, subjectUserID uuid.UUID, limit, offset int) ([]domain.Instance, error) {
 	rows, err := r.queries(ctx).ListWorkflowInstancesBySubject(ctx, db.ListWorkflowInstancesBySubjectParams{
 		TenantID: tenantID, Kind: string(kind), SubjectUserID: subjectUserID, Limit: int32(limit), Offset: int32(offset), //nolint:gosec // paging values are clamped

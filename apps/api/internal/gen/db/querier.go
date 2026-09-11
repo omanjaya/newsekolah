@@ -201,6 +201,8 @@ type Querier interface {
 	CountActiveClubsForStudent(ctx context.Context, arg CountActiveClubsForStudentParams) (int32, error)
 	CountActiveLoansForMember(ctx context.Context, arg CountActiveLoansForMemberParams) (int32, error)
 	CountActiveMembers(ctx context.Context, arg CountActiveMembersParams) (int32, error)
+	// Backs the admin dashboard's "active users per profile kind" panel.
+	CountActiveUsersByProfileKind(ctx context.Context, tenantID uuid.UUID) ([]CountActiveUsersByProfileKindRow, error)
 	CountAnnouncementReads(ctx context.Context, arg CountAnnouncementReadsParams) (int64, error)
 	CountAssignmentsForDutyType(ctx context.Context, arg CountAssignmentsForDutyTypeParams) (int64, error)
 	// The input to "meeting_number" in the session payload: how many prior
@@ -208,6 +210,10 @@ type Querier interface {
 	CountAttendanceSessionsForScheduleBeforeDate(ctx context.Context, arg CountAttendanceSessionsForScheduleBeforeDateParams) (int64, error)
 	CountAvailableCopies(ctx context.Context, arg CountAvailableCopiesParams) (int32, error)
 	CountDailySummaryStatusesForAttendance(ctx context.Context, arg CountDailySummaryStatusesForAttendanceParams) ([]CountDailySummaryStatusesForAttendanceRow, error)
+	// Backs the admin dashboard's pending queues (leave requests, exit
+	// permits, late arrivals all share this table -- see the kind check
+	// constraint).
+	CountInProgressWorkflowInstances(ctx context.Context, arg CountInProgressWorkflowInstancesParams) (int64, error)
 	CountIncidentsBySeverityInRange(ctx context.Context, arg CountIncidentsBySeverityInRangeParams) ([]CountIncidentsBySeverityInRangeRow, error)
 	// Read by the attendance module to compute a day's expected session count
 	// for a class (attendance/domain.ComputeDailyStatus's Expected input).
@@ -772,6 +778,12 @@ type Querier interface {
 	// occurrence_number (docs/analysis/database-inventory.md 1.5: the old
 	// app's per-student late-arrival numbering had exactly this race).
 	LockSubjectForInstanceCounting(ctx context.Context, arg LockSubjectForInstanceCountingParams) error
+	// Hour-of-day (0-23, UTC) histogram of successful logins in the last 7
+	// days, for the admin dashboard. UTC rather than tenant-local: unlike an
+	// attendance day boundary this is a rough usage-pattern chart, not a
+	// compliance cutoff, so it does not carry the "never compute in UTC"
+	// rule docs/03 attaches to school-day boundaries.
+	LoginHistogramByHour(ctx context.Context, arg LoginHistogramByHourParams) ([]LoginHistogramByHourRow, error)
 	MarkAllNotificationsRead(ctx context.Context, arg MarkAllNotificationsReadParams) error
 	MarkAnnouncementRead(ctx context.Context, arg MarkAnnouncementReadParams) error
 	MarkDigestSent(ctx context.Context, arg MarkDigestSentParams) error
