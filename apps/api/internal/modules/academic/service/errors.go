@@ -13,12 +13,29 @@ import (
 // response, instead of leaking a raw pgconn.PgError.
 const postgresUniqueViolation = "23505"
 
+// postgresForeignKeyViolation is Postgres's SQLSTATE for a foreign key
+// violation (23503) -- an "on delete restrict" constraint (e.g.
+// schedules.start_period_id -> periods) raises this when the row being
+// deleted is still referenced elsewhere.
+const postgresForeignKeyViolation = "23503"
+
 func mapUniqueViolation(err error, domainErr error) error {
 	if err == nil {
 		return nil
 	}
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) && pgErr.Code == postgresUniqueViolation {
+		return domainErr
+	}
+	return err
+}
+
+func mapForeignKeyViolation(err error, domainErr error) error {
+	if err == nil {
+		return nil
+	}
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) && pgErr.Code == postgresForeignKeyViolation {
 		return domainErr
 	}
 	return err

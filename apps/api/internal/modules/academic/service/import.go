@@ -3,6 +3,7 @@ package service
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
@@ -21,6 +22,7 @@ const (
 	ImportRowAssign    ImportRowAction = "assign"
 	ImportRowMove      ImportRowAction = "move"
 	ImportRowUnchanged ImportRowAction = "unchanged"
+	ImportRowSkipped   ImportRowAction = "skipped"
 	ImportRowError     ImportRowAction = "error"
 )
 
@@ -37,9 +39,21 @@ type ImportRowResult struct {
 	Message     string
 }
 
+// maxImportTemplateDropdownClasses caps how many class names go into the
+// template's inline dropdown list: excelize (and Excel itself) rejects a
+// data-validation list whose encoded form exceeds 255 characters, so a
+// tenant with very many classes still gets a usable template, just without
+// the dropdown.
+const maxImportTemplateDropdownClasses = 60
+
 // ImportTemplate builds the xlsx template students-by-class import expects:
 // one identifier column (NIS or username) and the destination class name.
-func (s *Service) ImportTemplate() ([]byte, error) {
+// Per row it prefills every student in yearID with no active enrollment
+// yet (the same list ListUnassignedStudents returns), and the class-name
+// column carries a dropdown of the year's classes -- staff fill in a class
+// next to a name already on the sheet instead of typing NIS and class name
+// from memory.
+func (s *Service) ImportTemplate(ctx context.Context, tenantID, yearID uuid.UUID) ([]byte, error) {
 	f := excelize.NewFile()
 	defer f.Close() //nolint:errcheck // best-effort close of an in-memory workbook
 
@@ -56,11 +70,36 @@ func (s *Service) ImportTemplate() ([]byte, error) {
 			return nil, err
 		}
 	}
-	if err := f.SetCellValue(importSheetName, "A2", "1234567890"); err != nil {
+
+	students, _, err := s.ListUnassignedStudents(ctx, tenantID, yearID, "", Page{Limit: 1000})
+	if err != nil {
 		return nil, err
 	}
-	if err := f.SetCellValue(importSheetName, "C2", "X IPA 1"); err != nil {
+	for i, student := range students {
+		row := i + 2
+		if err := f.SetCellValue(importSheetName, fmt.Sprintf("B%d", row), student.Username); err != nil {
+			return nil, err
+		}
+	}
+
+	classes, _, err := s.repo.ListClasses(ctx, tenantID, yearID, "", nil, Page{Limit: 200})
+	if err != nil {
 		return nil, err
+	}
+	if len(classes) > 0 && len(classes) <= maxImportTemplateDropdownClasses {
+		names := make([]string, len(classes))
+		for i, c := range classes {
+			names[i] = c.Name
+		}
+		lastRow := len(students) + 1
+		if lastRow < 1000 {
+			lastRow = 1000
+		}
+		dv := excelize.NewDataValidation(true)
+		dv.SetSqref(fmt.Sprintf("C2:C%d", lastRow))
+		if err := dv.SetDropList(names); err == nil {
+			_ = f.AddDataValidation(importSheetName, dv) //nolint:errcheck // dropdown is a convenience, not required for the import to work
+		}
 	}
 
 	var buf bytes.Buffer
@@ -72,38 +111,52 @@ func (s *Service) ImportTemplate() ([]byte, error) {
 
 // ImportPreview parses an uploaded workbook and reports, per row, what
 // would happen -- assign (no current enrollment), move (different class
-// than today), unchanged, or an error (student or class not found) --
-// without writing anything.
-func (s *Service) ImportPreview(ctx context.Context, tenantID, yearID uuid.UUID, file []byte) ([]ImportRowResult, error) {
+// than today, only when moveExisting is true), skipped (would move but
+// moveExisting is false, or a duplicate of an earlier row's student),
+// unchanged, or an error (student or class not found) -- without writing
+// anything.
+func (s *Service) ImportPreview(ctx context.Context, tenantID, yearID uuid.UUID, file []byte, moveExisting bool) ([]ImportRowResult, error) {
 	rows, err := parseImportRows(file)
 	if err != nil {
 		return nil, err
 	}
 
-	var results []ImportRowResult
+	var results []evaluatedImportRow
 	err = s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		for _, row := range rows {
-			results = append(results, s.evaluate(ctx, tenantID, yearID, row).ImportRowResult)
-		}
+		results = s.evaluateAll(ctx, tenantID, yearID, rows, moveExisting)
 		return nil
 	})
-	return results, err
+	return toRowResults(results), err
 }
 
-// ImportCommit re-parses and re-evaluates the same file (so preview and
-// commit never drift) and applies every row that isn't an error: assign or
-// move, inside one transaction. A row-level error (unmatched student or
-// class) is skipped and reported, not fatal to the rest of the file.
-func (s *Service) ImportCommit(ctx context.Context, tenantID, yearID uuid.UUID, file []byte, joinedOn time.Time) ([]ImportRowResult, error) {
+// ImportCommit re-parses and re-evaluates the same file with the same
+// flags (so preview and commit never drift) and, in one transaction,
+// applies every row that resolves to assign or move. Per the old app's
+// behaviour, an invalid file is rejected outright -- nothing is written --
+// unless partial is true, in which case error rows are skipped and every
+// other row is still applied.
+func (s *Service) ImportCommit(ctx context.Context, tenantID, yearID uuid.UUID, file []byte, joinedOn time.Time, moveExisting, partial bool) ([]ImportRowResult, error) {
 	rows, err := parseImportRows(file)
 	if err != nil {
 		return nil, err
 	}
 
-	var results []ImportRowResult
+	var results []evaluatedImportRow
 	err = s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		for _, row := range rows {
-			evaluated := s.evaluate(ctx, tenantID, yearID, row)
+		if err := s.requireYearNotArchived(ctx, tenantID, yearID); err != nil {
+			return err
+		}
+
+		results = s.evaluateAll(ctx, tenantID, yearID, rows, moveExisting)
+		if !partial {
+			for _, r := range results {
+				if r.Action == ImportRowError {
+					return domain.ErrImportHasInvalidRow
+				}
+			}
+		}
+
+		for _, evaluated := range results {
 			switch evaluated.Action {
 			case ImportRowAssign:
 				if _, err := s.repo.CreateEnrollment(ctx, tenantID, yearID, evaluated.matchedID, evaluated.matchedClassID, joinedOn); err != nil {
@@ -117,11 +170,43 @@ func (s *Service) ImportCommit(ctx context.Context, tenantID, yearID uuid.UUID, 
 					return err
 				}
 			}
-			results = append(results, evaluated.ImportRowResult)
 		}
 		return nil
 	})
-	return results, err
+	return toRowResults(results), err
+}
+
+// evaluateAll evaluates every row in order, tracking which students have
+// already matched an earlier row in the same file: a repeat is reported as
+// a skipped duplicate rather than applied twice.
+func (s *Service) evaluateAll(ctx context.Context, tenantID, yearID uuid.UUID, rows []importRawRow, moveExisting bool) []evaluatedImportRow {
+	results := make([]evaluatedImportRow, 0, len(rows))
+	seen := make(map[uuid.UUID]bool)
+	for _, row := range rows {
+		evaluated := s.evaluate(ctx, tenantID, yearID, row)
+		if evaluated.matchedID != uuid.Nil {
+			if seen[evaluated.matchedID] {
+				evaluated.Action = ImportRowSkipped
+				evaluated.Message = "duplicate student in file, only the first row was considered"
+			} else {
+				seen[evaluated.matchedID] = true
+			}
+		}
+		if evaluated.Action == ImportRowMove && !moveExisting {
+			evaluated.Action = ImportRowSkipped
+			evaluated.Message = "student already has a different class this year; move_existing=true is required to move them"
+		}
+		results = append(results, evaluated)
+	}
+	return results
+}
+
+func toRowResults(rows []evaluatedImportRow) []ImportRowResult {
+	out := make([]ImportRowResult, len(rows))
+	for i, r := range rows {
+		out[i] = r.ImportRowResult
+	}
+	return out
 }
 
 // importRawRow is one parsed spreadsheet line before student/class

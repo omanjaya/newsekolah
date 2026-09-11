@@ -108,6 +108,12 @@ func (r *Repository) DeleteSubjectOffering(ctx context.Context, tenantID, id uui
 	return r.queries(ctx).AcademicDeleteSubjectOffering(ctx, db.AcademicDeleteSubjectOfferingParams{TenantID: tenantID, ID: id})
 }
 
+func (r *Repository) SubjectOfferedInYear(ctx context.Context, tenantID, yearID, subjectID uuid.UUID) (bool, error) {
+	return r.queries(ctx).AcademicSubjectOfferedInYear(ctx, db.AcademicSubjectOfferedInYearParams{
+		TenantID: tenantID, AcademicYearID: yearID, SubjectID: subjectID,
+	})
+}
+
 func (r *Repository) CreateRoom(ctx context.Context, tenantID uuid.UUID, code, name string, capacity *int32) (domain.Room, error) {
 	row, err := r.queries(ctx).AcademicCreateRoom(ctx, db.AcademicCreateRoomParams{TenantID: tenantID, Code: code, Name: name, Capacity: int32PtrToPg(capacity)})
 	if err != nil {

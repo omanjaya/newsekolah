@@ -134,9 +134,13 @@ func (s *Service) UpdatePeriod(ctx context.Context, p domain.Period) (domain.Per
 	return period, err
 }
 
+// DeletePeriod maps the schedules table's "on delete restrict" foreign key
+// (start_period_id / end_period_id) to the same 409 ACADEMIC_HAS_DEPENDENTS
+// every other "still referenced" deletion in this module returns, instead
+// of letting the raw constraint violation fall through as a 500.
 func (s *Service) DeletePeriod(ctx context.Context, tenantID, id uuid.UUID) error {
 	return s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		return s.repo.DeletePeriod(ctx, tenantID, id)
+		return mapForeignKeyViolation(s.repo.DeletePeriod(ctx, tenantID, id), domain.ErrHasDependents)
 	})
 }
 

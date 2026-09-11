@@ -18,6 +18,21 @@ func (r *Repository) FindStudentByUsername(ctx context.Context, tenantID uuid.UU
 	return service.StudentSummary{ID: row.ID, Name: row.Name, Username: row.Username}, nil
 }
 
+// IsActiveStudent reports whether userID is an active user with a student
+// profile -- the check enrollment mutations run before opening or moving an
+// enrollment, so a mistyped or non-student id fails with a clear 400
+// instead of silently creating an enrollment for the wrong kind of user.
+func (r *Repository) IsActiveStudent(ctx context.Context, tenantID, userID uuid.UUID) (bool, error) {
+	return r.queries(ctx).AcademicIsActiveStudent(ctx, db.AcademicIsActiveStudentParams{TenantID: tenantID, ID: userID})
+}
+
+// IsActiveTeacher reports whether userID is an active user with a teacher
+// profile -- teaching assignments check this the same way enrollments
+// check IsActiveStudent, mirroring the old app's role+status guard.
+func (r *Repository) IsActiveTeacher(ctx context.Context, tenantID, userID uuid.UUID) (bool, error) {
+	return r.queries(ctx).AcademicIsActiveTeacher(ctx, db.AcademicIsActiveTeacherParams{TenantID: tenantID, ID: userID})
+}
+
 func (r *Repository) FindStudentByNIS(ctx context.Context, tenantID uuid.UUID, nis string) (service.StudentSummary, error) {
 	row, err := r.queries(ctx).AcademicFindStudentByNIS(ctx, db.AcademicFindStudentByNISParams{TenantID: tenantID, Nis: pdatabase.Text(nis)})
 	if err != nil {
