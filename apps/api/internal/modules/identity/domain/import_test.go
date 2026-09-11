@@ -97,7 +97,7 @@ func TestValidateImportRow(t *testing.T) {
 				r.Gender = "other"
 				return r
 			},
-			wantErrs: []string{"gender must be male or female"},
+			wantErrs: []string{"gender must be L/P (or male/female)"},
 		},
 		{
 			name: "weak password on create",
@@ -125,5 +125,61 @@ func TestValidateImportRow(t *testing.T) {
 			errs := ValidateImportRow(tt.row(), tt.isUpdate)
 			require.Equal(t, tt.wantErrs, errs)
 		})
+	}
+}
+
+func TestNormalizeGender(t *testing.T) {
+	tests := []struct {
+		in     string
+		want   string
+		wantOK bool
+	}{
+		{"L", "male", true},
+		{"p", "female", true},
+		{"Laki-Laki", "male", true},
+		{"perempuan", "female", true},
+		{"male", "male", true},
+		{"FEMALE", "female", true},
+		{"other", "", false},
+		{"", "", false},
+	}
+	for _, tt := range tests {
+		got, ok := NormalizeGender(tt.in)
+		if got != tt.want || ok != tt.wantOK {
+			t.Errorf("NormalizeGender(%q) = (%q, %v), want (%q, %v)", tt.in, got, ok, tt.want, tt.wantOK)
+		}
+	}
+}
+
+func TestValidateBloodType(t *testing.T) {
+	tests := []struct {
+		in   string
+		want bool
+	}{
+		{"A", true}, {"o", true}, {"AB+", true}, {"ab-", true},
+		{"", false}, {"C", false}, {"A++", false},
+	}
+	for _, tt := range tests {
+		if got := ValidateBloodType(tt.in); got != tt.want {
+			t.Errorf("ValidateBloodType(%q) = %v, want %v", tt.in, got, tt.want)
+		}
+	}
+}
+
+func TestResolveRoleAlias(t *testing.T) {
+	tests := []struct {
+		in   string
+		want string
+	}{
+		{"siswa", "student"},
+		{"Guru", "teacher"},
+		{"PEGAWAI", "staff"},
+		{"wali", "parent"},
+		{"wali_kelas_7a", "wali_kelas_7a"}, // unknown alias passes through as a custom slug
+	}
+	for _, tt := range tests {
+		if got := ResolveRoleAlias(tt.in); got != tt.want {
+			t.Errorf("ResolveRoleAlias(%q) = %q, want %q", tt.in, got, tt.want)
+		}
 	}
 }

@@ -2386,6 +2386,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/users/import/template": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download the xlsx template (with a reference sheet of accepted codes) for bulk user import */
+        get: operations["downloadUserImportTemplate"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/users/import/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Validate a batch of parsed import rows (up to 5000) without creating anything */
+        post: operations["previewUserImport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/users/import/commit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Re-validate the same batch and create every row in one transaction; any invalid row aborts the whole batch */
+        post: operations["commitUserImport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/users": {
         parameters: {
             query?: never;
@@ -7334,6 +7385,57 @@ export interface components {
             term_id: string;
             rows: components["schemas"]["EraporRow"][];
             skipped: components["schemas"]["EraporSkip"][];
+        };
+        UserImportRow: {
+            /** @description Optional; defaults to the row's position in the batch (1-based) */
+            row_number?: number;
+            username?: string;
+            email?: string;
+            password?: string;
+            profile_kind: components["schemas"]["ProfileKind"];
+            /** @description A system role slug, or an alias (e.g. "siswa", "guru", "pegawai", "wali") -- see the template's reference sheet */
+            role_slug: string;
+            nik?: string;
+            name: string;
+            /** @description L, P, male, or female */
+            gender?: string;
+            birth_place?: string;
+            /** @description YYYY-MM-DD */
+            birth_date?: string;
+            religion?: string;
+            address?: string;
+            district?: string;
+            city?: string;
+            phone?: string;
+            blood_type?: string;
+            nis?: string;
+            nisn?: string;
+            entry_year?: string;
+            father_name?: string;
+            mother_name?: string;
+            guardian_name?: string;
+            guardian_phone?: string;
+            parent_occupation?: string;
+            previous_school?: string;
+            nip?: string;
+            nuptk?: string;
+            last_education?: string;
+            employment_status?: string;
+            joined_year?: string;
+            specialization?: string;
+            employee_number?: string;
+            position?: string;
+        };
+        UserImportRequest: {
+            rows: components["schemas"]["UserImportRow"][];
+        };
+        UserImportRowResult: {
+            row_number: number;
+            username?: string;
+            errors: string[];
+        };
+        UserImportResult: {
+            data: components["schemas"]["UserImportRowResult"][];
         };
         AuthSettings: {
             session_days: number;
@@ -14127,6 +14229,82 @@ export interface operations {
                 content: {
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
                     "text/csv": string;
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    downloadUserImportTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Workbook */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    previewUserImport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserImportRequest"];
+            };
+        };
+        responses: {
+            /** @description Row-by-row preview */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserImportResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    commitUserImport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserImportRequest"];
+            };
+        };
+        responses: {
+            /** @description Row-by-row result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserImportResult"];
                 };
             };
             400: components["responses"]["BadRequest"];

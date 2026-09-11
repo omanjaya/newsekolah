@@ -62,7 +62,10 @@ var (
 	ErrUploadObjectNotOwned  = errors.New("uploaded object does not belong to this tenant/user")
 
 	// Import
-	ErrImportFileInvalid = errors.New("import file is unreadable or does not match the template")
+	ErrImportFileInvalid  = errors.New("import file is unreadable or does not match the template")
+	ErrImportEmpty        = errors.New("import batch has no rows")
+	ErrImportTooManyRows  = errors.New("import batch exceeds the 5000 row limit")
+	ErrImportHasRowErrors = errors.New("import batch has one or more invalid rows; nothing was committed")
 
 	// Google Workspace SSO
 	ErrSSONotConfigured        = errors.New("google sso is not configured for this school")
