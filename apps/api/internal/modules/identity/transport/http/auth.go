@@ -65,6 +65,8 @@ func (h *Handler) RefreshToken(ctx context.Context, request api.RefreshTokenRequ
 			return nil, httpx.ErrTokenInvalid
 		}
 		refreshToken = *request.Body.RefreshToken
+	} else if !httpx.OriginAllowed(httpx.RequestMetaFromContext(ctx).Origin, h.appOrigins) {
+		return nil, httpx.ErrOriginNotAllowed
 	}
 
 	ip, userAgent := deviceInfoFromContext(ctx)

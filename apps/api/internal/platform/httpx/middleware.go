@@ -101,9 +101,27 @@ func RequestMetaMiddleware(next http.Handler) http.Handler {
 		if h, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
 			host = h
 		}
-		ctx := WithRequestMeta(r.Context(), RequestMeta{IP: host, UserAgent: r.UserAgent()})
+		ctx := WithRequestMeta(r.Context(), RequestMeta{IP: host, UserAgent: r.UserAgent(), Origin: r.Header.Get("Origin")})
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+// OriginAllowed reports whether origin is one of allowed, or empty (a
+// native client, which sends no Origin header at all -- the same
+// leniency platform/realtime.OriginChecker applies to WebSocket upgrades).
+// Used by the refresh endpoint to reject a cookie-based refresh whose
+// Origin does not match the tenant's configured app origins
+// (docs/08-security.md section 7).
+func OriginAllowed(origin string, allowed []string) bool {
+	if origin == "" {
+		return true
+	}
+	for _, o := range allowed {
+		if o == origin {
+			return true
+		}
+	}
+	return false
 }
 
 // RefreshCookieMiddleware makes the web client's refresh_token cookie

@@ -33,9 +33,9 @@ func (r *Repository) GetSessionByID(ctx context.Context, tenantID, sessionID uui
 	return toDomainSession(row), nil
 }
 
-func (r *Repository) InsertImpersonationActionRecord(ctx context.Context, tenantID, sessionID uuid.UUID, method, path string) error {
+func (r *Repository) InsertImpersonationActionRecord(ctx context.Context, tenantID, sessionID uuid.UUID, method, path, ip string) error {
 	err := r.queries(ctx).InsertImpersonationAction(ctx, db.InsertImpersonationActionParams{
-		TenantID: tenantID, SessionID: sessionID, Method: method, Path: path,
+		TenantID: tenantID, SessionID: sessionID, Method: method, Path: path, Ip: pdatabase.Inet(ip),
 	})
 	if err != nil {
 		return fmt.Errorf("insert impersonation action: %w", err)

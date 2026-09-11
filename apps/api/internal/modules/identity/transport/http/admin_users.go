@@ -106,6 +106,15 @@ func (h *Handler) AdminResetPassword(ctx context.Context, request api.AdminReset
 }
 
 func (h *Handler) ImpersonateUser(ctx context.Context, request api.ImpersonateUserRequestObject) (api.ImpersonateUserResponseObject, error) {
+	// A caller whose own request context already carries an actor is
+	// currently impersonating someone; nested impersonation would let an
+	// admin's audit trail read as "the impersonated user started this",
+	// losing who the real actor is (docs/analysis/backend-inventory.md
+	// section 1.2).
+	if _, alreadyImpersonating := httpx.ActorIDFromContext(ctx); alreadyImpersonating {
+		return nil, httpx.ErrImpersonationNested
+	}
+
 	tenantID := tenantIDFromContext(ctx)
 	actorID, _ := httpx.UserIDFromContext(ctx)
 	client := api.Web

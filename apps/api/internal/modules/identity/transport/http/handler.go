@@ -36,10 +36,14 @@ type Handler struct {
 	branding     BrandingReader
 	sessionCache SessionCache
 	isProduction bool
+	// appOrigins is the allowlist a cookie-based refresh's Origin header
+	// is checked against (docs/08-security.md section 7). Empty disables
+	// the check, same as an unconfigured APP_ORIGINS in dev.
+	appOrigins []string
 }
 
-func New(svc *service.Service, branding BrandingReader, sessionCache SessionCache, isProduction bool) *Handler {
-	return &Handler{service: svc, branding: branding, sessionCache: sessionCache, isProduction: isProduction}
+func New(svc *service.Service, branding BrandingReader, sessionCache SessionCache, isProduction bool, appOrigins []string) *Handler {
+	return &Handler{service: svc, branding: branding, sessionCache: sessionCache, isProduction: isProduction, appOrigins: appOrigins}
 }
 
 // deviceInfoFromContext reads the client IP and User-Agent captured by

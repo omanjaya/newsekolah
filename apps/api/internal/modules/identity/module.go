@@ -28,6 +28,9 @@ type Dependencies struct {
 	Branding     transporthttp.BrandingReader
 	SessionCache transporthttp.SessionCache
 	IsProduction bool
+	// AppOrigins allowlists the Origin header on a cookie-based refresh
+	// (docs/08-security.md section 7).
+	AppOrigins []string
 
 	// ResetLimiter bounds password-reset-request attempts per IP. Email is
 	// where the reset link/OTP goes; a nil-noop sender still lets the flow
@@ -75,7 +78,7 @@ func Register(deps Dependencies) *Module {
 		Ceremony:       deps.Ceremony,
 		SessionCache:   deps.SessionCache,
 	})
-	handler := transporthttp.New(svc, deps.Branding, deps.SessionCache, deps.IsProduction)
+	handler := transporthttp.New(svc, deps.Branding, deps.SessionCache, deps.IsProduction, deps.AppOrigins)
 	return &Module{Service: svc, Handler: handler}
 }
 

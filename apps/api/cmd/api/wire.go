@@ -98,6 +98,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		Branding:     schoolModule.Handler,
 		SessionCache: sessionCache,
 		IsProduction: cfg.IsProduction(),
+		AppOrigins:   cfg.AppOrigins,
 		Email:        senders.Email,
 		MfaSealer:    sealer,
 		Ceremony:     store,
@@ -344,6 +345,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	router.Use(tenant.Middleware(mode, schoolModule.Loader, cfg.BaseDomain))
 	router.Use(httpx.RefreshCookieMiddleware)
 	router.Use(authenticator.Middleware)
+	router.Use(impersonationActionLogger(identityModule.Service))
 
 	api.HandlerFromMux(strict, router)
 
@@ -434,6 +436,35 @@ func storageClientFor(cfg config.Config, logger *slog.Logger) permitsservice.Sto
 		logger.Warn("S3 bucket not reachable; document storage may fail", "bucket", cfg.S3Bucket, "error", err)
 	}
 	return client
+}
+
+// impersonationActionLogger records every request made under an
+// impersonation session (docs/analysis/backend-inventory.md section 1.2:
+// impersonation_actions). It runs after the handler, in its own goroutine
+// and its own background context, so a slow or failing audit write never
+// adds latency to -- or ever fails -- the request it is describing.
+func impersonationActionLogger(svc *identityservice.Service) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			next.ServeHTTP(w, r)
+
+			ctx := r.Context()
+			if _, impersonating := httpx.ActorIDFromContext(ctx); !impersonating {
+				return
+			}
+			tenantID, ok := httpx.TenantIDFromContext(ctx)
+			if !ok {
+				return
+			}
+			sessionID, ok := httpx.SessionIDFromContext(ctx)
+			if !ok {
+				return
+			}
+			ip := httpx.RequestMetaFromContext(ctx).IP
+			method, path := r.Method, r.URL.Path
+			go svc.RecordImpersonationAction(context.Background(), tenantID, sessionID, method, path, ip)
+		})
+	}
 }
 
 // lateBoundSync breaks the permits <-> attendance construction cycle.
