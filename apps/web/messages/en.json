@@ -427,6 +427,13 @@
         "prevMonth": "Previous month",
         "nextMonth": "Next month",
         "dayTitle": "{submitted} of {expected} sessions recorded",
+        "dayDetailLabel": "Session detail for {date}",
+        "unknownSubject": "Subject",
+        "sessionSource": {
+          "leave": "Filled from a leave letter",
+          "permit": "Filled from an exit permit",
+          "system": "Filled by the system"
+        },
         "codes": {
           "H": "Present",
           "S": "Sick",

@@ -427,6 +427,13 @@
         "prevMonth": "Bulan sebelumnya",
         "nextMonth": "Bulan berikutnya",
         "dayTitle": "{submitted} dari {expected} sesi tercatat",
+        "dayDetailLabel": "Rincian sesi tanggal {date}",
+        "unknownSubject": "Mata pelajaran",
+        "sessionSource": {
+          "leave": "Diisi otomatis dari surat izin",
+          "permit": "Diisi otomatis dari izin keluar",
+          "system": "Diisi sistem"
+        },
         "codes": {
           "H": "Hadir",
           "S": "Sakit",

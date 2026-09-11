@@ -1,6 +1,14 @@
 "use client";
 
-import { Button, Skeleton, cn } from "@newsekolah/ui";
+import {
+  Button,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+  Skeleton,
+  StatusBadge,
+  cn,
+} from "@newsekolah/ui";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -17,6 +25,18 @@ const STATUS_CLASS: Record<string, string> = {
   A: "bg-status-absent/15 text-status-absent",
   INCOMPLETE: "bg-status-late/15 text-status-late",
   MIXED: "bg-bg text-fg",
+};
+
+const STATUS_TOKEN: Record<
+  string,
+  "present" | "sick" | "excused" | "dispensation" | "absent" | "late"
+> = {
+  H: "present",
+  S: "sick",
+  I: "excused",
+  D: "dispensation",
+  A: "absent",
+  INCOMPLETE: "late",
 };
 
 /** A student's month view: one daily status per day from the API's algorithm. */
@@ -101,28 +121,92 @@ export function AttendanceCalendar(): ReactElement {
             const day = byDate.get(date);
             const code = day?.status_code ?? "NONE";
             const isToday = date === today;
-            return (
-              <div
-                key={date}
-                className={cn(
-                  "flex min-h-14 flex-col items-center justify-center gap-1 rounded-xs border text-[13px]",
-                  isToday ? "border-accent" : "border-transparent",
-                  code !== "NONE" ? STATUS_CLASS[code] : "text-fg-muted",
-                )}
-                title={
-                  day
-                    ? t("dayTitle", {
-                        expected: day.expected_sessions,
-                        submitted: day.submitted_sessions,
-                      })
-                    : undefined
-                }
-              >
+            const sessions = day?.sessions ?? [];
+            const cellClassName = cn(
+              "flex min-h-14 w-full flex-col items-center justify-center gap-1 rounded-xs border text-[13px]",
+              isToday ? "border-accent" : "border-transparent",
+              code !== "NONE" ? STATUS_CLASS[code] : "text-fg-muted",
+            );
+            const cellContent = (
+              <>
                 <span>{Number(date.slice(-2))}</span>
                 {code !== "NONE" && (
                   <span className="text-[11px] font-semibold">{t(`codes.${code}`)}</span>
                 )}
-              </div>
+              </>
+            );
+
+            if (sessions.length === 0) {
+              return (
+                <div
+                  key={date}
+                  className={cellClassName}
+                  title={
+                    day
+                      ? t("dayTitle", {
+                          expected: day.expected_sessions,
+                          submitted: day.submitted_sessions,
+                        })
+                      : undefined
+                  }
+                >
+                  {cellContent}
+                </div>
+              );
+            }
+
+            return (
+              <Popover key={date}>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    className={cn(cellClassName, "cursor-pointer hover:opacity-80")}
+                    aria-label={t("dayDetailLabel", { date })}
+                  >
+                    {cellContent}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80">
+                  <p className="mb-2 text-[13px] font-medium text-fg">{date}</p>
+                  <ul className="flex flex-col gap-3">
+                    {sessions.map((session) => {
+                      const sessionToken = session.status_code
+                        ? STATUS_TOKEN[session.status_code]
+                        : undefined;
+                      return (
+                        <li key={session.schedule_id} className="flex flex-col gap-0.5 text-[13px]">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="font-medium text-fg">
+                              {session.subject_name ?? t("unknownSubject")}
+                            </span>
+                            {sessionToken ? (
+                              <StatusBadge
+                                status={sessionToken}
+                                label={t(`codes.${session.status_code}`)}
+                              />
+                            ) : session.status_code ? (
+                              <span className="text-fg-muted">
+                                {t(`codes.${session.status_code}`)}
+                              </span>
+                            ) : null}
+                          </div>
+                          <span className="text-fg-muted">
+                            {[session.period_label, session.teacher_name]
+                              .filter(Boolean)
+                              .join(" · ")}
+                          </span>
+                          {session.note && <span className="text-fg-muted">{session.note}</span>}
+                          {session.source && session.source !== "teacher" && (
+                            <span className="text-fg-muted">
+                              {t(`sessionSource.${session.source}`)}
+                            </span>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </PopoverContent>
+              </Popover>
             );
           })}
         </div>
