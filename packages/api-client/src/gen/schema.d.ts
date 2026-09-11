@@ -4713,6 +4713,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/library/import/template.xlsx": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** XLSX template for a collection import: 18 entry columns plus a hidden Referensi sheet with this tenant's master-data codes for dropdown validation */
+        get: operations["getLibraryImportTemplateXlsx"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/import/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Validate and dedupe-check up to 2000 import rows without writing anything */
+        post: operations["previewLibraryImport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/import/commit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create titles (auto call number when empty) and copies for every valid row, in one transaction; an existing title (deduped by normalized ISBN, then title+author) only gets new copies added */
+        post: operations["commitLibraryImport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/library/copies": {
         parameters: {
             query?: never;
@@ -9853,6 +9904,38 @@ export interface components {
             block_loans_with_unpaid_fines?: boolean;
             due_reminder_days?: number;
             auto_register_members?: boolean;
+        };
+        /** @description One raw import row, keyed either by internal field name (title, main_author, publisher, publish_place, publish_year, isbn, ddc_number, subjects, material_type, category, access, location, source, acquired_on, price, no_induk, barcode, copies, call_number) when no mapping is given, or by whatever source column name `mapping` points each field at. row_number is always read directly. */
+        LibraryImportRow: {
+            [key: string]: unknown;
+        };
+        LibraryImportRequest: {
+            rows: components["schemas"]["LibraryImportRow"][];
+            /** @description Internal field name -> source column name, for a sheet using its own headers (INLISLite export aliases included). */
+            mapping?: {
+                [key: string]: string;
+            };
+        };
+        LibraryImportPreviewRow: {
+            row_number: number;
+            /** @enum {string} */
+            status: "new_title" | "existing_title" | "error";
+            message: string;
+            title: string;
+            copies: number;
+        };
+        LibraryImportPreview: {
+            rows: components["schemas"]["LibraryImportPreviewRow"][];
+            summary: {
+                new_titles: number;
+                existing_titles: number;
+                copies: number;
+                errors: number;
+            };
+        };
+        LibraryImportCommitResult: {
+            created_titles: number;
+            created_copies: number;
         };
         LibraryExternalBibliography: {
             title: string;
@@ -21239,6 +21322,82 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    getLibraryImportTemplateXlsx: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description XLSX */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    previewLibraryImport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LibraryImportRequest"];
+            };
+        };
+        responses: {
+            /** @description Preview */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryImportPreview"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    commitLibraryImport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LibraryImportRequest"];
+            };
+        };
+        responses: {
+            /** @description Commit result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryImportCommitResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
         };
     };
     listLibraryCopiesFiltered: {

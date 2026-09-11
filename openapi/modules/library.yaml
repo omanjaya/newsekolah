@@ -303,6 +303,69 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
 
+  /v1/library/import/template.xlsx:
+    get:
+      tags: [library]
+      operationId: getLibraryImportTemplateXlsx
+      x-permission: manage_library_catalog
+      summary: >-
+        XLSX template for a collection import: 18 entry columns plus a hidden Referensi sheet
+        with this tenant's master-data codes for dropdown validation
+      responses:
+        "200":
+          description: XLSX
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: { type: string, format: binary }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /v1/library/import/preview:
+    post:
+      tags: [library]
+      operationId: previewLibraryImport
+      x-permission: manage_library_catalog
+      summary: >-
+        Validate and dedupe-check up to 2000 import rows without writing anything
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LibraryImportRequest" }
+      responses:
+        "200":
+          description: Preview
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LibraryImportPreview" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /v1/library/import/commit:
+    post:
+      tags: [library]
+      operationId: commitLibraryImport
+      x-permission: manage_library_catalog
+      summary: >-
+        Create titles (auto call number when empty) and copies for every valid row, in one
+        transaction; an existing title (deduped by normalized ISBN, then title+author) only gets
+        new copies added
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LibraryImportRequest" }
+      responses:
+        "200":
+          description: Commit result
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LibraryImportCommitResult" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
   /v1/library/copies:
     get:
       tags: [library]
@@ -1213,6 +1276,57 @@ components:
         block_loans_with_unpaid_fines: { type: boolean }
         due_reminder_days: { type: integer, minimum: 0 }
         auto_register_members: { type: boolean }
+
+    LibraryImportRow:
+      type: object
+      additionalProperties: true
+      description: >-
+        One raw import row, keyed either by internal field name (title, main_author, publisher,
+        publish_place, publish_year, isbn, ddc_number, subjects, material_type, category, access,
+        location, source, acquired_on, price, no_induk, barcode, copies, call_number) when no
+        mapping is given, or by whatever source column name `mapping` points each field at.
+        row_number is always read directly.
+    LibraryImportRequest:
+      type: object
+      required: [rows]
+      properties:
+        rows:
+          type: array
+          minItems: 1
+          maxItems: 2000
+          items: { $ref: "#/components/schemas/LibraryImportRow" }
+        mapping:
+          type: object
+          additionalProperties: { type: string }
+          description: "Internal field name -> source column name, for a sheet using its own headers (INLISLite export aliases included)."
+    LibraryImportPreviewRow:
+      type: object
+      required: [row_number, status, message, title, copies]
+      properties:
+        row_number: { type: integer }
+        status: { type: string, enum: [new_title, existing_title, error] }
+        message: { type: string }
+        title: { type: string }
+        copies: { type: integer }
+    LibraryImportPreview:
+      type: object
+      required: [rows, summary]
+      properties:
+        rows: { type: array, items: { $ref: "#/components/schemas/LibraryImportPreviewRow" } }
+        summary:
+          type: object
+          required: [new_titles, existing_titles, copies, errors]
+          properties:
+            new_titles: { type: integer }
+            existing_titles: { type: integer }
+            copies: { type: integer }
+            errors: { type: integer }
+    LibraryImportCommitResult:
+      type: object
+      required: [created_titles, created_copies]
+      properties:
+        created_titles: { type: integer }
+        created_copies: { type: integer }
 
     LibraryExternalBibliography:
       type: object
