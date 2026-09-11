@@ -5,7 +5,7 @@
 -- automatic_score. This is what lets SetManualReportScore restore the
 -- automatic value by clearing the override, without a full recompute.
 insert into report_scores (tenant_id, academic_year_id, term_id, class_id, subject_id, student_user_id, previous_score, manual_score, automatic_score, final_score, computed_at)
-values ($1, $2, $3, $4, $5, $6, $7, $8, $9, coalesce($8, $9), now())
+values ($1, $2, $3, $4, $5, $6, $7, $8, $9, coalesce($8::numeric, $9::numeric), now())
 on conflict (academic_year_id, term_id, class_id, subject_id, student_user_id) do update
   set previous_score = excluded.previous_score,
       manual_score = coalesce(excluded.manual_score, report_scores.manual_score),

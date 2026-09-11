@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 
 	"github.com/google/uuid"
 
@@ -136,6 +137,15 @@ func (s *Service) previousScores(ctx context.Context, tenantID, yearID, termID, 
 // SetManualScore overrides one student's report score; the override wins
 // over recomputation until it is cleared (UpsertReportScore and
 // SetManualReportScore's SQL both restore the automatic value once it is).
+//
+// report_scores rows normally come from recomputeReportScores, which only
+// visits students who already have at least one component grade -- a
+// student with none yet (a transfer student) has no row for
+// SetManualReportScore to UPDATE. When that happens this falls back to
+// inserting the row with the automatic value the student would otherwise
+// have (studentAutomaticScore), then applying the override on top, so the
+// override always succeeds and clearing it later still restores the same
+// automatic baseline.
 func (s *Service) SetManualScore(ctx context.Context, tenantID, actorID uuid.UUID, canManageAny bool, classID, subjectID, studentID uuid.UUID, termID uuid.NullUUID, manual *float64) (ReportScore, error) {
 	if err := s.requireEnabled(ctx, tenantID); err != nil {
 		return ReportScore{}, err
@@ -161,9 +171,65 @@ func (s *Service) SetManualScore(ctx context.Context, tenantID, actorID uuid.UUI
 			return domain.ErrScoreOutOfRange
 		}
 		out, err = s.repo.SetManualReportScore(ctx, tenantID, yearID, term.ID, classID, subjectID, studentID, manual)
+		if err == nil {
+			return nil
+		}
+		if !errors.Is(err, domain.ErrComponentNotFound) {
+			return err
+		}
+		automatic, previous, err := s.studentAutomaticScore(ctx, tenantID, yearID, term.ID, classID, subjectID, studentID, scale)
+		if err != nil {
+			return err
+		}
+		out, err = s.repo.UpsertReportScore(ctx, tenantID, yearID, term.ID, classID, subjectID, studentID, previous, manual, automatic)
 		return err
 	})
 	return out, err
+}
+
+// studentAutomaticScore computes the automatic report score one student
+// would have from their current component grades, the same rule
+// recomputeReportScores applies when it visits every graded student. A
+// student with no grades at all has no weighted average to work from, so
+// this falls back to the scale's minimum as the baseline.
+func (s *Service) studentAutomaticScore(ctx context.Context, tenantID, yearID, termID, classID, subjectID, studentID uuid.UUID, scale domain.Scale) (automatic float64, previous *float64, err error) {
+	components, err := s.repo.ListComponents(ctx, tenantID, termID, classID, subjectID)
+	if err != nil {
+		return 0, nil, err
+	}
+	prevByStudent, err := s.previousScores(ctx, tenantID, yearID, termID, classID, subjectID)
+	if err != nil {
+		return 0, nil, err
+	}
+	previous = prevByStudent[studentID]
+
+	raw := scale.Min
+	var ranges []domain.GradeRange
+	if len(components) > 0 {
+		componentIDs := make([]uuid.UUID, len(components))
+		for i, c := range components {
+			componentIDs[i] = c.ID
+		}
+		grades, err := s.repo.ListGradesForComponents(ctx, tenantID, componentIDs)
+		if err != nil {
+			return 0, nil, err
+		}
+		scores := make(map[uuid.UUID]float64, len(grades))
+		for _, g := range grades {
+			if g.StudentUserID == studentID {
+				scores[g.ComponentID] = g.Score
+			}
+		}
+		if avg, ok := domain.WeightedAverage(components, scores); ok {
+			raw = avg
+		}
+		ranges, err = s.applicableRanges(ctx, tenantID, yearID, subjectID, components[0].TeacherUserID)
+		if err != nil {
+			return 0, nil, err
+		}
+	}
+	result := domain.ComputeReportScore(scale, scale.Round(raw), previous, nil, ranges)
+	return result.Automatic, previous, nil
 }
 
 // Publish flips one class-subject's publication flag; students only see
