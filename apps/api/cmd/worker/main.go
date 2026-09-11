@@ -70,6 +70,7 @@ func run(logger *slog.Logger) error {
 		Pool: pool, Jobs: nil, Clock: clock.Real{},
 		Push: senders.Push, Email: senders.Email, WhatsApp: senders.WhatsApp,
 		Sealer: sealer, WhatsAppAppSecret: cfg.WhatsAppAppSecret, WhatsAppWebhookVerifyToken: cfg.WhatsAppWebhookVerifyToken,
+		APNSConfigured: cfg.APNSKeyP8 != "",
 	})
 	notificationPeriodic, err := notificationsModule.RegisterJobs(workers)
 	if err != nil {

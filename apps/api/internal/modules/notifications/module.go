@@ -42,6 +42,12 @@ type Dependencies struct {
 	Sealer                     *crypto.Sealer
 	WhatsAppAppSecret          string
 	WhatsAppWebhookVerifyToken string
+
+	// APNSConfigured gates iOS push device registration: RegisterPushDevice
+	// returns 503 for platform=ios when this is false, rather than
+	// accepting a token this server can never actually deliver to
+	// (reference/sion-rebuild-go apns.go's apnsEnabled check).
+	APNSConfigured bool
 }
 
 type Module struct {
@@ -57,6 +63,7 @@ func Register(deps Dependencies) *Module {
 	}
 	svc := service.New(deps.Pool, repository.New(deps.Pool), deps.Jobs, deps.Realtime, clk, deps.Contacts)
 	svc.SetWhatsAppSecrets(deps.Sealer, deps.WhatsAppAppSecret, deps.WhatsAppWebhookVerifyToken)
+	svc.SetAPNsConfigured(deps.APNSConfigured)
 	if deps.Bus != nil {
 		service.RegisterEventHandlers(deps.Bus, svc)
 	}

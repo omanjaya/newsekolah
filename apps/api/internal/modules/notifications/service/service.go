@@ -42,6 +42,7 @@ type Repository interface {
 	UpsertPushDevice(ctx context.Context, tenantID, userID uuid.UUID, reg PushDeviceRegistration, expiresAt time.Time) (domain.PushDevice, error)
 	DeletePushDeviceByEndpoint(ctx context.Context, tenantID, userID uuid.UUID, tokenOrEndpoint string) error
 	DeletePushDeviceByID(ctx context.Context, tenantID, id uuid.UUID) error
+	DeleteAllPushDevicesForUser(ctx context.Context, tenantID, userID uuid.UUID) error
 	GetPushDeviceByID(ctx context.Context, tenantID, id uuid.UUID) (domain.PushDevice, error)
 	ListPushDevicesForUser(ctx context.Context, tenantID, userID uuid.UUID) ([]domain.PushDevice, error)
 	ListPushDevicesForUsers(ctx context.Context, tenantID uuid.UUID, userIDs []uuid.UUID) ([]domain.PushDevice, error)
@@ -117,6 +118,18 @@ type Service struct {
 	waSealer      *crypto.Sealer
 	waAppSecret   string
 	waVerifyToken string
+
+	// apnsConfigured gates iOS device registration: 503 rather than a
+	// silently unusable row when the server has no APNs credentials
+	// (reference/sion-rebuild-go apns.go's apnsEnabled check).
+	apnsConfigured bool
+}
+
+// SetAPNsConfigured records whether this server has APNs credentials, for
+// RegisterPushDevice's iOS check. Set once at wiring time (module.go),
+// alongside SetWhatsAppSecrets.
+func (s *Service) SetAPNsConfigured(configured bool) {
+	s.apnsConfigured = configured
 }
 
 func New(pool *pgxpool.Pool, repo Repository, jobs JobInserter, realtime RealtimePublisher, clk clock.Clock, contacts ContactReader) *Service {

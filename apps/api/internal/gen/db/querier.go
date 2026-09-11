@@ -294,6 +294,7 @@ type Querier interface {
 	DeactivateAllAcademicYears(ctx context.Context, tenantID uuid.UUID) error
 	DeleteAchievement(ctx context.Context, arg DeleteAchievementParams) error
 	DeleteActivity(ctx context.Context, arg DeleteActivityParams) error
+	DeleteAllPushDevicesForUser(ctx context.Context, arg DeleteAllPushDevicesForUserParams) error
 	DeleteAnnouncement(ctx context.Context, arg DeleteAnnouncementParams) error
 	DeleteComponent(ctx context.Context, arg DeleteComponentParams) error
 	DeleteCounseling(ctx context.Context, arg DeleteCounselingParams) error

@@ -172,6 +172,10 @@ type Extras struct {
 	// middleware's validity cache. nil (e.g. in a unit test) just skips
 	// the eviction -- the cache entry still expires on its own TTL.
 	SessionCache SessionInvalidator
+	// PushDevices lets the service delete a user's push devices on
+	// logout/revoke-all. nil (e.g. a deployment without the notifications
+	// module wired, or a unit test) just skips the deletion.
+	PushDevices PushDeviceRevoker
 }
 
 // SessionInvalidator evicts a session from the authn middleware's
@@ -184,6 +188,16 @@ type Extras struct {
 // section 1.1).
 type SessionInvalidator interface {
 	Invalidate(ctx context.Context, sessionID uuid.UUID) error
+}
+
+// PushDeviceRevoker deletes a user's registered push devices, implemented
+// by the notifications module. Called on logout and on every "revoke all
+// other sessions" flow (password change, password-reset confirm,
+// single-device login) so a device that no longer has a valid session
+// also stops receiving push (docs/analysis/backend-inventory.md section
+// 1.1 and 1.8).
+type PushDeviceRevoker interface {
+	RemoveAllPushDevicesForUser(ctx context.Context, tenantID, userID uuid.UUID) error
 }
 
 // CeremonyStore is the narrow key-value contract passkey ceremonies need
@@ -266,6 +280,16 @@ func (s *Service) invalidateSessions(ctx context.Context, ids []uuid.UUID) {
 	for _, id := range ids {
 		_ = s.extras.SessionCache.Invalidate(ctx, id)
 	}
+}
+
+// revokePushDevices deletes every push device registered for userID.
+// Best-effort, same reasoning as invalidateSessions: the sessions are
+// already revoked in the database regardless of whether this succeeds.
+func (s *Service) revokePushDevices(ctx context.Context, tenantID, userID uuid.UUID) {
+	if s.extras.PushDevices == nil {
+		return
+	}
+	_ = s.extras.PushDevices.RemoveAllPushDevicesForUser(ctx, tenantID, userID)
 }
 
 // PruneSessions deletes revoked/expired sessions older than 30 days for

@@ -78,6 +78,9 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	if err != nil {
 		return nil, nil, err
 	}
+	// pushDevices is filled in once the notifications module exists below
+	// (identity is built first); see its type's comment.
+	pushDevices := &lateBoundPushDevices{}
 	identityModule := identity.Register(identity.Dependencies{
 		Pool:    pool,
 		Years:   schoolModule.Service,
@@ -99,6 +102,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		SessionCache: sessionCache,
 		IsProduction: cfg.IsProduction(),
 		AppOrigins:   cfg.AppOrigins,
+		PushDevices:  pushDevices,
 		Email:        senders.Email,
 		MfaSealer:    sealer,
 		Ceremony:     store,
@@ -191,7 +195,9 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		Contacts: identityContacts{svc: identityModule.Service}, Bus: eventBus, Clock: clock.Real{},
 		Push: senders.Push, Email: senders.Email, WhatsApp: senders.WhatsApp,
 		Sealer: sealer, WhatsAppAppSecret: cfg.WhatsAppAppSecret, WhatsAppWebhookVerifyToken: cfg.WhatsAppWebhookVerifyToken,
+		APNSConfigured: cfg.APNSKeyP8 != "",
 	})
+	pushDevices.svc = notificationsModule.Service
 	announcementsModule := announcements.Register(announcements.Dependencies{
 		Pool: pool, Notifier: wiring.AnnouncementNotifier{Svc: notificationsModule.Service}, Clock: clock.Real{}, Logger: logger,
 	})

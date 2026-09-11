@@ -88,7 +88,7 @@ func (s *Service) notifyOne(
 		case domain.ChannelInApp:
 			_ = s.realtime.Publish(ctx, userID, RealtimeEvent{
 				Type:    "notification_created",
-				Payload: map[string]any{"id": n.ID, "title": n.Title, "body": n.Body, "href": n.Href},
+				Payload: map[string]any{"id": n.ID, "kind": n.Kind, "title": n.Title, "body": n.Body, "href": n.Href},
 			})
 		case domain.ChannelPush:
 			if err := s.enqueuePush(ctx, tx, tenantID, n, userID, deferUntil); err != nil {
@@ -130,7 +130,7 @@ func (s *Service) enqueuePush(ctx context.Context, tx pgx.Tx, tenantID uuid.UUID
 		}
 		_, err = s.jobs.InsertTx(ctx, tx, DeliverPushArgs{
 			TenantID: tenantID, NotificationID: n.ID, NotificationCreatedAt: n.CreatedAt,
-			DeliveryID: deliveryID, DeviceID: d.ID, Title: n.Title, Body: n.Body, Href: n.Href,
+			DeliveryID: deliveryID, DeviceID: d.ID, Title: n.Title, Body: n.Body, Href: n.Href, NotificationKind: string(n.Kind),
 		}, &river.InsertOpts{ScheduledAt: deferUntil, MaxAttempts: deliveryMaxAttempts})
 		if err != nil {
 			return fmt.Errorf("enqueue push delivery job: %w", err)

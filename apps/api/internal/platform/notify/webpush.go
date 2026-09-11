@@ -58,6 +58,7 @@ func (s *webPushSender) Send(ctx context.Context, device PushDevice, payload Pus
 		VAPIDPrivateKey: s.cfg.PrivateKey,
 		TTL:             3600,
 		Urgency:         webpush.UrgencyHigh,
+		Topic:           payload.Topic,
 	})
 	if err != nil {
 		return fmt.Errorf("send web push: %w", err)

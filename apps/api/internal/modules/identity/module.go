@@ -31,6 +31,9 @@ type Dependencies struct {
 	// AppOrigins allowlists the Origin header on a cookie-based refresh
 	// (docs/08-security.md section 7).
 	AppOrigins []string
+	// PushDevices deletes a user's push devices on logout/revoke-all. nil
+	// disables that (no notifications module wired).
+	PushDevices service.PushDeviceRevoker
 
 	// ResetLimiter bounds password-reset-request attempts per IP. Email is
 	// where the reset link/OTP goes; a nil-noop sender still lets the flow
@@ -77,6 +80,7 @@ func Register(deps Dependencies) *Module {
 		GoogleVerifier: googleVerifier,
 		Ceremony:       deps.Ceremony,
 		SessionCache:   deps.SessionCache,
+		PushDevices:    deps.PushDevices,
 	})
 	handler := transporthttp.New(svc, deps.Branding, deps.SessionCache, deps.IsProduction, deps.AppOrigins)
 	return &Module{Service: svc, Handler: handler}

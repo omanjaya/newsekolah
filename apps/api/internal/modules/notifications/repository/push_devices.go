@@ -46,6 +46,10 @@ func (r *Repository) DeletePushDeviceByID(ctx context.Context, tenantID, id uuid
 	return r.queries(ctx).DeletePushDeviceByID(ctx, db.DeletePushDeviceByIDParams{TenantID: tenantID, ID: id})
 }
 
+func (r *Repository) DeleteAllPushDevicesForUser(ctx context.Context, tenantID, userID uuid.UUID) error {
+	return r.queries(ctx).DeleteAllPushDevicesForUser(ctx, db.DeleteAllPushDevicesForUserParams{TenantID: tenantID, UserID: userID})
+}
+
 func (r *Repository) GetPushDeviceByID(ctx context.Context, tenantID, id uuid.UUID) (domain.PushDevice, error) {
 	row, err := r.queries(ctx).GetPushDeviceByID(ctx, db.GetPushDeviceByIDParams{TenantID: tenantID, ID: id})
 	if err != nil {

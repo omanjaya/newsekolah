@@ -39,6 +39,9 @@ var errorMap = map[error]*httpx.Error{
 	domain.ErrPushDeviceNotFound:   httpx.ErrPushDeviceNotFound,
 	domain.ErrInvalidChannel:       httpx.ErrValidation,
 	domain.ErrInvalidPlatform:      httpx.ErrValidation,
+	domain.ErrInvalidPushEndpoint:  httpx.ErrPushEndpointNotAllowed,
+	domain.ErrDeviceTokenTooLong:   httpx.ErrValidation,
+	domain.ErrApnsNotConfigured:    httpx.ErrApnsNotConfigured,
 }
 
 func mapError(err error) error {

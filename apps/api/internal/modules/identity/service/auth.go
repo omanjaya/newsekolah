@@ -232,11 +232,21 @@ func (s *Service) buildAuthResult(ctx context.Context, user domain.User, session
 	}, nil
 }
 
-// Logout revokes exactly the current session.
-func (s *Service) Logout(ctx context.Context, tenantID, sessionID uuid.UUID) error {
-	return s.withTx(ctx, tenantID, func(ctx context.Context) error {
+// Logout revokes exactly the current session, and also deletes every push
+// device registered for the user: the schema has no session-to-device
+// link, so "the device this session logged out from" and "all of this
+// user's devices" cannot be told apart -- matching the old app's own
+// behavior of clearing every subscription on logout
+// (reference/sion-rebuild-go main.go).
+func (s *Service) Logout(ctx context.Context, tenantID, userID, sessionID uuid.UUID) error {
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		return s.repo.RevokeSession(ctx, tenantID, sessionID, "logout")
 	})
+	if err != nil {
+		return err
+	}
+	s.revokePushDevices(ctx, tenantID, userID)
+	return nil
 }
 
 func (s *Service) ListSessions(ctx context.Context, tenantID, userID uuid.UUID) ([]SessionView, error) {
@@ -300,6 +310,7 @@ func (s *Service) ChangePassword(ctx context.Context, tenantID, userID, currentS
 			return err
 		}
 		s.invalidateSessions(ctx, revokedIDs)
+		s.revokePushDevices(ctx, tenantID, userID)
 		return nil
 	})
 }
