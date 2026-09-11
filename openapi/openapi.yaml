@@ -915,6 +915,39 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
+  /v1/academic/enrollments/{enrollmentId}/leave:
+    parameters:
+      - name: enrollmentId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags:
+        - academic
+      operationId: removeStudentFromClass
+      x-permission: manage_enrollments
+      summary: Close the student's active enrollment as "left" mid-year (leaving the school, not moving class)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RemoveStudentInput"
+      responses:
+        "200":
+          description: Closed enrollment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Enrollment"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /v1/academic/years/{yearId}/unassigned-students:
     parameters:
       - $ref: "#/components/parameters/YearIdParam"
@@ -1045,7 +1078,10 @@ paths:
         - academic
       operationId: downloadEnrollmentImportTemplate
       x-permission: view_academic_data
-      summary: Download the xlsx template for the class-assignment import
+      summary: Download the xlsx template for the class-assignment import, prefilled with the year's currently unassigned
+        students and a class-name dropdown
+      parameters:
+        - $ref: "#/components/parameters/YearIdQueryParam"
       responses:
         "200":
           description: Workbook
@@ -1066,6 +1102,13 @@ paths:
         writing anything
       parameters:
         - $ref: "#/components/parameters/YearIdQueryParam"
+        - name: move_existing
+          in: query
+          description: When false (default), a row for a student who already has an active enrollment elsewhere is reported but
+            not applied on commit
+          schema:
+            type: boolean
+            default: false
       requestBody:
         required: true
         content:
@@ -1090,9 +1133,24 @@ paths:
         - academic
       operationId: commitEnrollmentImport
       x-permission: manage_enrollments
-      summary: Re-parse the same workbook and apply every row that isn't an error (assign or move)
+      summary: Re-parse the same workbook and apply every row that isn't an error (assign or move); the whole file is rejected
+        if any row is invalid unless partial=true
       parameters:
         - $ref: "#/components/parameters/YearIdQueryParam"
+        - name: move_existing
+          in: query
+          description: When false (default), a row for a student who already has an active enrollment elsewhere is skipped, not
+            moved
+          schema:
+            type: boolean
+            default: false
+        - name: partial
+          in: query
+          description: When false (default), the whole file is rejected (nothing is written) if any row is an error; when true,
+            invalid rows are skipped and the rest is applied
+          schema:
+            type: boolean
+            default: false
       requestBody:
         required: true
         content:
@@ -6275,6 +6333,40 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
+  /v1/staff-options:
+    get:
+      tags:
+        - duties
+      operationId: listStaffOptions
+      x-permission: view_users
+      summary: Active users with a teacher or staff profile, for a duty assignment form's assignee dropdown
+      parameters:
+        - $ref: "#/components/parameters/SearchParam"
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+      responses:
+        "200":
+          description: Staff options
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/UserOption"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /v1/audit-logs:
     get:
       tags:
@@ -11326,7 +11418,7 @@ paths:
       tags:
         - scheduling
       operationId: createSchedule
-      x-permission: view_schedules
+      x-permission: authenticated
       summary: Create a schedule (admin for any teacher, or a teacher for themselves within the edit deadline)
       requestBody:
         required: true
@@ -11411,6 +11503,47 @@ paths:
           description: Cleared
         "400":
           $ref: "#/components/responses/BadRequest"
+  /v1/schedules/teacher-options:
+    get:
+      tags:
+        - scheduling
+      operationId: listTeacherOptions
+      x-permission: authenticated
+      summary: Active teachers for a schedule form's teacher dropdown; a teacher without manage_schedules or
+        manage_master_data sees only themselves
+      parameters:
+        - name: academic_year_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/SearchParam"
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+      responses:
+        "200":
+          description: Teacher options
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/UserOption"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /v1/schedules/{scheduleId}:
     parameters:
       - name: scheduleId
@@ -11438,7 +11571,7 @@ paths:
       tags:
         - scheduling
       operationId: updateSchedule
-      x-permission: view_schedules
+      x-permission: authenticated
       summary: Update a schedule (admin, or the owning teacher within the edit deadline)
       requestBody:
         required: true
@@ -11465,7 +11598,7 @@ paths:
       tags:
         - scheduling
       operationId: deleteSchedule
-      x-permission: view_schedules
+      x-permission: authenticated
       summary: Delete a schedule (admin, or the owning teacher within the edit deadline)
       responses:
         "204":
@@ -13723,7 +13856,7 @@ components:
         name:
           type: string
           minLength: 1
-          maxLength: 100
+          maxLength: 150
         room_id:
           type: string
           format: uuid
@@ -13848,6 +13981,14 @@ components:
           type: string
           format: uuid
         effective_on:
+          type: string
+          format: date
+    RemoveStudentInput:
+      type: object
+      required:
+        - left_on
+      properties:
+        left_on:
           type: string
           format: date
     StudentSummary:
@@ -14051,6 +14192,7 @@ components:
         - assign
         - move
         - unchanged
+        - skipped
         - error
     ImportRowResult:
       type: object
@@ -19278,6 +19420,17 @@ components:
         created_at:
           type: string
           format: date-time
+    UserOption:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
     ScheduleSource:
       type: string
       enum:

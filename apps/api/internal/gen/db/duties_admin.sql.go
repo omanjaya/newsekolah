@@ -28,6 +28,26 @@ func (q *Queries) ClassExistsInTenant(ctx context.Context, arg ClassExistsInTena
 	return exists, err
 }
 
+const classExistsInYear = `-- name: ClassExistsInYear :one
+select exists(select 1 from classes where tenant_id = $1 and id = $2 and academic_year_id = $3 and deleted_at is null)
+`
+
+type ClassExistsInYearParams struct {
+	TenantID       uuid.UUID `json:"tenant_id"`
+	ID             uuid.UUID `json:"id"`
+	AcademicYearID uuid.UUID `json:"academic_year_id"`
+}
+
+// A duty assignment's scope class must belong to the same academic year as
+// the assignment itself, the same rule teaching assignments and schedules
+// enforce on their own class references.
+func (q *Queries) ClassExistsInYear(ctx context.Context, arg ClassExistsInYearParams) (bool, error) {
+	row := q.db.QueryRow(ctx, classExistsInYear, arg.TenantID, arg.ID, arg.AcademicYearID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const countAssignmentsForDutyType = `-- name: CountAssignmentsForDutyType :one
 select count(*) from duty_assignments where tenant_id = $1 and duty_type_id = $2
 `
@@ -124,6 +144,30 @@ func (q *Queries) GetDutyTypeByID(ctx context.Context, arg GetDutyTypeByIDParams
 		&i.DeletedAt,
 	)
 	return i, err
+}
+
+const isActiveTeacherOrStaff = `-- name: IsActiveTeacherOrStaff :one
+select exists(
+  select 1 from users u
+  join user_profiles up on up.user_id = u.id and up.kind in ('teacher', 'staff')
+  where u.tenant_id = $1 and u.id = $2 and u.deleted_at is null and u.status = 'active'
+)
+`
+
+type IsActiveTeacherOrStaffParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	ID       uuid.UUID `json:"id"`
+}
+
+// A duty assignment's assignee must be an active user with a teacher or
+// staff profile -- the old app kept teacher and employee duties in
+// separate tables for exactly this reason (employee_duties.go,
+// academic_scope.go); this is the merged model's equivalent guard.
+func (q *Queries) IsActiveTeacherOrStaff(ctx context.Context, arg IsActiveTeacherOrStaffParams) (bool, error) {
+	row := q.db.QueryRow(ctx, isActiveTeacherOrStaff, arg.TenantID, arg.ID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
 }
 
 const listDutyAssignmentsAdmin = `-- name: ListDutyAssignmentsAdmin :many
@@ -269,6 +313,52 @@ func (q *Queries) ListDutyTypes(ctx context.Context, arg ListDutyTypesParams) ([
 	return items, nil
 }
 
+const listStaffOptions = `-- name: ListStaffOptions :many
+select u.id, u.name
+from users u
+join user_profiles up on up.user_id = u.id and up.kind in ('teacher', 'staff')
+where u.tenant_id = $1
+  and u.deleted_at is null
+  and u.status = 'active'
+  and ($3::text is null or u.name ilike '%' || $3 || '%')
+order by u.name
+limit $2
+`
+
+type ListStaffOptionsParams struct {
+	TenantID uuid.UUID   `json:"tenant_id"`
+	Limit    int32       `json:"limit"`
+	Search   pgtype.Text `json:"search"`
+}
+
+type ListStaffOptionsRow struct {
+	ID   uuid.UUID `json:"id"`
+	Name string    `json:"name"`
+}
+
+// Active users with a teacher or staff profile, for a duty assignment
+// form's assignee dropdown -- the same eligibility IsActiveTeacherOrStaff
+// checks on create.
+func (q *Queries) ListStaffOptions(ctx context.Context, arg ListStaffOptionsParams) ([]ListStaffOptionsRow, error) {
+	rows, err := q.db.Query(ctx, listStaffOptions, arg.TenantID, arg.Limit, arg.Search)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListStaffOptionsRow{}
+	for rows.Next() {
+		var i ListStaffOptionsRow
+		if err := rows.Scan(&i.ID, &i.Name); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const softDeleteDutyType = `-- name: SoftDeleteDutyType :exec
 update duty_types set deleted_at = now(), is_active = false where tenant_id = $1 and id = $2
 `
@@ -280,6 +370,26 @@ type SoftDeleteDutyTypeParams struct {
 
 func (q *Queries) SoftDeleteDutyType(ctx context.Context, arg SoftDeleteDutyTypeParams) error {
 	_, err := q.db.Exec(ctx, softDeleteDutyType, arg.TenantID, arg.ID)
+	return err
+}
+
+const updateClassHomeroomTeacher = `-- name: UpdateClassHomeroomTeacher :exec
+update classes set homeroom_teacher_id = $3 where tenant_id = $1 and id = $2
+`
+
+type UpdateClassHomeroomTeacherParams struct {
+	TenantID          uuid.UUID   `json:"tenant_id"`
+	ID                uuid.UUID   `json:"id"`
+	HomeroomTeacherID pgtype.UUID `json:"homeroom_teacher_id"`
+}
+
+// Keeps classes.homeroom_teacher_id in sync with the "homeroom" duty
+// assignment for that class: attendance and permits both read this column
+// directly (a duty lookup on every attendance write would be wasteful), so
+// creating, ending, or deleting a homeroom duty assignment writes it here
+// too, in the same transaction as the duty_assignments row.
+func (q *Queries) UpdateClassHomeroomTeacher(ctx context.Context, arg UpdateClassHomeroomTeacherParams) error {
+	_, err := q.db.Exec(ctx, updateClassHomeroomTeacher, arg.TenantID, arg.ID, arg.HomeroomTeacherID)
 	return err
 }
 

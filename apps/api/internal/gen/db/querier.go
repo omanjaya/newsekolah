@@ -33,6 +33,7 @@ type Querier interface {
 	AcademicCreateClass(ctx context.Context, arg AcademicCreateClassParams) (Class, error)
 	AcademicCreateEnrollment(ctx context.Context, arg AcademicCreateEnrollmentParams) (Enrollment, error)
 	AcademicCreateGradeLevel(ctx context.Context, arg AcademicCreateGradeLevelParams) (GradeLevel, error)
+	AcademicCreateHomeroomAssignment(ctx context.Context, arg AcademicCreateHomeroomAssignmentParams) error
 	AcademicCreatePeriod(ctx context.Context, arg AcademicCreatePeriodParams) (Period, error)
 	AcademicCreatePeriodTemplate(ctx context.Context, arg AcademicCreatePeriodTemplateParams) (PeriodTemplate, error)
 	AcademicCreateRoom(ctx context.Context, arg AcademicCreateRoomParams) (Room, error)
@@ -53,6 +54,15 @@ type Querier interface {
 	AcademicDeleteTeachingAssignmentsForTeacherInYear(ctx context.Context, arg AcademicDeleteTeachingAssignmentsForTeacherInYearParams) error
 	AcademicDeleteTerm(ctx context.Context, arg AcademicDeleteTermParams) error
 	AcademicDeleteTrack(ctx context.Context, arg AcademicDeleteTrackParams) error
+	AcademicEndHomeroomAssignment(ctx context.Context, arg AcademicEndHomeroomAssignmentParams) error
+	AcademicFindActiveHomeroomAssignment(ctx context.Context, arg AcademicFindActiveHomeroomAssignmentParams) (AcademicFindActiveHomeroomAssignmentRow, error)
+	// Cross-module writes onto duty_types/duty_assignments (owned by the
+	// identity module): the class record's homeroom_teacher_id and the
+	// "homeroom" duty assignment for that class must always agree, so setting
+	// one from academic's side (editing a class) writes the other in the same
+	// transaction, mirroring identity's own UpdateClassHomeroomTeacher, which
+	// does the reverse write onto classes.
+	AcademicFindHomeroomDutyTypeID(ctx context.Context, tenantID uuid.UUID) (uuid.UUID, error)
 	AcademicFindStudentByNIS(ctx context.Context, arg AcademicFindStudentByNISParams) (AcademicFindStudentByNISRow, error)
 	// Read-only lookups against tables owned by the identity module (users,
 	// student_profiles). Per the ownership convention already used for
@@ -83,6 +93,8 @@ type Querier interface {
 	AcademicGetTrackByID(ctx context.Context, arg AcademicGetTrackByIDParams) (Track, error)
 	AcademicGetWeekdayAssignment(ctx context.Context, arg AcademicGetWeekdayAssignmentParams) (PeriodDayAssignment, error)
 	AcademicGetYearByID(ctx context.Context, arg AcademicGetYearByIDParams) (AcademicYear, error)
+	AcademicIsActiveStudent(ctx context.Context, arg AcademicIsActiveStudentParams) (bool, error)
+	AcademicIsActiveTeacher(ctx context.Context, arg AcademicIsActiveTeacherParams) (bool, error)
 	// Every class in an academic year, unpaginated: used by the new-academic-
 	// year setup to enumerate what would be copied forward, not by any
 	// paginated listing endpoint.
@@ -120,7 +132,7 @@ type Querier interface {
 	AcademicListTermsByYear(ctx context.Context, arg AcademicListTermsByYearParams) ([]Term, error)
 	AcademicListTracks(ctx context.Context, tenantID uuid.UUID) ([]Track, error)
 	// Every active student user in the tenant with no active enrollment in the
-	// given academic year.
+	// given academic year. Search matches name, username, email, NIS, or NISN.
 	AcademicListUnassignedStudents(ctx context.Context, arg AcademicListUnassignedStudentsParams) ([]AcademicListUnassignedStudentsRow, error)
 	AcademicListWeekdayAssignments(ctx context.Context, arg AcademicListWeekdayAssignmentsParams) ([]PeriodDayAssignment, error)
 	AcademicListYears(ctx context.Context, arg AcademicListYearsParams) ([]AcademicListYearsRow, error)
@@ -128,6 +140,7 @@ type Querier interface {
 	AcademicSoftDeleteClass(ctx context.Context, arg AcademicSoftDeleteClassParams) error
 	AcademicSoftDeleteRoom(ctx context.Context, arg AcademicSoftDeleteRoomParams) error
 	AcademicSoftDeleteSubject(ctx context.Context, arg AcademicSoftDeleteSubjectParams) error
+	AcademicSubjectOfferedInYear(ctx context.Context, arg AcademicSubjectOfferedInYearParams) (bool, error)
 	AcademicTeacherHasAssignment(ctx context.Context, arg AcademicTeacherHasAssignmentParams) (bool, error)
 	AcademicUpdateCalendarEvent(ctx context.Context, arg AcademicUpdateCalendarEventParams) (AcademicCalendarEvent, error)
 	AcademicUpdateClass(ctx context.Context, arg AcademicUpdateClassParams) (Class, error)
@@ -189,6 +202,10 @@ type Querier interface {
 	// instead of erroring, and the caller treats that as "already claimed".
 	ClaimReportScheduleRun(ctx context.Context, arg ClaimReportScheduleRunParams) (ReportScheduleRun, error)
 	ClassExistsInTenant(ctx context.Context, arg ClassExistsInTenantParams) (bool, error)
+	// A duty assignment's scope class must belong to the same academic year as
+	// the assignment itself, the same rule teaching assignments and schedules
+	// enforce on their own class references.
+	ClassExistsInYear(ctx context.Context, arg ClassExistsInYearParams) (bool, error)
 	ClearDefaultDocumentTemplate(ctx context.Context, arg ClearDefaultDocumentTemplateParams) error
 	CloseIncident(ctx context.Context, arg CloseIncidentParams) (VisitorIncident, error)
 	CloseStocktake(ctx context.Context, arg CloseStocktakeParams) (LibraryStocktake, error)
@@ -460,6 +477,10 @@ type Querier interface {
 	GetStaffAttendanceRecordByEmployeeDate(ctx context.Context, arg GetStaffAttendanceRecordByEmployeeDateParams) (StaffAttendanceRecord, error)
 	GetStaffProfile(ctx context.Context, arg GetStaffProfileParams) (StaffProfile, error)
 	GetStocktake(ctx context.Context, arg GetStocktakeParams) (LibraryStocktake, error)
+	// The class a student is actively enrolled in this academic year, for
+	// scoping schedule reads: a student may only list their own class's
+	// schedule, per teaching_schedules.go's studentClass lookup in the old app.
+	GetStudentActiveClassRef(ctx context.Context, arg GetStudentActiveClassRefParams) (uuid.UUID, error)
 	GetStudentGuardianName(ctx context.Context, arg GetStudentGuardianNameParams) (string, error)
 	GetStudentProfile(ctx context.Context, arg GetStudentProfileParams) (StudentProfile, error)
 	GetSubjectRefForSchedule(ctx context.Context, arg GetSubjectRefForScheduleParams) (GetSubjectRefForScheduleRow, error)
@@ -479,6 +500,7 @@ type Querier interface {
 	GetUserByUsername(ctx context.Context, arg GetUserByUsernameParams) (User, error)
 	GetUserByUsernameOrEmail(ctx context.Context, arg GetUserByUsernameOrEmailParams) (User, error)
 	GetUserName(ctx context.Context, arg GetUserNameParams) (string, error)
+	GetUserRefForSchedule(ctx context.Context, arg GetUserRefForScheduleParams) (GetUserRefForScheduleRow, error)
 	GetValidPasswordResetByHash(ctx context.Context, arg GetValidPasswordResetByHashParams) (PasswordReset, error)
 	GetViolationRecord(ctx context.Context, arg GetViolationRecordParams) (ViolationRecord, error)
 	GetViolationType(ctx context.Context, arg GetViolationTypeParams) (ViolationType, error)
@@ -529,7 +551,13 @@ type Querier interface {
 	InsertStarEvent(ctx context.Context, arg InsertStarEventParams) (StarEvent, error)
 	InsertWebAuthnCredential(ctx context.Context, arg InsertWebAuthnCredentialParams) (WebauthnCredential, error)
 	InsertWhatsAppTemplate(ctx context.Context, arg InsertWhatsAppTemplateParams) (WhatsappTemplate, error)
+	IsAcademicYearArchivedRef(ctx context.Context, arg IsAcademicYearArchivedRefParams) (bool, error)
 	IsActiveTeacher(ctx context.Context, arg IsActiveTeacherParams) (bool, error)
+	// A duty assignment's assignee must be an active user with a teacher or
+	// staff profile -- the old app kept teacher and employee duties in
+	// separate tables for exactly this reason (employee_duties.go,
+	// academic_scope.go); this is the merged model's equivalent guard.
+	IsActiveTeacherOrStaff(ctx context.Context, arg IsActiveTeacherOrStaffParams) (bool, error)
 	IsActiveTeacherRef(ctx context.Context, arg IsActiveTeacherRefParams) (bool, error)
 	IsParentOfStudent(ctx context.Context, arg IsParentOfStudentParams) (bool, error)
 	IsSchoolDayRef(ctx context.Context, arg IsSchoolDayRefParams) (bool, error)
@@ -714,6 +742,10 @@ type Querier interface {
 	// staff" for this module.
 	ListStaffAttendanceRosterEmployees(ctx context.Context, tenantID uuid.UUID) ([]ListStaffAttendanceRosterEmployeesRow, error)
 	ListStaffAttendanceScheduleDays(ctx context.Context, arg ListStaffAttendanceScheduleDaysParams) ([]StaffAttendanceSchedule, error)
+	// Active users with a teacher or staff profile, for a duty assignment
+	// form's assignee dropdown -- the same eligibility IsActiveTeacherOrStaff
+	// checks on create.
+	ListStaffOptions(ctx context.Context, arg ListStaffOptionsParams) ([]ListStaffOptionsRow, error)
 	ListStarBalancesForClass(ctx context.Context, arg ListStarBalancesForClassParams) ([]ListStarBalancesForClassRow, error)
 	ListStarEventsForStudent(ctx context.Context, arg ListStarEventsForStudentParams) ([]StarEvent, error)
 	ListStocktakeScans(ctx context.Context, arg ListStocktakeScansParams) ([]LibraryStocktakeScan, error)
@@ -730,6 +762,11 @@ type Querier interface {
 	ListSubstitutionsOutgoing(ctx context.Context, arg ListSubstitutionsOutgoingParams) ([]SubstitutionRequest, error)
 	ListSystemRoles(ctx context.Context, tenantID uuid.UUID) ([]ListSystemRolesRow, error)
 	ListTPMappings(ctx context.Context, arg ListTPMappingsParams) ([]ReportTpMapping, error)
+	// Active teachers with a teaching assignment in academic_year_id, for a
+	// schedule form's teacher dropdown. self_user_id narrows to one teacher
+	// (a caller without manage_schedules/manage_master_data sees only
+	// themselves); pass null to see everyone.
+	ListTeacherOptionsRef(ctx context.Context, arg ListTeacherOptionsRefParams) ([]ListTeacherOptionsRefRow, error)
 	ListTenantIDs(ctx context.Context) ([]uuid.UUID, error)
 	ListTenantSettingsByPrefix(ctx context.Context, arg ListTenantSettingsByPrefixParams) ([]TenantSetting, error)
 	ListTitles(ctx context.Context, arg ListTitlesParams) ([]LibraryTitle, error)
@@ -907,6 +944,12 @@ type Querier interface {
 	UpdateAnnouncement(ctx context.Context, arg UpdateAnnouncementParams) (Announcement, error)
 	UpdateAnnouncementStatus(ctx context.Context, arg UpdateAnnouncementStatusParams) (Announcement, error)
 	UpdateBillPayment(ctx context.Context, arg UpdateBillPaymentParams) error
+	// Keeps classes.homeroom_teacher_id in sync with the "homeroom" duty
+	// assignment for that class: attendance and permits both read this column
+	// directly (a duty lookup on every attendance write would be wasteful), so
+	// creating, ending, or deleting a homeroom duty assignment writes it here
+	// too, in the same transaction as the duty_assignments row.
+	UpdateClassHomeroomTeacher(ctx context.Context, arg UpdateClassHomeroomTeacherParams) error
 	UpdateComponent(ctx context.Context, arg UpdateComponentParams) (AssessmentComponent, error)
 	UpdateCopyStatus(ctx context.Context, arg UpdateCopyStatusParams) (LibraryCopy, error)
 	UpdateCounseling(ctx context.Context, arg UpdateCounselingParams) (Counseling, error)

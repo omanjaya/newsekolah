@@ -409,6 +409,25 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/academic/enrollments/{enrollmentId}/leave": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrollmentId: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Close the student's active enrollment as "left" mid-year (leaving the school, not moving class) */
+        post: operations["removeStudentFromClass"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/academic/years/{yearId}/unassigned-students": {
         parameters: {
             query?: never;
@@ -503,7 +522,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Download the xlsx template for the class-assignment import */
+        /** Download the xlsx template for the class-assignment import, prefilled with the year's currently unassigned students and a class-name dropdown */
         get: operations["downloadEnrollmentImportTemplate"];
         put?: never;
         post?: never;
@@ -539,7 +558,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Re-parse the same workbook and apply every row that isn't an error (assign or move) */
+        /** Re-parse the same workbook and apply every row that isn't an error (assign or move); the whole file is rejected if any row is invalid unless partial=true */
         post: operations["commitEnrollmentImport"];
         delete?: never;
         options?: never;
@@ -2754,6 +2773,23 @@ export interface paths {
         post?: never;
         /** Remove a duty assignment */
         delete: operations["deleteDutyAssignment"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff-options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Active users with a teacher or staff profile, for a duty assignment form's assignee dropdown */
+        get: operations["listStaffOptions"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -5015,6 +5051,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schedules/teacher-options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Active teachers for a schedule form's teacher dropdown; a teacher without manage_schedules or manage_master_data sees only themselves */
+        get: operations["listTeacherOptions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schedules/{scheduleId}": {
         parameters: {
             query?: never;
@@ -6107,6 +6160,10 @@ export interface components {
             /** Format: date */
             effective_on: string;
         };
+        RemoveStudentInput: {
+            /** Format: date */
+            left_on: string;
+        };
         StudentSummary: {
             /** Format: uuid */
             id: string;
@@ -6191,7 +6248,7 @@ export interface components {
             classes_copied: number;
         };
         /** @enum {string} */
-        ImportRowAction: "assign" | "move" | "unchanged" | "error";
+        ImportRowAction: "assign" | "move" | "unchanged" | "skipped" | "error";
         ImportRowResult: {
             row_number: number;
             nis?: string;
@@ -8366,6 +8423,11 @@ export interface components {
             /** Format: date-time */
             created_at: string;
         };
+        UserOption: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+        };
         /** @enum {string} */
         ScheduleSource: "admin" | "teacher" | "import";
         MutationPolicy: {
@@ -9890,6 +9952,35 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    removeStudentFromClass: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrollmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RemoveStudentInput"];
+            };
+        };
+        responses: {
+            /** @description Closed enrollment */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Enrollment"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
     listUnassignedStudents: {
         parameters: {
             query?: {
@@ -10025,7 +10116,9 @@ export interface operations {
     };
     downloadEnrollmentImportTemplate: {
         parameters: {
-            query?: never;
+            query: {
+                academic_year_id: components["parameters"]["YearIdQueryParam"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -10048,6 +10141,8 @@ export interface operations {
         parameters: {
             query: {
                 academic_year_id: components["parameters"]["YearIdQueryParam"];
+                /** @description When false (default), a row for a student who already has an active enrollment elsewhere is reported but not applied on commit */
+                move_existing?: boolean;
             };
             header?: never;
             path?: never;
@@ -10076,6 +10171,10 @@ export interface operations {
         parameters: {
             query: {
                 academic_year_id: components["parameters"]["YearIdQueryParam"];
+                /** @description When false (default), a row for a student who already has an active enrollment elsewhere is skipped, not moved */
+                move_existing?: boolean;
+                /** @description When false (default), the whole file is rejected (nothing is written) if any row is an error; when true, invalid rows are skipped and the rest is applied */
+                partial?: boolean;
             };
             header?: never;
             path?: never;
@@ -14853,6 +14952,33 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    listStaffOptions: {
+        parameters: {
+            query?: {
+                search?: components["parameters"]["SearchParam"];
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Staff options */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["UserOption"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
     listAuditLogs: {
         parameters: {
             query?: {
@@ -19411,6 +19537,34 @@ export interface operations {
                 content?: never;
             };
             400: components["responses"]["BadRequest"];
+        };
+    };
+    listTeacherOptions: {
+        parameters: {
+            query: {
+                academic_year_id: string;
+                search?: components["parameters"]["SearchParam"];
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Teacher options */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["UserOption"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
         };
     };
     getSchedule: {

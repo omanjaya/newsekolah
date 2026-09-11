@@ -274,6 +274,26 @@ func (q *Queries) AcademicSoftDeleteSubject(ctx context.Context, arg AcademicSof
 	return err
 }
 
+const academicSubjectOfferedInYear = `-- name: AcademicSubjectOfferedInYear :one
+select exists (
+  select 1 from subject_offerings
+  where tenant_id = $1 and academic_year_id = $2 and subject_id = $3
+)
+`
+
+type AcademicSubjectOfferedInYearParams struct {
+	TenantID       uuid.UUID `json:"tenant_id"`
+	AcademicYearID uuid.UUID `json:"academic_year_id"`
+	SubjectID      uuid.UUID `json:"subject_id"`
+}
+
+func (q *Queries) AcademicSubjectOfferedInYear(ctx context.Context, arg AcademicSubjectOfferedInYearParams) (bool, error) {
+	row := q.db.QueryRow(ctx, academicSubjectOfferedInYear, arg.TenantID, arg.AcademicYearID, arg.SubjectID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const academicUpdateSubject = `-- name: AcademicUpdateSubject :one
 update subjects set code = $3, name = $4, updated_at = now()
 where tenant_id = $1 and id = $2 and deleted_at is null

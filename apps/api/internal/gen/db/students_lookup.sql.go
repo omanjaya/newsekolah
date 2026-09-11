@@ -41,6 +41,7 @@ const academicFindStudentByUsername = `-- name: AcademicFindStudentByUsername :o
 
 select u.id, u.name, u.username
 from users u
+join user_profiles up on up.user_id = u.id and up.kind = 'student'
 where u.tenant_id = $1 and u.username = $2 and u.deleted_at is null
 `
 
@@ -68,14 +69,62 @@ func (q *Queries) AcademicFindStudentByUsername(ctx context.Context, arg Academi
 	return i, err
 }
 
+const academicIsActiveStudent = `-- name: AcademicIsActiveStudent :one
+select exists (
+  select 1 from users u
+  join user_profiles up on up.user_id = u.id and up.kind = 'student'
+  where u.tenant_id = $1 and u.id = $2 and u.deleted_at is null and u.status = 'active'
+)
+`
+
+type AcademicIsActiveStudentParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	ID       uuid.UUID `json:"id"`
+}
+
+func (q *Queries) AcademicIsActiveStudent(ctx context.Context, arg AcademicIsActiveStudentParams) (bool, error) {
+	row := q.db.QueryRow(ctx, academicIsActiveStudent, arg.TenantID, arg.ID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
+const academicIsActiveTeacher = `-- name: AcademicIsActiveTeacher :one
+select exists (
+  select 1 from users u
+  join user_profiles up on up.user_id = u.id and up.kind = 'teacher'
+  where u.tenant_id = $1 and u.id = $2 and u.deleted_at is null and u.status = 'active'
+)
+`
+
+type AcademicIsActiveTeacherParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	ID       uuid.UUID `json:"id"`
+}
+
+func (q *Queries) AcademicIsActiveTeacher(ctx context.Context, arg AcademicIsActiveTeacherParams) (bool, error) {
+	row := q.db.QueryRow(ctx, academicIsActiveTeacher, arg.TenantID, arg.ID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const academicListUnassignedStudents = `-- name: AcademicListUnassignedStudents :many
 select u.id, u.tenant_id, u.username, u.email, u.phone, u.password_hash, u.name, u.status, u.must_change_password, u.last_login_at, u.locale, u.avatar_asset_id, u.created_at, u.updated_at, u.deleted_at, count(*) over () as total_count
 from users u
 join user_profiles up on up.user_id = u.id and up.kind = 'student'
+left join student_profiles sp on sp.user_id = u.id
 where u.tenant_id = $1
   and u.deleted_at is null
   and u.status = 'active'
-  and ($5::text is null or u.name ilike '%' || $5 || '%' or u.username ilike '%' || $5 || '%')
+  and (
+    $5::text is null
+    or u.name ilike '%' || $5 || '%'
+    or u.username ilike '%' || $5 || '%'
+    or u.email ilike '%' || $5 || '%'
+    or sp.nis ilike '%' || $5 || '%'
+    or sp.nisn ilike '%' || $5 || '%'
+  )
   and not exists (
     select 1 from enrollments e
     where e.tenant_id = $1 and e.academic_year_id = $2 and e.student_user_id = u.id and e.status = 'active'
@@ -98,7 +147,7 @@ type AcademicListUnassignedStudentsRow struct {
 }
 
 // Every active student user in the tenant with no active enrollment in the
-// given academic year.
+// given academic year. Search matches name, username, email, NIS, or NISN.
 func (q *Queries) AcademicListUnassignedStudents(ctx context.Context, arg AcademicListUnassignedStudentsParams) ([]AcademicListUnassignedStudentsRow, error) {
 	rows, err := q.db.Query(ctx, academicListUnassignedStudents,
 		arg.TenantID,
