@@ -101,6 +101,14 @@ func (r *Repository) DeleteComponent(ctx context.Context, tenantID, id uuid.UUID
 	return nil
 }
 
+func (r *Repository) ComponentHasGrades(ctx context.Context, tenantID, componentID uuid.UUID) (bool, error) {
+	has, err := r.queries(ctx).ComponentHasGrades(ctx, db.ComponentHasGradesParams{TenantID: tenantID, ComponentID: componentID})
+	if err != nil {
+		return false, fmt.Errorf("component has grades: %w", err)
+	}
+	return has, nil
+}
+
 func (r *Repository) UpsertGrade(ctx context.Context, tenantID, componentID, studentID uuid.UUID, score float64, recordedBy uuid.UUID) (domain.Grade, error) {
 	row, err := r.queries(ctx).UpsertGrade(ctx, db.UpsertGradeParams{
 		TenantID: tenantID, ComponentID: componentID, StudentUserID: studentID,
@@ -110,6 +118,13 @@ func (r *Repository) UpsertGrade(ctx context.Context, tenantID, componentID, stu
 		return domain.Grade{}, fmt.Errorf("upsert grade: %w", err)
 	}
 	return domain.Grade{ComponentID: row.ComponentID, StudentUserID: row.StudentUserID, Score: pdatabase.FloatOrZero(row.Score), UpdatedAt: pdatabase.TimeOrZero(row.UpdatedAt)}, nil
+}
+
+func (r *Repository) DeleteGrade(ctx context.Context, tenantID, componentID, studentID uuid.UUID) error {
+	if err := r.queries(ctx).DeleteGrade(ctx, db.DeleteGradeParams{TenantID: tenantID, ComponentID: componentID, StudentUserID: studentID}); err != nil {
+		return fmt.Errorf("delete grade: %w", err)
+	}
+	return nil
 }
 
 func (r *Repository) ListGradesForComponents(ctx context.Context, tenantID uuid.UUID, componentIDs []uuid.UUID) ([]domain.Grade, error) {
@@ -177,10 +192,10 @@ func (r *Repository) ListPublishedSubjects(ctx context.Context, tenantID, termID
 
 // Report scores.
 
-func (r *Repository) UpsertReportScore(ctx context.Context, tenantID, yearID, termID, classID, subjectID, studentID uuid.UUID, previous, manual *float64, final float64) (service.ReportScore, error) {
+func (r *Repository) UpsertReportScore(ctx context.Context, tenantID, yearID, termID, classID, subjectID, studentID uuid.UUID, previous, manual *float64, automatic float64) (service.ReportScore, error) {
 	row, err := r.queries(ctx).UpsertReportScore(ctx, db.UpsertReportScoreParams{
 		TenantID: tenantID, AcademicYearID: yearID, TermID: termID, ClassID: classID, SubjectID: subjectID, StudentUserID: studentID,
-		PreviousScore: pdatabase.NumericPtr(previous), ManualScore: pdatabase.NumericPtr(manual), FinalScore: pdatabase.Numeric(final),
+		PreviousScore: pdatabase.NumericPtr(previous), ManualScore: pdatabase.NumericPtr(manual), AutomaticScore: pdatabase.Numeric(automatic),
 	})
 	if err != nil {
 		return service.ReportScore{}, fmt.Errorf("upsert report score: %w", err)
@@ -250,6 +265,79 @@ func (r *Repository) DeleteGradeRange(ctx context.Context, tenantID, id uuid.UUI
 	return nil
 }
 
+// ReplaceGradeRanges deletes every existing range of this subject-teacher
+// scope and re-inserts the replacement set, so a save always leaves
+// exactly the ranges the caller submitted.
+func (r *Repository) ReplaceGradeRanges(ctx context.Context, tenantID, yearID, subjectID uuid.UUID, teacherUserID uuid.NullUUID, ranges []domain.GradeRange) ([]domain.GradeRange, error) {
+	q := r.queries(ctx)
+	if err := q.ReplaceGradeRangesScope(ctx, db.ReplaceGradeRangesScopeParams{
+		TenantID: tenantID, AcademicYearID: yearID, SubjectID: pgtype.UUID{Bytes: subjectID, Valid: true}, TeacherUserID: pdatabase.NullUUID(teacherUserID),
+	}); err != nil {
+		return nil, fmt.Errorf("replace grade ranges: %w", err)
+	}
+	out := make([]domain.GradeRange, len(ranges))
+	for i, rg := range ranges {
+		row, err := q.CreateGradeRange(ctx, db.CreateGradeRangeParams{
+			TenantID: tenantID, AcademicYearID: yearID, SubjectID: pdatabase.NullUUID(rg.SubjectID), TeacherUserID: pdatabase.NullUUID(rg.TeacherUserID),
+			MinScore: pdatabase.Numeric(rg.MinScore), MaxScore: pdatabase.Numeric(rg.MaxScore), IncreaseAmount: pdatabase.Numeric(rg.IncreaseAmount),
+		})
+		if err != nil {
+			return nil, fmt.Errorf("create grade range: %w", err)
+		}
+		out[i] = toGradeRange(row)
+	}
+	return out, nil
+}
+
+// TP mapping (e-Rapor legacy export).
+
+func (r *Repository) UpsertTPMapping(ctx context.Context, tenantID uuid.UUID, m domain.TPMapping) (domain.TPMapping, error) {
+	row, err := r.queries(ctx).UpsertTPMapping(ctx, db.UpsertTPMappingParams{
+		TenantID: tenantID, ComponentID: m.ComponentID, ExportCode: m.ExportCode,
+		RMin: pdatabase.Numeric(m.RMin), RMax: pdatabase.Numeric(m.RMax), TMin: pdatabase.Numeric(m.TMin), TMax: pdatabase.Numeric(m.TMax),
+	})
+	if isUnique(err) {
+		return domain.TPMapping{}, domain.ErrTPExportCodeExists
+	}
+	if err != nil {
+		return domain.TPMapping{}, fmt.Errorf("upsert tp mapping: %w", err)
+	}
+	return toTPMapping(row), nil
+}
+
+func (r *Repository) GetTPMapping(ctx context.Context, tenantID, id uuid.UUID) (domain.TPMapping, bool, error) {
+	row, err := r.queries(ctx).GetTPMapping(ctx, db.GetTPMappingParams{TenantID: tenantID, ID: id})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return domain.TPMapping{}, false, nil
+	}
+	if err != nil {
+		return domain.TPMapping{}, false, fmt.Errorf("get tp mapping: %w", err)
+	}
+	return toTPMapping(row), true, nil
+}
+
+func (r *Repository) ListTPMappingsForComponents(ctx context.Context, tenantID uuid.UUID, componentIDs []uuid.UUID) ([]domain.TPMapping, error) {
+	if len(componentIDs) == 0 {
+		return nil, nil
+	}
+	rows, err := r.queries(ctx).ListTPMappings(ctx, db.ListTPMappingsParams{TenantID: tenantID, ComponentIds: componentIDs})
+	if err != nil {
+		return nil, fmt.Errorf("list tp mappings: %w", err)
+	}
+	out := make([]domain.TPMapping, len(rows))
+	for i, row := range rows {
+		out[i] = toTPMapping(row)
+	}
+	return out, nil
+}
+
+func (r *Repository) DeleteTPMapping(ctx context.Context, tenantID, id uuid.UUID) error {
+	if err := r.queries(ctx).DeleteTPMapping(ctx, db.DeleteTPMappingParams{TenantID: tenantID, ID: id}); err != nil {
+		return fmt.Errorf("delete tp mapping: %w", err)
+	}
+	return nil
+}
+
 // Stars.
 
 func (r *Repository) InsertStarEvent(ctx context.Context, e domain.StarEvent) (domain.StarEvent, error) {
@@ -269,6 +357,37 @@ func (r *Repository) StarBalance(ctx context.Context, tenantID, yearID, studentI
 		return 0, fmt.Errorf("star balance: %w", err)
 	}
 	return int(balance), nil
+}
+
+func (r *Repository) VisibleStarBalance(ctx context.Context, tenantID, yearID, studentID uuid.UUID) (int, error) {
+	balance, err := r.queries(ctx).VisibleStarBalance(ctx, db.VisibleStarBalanceParams{TenantID: tenantID, AcademicYearID: yearID, StudentUserID: studentID})
+	if err != nil {
+		return 0, fmt.Errorf("visible star balance: %w", err)
+	}
+	return int(balance), nil
+}
+
+func (r *Repository) LockStarBalance(ctx context.Context, tenantID, studentID uuid.UUID) error {
+	if err := r.queries(ctx).LockStarBalance(ctx, db.LockStarBalanceParams{Column1: tenantID.String(), Column2: studentID.String()}); err != nil {
+		return fmt.Errorf("lock star balance: %w", err)
+	}
+	return nil
+}
+
+func (r *Repository) MyStarsGrouped(ctx context.Context, tenantID, yearID, studentID uuid.UUID) ([]service.MyStarGroup, error) {
+	rows, err := r.queries(ctx).MyStarsGrouped(ctx, db.MyStarsGroupedParams{TenantID: tenantID, AcademicYearID: yearID, StudentUserID: studentID})
+	if err != nil {
+		return nil, fmt.Errorf("my stars grouped: %w", err)
+	}
+	out := make([]service.MyStarGroup, len(rows))
+	for i, row := range rows {
+		out[i] = service.MyStarGroup{
+			SubjectID: pdatabase.UUIDOrNil(row.SubjectID), SubjectName: row.SubjectName,
+			TeacherUserID: row.TeacherUserID, TeacherName: row.TeacherName, Total: int(row.Total),
+			LastAwardedAt: pdatabase.TimeOrZero(row.LastAwardedAt),
+		}
+	}
+	return out, nil
 }
 
 func (r *Repository) ListStarEvents(ctx context.Context, tenantID, yearID, studentID uuid.UUID, includeHidden bool, limit int) ([]domain.StarEvent, error) {
@@ -357,6 +476,12 @@ func (r *Repository) TeacherTeaches(ctx context.Context, tenantID, yearID, teach
 	})
 }
 
+func (r *Repository) TeacherTeachesClass(ctx context.Context, tenantID, yearID, teacherID, classID uuid.UUID) (bool, error) {
+	return r.queries(ctx).GradingTeacherTeachesClass(ctx, db.GradingTeacherTeachesClassParams{
+		TenantID: tenantID, AcademicYearID: yearID, TeacherUserID: teacherID, ClassID: classID,
+	})
+}
+
 func (r *Repository) StudentNames(ctx context.Context, tenantID uuid.UUID, ids []uuid.UUID) (map[uuid.UUID]string, error) {
 	if len(ids) == 0 {
 		return map[uuid.UUID]string{}, nil
@@ -396,7 +521,7 @@ func (r *Repository) StudentNISNs(ctx context.Context, tenantID uuid.UUID, ids [
 	}
 	out := make(map[uuid.UUID]service.EraporStudent, len(rows))
 	for _, row := range rows {
-		out[row.ID] = service.EraporStudent{Name: row.Name, NISN: row.Nisn}
+		out[row.ID] = service.EraporStudent{Name: row.Name, NIS: row.Nis, NISN: row.Nisn}
 	}
 	return out, nil
 }
@@ -439,7 +564,8 @@ func toReportScore(row db.ReportScore) service.ReportScore {
 	return service.ReportScore{
 		TermID: row.TermID, ClassID: row.ClassID, SubjectID: row.SubjectID, StudentUserID: row.StudentUserID,
 		PreviousScore: pdatabase.FloatPtr(row.PreviousScore), ManualScore: pdatabase.FloatPtr(row.ManualScore),
-		FinalScore: pdatabase.FloatOrZero(row.FinalScore), ComputedAt: pdatabase.TimeOrZero(row.ComputedAt),
+		AutomaticScore: pdatabase.FloatPtr(row.AutomaticScore),
+		FinalScore:     pdatabase.FloatOrZero(row.FinalScore), ComputedAt: pdatabase.TimeOrZero(row.ComputedAt),
 	}
 }
 
@@ -455,6 +581,14 @@ func toGradeRange(row db.ReportGradeRange) domain.GradeRange {
 	return domain.GradeRange{
 		ID: row.ID, SubjectID: pdatabase.UUIDOrNil(row.SubjectID), TeacherUserID: pdatabase.UUIDOrNil(row.TeacherUserID),
 		MinScore: pdatabase.FloatOrZero(row.MinScore), MaxScore: pdatabase.FloatOrZero(row.MaxScore), IncreaseAmount: pdatabase.FloatOrZero(row.IncreaseAmount),
+	}
+}
+
+func toTPMapping(row db.ReportTpMapping) domain.TPMapping {
+	return domain.TPMapping{
+		ID: row.ID, ComponentID: row.ComponentID, ExportCode: row.ExportCode,
+		RMin: pdatabase.FloatOrZero(row.RMin), RMax: pdatabase.FloatOrZero(row.RMax),
+		TMin: pdatabase.FloatOrZero(row.TMin), TMax: pdatabase.FloatOrZero(row.TMax),
 	}
 }
 

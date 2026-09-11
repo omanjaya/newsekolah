@@ -21,6 +21,15 @@ select exists (
   where tenant_id = $1 and academic_year_id = $2 and teacher_user_id = $3 and class_id = $4 and subject_id = $5 and is_active
 )::bool as teaches;
 
+-- name: GradingTeacherTeachesClass :one
+-- Same as GradingTeacherTeaches without a specific subject, for endpoints
+-- scoped to a whole class (the star ledger and class balances): true when
+-- the teacher has any active assignment in this class.
+select exists (
+  select 1 from teaching_assignments
+  where tenant_id = $1 and academic_year_id = $2 and teacher_user_id = $3 and class_id = $4 and is_active
+)::bool as teaches;
+
 -- name: GradingStudentClassID :one
 select class_id from enrollments
 where tenant_id = $1 and academic_year_id = $2 and student_user_id = $3 and status = 'active'
@@ -48,9 +57,11 @@ where ta.tenant_id = $1 and ta.academic_year_id = $2 and ta.class_id = $3 and ta
 order by s.code;
 
 -- name: GradingStudentNISNs :many
--- cross-module read: student_profiles is owned by the identity module. NISN
--- (Nomor Induk Siswa Nasional) is the key e-Rapor imports students by.
-select u.id, u.name, coalesce(sp.nisn, '') as nisn
+-- cross-module read: student_profiles is owned by the identity module.
+-- NISN (Nomor Induk Siswa Nasional) is the key the current e-Rapor export
+-- imports students by; NIS (Nomor Induk Siswa) is what the legacy
+-- per-subject sheet keys rows on instead.
+select u.id, u.name, coalesce(sp.nis, '') as nis, coalesce(sp.nisn, '') as nisn
 from users u
 left join student_profiles sp on sp.user_id = u.id and sp.tenant_id = u.tenant_id
 where u.tenant_id = $1 and u.id = any(sqlc.arg(user_ids)::uuid[]);

@@ -44,6 +44,9 @@ type EraporFile struct {
 // PreviewErapor computes the e-Rapor mapping for one class-term without
 // rendering a file, for a "here is what will be exported" screen.
 func (s *Service) PreviewErapor(ctx context.Context, tenantID, actorID uuid.UUID, canManageAny bool, classID uuid.UUID, termID uuid.NullUUID) (EraporPreview, error) {
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return EraporPreview{}, err
+	}
 	var out EraporPreview
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		export, term, err := s.buildEraporExport(ctx, tenantID, actorID, canManageAny, classID, termID)
@@ -61,6 +64,9 @@ func (s *Service) PreviewErapor(ctx context.Context, tenantID, actorID uuid.UUID
 // report travels with the file as its own sheet (or trailing section for
 // CSV), so a downloaded file never hides what it left out.
 func (s *Service) ExportErapor(ctx context.Context, tenantID, actorID uuid.UUID, canManageAny bool, classID uuid.UUID, termID uuid.NullUUID, format EraporFormat) (EraporFile, error) {
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return EraporFile{}, err
+	}
 	var out EraporFile
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		export, term, err := s.buildEraporExport(ctx, tenantID, actorID, canManageAny, classID, termID)

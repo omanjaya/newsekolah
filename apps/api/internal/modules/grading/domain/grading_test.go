@@ -26,24 +26,187 @@ func TestWeightedAverageSkipsUngradedComponents(t *testing.T) {
 	require.False(t, ok, "no grades at all means no average")
 }
 
-func TestReportScoreAppliesRangeAndFloor(t *testing.T) {
+func TestWeightedKKTPAverageOnlyCountsScoredComponentsWithAKKTP(t *testing.T) {
+	kktp70, kktp80 := 70.0, 80.0
+	quiz := domain.Component{ID: uuid.New(), Weight: 1, KKTP: &kktp70}
+	exam := domain.Component{ID: uuid.New(), Weight: 1, KKTP: &kktp80}
+	noKKTP := domain.Component{ID: uuid.New(), Weight: 1}
+	components := []domain.Component{quiz, exam, noKKTP}
+
+	avg, ok := domain.WeightedKKTPAverage(components, map[uuid.UUID]float64{quiz.ID: 80, exam.ID: 60, noKKTP.ID: 90})
+	require.True(t, ok)
+	require.InDelta(t, 75, avg, 0.001, "noKKTP is scored but carries no KKTP, so it is skipped")
+
+	_, ok = domain.WeightedKKTPAverage(components, map[uuid.UUID]float64{noKKTP.ID: 90})
+	require.False(t, ok, "the only scored component has no KKTP")
+}
+
+func TestComputeReportScoreIgnoresRangeWithoutAPositivePrevious(t *testing.T) {
 	scale := domain.DefaultScale()
 	ranges := []domain.GradeRange{{MinScore: 60, MaxScore: 70, IncreaseAmount: 3}}
 
-	require.InDelta(t, 68, domain.ReportScore(scale, 65, nil, ranges), 0.001, "a matching range raises the score")
-	require.InDelta(t, 75, domain.ReportScore(scale, 75, nil, ranges), 0.001, "a score outside every range is unchanged")
+	result := domain.ComputeReportScore(scale, 65, nil, nil, ranges)
+	require.InDelta(t, 65, result.Automatic, 0.001, "a range is a promotion floor from last term, not a first-term bonus")
+	require.InDelta(t, 65, result.Final, 0.001)
 
-	previous := 80.0
-	require.InDelta(t, 80, domain.ReportScore(scale, 65, &previous, ranges), 0.001, "a report never drops below the previous term")
+	zero := 0.0
+	result = domain.ComputeReportScore(scale, 65, &zero, nil, ranges)
+	require.InDelta(t, 65, result.Automatic, 0.001, "a previous score of exactly zero is treated as no baseline")
 }
 
-func TestReportScoreRespectsScaleCaps(t *testing.T) {
+func TestComputeReportScoreAddsIncreaseToThePreviousScore(t *testing.T) {
+	scale := domain.DefaultScale()
+	ranges := []domain.GradeRange{{MinScore: 60, MaxScore: 70, IncreaseAmount: 3}}
+	previous := 80.0
+
+	result := domain.ComputeReportScore(scale, 65, &previous, nil, ranges)
+	require.InDelta(t, 83, result.Automatic, 0.001, "the increase adds to the previous score, not to the raw average")
+}
+
+func TestComputeReportScoreCapsAtTheScaleIncreaseAndMaximum(t *testing.T) {
 	scale := domain.DefaultScale()
 	scale.IncreaseMax = 2
-
 	ranges := []domain.GradeRange{{MinScore: 0, MaxScore: 100, IncreaseAmount: 10}}
-	require.InDelta(t, 52, domain.ReportScore(scale, 50, nil, ranges), 0.001, "the school-wide cap wins over a generous range")
-	require.InDelta(t, 100, domain.ReportScore(scale, 99.5, nil, ranges), 0.001, "the result is clamped to the scale maximum")
+	previous := 99.0
+
+	result := domain.ComputeReportScore(scale, 50, &previous, nil, ranges)
+	require.InDelta(t, 100, result.Automatic, 0.001, "the school-wide increase cap wins, and the result never exceeds the scale maximum")
+}
+
+func TestComputeReportScoreManualOverrideWinsAsFinal(t *testing.T) {
+	scale := domain.DefaultScale()
+	previous := 70.0
+	manual := 95.0
+
+	result := domain.ComputeReportScore(scale, 60, &previous, &manual, nil)
+	require.InDelta(t, 95, result.Final, 0.001)
+	require.NotEqual(t, result.Automatic, result.Final, "the automatic value survives alongside the override")
+}
+
+func TestComputeReportScoreWarnsWhenFinalDropsBelowPrevious(t *testing.T) {
+	scale := domain.DefaultScale()
+	previous := 80.0
+	manual := 70.0
+
+	result := domain.ComputeReportScore(scale, 68, &previous, &manual, nil)
+	require.Equal(t, domain.ReportWarningDanger, result.Warning)
+	require.Contains(t, result.Warning.Message(&previous, result.Final), "Turun")
+}
+
+func TestComputeReportScoreWarnsWhenFinalStraysFromRaw(t *testing.T) {
+	scale := domain.DefaultScale()
+	manual := 65.0
+
+	result := domain.ComputeReportScore(scale, 50, nil, &manual, nil)
+	require.Equal(t, domain.ReportWarningNotice, result.Warning)
+	require.Equal(t, "Selisih lebih dari 10 poin dari nilai murni", result.Warning.Message(nil, result.Final))
+}
+
+func TestComputeReportScoreNoWarningWhenClose(t *testing.T) {
+	scale := domain.DefaultScale()
+	previous := 60.0
+
+	result := domain.ComputeReportScore(scale, 62, &previous, nil, nil)
+	require.Equal(t, domain.ReportWarningNone, result.Warning)
+	require.Equal(t, "OK", result.Warning.Message(&previous, result.Final))
+}
+
+func TestValidateGradeRangesRejectsOverlap(t *testing.T) {
+	scale := domain.DefaultScale()
+	ranges := []domain.GradeRange{
+		{MinScore: 0, MaxScore: 60, IncreaseAmount: 2},
+		{MinScore: 55, MaxScore: 100, IncreaseAmount: 3},
+	}
+	require.ErrorIs(t, domain.ValidateGradeRanges(scale, ranges), domain.ErrGradeRangeOverlap)
+}
+
+func TestValidateGradeRangesAcceptsAdjacentRanges(t *testing.T) {
+	scale := domain.DefaultScale()
+	ranges := []domain.GradeRange{
+		{MinScore: 0, MaxScore: 59, IncreaseAmount: 2},
+		{MinScore: 60, MaxScore: 100, IncreaseAmount: 3},
+	}
+	require.NoError(t, domain.ValidateGradeRanges(scale, ranges))
+}
+
+func TestValidateGradeRangesRejectsIncreaseAboveTheDefaultCap(t *testing.T) {
+	scale := domain.DefaultScale()
+	scale.IncreaseMax = 3
+	ranges := []domain.GradeRange{{MinScore: 0, MaxScore: 100, IncreaseAmount: 11}}
+	require.ErrorIs(t, domain.ValidateGradeRanges(scale, ranges), domain.ErrInvalidInput, "the cap is max(10, scale.IncreaseMax) and the scale here is only 3")
+}
+
+func TestValidateGradeRangesAllowsAScaleIncreaseCapAboveTen(t *testing.T) {
+	scale := domain.DefaultScale()
+	scale.IncreaseMax = 15
+	ranges := []domain.GradeRange{{MinScore: 0, MaxScore: 100, IncreaseAmount: 12}}
+	require.NoError(t, domain.ValidateGradeRanges(scale, ranges))
+}
+
+func TestValidateGradeRangesRejectsOutOfScaleBounds(t *testing.T) {
+	scale := domain.DefaultScale()
+	ranges := []domain.GradeRange{{MinScore: -1, MaxScore: 50, IncreaseAmount: 1}}
+	require.ErrorIs(t, domain.ValidateGradeRanges(scale, ranges), domain.ErrInvalidInput)
+}
+
+func TestValidateComponent(t *testing.T) {
+	require.NoError(t, domain.ValidateComponent("UH1", "Ulangan harian", domain.KindFormative, 20, nil))
+
+	kktp := 70.0
+	require.NoError(t, domain.ValidateComponent("UH1", "", domain.KindFormative, 0, &kktp))
+
+	require.ErrorIs(t, domain.ValidateComponent("", "", domain.KindFormative, 20, nil), domain.ErrInvalidInput, "code is required")
+
+	longCode := make([]byte, 33)
+	for i := range longCode {
+		longCode[i] = 'A'
+	}
+	require.ErrorIs(t, domain.ValidateComponent(string(longCode), "", domain.KindFormative, 20, nil), domain.ErrInvalidInput, "code over 32 characters")
+
+	require.ErrorIs(t, domain.ValidateComponent("UH1", "", "not-a-kind", 20, nil), domain.ErrInvalidInput)
+	require.ErrorIs(t, domain.ValidateComponent("UH1", "", domain.KindFormative, 101, nil), domain.ErrInvalidInput, "weight over 100")
+	require.ErrorIs(t, domain.ValidateComponent("UH1", "", domain.KindFormative, -1, nil), domain.ErrInvalidInput, "weight below 0")
+
+	over100 := 101.0
+	require.ErrorIs(t, domain.ValidateComponent("UH1", "", domain.KindFormative, 20, &over100), domain.ErrInvalidInput, "kktp over 100")
+}
+
+func TestScaleIsTPEligible(t *testing.T) {
+	scale := domain.DefaultScale()
+	require.True(t, scale.IsTPEligible(domain.KindFormative))
+	require.False(t, scale.IsTPEligible(domain.KindProject), "no tenant TP kind configured beyond formative")
+
+	scale.TPKind = domain.KindProject
+	require.True(t, scale.IsTPEligible(domain.KindProject))
+	require.False(t, scale.IsTPEligible(domain.KindSummative))
+}
+
+func TestTPResult(t *testing.T) {
+	score := 80.0
+	require.Equal(t, "T", domain.TPResult(&score, 75, 100))
+	require.Equal(t, "R", domain.TPResult(&score, 0, 74))
+	require.Equal(t, "", domain.TPResult(nil, 0, 100))
+}
+
+func TestValidateTPMapping(t *testing.T) {
+	scale := domain.DefaultScale()
+	require.NoError(t, domain.ValidateTPMapping(scale, domain.TPMapping{ExportCode: "TP1", RMin: 0, RMax: 74, TMin: 75, TMax: 100}))
+	require.ErrorIs(t, domain.ValidateTPMapping(scale, domain.TPMapping{ExportCode: "", RMin: 0, RMax: 74, TMin: 75, TMax: 100}), domain.ErrInvalidInput)
+	require.ErrorIs(t, domain.ValidateTPMapping(scale, domain.TPMapping{ExportCode: "TP1", RMin: 80, RMax: 74, TMin: 75, TMax: 100}), domain.ErrInvalidInput)
+	require.ErrorIs(t, domain.ValidateTPMapping(scale, domain.TPMapping{ExportCode: "TP1", RMin: 0, RMax: 74, TMin: 75, TMax: 200}), domain.ErrInvalidInput)
+}
+
+func TestValidateStar(t *testing.T) {
+	require.NoError(t, domain.ValidateStar(5, "kerja bagus"))
+	require.NoError(t, domain.ValidateStar(-999, ""))
+	require.ErrorIs(t, domain.ValidateStar(0, ""), domain.ErrInvalidInput, "amount is |delta|, and delta must not be zero")
+	require.ErrorIs(t, domain.ValidateStar(1000, ""), domain.ErrInvalidInput, "amount over 999")
+
+	longNote := make([]byte, 256)
+	for i := range longNote {
+		longNote[i] = 'x'
+	}
+	require.ErrorIs(t, domain.ValidateStar(1, string(longNote)), domain.ErrInvalidInput, "note over 255 characters")
 }
 
 func TestApplyStarRefusesNegativeBalance(t *testing.T) {
@@ -71,5 +234,9 @@ func TestScaleValidate(t *testing.T) {
 
 	invalid = domain.DefaultScale()
 	invalid.RoundDecimal = 9
+	require.Error(t, invalid.Validate())
+
+	invalid = domain.DefaultScale()
+	invalid.TPKind = "not-a-kind"
 	require.Error(t, invalid.Validate())
 }

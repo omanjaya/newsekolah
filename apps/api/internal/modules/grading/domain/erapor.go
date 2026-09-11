@@ -2,6 +2,69 @@ package domain
 
 import "github.com/google/uuid"
 
+// LegacyEraporStudentSource is one student's raw material for the legacy
+// e-Rapor sheet: this term's component grades (to compute the raw
+// average), the previous term's final score, and any manual override.
+type LegacyEraporStudentSource struct {
+	NIS      string
+	Name     string
+	Grades   map[uuid.UUID]float64 // component ID -> score
+	Previous *float64
+	Manual   *float64
+}
+
+// LegacyEraporRow is one line of the old per-subject e-Rapor sheet: a
+// student's report score plus a T|R mark for every mapped TP component.
+type LegacyEraporRow struct {
+	NIS        string
+	Name       string
+	FinalScore *float64
+	TPMarks    []string // aligned with LegacyEraporExport.ExportCodes
+	Validation string
+}
+
+// LegacyEraporExport is the full legacy sheet: the TP export codes as
+// column headers, and one row per student in class roster order.
+type LegacyEraporExport struct {
+	ExportCodes []string
+	Rows        []LegacyEraporRow
+}
+
+// BuildLegacyEraporRows mirrors the old app's buildReportAnalysis and
+// exportReportWorkbook (grading_extended.go:256-336, 421-485): the report
+// score's automatic/manual/warning computation from ComputeReportScore,
+// plus a T|R mark per mapped TP component from TPResult, folded into one
+// row per student. A student with no grades yet still gets a row (nil
+// FinalScore), matching the old app's "used > 0" guard rather than
+// dropping them silently.
+func BuildLegacyEraporRows(scale Scale, components []Component, ranges []GradeRange, mappings []TPMapping, students []LegacyEraporStudentSource) LegacyEraporExport {
+	codes := make([]string, len(mappings))
+	for i, m := range mappings {
+		codes[i] = m.ExportCode
+	}
+	rows := make([]LegacyEraporRow, len(students))
+	for i, st := range students {
+		row := LegacyEraporRow{NIS: st.NIS, Name: st.Name}
+		if raw, ok := WeightedAverage(components, st.Grades); ok {
+			result := ComputeReportScore(scale, scale.Round(raw), st.Previous, st.Manual, ranges)
+			final := result.Final
+			row.FinalScore = &final
+			row.Validation = result.Warning.Message(st.Previous, result.Final)
+		}
+		marks := make([]string, len(mappings))
+		for j, m := range mappings {
+			var score *float64
+			if v, ok := st.Grades[m.ComponentID]; ok {
+				score = &v
+			}
+			marks[j] = TPResult(score, m.TMin, m.TMax)
+		}
+		row.TPMarks = marks
+		rows[i] = row
+	}
+	return LegacyEraporExport{ExportCodes: codes, Rows: rows}
+}
+
 // EraporSkipReason is why one student-subject pair did not make it into the
 // e-Rapor import file. Both reasons must be reported per row rather than the
 // row being silently dropped, since a school reconciles the skip list by

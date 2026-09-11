@@ -100,7 +100,7 @@ paths:
       tags: [grading]
       operationId: deleteAssessmentComponent
       x-permission: manage_grades
-      summary: Delete a component and its scores
+      summary: Delete a component (refused once it has grades)
       parameters:
         - { name: componentId, in: path, required: true, schema: { type: string, format: uuid } }
       responses:
@@ -108,12 +108,14 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
   /v1/grading/components/{componentId}/scores:
     put:
       tags: [grading]
       operationId: saveComponentScores
       x-permission: manage_grades
       summary: Save one component's column and recompute report scores
+      description: A null score deletes that student's grade for the component.
       parameters:
         - { name: componentId, in: path, required: true, schema: { type: string, format: uuid } }
       requestBody:
@@ -128,10 +130,10 @@ paths:
                   type: array
                   items:
                     type: object
-                    required: [student_user_id, score]
+                    required: [student_user_id]
                     properties:
                       student_user_id: { type: string, format: uuid }
-                      score: { type: number }
+                      score: { type: number, nullable: true }
       responses:
         "200":
           description: Sheet after saving
@@ -223,7 +225,7 @@ paths:
       tags: [grading]
       operationId: createGradeRange
       x-permission: manage_settings
-      summary: Add a report-score increase range
+      summary: Add a single report-score increase range (admin ad hoc)
       requestBody:
         required: true
         content:
@@ -235,6 +237,50 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/GradeRange" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    put:
+      tags: [grading]
+      operationId: replaceGradeRanges
+      x-permission: manage_grades
+      summary: Replace every range of one subject-teacher scope
+      description: >-
+        A plain teacher (manage_grades) may only target teacher_user_id
+        equal to themselves, or omit it to mean themselves; a curriculum
+        lead or admin (manage_master_data or manage_settings) may target
+        another teacher or omit it to mean a school-wide range. The set of
+        ranges submitted is validated together (no overlap) and replaces
+        whatever was saved before for that scope.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [subject_id, ranges]
+              properties:
+                subject_id: { type: string, format: uuid }
+                teacher_user_id: { type: string, format: uuid }
+                ranges:
+                  type: array
+                  items:
+                    type: object
+                    required: [min_score, max_score, increase_amount]
+                    properties:
+                      min_score: { type: number }
+                      max_score: { type: number }
+                      increase_amount: { type: number, minimum: 0 }
+      responses:
+        "200":
+          description: Ranges after replacing
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/GradeRange" } }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
@@ -251,6 +297,68 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
 
+  /v1/grading/tp-mappings:
+    get:
+      tags: [grading]
+      operationId: listTPMappings
+      x-permission: manage_grades
+      summary: TP export-code mappings of one class-subject-term
+      parameters:
+        - { name: class_id, in: query, required: true, schema: { type: string, format: uuid } }
+        - { name: subject_id, in: query, required: true, schema: { type: string, format: uuid } }
+        - { name: term_id, in: query, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Mappings
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/TPMapping" } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: [grading]
+      operationId: saveTPMapping
+      x-permission: manage_grades
+      summary: Create or replace one component's TP export mapping
+      description: >-
+        Only components of kind formative, or the tenant's configured TP
+        kind, are eligible. export_code must be unique among the sibling
+        components of the same class, subject and term.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TPMappingWrite" }
+      responses:
+        "200":
+          description: Mapping
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TPMapping" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /v1/grading/tp-mappings/{mappingId}:
+    delete:
+      tags: [grading]
+      operationId: deleteTPMapping
+      x-permission: manage_grades
+      summary: Remove one component's TP export mapping
+      parameters:
+        - { name: mappingId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "204": { description: Deleted }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
   /v1/me/grades:
     get:
       tags: [grading]
@@ -265,6 +373,22 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/MyGrades" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /v1/me/stars:
+    get:
+      tags: [grading]
+      operationId: getMyStars
+      x-permission: view_own_grades
+      summary: The current student's own star total, grouped by subject and teacher
+      description: Counts only events the teacher marked visible to the student.
+      responses:
+        "200":
+          description: Stars
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MyStars" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
 
@@ -409,6 +533,31 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
 
+  /v1/grading/erapor/export-legacy:
+    get:
+      tags: [grading]
+      operationId: exportEraporLegacy
+      x-permission: manage_grades
+      summary: Download the old per-subject e-Rapor sheet
+      description: >-
+        The legacy layout: No / NIS / Nama / Nilai Rapor / one column per
+        mapped TP export code (T|R, with a dropdown) / Validasi. Kept
+        alongside exportErapor (the current NISN/predicate layout) for
+        schools whose import tooling still expects this shape.
+      parameters:
+        - { name: class_id, in: query, required: true, schema: { type: string, format: uuid } }
+        - { name: subject_id, in: query, required: true, schema: { type: string, format: uuid } }
+        - { name: term_id, in: query, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: e-Rapor legacy sheet
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: { type: string, format: binary }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
 components:
   schemas:
     GradingScale:
@@ -421,6 +570,9 @@ components:
         report_increase_max: { type: number }
         default_kktp: { type: number }
         round_decimal: { type: integer }
+        tp_kind:
+          allOf: [{ $ref: "#/components/schemas/AssessmentComponentKind" }]
+          description: The extra component kind (beyond formative) eligible for TP export mapping.
     GradingScaleWrite:
       type: object
       required: [min, max, report_increase_max, default_kktp, round_decimal]
@@ -430,6 +582,7 @@ components:
         report_increase_max: { type: number, minimum: 0 }
         default_kktp: { type: number }
         round_decimal: { type: integer, minimum: 0, maximum: 4 }
+        tp_kind: { $ref: "#/components/schemas/AssessmentComponentKind" }
     AssessmentComponentKind:
       type: string
       enum: [formative, summative, project, practical, attitude, other]
@@ -471,6 +624,7 @@ components:
           type: object
           additionalProperties: { type: number }
         average: { type: number }
+        final_kktp: { type: number }
         report_score: { type: number }
     Gradebook:
       type: object
@@ -495,6 +649,7 @@ components:
         student_user_id: { type: string, format: uuid }
         previous_score: { type: number }
         manual_score: { type: number }
+        automatic_score: { type: number }
         final_score: { type: number }
         computed_at: { type: string, format: date-time }
     GradePublication:
@@ -525,6 +680,27 @@ components:
         min_score: { type: number }
         max_score: { type: number }
         increase_amount: { type: number, minimum: 0 }
+    TPMapping:
+      type: object
+      required: [id, component_id, export_code, r_min, r_max, t_min, t_max]
+      properties:
+        id: { type: string, format: uuid }
+        component_id: { type: string, format: uuid }
+        export_code: { type: string }
+        r_min: { type: number }
+        r_max: { type: number }
+        t_min: { type: number }
+        t_max: { type: number }
+    TPMappingWrite:
+      type: object
+      required: [component_id, export_code, r_min, r_max, t_min, t_max]
+      properties:
+        component_id: { type: string, format: uuid }
+        export_code: { type: string, minLength: 1, maxLength: 32 }
+        r_min: { type: number }
+        r_max: { type: number }
+        t_min: { type: number }
+        t_max: { type: number }
     MyComponentScore:
       type: object
       required: [code, kind, score]
@@ -573,6 +749,22 @@ components:
         note: { type: string }
         visible_to_student: { type: boolean }
         created_at: { type: string, format: date-time }
+    MyStarGroup:
+      type: object
+      required: [teacher_user_id, teacher_name, total, last_awarded_at]
+      properties:
+        subject_id: { type: string, format: uuid }
+        subject_name: { type: string }
+        teacher_user_id: { type: string, format: uuid }
+        teacher_name: { type: string }
+        total: { type: integer }
+        last_awarded_at: { type: string, format: date-time }
+    MyStars:
+      type: object
+      required: [total, subjects]
+      properties:
+        total: { type: integer }
+        subjects: { type: array, items: { $ref: "#/components/schemas/MyStarGroup" } }
     EraporFormat:
       type: string
       enum: [xlsx, csv]

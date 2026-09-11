@@ -109,7 +109,11 @@ func (d DisciplineReports) names(ctx context.Context, tenantID uuid.UUID, ids []
 type GradingReports struct{ Svc *gradingservice.Service }
 
 func (g GradingReports) ReportScoreRows(ctx context.Context, tenantID, classID, subjectID uuid.UUID, termID uuid.NullUUID) (reportsservice.Sheet, error) {
-	book, err := g.Svc.Gradebook(ctx, tenantID, gradingservice.GradebookQuery{ClassID: classID, SubjectID: subjectID, TermID: termID})
+	// Scheduled/manual report exports run without a per-request teacher
+	// actor, so this reads with the same admin bypass the grading
+	// handler grants manage_master_data -- true here is not "some
+	// teacher", it is "this is the reports module's own trusted read".
+	book, err := g.Svc.Gradebook(ctx, tenantID, uuid.Nil, true, gradingservice.GradebookQuery{ClassID: classID, SubjectID: subjectID, TermID: termID})
 	if err != nil {
 		return reportsservice.Sheet{}, err
 	}

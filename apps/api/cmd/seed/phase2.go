@@ -130,7 +130,7 @@ func ensureViolationTypes(ctx context.Context, module *discipline.Module, tenant
 }
 
 func ensureComponents(ctx context.Context, module *grading.Module, tenantID, teacherID, classID, subjectID, termID uuid.UUID) error {
-	book, err := module.Service.Gradebook(ctx, tenantID, gradingservice.GradebookQuery{
+	book, err := module.Service.Gradebook(ctx, tenantID, teacherID, true, gradingservice.GradebookQuery{
 		ClassID: classID, SubjectID: subjectID, TermID: uuid.NullUUID{UUID: termID, Valid: true},
 	})
 	if err != nil {

@@ -84,6 +84,35 @@ func TestBuildEraporRowsNeverDropsARowSilently(t *testing.T) {
 	require.Equal(t, len(sources), len(export.Rows)+len(export.Skipped), "every source row is accounted for exactly once")
 }
 
+func TestBuildLegacyEraporRowsMarksTPResultsAndValidation(t *testing.T) {
+	scale := domain.DefaultScale()
+	uh1 := domain.Component{ID: uuid.New(), Weight: 1}
+	previous := 80.0
+	manual := 70.0
+
+	students := []domain.LegacyEraporStudentSource{
+		{
+			NIS: "001", Name: "Siti", Grades: map[uuid.UUID]float64{uh1.ID: 90},
+			Previous: &previous, Manual: &manual,
+		},
+		{NIS: "002", Name: "Budi", Grades: map[uuid.UUID]float64{}},
+	}
+	mappings := []domain.TPMapping{{ComponentID: uh1.ID, ExportCode: "TP1", TMin: 75, TMax: 100}}
+
+	export := domain.BuildLegacyEraporRows(scale, []domain.Component{uh1}, nil, mappings, students)
+
+	require.Equal(t, []string{"TP1"}, export.ExportCodes)
+	require.Len(t, export.Rows, 2)
+
+	require.NotNil(t, export.Rows[0].FinalScore)
+	require.InDelta(t, 70, *export.Rows[0].FinalScore, 0.001, "the manual override wins")
+	require.Equal(t, []string{"T"}, export.Rows[0].TPMarks, "90 falls inside the T range 75-100")
+	require.Contains(t, export.Rows[0].Validation, "Turun", "70 dropped below the previous 80")
+
+	require.Nil(t, export.Rows[1].FinalScore, "a student with no grades yet still gets a row")
+	require.Equal(t, []string{""}, export.Rows[1].TPMarks, "no score for the mapped component")
+}
+
 func TestEraporPredicateScalesToTheGradingScale(t *testing.T) {
 	scale := domain.Scale{Min: 0, Max: 4, IncreaseMax: 0, RoundDecimal: 2}
 

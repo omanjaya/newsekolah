@@ -1018,6 +1018,7 @@ type ReportScore struct {
 	ManualScore    pgtype.Numeric     `json:"manual_score"`
 	FinalScore     pgtype.Numeric     `json:"final_score"`
 	ComputedAt     pgtype.Timestamptz `json:"computed_at"`
+	AutomaticScore pgtype.Numeric     `json:"automatic_score"`
 }
 
 type ReportTpMapping struct {

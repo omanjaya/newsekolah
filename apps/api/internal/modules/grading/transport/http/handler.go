@@ -49,9 +49,25 @@ func (h *GradingHandler) canManageAny(ctx context.Context) bool {
 	return set.Has(authz.PermManageMasterData)
 }
 
+// canManageSettings is true for callers holding manage_settings -- the
+// admin bypass for the grade-range replace endpoint, which a plain
+// teacher may only use on their own scope (docs: "teachers manage their
+// own ranges, admins keep manage_settings").
+func (h *GradingHandler) canManageSettings(ctx context.Context) bool {
+	if h.perms == nil {
+		return false
+	}
+	set, err := h.perms.EffectivePermissions(ctx, tenantID(ctx), userID(ctx))
+	if err != nil {
+		return false
+	}
+	return set.Has(authz.PermManageSettings)
+}
+
 var errorMap = map[error]*httpx.Error{
 	domain.ErrComponentNotFound:    httpx.ErrComponentNotFound,
 	domain.ErrComponentCodeExists:  httpx.ErrComponentCodeExists,
+	domain.ErrComponentHasGrades:   httpx.ErrComponentHasGrades,
 	domain.ErrNotTeachingThisClass: httpx.ErrNotTeachingClass,
 	domain.ErrGradesNotPublished:   httpx.ErrGradesNotPublished,
 	domain.ErrStarBalanceNegative:  httpx.ErrStarBalanceNegative,
@@ -60,6 +76,12 @@ var errorMap = map[error]*httpx.Error{
 	domain.ErrInvalidInput:         httpx.ErrValidation,
 	domain.ErrNoActiveAcademicYear: httpx.ErrValidation,
 	domain.ErrNoGradableSubjects:   httpx.ErrNoGradableSubjects,
+	domain.ErrStudentNotInClass:    httpx.ErrStudentNotInClass,
+	domain.ErrGradeRangeOverlap:    httpx.ErrGradeRangeOverlap,
+	domain.ErrTPExportCodeExists:   httpx.ErrTPExportCodeExists,
+	domain.ErrTPKindNotEligible:    httpx.ErrTPKindNotEligible,
+	domain.ErrTPMappingNotFound:    httpx.ErrTPMappingNotFound,
+	domain.ErrModuleDisabled:       httpx.ErrGradingModuleDisabled,
 }
 
 func mapError(err error) error {
@@ -88,6 +110,13 @@ func uuidPtr(n uuid.NullUUID) *openapi_types.UUID {
 	}
 	id := openapi_types.UUID(n.UUID)
 	return &id
+}
+
+func stringPtr(v string) *string {
+	if v == "" {
+		return nil
+	}
+	return &v
 }
 
 func f32(v float64) float32 { return float32(v) }
@@ -120,9 +149,13 @@ func (h *GradingHandler) GetGradingScale(ctx context.Context, _ api.GetGradingSc
 
 func (h *GradingHandler) UpdateGradingScale(ctx context.Context, request api.UpdateGradingScaleRequestObject) (api.UpdateGradingScaleResponseObject, error) {
 	b := request.Body
-	scale, err := h.service.UpdateScale(ctx, tenantID(ctx), userID(ctx), domain.Scale{
+	next := domain.Scale{
 		Min: float64(b.Min), Max: float64(b.Max), IncreaseMax: float64(b.ReportIncreaseMax), DefaultKKTP: float64(b.DefaultKktp), RoundDecimal: b.RoundDecimal,
-	})
+	}
+	if b.TpKind != nil {
+		next.TPKind = domain.ComponentKind(*b.TpKind)
+	}
+	scale, err := h.service.UpdateScale(ctx, tenantID(ctx), userID(ctx), next)
 	if err != nil {
 		return nil, mapError(err)
 	}
@@ -132,7 +165,7 @@ func (h *GradingHandler) UpdateGradingScale(ctx context.Context, request api.Upd
 // Gradebook.
 
 func (h *GradingHandler) GetGradebook(ctx context.Context, request api.GetGradebookRequestObject) (api.GetGradebookResponseObject, error) {
-	book, err := h.service.Gradebook(ctx, tenantID(ctx), service.GradebookQuery{
+	book, err := h.service.Gradebook(ctx, tenantID(ctx), userID(ctx), h.canManageAny(ctx), service.GradebookQuery{
 		ClassID: request.Params.ClassId, SubjectID: request.Params.SubjectId, TermID: nullUUID(request.Params.TermId),
 	})
 	if err != nil {
@@ -181,7 +214,7 @@ func (h *GradingHandler) DeleteAssessmentComponent(ctx context.Context, request 
 func (h *GradingHandler) SaveComponentScores(ctx context.Context, request api.SaveComponentScoresRequestObject) (api.SaveComponentScoresResponseObject, error) {
 	entries := make([]service.ScoreEntry, len(request.Body.Entries))
 	for i, e := range request.Body.Entries {
-		entries[i] = service.ScoreEntry{StudentUserID: e.StudentUserId, Score: float64(e.Score)}
+		entries[i] = service.ScoreEntry{StudentUserID: e.StudentUserId, Score: f64Ptr(e.Score)}
 	}
 	book, err := h.service.SaveScores(ctx, tenantID(ctx), request.ComponentId, userID(ctx), h.canManageAny(ctx), entries)
 	if err != nil {
@@ -211,7 +244,7 @@ func (h *GradingHandler) SetGradePublication(ctx context.Context, request api.Se
 // Grade ranges.
 
 func (h *GradingHandler) ListGradeRanges(ctx context.Context, _ api.ListGradeRangesRequestObject) (api.ListGradeRangesResponseObject, error) {
-	ranges, err := h.service.ListGradeRanges(ctx, tenantID(ctx))
+	ranges, err := h.service.ListGradeRanges(ctx, tenantID(ctx), userID(ctx), h.canManageAny(ctx))
 	if err != nil {
 		return nil, mapError(err)
 	}
@@ -220,6 +253,31 @@ func (h *GradingHandler) ListGradeRanges(ctx context.Context, _ api.ListGradeRan
 		data[i] = toAPIRange(r)
 	}
 	return api.ListGradeRanges200JSONResponse{Data: data}, nil
+}
+
+func (h *GradingHandler) ReplaceGradeRanges(ctx context.Context, request api.ReplaceGradeRangesRequestObject) (api.ReplaceGradeRangesResponseObject, error) {
+	b := request.Body
+	inputs := make([]service.GradeRangeInput, len(b.Ranges))
+	for i, r := range b.Ranges {
+		inputs[i] = service.GradeRangeInput{MinScore: float64(r.MinScore), MaxScore: float64(r.MaxScore), IncreaseAmount: float64(r.IncreaseAmount)}
+	}
+	teacherUserID := nullUUID(b.TeacherUserId)
+	// canManageSettings bypasses the "own ranges only" scope check the
+	// same way canManageAny bypasses requireTeaches elsewhere; a plain
+	// teacher with no teacher_user_id in the request defaults to
+	// themselves rather than being refused for omitting it.
+	if !h.canManageSettings(ctx) && !teacherUserID.Valid {
+		teacherUserID = uuid.NullUUID{UUID: userID(ctx), Valid: true}
+	}
+	ranges, err := h.service.ReplaceGradeRanges(ctx, tenantID(ctx), userID(ctx), h.canManageSettings(ctx), b.SubjectId, teacherUserID, inputs)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	data := make([]api.GradeRange, len(ranges))
+	for i, r := range ranges {
+		data[i] = toAPIRange(r)
+	}
+	return api.ReplaceGradeRanges200JSONResponse{Data: data}, nil
 }
 
 func (h *GradingHandler) CreateGradeRange(ctx context.Context, request api.CreateGradeRangeRequestObject) (api.CreateGradeRangeResponseObject, error) {
@@ -261,6 +319,21 @@ func (h *GradingHandler) GetMyGrades(ctx context.Context, request api.GetMyGrade
 	}, nil
 }
 
+func (h *GradingHandler) GetMyStars(ctx context.Context, _ api.GetMyStarsRequestObject) (api.GetMyStarsResponseObject, error) {
+	groups, total, err := h.service.MyStars(ctx, tenantID(ctx), userID(ctx))
+	if err != nil {
+		return nil, mapError(err)
+	}
+	subjects := make([]api.MyStarGroup, len(groups))
+	for i, g := range groups {
+		subjects[i] = api.MyStarGroup{
+			SubjectId: uuidPtr(g.SubjectID), SubjectName: stringPtr(g.SubjectName),
+			TeacherUserId: g.TeacherUserID, TeacherName: g.TeacherName, Total: g.Total, LastAwardedAt: g.LastAwardedAt,
+		}
+	}
+	return api.GetMyStars200JSONResponse{Total: total, Subjects: subjects}, nil
+}
+
 // Stars.
 
 func (h *GradingHandler) GiveStar(ctx context.Context, request api.GiveStarRequestObject) (api.GiveStarResponseObject, error) {
@@ -272,7 +345,7 @@ func (h *GradingHandler) GiveStar(ctx context.Context, request api.GiveStarReque
 	if b.VisibleToStudent != nil {
 		in.VisibleToStudent = *b.VisibleToStudent
 	}
-	event, balance, err := h.service.GiveStar(ctx, tenantID(ctx), userID(ctx), in)
+	event, balance, err := h.service.GiveStar(ctx, tenantID(ctx), userID(ctx), h.canManageAny(ctx), in)
 	if err != nil {
 		return nil, mapError(err)
 	}
@@ -284,7 +357,7 @@ func (h *GradingHandler) GetStarLedger(ctx context.Context, request api.GetStarL
 	if request.Params.Limit != nil {
 		limit = *request.Params.Limit
 	}
-	events, balance, err := h.service.StarLedger(ctx, tenantID(ctx), request.StudentId, true, limit)
+	events, balance, err := h.service.StarLedger(ctx, tenantID(ctx), userID(ctx), h.canManageAny(ctx), request.StudentId, true, limit)
 	if err != nil {
 		return nil, mapError(err)
 	}
@@ -296,7 +369,7 @@ func (h *GradingHandler) GetStarLedger(ctx context.Context, request api.GetStarL
 }
 
 func (h *GradingHandler) ListClassStarBalances(ctx context.Context, request api.ListClassStarBalancesRequestObject) (api.ListClassStarBalancesResponseObject, error) {
-	balances, err := h.service.ClassStarBalances(ctx, tenantID(ctx), request.ClassId)
+	balances, err := h.service.ClassStarBalances(ctx, tenantID(ctx), userID(ctx), h.canManageAny(ctx), request.ClassId)
 	if err != nil {
 		return nil, mapError(err)
 	}
@@ -308,6 +381,45 @@ func (h *GradingHandler) ListClassStarBalances(ctx context.Context, request api.
 		}{Balance: b.Balance, StudentUserId: b.StudentUserID})
 	}
 	return resp, nil
+}
+
+// TP mapping.
+
+func (h *GradingHandler) ListTPMappings(ctx context.Context, request api.ListTPMappingsRequestObject) (api.ListTPMappingsResponseObject, error) {
+	mappings, err := h.service.ListTPMappings(ctx, tenantID(ctx), userID(ctx), h.canManageAny(ctx), request.Params.ClassId, request.Params.SubjectId, nullUUID(request.Params.TermId))
+	if err != nil {
+		return nil, mapError(err)
+	}
+	data := make([]api.TPMapping, len(mappings))
+	for i, m := range mappings {
+		data[i] = toAPITPMapping(m)
+	}
+	return api.ListTPMappings200JSONResponse{Data: data}, nil
+}
+
+func (h *GradingHandler) SaveTPMapping(ctx context.Context, request api.SaveTPMappingRequestObject) (api.SaveTPMappingResponseObject, error) {
+	b := request.Body
+	mapping, err := h.service.SaveTPMapping(ctx, tenantID(ctx), userID(ctx), h.canManageAny(ctx), service.TPMappingInput{
+		ComponentID: b.ComponentId, ExportCode: b.ExportCode, RMin: float64(b.RMin), RMax: float64(b.RMax), TMin: float64(b.TMin), TMax: float64(b.TMax),
+	})
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return api.SaveTPMapping200JSONResponse(toAPITPMapping(mapping)), nil
+}
+
+func (h *GradingHandler) DeleteTPMapping(ctx context.Context, request api.DeleteTPMappingRequestObject) (api.DeleteTPMappingResponseObject, error) {
+	if err := h.service.DeleteTPMapping(ctx, tenantID(ctx), userID(ctx), request.MappingId, h.canManageAny(ctx)); err != nil {
+		return nil, mapError(err)
+	}
+	return api.DeleteTPMapping204Response{}, nil
+}
+
+func toAPITPMapping(m domain.TPMapping) api.TPMapping {
+	return api.TPMapping{
+		Id: m.ID, ComponentId: m.ComponentID, ExportCode: m.ExportCode,
+		RMin: f32(m.RMin), RMax: f32(m.RMax), TMin: f32(m.TMin), TMax: f32(m.TMax),
+	}
 }
 
 // e-Rapor export.
@@ -339,6 +451,16 @@ func (h *GradingHandler) ExportErapor(ctx context.Context, request api.ExportEra
 	}, nil
 }
 
+func (h *GradingHandler) ExportEraporLegacy(ctx context.Context, request api.ExportEraporLegacyRequestObject) (api.ExportEraporLegacyResponseObject, error) {
+	file, err := h.service.ExportEraporLegacy(ctx, tenantID(ctx), userID(ctx), h.canManageAny(ctx), request.Params.ClassId, request.Params.SubjectId, nullUUID(request.Params.TermId))
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return api.ExportEraporLegacy200ApplicationvndOpenxmlformatsOfficedocumentSpreadsheetmlSheetResponse{
+		Body: bytes.NewReader(file.Content), ContentLength: int64(len(file.Content)),
+	}, nil
+}
+
 func toAPIEraporPreview(p service.EraporPreview) api.EraporPreview {
 	rows := make([]api.EraporRow, len(p.Rows))
 	for i, row := range p.Rows {
@@ -354,7 +476,12 @@ func toAPIEraporPreview(p service.EraporPreview) api.EraporPreview {
 // Conversions.
 
 func toAPIScale(s domain.Scale) api.GradingScale {
-	return api.GradingScale{Version: s.Version, Min: f32(s.Min), Max: f32(s.Max), ReportIncreaseMax: f32(s.IncreaseMax), DefaultKktp: f32(s.DefaultKKTP), RoundDecimal: s.RoundDecimal}
+	out := api.GradingScale{Version: s.Version, Min: f32(s.Min), Max: f32(s.Max), ReportIncreaseMax: f32(s.IncreaseMax), DefaultKktp: f32(s.DefaultKKTP), RoundDecimal: s.RoundDecimal}
+	if s.TPKind != "" {
+		kind := api.AssessmentComponentKind(s.TPKind)
+		out.TpKind = &kind
+	}
+	return out
 }
 
 func toAPIComponent(c domain.Component) api.AssessmentComponent {
@@ -384,7 +511,10 @@ func toAPIGradebook(b service.Gradebook) api.Gradebook {
 		for id, score := range s.Scores {
 			scores[id.String()] = f32(score)
 		}
-		students[i] = api.GradebookStudent{StudentUserId: s.StudentUserID, Name: s.Name, Scores: scores, Average: f32Ptr(s.Average), ReportScore: f32Ptr(s.ReportScore)}
+		students[i] = api.GradebookStudent{
+			StudentUserId: s.StudentUserID, Name: s.Name, Scores: scores, Average: f32Ptr(s.Average),
+			FinalKktp: f32Ptr(s.FinalKKTP), ReportScore: f32Ptr(s.ReportScore),
+		}
 	}
 	return api.Gradebook{
 		TermId: b.Term.ID, TermName: b.Term.Name, ClassId: b.ClassID, SubjectId: b.SubjectID,
@@ -395,7 +525,8 @@ func toAPIGradebook(b service.Gradebook) api.Gradebook {
 func toAPIReportScore(s service.ReportScore) api.ReportScore {
 	return api.ReportScore{
 		TermId: s.TermID, ClassId: s.ClassID, SubjectId: s.SubjectID, StudentUserId: s.StudentUserID,
-		PreviousScore: f32Ptr(s.PreviousScore), ManualScore: f32Ptr(s.ManualScore), FinalScore: f32(s.FinalScore), ComputedAt: &s.ComputedAt,
+		PreviousScore: f32Ptr(s.PreviousScore), ManualScore: f32Ptr(s.ManualScore), AutomaticScore: f32Ptr(s.AutomaticScore),
+		FinalScore: f32(s.FinalScore), ComputedAt: &s.ComputedAt,
 	}
 }
 

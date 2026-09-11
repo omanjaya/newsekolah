@@ -23,6 +23,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/discipline"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/family"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/grading"
+	gradingservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/grading/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/identity"
 	identityservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/identity/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/integrations"
@@ -147,8 +148,14 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		Leave:    wiring.StaffAttendanceLeave{Permits: permitsModule.Service},
 	})
 
+	// grading's module flag is read through platformModule, which is not
+	// built until after grading and several modules that depend on it
+	// (below); gradingFlags is set once platformModule exists, the same
+	// lateBoundSync trick permits/attendance already use to break a
+	// construction-order cycle.
+	gradingFlags := &lateBoundGradingFlags{}
 	gradingModule := grading.Register(grading.Dependencies{
-		Pool: pool, Years: schoolModule.Service, Perms: identityModule.Service, Clock: clock.Real{},
+		Pool: pool, Years: schoolModule.Service, Perms: identityModule.Service, Flags: gradingFlags, Clock: clock.Real{},
 	})
 	disciplineModule := discipline.Register(discipline.Dependencies{
 		Pool: pool, Years: schoolModule.Service, Docs: wiring.DisciplineDocuments{Permits: permitsModule.Service},
@@ -211,6 +218,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		platformDeps.Storage = wiring.PlatformStorage{Client: sharedStorage}
 	}
 	platformModule := platform.Register(platformDeps)
+	gradingFlags.inner = wiring.GradingFlags{Platform: platformModule.Service}
 
 	// Fase 6 modules (docs/12-roadmap.md): both gated by platform's
 	// per-tenant feature flags through the wiring.PlatformFlags adapter,
@@ -438,4 +446,18 @@ func (l *lateBoundSync) ForceStatus(ctx context.Context, tenantID, studentUserID
 		return nil
 	}
 	return l.inner.ForceStatus(ctx, tenantID, studentUserID, from, to, statusCode, reason)
+}
+
+// lateBoundGradingFlags breaks the grading <-> platform construction
+// order: grading is registered before platformModule exists, but only
+// platformModule can answer IsModuleEnabled. Before inner is set (i.e.
+// before the server ever handles a request), grading reads as enabled --
+// the same fail-open default lateBoundSync uses for ForceStatus.
+type lateBoundGradingFlags struct{ inner gradingservice.FlagReader }
+
+func (l *lateBoundGradingFlags) IsModuleEnabled(ctx context.Context, tenantID uuid.UUID) (bool, error) {
+	if l.inner == nil {
+		return true, nil
+	}
+	return l.inner.IsModuleEnabled(ctx, tenantID)
 }

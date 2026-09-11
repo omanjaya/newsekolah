@@ -2188,7 +2188,7 @@ export interface paths {
         /** Edit a component */
         put: operations["updateAssessmentComponent"];
         post?: never;
-        /** Delete a component and its scores */
+        /** Delete a component (refused once it has grades) */
         delete: operations["deleteAssessmentComponent"];
         options?: never;
         head?: never;
@@ -2203,7 +2203,10 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Save one component's column and recompute report scores */
+        /**
+         * Save one component's column and recompute report scores
+         * @description A null score deletes that student's grade for the component.
+         */
         put: operations["saveComponentScores"];
         post?: never;
         delete?: never;
@@ -2255,8 +2258,12 @@ export interface paths {
         };
         /** Report-score increase ranges for this year */
         get: operations["listGradeRanges"];
-        put?: never;
-        /** Add a report-score increase range */
+        /**
+         * Replace every range of one subject-teacher scope
+         * @description A plain teacher (manage_grades) may only target teacher_user_id equal to themselves, or omit it to mean themselves; a curriculum lead or admin (manage_master_data or manage_settings) may target another teacher or omit it to mean a school-wide range. The set of ranges submitted is validated together (no overlap) and replaces whatever was saved before for that scope.
+         */
+        put: operations["replaceGradeRanges"];
+        /** Add a single report-score increase range (admin ad hoc) */
         post: operations["createGradeRange"];
         delete?: never;
         options?: never;
@@ -2281,6 +2288,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/grading/tp-mappings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** TP export-code mappings of one class-subject-term */
+        get: operations["listTPMappings"];
+        put?: never;
+        /**
+         * Create or replace one component's TP export mapping
+         * @description Only components of kind formative, or the tenant's configured TP kind, are eligible. export_code must be unique among the sibling components of the same class, subject and term.
+         */
+        post: operations["saveTPMapping"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/grading/tp-mappings/{mappingId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove one component's TP export mapping */
+        delete: operations["deleteTPMapping"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/me/grades": {
         parameters: {
             query?: never;
@@ -2290,6 +2335,26 @@ export interface paths {
         };
         /** The current student's published grades and star balance */
         get: operations["getMyGrades"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/stars": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The current student's own star total, grouped by subject and teacher
+         * @description Counts only events the teacher marked visible to the student.
+         */
+        get: operations["getMyStars"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2378,6 +2443,26 @@ export interface paths {
          * @description Refuses with GRADES_NOT_PUBLISHED (403) when none of the class's subjects have published grades for the term. The skip report travels with the file itself (a second sheet for XLSX, a trailing section for CSV); call previewEraporExport first to see it without downloading.
          */
         get: operations["exportErapor"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/grading/erapor/export-legacy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download the old per-subject e-Rapor sheet
+         * @description The legacy layout: No / NIS / Nama / Nilai Rapor / one column per mapped TP export code (T|R, with a dropdown) / Validasi. Kept alongside exportErapor (the current NISN/predicate layout) for schools whose import tooling still expects this shape.
+         */
+        get: operations["exportEraporLegacy"];
         put?: never;
         post?: never;
         delete?: never;
@@ -7075,6 +7160,8 @@ export interface components {
             report_increase_max: number;
             default_kktp: number;
             round_decimal: number;
+            /** @description The extra component kind (beyond formative) eligible for TP export mapping. */
+            tp_kind?: components["schemas"]["AssessmentComponentKind"];
         };
         GradingScaleWrite: {
             min: number;
@@ -7082,6 +7169,7 @@ export interface components {
             report_increase_max: number;
             default_kktp: number;
             round_decimal: number;
+            tp_kind?: components["schemas"]["AssessmentComponentKind"];
         };
         /** @enum {string} */
         AssessmentComponentKind: "formative" | "summative" | "project" | "practical" | "attitude" | "other";
@@ -7126,6 +7214,7 @@ export interface components {
                 [key: string]: number;
             };
             average?: number;
+            final_kktp?: number;
             report_score?: number;
         };
         Gradebook: {
@@ -7152,6 +7241,7 @@ export interface components {
             student_user_id: string;
             previous_score?: number;
             manual_score?: number;
+            automatic_score?: number;
             final_score: number;
             /** Format: date-time */
             computed_at?: string;
@@ -7186,6 +7276,26 @@ export interface components {
             min_score: number;
             max_score: number;
             increase_amount: number;
+        };
+        TPMapping: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            component_id: string;
+            export_code: string;
+            r_min: number;
+            r_max: number;
+            t_min: number;
+            t_max: number;
+        };
+        TPMappingWrite: {
+            /** Format: uuid */
+            component_id: string;
+            export_code: string;
+            r_min: number;
+            r_max: number;
+            t_min: number;
+            t_max: number;
         };
         MyComponentScore: {
             code: string;
@@ -7224,6 +7334,21 @@ export interface components {
             visible_to_student: boolean;
             /** Format: date-time */
             created_at: string;
+        };
+        MyStarGroup: {
+            /** Format: uuid */
+            subject_id?: string;
+            subject_name?: string;
+            /** Format: uuid */
+            teacher_user_id: string;
+            teacher_name: string;
+            total: number;
+            /** Format: date-time */
+            last_awarded_at: string;
+        };
+        MyStars: {
+            total: number;
+            subjects: components["schemas"]["MyStarGroup"][];
         };
         /** @enum {string} */
         EraporFormat: "xlsx" | "csv";
@@ -13659,6 +13784,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
         };
     };
     saveComponentScores: {
@@ -13676,7 +13802,7 @@ export interface operations {
                     entries: {
                         /** Format: uuid */
                         student_user_id: string;
-                        score: number;
+                        score?: number | null;
                     }[];
                 };
             };
@@ -13794,6 +13920,45 @@ export interface operations {
             403: components["responses"]["Forbidden"];
         };
     };
+    replaceGradeRanges: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    subject_id: string;
+                    /** Format: uuid */
+                    teacher_user_id?: string;
+                    ranges: {
+                        min_score: number;
+                        max_score: number;
+                        increase_amount: number;
+                    }[];
+                };
+            };
+        };
+        responses: {
+            /** @description Ranges after replacing */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["GradeRange"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
     createGradeRange: {
         parameters: {
             query?: never;
@@ -13843,6 +14008,87 @@ export interface operations {
             403: components["responses"]["Forbidden"];
         };
     };
+    listTPMappings: {
+        parameters: {
+            query: {
+                class_id: string;
+                subject_id: string;
+                term_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Mappings */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["TPMapping"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    saveTPMapping: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TPMappingWrite"];
+            };
+        };
+        responses: {
+            /** @description Mapping */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TPMapping"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    deleteTPMapping: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mappingId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
     getMyGrades: {
         parameters: {
             query?: {
@@ -13861,6 +14107,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MyGrades"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    getMyStars: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Stars */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyStars"];
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -14016,6 +14284,33 @@ export interface operations {
                 content: {
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
                     "text/csv": string;
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    exportEraporLegacy: {
+        parameters: {
+            query: {
+                class_id: string;
+                subject_id: string;
+                term_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description e-Rapor legacy sheet */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
                 };
             };
             400: components["responses"]["BadRequest"];

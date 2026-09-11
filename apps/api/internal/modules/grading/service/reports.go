@@ -38,9 +38,12 @@ func (s *Service) PreviousTerm(ctx context.Context, tenantID, currentTermID uuid
 	return term, found, err
 }
 
-// recomputeReportScores refreshes every student's report score for one
-// class-subject from the current component grades, applying the school's
-// grade ranges and never dropping below the previous term.
+// recomputeReportScores refreshes every student's automatic report score
+// for one class-subject from the current component grades, applying the
+// school's grade ranges. A manual override, if one is already set, keeps
+// winning as final_score -- UpsertReportScore only replaces final_score
+// with the automatic value when no override exists (domain.
+// ComputeReportScore's doc comment has the full rule).
 func (s *Service) recomputeReportScores(ctx context.Context, tenantID, yearID, termID, classID, subjectID uuid.UUID, scale domain.Scale) error {
 	components, err := s.repo.ListComponents(ctx, tenantID, termID, classID, subjectID)
 	if err != nil {
@@ -79,9 +82,8 @@ func (s *Service) recomputeReportScores(ctx context.Context, tenantID, yearID, t
 		if !ok {
 			continue
 		}
-		prev := previous[studentID]
-		final := domain.ReportScore(scale, scale.Round(raw), prev, ranges)
-		if _, err := s.repo.UpsertReportScore(ctx, tenantID, yearID, termID, classID, subjectID, studentID, prev, nil, final); err != nil {
+		result := domain.ComputeReportScore(scale, scale.Round(raw), previous[studentID], nil, ranges)
+		if _, err := s.repo.UpsertReportScore(ctx, tenantID, yearID, termID, classID, subjectID, studentID, previous[studentID], nil, result.Automatic); err != nil {
 			return err
 		}
 	}
@@ -132,8 +134,12 @@ func (s *Service) previousScores(ctx context.Context, tenantID, yearID, termID, 
 }
 
 // SetManualScore overrides one student's report score; the override wins
-// over recomputation until it is cleared.
+// over recomputation until it is cleared (UpsertReportScore and
+// SetManualReportScore's SQL both restore the automatic value once it is).
 func (s *Service) SetManualScore(ctx context.Context, tenantID, actorID uuid.UUID, canManageAny bool, classID, subjectID, studentID uuid.UUID, termID uuid.NullUUID, manual *float64) (ReportScore, error) {
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return ReportScore{}, err
+	}
 	var out ReportScore
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		yearID, err := s.activeYear(ctx, tenantID)
@@ -163,6 +169,9 @@ func (s *Service) SetManualScore(ctx context.Context, tenantID, actorID uuid.UUI
 // Publish flips one class-subject's publication flag; students only see
 // grades of published subjects.
 func (s *Service) Publish(ctx context.Context, tenantID, actorID uuid.UUID, canManageAny bool, classID, subjectID uuid.UUID, termID uuid.NullUUID, published bool) (Publication, error) {
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return Publication{}, err
+	}
 	var out Publication
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		yearID, err := s.activeYear(ctx, tenantID)
@@ -214,8 +223,13 @@ type MyGrades struct {
 }
 
 // MyGrades returns the student's own grades, hiding subjects whose
-// publication is still off.
+// publication is still off. Stars counts only visible_to_student events
+// (grading_extended.go:653's "AND e.visible_to_student=TRUE"), matching
+// the /v1/me/stars breakdown.
 func (s *Service) MyGrades(ctx context.Context, tenantID, studentID uuid.UUID, termID uuid.NullUUID) (MyGrades, error) {
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return MyGrades{}, err
+	}
 	var out MyGrades
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		yearID, err := s.activeYear(ctx, tenantID)
@@ -243,7 +257,7 @@ func (s *Service) MyGrades(ctx context.Context, tenantID, studentID uuid.UUID, t
 			return err
 		}
 		out = MyGrades{Term: term, Scale: scale, Subjects: groupStudentGrades(rows, published, finals, scale)}
-		out.Stars, err = s.repo.StarBalance(ctx, tenantID, yearID, studentID)
+		out.Stars, err = s.repo.VisibleStarBalance(ctx, tenantID, yearID, studentID)
 		return err
 	})
 	return out, err
@@ -317,27 +331,55 @@ func groupStudentGrades(rows []StudentGradeRow, published map[uuid.UUID]bool, fi
 
 // Grade ranges (the "kenaikan nilai rapor" table).
 
-func (s *Service) ListGradeRanges(ctx context.Context, tenantID uuid.UUID) ([]domain.GradeRange, error) {
+// ListGradeRanges scopes to the caller's own teacher-specific ranges plus
+// every school-wide or subject-only range (teacher_user_id null); a
+// curriculum lead or admin (canManageAny) sees every range in the school.
+// Without this, any teacher holding manage_grades could read every other
+// teacher's ranges.
+func (s *Service) ListGradeRanges(ctx context.Context, tenantID, actorID uuid.UUID, canManageAny bool) ([]domain.GradeRange, error) {
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return nil, err
+	}
 	var out []domain.GradeRange
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		yearID, err := s.activeYear(ctx, tenantID)
 		if err != nil {
 			return err
 		}
-		out, err = s.repo.ListGradeRanges(ctx, tenantID, yearID)
-		return err
+		all, err := s.repo.ListGradeRanges(ctx, tenantID, yearID)
+		if err != nil {
+			return err
+		}
+		if canManageAny {
+			out = all
+			return nil
+		}
+		out = make([]domain.GradeRange, 0, len(all))
+		for _, r := range all {
+			if !r.TeacherUserID.Valid || r.TeacherUserID.UUID == actorID {
+				out = append(out, r)
+			}
+		}
+		return nil
 	})
 	return out, err
 }
 
 func (s *Service) CreateGradeRange(ctx context.Context, tenantID uuid.UUID, r domain.GradeRange) (domain.GradeRange, error) {
-	if r.MinScore > r.MaxScore || r.IncreaseAmount < 0 {
-		return domain.GradeRange{}, domain.ErrInvalidInput
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return domain.GradeRange{}, err
 	}
 	var out domain.GradeRange
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		yearID, err := s.activeYear(ctx, tenantID)
 		if err != nil {
+			return err
+		}
+		scale, err := s.loadScale(ctx, tenantID)
+		if err != nil {
+			return err
+		}
+		if err := domain.ValidateGradeRanges(scale, []domain.GradeRange{r}); err != nil {
 			return err
 		}
 		out, err = s.repo.CreateGradeRange(ctx, tenantID, yearID, r)
@@ -347,80 +389,53 @@ func (s *Service) CreateGradeRange(ctx context.Context, tenantID uuid.UUID, r do
 }
 
 func (s *Service) DeleteGradeRange(ctx context.Context, tenantID, id uuid.UUID) error {
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return err
+	}
 	return s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		return s.repo.DeleteGradeRange(ctx, tenantID, id)
 	})
 }
 
-// Stars.
-
-type StarInput struct {
-	StudentUserID    uuid.UUID
-	ClassID          uuid.UUID
-	SubjectID        uuid.NullUUID
-	Delta            int
-	Note             string
-	VisibleToStudent bool
-}
-
-func (s *Service) GiveStar(ctx context.Context, tenantID, teacherID uuid.UUID, in StarInput) (domain.StarEvent, int, error) {
-	var (
-		event   domain.StarEvent
-		balance int
-	)
-	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		yearID, err := s.activeYear(ctx, tenantID)
-		if err != nil {
-			return err
-		}
-		current, err := s.repo.StarBalance(ctx, tenantID, yearID, in.StudentUserID)
-		if err != nil {
-			return err
-		}
-		balance, err = domain.ApplyStar(current, in.Delta)
-		if err != nil {
-			return err
-		}
-		event, err = s.repo.InsertStarEvent(ctx, domain.StarEvent{
-			TenantID: tenantID, AcademicYearID: yearID, ClassID: in.ClassID, SubjectID: in.SubjectID,
-			StudentUserID: in.StudentUserID, TeacherUserID: teacherID, Delta: in.Delta, Note: in.Note, VisibleToStudent: in.VisibleToStudent,
-		})
-		return err
-	})
-	return event, balance, err
-}
-
-func (s *Service) StarLedger(ctx context.Context, tenantID, studentID uuid.UUID, includeHidden bool, limit int) ([]domain.StarEvent, int, error) {
-	if limit <= 0 || limit > 200 {
-		limit = 50
+// ReplaceGradeRanges is the "aturan nilai rapor" screen's save action
+// (grading_extended.go:111-152): the full set of ranges for one
+// subject-teacher pair is validated together (so overlap can be checked)
+// and replaces whatever was saved before. A plain teacher (manage_grades,
+// !canManageAny) may only replace their own ranges; a curriculum lead or
+// admin may target another teacher or leave the scope teacher-less for a
+// school-wide range.
+func (s *Service) ReplaceGradeRanges(ctx context.Context, tenantID, actorID uuid.UUID, canManageAny bool, subjectID uuid.UUID, teacherUserID uuid.NullUUID, inputs []GradeRangeInput) ([]domain.GradeRange, error) {
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return nil, err
 	}
-	var (
-		events  []domain.StarEvent
-		balance int
-	)
+	if !canManageAny && (!teacherUserID.Valid || teacherUserID.UUID != actorID) {
+		return nil, domain.ErrNotTeachingThisClass
+	}
+	ranges := make([]domain.GradeRange, len(inputs))
+	for i, in := range inputs {
+		ranges[i] = domain.GradeRange{SubjectID: uuid.NullUUID{UUID: subjectID, Valid: true}, TeacherUserID: teacherUserID, MinScore: in.MinScore, MaxScore: in.MaxScore, IncreaseAmount: in.IncreaseAmount}
+	}
+	var out []domain.GradeRange
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		yearID, err := s.activeYear(ctx, tenantID)
 		if err != nil {
 			return err
 		}
-		if events, err = s.repo.ListStarEvents(ctx, tenantID, yearID, studentID, includeHidden, limit); err != nil {
-			return err
-		}
-		balance, err = s.repo.StarBalance(ctx, tenantID, yearID, studentID)
-		return err
-	})
-	return events, balance, err
-}
-
-func (s *Service) ClassStarBalances(ctx context.Context, tenantID, classID uuid.UUID) ([]StarBalance, error) {
-	var out []StarBalance
-	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		yearID, err := s.activeYear(ctx, tenantID)
+		scale, err := s.loadScale(ctx, tenantID)
 		if err != nil {
 			return err
 		}
-		out, err = s.repo.ListStarBalances(ctx, tenantID, yearID, classID)
+		if err := domain.ValidateGradeRanges(scale, ranges); err != nil {
+			return err
+		}
+		out, err = s.repo.ReplaceGradeRanges(ctx, tenantID, yearID, subjectID, teacherUserID, ranges)
 		return err
 	})
 	return out, err
+}
+
+type GradeRangeInput struct {
+	MinScore       float64
+	MaxScore       float64
+	IncreaseAmount float64
 }

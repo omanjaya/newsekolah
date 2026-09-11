@@ -66,6 +66,45 @@ func (q *Queries) DeleteGradeRange(ctx context.Context, arg DeleteGradeRangePara
 	return err
 }
 
+const deleteTPMapping = `-- name: DeleteTPMapping :exec
+delete from report_tp_mappings where tenant_id = $1 and id = $2
+`
+
+type DeleteTPMappingParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	ID       uuid.UUID `json:"id"`
+}
+
+func (q *Queries) DeleteTPMapping(ctx context.Context, arg DeleteTPMappingParams) error {
+	_, err := q.db.Exec(ctx, deleteTPMapping, arg.TenantID, arg.ID)
+	return err
+}
+
+const getTPMapping = `-- name: GetTPMapping :one
+select id, tenant_id, component_id, export_code, r_min, r_max, t_min, t_max from report_tp_mappings where tenant_id = $1 and id = $2
+`
+
+type GetTPMappingParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	ID       uuid.UUID `json:"id"`
+}
+
+func (q *Queries) GetTPMapping(ctx context.Context, arg GetTPMappingParams) (ReportTpMapping, error) {
+	row := q.db.QueryRow(ctx, getTPMapping, arg.TenantID, arg.ID)
+	var i ReportTpMapping
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.ComponentID,
+		&i.ExportCode,
+		&i.RMin,
+		&i.RMax,
+		&i.TMin,
+		&i.TMax,
+	)
+	return i, err
+}
+
 const insertStarEvent = `-- name: InsertStarEvent :one
 insert into star_events (tenant_id, academic_year_id, class_id, subject_id, student_user_id, teacher_user_id, delta, note, visible_to_student)
 values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
@@ -201,7 +240,7 @@ func (q *Queries) ListGradeRanges(ctx context.Context, arg ListGradeRangesParams
 }
 
 const listReportScores = `-- name: ListReportScores :many
-select id, tenant_id, academic_year_id, term_id, class_id, subject_id, student_user_id, previous_score, manual_score, final_score, computed_at from report_scores
+select id, tenant_id, academic_year_id, term_id, class_id, subject_id, student_user_id, previous_score, manual_score, final_score, computed_at, automatic_score from report_scores
 where tenant_id = $1 and term_id = $2 and class_id = $3 and subject_id = $4
 order by student_user_id
 `
@@ -239,6 +278,7 @@ func (q *Queries) ListReportScores(ctx context.Context, arg ListReportScoresPara
 			&i.ManualScore,
 			&i.FinalScore,
 			&i.ComputedAt,
+			&i.AutomaticScore,
 		); err != nil {
 			return nil, err
 		}
@@ -251,7 +291,7 @@ func (q *Queries) ListReportScores(ctx context.Context, arg ListReportScoresPara
 }
 
 const listReportScoresForStudent = `-- name: ListReportScoresForStudent :many
-select id, tenant_id, academic_year_id, term_id, class_id, subject_id, student_user_id, previous_score, manual_score, final_score, computed_at from report_scores
+select id, tenant_id, academic_year_id, term_id, class_id, subject_id, student_user_id, previous_score, manual_score, final_score, computed_at, automatic_score from report_scores
 where tenant_id = $1 and term_id = $2 and student_user_id = $3
 order by subject_id
 `
@@ -283,6 +323,7 @@ func (q *Queries) ListReportScoresForStudent(ctx context.Context, arg ListReport
 			&i.ManualScore,
 			&i.FinalScore,
 			&i.ComputedAt,
+			&i.AutomaticScore,
 		); err != nil {
 			return nil, err
 		}
@@ -425,10 +466,111 @@ func (q *Queries) ListTPMappings(ctx context.Context, arg ListTPMappingsParams) 
 	return items, nil
 }
 
+const lockStarBalance = `-- name: LockStarBalance :exec
+select pg_advisory_xact_lock(hashtext($1::text), hashtext($2::text))
+`
+
+type LockStarBalanceParams struct {
+	Column1 string `json:"column_1"`
+	Column2 string `json:"column_2"`
+}
+
+// A per-student advisory lock held for the rest of the transaction
+// (docs/06 section 9: "constraint saldo >= 0 ditegakkan service dengan
+// advisory lock per siswa"), so two concurrent star deductions cannot
+// both read the same balance and both pass the "stays >= 0" check.
+func (q *Queries) LockStarBalance(ctx context.Context, arg LockStarBalanceParams) error {
+	_, err := q.db.Exec(ctx, lockStarBalance, arg.Column1, arg.Column2)
+	return err
+}
+
+const myStarsGrouped = `-- name: MyStarsGrouped :many
+select e.subject_id, coalesce(sub.name, '') as subject_name, e.teacher_user_id, u.name as teacher_name,
+       sum(e.delta)::int as total, max(e.created_at)::timestamptz as last_awarded_at
+from star_events e
+join users u on u.id = e.teacher_user_id and u.tenant_id = e.tenant_id
+left join subjects sub on sub.id = e.subject_id and sub.tenant_id = e.tenant_id
+where e.tenant_id = $1 and e.academic_year_id = $2 and e.student_user_id = $3 and e.visible_to_student
+group by e.subject_id, sub.name, e.teacher_user_id, u.name
+order by sub.name nulls last, u.name
+`
+
+type MyStarsGroupedParams struct {
+	TenantID       uuid.UUID `json:"tenant_id"`
+	AcademicYearID uuid.UUID `json:"academic_year_id"`
+	StudentUserID  uuid.UUID `json:"student_user_id"`
+}
+
+type MyStarsGroupedRow struct {
+	SubjectID     pgtype.UUID        `json:"subject_id"`
+	SubjectName   string             `json:"subject_name"`
+	TeacherUserID uuid.UUID          `json:"teacher_user_id"`
+	TeacherName   string             `json:"teacher_name"`
+	Total         int32              `json:"total"`
+	LastAwardedAt pgtype.Timestamptz `json:"last_awarded_at"`
+}
+
+// The student's own star breakdown (grading_extended.go:653's myStars):
+// visible events only, grouped by subject and teacher.
+func (q *Queries) MyStarsGrouped(ctx context.Context, arg MyStarsGroupedParams) ([]MyStarsGroupedRow, error) {
+	rows, err := q.db.Query(ctx, myStarsGrouped, arg.TenantID, arg.AcademicYearID, arg.StudentUserID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []MyStarsGroupedRow{}
+	for rows.Next() {
+		var i MyStarsGroupedRow
+		if err := rows.Scan(
+			&i.SubjectID,
+			&i.SubjectName,
+			&i.TeacherUserID,
+			&i.TeacherName,
+			&i.Total,
+			&i.LastAwardedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const replaceGradeRangesScope = `-- name: ReplaceGradeRangesScope :exec
+delete from report_grade_ranges
+where tenant_id = $1 and academic_year_id = $2 and subject_id = $3
+  and teacher_user_id is not distinct from $4::uuid
+`
+
+type ReplaceGradeRangesScopeParams struct {
+	TenantID       uuid.UUID   `json:"tenant_id"`
+	AcademicYearID uuid.UUID   `json:"academic_year_id"`
+	SubjectID      pgtype.UUID `json:"subject_id"`
+	TeacherUserID  pgtype.UUID `json:"teacher_user_id"`
+}
+
+// Deletes every range of one subject-teacher scope before the caller
+// re-inserts the replacement set (the "aturan nilai rapor" save action,
+// grading_extended.go:140). `is not distinct from` treats a null
+// teacher_user_id (a school-wide range) as its own scope rather than
+// matching every teacher's ranges.
+func (q *Queries) ReplaceGradeRangesScope(ctx context.Context, arg ReplaceGradeRangesScopeParams) error {
+	_, err := q.db.Exec(ctx, replaceGradeRangesScope,
+		arg.TenantID,
+		arg.AcademicYearID,
+		arg.SubjectID,
+		arg.TeacherUserID,
+	)
+	return err
+}
+
 const setManualReportScore = `-- name: SetManualReportScore :one
-update report_scores set manual_score = $7, final_score = coalesce($7, final_score), computed_at = now()
+update report_scores set manual_score = $7, final_score = coalesce($7, automatic_score), computed_at = now()
 where tenant_id = $1 and term_id = $2 and class_id = $3 and subject_id = $4 and student_user_id = $5 and academic_year_id = $6
-returning id, tenant_id, academic_year_id, term_id, class_id, subject_id, student_user_id, previous_score, manual_score, final_score, computed_at
+returning id, tenant_id, academic_year_id, term_id, class_id, subject_id, student_user_id, previous_score, manual_score, final_score, computed_at, automatic_score
 `
 
 type SetManualReportScoreParams struct {
@@ -464,6 +606,7 @@ func (q *Queries) SetManualReportScore(ctx context.Context, arg SetManualReportS
 		&i.ManualScore,
 		&i.FinalScore,
 		&i.ComputedAt,
+		&i.AutomaticScore,
 	)
 	return i, err
 }
@@ -487,13 +630,15 @@ func (q *Queries) StarBalance(ctx context.Context, arg StarBalanceParams) (int32
 }
 
 const upsertReportScore = `-- name: UpsertReportScore :one
-insert into report_scores (tenant_id, academic_year_id, term_id, class_id, subject_id, student_user_id, previous_score, manual_score, final_score, computed_at)
-values ($1, $2, $3, $4, $5, $6, $7, $8, $9, now())
+insert into report_scores (tenant_id, academic_year_id, term_id, class_id, subject_id, student_user_id, previous_score, manual_score, automatic_score, final_score, computed_at)
+values ($1, $2, $3, $4, $5, $6, $7, $8, $9, coalesce($8, $9), now())
 on conflict (academic_year_id, term_id, class_id, subject_id, student_user_id) do update
   set previous_score = excluded.previous_score,
       manual_score = coalesce(excluded.manual_score, report_scores.manual_score),
-      final_score = excluded.final_score, computed_at = now()
-returning id, tenant_id, academic_year_id, term_id, class_id, subject_id, student_user_id, previous_score, manual_score, final_score, computed_at
+      automatic_score = excluded.automatic_score,
+      final_score = coalesce(coalesce(excluded.manual_score, report_scores.manual_score), excluded.automatic_score),
+      computed_at = now()
+returning id, tenant_id, academic_year_id, term_id, class_id, subject_id, student_user_id, previous_score, manual_score, final_score, computed_at, automatic_score
 `
 
 type UpsertReportScoreParams struct {
@@ -505,9 +650,14 @@ type UpsertReportScoreParams struct {
 	StudentUserID  uuid.UUID      `json:"student_user_id"`
 	PreviousScore  pgtype.Numeric `json:"previous_score"`
 	ManualScore    pgtype.Numeric `json:"manual_score"`
-	FinalScore     pgtype.Numeric `json:"final_score"`
+	AutomaticScore pgtype.Numeric `json:"automatic_score"`
 }
 
+// automatic_score always reflects the latest weighted-average
+// computation; final_score is the manual override when one is set
+// (either passed here or already on the row), otherwise it mirrors
+// automatic_score. This is what lets SetManualReportScore restore the
+// automatic value by clearing the override, without a full recompute.
 func (q *Queries) UpsertReportScore(ctx context.Context, arg UpsertReportScoreParams) (ReportScore, error) {
 	row := q.db.QueryRow(ctx, upsertReportScore,
 		arg.TenantID,
@@ -518,7 +668,7 @@ func (q *Queries) UpsertReportScore(ctx context.Context, arg UpsertReportScorePa
 		arg.StudentUserID,
 		arg.PreviousScore,
 		arg.ManualScore,
-		arg.FinalScore,
+		arg.AutomaticScore,
 	)
 	var i ReportScore
 	err := row.Scan(
@@ -533,6 +683,7 @@ func (q *Queries) UpsertReportScore(ctx context.Context, arg UpsertReportScorePa
 		&i.ManualScore,
 		&i.FinalScore,
 		&i.ComputedAt,
+		&i.AutomaticScore,
 	)
 	return i, err
 }
@@ -576,4 +727,26 @@ func (q *Queries) UpsertTPMapping(ctx context.Context, arg UpsertTPMappingParams
 		&i.TMax,
 	)
 	return i, err
+}
+
+const visibleStarBalance = `-- name: VisibleStarBalance :one
+select coalesce(sum(delta), 0)::int as balance from star_events
+where tenant_id = $1 and academic_year_id = $2 and student_user_id = $3 and visible_to_student
+`
+
+type VisibleStarBalanceParams struct {
+	TenantID       uuid.UUID `json:"tenant_id"`
+	AcademicYearID uuid.UUID `json:"academic_year_id"`
+	StudentUserID  uuid.UUID `json:"student_user_id"`
+}
+
+// The balance a student (or MyGrades) may see: events the teacher marked
+// visible_to_student only (grading_extended.go:653's "AND
+// e.visible_to_student=TRUE"). Hidden adjustments still count toward the
+// real (StarBalance) total a teacher works from.
+func (q *Queries) VisibleStarBalance(ctx context.Context, arg VisibleStarBalanceParams) (int32, error) {
+	row := q.db.QueryRow(ctx, visibleStarBalance, arg.TenantID, arg.AcademicYearID, arg.StudentUserID)
+	var balance int32
+	err := row.Scan(&balance)
+	return balance, err
 }
