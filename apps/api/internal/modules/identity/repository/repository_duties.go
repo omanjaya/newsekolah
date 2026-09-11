@@ -2,10 +2,12 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/db"
@@ -48,6 +50,20 @@ func (r *Repository) CreateDutyTypeRecord(ctx context.Context, tenantID uuid.UUI
 		return service.DutyTypeRecord{}, fmt.Errorf("create duty type: %w", err)
 	}
 	return toDutyTypeRecord(row), nil
+}
+
+// GetDutyTypeBySlug is the lookup tenant bootstrap uses to seed the
+// default duty types idempotently: re-running it on a tenant that already
+// has "homeroom" must not error or duplicate the row.
+func (r *Repository) GetDutyTypeBySlug(ctx context.Context, tenantID uuid.UUID, slug string) (service.DutyTypeRecord, bool, error) {
+	row, err := r.queries(ctx).GetDutyTypeBySlug(ctx, db.GetDutyTypeBySlugParams{TenantID: tenantID, Slug: slug})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return service.DutyTypeRecord{}, false, nil
+		}
+		return service.DutyTypeRecord{}, false, fmt.Errorf("get duty type by slug: %w", err)
+	}
+	return toDutyTypeRecord(row), true, nil
 }
 
 func (r *Repository) UpdateDutyTypeRecord(ctx context.Context, tenantID, id uuid.UUID, name string, scope domain.DutyScopeKind, isActive bool) error {
@@ -161,8 +177,39 @@ func (r *Repository) ClassExists(ctx context.Context, tenantID, classID uuid.UUI
 	return r.queries(ctx).ClassExistsInTenant(ctx, db.ClassExistsInTenantParams{TenantID: tenantID, ID: classID})
 }
 
+func (r *Repository) ClassExistsInYear(ctx context.Context, tenantID, classID, academicYearID uuid.UUID) (bool, error) {
+	return r.queries(ctx).ClassExistsInYear(ctx, db.ClassExistsInYearParams{TenantID: tenantID, ID: classID, AcademicYearID: academicYearID})
+}
+
 func (r *Repository) UserExists(ctx context.Context, tenantID, userID uuid.UUID) (bool, error) {
 	return r.queries(ctx).UserExistsInTenant(ctx, db.UserExistsInTenantParams{TenantID: tenantID, ID: userID})
+}
+
+func (r *Repository) IsActiveTeacherOrStaff(ctx context.Context, tenantID, userID uuid.UUID) (bool, error) {
+	return r.queries(ctx).IsActiveTeacherOrStaff(ctx, db.IsActiveTeacherOrStaffParams{TenantID: tenantID, ID: userID})
+}
+
+func (r *Repository) ListStaffOptions(ctx context.Context, tenantID uuid.UUID, search string, limit int32) ([]service.UserOption, error) {
+	rows, err := r.queries(ctx).ListStaffOptions(ctx, db.ListStaffOptionsParams{TenantID: tenantID, Search: pdatabase.Text(search), Limit: limit})
+	if err != nil {
+		return nil, err
+	}
+	out := make([]service.UserOption, len(rows))
+	for i, row := range rows {
+		out[i] = service.UserOption{ID: row.ID, Name: row.Name}
+	}
+	return out, nil
+}
+
+// UpdateClassHomeroomTeacher writes classes.homeroom_teacher_id directly
+// (a cross-module write onto a table academic owns, mirroring the
+// cross-module reads scoping/teaching already do against each other's
+// tables) -- pass an invalid teacherID to clear it. See the query's
+// comment for why this column is kept in sync at all.
+func (r *Repository) UpdateClassHomeroomTeacher(ctx context.Context, tenantID, classID uuid.UUID, teacherID uuid.NullUUID) error {
+	return r.queries(ctx).UpdateClassHomeroomTeacher(ctx, db.UpdateClassHomeroomTeacherParams{
+		TenantID: tenantID, ID: classID, HomeroomTeacherID: pdatabase.NullUUID(teacherID),
+	})
 }
 
 func endsOnPtr(d pgtype.Date) *time.Time {

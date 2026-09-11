@@ -46,16 +46,19 @@ func (s *Service) CreateDutyAssignment(ctx context.Context, tenantID uuid.UUID, 
 		if err := s.checkScopeTargetsExist(ctx, tenantID, in); err != nil {
 			return err
 		}
-		if exists, err := s.repo.UserExists(ctx, tenantID, in.UserID); err != nil {
-			return fmt.Errorf("check assignee exists: %w", err)
-		} else if !exists {
-			return domain.ErrScopeTargetNotFound
+		if ok, err := s.repo.IsActiveTeacherOrStaff(ctx, tenantID, in.UserID); err != nil {
+			return fmt.Errorf("check assignee is teacher or staff: %w", err)
+		} else if !ok {
+			return domain.ErrAssigneeNotEligible
 		}
 
 		in.DutySlug, in.DutyName = dutyType.Slug, dutyType.Name
 		created, err := s.repo.CreateDutyAssignmentRecord(ctx, tenantID, in)
 		if err != nil {
 			return fmt.Errorf("create duty assignment: %w", err)
+		}
+		if err := s.syncClassHomeroom(ctx, tenantID, dutyType.Slug, in.ScopeClassID, uuid.NullUUID{UUID: in.UserID, Valid: true}); err != nil {
+			return fmt.Errorf("sync class homeroom teacher: %w", err)
 		}
 		if err := audit.Record(ctx, tenantID, "duty_assignment.create", "duty_assignment", created.ID, nil, created); err != nil {
 			return err
@@ -68,9 +71,12 @@ func (s *Service) CreateDutyAssignment(ctx context.Context, tenantID uuid.UUID, 
 
 func (s *Service) checkScopeTargetsExist(ctx context.Context, tenantID uuid.UUID, in DutyAssignmentRecord) error {
 	if in.ScopeClassID.Valid {
-		exists, err := s.repo.ClassExists(ctx, tenantID, in.ScopeClassID.UUID)
+		// The scope class must belong to the same academic year as the
+		// assignment itself, not merely exist in the tenant -- otherwise a
+		// homeroom duty could point at a class from a different year.
+		exists, err := s.repo.ClassExistsInYear(ctx, tenantID, in.ScopeClassID.UUID, in.AcademicYearID)
 		if err != nil {
-			return fmt.Errorf("check class exists: %w", err)
+			return fmt.Errorf("check class exists in year: %w", err)
 		}
 		if !exists {
 			return domain.ErrScopeTargetNotFound
@@ -105,6 +111,14 @@ func (s *Service) UpdateDutyAssignment(ctx context.Context, tenantID, id uuid.UU
 		}
 		after := before
 		after.IsActive, after.EndsOn = isActive, endsOn
+		if before.IsActive && !isActive {
+			// The homeroom teacher just lost the duty: clear the class's
+			// cached homeroom_teacher_id rather than leave it pointing at
+			// someone no longer holding the duty.
+			if err := s.syncClassHomeroom(ctx, tenantID, before.DutySlug, before.ScopeClassID, uuid.NullUUID{}); err != nil {
+				return fmt.Errorf("sync class homeroom teacher: %w", err)
+			}
+		}
 		if err := audit.Record(ctx, tenantID, "duty_assignment.update", "duty_assignment", id, before, after); err != nil {
 			return err
 		}
@@ -125,6 +139,11 @@ func (s *Service) DeleteDutyAssignment(ctx context.Context, tenantID, id uuid.UU
 		}
 		if err := s.repo.DeleteDutyAssignmentRecord(ctx, tenantID, id); err != nil {
 			return fmt.Errorf("delete duty assignment: %w", err)
+		}
+		if before.IsActive {
+			if err := s.syncClassHomeroom(ctx, tenantID, before.DutySlug, before.ScopeClassID, uuid.NullUUID{}); err != nil {
+				return fmt.Errorf("sync class homeroom teacher: %w", err)
+			}
 		}
 		return audit.Record(ctx, tenantID, "duty_assignment.delete", "duty_assignment", id, before, nil)
 	})

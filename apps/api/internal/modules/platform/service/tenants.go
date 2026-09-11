@@ -118,6 +118,10 @@ func (s *Service) CreateTenant(ctx context.Context, in domain.TenantInput) (Crea
 		return CreateTenantResult{}, err
 	}
 
+	if err := s.admin.SeedDefaultDuties(ctx, tenant.ID); err != nil {
+		return CreateTenantResult{}, err
+	}
+
 	return CreateTenantResult{Tenant: tenant, AdminUsername: admin.Username, AdminPassword: admin.Password}, nil
 }
 

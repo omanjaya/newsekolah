@@ -68,6 +68,13 @@ type AdminResult struct {
 // this package never imports identity internals directly.
 type IdentityProvisioner interface {
 	ProvisionAdmin(ctx context.Context, tenantID uuid.UUID, in AdminInput) (AdminResult, error)
+
+	// SeedDefaultDuties creates the tenant's standard duty types
+	// (homeroom, counselor, leadership, security, and the rest of
+	// authz.DutyTypeDefaults) with their default permissions, so a new
+	// tenant can name a homeroom teacher from day one instead of only
+	// after someone runs the module's duty-type admin UI by hand.
+	SeedDefaultDuties(ctx context.Context, tenantID uuid.UUID) error
 }
 
 // JobInserter is the slice of *river.Client[pgx.Tx] RequestExport needs:

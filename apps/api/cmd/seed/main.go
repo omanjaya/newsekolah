@@ -38,21 +38,9 @@ const (
 
 var systemRoles = authz.RoleDefaults()
 
-type dutySeed struct {
-	slug        string
-	name        string
-	scopeKind   string
-	permissions []string
-}
-
-var systemDuties = []dutySeed{
-	{"homeroom", "Wali Kelas", "class", []string{authz.PermReviewLeaveRequests, authz.PermCorrectAttendance}},
-	{"counselor", "Guru BK", "school", []string{authz.PermIssueLeaveLetters, authz.PermViewReports, authz.PermManageCounseling, authz.PermIssueWarningLetters, authz.PermViewDiscipline, authz.PermRecordViolations}},
-	{"picket", "Guru Piket", "school", []string{authz.PermManageAttendance}},
-	{"leadership", "Wakil Kepala Sekolah", "school", []string{authz.PermReviewLeaveRequests, authz.PermIssueLeaveLetters, authz.PermViewReports, authz.PermIssueWarningLetters, authz.PermViewDiscipline}},
-	{"security", "Satpam", "school", []string{authz.PermScanExitPermits}},
-	{"librarian", "Petugas Perpustakaan", "school", []string{authz.PermManageLibraryCirculation}},
-}
+// System duty types and their default permissions come from
+// authz.DutyTypeDefaults so seed and a real tenant's bootstrap (platform
+// service's CreateTenant) never disagree.
 
 type userSeed struct {
 	username string
@@ -199,19 +187,19 @@ func seedRoles(ctx context.Context, q *db.Queries, tenantID uuid.UUID) (map[stri
 }
 
 func seedDuties(ctx context.Context, q *db.Queries, tenantID uuid.UUID) error {
-	for _, ds := range systemDuties {
-		dutyType, err := q.GetDutyTypeBySlug(ctx, db.GetDutyTypeBySlugParams{TenantID: tenantID, Slug: ds.slug})
+	for _, ds := range authz.DutyTypeDefaults() {
+		dutyType, err := q.GetDutyTypeBySlug(ctx, db.GetDutyTypeBySlugParams{TenantID: tenantID, Slug: ds.Slug})
 		if notFound(err) {
 			dutyType, err = q.CreateDutyType(ctx, db.CreateDutyTypeParams{
-				TenantID: tenantID, Slug: ds.slug, Name: ds.name, ScopeKind: ds.scopeKind,
+				TenantID: tenantID, Slug: ds.Slug, Name: ds.Name, ScopeKind: ds.ScopeKind,
 			})
 		}
 		if err != nil {
-			return fmt.Errorf("ensure duty type %s: %w", ds.slug, err)
+			return fmt.Errorf("ensure duty type %s: %w", ds.Slug, err)
 		}
-		for _, code := range ds.permissions {
+		for _, code := range ds.Permissions {
 			if err := q.AddDutyPermission(ctx, db.AddDutyPermissionParams{DutyTypeID: dutyType.ID, PermissionCode: code, TenantID: tenantID}); err != nil {
-				return fmt.Errorf("grant %s to duty %s: %w", code, ds.slug, err)
+				return fmt.Errorf("grant %s to duty %s: %w", code, ds.Slug, err)
 			}
 		}
 	}
