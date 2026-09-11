@@ -60,13 +60,14 @@ type DutiesRepository interface {
 
 	ListDutyAssignments(ctx context.Context, tenantID, academicYearID uuid.UUID, dutyTypeID, userID uuid.NullUUID) ([]DutyAssignmentRecord, error)
 	GetDutyAssignmentByID(ctx context.Context, tenantID, id uuid.UUID) (DutyAssignmentRecord, error)
+	FindActiveAssignmentForClass(ctx context.Context, tenantID, academicYearID, dutyTypeID, classID uuid.UUID) (id uuid.UUID, found bool, err error)
 	CreateDutyAssignmentRecord(ctx context.Context, tenantID uuid.UUID, in DutyAssignmentRecord) (DutyAssignmentRecord, error)
 	UpdateDutyAssignmentRecord(ctx context.Context, tenantID, id uuid.UUID, isActive bool, endsOn *time.Time) error
 	DeleteDutyAssignmentRecord(ctx context.Context, tenantID, id uuid.UUID) error
 
 	ClassExists(ctx context.Context, tenantID, classID uuid.UUID) (bool, error)
 	ClassExistsInYear(ctx context.Context, tenantID, classID, academicYearID uuid.UUID) (bool, error)
-	UserExists(ctx context.Context, tenantID, userID uuid.UUID) (bool, error)
+	IsActiveStudent(ctx context.Context, tenantID, userID uuid.UUID) (bool, error)
 	IsActiveTeacherOrStaff(ctx context.Context, tenantID, userID uuid.UUID) (bool, error)
 	UpdateClassHomeroomTeacher(ctx context.Context, tenantID, classID uuid.UUID, teacherID uuid.NullUUID) error
 	ListStaffOptions(ctx context.Context, tenantID uuid.UUID, search string, limit int32) ([]UserOption, error)

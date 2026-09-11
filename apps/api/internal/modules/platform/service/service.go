@@ -121,6 +121,18 @@ func (s *Service) withTx(ctx context.Context, tenantID uuid.UUID, fn func(ctx co
 	return database.WithTenantTx(ctx, s.pool, tenantID, fn)
 }
 
+// withPlatformTx opens the cross-tenant transaction for a use case that
+// runs before any one tenant exists to scope a transaction to -- CreateTenant
+// is the only caller today. A nested WithTenantTx call made from inside fn
+// (e.g. identity's own s.withTx while provisioning the new tenant's admin)
+// joins this same transaction instead of opening a second one: see
+// database.withTx's ambient-transaction reuse and WithTenantTx's per-call
+// set_config, which re-scopes app.tenant_id to the callee's own tenant id
+// even when joining an existing transaction.
+func (s *Service) withPlatformTx(ctx context.Context, fn func(ctx context.Context) error) error {
+	return database.WithPlatformTx(ctx, s.pool, fn)
+}
+
 func txFromContext(ctx context.Context) (pgx.Tx, bool) {
 	return database.TxFromContext(ctx)
 }

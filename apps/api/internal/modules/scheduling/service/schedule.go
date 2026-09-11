@@ -116,6 +116,14 @@ func (s *Service) UpdateSchedule(ctx context.Context, tenantID, id uuid.UUID, in
 	return updated, err
 }
 
+// DeleteSchedule does not check IsYearArchived, unlike CreateSchedule and
+// UpdateSchedule (both go through resolveCandidate, which does). This is
+// deliberate, not an oversight: an archived year's schedules are history
+// the tenant may still need to clean up (e.g. a bad bulk import caught
+// after archiving), and academic/service's own delete methods (DeleteClass,
+// DeleteGradeLevel, ...) follow the same rule -- the archived-year guard
+// exists to stop new edits landing in a closed year, not to freeze
+// deletion of what is already there.
 func (s *Service) DeleteSchedule(ctx context.Context, tenantID, id uuid.UUID, actor Actor) error {
 	return s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		existing, err := s.repo.GetScheduleByID(ctx, tenantID, id)
@@ -135,7 +143,10 @@ func (s *Service) DeleteSchedule(ctx context.Context, tenantID, id uuid.UUID, ac
 }
 
 // ClearAcademicYear deletes every schedule for one academic year (admin
-// bulk clear), typically before a bulk import.
+// bulk clear), typically before a bulk import. Like DeleteSchedule, it does
+// not check IsYearArchived -- see DeleteSchedule's comment for why deletion
+// is exempt from the archived-year guard that CreateSchedule and
+// UpdateSchedule enforce.
 func (s *Service) ClearAcademicYear(ctx context.Context, tenantID, academicYearID uuid.UUID) error {
 	return s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		return s.repo.DeleteSchedulesByAcademicYear(ctx, tenantID, academicYearID)

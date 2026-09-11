@@ -51,6 +51,9 @@ func (s *Service) CreateDutyAssignment(ctx context.Context, tenantID uuid.UUID, 
 		} else if !ok {
 			return domain.ErrAssigneeNotEligible
 		}
+		if err := s.endActiveHomeroomAssignment(ctx, tenantID, dutyType, in); err != nil {
+			return err
+		}
 
 		in.DutySlug, in.DutyName = dutyType.Slug, dutyType.Name
 		created, err := s.repo.CreateDutyAssignmentRecord(ctx, tenantID, in)
@@ -83,13 +86,41 @@ func (s *Service) checkScopeTargetsExist(ctx context.Context, tenantID uuid.UUID
 		}
 	}
 	if in.ScopeStudentID.Valid {
-		exists, err := s.repo.UserExists(ctx, tenantID, in.ScopeStudentID.UUID)
+		// Consistent with the assignee eligibility check CreateDutyAssignment
+		// runs via IsActiveTeacherOrStaff: a student-scope target must
+		// resolve to an active user with a student profile, not merely
+		// "some user exists in the tenant".
+		ok, err := s.repo.IsActiveStudent(ctx, tenantID, in.ScopeStudentID.UUID)
 		if err != nil {
 			return fmt.Errorf("check student exists: %w", err)
 		}
-		if !exists {
+		if !ok {
 			return domain.ErrScopeTargetNotFound
 		}
+	}
+	return nil
+}
+
+// endActiveHomeroomAssignment ends a class's currently active "homeroom"
+// duty assignment, if any, before CreateDutyAssignment creates a new one
+// for the same class -- mirroring academic/service.syncHomeroomDuty, which
+// does the same when classes.homeroom_teacher_id is edited directly.
+// Without this, two assignments could be active for one class at once
+// while homeroom_teacher_id silently points at only the newest.
+func (s *Service) endActiveHomeroomAssignment(ctx context.Context, tenantID uuid.UUID, dutyType DutyTypeRecord, in DutyAssignmentRecord) error {
+	if dutyType.Slug != homeroomDutySlug || !in.ScopeClassID.Valid {
+		return nil
+	}
+	existingID, found, err := s.repo.FindActiveAssignmentForClass(ctx, tenantID, in.AcademicYearID, dutyType.ID, in.ScopeClassID.UUID)
+	if err != nil {
+		return fmt.Errorf("find active homeroom assignment: %w", err)
+	}
+	if !found {
+		return nil
+	}
+	endsOn := in.StartsOn
+	if err := s.repo.UpdateDutyAssignmentRecord(ctx, tenantID, existingID, false, &endsOn); err != nil {
+		return fmt.Errorf("end previous homeroom assignment: %w", err)
 	}
 	return nil
 }

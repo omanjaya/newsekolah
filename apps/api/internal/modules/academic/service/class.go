@@ -39,6 +39,9 @@ type classRepository interface {
 }
 
 func (s *Service) CreateClass(ctx context.Context, c domain.Class) (domain.Class, error) {
+	if err := domain.ValidateMaxLength(c.Name, domain.MaxClassNameLength); err != nil {
+		return domain.Class{}, err
+	}
 	var class domain.Class
 	err := s.withTx(ctx, c.TenantID, func(ctx context.Context) error {
 		if err := s.requireYearNotArchived(ctx, c.TenantID, c.AcademicYearID); err != nil {
@@ -47,7 +50,7 @@ func (s *Service) CreateClass(ctx context.Context, c domain.Class) (domain.Class
 		var err error
 		class, err = s.repo.CreateClass(ctx, c)
 		if err != nil {
-			return mapUniqueViolation(err, domain.ErrClassNameExists)
+			return mapCheckViolation(mapUniqueViolation(err, domain.ErrClassNameExists), domain.ErrFieldTooLong)
 		}
 		return s.syncHomeroomDuty(ctx, class, nil, class.HomeroomTeacherID)
 	})
@@ -55,6 +58,9 @@ func (s *Service) CreateClass(ctx context.Context, c domain.Class) (domain.Class
 }
 
 func (s *Service) UpdateClass(ctx context.Context, c domain.Class) (domain.Class, error) {
+	if err := domain.ValidateMaxLength(c.Name, domain.MaxClassNameLength); err != nil {
+		return domain.Class{}, err
+	}
 	var class domain.Class
 	err := s.withTx(ctx, c.TenantID, func(ctx context.Context) error {
 		if err := s.requireYearNotArchived(ctx, c.TenantID, c.AcademicYearID); err != nil {
@@ -66,7 +72,7 @@ func (s *Service) UpdateClass(ctx context.Context, c domain.Class) (domain.Class
 		}
 		class, err = s.repo.UpdateClass(ctx, c)
 		if err != nil {
-			return mapNotFound(mapUniqueViolation(err, domain.ErrClassNameExists), domain.ErrClassNotFound)
+			return mapNotFound(mapCheckViolation(mapUniqueViolation(err, domain.ErrClassNameExists), domain.ErrFieldTooLong), domain.ErrClassNotFound)
 		}
 		return s.syncHomeroomDuty(ctx, class, before.HomeroomTeacherID, class.HomeroomTeacherID)
 	})

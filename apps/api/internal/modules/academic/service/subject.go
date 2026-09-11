@@ -46,23 +46,36 @@ func (s *Service) ListSubjects(ctx context.Context, tenantID uuid.UUID, search s
 }
 
 func (s *Service) CreateSubject(ctx context.Context, tenantID uuid.UUID, code, name string) (domain.Subject, error) {
+	if err := validateSubjectFields(code, name); err != nil {
+		return domain.Subject{}, err
+	}
 	var subject domain.Subject
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error
 		subject, err = s.repo.CreateSubject(ctx, tenantID, code, name)
-		return mapUniqueViolation(err, domain.ErrSubjectCodeExists)
+		return mapCheckViolation(mapUniqueViolation(err, domain.ErrSubjectCodeExists), domain.ErrFieldTooLong)
 	})
 	return subject, err
 }
 
 func (s *Service) UpdateSubject(ctx context.Context, tenantID, id uuid.UUID, code, name string) (domain.Subject, error) {
+	if err := validateSubjectFields(code, name); err != nil {
+		return domain.Subject{}, err
+	}
 	var subject domain.Subject
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error
 		subject, err = s.repo.UpdateSubject(ctx, tenantID, id, code, name)
-		return mapNotFound(mapUniqueViolation(err, domain.ErrSubjectCodeExists), domain.ErrSubjectNotFound)
+		return mapNotFound(mapCheckViolation(mapUniqueViolation(err, domain.ErrSubjectCodeExists), domain.ErrFieldTooLong), domain.ErrSubjectNotFound)
 	})
 	return subject, err
+}
+
+func validateSubjectFields(code, name string) error {
+	if err := domain.ValidateMaxLength(code, domain.MaxSubjectCodeLength); err != nil {
+		return err
+	}
+	return domain.ValidateMaxLength(name, domain.MaxSubjectNameLength)
 }
 
 // DeleteSubject refuses to remove a subject still referenced by an
@@ -135,23 +148,36 @@ func (s *Service) ListRooms(ctx context.Context, tenantID uuid.UUID, search stri
 }
 
 func (s *Service) CreateRoom(ctx context.Context, tenantID uuid.UUID, code, name string, capacity *int32) (domain.Room, error) {
+	if err := validateRoomFields(code, name); err != nil {
+		return domain.Room{}, err
+	}
 	var room domain.Room
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error
 		room, err = s.repo.CreateRoom(ctx, tenantID, code, name, capacity)
-		return mapUniqueViolation(err, domain.ErrRoomCodeExists)
+		return mapCheckViolation(mapUniqueViolation(err, domain.ErrRoomCodeExists), domain.ErrFieldTooLong)
 	})
 	return room, err
 }
 
 func (s *Service) UpdateRoom(ctx context.Context, tenantID, id uuid.UUID, code, name string, capacity *int32) (domain.Room, error) {
+	if err := validateRoomFields(code, name); err != nil {
+		return domain.Room{}, err
+	}
 	var room domain.Room
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error
 		room, err = s.repo.UpdateRoom(ctx, tenantID, id, code, name, capacity)
-		return mapNotFound(mapUniqueViolation(err, domain.ErrRoomCodeExists), domain.ErrRoomNotFound)
+		return mapNotFound(mapCheckViolation(mapUniqueViolation(err, domain.ErrRoomCodeExists), domain.ErrFieldTooLong), domain.ErrRoomNotFound)
 	})
 	return room, err
+}
+
+func validateRoomFields(code, name string) error {
+	if err := domain.ValidateMaxLength(code, domain.MaxRoomCodeLength); err != nil {
+		return err
+	}
+	return domain.ValidateMaxLength(name, domain.MaxRoomNameLength)
 }
 
 // DeleteRoom refuses to remove a room still assigned to a class (409
