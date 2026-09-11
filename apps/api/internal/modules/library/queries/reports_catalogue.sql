@@ -1,9 +1,7 @@
 -- Catalogue-side accreditation summary and the accession register (Buku
 -- Induk). Figures that need library_members/library_visits (students,
--- members, visits) are intentionally not queried here: those tables
--- belong to the circulation half of this module and do not exist in this
--- worktree; the service layer fills those fields with zero rather than
--- failing the whole report.
+-- members, visits) live in queries/reports_extra.sql, alongside the
+-- enrollments/classes joins those figures also need.
 
 -- name: TitlesByDDCClass :many
 select d.code, d.name, count(t.id)::int as title_count

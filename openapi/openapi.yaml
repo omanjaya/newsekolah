@@ -8832,9 +8832,6 @@ paths:
       operationId: getLibraryCatalogueSummaryReport
       x-permission: view_library_reports
       summary: Accreditation-style catalogue summary (defaults to the last 30 days, inclusive of "to")
-      description: >
-        students_total, members_total, and the per-student ratios the old app computed from them are not included: those
-        figures need the circulation half's member/enrollment tables, which this report does not read.
       parameters:
         - name: from
           in: query
@@ -8853,6 +8850,166 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/LibraryCatalogueSummary"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/library/reports/summary.xlsx:
+    get:
+      tags:
+        - library
+      operationId: getLibraryCatalogueSummaryReportXlsx
+      x-permission: view_library_reports
+      summary: Accreditation-style catalogue summary as XLSX
+      parameters:
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: XLSX
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/library/reports/visits:
+    get:
+      tags:
+        - library
+      operationId: getLibraryVisitsReport
+      x-permission: view_library_reports
+      summary: Visits in a period, per day and per class (defaults to the last 30 days, inclusive of "to")
+      parameters:
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Visits report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryVisitsReport"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/library/reports/visits.xlsx:
+    get:
+      tags:
+        - library
+      operationId: getLibraryVisitsReportXlsx
+      x-permission: view_library_reports
+      summary: Visits report as XLSX
+      parameters:
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: XLSX
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/library/reports/members:
+    get:
+      tags:
+        - library
+      operationId: getLibraryMembersReport
+      x-permission: view_library_reports
+      summary: Members, per type and per class
+      responses:
+        "200":
+          description: Members report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryMembersReport"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/library/reports/members.xlsx:
+    get:
+      tags:
+        - library
+      operationId: getLibraryMembersReportXlsx
+      x-permission: view_library_reports
+      summary: Members report as XLSX
+      responses:
+        "200":
+          description: XLSX
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/library/reports/monthly:
+    get:
+      tags:
+        - library
+      operationId: getLibraryMonthlyReport
+      x-permission: view_library_reports
+      summary: Printable A4 monthly report (12 indicators, top titles, top borrowers, visits per class)
+      parameters:
+        - name: month
+          in: query
+          schema:
+            type: string
+            pattern: ^\d{4}-\d{2}$
+          description: YYYY-MM, defaults to the current month
+      responses:
+        "200":
+          description: Report PDF
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -8893,6 +9050,57 @@ paths:
                       $ref: "#/components/schemas/LibraryCopy"
         "400":
           $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/library/reports/accession-register.xlsx:
+    get:
+      tags:
+        - library
+      operationId: getLibraryAccessionRegisterReportXlsx
+      x-permission: view_library_reports
+      summary: Accession register as XLSX
+      parameters:
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: XLSX
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/library/catalogue/export.xlsx:
+    get:
+      tags:
+        - library
+      operationId: exportLibraryCatalogueXlsx
+      x-permission: manage_library_catalog
+      summary: "Full catalogue export as XLSX: a Titles sheet (every bibliographic field) and a Copies sheet"
+      responses:
+        "200":
+          description: XLSX
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -11580,6 +11788,38 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+  /v1/library/reports/loans.xlsx:
+    get:
+      tags:
+        - library
+      operationId: getLibraryLoansReportXlsx
+      x-permission: view_library_reports
+      summary: Loans report as XLSX
+      parameters:
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: XLSX
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /v1/library/reports/overdue-members:
     get:
       tags:
@@ -11605,13 +11845,32 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+  /v1/library/reports/overdue-members.xlsx:
+    get:
+      tags:
+        - library
+      operationId: getLibraryOverdueMembersReportXlsx
+      x-permission: view_library_reports
+      summary: Overdue-members report as XLSX
+      responses:
+        "200":
+          description: XLSX
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /v1/library/reports/most-borrowed:
     get:
       tags:
         - library
       operationId: getLibraryMostBorrowedReport
       x-permission: view_library_reports
-      summary: Most-borrowed titles within a period (defaults to the last 30 days, inclusive of "to")
+      summary: Most-borrowed titles and top borrowers within a period (defaults to the last 30 days, inclusive of "to")
       parameters:
         - name: from
           in: query
@@ -11632,18 +11891,62 @@ paths:
             default: 20
       responses:
         "200":
-          description: Titles
+          description: Titles and borrowers
           content:
             application/json:
               schema:
                 type: object
                 required:
                   - data
+                  - top_borrowers
                 properties:
                   data:
                     type: array
                     items:
                       $ref: "#/components/schemas/LibraryMostBorrowedTitle"
+                  top_borrowers:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/LibraryTopBorrower"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/library/reports/most-borrowed.xlsx:
+    get:
+      tags:
+        - library
+      operationId: getLibraryMostBorrowedReportXlsx
+      x-permission: view_library_reports
+      summary: Most-borrowed titles and top borrowers as XLSX
+      parameters:
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: XLSX
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -21595,6 +21898,12 @@ components:
         - loans_in_period
         - active_borrowers
         - overdue_now
+        - students_total
+        - members_total
+        - items_per_student
+        - loans_per_student
+        - visits_in_period
+        - visits_per_student
       properties:
         titles_by_ddc:
           type: array
@@ -21622,6 +21931,95 @@ components:
           type: integer
         last_stocktake:
           $ref: "#/components/schemas/LibraryStocktake"
+        students_total:
+          type: integer
+          description: Active students (users of kind student, status active)
+        members_total:
+          type: integer
+        items_per_student:
+          type: number
+          format: double
+        loans_per_student:
+          type: number
+          format: double
+        visits_in_period:
+          type: integer
+        visits_per_student:
+          type: number
+          format: double
+    LibraryClassCount:
+      type: object
+      required:
+        - class_name
+        - count
+      properties:
+        class_name:
+          type: string
+          description: '"Lainnya" for no active class enrollment'
+        count:
+          type: integer
+    LibraryDayCount:
+      type: object
+      required:
+        - day
+        - count
+      properties:
+        day:
+          type: string
+          format: date
+        count:
+          type: integer
+    LibraryVisitsReport:
+      type: object
+      required:
+        - total
+        - per_day
+        - per_class
+      properties:
+        total:
+          type: integer
+        per_day:
+          type: array
+          items:
+            $ref: "#/components/schemas/LibraryDayCount"
+        per_class:
+          type: array
+          items:
+            $ref: "#/components/schemas/LibraryClassCount"
+    LibraryMemberTypeCount:
+      type: object
+      required:
+        - id
+        - name
+        - count
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        count:
+          type: integer
+    LibraryMembersReport:
+      type: object
+      required:
+        - total
+        - active
+        - per_type
+        - per_class
+      properties:
+        total:
+          type: integer
+        active:
+          type: integer
+        per_type:
+          type: array
+          items:
+            $ref: "#/components/schemas/LibraryMemberTypeCount"
+        per_class:
+          type: array
+          items:
+            $ref: "#/components/schemas/LibraryClassCount"
     LibraryDashboardSummary:
       type: object
       required:
@@ -21649,13 +22047,10 @@ components:
           type: integer
         members:
           type: integer
-          description: 0 until the circulation module's member table exists
         active_members:
           type: integer
-          description: 0 until the circulation module's member table exists
         visits_today:
           type: integer
-          description: 0 until the circulation module's visits table exists
         loans_today:
           type: integer
         returns_today:
@@ -23077,6 +23472,24 @@ components:
       properties:
         title:
           $ref: "#/components/schemas/LibraryTitle"
+        loan_count:
+          type: integer
+    LibraryTopBorrower:
+      type: object
+      required:
+        - member_user_id
+        - member_name
+        - class_name
+        - loan_count
+      properties:
+        member_user_id:
+          type: string
+          format: uuid
+        member_name:
+          type: string
+        class_name:
+          type: string
+          description: '"" when the member has no active class enrollment'
         loan_count:
           type: integer
     LibraryLoanReportRow:

@@ -13,10 +13,8 @@ import (
 // dashboardSeriesDays mirrors the old app's dashboard trend window.
 const dashboardSeriesDays = 30
 
-// DashboardSummary is the library dashboard's headline counts. Members,
-// ActiveMembers, and VisitsToday are always zero: those figures live in
-// the circulation half's library_members/library_visits tables, which do
-// not exist in this worktree (see queries/dashboard.sql).
+// DashboardSummary is the library dashboard's headline counts (old app:
+// library_operations.go's GET /library/dashboard).
 type DashboardSummary struct {
 	Titles           int
 	Copies           int
@@ -89,6 +87,18 @@ func (s *Service) Dashboard(ctx context.Context, tenantID uuid.UUID) (Dashboard,
 	if err != nil {
 		return Dashboard{}, err
 	}
+	members, err := s.repo.CountMembersTotal(ctx, tenantID)
+	if err != nil {
+		return Dashboard{}, err
+	}
+	activeMembers, err := s.repo.CountActiveMembersTotal(ctx, tenantID)
+	if err != nil {
+		return Dashboard{}, err
+	}
+	visitsToday, err := s.repo.CountVisitsBetween(ctx, tenantID, dayStart, dayEnd)
+	if err != nil {
+		return Dashboard{}, err
+	}
 	latestLoans, err := s.repo.ListLatestLoans(ctx, tenantID, 10)
 	if err != nil {
 		return Dashboard{}, err
@@ -131,6 +141,7 @@ func (s *Service) Dashboard(ctx context.Context, tenantID uuid.UUID) (Dashboard,
 	return Dashboard{
 		Summary: DashboardSummary{
 			Titles: titles, Copies: copies, Available: available, OnLoan: onLoan, Overdue: overdue,
+			Members: members, ActiveMembers: activeMembers, VisitsToday: visitsToday,
 			LoansToday: loansToday, ReturnsToday: returnsToday, UnpaidFinesTotal: unpaidFines,
 		},
 		LatestLoans: latestLoans, LongestOverdue: longestOverdue, PopularTitles: popular, Series: series,

@@ -912,6 +912,25 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
 
+  /v1/library/reports/loans.xlsx:
+    get:
+      tags: [library]
+      operationId: getLibraryLoansReportXlsx
+      x-permission: view_library_reports
+      summary: Loans report as XLSX
+      parameters:
+        - { name: from, in: query, schema: { type: string, format: date } }
+        - { name: to, in: query, schema: { type: string, format: date } }
+      responses:
+        "200":
+          description: XLSX
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: { type: string, format: binary }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
   /v1/library/reports/overdue-members:
     get:
       tags: [library]
@@ -932,12 +951,27 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
 
+  /v1/library/reports/overdue-members.xlsx:
+    get:
+      tags: [library]
+      operationId: getLibraryOverdueMembersReportXlsx
+      x-permission: view_library_reports
+      summary: Overdue-members report as XLSX
+      responses:
+        "200":
+          description: XLSX
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: { type: string, format: binary }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
   /v1/library/reports/most-borrowed:
     get:
       tags: [library]
       operationId: getLibraryMostBorrowedReport
       x-permission: view_library_reports
-      summary: Most-borrowed titles within a period (defaults to the last 30 days, inclusive of "to")
+      summary: Most-borrowed titles and top borrowers within a period (defaults to the last 30 days, inclusive of "to")
       parameters:
         - { name: from, in: query, schema: { type: string, format: date } }
         - { name: to, in: query, schema: { type: string, format: date } }
@@ -948,18 +982,44 @@ paths:
           }
       responses:
         "200":
-          description: Titles
+          description: Titles and borrowers
           content:
             application/json:
               schema:
                 type: object
-                required: [data]
+                required: [data, top_borrowers]
                 properties:
                   data:
                     {
                       type: array,
                       items: { $ref: "#/components/schemas/LibraryMostBorrowedTitle" },
                     }
+                  top_borrowers:
+                    { type: array, items: { $ref: "#/components/schemas/LibraryTopBorrower" } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /v1/library/reports/most-borrowed.xlsx:
+    get:
+      tags: [library]
+      operationId: getLibraryMostBorrowedReportXlsx
+      x-permission: view_library_reports
+      summary: Most-borrowed titles and top borrowers as XLSX
+      parameters:
+        - { name: from, in: query, schema: { type: string, format: date } }
+        - { name: to, in: query, schema: { type: string, format: date } }
+        - {
+            name: limit,
+            in: query,
+            schema: { type: integer, minimum: 1, maximum: 100, default: 20 },
+          }
+      responses:
+        "200":
+          description: XLSX
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: { type: string, format: binary }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
@@ -1386,6 +1446,15 @@ components:
       required: [title, loan_count]
       properties:
         title: { $ref: "#/components/schemas/LibraryTitle" }
+        loan_count: { type: integer }
+    LibraryTopBorrower:
+      type: object
+      required: [member_user_id, member_name, class_name, loan_count]
+      properties:
+        member_user_id: { type: string, format: uuid }
+        member_name: { type: string }
+        class_name:
+          { type: string, description: '"" when the member has no active class enrollment' }
         loan_count: { type: integer }
     LibraryLoanReportRow:
       type: object

@@ -65,6 +65,50 @@ type DaySeriesPoint struct {
 	Count int
 }
 
+// ClassCount is one row of a per-class breakdown (visits or members),
+// grouped by a student's current active class; ClassName is "" for a row
+// the service should relabel as "Lainnya" (no active enrollment, or a
+// visit that was never tied to a member at all).
+type ClassCount struct {
+	ClassName string
+	Count     int
+}
+
+// MemberTypeCount is one row of the members-by-type report.
+type MemberTypeCount struct {
+	ID    uuid.UUID
+	Name  string
+	Count int
+}
+
+// BorrowerCount is one row of the top-borrowers report: a member's loan
+// count in the period plus their current class, if any.
+type BorrowerCount struct {
+	MemberUserID uuid.UUID
+	ClassName    string
+	LoanCount    int
+}
+
+// TitleExportRow is one title plus the fields the catalogue XLSX export
+// needs beyond domain.Title itself.
+type TitleExportRow struct {
+	Title            domain.Title
+	MaterialTypeCode string
+	TotalCopies      int
+	AvailableCopies  int
+}
+
+// CopyExportRow is one copy plus its title and resolved master-data names
+// for the catalogue XLSX export's Copies sheet.
+type CopyExportRow struct {
+	Copy         domain.Copy
+	TitleName    string
+	TitleAuthor  string
+	CategoryName string
+	LocationName string
+	SourceName   string
+}
+
 // StocktakeResultRow is one persisted stocktake anomaly, with the copy it
 // refers to resolved (nil if the copy was later deleted).
 type StocktakeResultRow struct {
@@ -207,6 +251,22 @@ type Repository interface {
 	PopularTitlesAllTime(ctx context.Context, tenantID uuid.UUID, limit int) ([]TitleLoanCount, error)
 	DailyLoansSeries(ctx context.Context, tenantID uuid.UUID, since time.Time) ([]DaySeriesPoint, error)
 	DailyReturnsSeries(ctx context.Context, tenantID uuid.UUID, since time.Time) ([]DaySeriesPoint, error)
+
+	CountActiveStudentsTotal(ctx context.Context, tenantID uuid.UUID) (int, error)
+	CountMembersTotal(ctx context.Context, tenantID uuid.UUID) (int, error)
+	CountActiveMembersTotal(ctx context.Context, tenantID uuid.UUID) (int, error)
+	CountVisitsBetween(ctx context.Context, tenantID uuid.UUID, from, to time.Time) (int, error)
+	CountCopiesAddedInPeriod(ctx context.Context, tenantID uuid.UUID, from, to time.Time) (int, error)
+	CountLateReturnsBetween(ctx context.Context, tenantID uuid.UUID, from, to time.Time) (int, error)
+	SumFinesRecordedBetween(ctx context.Context, tenantID uuid.UUID, from, to time.Time) (int, error)
+	VisitsPerDay(ctx context.Context, tenantID uuid.UUID, from, to time.Time) ([]DaySeriesPoint, error)
+	VisitsPerClass(ctx context.Context, tenantID uuid.UUID, from, to time.Time) ([]ClassCount, error)
+	MembersByType(ctx context.Context, tenantID uuid.UUID) ([]MemberTypeCount, error)
+	MembersByClass(ctx context.Context, tenantID uuid.UUID) ([]ClassCount, error)
+	TopBorrowersInPeriod(ctx context.Context, tenantID uuid.UUID, from, to time.Time, limit int) ([]BorrowerCount, error)
+
+	ListTitlesForExport(ctx context.Context, tenantID uuid.UUID) ([]TitleExportRow, error)
+	ListCopiesForExport(ctx context.Context, tenantID uuid.UUID) ([]CopyExportRow, error)
 
 	CreateCirculationEvent(ctx context.Context, e domain.ItemEventRecord) (domain.ItemEventRecord, error)
 	ListItemEventsForCopy(ctx context.Context, tenantID, copyID uuid.UUID) ([]domain.ItemEventRecord, error)

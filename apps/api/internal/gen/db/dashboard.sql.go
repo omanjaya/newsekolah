@@ -78,11 +78,9 @@ const countTitlesActive = `-- name: CountTitlesActive :one
 select count(*)::int from library_titles where tenant_id = $1 and deleted_at is null
 `
 
-// Library dashboard: counts, recent activity, and a 30-day series, built
-// only from tables this half of the module owns (titles, copies, loans).
-// Members and visits figures belong to the circulation half's tables
-// (library_members, library_visits), which do not exist in this
-// worktree; the service layer reports those as zero rather than failing.
+// Library dashboard: counts, recent activity, and a 30-day series. Member
+// and visit counts come from CountMembersTotal/CountActiveMembersTotal
+// (queries/reports_extra.sql) and TodayVisitSummary (queries/visits.sql).
 func (q *Queries) CountTitlesActive(ctx context.Context, tenantID uuid.UUID) (int32, error) {
 	row := q.db.QueryRow(ctx, countTitlesActive, tenantID)
 	var column_1 int32

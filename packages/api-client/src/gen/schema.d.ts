@@ -3840,11 +3840,110 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**
-         * Accreditation-style catalogue summary (defaults to the last 30 days, inclusive of "to")
-         * @description students_total, members_total, and the per-student ratios the old app computed from them are not included: those figures need the circulation half's member/enrollment tables, which this report does not read.
-         */
+        /** Accreditation-style catalogue summary (defaults to the last 30 days, inclusive of "to") */
         get: operations["getLibraryCatalogueSummaryReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/reports/summary.xlsx": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Accreditation-style catalogue summary as XLSX */
+        get: operations["getLibraryCatalogueSummaryReportXlsx"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/reports/visits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Visits in a period, per day and per class (defaults to the last 30 days, inclusive of "to") */
+        get: operations["getLibraryVisitsReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/reports/visits.xlsx": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Visits report as XLSX */
+        get: operations["getLibraryVisitsReportXlsx"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/reports/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Members, per type and per class */
+        get: operations["getLibraryMembersReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/reports/members.xlsx": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Members report as XLSX */
+        get: operations["getLibraryMembersReportXlsx"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/reports/monthly": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Printable A4 monthly report (12 indicators, top titles, top borrowers, visits per class) */
+        get: operations["getLibraryMonthlyReport"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3862,6 +3961,40 @@ export interface paths {
         };
         /** Accession register (Buku Induk): copies acquired in the period, in acquisition order */
         get: operations["getLibraryAccessionRegisterReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/reports/accession-register.xlsx": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Accession register as XLSX */
+        get: operations["getLibraryAccessionRegisterReportXlsx"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/catalogue/export.xlsx": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Full catalogue export as XLSX: a Titles sheet (every bibliographic field) and a Copies sheet */
+        get: operations["exportLibraryCatalogueXlsx"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4992,6 +5125,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/library/reports/loans.xlsx": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Loans report as XLSX */
+        get: operations["getLibraryLoansReportXlsx"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/library/reports/overdue-members": {
         parameters: {
             query?: never;
@@ -5009,6 +5159,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/library/reports/overdue-members.xlsx": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Overdue-members report as XLSX */
+        get: operations["getLibraryOverdueMembersReportXlsx"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/library/reports/most-borrowed": {
         parameters: {
             query?: never;
@@ -5016,8 +5183,25 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Most-borrowed titles within a period (defaults to the last 30 days, inclusive of "to") */
+        /** Most-borrowed titles and top borrowers within a period (defaults to the last 30 days, inclusive of "to") */
         get: operations["getLibraryMostBorrowedReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/reports/most-borrowed.xlsx": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Most-borrowed titles and top borrowers as XLSX */
+        get: operations["getLibraryMostBorrowedReportXlsx"];
         put?: never;
         post?: never;
         delete?: never;
@@ -9243,6 +9427,43 @@ export interface components {
             active_borrowers: number;
             overdue_now: number;
             last_stocktake?: components["schemas"]["LibraryStocktake"];
+            /** @description Active students (users of kind student, status active) */
+            students_total: number;
+            members_total: number;
+            /** Format: double */
+            items_per_student: number;
+            /** Format: double */
+            loans_per_student: number;
+            visits_in_period: number;
+            /** Format: double */
+            visits_per_student: number;
+        };
+        LibraryClassCount: {
+            /** @description "Lainnya" for no active class enrollment */
+            class_name: string;
+            count: number;
+        };
+        LibraryDayCount: {
+            /** Format: date */
+            day: string;
+            count: number;
+        };
+        LibraryVisitsReport: {
+            total: number;
+            per_day: components["schemas"]["LibraryDayCount"][];
+            per_class: components["schemas"]["LibraryClassCount"][];
+        };
+        LibraryMemberTypeCount: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            count: number;
+        };
+        LibraryMembersReport: {
+            total: number;
+            active: number;
+            per_type: components["schemas"]["LibraryMemberTypeCount"][];
+            per_class: components["schemas"]["LibraryClassCount"][];
         };
         LibraryDashboardSummary: {
             titles: number;
@@ -9250,11 +9471,8 @@ export interface components {
             available: number;
             on_loan: number;
             overdue: number;
-            /** @description 0 until the circulation module's member table exists */
             members: number;
-            /** @description 0 until the circulation module's member table exists */
             active_members: number;
-            /** @description 0 until the circulation module's visits table exists */
             visits_today: number;
             loans_today: number;
             returns_today: number;
@@ -9841,6 +10059,14 @@ export interface components {
         };
         LibraryMostBorrowedTitle: {
             title: components["schemas"]["LibraryTitle"];
+            loan_count: number;
+        };
+        LibraryTopBorrower: {
+            /** Format: uuid */
+            member_user_id: string;
+            member_name: string;
+            /** @description "" when the member has no active class enrollment */
+            class_name: string;
             loan_count: number;
         };
         LibraryLoanReportRow: {
@@ -19205,6 +19431,154 @@ export interface operations {
             403: components["responses"]["Forbidden"];
         };
     };
+    getLibraryCatalogueSummaryReportXlsx: {
+        parameters: {
+            query?: {
+                from?: string;
+                to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description XLSX */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    getLibraryVisitsReport: {
+        parameters: {
+            query?: {
+                from?: string;
+                to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Visits report */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryVisitsReport"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    getLibraryVisitsReportXlsx: {
+        parameters: {
+            query?: {
+                from?: string;
+                to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description XLSX */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    getLibraryMembersReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Members report */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryMembersReport"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    getLibraryMembersReportXlsx: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description XLSX */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    getLibraryMonthlyReport: {
+        parameters: {
+            query?: {
+                /** @description YYYY-MM, defaults to the current month */
+                month?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Report PDF */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": string;
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
     getLibraryAccessionRegisterReport: {
         parameters: {
             query?: {
@@ -19229,6 +19603,54 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    getLibraryAccessionRegisterReportXlsx: {
+        parameters: {
+            query?: {
+                from?: string;
+                to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description XLSX */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    exportLibraryCatalogueXlsx: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description XLSX */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
+                };
+            };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
         };
@@ -21475,6 +21897,32 @@ export interface operations {
             403: components["responses"]["Forbidden"];
         };
     };
+    getLibraryLoansReportXlsx: {
+        parameters: {
+            query?: {
+                from?: string;
+                to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description XLSX */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
     getLibraryOverdueMembersReport: {
         parameters: {
             query?: never;
@@ -21499,6 +21947,28 @@ export interface operations {
             403: components["responses"]["Forbidden"];
         };
     };
+    getLibraryOverdueMembersReportXlsx: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description XLSX */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
     getLibraryMostBorrowedReport: {
         parameters: {
             query?: {
@@ -21512,7 +21982,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Titles */
+            /** @description Titles and borrowers */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -21520,7 +21990,35 @@ export interface operations {
                 content: {
                     "application/json": {
                         data: components["schemas"]["LibraryMostBorrowedTitle"][];
+                        top_borrowers: components["schemas"]["LibraryTopBorrower"][];
                     };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    getLibraryMostBorrowedReportXlsx: {
+        parameters: {
+            query?: {
+                from?: string;
+                to?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description XLSX */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
                 };
             };
             400: components["responses"]["BadRequest"];
