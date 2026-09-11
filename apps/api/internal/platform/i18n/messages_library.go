@@ -17,4 +17,12 @@ func init() {
 	catalog["LIBRARY_COPY_AVAILABLE_FOR_LOAN"] = map[string]string{Indonesian: "Eksemplar sudah tersedia, tidak perlu memesan.", English: "A copy is already available, no need to reserve."}
 	catalog["LIBRARY_STOCKTAKE_NOT_FOUND"] = map[string]string{Indonesian: "Sesi opname tidak ditemukan.", English: "Stocktake session not found."}
 	catalog["LIBRARY_STOCKTAKE_CLOSED"] = map[string]string{Indonesian: "Sesi opname ini sudah ditutup.", English: "This stocktake session is already closed."}
+	catalog["LIBRARY_TITLE_HAS_COPIES"] = map[string]string{Indonesian: "Judul ini masih memiliki eksemplar, hapus atau pindahkan dulu eksemplarnya.", English: "This title still has copies; remove or move them first."}
+	catalog["LIBRARY_CONTROL_NUMBER_EXISTS"] = map[string]string{Indonesian: "Nomor kontrol sudah dipakai.", English: "Control number already in use."}
+	catalog["LIBRARY_COPY_ACCESSION_EXISTS"] = map[string]string{Indonesian: "Nomor induk eksemplar sudah dipakai.", English: "Copy accession number already in use."}
+	catalog["LIBRARY_COPY_HAS_LOAN_HISTORY"] = map[string]string{Indonesian: "Eksemplar ini punya riwayat pinjam, ubah statusnya (mis. hilang/dihibahkan) alih-alih menghapus.", English: "This copy has loan history; change its status (e.g. lost/donated) instead of deleting it."}
+	catalog["LIBRARY_COPY_STATUS_NOT_MANUAL"] = map[string]string{Indonesian: "Status ini hanya bisa diubah lewat sirkulasi (dipinjam/dipesan), bukan secara manual.", English: "This status can only be set through circulation (on loan/reserved), not manually."}
+	catalog["LIBRARY_MASTER_DATA_NOT_FOUND"] = map[string]string{Indonesian: "Data induk tidak ditemukan.", English: "Master data entry not found."}
+	catalog["LIBRARY_MASTER_DATA_CODE_EXISTS"] = map[string]string{Indonesian: "Kode ini sudah dipakai.", English: "This code is already in use."}
+	catalog["LIBRARY_MASTER_DATA_IN_USE"] = map[string]string{Indonesian: "Data induk ini masih dipakai, tidak dapat dihapus.", English: "This master data entry is still in use and cannot be deleted."}
 }

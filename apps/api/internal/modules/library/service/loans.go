@@ -162,7 +162,7 @@ func (s *Service) MarkLost(ctx context.Context, tenantID, loanID, checkedInBy uu
 			return err
 		}
 		lost := domain.ConditionLost
-		_, err = s.repo.UpdateCopyStatus(ctx, tenantID, existing.CopyID, domain.CopyWithdrawn, &lost)
+		_, err = s.repo.UpdateCopyStatus(ctx, tenantID, existing.CopyID, domain.CopyLost, &lost)
 		return err
 	})
 	return loan, err

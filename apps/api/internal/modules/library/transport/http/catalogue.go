@@ -4,8 +4,11 @@ import (
 	"bytes"
 	"context"
 
+	"github.com/google/uuid"
+
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/api"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/library/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/library/service"
 )
 
 func (h *LibraryHandler) GetLibraryPolicy(ctx context.Context, _ api.GetLibraryPolicyRequestObject) (api.GetLibraryPolicyResponseObject, error) {
@@ -29,7 +32,20 @@ func (h *LibraryHandler) UpdateLibraryPolicy(ctx context.Context, request api.Up
 }
 
 func (h *LibraryHandler) ListLibraryTitles(ctx context.Context, request api.ListLibraryTitlesRequestObject) (api.ListLibraryTitlesResponseObject, error) {
-	titles, err := h.service.ListTitles(ctx, tenantID(ctx), strOr(request.Params.Search), intOr(request.Params.Limit, 50), intOr(request.Params.Offset, 0))
+	q := service.TitleSearch{
+		Search: strOr(request.Params.Search), MaterialTypeID: nullUUID(request.Params.MaterialTypeId),
+		Limit: intOr(request.Params.Limit, 50), Offset: intOr(request.Params.Offset, 0),
+	}
+	if request.Params.DdcClass != nil {
+		q.DDCClass = *request.Params.DdcClass
+	}
+	if request.Params.Availability != nil {
+		q.AvailableOnly = true
+	}
+	if request.Params.Sort != nil {
+		q.Sort = string(*request.Params.Sort)
+	}
+	titles, err := h.service.ListTitles(ctx, tenantID(ctx), q)
 	if err != nil {
 		return nil, mapError(err)
 	}
@@ -42,18 +58,29 @@ func (h *LibraryHandler) ListLibraryTitles(ctx context.Context, request api.List
 
 func (h *LibraryHandler) CreateLibraryTitle(ctx context.Context, request api.CreateLibraryTitleRequestObject) (api.CreateLibraryTitleResponseObject, error) {
 	b := request.Body
-	t, err := h.service.CreateTitle(ctx, domain.Title{
-		TenantID: tenantID(ctx), Title: b.Title, Subtitle: strOr(b.Subtitle), Author: strOr(b.Author), Publisher: strOr(b.Publisher),
-		PublishYear: intOr(b.PublishYear, 0), ISBN: strOr(b.Isbn), Classification: strOr(b.Classification), Language: strOr(b.Language),
-	})
+	t := titleFromWrite(*b)
+	t.TenantID = tenantID(ctx)
+	copyCount := intOr(b.Copies, 0)
+	created, _, err := h.service.CreateTitle(ctx, t, copyCount, service.CopyDefaults{})
 	if err != nil {
 		return nil, mapError(err)
 	}
-	availability, err := h.service.GetTitle(ctx, tenantID(ctx), t.ID)
+	availability, err := h.service.GetTitle(ctx, tenantID(ctx), created.ID)
 	if err != nil {
 		return nil, mapError(err)
 	}
 	return api.CreateLibraryTitle201JSONResponse(toAPITitle(availability)), nil
+}
+
+func (h *LibraryHandler) LookupLibraryTitleByIsbn(ctx context.Context, request api.LookupLibraryTitleByIsbnRequestObject) (api.LookupLibraryTitleByIsbnResponseObject, error) {
+	t, found, err := h.service.LookupTitleByISBN(ctx, tenantID(ctx), request.Params.Isbn)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	if !found {
+		return nil, mapError(domain.ErrTitleNotFound)
+	}
+	return api.LookupLibraryTitleByIsbn200JSONResponse(toAPITitle(t)), nil
 }
 
 func (h *LibraryHandler) GetLibraryTitle(ctx context.Context, request api.GetLibraryTitleRequestObject) (api.GetLibraryTitleResponseObject, error) {
@@ -65,13 +92,10 @@ func (h *LibraryHandler) GetLibraryTitle(ctx context.Context, request api.GetLib
 }
 
 func (h *LibraryHandler) UpdateLibraryTitle(ctx context.Context, request api.UpdateLibraryTitleRequestObject) (api.UpdateLibraryTitleResponseObject, error) {
-	b := request.Body
-	_, err := h.service.UpdateTitle(ctx, domain.Title{
-		TenantID: tenantID(ctx), ID: request.TitleId, Title: b.Title, Subtitle: strOr(b.Subtitle), Author: strOr(b.Author),
-		Publisher: strOr(b.Publisher), PublishYear: intOr(b.PublishYear, 0), ISBN: strOr(b.Isbn),
-		Classification: strOr(b.Classification), Language: strOr(b.Language),
-	})
-	if err != nil {
+	t := titleFromWrite(*request.Body)
+	t.TenantID = tenantID(ctx)
+	t.ID = request.TitleId
+	if _, err := h.service.UpdateTitle(ctx, t); err != nil {
 		return nil, mapError(err)
 	}
 	availability, err := h.service.GetTitle(ctx, tenantID(ctx), request.TitleId)
@@ -79,6 +103,13 @@ func (h *LibraryHandler) UpdateLibraryTitle(ctx context.Context, request api.Upd
 		return nil, mapError(err)
 	}
 	return api.UpdateLibraryTitle200JSONResponse(toAPITitle(availability)), nil
+}
+
+func (h *LibraryHandler) DeleteLibraryTitle(ctx context.Context, request api.DeleteLibraryTitleRequestObject) (api.DeleteLibraryTitleResponseObject, error) {
+	if err := h.service.DeleteTitle(ctx, tenantID(ctx), request.TitleId); err != nil {
+		return nil, mapError(err)
+	}
+	return api.DeleteLibraryTitle204Response{}, nil
 }
 
 func (h *LibraryHandler) ListLibraryCopies(ctx context.Context, request api.ListLibraryCopiesRequestObject) (api.ListLibraryCopiesResponseObject, error) {
@@ -94,19 +125,112 @@ func (h *LibraryHandler) ListLibraryCopies(ctx context.Context, request api.List
 }
 
 func (h *LibraryHandler) CreateLibraryCopy(ctx context.Context, request api.CreateLibraryCopyRequestObject) (api.CreateLibraryCopyResponseObject, error) {
-	b := request.Body
-	copyIn := domain.Copy{TitleID: request.TitleId, Barcode: b.Barcode, Notes: strOr(b.Notes)}
-	if b.Condition != nil {
-		copyIn.Condition = domain.CopyCondition(*b.Condition)
-	}
-	if b.AcquiredOn != nil {
-		copyIn.AcquiredOn = &b.AcquiredOn.Time
-	}
-	c, err := h.service.AddCopy(ctx, tenantID(ctx), copyIn)
+	c, err := h.service.AddCopy(ctx, tenantID(ctx), request.TitleId, copyDefaultsFromWrite(*request.Body))
 	if err != nil {
 		return nil, mapError(err)
 	}
 	return api.CreateLibraryCopy201JSONResponse(toAPICopy(c)), nil
+}
+
+func (h *LibraryHandler) AddLibraryCopiesBatch(ctx context.Context, request api.AddLibraryCopiesBatchRequestObject) (api.AddLibraryCopiesBatchResponseObject, error) {
+	b := request.Body
+	defaults := service.CopyDefaults{
+		CategoryID: nullUUID(b.CategoryId), LocationID: nullUUID(b.LocationId), SourceID: nullUUID(b.SourceId),
+		PartnerID: nullUUID(b.PartnerId), Price: intOr(b.Price, 0), IsOPAC: boolOr(b.IsOpac, true), Notes: strOr(b.Notes),
+	}
+	if b.Access != nil {
+		defaults.Access = domain.CopyAccess(*b.Access)
+	}
+	if b.Condition != nil {
+		defaults.Condition = domain.CopyCondition(*b.Condition)
+	}
+	copies, err := h.service.AddCopies(ctx, tenantID(ctx), request.TitleId, b.Count, defaults)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	data := make([]api.LibraryCopy, len(copies))
+	for i, c := range copies {
+		data[i] = toAPICopy(c)
+	}
+	return api.AddLibraryCopiesBatch201JSONResponse{Data: data}, nil
+}
+
+func (h *LibraryHandler) ListLibraryCopiesFiltered(ctx context.Context, request api.ListLibraryCopiesFilteredRequestObject) (api.ListLibraryCopiesFilteredResponseObject, error) {
+	q := service.CopySearch{
+		TitleID: nullUUID(request.Params.TitleId), CategoryID: nullUUID(request.Params.CategoryId),
+		LocationID: nullUUID(request.Params.LocationId), Search: strOr(request.Params.Search),
+		Limit: intOr(request.Params.Limit, 50), Offset: intOr(request.Params.Offset, 0),
+	}
+	if request.Params.Status != nil {
+		q.Status = domain.CopyStatus(*request.Params.Status)
+	}
+	copies, err := h.service.ListCopiesFiltered(ctx, tenantID(ctx), q)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	data := make([]api.LibraryCopy, len(copies))
+	for i, c := range copies {
+		data[i] = toAPICopy(c)
+	}
+	return api.ListLibraryCopiesFiltered200JSONResponse{Data: data}, nil
+}
+
+func (h *LibraryHandler) FindLibraryCopyByCode(ctx context.Context, request api.FindLibraryCopyByCodeRequestObject) (api.FindLibraryCopyByCodeResponseObject, error) {
+	c, err := h.service.FindCopyByCode(ctx, tenantID(ctx), request.Params.Code)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return api.FindLibraryCopyByCode200JSONResponse(toAPICopy(c)), nil
+}
+
+func (h *LibraryHandler) DeleteLibraryCopy(ctx context.Context, request api.DeleteLibraryCopyRequestObject) (api.DeleteLibraryCopyResponseObject, error) {
+	if err := h.service.DeleteCopy(ctx, tenantID(ctx), request.CopyId); err != nil {
+		return nil, mapError(err)
+	}
+	return api.DeleteLibraryCopy204Response{}, nil
+}
+
+func (h *LibraryHandler) SetLibraryCopyStatus(ctx context.Context, request api.SetLibraryCopyStatusRequestObject) (api.SetLibraryCopyStatusResponseObject, error) {
+	b := request.Body
+	var condition *domain.CopyCondition
+	if b.Condition != nil {
+		c := domain.CopyCondition(*b.Condition)
+		condition = &c
+	}
+	c, err := h.service.SetCopyStatus(ctx, tenantID(ctx), request.CopyId, userID(ctx), domain.CopyStatus(b.Status), condition, strOr(b.Note))
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return api.SetLibraryCopyStatus200JSONResponse(toAPICopy(c)), nil
+}
+
+func (h *LibraryHandler) BulkSetLibraryCopyStatus(ctx context.Context, request api.BulkSetLibraryCopyStatusRequestObject) (api.BulkSetLibraryCopyStatusResponseObject, error) {
+	b := request.Body
+	ids := make([]uuid.UUID, len(b.CopyIds))
+	for i, id := range b.CopyIds {
+		ids[i] = uuid.UUID(id)
+	}
+	copies, err := h.service.BulkSetCopyStatus(ctx, tenantID(ctx), userID(ctx), ids, domain.CopyStatus(b.Status), strOr(b.Note))
+	if err != nil {
+		return nil, mapError(err)
+	}
+	data := make([]api.LibraryCopy, len(copies))
+	for i, c := range copies {
+		data[i] = toAPICopy(c)
+	}
+	return api.BulkSetLibraryCopyStatus200JSONResponse{Data: data}, nil
+}
+
+func (h *LibraryHandler) ListLibraryCopyEvents(ctx context.Context, request api.ListLibraryCopyEventsRequestObject) (api.ListLibraryCopyEventsResponseObject, error) {
+	events, err := h.service.ListItemEvents(ctx, tenantID(ctx), request.CopyId)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	data := make([]api.LibraryItemEvent, len(events))
+	for i, e := range events {
+		data[i] = toAPIItemEvent(e)
+	}
+	return api.ListLibraryCopyEvents200JSONResponse{Data: data}, nil
 }
 
 func (h *LibraryHandler) PrintLibraryCopyLabel(ctx context.Context, request api.PrintLibraryCopyLabelRequestObject) (api.PrintLibraryCopyLabelResponseObject, error) {

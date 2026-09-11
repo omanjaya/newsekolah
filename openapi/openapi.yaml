@@ -8036,6 +8036,704 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /v1/library/material-types:
+    get:
+      tags:
+        - library
+      operationId: listLibraryMaterialTypes
+      x-permission: view_library
+      summary: Material types (book, magazine, ...), each with its own loan limits
+      responses:
+        "200":
+          description: Material types
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/LibraryMaterialType"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags:
+        - library
+      operationId: createLibraryMaterialType
+      x-permission: manage_library_catalog
+      summary: Add a material type
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LibraryMaterialTypeWrite"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryMaterialType"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/library/material-types/{id}:
+    put:
+      tags:
+        - library
+      operationId: updateLibraryMaterialType
+      x-permission: manage_library_catalog
+      summary: Edit a material type
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LibraryMaterialTypeWrite"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryMaterialType"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    delete:
+      tags:
+        - library
+      operationId: deleteLibraryMaterialType
+      x-permission: manage_library_catalog
+      summary: Remove a material type; refused while any title uses it
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/library/collection-categories:
+    get:
+      tags:
+        - library
+      operationId: listLibraryCollectionCategories
+      x-permission: view_library
+      summary: Collection categories (fiction, reference, ...)
+      responses:
+        "200":
+          description: Categories
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/LibraryMasterEntry"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags:
+        - library
+      operationId: createLibraryCollectionCategory
+      x-permission: manage_library_catalog
+      summary: Add a collection category
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LibraryMasterEntryWrite"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryMasterEntry"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/library/collection-categories/{id}:
+    put:
+      tags:
+        - library
+      operationId: updateLibraryCollectionCategory
+      x-permission: manage_library_catalog
+      summary: Edit a collection category
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LibraryMasterEntryWrite"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryMasterEntry"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    delete:
+      tags:
+        - library
+      operationId: deleteLibraryCollectionCategory
+      x-permission: manage_library_catalog
+      summary: Remove a collection category; refused while any copy uses it
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/library/acquisition-sources:
+    get:
+      tags:
+        - library
+      operationId: listLibraryAcquisitionSources
+      x-permission: view_library
+      summary: Acquisition sources (purchase, donation, ...)
+      responses:
+        "200":
+          description: Sources
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/LibraryMasterEntry"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags:
+        - library
+      operationId: createLibraryAcquisitionSource
+      x-permission: manage_library_catalog
+      summary: Add an acquisition source
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LibraryMasterEntryWrite"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryMasterEntry"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/library/acquisition-sources/{id}:
+    put:
+      tags:
+        - library
+      operationId: updateLibraryAcquisitionSource
+      x-permission: manage_library_catalog
+      summary: Edit an acquisition source
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LibraryMasterEntryWrite"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryMasterEntry"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    delete:
+      tags:
+        - library
+      operationId: deleteLibraryAcquisitionSource
+      x-permission: manage_library_catalog
+      summary: Remove an acquisition source; refused while any copy uses it
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/library/partners:
+    get:
+      tags:
+        - library
+      operationId: listLibraryPartners
+      x-permission: view_library
+      summary: Donor and vendor partners
+      responses:
+        "200":
+          description: Partners
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/LibraryPartner"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags:
+        - library
+      operationId: createLibraryPartner
+      x-permission: manage_library_catalog
+      summary: Add a partner
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LibraryPartnerWrite"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryPartner"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/library/partners/{id}:
+    put:
+      tags:
+        - library
+      operationId: updateLibraryPartner
+      x-permission: manage_library_catalog
+      summary: Edit a partner
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LibraryPartnerWrite"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryPartner"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    delete:
+      tags:
+        - library
+      operationId: deleteLibraryPartner
+      x-permission: manage_library_catalog
+      summary: Remove a partner; refused while any copy uses it
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/library/locations:
+    get:
+      tags:
+        - library
+      operationId: listLibraryLocations
+      x-permission: view_library
+      summary: Shelf/room locations
+      responses:
+        "200":
+          description: Locations
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/LibraryMasterEntry"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags:
+        - library
+      operationId: createLibraryLocation
+      x-permission: manage_library_catalog
+      summary: Add a location
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LibraryMasterEntryWrite"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryMasterEntry"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/library/locations/{id}:
+    put:
+      tags:
+        - library
+      operationId: updateLibraryLocation
+      x-permission: manage_library_catalog
+      summary: Edit a location
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LibraryMasterEntryWrite"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryMasterEntry"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    delete:
+      tags:
+        - library
+      operationId: deleteLibraryLocation
+      x-permission: manage_library_catalog
+      summary: Remove a location; refused while any copy uses it
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/library/ddc-classes:
+    get:
+      tags:
+        - library
+      operationId: listLibraryDdcClasses
+      x-permission: view_library
+      summary: The ten top-level Dewey Decimal classes (read-only)
+      responses:
+        "200":
+          description: Classes
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/LibraryDDCClass"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/library/catalogue/options:
+    get:
+      tags:
+        - library
+      operationId: getLibraryCatalogueOptions
+      x-permission: view_library
+      summary: Every master-data list the catalogue's forms need, in one round trip
+      responses:
+        "200":
+          description: Options
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryCatalogueOptions"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/library/reports/summary:
+    get:
+      tags:
+        - library
+      operationId: getLibraryCatalogueSummaryReport
+      x-permission: view_library_reports
+      summary: Accreditation-style catalogue summary (defaults to the last 30 days, inclusive of "to")
+      description: >
+        students_total, members_total, and the per-student ratios the old app computed from them are not included: those
+        figures need the circulation half's member/enrollment tables, which this report does not read.
+      parameters:
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryCatalogueSummary"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/library/reports/accession-register:
+    get:
+      tags:
+        - library
+      operationId: getLibraryAccessionRegisterReport
+      x-permission: view_library_reports
+      summary: "Accession register (Buku Induk): copies acquired in the period, in acquisition order"
+      parameters:
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Register
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/LibraryCopy"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/library/dashboard:
+    get:
+      tags:
+        - library
+      operationId: getLibraryDashboard
+      x-permission: view_library
+      summary: Library dashboard summary, recent activity, and a 30-day trend
+      responses:
+        "200":
+          description: Dashboard
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryDashboard"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /v1/library/policy:
     get:
       tags:
@@ -8092,6 +8790,32 @@ paths:
           schema:
             type: string
             maxLength: 200
+          description: Fulltext for 3+ characters, substring for fewer, plus a normalized ISBN prefix match
+        - name: material_type_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: ddc_class
+          in: query
+          schema:
+            type: string
+            maxLength: 3
+          description: Filters by the first digits of the DDC number, e.g. '800'
+        - name: availability
+          in: query
+          schema:
+            type: string
+            enum:
+              - available
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum:
+              - title
+              - newest
+            default: title
         - name: limit
           in: query
           schema:
@@ -8128,7 +8852,7 @@ paths:
         - library
       operationId: createLibraryTitle
       x-permission: manage_library_catalog
-      summary: Add a title to the catalogue
+      summary: Add a title to the catalogue, optionally with its first copies
       requestBody:
         required: true
         content:
@@ -8148,6 +8872,37 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/library/titles/lookup:
+    get:
+      tags:
+        - library
+      operationId: lookupLibraryTitleByIsbn
+      x-permission: view_library
+      summary: Find an existing title by ISBN, to catch duplicates before creating a new one
+      parameters:
+        - name: isbn
+          in: query
+          required: true
+          schema:
+            type: string
+            maxLength: 32
+      responses:
+        "200":
+          description: Match found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryTitle"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /v1/library/titles/{titleId}:
     get:
       tags:
@@ -8209,6 +8964,32 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    delete:
+      tags:
+        - library
+      operationId: deleteLibraryTitle
+      x-permission: manage_library_catalog
+      summary: Remove a title; refused while it still has copies
+      parameters:
+        - name: titleId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
   /v1/library/titles/{titleId}/copies:
     get:
       tags:
@@ -8277,6 +9058,325 @@ paths:
           $ref: "#/components/responses/NotFound"
         "409":
           $ref: "#/components/responses/Conflict"
+  /v1/library/titles/{titleId}/copies/batch:
+    post:
+      tags:
+        - library
+      operationId: addLibraryCopiesBatch
+      x-permission: manage_library_catalog
+      summary: Add several copies of the same title at once, every number auto-generated
+      parameters:
+        - name: titleId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - count
+              properties:
+                count:
+                  type: integer
+                  minimum: 1
+                  maximum: 200
+                category_id:
+                  type: string
+                  format: uuid
+                location_id:
+                  type: string
+                  format: uuid
+                source_id:
+                  type: string
+                  format: uuid
+                partner_id:
+                  type: string
+                  format: uuid
+                price:
+                  type: integer
+                  minimum: 0
+                is_opac:
+                  type: boolean
+                  default: true
+                access:
+                  $ref: "#/components/schemas/LibraryCopyAccess"
+                condition:
+                  $ref: "#/components/schemas/LibraryCopyCondition"
+                notes:
+                  type: string
+                  maxLength: 500
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/LibraryCopy"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/library/copies:
+    get:
+      tags:
+        - library
+      operationId: listLibraryCopiesFiltered
+      x-permission: view_library
+      summary: Copies across the whole catalogue, filtered and searched by barcode, accession number, RFID, or title
+      parameters:
+        - name: title_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/LibraryCopyStatus"
+        - name: category_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: location_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: search
+          in: query
+          schema:
+            type: string
+            maxLength: 200
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        "200":
+          description: Copies
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/LibraryCopy"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/library/copies/find:
+    get:
+      tags:
+        - library
+      operationId: findLibraryCopyByCode
+      x-permission: view_library
+      summary: Find one copy by barcode, accession number, or RFID tag
+      parameters:
+        - name: code
+          in: query
+          required: true
+          schema:
+            type: string
+            maxLength: 64
+      responses:
+        "200":
+          description: Copy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryCopy"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/library/copies/{copyId}:
+    delete:
+      tags:
+        - library
+      operationId: deleteLibraryCopy
+      x-permission: manage_library_catalog
+      summary: Remove a copy that was never borrowed; one with loan history is kept for the audit trail
+      parameters:
+        - name: copyId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/library/copies/{copyId}/status:
+    put:
+      tags:
+        - library
+      operationId: setLibraryCopyStatus
+      x-permission: manage_library_catalog
+      summary: Manually change a copy's status (weeding, damage, repair); refused while the copy is on loan
+      parameters:
+        - name: copyId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  $ref: "#/components/schemas/LibraryCopyStatus"
+                condition:
+                  $ref: "#/components/schemas/LibraryCopyCondition"
+                note:
+                  type: string
+                  maxLength: 500
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryCopy"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/library/copies/{copyId}/events:
+    get:
+      tags:
+        - library
+      operationId: listLibraryCopyEvents
+      x-permission: view_library
+      summary: A copy's audit trail (created, status changes, circulation, stocktake)
+      parameters:
+        - name: copyId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Events
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/LibraryItemEvent"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/library/copies/bulk-status:
+    post:
+      tags:
+        - library
+      operationId: bulkSetLibraryCopyStatus
+      x-permission: manage_library_catalog
+      summary: Change up to 1000 copies to the same manual status at once; copies on loan are skipped
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - copy_ids
+                - status
+              properties:
+                copy_ids:
+                  type: array
+                  minItems: 1
+                  maxItems: 1000
+                  items:
+                    type: string
+                    format: uuid
+                status:
+                  $ref: "#/components/schemas/LibraryCopyStatus"
+                note:
+                  type: string
+                  maxLength: 500
+      responses:
+        "200":
+          description: Updated copies (a copy on loan is silently skipped, not an error)
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/LibraryCopy"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /v1/library/copies/{copyId}/label:
     get:
       tags:
@@ -8798,7 +9898,10 @@ paths:
         - library
       operationId: scanLibraryStocktake
       x-permission: manage_library_catalog
-      summary: Record one scanned barcode in an open stocktake session
+      summary: Record a batch of scanned codes in an open stocktake session
+      description: >
+        Each code is matched against barcode, accession number, and RFID. A code matching nothing is recorded with
+        outcome "rejected" instead of failing the request, so one bad scan in a batch of 200 does not lose the rest.
       parameters:
         - name: stocktakeId
           in: path
@@ -8813,19 +9916,33 @@ paths:
             schema:
               type: object
               required:
-                - barcode
+                - codes
               properties:
-                barcode:
+                codes:
+                  type: array
+                  minItems: 1
+                  maxItems: 500
+                  items:
+                    type: string
+                    minLength: 1
+                    maxLength: 64
+                location_id:
                   type: string
-                  minLength: 1
-                  maxLength: 64
+                  format: uuid
       responses:
         "201":
           description: Scanned
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/LibraryStocktakeScan"
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/LibraryStocktakeScan"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -8836,13 +9953,95 @@ paths:
           $ref: "#/components/responses/NotFound"
         "409":
           $ref: "#/components/responses/Conflict"
+  /v1/library/stocktakes/{stocktakeId}/progress:
+    get:
+      tags:
+        - library
+      operationId: getLibraryStocktakeProgress
+      x-permission: view_library
+      summary: Live expected/scanned/missing/misplaced counters for an in-progress session
+      parameters:
+        - name: stocktakeId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Progress
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryStocktakeProgress"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/library/stocktakes/{stocktakeId}/results:
+    get:
+      tags:
+        - library
+      operationId: getLibraryStocktakeResults
+      x-permission: view_library
+      summary: The persisted reconciliation of a closed session (recomputed live for an open one)
+      parameters:
+        - name: stocktakeId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryStocktakeResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/library/stocktakes/{stocktakeId}/report.xlsx:
+    get:
+      tags:
+        - library
+      operationId: getLibraryStocktakeReportXlsx
+      x-permission: view_library_reports
+      summary: Per-session stocktake report as XLSX (previous status, scan time, location found, misplaced)
+      parameters:
+        - name: stocktakeId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: XLSX
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /v1/library/stocktakes/{stocktakeId}/close:
     post:
       tags:
         - library
       operationId: closeLibraryStocktake
       x-permission: manage_library_catalog
-      summary: Close a stocktake session and report missing and unexpected copies
+      summary: Close a stocktake session and report missing, unexpected, and misplaced copies
       parameters:
         - name: stocktakeId
           in: path
@@ -8859,6 +10058,14 @@ paths:
                 notes:
                   type: string
                   maxLength: 500
+                mark_missing_as:
+                  type: string
+                  enum:
+                    - lost
+                    - unknown
+                    - none
+                  default: none
+                  description: What to do to a copy that was expected but never scanned
       responses:
         "200":
           description: Closed
@@ -8880,20 +10087,20 @@ paths:
         - library
       operationId: getLibraryLoansReport
       x-permission: view_library_reports
-      summary: Loans started within a period
+      summary: Loans started within a period (defaults to the last 30 days, inclusive of "to")
       parameters:
         - name: from
           in: query
-          required: true
           schema:
             type: string
             format: date
+          description: Defaults to 30 days before 'to'
         - name: to
           in: query
-          required: true
           schema:
             type: string
             format: date
+          description: Defaults to today; the whole day is included
       responses:
         "200":
           description: Loans
@@ -8907,7 +10114,7 @@ paths:
                   data:
                     type: array
                     items:
-                      $ref: "#/components/schemas/LibraryLoan"
+                      $ref: "#/components/schemas/LibraryLoanReportRow"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -8945,17 +10152,15 @@ paths:
         - library
       operationId: getLibraryMostBorrowedReport
       x-permission: view_library_reports
-      summary: Most-borrowed titles within a period
+      summary: Most-borrowed titles within a period (defaults to the last 30 days, inclusive of "to")
       parameters:
         - name: from
           in: query
-          required: true
           schema:
             type: string
             format: date
         - name: to
           in: query
-          required: true
           schema:
             type: string
             format: date
@@ -18403,6 +19608,356 @@ components:
           properties:
             next_cursor:
               type: string
+    LibraryMasterEntry:
+      type: object
+      required:
+        - id
+        - code
+        - name
+        - is_active
+        - sort_order
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+        is_active:
+          type: boolean
+        sort_order:
+          type: integer
+    LibraryMasterEntryWrite:
+      type: object
+      required:
+        - code
+        - name
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 32
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        is_active:
+          type: boolean
+          default: true
+        sort_order:
+          type: integer
+          default: 0
+    LibraryMaterialType:
+      type: object
+      required:
+        - id
+        - code
+        - name
+        - max_loan_items
+        - max_loan_days
+        - max_renewals
+        - is_active
+        - sort_order
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+        max_loan_items:
+          type: integer
+        max_loan_days:
+          type: integer
+        max_renewals:
+          type: integer
+        is_active:
+          type: boolean
+        sort_order:
+          type: integer
+    LibraryMaterialTypeWrite:
+      type: object
+      required:
+        - code
+        - name
+        - max_loan_items
+        - max_loan_days
+        - max_renewals
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 32
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        max_loan_items:
+          type: integer
+          minimum: 1
+        max_loan_days:
+          type: integer
+          minimum: 1
+        max_renewals:
+          type: integer
+          minimum: 0
+        is_active:
+          type: boolean
+          default: true
+        sort_order:
+          type: integer
+          default: 0
+    LibraryPartner:
+      type: object
+      required:
+        - id
+        - code
+        - name
+        - is_active
+        - sort_order
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+        contact_name:
+          type: string
+        phone:
+          type: string
+        address:
+          type: string
+        is_active:
+          type: boolean
+        sort_order:
+          type: integer
+    LibraryPartnerWrite:
+      type: object
+      required:
+        - code
+        - name
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 32
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        contact_name:
+          type: string
+          maxLength: 120
+        phone:
+          type: string
+          maxLength: 40
+        address:
+          type: string
+          maxLength: 300
+        is_active:
+          type: boolean
+          default: true
+        sort_order:
+          type: integer
+          default: 0
+    LibraryDDCClass:
+      type: object
+      required:
+        - code
+        - name
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+    LibraryCatalogueOptions:
+      type: object
+      required:
+        - material_types
+        - collection_categories
+        - acquisition_sources
+        - partners
+        - locations
+        - ddc_classes
+      properties:
+        material_types:
+          type: array
+          items:
+            $ref: "#/components/schemas/LibraryMaterialType"
+        collection_categories:
+          type: array
+          items:
+            $ref: "#/components/schemas/LibraryMasterEntry"
+        acquisition_sources:
+          type: array
+          items:
+            $ref: "#/components/schemas/LibraryMasterEntry"
+        partners:
+          type: array
+          items:
+            $ref: "#/components/schemas/LibraryPartner"
+        locations:
+          type: array
+          items:
+            $ref: "#/components/schemas/LibraryMasterEntry"
+        ddc_classes:
+          type: array
+          items:
+            $ref: "#/components/schemas/LibraryDDCClass"
+    LibraryDDCClassCount:
+      type: object
+      required:
+        - code
+        - name
+        - title_count
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        title_count:
+          type: integer
+    LibraryMasterEntryCount:
+      type: object
+      required:
+        - id
+        - code
+        - name
+        - count
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+        count:
+          type: integer
+    LibraryCatalogueSummary:
+      type: object
+      required:
+        - titles_by_ddc
+        - items_by_category
+        - items_by_material_type
+        - fiction_count
+        - fiction_total
+        - additions_in_period
+        - loans_in_period
+        - active_borrowers
+        - overdue_now
+      properties:
+        titles_by_ddc:
+          type: array
+          items:
+            $ref: "#/components/schemas/LibraryDDCClassCount"
+        items_by_category:
+          type: array
+          items:
+            $ref: "#/components/schemas/LibraryMasterEntryCount"
+        items_by_material_type:
+          type: array
+          items:
+            $ref: "#/components/schemas/LibraryMasterEntryCount"
+        fiction_count:
+          type: integer
+        fiction_total:
+          type: integer
+        additions_in_period:
+          type: integer
+        loans_in_period:
+          type: integer
+        active_borrowers:
+          type: integer
+        overdue_now:
+          type: integer
+        last_stocktake:
+          $ref: "#/components/schemas/LibraryStocktake"
+    LibraryDashboardSummary:
+      type: object
+      required:
+        - titles
+        - copies
+        - available
+        - on_loan
+        - overdue
+        - members
+        - active_members
+        - visits_today
+        - loans_today
+        - returns_today
+        - unpaid_fines_total
+      properties:
+        titles:
+          type: integer
+        copies:
+          type: integer
+        available:
+          type: integer
+        on_loan:
+          type: integer
+        overdue:
+          type: integer
+        members:
+          type: integer
+          description: 0 until the circulation module's member table exists
+        active_members:
+          type: integer
+          description: 0 until the circulation module's member table exists
+        visits_today:
+          type: integer
+          description: 0 until the circulation module's visits table exists
+        loans_today:
+          type: integer
+        returns_today:
+          type: integer
+        unpaid_fines_total:
+          type: integer
+    LibraryDashboardSeriesPoint:
+      type: object
+      required:
+        - day
+        - loans
+        - returns
+      properties:
+        day:
+          type: string
+          format: date
+        loans:
+          type: integer
+        returns:
+          type: integer
+    LibraryDashboard:
+      type: object
+      required:
+        - summary
+        - latest_loans
+        - longest_overdue
+        - popular_titles
+        - series
+      properties:
+        summary:
+          $ref: "#/components/schemas/LibraryDashboardSummary"
+        latest_loans:
+          type: array
+          items:
+            $ref: "#/components/schemas/LibraryLoan"
+        longest_overdue:
+          type: array
+          items:
+            $ref: "#/components/schemas/LibraryLoan"
+        popular_titles:
+          type: array
+          items:
+            $ref: "#/components/schemas/LibraryMostBorrowedTitle"
+        series:
+          type: array
+          items:
+            $ref: "#/components/schemas/LibraryDashboardSeriesPoint"
     LibraryPolicy:
       type: object
       required:
@@ -18466,28 +20021,66 @@ components:
         - isbn
         - classification
         - language
+        - is_opac
         - total_copies
         - available_copies
       properties:
         id:
           type: string
           format: uuid
+        control_number:
+          type: string
         title:
           type: string
         subtitle:
           type: string
         author:
           type: string
+        responsibility:
+          type: string
+        additional_authors:
+          type: string
         publisher:
+          type: string
+        publish_place:
           type: string
         publish_year:
           type: integer
+        edition:
+          type: string
+        pages:
+          type: string
+        illustration:
+          type: string
+        dimensions:
+          type: string
         isbn:
+          type: string
+        issn:
+          type: string
+        ddc_number:
+          type: string
+        call_number:
           type: string
         classification:
           type: string
+        subjects:
+          type: string
         language:
           type: string
+        literary_form:
+          type: string
+        target_audience:
+          type: string
+        notes:
+          type: string
+        abstract:
+          type: string
+        material_type_id:
+          type: string
+          format: uuid
+        is_opac:
+          type: boolean
         cover_asset_id:
           type: string
           format: uuid
@@ -18500,6 +20093,9 @@ components:
       required:
         - title
       properties:
+        control_number:
+          type: string
+          maxLength: 60
         title:
           type: string
           minLength: 1
@@ -18510,25 +20106,82 @@ components:
         author:
           type: string
           maxLength: 200
+        responsibility:
+          type: string
+          maxLength: 300
+        additional_authors:
+          type: string
+          maxLength: 500
         publisher:
           type: string
           maxLength: 200
+        publish_place:
+          type: string
+          maxLength: 120
         publish_year:
           type: integer
           minimum: 1000
           maximum: 3000
+        edition:
+          type: string
+          maxLength: 60
+        pages:
+          type: string
+          maxLength: 60
+        illustration:
+          type: string
+          maxLength: 120
+        dimensions:
+          type: string
+          maxLength: 60
         isbn:
           type: string
           maxLength: 32
+        issn:
+          type: string
+          maxLength: 32
+        ddc_number:
+          type: string
+          maxLength: 20
+        call_number:
+          type: string
+          maxLength: 60
+          description: Auto-generated from DDC/author/title when left empty
         classification:
           type: string
           maxLength: 60
+        subjects:
+          type: string
+          maxLength: 500
         language:
           type: string
           maxLength: 10
+        literary_form:
+          type: string
+          maxLength: 60
+        target_audience:
+          type: string
+          maxLength: 60
+        notes:
+          type: string
+          maxLength: 1000
+        abstract:
+          type: string
+          maxLength: 2000
+        material_type_id:
+          type: string
+          format: uuid
+        is_opac:
+          type: boolean
+          default: true
         cover_asset_id:
           type: string
           format: uuid
+        copies:
+          type: integer
+          minimum: 0
+          maximum: 200
+          description: Create this title is created with copies at once (ignored on update)
     LibraryCopyCondition:
       type: string
       enum:
@@ -18542,15 +20195,31 @@ components:
         - available
         - on_loan
         - reserved
-        - withdrawn
+        - damaged
+        - lost
+        - in_repair
+        - processing
+        - donated
+        - reserve_stack
+        - unknown
+    LibraryCopyAccess:
+      type: string
+      enum:
+        - loanable
+        - read_in_place
+        - reference
     LibraryCopy:
       type: object
       required:
         - id
         - title_id
+        - accession_number
         - barcode
+        - copy_number
+        - access
         - condition
         - status
+        - is_opac
       properties:
         id:
           type: string
@@ -18558,8 +20227,34 @@ components:
         title_id:
           type: string
           format: uuid
+        accession_number:
+          type: string
         barcode:
           type: string
+        copy_number:
+          type: integer
+        call_number:
+          type: string
+        category_id:
+          type: string
+          format: uuid
+        location_id:
+          type: string
+          format: uuid
+        source_id:
+          type: string
+          format: uuid
+        partner_id:
+          type: string
+          format: uuid
+        price:
+          type: integer
+        is_opac:
+          type: boolean
+        rfid:
+          type: string
+        access:
+          $ref: "#/components/schemas/LibraryCopyAccess"
         condition:
           $ref: "#/components/schemas/LibraryCopyCondition"
         status:
@@ -18571,21 +20266,86 @@ components:
           type: string
     LibraryCopyWrite:
       type: object
-      required:
-        - barcode
       properties:
+        accession_number:
+          type: string
+          maxLength: 40
+          description: Leave empty to auto-generate from the tenant's numbering pattern
         barcode:
           type: string
-          minLength: 1
           maxLength: 64
+          description: Leave empty to default to the accession number or an auto sequence
+        call_number:
+          type: string
+          maxLength: 60
+        category_id:
+          type: string
+          format: uuid
+        location_id:
+          type: string
+          format: uuid
+        source_id:
+          type: string
+          format: uuid
+        partner_id:
+          type: string
+          format: uuid
+        price:
+          type: integer
+          minimum: 0
+        is_opac:
+          type: boolean
+          default: true
+        rfid:
+          type: string
+          maxLength: 64
+        access:
+          $ref: "#/components/schemas/LibraryCopyAccess"
         condition:
           $ref: "#/components/schemas/LibraryCopyCondition"
+        status:
+          $ref: "#/components/schemas/LibraryCopyStatus"
         acquired_on:
           type: string
           format: date
         notes:
           type: string
           maxLength: 500
+    LibraryItemEventType:
+      type: string
+      enum:
+        - created
+        - status_changed
+        - circulation
+        - stocktake
+    LibraryItemEvent:
+      type: object
+      required:
+        - id
+        - copy_id
+        - event_type
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        copy_id:
+          type: string
+          format: uuid
+        event_type:
+          $ref: "#/components/schemas/LibraryItemEventType"
+        from_status:
+          type: string
+        to_status:
+          type: string
+        note:
+          type: string
+        actor_user_id:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
     LibraryLoanStatus:
       type: string
       enum:
@@ -18680,6 +20440,12 @@ components:
       enum:
         - open
         - closed
+    LibraryMarkMissingAs:
+      type: string
+      enum:
+        - lost
+        - unknown
+        - none
     LibraryStocktake:
       type: object
       required:
@@ -18688,6 +20454,9 @@ components:
         - started_on
         - coordinator_user_id
         - status
+        - missing_count
+        - unexpected_count
+        - misplaced_count
       properties:
         id:
           type: string
@@ -18707,13 +20476,26 @@ components:
           $ref: "#/components/schemas/LibraryStocktakeStatus"
         notes:
           type: string
+        missing_count:
+          type: integer
+        unexpected_count:
+          type: integer
+        misplaced_count:
+          type: integer
+        mark_missing_as:
+          $ref: "#/components/schemas/LibraryMarkMissingAs"
+    LibraryStocktakeScanOutcome:
+      type: string
+      enum:
+        - found
+        - rejected
     LibraryStocktakeScan:
       type: object
       required:
         - id
         - stocktake_id
-        - copy_id
-        - barcode
+        - raw_code
+        - outcome
         - scanned_at
       properties:
         id:
@@ -18725,11 +20507,27 @@ components:
         copy_id:
           type: string
           format: uuid
-        barcode:
+        raw_code:
           type: string
+        outcome:
+          $ref: "#/components/schemas/LibraryStocktakeScanOutcome"
+        location_id:
+          type: string
+          format: uuid
         scanned_at:
           type: string
           format: date-time
+    LibraryStocktakeMisplacedCopy:
+      type: object
+      required:
+        - copy
+        - found_location_id
+      properties:
+        copy:
+          $ref: "#/components/schemas/LibraryCopy"
+        found_location_id:
+          type: string
+          format: uuid
     LibraryStocktakeResult:
       type: object
       required:
@@ -18737,6 +20535,7 @@ components:
         - scanned_count
         - missing
         - unexpected
+        - misplaced
       properties:
         expected_count:
           type: integer
@@ -18749,7 +20548,27 @@ components:
         unexpected:
           type: array
           items:
-            type: string
+            $ref: "#/components/schemas/LibraryCopy"
+        misplaced:
+          type: array
+          items:
+            $ref: "#/components/schemas/LibraryStocktakeMisplacedCopy"
+    LibraryStocktakeProgress:
+      type: object
+      required:
+        - expected_count
+        - scanned_count
+        - missing_count
+        - misplaced_count
+      properties:
+        expected_count:
+          type: integer
+        scanned_count:
+          type: integer
+        missing_count:
+          type: integer
+        misplaced_count:
+          type: integer
     LibraryOverdueMember:
       type: object
       required:
@@ -18774,6 +20593,19 @@ components:
           $ref: "#/components/schemas/LibraryTitle"
         loan_count:
           type: integer
+    LibraryLoanReportRow:
+      type: object
+      required:
+        - loan
+        - title
+        - member_name
+      properties:
+        loan:
+          $ref: "#/components/schemas/LibraryLoan"
+        title:
+          type: string
+        member_name:
+          type: string
     MentorGroupSizeLimit:
       type: object
       required:

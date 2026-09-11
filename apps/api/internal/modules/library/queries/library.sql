@@ -6,25 +6,65 @@ insert into library_policies (tenant_id, version, config, effective_from, create
 values ($1, $2, $3, $4, $5);
 
 -- name: CreateTitle :one
-insert into library_titles (tenant_id, title, subtitle, author, publisher, publish_year, isbn, classification, language, cover_asset_id)
-values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+insert into library_titles (
+  tenant_id, control_number, title, subtitle, author, responsibility, additional_authors,
+  publisher, publish_place, publish_year, edition, pages, illustration, dimensions,
+  isbn, issn, ddc_number, call_number, classification, subjects, language, literary_form,
+  target_audience, notes, abstract, material_type_id, is_opac, cover_asset_id
+) values (
+  sqlc.arg(tenant_id), sqlc.arg(control_number), sqlc.arg(title), sqlc.arg(subtitle), sqlc.arg(author),
+  sqlc.arg(responsibility), sqlc.arg(additional_authors), sqlc.arg(publisher), sqlc.arg(publish_place),
+  sqlc.narg(publish_year), sqlc.arg(edition), sqlc.arg(pages), sqlc.arg(illustration), sqlc.arg(dimensions),
+  sqlc.arg(isbn), sqlc.arg(issn), sqlc.arg(ddc_number), sqlc.arg(call_number), sqlc.arg(classification),
+  sqlc.arg(subjects), sqlc.arg(language), sqlc.arg(literary_form), sqlc.arg(target_audience), sqlc.arg(notes),
+  sqlc.arg(abstract), sqlc.narg(material_type_id), sqlc.arg(is_opac), sqlc.narg(cover_asset_id)
+)
 returning *;
 
 -- name: UpdateTitle :one
-update library_titles set title = $3, subtitle = $4, author = $5, publisher = $6, publish_year = $7,
-  isbn = $8, classification = $9, language = $10, cover_asset_id = $11
-where tenant_id = $1 and id = $2 and deleted_at is null
+update library_titles set
+  control_number = sqlc.arg(control_number), title = sqlc.arg(title), subtitle = sqlc.arg(subtitle),
+  author = sqlc.arg(author), responsibility = sqlc.arg(responsibility), additional_authors = sqlc.arg(additional_authors),
+  publisher = sqlc.arg(publisher), publish_place = sqlc.arg(publish_place), publish_year = sqlc.narg(publish_year),
+  edition = sqlc.arg(edition), pages = sqlc.arg(pages), illustration = sqlc.arg(illustration), dimensions = sqlc.arg(dimensions),
+  isbn = sqlc.arg(isbn), issn = sqlc.arg(issn), ddc_number = sqlc.arg(ddc_number), call_number = sqlc.arg(call_number),
+  classification = sqlc.arg(classification), subjects = sqlc.arg(subjects), language = sqlc.arg(language),
+  literary_form = sqlc.arg(literary_form), target_audience = sqlc.arg(target_audience), notes = sqlc.arg(notes),
+  abstract = sqlc.arg(abstract), material_type_id = sqlc.narg(material_type_id), is_opac = sqlc.arg(is_opac),
+  cover_asset_id = sqlc.narg(cover_asset_id)
+where tenant_id = sqlc.arg(tenant_id) and id = sqlc.arg(id) and deleted_at is null
 returning *;
 
 -- name: GetTitle :one
 select * from library_titles where tenant_id = $1 and id = $2 and deleted_at is null;
 
+-- name: GetTitleByISBN :one
+select * from library_titles where tenant_id = $1 and isbn = $2 and isbn <> '' and deleted_at is null limit 1;
+
+-- name: DeleteTitle :execrows
+update library_titles set deleted_at = now() where tenant_id = $1 and id = $2 and deleted_at is null;
+
 -- name: ListTitles :many
-select * from library_titles
-where tenant_id = $1 and deleted_at is null
-  and (sqlc.narg(search)::text is null or lower(title) like '%' || lower(sqlc.narg(search)::text) || '%'
-    or lower(author) like '%' || lower(sqlc.narg(search)::text) || '%' or isbn = sqlc.narg(search)::text)
-order by title
+select * from library_titles t
+where t.tenant_id = $1 and t.deleted_at is null
+  and (sqlc.narg(material_type_id)::uuid is null or t.material_type_id = sqlc.narg(material_type_id)::uuid)
+  and (sqlc.narg(ddc_class)::text is null or t.ddc_number like sqlc.narg(ddc_class)::text || '%')
+  and (
+    sqlc.narg(availability_only)::bool is not true
+    or exists (select 1 from library_copies c where c.tenant_id = t.tenant_id and c.title_id = t.id and c.status = 'available')
+  )
+  and (
+    sqlc.narg(search)::text is null
+    or (char_length(sqlc.narg(search)::text) >= 3 and t.search_vector @@ plainto_tsquery('simple', sqlc.narg(search)::text))
+    or (char_length(sqlc.narg(search)::text) < 3 and (
+      lower(t.title) like '%' || lower(sqlc.narg(search)::text) || '%'
+      or lower(t.author) like '%' || lower(sqlc.narg(search)::text) || '%'
+    ))
+    or (sqlc.narg(search_isbn)::text is not null and t.isbn like sqlc.narg(search_isbn)::text || '%')
+  )
+order by
+  (case when sqlc.narg(sort)::text = 'newest' then t.created_at end) desc nulls last,
+  (case when sqlc.narg(sort)::text = 'newest' then null else t.title end) asc
 limit $2 offset $3;
 
 -- name: CountTitleCopies :one
@@ -34,8 +74,15 @@ select count(*)::int from library_copies where tenant_id = $1 and title_id = $2;
 select count(*)::int from library_copies where tenant_id = $1 and title_id = $2 and status = 'available';
 
 -- name: CreateCopy :one
-insert into library_copies (tenant_id, title_id, barcode, condition, notes, acquired_on)
-values ($1, $2, $3, $4, $5, $6)
+insert into library_copies (
+  tenant_id, title_id, accession_number, barcode, copy_number, call_number, category_id, location_id,
+  source_id, partner_id, price, is_opac, rfid, access, condition, status, notes, acquired_on
+) values (
+  sqlc.arg(tenant_id), sqlc.arg(title_id), sqlc.arg(accession_number), sqlc.arg(barcode), sqlc.arg(copy_number),
+  sqlc.arg(call_number), sqlc.narg(category_id), sqlc.narg(location_id), sqlc.narg(source_id), sqlc.narg(partner_id),
+  sqlc.arg(price), sqlc.arg(is_opac), sqlc.arg(rfid), sqlc.arg(access), sqlc.arg(condition), sqlc.arg(status),
+  sqlc.arg(notes), sqlc.narg(acquired_on)
+)
 returning *;
 
 -- name: GetCopy :one
@@ -44,17 +91,85 @@ select * from library_copies where tenant_id = $1 and id = $2;
 -- name: GetCopyByBarcode :one
 select * from library_copies where tenant_id = $1 and barcode = $2;
 
+-- name: FindCopyByCode :one
+-- Matches barcode, accession number, or RFID tag, the same three columns
+-- the old app searched (libOpsFindItemByCode).
+select * from library_copies
+where tenant_id = $1 and (barcode = $2 or accession_number = $2 or (rfid <> '' and rfid = $2))
+limit 1;
+
 -- name: ListCopiesForTitle :many
 select * from library_copies where tenant_id = $1 and title_id = $2 order by barcode;
 
 -- name: ListCopiesForStocktake :many
--- Every copy not currently on loan is expected on the shelf during a stocktake.
-select * from library_copies where tenant_id = $1 and status != 'on_loan' order by barcode;
+-- Every copy that could plausibly still be on the shelf: not on loan, and
+-- not permanently removed from the collection (lost or donated away).
+select * from library_copies
+where tenant_id = $1 and status not in ('on_loan', 'lost', 'donated')
+order by barcode;
+
+-- name: ListCopiesFiltered :many
+select * from library_copies c
+where c.tenant_id = $1
+  and (sqlc.narg(title_id)::uuid is null or c.title_id = sqlc.narg(title_id)::uuid)
+  and (sqlc.narg(status)::text is null or c.status = sqlc.narg(status)::text)
+  and (sqlc.narg(category_id)::uuid is null or c.category_id = sqlc.narg(category_id)::uuid)
+  and (sqlc.narg(location_id)::uuid is null or c.location_id = sqlc.narg(location_id)::uuid)
+  and (
+    sqlc.narg(search)::text is null
+    or c.barcode like '%' || sqlc.narg(search)::text || '%'
+    or c.accession_number like '%' || sqlc.narg(search)::text || '%'
+    or c.rfid like '%' || sqlc.narg(search)::text || '%'
+    or exists (
+      select 1 from library_titles t where t.id = c.title_id and lower(t.title) like '%' || lower(sqlc.narg(search)::text) || '%'
+    )
+  )
+order by c.created_at desc
+limit $2 offset $3;
 
 -- name: UpdateCopyStatus :one
 update library_copies set status = $3, condition = coalesce(sqlc.narg(condition)::text, condition)
 where tenant_id = $1 and id = $2
 returning *;
+
+-- name: BulkUpdateCopyStatus :many
+-- FOR UPDATE keeps a concurrent borrow from racing this bulk change; a
+-- copy currently on loan is left untouched (its id just won't be part of
+-- the returned set) rather than failing the whole batch.
+with locked as (
+  select id from library_copies
+  where tenant_id = sqlc.arg(tenant_id) and id = any(sqlc.arg(ids)::uuid[]) and status != 'on_loan'
+  for update
+)
+update library_copies c set status = sqlc.arg(status)
+from locked
+where c.id = locked.id and c.tenant_id = sqlc.arg(tenant_id)
+returning c.*;
+
+-- name: DeleteCopy :execrows
+delete from library_copies where tenant_id = $1 and id = $2;
+
+-- name: HasLoanHistory :one
+select exists(select 1 from library_loans where tenant_id = $1 and copy_id = $2)::bool;
+
+-- name: CreateItemEvent :exec
+insert into library_item_events (tenant_id, copy_id, event_type, from_status, to_status, note, actor_user_id)
+values ($1, $2, $3, $4, $5, $6, $7);
+
+-- name: ListItemEvents :many
+select * from library_item_events where tenant_id = $1 and copy_id = $2 order by created_at desc;
+
+-- name: NextAccessionSequence :one
+insert into library_accession_sequences (tenant_id, year, next_value)
+values ($1, $2, 2)
+on conflict (tenant_id, year) do update set next_value = library_accession_sequences.next_value + 1
+returning (next_value - 1)::bigint;
+
+-- name: NextBarcodeSequence :one
+insert into library_barcode_sequences (tenant_id, next_value)
+values ($1, 2)
+on conflict (tenant_id) do update set next_value = library_barcode_sequences.next_value + 1
+returning (next_value - 1)::bigint;
 
 -- name: CreateLoan :one
 insert into library_loans (tenant_id, copy_id, title_id, member_user_id, checked_out_by, borrowed_at, due_on)
@@ -153,15 +268,21 @@ select * from library_stocktakes where tenant_id = $1 and id = $2;
 select * from library_stocktakes where tenant_id = $1 order by started_on desc limit $2 offset $3;
 
 -- name: CloseStocktake :one
-update library_stocktakes set status = 'closed', ended_on = $3, notes = $4
+update library_stocktakes set
+  status = 'closed', ended_on = $3, notes = $4,
+  missing_count = $5, unexpected_count = $6, misplaced_count = $7, mark_missing_as = $8
 where tenant_id = $1 and id = $2 and status = 'open'
 returning *;
 
 -- name: RecordStocktakeScan :one
-insert into library_stocktake_scans (tenant_id, stocktake_id, copy_id, barcode, scanned_at, scanned_by_user_id)
-values ($1, $2, $3, $4, $5, $6)
-on conflict (stocktake_id, copy_id) do update set scanned_at = excluded.scanned_at
+insert into library_stocktake_scans (tenant_id, stocktake_id, copy_id, raw_code, outcome, location_id, scanned_at, scanned_by_user_id)
+values (sqlc.arg(tenant_id), sqlc.arg(stocktake_id), sqlc.narg(copy_id), sqlc.arg(raw_code), sqlc.arg(outcome), sqlc.narg(location_id), sqlc.arg(scanned_at), sqlc.arg(scanned_by_user_id))
+on conflict (stocktake_id, copy_id) where copy_id is not null
+  do update set scanned_at = excluded.scanned_at, location_id = excluded.location_id, outcome = excluded.outcome
 returning *;
 
 -- name: ListStocktakeScans :many
 select * from library_stocktake_scans where tenant_id = $1 and stocktake_id = $2 order by scanned_at;
+
+-- name: CountStocktakeScans :one
+select count(*)::int from library_stocktake_scans where tenant_id = $1 and stocktake_id = $2 and outcome = 'found';

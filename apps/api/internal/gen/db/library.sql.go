@@ -12,6 +12,69 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const bulkUpdateCopyStatus = `-- name: BulkUpdateCopyStatus :many
+with locked as (
+  select id from library_copies
+  where tenant_id = $2 and id = any($3::uuid[]) and status != 'on_loan'
+  for update
+)
+update library_copies c set status = $1
+from locked
+where c.id = locked.id and c.tenant_id = $2
+returning c.id, c.tenant_id, c.title_id, c.barcode, c.condition, c.status, c.acquired_on, c.notes, c.created_at, c.updated_at, c.accession_number, c.copy_number, c.call_number, c.category_id, c.location_id, c.source_id, c.partner_id, c.price, c.is_opac, c.rfid, c.access
+`
+
+type BulkUpdateCopyStatusParams struct {
+	Status   string      `json:"status"`
+	TenantID uuid.UUID   `json:"tenant_id"`
+	Ids      []uuid.UUID `json:"ids"`
+}
+
+// FOR UPDATE keeps a concurrent borrow from racing this bulk change; a
+// copy currently on loan is left untouched (its id just won't be part of
+// the returned set) rather than failing the whole batch.
+func (q *Queries) BulkUpdateCopyStatus(ctx context.Context, arg BulkUpdateCopyStatusParams) ([]LibraryCopy, error) {
+	rows, err := q.db.Query(ctx, bulkUpdateCopyStatus, arg.Status, arg.TenantID, arg.Ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []LibraryCopy{}
+	for rows.Next() {
+		var i LibraryCopy
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.TitleID,
+			&i.Barcode,
+			&i.Condition,
+			&i.Status,
+			&i.AcquiredOn,
+			&i.Notes,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.AccessionNumber,
+			&i.CopyNumber,
+			&i.CallNumber,
+			&i.CategoryID,
+			&i.LocationID,
+			&i.SourceID,
+			&i.PartnerID,
+			&i.Price,
+			&i.IsOpac,
+			&i.Rfid,
+			&i.Access,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const cancelReservation = `-- name: CancelReservation :one
 update library_reservations set status = 'cancelled'
 where tenant_id = $1 and id = $2 and status in ('waiting', 'ready')
@@ -43,16 +106,22 @@ func (q *Queries) CancelReservation(ctx context.Context, arg CancelReservationPa
 }
 
 const closeStocktake = `-- name: CloseStocktake :one
-update library_stocktakes set status = 'closed', ended_on = $3, notes = $4
+update library_stocktakes set
+  status = 'closed', ended_on = $3, notes = $4,
+  missing_count = $5, unexpected_count = $6, misplaced_count = $7, mark_missing_as = $8
 where tenant_id = $1 and id = $2 and status = 'open'
-returning id, tenant_id, name, started_on, ended_on, coordinator_user_id, status, notes, created_at, updated_at
+returning id, tenant_id, name, started_on, ended_on, coordinator_user_id, status, notes, created_at, updated_at, missing_count, unexpected_count, misplaced_count, mark_missing_as
 `
 
 type CloseStocktakeParams struct {
-	TenantID uuid.UUID   `json:"tenant_id"`
-	ID       uuid.UUID   `json:"id"`
-	EndedOn  pgtype.Date `json:"ended_on"`
-	Notes    string      `json:"notes"`
+	TenantID        uuid.UUID   `json:"tenant_id"`
+	ID              uuid.UUID   `json:"id"`
+	EndedOn         pgtype.Date `json:"ended_on"`
+	Notes           string      `json:"notes"`
+	MissingCount    int32       `json:"missing_count"`
+	UnexpectedCount int32       `json:"unexpected_count"`
+	MisplacedCount  int32       `json:"misplaced_count"`
+	MarkMissingAs   string      `json:"mark_missing_as"`
 }
 
 func (q *Queries) CloseStocktake(ctx context.Context, arg CloseStocktakeParams) (LibraryStocktake, error) {
@@ -61,6 +130,10 @@ func (q *Queries) CloseStocktake(ctx context.Context, arg CloseStocktakeParams) 
 		arg.ID,
 		arg.EndedOn,
 		arg.Notes,
+		arg.MissingCount,
+		arg.UnexpectedCount,
+		arg.MisplacedCount,
+		arg.MarkMissingAs,
 	)
 	var i LibraryStocktake
 	err := row.Scan(
@@ -74,6 +147,10 @@ func (q *Queries) CloseStocktake(ctx context.Context, arg CloseStocktakeParams) 
 		&i.Notes,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.MissingCount,
+		&i.UnexpectedCount,
+		&i.MisplacedCount,
+		&i.MarkMissingAs,
 	)
 	return i, err
 }
@@ -110,6 +187,22 @@ func (q *Queries) CountAvailableCopies(ctx context.Context, arg CountAvailableCo
 	return column_1, err
 }
 
+const countStocktakeScans = `-- name: CountStocktakeScans :one
+select count(*)::int from library_stocktake_scans where tenant_id = $1 and stocktake_id = $2 and outcome = 'found'
+`
+
+type CountStocktakeScansParams struct {
+	TenantID    uuid.UUID `json:"tenant_id"`
+	StocktakeID uuid.UUID `json:"stocktake_id"`
+}
+
+func (q *Queries) CountStocktakeScans(ctx context.Context, arg CountStocktakeScansParams) (int32, error) {
+	row := q.db.QueryRow(ctx, countStocktakeScans, arg.TenantID, arg.StocktakeID)
+	var column_1 int32
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const countTitleCopies = `-- name: CountTitleCopies :one
 select count(*)::int from library_copies where tenant_id = $1 and title_id = $2
 `
@@ -127,26 +220,57 @@ func (q *Queries) CountTitleCopies(ctx context.Context, arg CountTitleCopiesPara
 }
 
 const createCopy = `-- name: CreateCopy :one
-insert into library_copies (tenant_id, title_id, barcode, condition, notes, acquired_on)
-values ($1, $2, $3, $4, $5, $6)
-returning id, tenant_id, title_id, barcode, condition, status, acquired_on, notes, created_at, updated_at
+insert into library_copies (
+  tenant_id, title_id, accession_number, barcode, copy_number, call_number, category_id, location_id,
+  source_id, partner_id, price, is_opac, rfid, access, condition, status, notes, acquired_on
+) values (
+  $1, $2, $3, $4, $5,
+  $6, $7, $8, $9, $10,
+  $11, $12, $13, $14, $15, $16,
+  $17, $18
+)
+returning id, tenant_id, title_id, barcode, condition, status, acquired_on, notes, created_at, updated_at, accession_number, copy_number, call_number, category_id, location_id, source_id, partner_id, price, is_opac, rfid, access
 `
 
 type CreateCopyParams struct {
-	TenantID   uuid.UUID   `json:"tenant_id"`
-	TitleID    uuid.UUID   `json:"title_id"`
-	Barcode    string      `json:"barcode"`
-	Condition  string      `json:"condition"`
-	Notes      string      `json:"notes"`
-	AcquiredOn pgtype.Date `json:"acquired_on"`
+	TenantID        uuid.UUID   `json:"tenant_id"`
+	TitleID         uuid.UUID   `json:"title_id"`
+	AccessionNumber string      `json:"accession_number"`
+	Barcode         string      `json:"barcode"`
+	CopyNumber      int32       `json:"copy_number"`
+	CallNumber      string      `json:"call_number"`
+	CategoryID      pgtype.UUID `json:"category_id"`
+	LocationID      pgtype.UUID `json:"location_id"`
+	SourceID        pgtype.UUID `json:"source_id"`
+	PartnerID       pgtype.UUID `json:"partner_id"`
+	Price           int32       `json:"price"`
+	IsOpac          bool        `json:"is_opac"`
+	Rfid            string      `json:"rfid"`
+	Access          string      `json:"access"`
+	Condition       string      `json:"condition"`
+	Status          string      `json:"status"`
+	Notes           string      `json:"notes"`
+	AcquiredOn      pgtype.Date `json:"acquired_on"`
 }
 
 func (q *Queries) CreateCopy(ctx context.Context, arg CreateCopyParams) (LibraryCopy, error) {
 	row := q.db.QueryRow(ctx, createCopy,
 		arg.TenantID,
 		arg.TitleID,
+		arg.AccessionNumber,
 		arg.Barcode,
+		arg.CopyNumber,
+		arg.CallNumber,
+		arg.CategoryID,
+		arg.LocationID,
+		arg.SourceID,
+		arg.PartnerID,
+		arg.Price,
+		arg.IsOpac,
+		arg.Rfid,
+		arg.Access,
 		arg.Condition,
+		arg.Status,
 		arg.Notes,
 		arg.AcquiredOn,
 	)
@@ -162,8 +286,47 @@ func (q *Queries) CreateCopy(ctx context.Context, arg CreateCopyParams) (Library
 		&i.Notes,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.AccessionNumber,
+		&i.CopyNumber,
+		&i.CallNumber,
+		&i.CategoryID,
+		&i.LocationID,
+		&i.SourceID,
+		&i.PartnerID,
+		&i.Price,
+		&i.IsOpac,
+		&i.Rfid,
+		&i.Access,
 	)
 	return i, err
+}
+
+const createItemEvent = `-- name: CreateItemEvent :exec
+insert into library_item_events (tenant_id, copy_id, event_type, from_status, to_status, note, actor_user_id)
+values ($1, $2, $3, $4, $5, $6, $7)
+`
+
+type CreateItemEventParams struct {
+	TenantID    uuid.UUID   `json:"tenant_id"`
+	CopyID      uuid.UUID   `json:"copy_id"`
+	EventType   string      `json:"event_type"`
+	FromStatus  string      `json:"from_status"`
+	ToStatus    string      `json:"to_status"`
+	Note        string      `json:"note"`
+	ActorUserID pgtype.UUID `json:"actor_user_id"`
+}
+
+func (q *Queries) CreateItemEvent(ctx context.Context, arg CreateItemEventParams) error {
+	_, err := q.db.Exec(ctx, createItemEvent,
+		arg.TenantID,
+		arg.CopyID,
+		arg.EventType,
+		arg.FromStatus,
+		arg.ToStatus,
+		arg.Note,
+		arg.ActorUserID,
+	)
+	return err
 }
 
 const createLibraryPolicy = `-- name: CreateLibraryPolicy :exec
@@ -279,7 +442,7 @@ func (q *Queries) CreateReservation(ctx context.Context, arg CreateReservationPa
 const createStocktake = `-- name: CreateStocktake :one
 insert into library_stocktakes (tenant_id, name, started_on, coordinator_user_id, notes)
 values ($1, $2, $3, $4, $5)
-returning id, tenant_id, name, started_on, ended_on, coordinator_user_id, status, notes, created_at, updated_at
+returning id, tenant_id, name, started_on, ended_on, coordinator_user_id, status, notes, created_at, updated_at, missing_count, unexpected_count, misplaced_count, mark_missing_as
 `
 
 type CreateStocktakeParams struct {
@@ -310,40 +473,91 @@ func (q *Queries) CreateStocktake(ctx context.Context, arg CreateStocktakeParams
 		&i.Notes,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.MissingCount,
+		&i.UnexpectedCount,
+		&i.MisplacedCount,
+		&i.MarkMissingAs,
 	)
 	return i, err
 }
 
 const createTitle = `-- name: CreateTitle :one
-insert into library_titles (tenant_id, title, subtitle, author, publisher, publish_year, isbn, classification, language, cover_asset_id)
-values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-returning id, tenant_id, title, subtitle, author, publisher, publish_year, isbn, classification, language, cover_asset_id, created_at, updated_at, deleted_at
+insert into library_titles (
+  tenant_id, control_number, title, subtitle, author, responsibility, additional_authors,
+  publisher, publish_place, publish_year, edition, pages, illustration, dimensions,
+  isbn, issn, ddc_number, call_number, classification, subjects, language, literary_form,
+  target_audience, notes, abstract, material_type_id, is_opac, cover_asset_id
+) values (
+  $1, $2, $3, $4, $5,
+  $6, $7, $8, $9,
+  $10, $11, $12, $13, $14,
+  $15, $16, $17, $18, $19,
+  $20, $21, $22, $23, $24,
+  $25, $26, $27, $28
+)
+returning id, tenant_id, title, subtitle, author, publisher, publish_year, isbn, classification, language, cover_asset_id, created_at, updated_at, deleted_at, control_number, responsibility, additional_authors, publish_place, edition, pages, illustration, dimensions, issn, ddc_number, call_number, subjects, literary_form, target_audience, notes, abstract, material_type_id, is_opac, search_vector
 `
 
 type CreateTitleParams struct {
-	TenantID       uuid.UUID   `json:"tenant_id"`
-	Title          string      `json:"title"`
-	Subtitle       string      `json:"subtitle"`
-	Author         string      `json:"author"`
-	Publisher      string      `json:"publisher"`
-	PublishYear    pgtype.Int4 `json:"publish_year"`
-	Isbn           string      `json:"isbn"`
-	Classification string      `json:"classification"`
-	Language       string      `json:"language"`
-	CoverAssetID   pgtype.UUID `json:"cover_asset_id"`
+	TenantID          uuid.UUID   `json:"tenant_id"`
+	ControlNumber     string      `json:"control_number"`
+	Title             string      `json:"title"`
+	Subtitle          string      `json:"subtitle"`
+	Author            string      `json:"author"`
+	Responsibility    string      `json:"responsibility"`
+	AdditionalAuthors string      `json:"additional_authors"`
+	Publisher         string      `json:"publisher"`
+	PublishPlace      string      `json:"publish_place"`
+	PublishYear       pgtype.Int4 `json:"publish_year"`
+	Edition           string      `json:"edition"`
+	Pages             string      `json:"pages"`
+	Illustration      string      `json:"illustration"`
+	Dimensions        string      `json:"dimensions"`
+	Isbn              string      `json:"isbn"`
+	Issn              string      `json:"issn"`
+	DdcNumber         string      `json:"ddc_number"`
+	CallNumber        string      `json:"call_number"`
+	Classification    string      `json:"classification"`
+	Subjects          string      `json:"subjects"`
+	Language          string      `json:"language"`
+	LiteraryForm      string      `json:"literary_form"`
+	TargetAudience    string      `json:"target_audience"`
+	Notes             string      `json:"notes"`
+	Abstract          string      `json:"abstract"`
+	MaterialTypeID    pgtype.UUID `json:"material_type_id"`
+	IsOpac            bool        `json:"is_opac"`
+	CoverAssetID      pgtype.UUID `json:"cover_asset_id"`
 }
 
 func (q *Queries) CreateTitle(ctx context.Context, arg CreateTitleParams) (LibraryTitle, error) {
 	row := q.db.QueryRow(ctx, createTitle,
 		arg.TenantID,
+		arg.ControlNumber,
 		arg.Title,
 		arg.Subtitle,
 		arg.Author,
+		arg.Responsibility,
+		arg.AdditionalAuthors,
 		arg.Publisher,
+		arg.PublishPlace,
 		arg.PublishYear,
+		arg.Edition,
+		arg.Pages,
+		arg.Illustration,
+		arg.Dimensions,
 		arg.Isbn,
+		arg.Issn,
+		arg.DdcNumber,
+		arg.CallNumber,
 		arg.Classification,
+		arg.Subjects,
 		arg.Language,
+		arg.LiteraryForm,
+		arg.TargetAudience,
+		arg.Notes,
+		arg.Abstract,
+		arg.MaterialTypeID,
+		arg.IsOpac,
 		arg.CoverAssetID,
 	)
 	var i LibraryTitle
@@ -362,6 +576,101 @@ func (q *Queries) CreateTitle(ctx context.Context, arg CreateTitleParams) (Libra
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.ControlNumber,
+		&i.Responsibility,
+		&i.AdditionalAuthors,
+		&i.PublishPlace,
+		&i.Edition,
+		&i.Pages,
+		&i.Illustration,
+		&i.Dimensions,
+		&i.Issn,
+		&i.DdcNumber,
+		&i.CallNumber,
+		&i.Subjects,
+		&i.LiteraryForm,
+		&i.TargetAudience,
+		&i.Notes,
+		&i.Abstract,
+		&i.MaterialTypeID,
+		&i.IsOpac,
+		&i.SearchVector,
+	)
+	return i, err
+}
+
+const deleteCopy = `-- name: DeleteCopy :execrows
+delete from library_copies where tenant_id = $1 and id = $2
+`
+
+type DeleteCopyParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	ID       uuid.UUID `json:"id"`
+}
+
+func (q *Queries) DeleteCopy(ctx context.Context, arg DeleteCopyParams) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteCopy, arg.TenantID, arg.ID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const deleteTitle = `-- name: DeleteTitle :execrows
+update library_titles set deleted_at = now() where tenant_id = $1 and id = $2 and deleted_at is null
+`
+
+type DeleteTitleParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	ID       uuid.UUID `json:"id"`
+}
+
+func (q *Queries) DeleteTitle(ctx context.Context, arg DeleteTitleParams) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteTitle, arg.TenantID, arg.ID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const findCopyByCode = `-- name: FindCopyByCode :one
+select id, tenant_id, title_id, barcode, condition, status, acquired_on, notes, created_at, updated_at, accession_number, copy_number, call_number, category_id, location_id, source_id, partner_id, price, is_opac, rfid, access from library_copies
+where tenant_id = $1 and (barcode = $2 or accession_number = $2 or (rfid <> '' and rfid = $2))
+limit 1
+`
+
+type FindCopyByCodeParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	Barcode  string    `json:"barcode"`
+}
+
+// Matches barcode, accession number, or RFID tag, the same three columns
+// the old app searched (libOpsFindItemByCode).
+func (q *Queries) FindCopyByCode(ctx context.Context, arg FindCopyByCodeParams) (LibraryCopy, error) {
+	row := q.db.QueryRow(ctx, findCopyByCode, arg.TenantID, arg.Barcode)
+	var i LibraryCopy
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.TitleID,
+		&i.Barcode,
+		&i.Condition,
+		&i.Status,
+		&i.AcquiredOn,
+		&i.Notes,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.AccessionNumber,
+		&i.CopyNumber,
+		&i.CallNumber,
+		&i.CategoryID,
+		&i.LocationID,
+		&i.SourceID,
+		&i.PartnerID,
+		&i.Price,
+		&i.IsOpac,
+		&i.Rfid,
+		&i.Access,
 	)
 	return i, err
 }
@@ -432,7 +741,7 @@ func (q *Queries) GetActiveLoanForCopy(ctx context.Context, arg GetActiveLoanFor
 }
 
 const getCopy = `-- name: GetCopy :one
-select id, tenant_id, title_id, barcode, condition, status, acquired_on, notes, created_at, updated_at from library_copies where tenant_id = $1 and id = $2
+select id, tenant_id, title_id, barcode, condition, status, acquired_on, notes, created_at, updated_at, accession_number, copy_number, call_number, category_id, location_id, source_id, partner_id, price, is_opac, rfid, access from library_copies where tenant_id = $1 and id = $2
 `
 
 type GetCopyParams struct {
@@ -454,12 +763,23 @@ func (q *Queries) GetCopy(ctx context.Context, arg GetCopyParams) (LibraryCopy, 
 		&i.Notes,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.AccessionNumber,
+		&i.CopyNumber,
+		&i.CallNumber,
+		&i.CategoryID,
+		&i.LocationID,
+		&i.SourceID,
+		&i.PartnerID,
+		&i.Price,
+		&i.IsOpac,
+		&i.Rfid,
+		&i.Access,
 	)
 	return i, err
 }
 
 const getCopyByBarcode = `-- name: GetCopyByBarcode :one
-select id, tenant_id, title_id, barcode, condition, status, acquired_on, notes, created_at, updated_at from library_copies where tenant_id = $1 and barcode = $2
+select id, tenant_id, title_id, barcode, condition, status, acquired_on, notes, created_at, updated_at, accession_number, copy_number, call_number, category_id, location_id, source_id, partner_id, price, is_opac, rfid, access from library_copies where tenant_id = $1 and barcode = $2
 `
 
 type GetCopyByBarcodeParams struct {
@@ -481,6 +801,17 @@ func (q *Queries) GetCopyByBarcode(ctx context.Context, arg GetCopyByBarcodePara
 		&i.Notes,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.AccessionNumber,
+		&i.CopyNumber,
+		&i.CallNumber,
+		&i.CategoryID,
+		&i.LocationID,
+		&i.SourceID,
+		&i.PartnerID,
+		&i.Price,
+		&i.IsOpac,
+		&i.Rfid,
+		&i.Access,
 	)
 	return i, err
 }
@@ -566,7 +897,7 @@ func (q *Queries) GetReservation(ctx context.Context, arg GetReservationParams) 
 }
 
 const getStocktake = `-- name: GetStocktake :one
-select id, tenant_id, name, started_on, ended_on, coordinator_user_id, status, notes, created_at, updated_at from library_stocktakes where tenant_id = $1 and id = $2
+select id, tenant_id, name, started_on, ended_on, coordinator_user_id, status, notes, created_at, updated_at, missing_count, unexpected_count, misplaced_count, mark_missing_as from library_stocktakes where tenant_id = $1 and id = $2
 `
 
 type GetStocktakeParams struct {
@@ -588,12 +919,16 @@ func (q *Queries) GetStocktake(ctx context.Context, arg GetStocktakeParams) (Lib
 		&i.Notes,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.MissingCount,
+		&i.UnexpectedCount,
+		&i.MisplacedCount,
+		&i.MarkMissingAs,
 	)
 	return i, err
 }
 
 const getTitle = `-- name: GetTitle :one
-select id, tenant_id, title, subtitle, author, publisher, publish_year, isbn, classification, language, cover_asset_id, created_at, updated_at, deleted_at from library_titles where tenant_id = $1 and id = $2 and deleted_at is null
+select id, tenant_id, title, subtitle, author, publisher, publish_year, isbn, classification, language, cover_asset_id, created_at, updated_at, deleted_at, control_number, responsibility, additional_authors, publish_place, edition, pages, illustration, dimensions, issn, ddc_number, call_number, subjects, literary_form, target_audience, notes, abstract, material_type_id, is_opac, search_vector from library_titles where tenant_id = $1 and id = $2 and deleted_at is null
 `
 
 type GetTitleParams struct {
@@ -619,15 +954,185 @@ func (q *Queries) GetTitle(ctx context.Context, arg GetTitleParams) (LibraryTitl
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.ControlNumber,
+		&i.Responsibility,
+		&i.AdditionalAuthors,
+		&i.PublishPlace,
+		&i.Edition,
+		&i.Pages,
+		&i.Illustration,
+		&i.Dimensions,
+		&i.Issn,
+		&i.DdcNumber,
+		&i.CallNumber,
+		&i.Subjects,
+		&i.LiteraryForm,
+		&i.TargetAudience,
+		&i.Notes,
+		&i.Abstract,
+		&i.MaterialTypeID,
+		&i.IsOpac,
+		&i.SearchVector,
 	)
 	return i, err
 }
 
-const listCopiesForStocktake = `-- name: ListCopiesForStocktake :many
-select id, tenant_id, title_id, barcode, condition, status, acquired_on, notes, created_at, updated_at from library_copies where tenant_id = $1 and status != 'on_loan' order by barcode
+const getTitleByISBN = `-- name: GetTitleByISBN :one
+select id, tenant_id, title, subtitle, author, publisher, publish_year, isbn, classification, language, cover_asset_id, created_at, updated_at, deleted_at, control_number, responsibility, additional_authors, publish_place, edition, pages, illustration, dimensions, issn, ddc_number, call_number, subjects, literary_form, target_audience, notes, abstract, material_type_id, is_opac, search_vector from library_titles where tenant_id = $1 and isbn = $2 and isbn <> '' and deleted_at is null limit 1
 `
 
-// Every copy not currently on loan is expected on the shelf during a stocktake.
+type GetTitleByISBNParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	Isbn     string    `json:"isbn"`
+}
+
+func (q *Queries) GetTitleByISBN(ctx context.Context, arg GetTitleByISBNParams) (LibraryTitle, error) {
+	row := q.db.QueryRow(ctx, getTitleByISBN, arg.TenantID, arg.Isbn)
+	var i LibraryTitle
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.Title,
+		&i.Subtitle,
+		&i.Author,
+		&i.Publisher,
+		&i.PublishYear,
+		&i.Isbn,
+		&i.Classification,
+		&i.Language,
+		&i.CoverAssetID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+		&i.ControlNumber,
+		&i.Responsibility,
+		&i.AdditionalAuthors,
+		&i.PublishPlace,
+		&i.Edition,
+		&i.Pages,
+		&i.Illustration,
+		&i.Dimensions,
+		&i.Issn,
+		&i.DdcNumber,
+		&i.CallNumber,
+		&i.Subjects,
+		&i.LiteraryForm,
+		&i.TargetAudience,
+		&i.Notes,
+		&i.Abstract,
+		&i.MaterialTypeID,
+		&i.IsOpac,
+		&i.SearchVector,
+	)
+	return i, err
+}
+
+const hasLoanHistory = `-- name: HasLoanHistory :one
+select exists(select 1 from library_loans where tenant_id = $1 and copy_id = $2)::bool
+`
+
+type HasLoanHistoryParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	CopyID   uuid.UUID `json:"copy_id"`
+}
+
+func (q *Queries) HasLoanHistory(ctx context.Context, arg HasLoanHistoryParams) (bool, error) {
+	row := q.db.QueryRow(ctx, hasLoanHistory, arg.TenantID, arg.CopyID)
+	var column_1 bool
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
+const listCopiesFiltered = `-- name: ListCopiesFiltered :many
+select id, tenant_id, title_id, barcode, condition, status, acquired_on, notes, created_at, updated_at, accession_number, copy_number, call_number, category_id, location_id, source_id, partner_id, price, is_opac, rfid, access from library_copies c
+where c.tenant_id = $1
+  and ($4::uuid is null or c.title_id = $4::uuid)
+  and ($5::text is null or c.status = $5::text)
+  and ($6::uuid is null or c.category_id = $6::uuid)
+  and ($7::uuid is null or c.location_id = $7::uuid)
+  and (
+    $8::text is null
+    or c.barcode like '%' || $8::text || '%'
+    or c.accession_number like '%' || $8::text || '%'
+    or c.rfid like '%' || $8::text || '%'
+    or exists (
+      select 1 from library_titles t where t.id = c.title_id and lower(t.title) like '%' || lower($8::text) || '%'
+    )
+  )
+order by c.created_at desc
+limit $2 offset $3
+`
+
+type ListCopiesFilteredParams struct {
+	TenantID   uuid.UUID   `json:"tenant_id"`
+	Limit      int32       `json:"limit"`
+	Offset     int32       `json:"offset"`
+	TitleID    pgtype.UUID `json:"title_id"`
+	Status     pgtype.Text `json:"status"`
+	CategoryID pgtype.UUID `json:"category_id"`
+	LocationID pgtype.UUID `json:"location_id"`
+	Search     pgtype.Text `json:"search"`
+}
+
+func (q *Queries) ListCopiesFiltered(ctx context.Context, arg ListCopiesFilteredParams) ([]LibraryCopy, error) {
+	rows, err := q.db.Query(ctx, listCopiesFiltered,
+		arg.TenantID,
+		arg.Limit,
+		arg.Offset,
+		arg.TitleID,
+		arg.Status,
+		arg.CategoryID,
+		arg.LocationID,
+		arg.Search,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []LibraryCopy{}
+	for rows.Next() {
+		var i LibraryCopy
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.TitleID,
+			&i.Barcode,
+			&i.Condition,
+			&i.Status,
+			&i.AcquiredOn,
+			&i.Notes,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.AccessionNumber,
+			&i.CopyNumber,
+			&i.CallNumber,
+			&i.CategoryID,
+			&i.LocationID,
+			&i.SourceID,
+			&i.PartnerID,
+			&i.Price,
+			&i.IsOpac,
+			&i.Rfid,
+			&i.Access,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listCopiesForStocktake = `-- name: ListCopiesForStocktake :many
+select id, tenant_id, title_id, barcode, condition, status, acquired_on, notes, created_at, updated_at, accession_number, copy_number, call_number, category_id, location_id, source_id, partner_id, price, is_opac, rfid, access from library_copies
+where tenant_id = $1 and status not in ('on_loan', 'lost', 'donated')
+order by barcode
+`
+
+// Every copy that could plausibly still be on the shelf: not on loan, and
+// not permanently removed from the collection (lost or donated away).
 func (q *Queries) ListCopiesForStocktake(ctx context.Context, tenantID uuid.UUID) ([]LibraryCopy, error) {
 	rows, err := q.db.Query(ctx, listCopiesForStocktake, tenantID)
 	if err != nil {
@@ -648,6 +1153,17 @@ func (q *Queries) ListCopiesForStocktake(ctx context.Context, tenantID uuid.UUID
 			&i.Notes,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.AccessionNumber,
+			&i.CopyNumber,
+			&i.CallNumber,
+			&i.CategoryID,
+			&i.LocationID,
+			&i.SourceID,
+			&i.PartnerID,
+			&i.Price,
+			&i.IsOpac,
+			&i.Rfid,
+			&i.Access,
 		); err != nil {
 			return nil, err
 		}
@@ -660,7 +1176,7 @@ func (q *Queries) ListCopiesForStocktake(ctx context.Context, tenantID uuid.UUID
 }
 
 const listCopiesForTitle = `-- name: ListCopiesForTitle :many
-select id, tenant_id, title_id, barcode, condition, status, acquired_on, notes, created_at, updated_at from library_copies where tenant_id = $1 and title_id = $2 order by barcode
+select id, tenant_id, title_id, barcode, condition, status, acquired_on, notes, created_at, updated_at, accession_number, copy_number, call_number, category_id, location_id, source_id, partner_id, price, is_opac, rfid, access from library_copies where tenant_id = $1 and title_id = $2 order by barcode
 `
 
 type ListCopiesForTitleParams struct {
@@ -688,6 +1204,56 @@ func (q *Queries) ListCopiesForTitle(ctx context.Context, arg ListCopiesForTitle
 			&i.Notes,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.AccessionNumber,
+			&i.CopyNumber,
+			&i.CallNumber,
+			&i.CategoryID,
+			&i.LocationID,
+			&i.SourceID,
+			&i.PartnerID,
+			&i.Price,
+			&i.IsOpac,
+			&i.Rfid,
+			&i.Access,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listItemEvents = `-- name: ListItemEvents :many
+select id, tenant_id, copy_id, event_type, from_status, to_status, note, actor_user_id, created_at from library_item_events where tenant_id = $1 and copy_id = $2 order by created_at desc
+`
+
+type ListItemEventsParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	CopyID   uuid.UUID `json:"copy_id"`
+}
+
+func (q *Queries) ListItemEvents(ctx context.Context, arg ListItemEventsParams) ([]LibraryItemEvent, error) {
+	rows, err := q.db.Query(ctx, listItemEvents, arg.TenantID, arg.CopyID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []LibraryItemEvent{}
+	for rows.Next() {
+		var i LibraryItemEvent
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.CopyID,
+			&i.EventType,
+			&i.FromStatus,
+			&i.ToStatus,
+			&i.Note,
+			&i.ActorUserID,
+			&i.CreatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -940,7 +1506,7 @@ func (q *Queries) ListReservationsForTitle(ctx context.Context, arg ListReservat
 }
 
 const listStocktakeScans = `-- name: ListStocktakeScans :many
-select id, tenant_id, stocktake_id, copy_id, barcode, scanned_at, scanned_by_user_id, created_at from library_stocktake_scans where tenant_id = $1 and stocktake_id = $2 order by scanned_at
+select id, tenant_id, stocktake_id, copy_id, raw_code, scanned_at, scanned_by_user_id, created_at, outcome, location_id from library_stocktake_scans where tenant_id = $1 and stocktake_id = $2 order by scanned_at
 `
 
 type ListStocktakeScansParams struct {
@@ -962,10 +1528,12 @@ func (q *Queries) ListStocktakeScans(ctx context.Context, arg ListStocktakeScans
 			&i.TenantID,
 			&i.StocktakeID,
 			&i.CopyID,
-			&i.Barcode,
+			&i.RawCode,
 			&i.ScannedAt,
 			&i.ScannedByUserID,
 			&i.CreatedAt,
+			&i.Outcome,
+			&i.LocationID,
 		); err != nil {
 			return nil, err
 		}
@@ -978,7 +1546,7 @@ func (q *Queries) ListStocktakeScans(ctx context.Context, arg ListStocktakeScans
 }
 
 const listStocktakes = `-- name: ListStocktakes :many
-select id, tenant_id, name, started_on, ended_on, coordinator_user_id, status, notes, created_at, updated_at from library_stocktakes where tenant_id = $1 order by started_on desc limit $2 offset $3
+select id, tenant_id, name, started_on, ended_on, coordinator_user_id, status, notes, created_at, updated_at, missing_count, unexpected_count, misplaced_count, mark_missing_as from library_stocktakes where tenant_id = $1 order by started_on desc limit $2 offset $3
 `
 
 type ListStocktakesParams struct {
@@ -1007,6 +1575,10 @@ func (q *Queries) ListStocktakes(ctx context.Context, arg ListStocktakesParams) 
 			&i.Notes,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.MissingCount,
+			&i.UnexpectedCount,
+			&i.MisplacedCount,
+			&i.MarkMissingAs,
 		); err != nil {
 			return nil, err
 		}
@@ -1019,19 +1591,39 @@ func (q *Queries) ListStocktakes(ctx context.Context, arg ListStocktakesParams) 
 }
 
 const listTitles = `-- name: ListTitles :many
-select id, tenant_id, title, subtitle, author, publisher, publish_year, isbn, classification, language, cover_asset_id, created_at, updated_at, deleted_at from library_titles
-where tenant_id = $1 and deleted_at is null
-  and ($4::text is null or lower(title) like '%' || lower($4::text) || '%'
-    or lower(author) like '%' || lower($4::text) || '%' or isbn = $4::text)
-order by title
+select id, tenant_id, title, subtitle, author, publisher, publish_year, isbn, classification, language, cover_asset_id, created_at, updated_at, deleted_at, control_number, responsibility, additional_authors, publish_place, edition, pages, illustration, dimensions, issn, ddc_number, call_number, subjects, literary_form, target_audience, notes, abstract, material_type_id, is_opac, search_vector from library_titles t
+where t.tenant_id = $1 and t.deleted_at is null
+  and ($4::uuid is null or t.material_type_id = $4::uuid)
+  and ($5::text is null or t.ddc_number like $5::text || '%')
+  and (
+    $6::bool is not true
+    or exists (select 1 from library_copies c where c.tenant_id = t.tenant_id and c.title_id = t.id and c.status = 'available')
+  )
+  and (
+    $7::text is null
+    or (char_length($7::text) >= 3 and t.search_vector @@ plainto_tsquery('simple', $7::text))
+    or (char_length($7::text) < 3 and (
+      lower(t.title) like '%' || lower($7::text) || '%'
+      or lower(t.author) like '%' || lower($7::text) || '%'
+    ))
+    or ($8::text is not null and t.isbn like $8::text || '%')
+  )
+order by
+  (case when $9::text = 'newest' then t.created_at end) desc nulls last,
+  (case when $9::text = 'newest' then null else t.title end) asc
 limit $2 offset $3
 `
 
 type ListTitlesParams struct {
-	TenantID uuid.UUID   `json:"tenant_id"`
-	Limit    int32       `json:"limit"`
-	Offset   int32       `json:"offset"`
-	Search   pgtype.Text `json:"search"`
+	TenantID         uuid.UUID   `json:"tenant_id"`
+	Limit            int32       `json:"limit"`
+	Offset           int32       `json:"offset"`
+	MaterialTypeID   pgtype.UUID `json:"material_type_id"`
+	DdcClass         pgtype.Text `json:"ddc_class"`
+	AvailabilityOnly pgtype.Bool `json:"availability_only"`
+	Search           pgtype.Text `json:"search"`
+	SearchIsbn       pgtype.Text `json:"search_isbn"`
+	Sort             pgtype.Text `json:"sort"`
 }
 
 func (q *Queries) ListTitles(ctx context.Context, arg ListTitlesParams) ([]LibraryTitle, error) {
@@ -1039,7 +1631,12 @@ func (q *Queries) ListTitles(ctx context.Context, arg ListTitlesParams) ([]Libra
 		arg.TenantID,
 		arg.Limit,
 		arg.Offset,
+		arg.MaterialTypeID,
+		arg.DdcClass,
+		arg.AvailabilityOnly,
 		arg.Search,
+		arg.SearchIsbn,
+		arg.Sort,
 	)
 	if err != nil {
 		return nil, err
@@ -1063,6 +1660,25 @@ func (q *Queries) ListTitles(ctx context.Context, arg ListTitlesParams) ([]Libra
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.DeletedAt,
+			&i.ControlNumber,
+			&i.Responsibility,
+			&i.AdditionalAuthors,
+			&i.PublishPlace,
+			&i.Edition,
+			&i.Pages,
+			&i.Illustration,
+			&i.Dimensions,
+			&i.Issn,
+			&i.DdcNumber,
+			&i.CallNumber,
+			&i.Subjects,
+			&i.LiteraryForm,
+			&i.TargetAudience,
+			&i.Notes,
+			&i.Abstract,
+			&i.MaterialTypeID,
+			&i.IsOpac,
+			&i.SearchVector,
 		); err != nil {
 			return nil, err
 		}
@@ -1237,18 +1853,54 @@ func (q *Queries) MostBorrowedTitles(ctx context.Context, arg MostBorrowedTitles
 	return items, nil
 }
 
+const nextAccessionSequence = `-- name: NextAccessionSequence :one
+insert into library_accession_sequences (tenant_id, year, next_value)
+values ($1, $2, 2)
+on conflict (tenant_id, year) do update set next_value = library_accession_sequences.next_value + 1
+returning (next_value - 1)::bigint
+`
+
+type NextAccessionSequenceParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	Year     int32     `json:"year"`
+}
+
+func (q *Queries) NextAccessionSequence(ctx context.Context, arg NextAccessionSequenceParams) (int64, error) {
+	row := q.db.QueryRow(ctx, nextAccessionSequence, arg.TenantID, arg.Year)
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
+const nextBarcodeSequence = `-- name: NextBarcodeSequence :one
+insert into library_barcode_sequences (tenant_id, next_value)
+values ($1, 2)
+on conflict (tenant_id) do update set next_value = library_barcode_sequences.next_value + 1
+returning (next_value - 1)::bigint
+`
+
+func (q *Queries) NextBarcodeSequence(ctx context.Context, tenantID uuid.UUID) (int64, error) {
+	row := q.db.QueryRow(ctx, nextBarcodeSequence, tenantID)
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const recordStocktakeScan = `-- name: RecordStocktakeScan :one
-insert into library_stocktake_scans (tenant_id, stocktake_id, copy_id, barcode, scanned_at, scanned_by_user_id)
-values ($1, $2, $3, $4, $5, $6)
-on conflict (stocktake_id, copy_id) do update set scanned_at = excluded.scanned_at
-returning id, tenant_id, stocktake_id, copy_id, barcode, scanned_at, scanned_by_user_id, created_at
+insert into library_stocktake_scans (tenant_id, stocktake_id, copy_id, raw_code, outcome, location_id, scanned_at, scanned_by_user_id)
+values ($1, $2, $3, $4, $5, $6, $7, $8)
+on conflict (stocktake_id, copy_id) where copy_id is not null
+  do update set scanned_at = excluded.scanned_at, location_id = excluded.location_id, outcome = excluded.outcome
+returning id, tenant_id, stocktake_id, copy_id, raw_code, scanned_at, scanned_by_user_id, created_at, outcome, location_id
 `
 
 type RecordStocktakeScanParams struct {
 	TenantID        uuid.UUID          `json:"tenant_id"`
 	StocktakeID     uuid.UUID          `json:"stocktake_id"`
-	CopyID          uuid.UUID          `json:"copy_id"`
-	Barcode         string             `json:"barcode"`
+	CopyID          pgtype.UUID        `json:"copy_id"`
+	RawCode         string             `json:"raw_code"`
+	Outcome         string             `json:"outcome"`
+	LocationID      pgtype.UUID        `json:"location_id"`
 	ScannedAt       pgtype.Timestamptz `json:"scanned_at"`
 	ScannedByUserID uuid.UUID          `json:"scanned_by_user_id"`
 }
@@ -1258,7 +1910,9 @@ func (q *Queries) RecordStocktakeScan(ctx context.Context, arg RecordStocktakeSc
 		arg.TenantID,
 		arg.StocktakeID,
 		arg.CopyID,
-		arg.Barcode,
+		arg.RawCode,
+		arg.Outcome,
+		arg.LocationID,
 		arg.ScannedAt,
 		arg.ScannedByUserID,
 	)
@@ -1268,10 +1922,12 @@ func (q *Queries) RecordStocktakeScan(ctx context.Context, arg RecordStocktakeSc
 		&i.TenantID,
 		&i.StocktakeID,
 		&i.CopyID,
-		&i.Barcode,
+		&i.RawCode,
 		&i.ScannedAt,
 		&i.ScannedByUserID,
 		&i.CreatedAt,
+		&i.Outcome,
+		&i.LocationID,
 	)
 	return i, err
 }
@@ -1361,7 +2017,7 @@ func (q *Queries) ReturnLoan(ctx context.Context, arg ReturnLoanParams) (Library
 const updateCopyStatus = `-- name: UpdateCopyStatus :one
 update library_copies set status = $3, condition = coalesce($4::text, condition)
 where tenant_id = $1 and id = $2
-returning id, tenant_id, title_id, barcode, condition, status, acquired_on, notes, created_at, updated_at
+returning id, tenant_id, title_id, barcode, condition, status, acquired_on, notes, created_at, updated_at, accession_number, copy_number, call_number, category_id, location_id, source_id, partner_id, price, is_opac, rfid, access
 `
 
 type UpdateCopyStatusParams struct {
@@ -1390,44 +2046,99 @@ func (q *Queries) UpdateCopyStatus(ctx context.Context, arg UpdateCopyStatusPara
 		&i.Notes,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.AccessionNumber,
+		&i.CopyNumber,
+		&i.CallNumber,
+		&i.CategoryID,
+		&i.LocationID,
+		&i.SourceID,
+		&i.PartnerID,
+		&i.Price,
+		&i.IsOpac,
+		&i.Rfid,
+		&i.Access,
 	)
 	return i, err
 }
 
 const updateTitle = `-- name: UpdateTitle :one
-update library_titles set title = $3, subtitle = $4, author = $5, publisher = $6, publish_year = $7,
-  isbn = $8, classification = $9, language = $10, cover_asset_id = $11
-where tenant_id = $1 and id = $2 and deleted_at is null
-returning id, tenant_id, title, subtitle, author, publisher, publish_year, isbn, classification, language, cover_asset_id, created_at, updated_at, deleted_at
+update library_titles set
+  control_number = $1, title = $2, subtitle = $3,
+  author = $4, responsibility = $5, additional_authors = $6,
+  publisher = $7, publish_place = $8, publish_year = $9,
+  edition = $10, pages = $11, illustration = $12, dimensions = $13,
+  isbn = $14, issn = $15, ddc_number = $16, call_number = $17,
+  classification = $18, subjects = $19, language = $20,
+  literary_form = $21, target_audience = $22, notes = $23,
+  abstract = $24, material_type_id = $25, is_opac = $26,
+  cover_asset_id = $27
+where tenant_id = $28 and id = $29 and deleted_at is null
+returning id, tenant_id, title, subtitle, author, publisher, publish_year, isbn, classification, language, cover_asset_id, created_at, updated_at, deleted_at, control_number, responsibility, additional_authors, publish_place, edition, pages, illustration, dimensions, issn, ddc_number, call_number, subjects, literary_form, target_audience, notes, abstract, material_type_id, is_opac, search_vector
 `
 
 type UpdateTitleParams struct {
-	TenantID       uuid.UUID   `json:"tenant_id"`
-	ID             uuid.UUID   `json:"id"`
-	Title          string      `json:"title"`
-	Subtitle       string      `json:"subtitle"`
-	Author         string      `json:"author"`
-	Publisher      string      `json:"publisher"`
-	PublishYear    pgtype.Int4 `json:"publish_year"`
-	Isbn           string      `json:"isbn"`
-	Classification string      `json:"classification"`
-	Language       string      `json:"language"`
-	CoverAssetID   pgtype.UUID `json:"cover_asset_id"`
+	ControlNumber     string      `json:"control_number"`
+	Title             string      `json:"title"`
+	Subtitle          string      `json:"subtitle"`
+	Author            string      `json:"author"`
+	Responsibility    string      `json:"responsibility"`
+	AdditionalAuthors string      `json:"additional_authors"`
+	Publisher         string      `json:"publisher"`
+	PublishPlace      string      `json:"publish_place"`
+	PublishYear       pgtype.Int4 `json:"publish_year"`
+	Edition           string      `json:"edition"`
+	Pages             string      `json:"pages"`
+	Illustration      string      `json:"illustration"`
+	Dimensions        string      `json:"dimensions"`
+	Isbn              string      `json:"isbn"`
+	Issn              string      `json:"issn"`
+	DdcNumber         string      `json:"ddc_number"`
+	CallNumber        string      `json:"call_number"`
+	Classification    string      `json:"classification"`
+	Subjects          string      `json:"subjects"`
+	Language          string      `json:"language"`
+	LiteraryForm      string      `json:"literary_form"`
+	TargetAudience    string      `json:"target_audience"`
+	Notes             string      `json:"notes"`
+	Abstract          string      `json:"abstract"`
+	MaterialTypeID    pgtype.UUID `json:"material_type_id"`
+	IsOpac            bool        `json:"is_opac"`
+	CoverAssetID      pgtype.UUID `json:"cover_asset_id"`
+	TenantID          uuid.UUID   `json:"tenant_id"`
+	ID                uuid.UUID   `json:"id"`
 }
 
 func (q *Queries) UpdateTitle(ctx context.Context, arg UpdateTitleParams) (LibraryTitle, error) {
 	row := q.db.QueryRow(ctx, updateTitle,
-		arg.TenantID,
-		arg.ID,
+		arg.ControlNumber,
 		arg.Title,
 		arg.Subtitle,
 		arg.Author,
+		arg.Responsibility,
+		arg.AdditionalAuthors,
 		arg.Publisher,
+		arg.PublishPlace,
 		arg.PublishYear,
+		arg.Edition,
+		arg.Pages,
+		arg.Illustration,
+		arg.Dimensions,
 		arg.Isbn,
+		arg.Issn,
+		arg.DdcNumber,
+		arg.CallNumber,
 		arg.Classification,
+		arg.Subjects,
 		arg.Language,
+		arg.LiteraryForm,
+		arg.TargetAudience,
+		arg.Notes,
+		arg.Abstract,
+		arg.MaterialTypeID,
+		arg.IsOpac,
 		arg.CoverAssetID,
+		arg.TenantID,
+		arg.ID,
 	)
 	var i LibraryTitle
 	err := row.Scan(
@@ -1445,6 +2156,25 @@ func (q *Queries) UpdateTitle(ctx context.Context, arg UpdateTitleParams) (Libra
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.ControlNumber,
+		&i.Responsibility,
+		&i.AdditionalAuthors,
+		&i.PublishPlace,
+		&i.Edition,
+		&i.Pages,
+		&i.Illustration,
+		&i.Dimensions,
+		&i.Issn,
+		&i.DdcNumber,
+		&i.CallNumber,
+		&i.Subjects,
+		&i.LiteraryForm,
+		&i.TargetAudience,
+		&i.Notes,
+		&i.Abstract,
+		&i.MaterialTypeID,
+		&i.IsOpac,
+		&i.SearchVector,
 	)
 	return i, err
 }

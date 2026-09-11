@@ -3566,6 +3566,274 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/library/material-types": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Material types (book, magazine, ...), each with its own loan limits */
+        get: operations["listLibraryMaterialTypes"];
+        put?: never;
+        /** Add a material type */
+        post: operations["createLibraryMaterialType"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/material-types/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Edit a material type */
+        put: operations["updateLibraryMaterialType"];
+        post?: never;
+        /** Remove a material type; refused while any title uses it */
+        delete: operations["deleteLibraryMaterialType"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/collection-categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Collection categories (fiction, reference, ...) */
+        get: operations["listLibraryCollectionCategories"];
+        put?: never;
+        /** Add a collection category */
+        post: operations["createLibraryCollectionCategory"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/collection-categories/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Edit a collection category */
+        put: operations["updateLibraryCollectionCategory"];
+        post?: never;
+        /** Remove a collection category; refused while any copy uses it */
+        delete: operations["deleteLibraryCollectionCategory"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/acquisition-sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Acquisition sources (purchase, donation, ...) */
+        get: operations["listLibraryAcquisitionSources"];
+        put?: never;
+        /** Add an acquisition source */
+        post: operations["createLibraryAcquisitionSource"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/acquisition-sources/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Edit an acquisition source */
+        put: operations["updateLibraryAcquisitionSource"];
+        post?: never;
+        /** Remove an acquisition source; refused while any copy uses it */
+        delete: operations["deleteLibraryAcquisitionSource"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/partners": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Donor and vendor partners */
+        get: operations["listLibraryPartners"];
+        put?: never;
+        /** Add a partner */
+        post: operations["createLibraryPartner"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/partners/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Edit a partner */
+        put: operations["updateLibraryPartner"];
+        post?: never;
+        /** Remove a partner; refused while any copy uses it */
+        delete: operations["deleteLibraryPartner"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/locations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Shelf/room locations */
+        get: operations["listLibraryLocations"];
+        put?: never;
+        /** Add a location */
+        post: operations["createLibraryLocation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/locations/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Edit a location */
+        put: operations["updateLibraryLocation"];
+        post?: never;
+        /** Remove a location; refused while any copy uses it */
+        delete: operations["deleteLibraryLocation"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/ddc-classes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The ten top-level Dewey Decimal classes (read-only) */
+        get: operations["listLibraryDdcClasses"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/catalogue/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every master-data list the catalogue's forms need, in one round trip */
+        get: operations["getLibraryCatalogueOptions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/reports/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Accreditation-style catalogue summary (defaults to the last 30 days, inclusive of "to")
+         * @description students_total, members_total, and the per-student ratios the old app computed from them are not included: those figures need the circulation half's member/enrollment tables, which this report does not read.
+         */
+        get: operations["getLibraryCatalogueSummaryReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/reports/accession-register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Accession register (Buku Induk): copies acquired in the period, in acquisition order */
+        get: operations["getLibraryAccessionRegisterReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/dashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Library dashboard summary, recent activity, and a 30-day trend */
+        get: operations["getLibraryDashboard"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/library/policy": {
         parameters: {
             query?: never;
@@ -3594,8 +3862,25 @@ export interface paths {
         /** Catalogue search */
         get: operations["listLibraryTitles"];
         put?: never;
-        /** Add a title to the catalogue */
+        /** Add a title to the catalogue, optionally with its first copies */
         post: operations["createLibraryTitle"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/titles/lookup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Find an existing title by ISBN, to catch duplicates before creating a new one */
+        get: operations["lookupLibraryTitleByIsbn"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -3614,7 +3899,8 @@ export interface paths {
         /** Edit a title's bibliographic details */
         put: operations["updateLibraryTitle"];
         post?: never;
-        delete?: never;
+        /** Remove a title; refused while it still has copies */
+        delete: operations["deleteLibraryTitle"];
         options?: never;
         head?: never;
         patch?: never;
@@ -3632,6 +3918,125 @@ export interface paths {
         put?: never;
         /** Register a new physical copy under a title */
         post: operations["createLibraryCopy"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/titles/{titleId}/copies/batch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add several copies of the same title at once, every number auto-generated */
+        post: operations["addLibraryCopiesBatch"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/copies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Copies across the whole catalogue, filtered and searched by barcode, accession number, RFID, or title */
+        get: operations["listLibraryCopiesFiltered"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/copies/find": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Find one copy by barcode, accession number, or RFID tag */
+        get: operations["findLibraryCopyByCode"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/copies/{copyId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove a copy that was never borrowed; one with loan history is kept for the audit trail */
+        delete: operations["deleteLibraryCopy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/copies/{copyId}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Manually change a copy's status (weeding, damage, repair); refused while the copy is on loan */
+        put: operations["setLibraryCopyStatus"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/copies/{copyId}/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A copy's audit trail (created, status changes, circulation, stocktake) */
+        get: operations["listLibraryCopyEvents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/copies/bulk-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Change up to 1000 copies to the same manual status at once; copies on loan are skipped */
+        post: operations["bulkSetLibraryCopyStatus"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3886,8 +4291,62 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Record one scanned barcode in an open stocktake session */
+        /**
+         * Record a batch of scanned codes in an open stocktake session
+         * @description Each code is matched against barcode, accession number, and RFID. A code matching nothing is recorded with outcome "rejected" instead of failing the request, so one bad scan in a batch of 200 does not lose the rest.
+         */
         post: operations["scanLibraryStocktake"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/stocktakes/{stocktakeId}/progress": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Live expected/scanned/missing/misplaced counters for an in-progress session */
+        get: operations["getLibraryStocktakeProgress"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/stocktakes/{stocktakeId}/results": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The persisted reconciliation of a closed session (recomputed live for an open one) */
+        get: operations["getLibraryStocktakeResults"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/stocktakes/{stocktakeId}/report.xlsx": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Per-session stocktake report as XLSX (previous status, scan time, location found, misplaced) */
+        get: operations["getLibraryStocktakeReportXlsx"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -3903,7 +4362,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Close a stocktake session and report missing and unexpected copies */
+        /** Close a stocktake session and report missing, unexpected, and misplaced copies */
         post: operations["closeLibraryStocktake"];
         delete?: never;
         options?: never;
@@ -3918,7 +4377,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Loans started within a period */
+        /** Loans started within a period (defaults to the last 30 days, inclusive of "to") */
         get: operations["getLibraryLoansReport"];
         put?: never;
         post?: never;
@@ -3952,7 +4411,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Most-borrowed titles within a period */
+        /** Most-borrowed titles within a period (defaults to the last 30 days, inclusive of "to") */
         get: operations["getLibraryMostBorrowedReport"];
         put?: never;
         post?: never;
@@ -7995,6 +8454,131 @@ export interface components {
                 next_cursor: string;
             };
         };
+        LibraryMasterEntry: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            name: string;
+            is_active: boolean;
+            sort_order: number;
+        };
+        LibraryMasterEntryWrite: {
+            code: string;
+            name: string;
+            /** @default true */
+            is_active: boolean;
+            /** @default 0 */
+            sort_order: number;
+        };
+        LibraryMaterialType: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            name: string;
+            max_loan_items: number;
+            max_loan_days: number;
+            max_renewals: number;
+            is_active: boolean;
+            sort_order: number;
+        };
+        LibraryMaterialTypeWrite: {
+            code: string;
+            name: string;
+            max_loan_items: number;
+            max_loan_days: number;
+            max_renewals: number;
+            /** @default true */
+            is_active: boolean;
+            /** @default 0 */
+            sort_order: number;
+        };
+        LibraryPartner: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            name: string;
+            contact_name?: string;
+            phone?: string;
+            address?: string;
+            is_active: boolean;
+            sort_order: number;
+        };
+        LibraryPartnerWrite: {
+            code: string;
+            name: string;
+            contact_name?: string;
+            phone?: string;
+            address?: string;
+            /** @default true */
+            is_active: boolean;
+            /** @default 0 */
+            sort_order: number;
+        };
+        LibraryDDCClass: {
+            code: string;
+            name: string;
+        };
+        LibraryCatalogueOptions: {
+            material_types: components["schemas"]["LibraryMaterialType"][];
+            collection_categories: components["schemas"]["LibraryMasterEntry"][];
+            acquisition_sources: components["schemas"]["LibraryMasterEntry"][];
+            partners: components["schemas"]["LibraryPartner"][];
+            locations: components["schemas"]["LibraryMasterEntry"][];
+            ddc_classes: components["schemas"]["LibraryDDCClass"][];
+        };
+        LibraryDDCClassCount: {
+            code: string;
+            name: string;
+            title_count: number;
+        };
+        LibraryMasterEntryCount: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            name: string;
+            count: number;
+        };
+        LibraryCatalogueSummary: {
+            titles_by_ddc: components["schemas"]["LibraryDDCClassCount"][];
+            items_by_category: components["schemas"]["LibraryMasterEntryCount"][];
+            items_by_material_type: components["schemas"]["LibraryMasterEntryCount"][];
+            fiction_count: number;
+            fiction_total: number;
+            additions_in_period: number;
+            loans_in_period: number;
+            active_borrowers: number;
+            overdue_now: number;
+            last_stocktake?: components["schemas"]["LibraryStocktake"];
+        };
+        LibraryDashboardSummary: {
+            titles: number;
+            copies: number;
+            available: number;
+            on_loan: number;
+            overdue: number;
+            /** @description 0 until the circulation module's member table exists */
+            members: number;
+            /** @description 0 until the circulation module's member table exists */
+            active_members: number;
+            /** @description 0 until the circulation module's visits table exists */
+            visits_today: number;
+            loans_today: number;
+            returns_today: number;
+            unpaid_fines_total: number;
+        };
+        LibraryDashboardSeriesPoint: {
+            /** Format: date */
+            day: string;
+            loans: number;
+            returns: number;
+        };
+        LibraryDashboard: {
+            summary: components["schemas"]["LibraryDashboardSummary"];
+            latest_loans: components["schemas"]["LibraryLoan"][];
+            longest_overdue: components["schemas"]["LibraryLoan"][];
+            popular_titles: components["schemas"]["LibraryMostBorrowedTitle"][];
+            series: components["schemas"]["LibraryDashboardSeriesPoint"][];
+        };
         LibraryPolicy: {
             version: number;
             loan_days: number;
@@ -8015,41 +8599,100 @@ export interface components {
         LibraryTitle: {
             /** Format: uuid */
             id: string;
+            control_number?: string;
             title: string;
             subtitle?: string;
             author: string;
+            responsibility?: string;
+            additional_authors?: string;
             publisher: string;
+            publish_place?: string;
             publish_year?: number;
+            edition?: string;
+            pages?: string;
+            illustration?: string;
+            dimensions?: string;
             isbn: string;
+            issn?: string;
+            ddc_number?: string;
+            call_number?: string;
             classification: string;
+            subjects?: string;
             language: string;
+            literary_form?: string;
+            target_audience?: string;
+            notes?: string;
+            abstract?: string;
+            /** Format: uuid */
+            material_type_id?: string;
+            is_opac: boolean;
             /** Format: uuid */
             cover_asset_id?: string;
             total_copies: number;
             available_copies: number;
         };
         LibraryTitleWrite: {
+            control_number?: string;
             title: string;
             subtitle?: string;
             author?: string;
+            responsibility?: string;
+            additional_authors?: string;
             publisher?: string;
+            publish_place?: string;
             publish_year?: number;
+            edition?: string;
+            pages?: string;
+            illustration?: string;
+            dimensions?: string;
             isbn?: string;
+            issn?: string;
+            ddc_number?: string;
+            /** @description Auto-generated from DDC/author/title when left empty */
+            call_number?: string;
             classification?: string;
+            subjects?: string;
             language?: string;
+            literary_form?: string;
+            target_audience?: string;
+            notes?: string;
+            abstract?: string;
+            /** Format: uuid */
+            material_type_id?: string;
+            /** @default true */
+            is_opac: boolean;
             /** Format: uuid */
             cover_asset_id?: string;
+            /** @description Create this title is created with copies at once (ignored on update) */
+            copies?: number;
         };
         /** @enum {string} */
         LibraryCopyCondition: "good" | "fair" | "damaged" | "lost";
         /** @enum {string} */
-        LibraryCopyStatus: "available" | "on_loan" | "reserved" | "withdrawn";
+        LibraryCopyStatus: "available" | "on_loan" | "reserved" | "damaged" | "lost" | "in_repair" | "processing" | "donated" | "reserve_stack" | "unknown";
+        /** @enum {string} */
+        LibraryCopyAccess: "loanable" | "read_in_place" | "reference";
         LibraryCopy: {
             /** Format: uuid */
             id: string;
             /** Format: uuid */
             title_id: string;
+            accession_number: string;
             barcode: string;
+            copy_number: number;
+            call_number?: string;
+            /** Format: uuid */
+            category_id?: string;
+            /** Format: uuid */
+            location_id?: string;
+            /** Format: uuid */
+            source_id?: string;
+            /** Format: uuid */
+            partner_id?: string;
+            price?: number;
+            is_opac: boolean;
+            rfid?: string;
+            access: components["schemas"]["LibraryCopyAccess"];
             condition: components["schemas"]["LibraryCopyCondition"];
             status: components["schemas"]["LibraryCopyStatus"];
             /** Format: date */
@@ -8057,11 +8700,45 @@ export interface components {
             notes?: string;
         };
         LibraryCopyWrite: {
-            barcode: string;
+            /** @description Leave empty to auto-generate from the tenant's numbering pattern */
+            accession_number?: string;
+            /** @description Leave empty to default to the accession number or an auto sequence */
+            barcode?: string;
+            call_number?: string;
+            /** Format: uuid */
+            category_id?: string;
+            /** Format: uuid */
+            location_id?: string;
+            /** Format: uuid */
+            source_id?: string;
+            /** Format: uuid */
+            partner_id?: string;
+            price?: number;
+            /** @default true */
+            is_opac: boolean;
+            rfid?: string;
+            access?: components["schemas"]["LibraryCopyAccess"];
             condition?: components["schemas"]["LibraryCopyCondition"];
+            status?: components["schemas"]["LibraryCopyStatus"];
             /** Format: date */
             acquired_on?: string;
             notes?: string;
+        };
+        /** @enum {string} */
+        LibraryItemEventType: "created" | "status_changed" | "circulation" | "stocktake";
+        LibraryItemEvent: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            copy_id: string;
+            event_type: components["schemas"]["LibraryItemEventType"];
+            from_status?: string;
+            to_status?: string;
+            note?: string;
+            /** Format: uuid */
+            actor_user_id?: string;
+            /** Format: date-time */
+            created_at: string;
         };
         /** @enum {string} */
         LibraryLoanStatus: "active" | "returned" | "lost";
@@ -8107,6 +8784,8 @@ export interface components {
         };
         /** @enum {string} */
         LibraryStocktakeStatus: "open" | "closed";
+        /** @enum {string} */
+        LibraryMarkMissingAs: "lost" | "unknown" | "none";
         LibraryStocktake: {
             /** Format: uuid */
             id: string;
@@ -8119,23 +8798,44 @@ export interface components {
             coordinator_user_id: string;
             status: components["schemas"]["LibraryStocktakeStatus"];
             notes?: string;
+            missing_count: number;
+            unexpected_count: number;
+            misplaced_count: number;
+            mark_missing_as?: components["schemas"]["LibraryMarkMissingAs"];
         };
+        /** @enum {string} */
+        LibraryStocktakeScanOutcome: "found" | "rejected";
         LibraryStocktakeScan: {
             /** Format: uuid */
             id: string;
             /** Format: uuid */
             stocktake_id: string;
             /** Format: uuid */
-            copy_id: string;
-            barcode: string;
+            copy_id?: string;
+            raw_code: string;
+            outcome: components["schemas"]["LibraryStocktakeScanOutcome"];
+            /** Format: uuid */
+            location_id?: string;
             /** Format: date-time */
             scanned_at: string;
+        };
+        LibraryStocktakeMisplacedCopy: {
+            copy: components["schemas"]["LibraryCopy"];
+            /** Format: uuid */
+            found_location_id: string;
         };
         LibraryStocktakeResult: {
             expected_count: number;
             scanned_count: number;
             missing: components["schemas"]["LibraryCopy"][];
-            unexpected: string[];
+            unexpected: components["schemas"]["LibraryCopy"][];
+            misplaced: components["schemas"]["LibraryStocktakeMisplacedCopy"][];
+        };
+        LibraryStocktakeProgress: {
+            expected_count: number;
+            scanned_count: number;
+            missing_count: number;
+            misplaced_count: number;
         };
         LibraryOverdueMember: {
             /** Format: uuid */
@@ -8146,6 +8846,11 @@ export interface components {
         LibraryMostBorrowedTitle: {
             title: components["schemas"]["LibraryTitle"];
             loan_count: number;
+        };
+        LibraryLoanReportRow: {
+            loan: components["schemas"]["LibraryLoan"];
+            title: string;
+            member_name: string;
         };
         MentorGroupSizeLimit: {
             limit: number;
@@ -16775,6 +17480,663 @@ export interface operations {
             };
         };
     };
+    listLibraryMaterialTypes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Material types */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["LibraryMaterialType"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createLibraryMaterialType: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LibraryMaterialTypeWrite"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryMaterialType"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    updateLibraryMaterialType: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LibraryMaterialTypeWrite"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryMaterialType"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    deleteLibraryMaterialType: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listLibraryCollectionCategories: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Categories */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["LibraryMasterEntry"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createLibraryCollectionCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LibraryMasterEntryWrite"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryMasterEntry"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    updateLibraryCollectionCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LibraryMasterEntryWrite"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryMasterEntry"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    deleteLibraryCollectionCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listLibraryAcquisitionSources: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sources */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["LibraryMasterEntry"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createLibraryAcquisitionSource: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LibraryMasterEntryWrite"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryMasterEntry"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    updateLibraryAcquisitionSource: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LibraryMasterEntryWrite"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryMasterEntry"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    deleteLibraryAcquisitionSource: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listLibraryPartners: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Partners */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["LibraryPartner"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createLibraryPartner: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LibraryPartnerWrite"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryPartner"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    updateLibraryPartner: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LibraryPartnerWrite"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryPartner"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    deleteLibraryPartner: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listLibraryLocations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Locations */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["LibraryMasterEntry"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createLibraryLocation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LibraryMasterEntryWrite"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryMasterEntry"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    updateLibraryLocation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LibraryMasterEntryWrite"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryMasterEntry"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    deleteLibraryLocation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listLibraryDdcClasses: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Classes */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["LibraryDDCClass"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    getLibraryCatalogueOptions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Options */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryCatalogueOptions"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    getLibraryCatalogueSummaryReport: {
+        parameters: {
+            query?: {
+                from?: string;
+                to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Summary */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryCatalogueSummary"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    getLibraryAccessionRegisterReport: {
+        parameters: {
+            query?: {
+                from?: string;
+                to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Register */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["LibraryCopy"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    getLibraryDashboard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Dashboard */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryDashboard"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
     getLibraryPolicy: {
         parameters: {
             query?: never;
@@ -16827,7 +18189,13 @@ export interface operations {
     listLibraryTitles: {
         parameters: {
             query?: {
+                /** @description Fulltext for 3+ characters, substring for fewer, plus a normalized ISBN prefix match */
                 search?: string;
+                material_type_id?: string;
+                /** @description Filters by the first digits of the DDC number, e.g. '800' */
+                ddc_class?: string;
+                availability?: "available";
+                sort?: "title" | "newest";
                 limit?: number;
                 offset?: number;
             };
@@ -16877,6 +18245,33 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    lookupLibraryTitleByIsbn: {
+        parameters: {
+            query: {
+                isbn: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Match found */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryTitle"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     getLibraryTitle: {
@@ -16932,6 +18327,31 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    deleteLibraryTitle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                titleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
         };
     };
     listLibraryCopies: {
@@ -16989,6 +18409,230 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+        };
+    };
+    addLibraryCopiesBatch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                titleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    count: number;
+                    /** Format: uuid */
+                    category_id?: string;
+                    /** Format: uuid */
+                    location_id?: string;
+                    /** Format: uuid */
+                    source_id?: string;
+                    /** Format: uuid */
+                    partner_id?: string;
+                    price?: number;
+                    /** @default true */
+                    is_opac?: boolean;
+                    access?: components["schemas"]["LibraryCopyAccess"];
+                    condition?: components["schemas"]["LibraryCopyCondition"];
+                    notes?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["LibraryCopy"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listLibraryCopiesFiltered: {
+        parameters: {
+            query?: {
+                title_id?: string;
+                status?: components["schemas"]["LibraryCopyStatus"];
+                category_id?: string;
+                location_id?: string;
+                search?: string;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Copies */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["LibraryCopy"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    findLibraryCopyByCode: {
+        parameters: {
+            query: {
+                code: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Copy */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryCopy"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteLibraryCopy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                copyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    setLibraryCopyStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                copyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    status: components["schemas"]["LibraryCopyStatus"];
+                    condition?: components["schemas"]["LibraryCopyCondition"];
+                    note?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryCopy"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listLibraryCopyEvents: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                copyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Events */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["LibraryItemEvent"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    bulkSetLibraryCopyStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    copy_ids: string[];
+                    status: components["schemas"]["LibraryCopyStatus"];
+                    note?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Updated copies (a copy on loan is silently skipped, not an error) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["LibraryCopy"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
         };
     };
     printLibraryCopyLabel: {
@@ -17425,7 +19069,9 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
-                    barcode: string;
+                    codes: string[];
+                    /** Format: uuid */
+                    location_id?: string;
                 };
             };
         };
@@ -17436,7 +19082,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["LibraryStocktakeScan"];
+                    "application/json": {
+                        data: components["schemas"]["LibraryStocktakeScan"][];
+                    };
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -17444,6 +19092,81 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+        };
+    };
+    getLibraryStocktakeProgress: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                stocktakeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Progress */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryStocktakeProgress"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getLibraryStocktakeResults: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                stocktakeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Results */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryStocktakeResult"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getLibraryStocktakeReportXlsx: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                stocktakeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description XLSX */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     closeLibraryStocktake: {
@@ -17459,6 +19182,12 @@ export interface operations {
             content: {
                 "application/json": {
                     notes?: string;
+                    /**
+                     * @description What to do to a copy that was expected but never scanned
+                     * @default none
+                     * @enum {string}
+                     */
+                    mark_missing_as?: "lost" | "unknown" | "none";
                 };
             };
         };
@@ -17480,9 +19209,11 @@ export interface operations {
     };
     getLibraryLoansReport: {
         parameters: {
-            query: {
-                from: string;
-                to: string;
+            query?: {
+                /** @description Defaults to 30 days before 'to' */
+                from?: string;
+                /** @description Defaults to today; the whole day is included */
+                to?: string;
             };
             header?: never;
             path?: never;
@@ -17497,7 +19228,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        data: components["schemas"]["LibraryLoan"][];
+                        data: components["schemas"]["LibraryLoanReportRow"][];
                     };
                 };
             };
@@ -17532,9 +19263,9 @@ export interface operations {
     };
     getLibraryMostBorrowedReport: {
         parameters: {
-            query: {
-                from: string;
-                to: string;
+            query?: {
+                from?: string;
+                to?: string;
                 limit?: number;
             };
             header?: never;

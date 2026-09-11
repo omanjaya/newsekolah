@@ -16,19 +16,58 @@ type TitleWithAvailability struct {
 	AvailableCopies int
 }
 
-func (s *Service) CreateTitle(ctx context.Context, t domain.Title) (domain.Title, error) {
+// prepareTitle normalizes the ISBN and fills the default language and
+// call number the same way for create and update, so both paths apply
+// the old app's rules identically.
+func prepareTitle(t domain.Title) (domain.Title, error) {
 	if t.Title == "" {
 		return domain.Title{}, domain.ErrInvalidInput
 	}
 	if t.Language == "" {
 		t.Language = "ind"
 	}
-	return s.repo.CreateTitle(ctx, t)
+	t.ISBN = domain.NormalizeISBN(t.ISBN)
+	if t.CallNumber == "" {
+		t.CallNumber = domain.GenerateCallNumber(t.DDCNumber, t.Author, t.Title)
+	}
+	return t, nil
+}
+
+func (s *Service) CreateTitle(ctx context.Context, t domain.Title, copyCount int, copyDefaults CopyDefaults) (domain.Title, []domain.Copy, error) {
+	t, err := prepareTitle(t)
+	if err != nil {
+		return domain.Title{}, nil, err
+	}
+	if copyCount < 0 || copyCount > 200 {
+		return domain.Title{}, nil, domain.ErrInvalidInput
+	}
+	var created domain.Title
+	var copies []domain.Copy
+	err = s.withTx(ctx, t.TenantID, func(ctx context.Context) error {
+		var err error
+		created, err = s.repo.CreateTitle(ctx, t)
+		if err != nil {
+			return err
+		}
+		for i := 0; i < copyCount; i++ {
+			c, err := s.addCopyTx(ctx, created, copyDefaults)
+			if err != nil {
+				return err
+			}
+			copies = append(copies, c)
+		}
+		return nil
+	})
+	if err != nil {
+		return domain.Title{}, nil, err
+	}
+	return created, copies, nil
 }
 
 func (s *Service) UpdateTitle(ctx context.Context, t domain.Title) (domain.Title, error) {
-	if t.Title == "" {
-		return domain.Title{}, domain.ErrInvalidInput
+	t, err := prepareTitle(t)
+	if err != nil {
+		return domain.Title{}, err
 	}
 	return s.repo.UpdateTitle(ctx, t)
 }
@@ -44,9 +83,64 @@ func (s *Service) GetTitle(ctx context.Context, tenantID, id uuid.UUID) (TitleWi
 	return s.withAvailability(ctx, tenantID, title)
 }
 
-func (s *Service) ListTitles(ctx context.Context, tenantID uuid.UUID, search string, limit, offset int) ([]TitleWithAvailability, error) {
-	limit = clampLimit(limit)
-	titles, err := s.repo.ListTitles(ctx, tenantID, search, limit, offset)
+// LookupTitleByISBN finds an existing title with the same (normalized)
+// ISBN, for the catalogue's duplicate check before someone types in a
+// book that is already on the shelf.
+func (s *Service) LookupTitleByISBN(ctx context.Context, tenantID uuid.UUID, isbn string) (TitleWithAvailability, bool, error) {
+	normalized := domain.NormalizeISBN(isbn)
+	if normalized == "" {
+		return TitleWithAvailability{}, false, domain.ErrInvalidInput
+	}
+	title, found, err := s.repo.GetTitleByISBN(ctx, tenantID, normalized)
+	if err != nil || !found {
+		return TitleWithAvailability{}, false, err
+	}
+	withAvailability, err := s.withAvailability(ctx, tenantID, title)
+	return withAvailability, true, err
+}
+
+// DeleteTitle removes a title, refusing while it still has copies --
+// weed the copies first (or move them to another title) so a bibliography
+// deletion can never silently orphan shelf items.
+func (s *Service) DeleteTitle(ctx context.Context, tenantID, id uuid.UUID) error {
+	count, err := s.repo.CountTitleCopies(ctx, tenantID, id)
+	if err != nil {
+		return err
+	}
+	if count > 0 {
+		return domain.ErrTitleHasCopies
+	}
+	ok, err := s.repo.DeleteTitle(ctx, tenantID, id)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return domain.ErrTitleNotFound
+	}
+	return nil
+}
+
+// TitleSearch is the catalogue list/search request, translated from
+// transport query parameters into the filter the repository understands.
+type TitleSearch struct {
+	Search         string
+	MaterialTypeID uuid.NullUUID
+	DDCClass       string
+	AvailableOnly  bool
+	Sort           string
+	Limit          int
+	Offset         int
+}
+
+func (s *Service) ListTitles(ctx context.Context, tenantID uuid.UUID, q TitleSearch) ([]TitleWithAvailability, error) {
+	filter := TitleFilter{
+		MaterialTypeID: q.MaterialTypeID, DDCClass: q.DDCClass, AvailableOnly: q.AvailableOnly, Sort: q.Sort,
+	}
+	if q.Search != "" {
+		filter.Search = q.Search
+		filter.SearchISBN = domain.NormalizeISBN(q.Search)
+	}
+	titles, err := s.repo.ListTitles(ctx, tenantID, filter, clampLimit(q.Limit), q.Offset)
 	if err != nil {
 		return nil, err
 	}
@@ -70,22 +164,6 @@ func (s *Service) withAvailability(ctx context.Context, tenantID uuid.UUID, t do
 		return TitleWithAvailability{}, err
 	}
 	return TitleWithAvailability{Title: t, TotalCopies: total, AvailableCopies: available}, nil
-}
-
-func (s *Service) AddCopy(ctx context.Context, tenantID uuid.UUID, c domain.Copy) (domain.Copy, error) {
-	if c.Barcode == "" {
-		return domain.Copy{}, domain.ErrInvalidInput
-	}
-	if !c.Condition.Valid() {
-		c.Condition = domain.ConditionGood
-	}
-	c.TenantID = tenantID
-	if _, found, err := s.repo.GetTitle(ctx, tenantID, c.TitleID); err != nil {
-		return domain.Copy{}, err
-	} else if !found {
-		return domain.Copy{}, domain.ErrTitleNotFound
-	}
-	return s.repo.CreateCopy(ctx, c)
 }
 
 func (s *Service) ListCopies(ctx context.Context, tenantID, titleID uuid.UUID) ([]domain.Copy, error) {
