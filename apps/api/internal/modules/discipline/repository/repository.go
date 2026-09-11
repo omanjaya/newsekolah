@@ -39,8 +39,8 @@ func isUnique(err error) bool {
 
 // Violation types.
 
-func (r *Repository) ListViolationTypes(ctx context.Context, tenantID uuid.UUID, includeInactive bool) ([]domain.ViolationType, error) {
-	rows, err := r.queries(ctx).ListViolationTypes(ctx, db.ListViolationTypesParams{TenantID: tenantID, IncludeInactive: includeInactive})
+func (r *Repository) ListViolationTypes(ctx context.Context, tenantID uuid.UUID, includeInactive bool, search string) ([]domain.ViolationType, error) {
+	rows, err := r.queries(ctx).ListViolationTypes(ctx, db.ListViolationTypesParams{TenantID: tenantID, IncludeInactive: includeInactive, Search: pdatabase.Text(search)})
 	if err != nil {
 		return nil, fmt.Errorf("list violation types: %w", err)
 	}
@@ -124,6 +124,19 @@ func (r *Repository) GetRecord(ctx context.Context, tenantID, id uuid.UUID) (dom
 	return toRecord(row, "", "", ""), true, nil
 }
 
+func (r *Repository) GetRecordByWorkflow(ctx context.Context, tenantID, workflowInstanceID, violationTypeID uuid.UUID) (domain.ViolationRecord, bool, error) {
+	row, err := r.queries(ctx).GetViolationRecordByWorkflow(ctx, db.GetViolationRecordByWorkflowParams{
+		TenantID: tenantID, WorkflowInstanceID: pgtype.UUID{Bytes: workflowInstanceID, Valid: true}, ViolationTypeID: violationTypeID,
+	})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return domain.ViolationRecord{}, false, nil
+	}
+	if err != nil {
+		return domain.ViolationRecord{}, false, fmt.Errorf("get violation record by workflow: %w", err)
+	}
+	return toRecord(row, "", "", ""), true, nil
+}
+
 func (r *Repository) VoidRecord(ctx context.Context, tenantID, id, voidedBy uuid.UUID, reason string) (domain.ViolationRecord, bool, error) {
 	row, err := r.queries(ctx).VoidViolationRecord(ctx, db.VoidViolationRecordParams{
 		TenantID: tenantID, ID: id, VoidedBy: pgtype.UUID{Bytes: voidedBy, Valid: true}, VoidReason: pdatabase.Text(reason),
@@ -201,6 +214,18 @@ func (r *Repository) ListPointTotals(ctx context.Context, tenantID, yearID uuid.
 	return out, nil
 }
 
+func (r *Repository) ListActivePoints(ctx context.Context, tenantID, yearID uuid.UUID, classID uuid.NullUUID) ([]service.StudentPointRecord, error) {
+	rows, err := r.queries(ctx).ListActivePointsByYear(ctx, db.ListActivePointsByYearParams{TenantID: tenantID, AcademicYearID: yearID, ClassID: pdatabase.NullUUID(classID)})
+	if err != nil {
+		return nil, fmt.Errorf("list active points: %w", err)
+	}
+	out := make([]service.StudentPointRecord, len(rows))
+	for i, row := range rows {
+		out[i] = service.StudentPointRecord{StudentUserID: row.StudentUserID, Points: int(row.PointsSnapshot), OccurredOn: pdatabase.DateOrZero(row.OccurredOn)}
+	}
+	return out, nil
+}
+
 // Letters.
 
 func (r *Repository) CreateLetter(ctx context.Context, l domain.WarningLetter) (domain.WarningLetter, error) {
@@ -247,13 +272,40 @@ func (r *Repository) ListLetters(ctx context.Context, tenantID, yearID uuid.UUID
 	return toLetters(rows), nil
 }
 
+func (r *Repository) ListSPCandidates(ctx context.Context, tenantID, yearID uuid.UUID, f service.CandidateFilter) ([]service.SPCandidate, error) {
+	maxPoints := pgtype.Int4{}
+	if f.MaxPoints != nil {
+		maxPoints = pgtype.Int4{Int32: int32(*f.MaxPoints), Valid: true} //nolint:gosec // point thresholds are small
+	}
+	rows, err := r.queries(ctx).ListSPCandidates(ctx, db.ListSPCandidatesParams{
+		TenantID: tenantID, AcademicYearID: yearID, Limit: int32(f.Limit), Offset: int32(f.Offset), //nolint:gosec // clamped by the service
+		ClassID: pdatabase.NullUUID(f.ClassID), Search: pdatabase.Text(f.Search), MinPoints: int32(f.MinPoints), MaxPoints: maxPoints, //nolint:gosec // clamped
+	})
+	if err != nil {
+		return nil, fmt.Errorf("list SP candidates: %w", err)
+	}
+	out := make([]service.SPCandidate, len(rows))
+	for i, row := range rows {
+		levels := make([]int, len(row.IssuedLevels))
+		for j, l := range row.IssuedLevels {
+			levels[j] = int(l)
+		}
+		out[i] = service.SPCandidate{
+			StudentUserID: row.StudentUserID, StudentName: row.StudentName, NIS: row.Nis, ClassName: row.ClassName,
+			TotalPoints: int(row.Total), IssuedLevels: levels,
+		}
+	}
+	return out, nil
+}
+
 // Counselings.
 
-func (r *Repository) CreateCounseling(ctx context.Context, c domain.Counseling, content, followUp []byte, keyID string) (domain.Counseling, error) {
+func (r *Repository) CreateCounseling(ctx context.Context, c domain.Counseling, content, followUp, careerGoals, problemDescription []byte, keyID string) (domain.Counseling, error) {
 	row, err := r.queries(ctx).CreateCounseling(ctx, db.CreateCounselingParams{
 		TenantID: c.TenantID, AcademicYearID: c.AcademicYearID, StudentUserID: c.StudentUserID, CounselorUserID: c.CounselorUserID,
-		SessionAt: pdatabase.Timestamptz(c.SessionAt), Kind: string(c.Kind), Title: c.Title,
-		ContentEncrypted: content, ContentKeyID: keyID, FollowUpPlanEncrypted: followUp, Visibility: string(c.Visibility),
+		SessionAt: pdatabase.Timestamptz(c.SessionAt), Kind: string(c.Kind), Topic: string(c.Topic), Title: c.Title,
+		ContentEncrypted: content, ContentKeyID: keyID, FollowUpPlanEncrypted: followUp,
+		CareerGoalsEncrypted: careerGoals, ProblemDescriptionEncrypted: problemDescription, Visibility: string(c.Visibility),
 	})
 	if err != nil {
 		return domain.Counseling{}, fmt.Errorf("create counseling: %w", err)
@@ -261,10 +313,11 @@ func (r *Repository) CreateCounseling(ctx context.Context, c domain.Counseling, 
 	return toCounseling(row).Counseling, nil
 }
 
-func (r *Repository) UpdateCounseling(ctx context.Context, c domain.Counseling, content, followUp []byte, keyID string) (domain.Counseling, error) {
+func (r *Repository) UpdateCounseling(ctx context.Context, c domain.Counseling, content, followUp, careerGoals, problemDescription []byte, keyID string) (domain.Counseling, error) {
 	row, err := r.queries(ctx).UpdateCounseling(ctx, db.UpdateCounselingParams{
-		TenantID: c.TenantID, ID: c.ID, SessionAt: pdatabase.Timestamptz(c.SessionAt), Kind: string(c.Kind), Title: c.Title,
-		ContentEncrypted: content, ContentKeyID: keyID, FollowUpPlanEncrypted: followUp, Visibility: string(c.Visibility),
+		TenantID: c.TenantID, ID: c.ID, SessionAt: pdatabase.Timestamptz(c.SessionAt), Kind: string(c.Kind), Topic: string(c.Topic), Title: c.Title,
+		ContentEncrypted: content, ContentKeyID: keyID, FollowUpPlanEncrypted: followUp,
+		CareerGoalsEncrypted: careerGoals, ProblemDescriptionEncrypted: problemDescription, Visibility: string(c.Visibility),
 	})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return domain.Counseling{}, domain.ErrCounselingNotFound
@@ -304,11 +357,52 @@ func (r *Repository) ListCounselingsByCounselor(ctx context.Context, tenantID, y
 	return toCounselings(rows), nil
 }
 
+func (r *Repository) ListCounselingsByVisibility(ctx context.Context, tenantID, yearID uuid.UUID, topic string, limit, offset int) ([]service.EncryptedCounseling, error) {
+	rows, err := r.queries(ctx).ListCounselingsByVisibility(ctx, db.ListCounselingsByVisibilityParams{
+		TenantID: tenantID, AcademicYearID: yearID, Limit: int32(limit), Offset: int32(offset), Topic: pdatabase.Text(topic), //nolint:gosec // clamped
+	})
+	if err != nil {
+		return nil, fmt.Errorf("list bk team counselings: %w", err)
+	}
+	return toCounselings(rows), nil
+}
+
 func (r *Repository) DeleteCounseling(ctx context.Context, tenantID, id uuid.UUID) error {
 	if err := r.queries(ctx).DeleteCounseling(ctx, db.DeleteCounselingParams{TenantID: tenantID, ID: id}); err != nil {
 		return fmt.Errorf("delete counseling: %w", err)
 	}
 	return nil
+}
+
+func (r *Repository) CreateCounselingAttachment(ctx context.Context, tenantID, counselingID, assetID uuid.UUID) (domain.CounselingAttachment, error) {
+	row, err := r.queries(ctx).CreateCounselingAttachment(ctx, db.CreateCounselingAttachmentParams{TenantID: tenantID, CounselingID: counselingID, AssetID: assetID})
+	if err != nil {
+		return domain.CounselingAttachment{}, fmt.Errorf("create counseling attachment: %w", err)
+	}
+	return toAttachment(row), nil
+}
+
+func (r *Repository) ListCounselingAttachments(ctx context.Context, tenantID, counselingID uuid.UUID) ([]domain.CounselingAttachment, error) {
+	rows, err := r.queries(ctx).ListCounselingAttachments(ctx, db.ListCounselingAttachmentsParams{TenantID: tenantID, CounselingID: counselingID})
+	if err != nil {
+		return nil, fmt.Errorf("list counseling attachments: %w", err)
+	}
+	out := make([]domain.CounselingAttachment, len(rows))
+	for i, row := range rows {
+		out[i] = toAttachment(row)
+	}
+	return out, nil
+}
+
+func (r *Repository) GetCounselingAttachment(ctx context.Context, tenantID, id uuid.UUID) (domain.CounselingAttachment, bool, error) {
+	row, err := r.queries(ctx).GetCounselingAttachment(ctx, db.GetCounselingAttachmentParams{TenantID: tenantID, ID: id})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return domain.CounselingAttachment{}, false, nil
+	}
+	if err != nil {
+		return domain.CounselingAttachment{}, false, fmt.Errorf("get counseling attachment: %w", err)
+	}
+	return toAttachment(row), true, nil
 }
 
 // Policy and cross-module reads.
@@ -338,7 +432,37 @@ func (r *Repository) StudentSnapshot(ctx context.Context, tenantID, studentID, y
 	if err != nil {
 		return service.StudentSnapshot{}, fmt.Errorf("student snapshot: %w", err)
 	}
-	return service.StudentSnapshot{StudentName: row.StudentName, ClassName: row.ClassName, GuardianName: row.GuardianName}, nil
+	return service.StudentSnapshot{StudentName: row.StudentName, ClassName: row.ClassName, GuardianName: row.GuardianName, NIS: row.Nis}, nil
+}
+
+func (r *Repository) StudentEligible(ctx context.Context, tenantID, yearID, studentID uuid.UUID) (bool, bool, error) {
+	row, err := r.queries(ctx).DisciplineStudentEligible(ctx, db.DisciplineStudentEligibleParams{TenantID: tenantID, ID: studentID, AcademicYearID: yearID})
+	if err != nil {
+		return false, false, fmt.Errorf("student eligible: %w", err)
+	}
+	return row.Enrolled, row.UserActive, nil
+}
+
+func (r *Repository) CreateAsset(ctx context.Context, tenantID uuid.UUID, bucket, objectKey, mime string, sizeBytes int64, sha256Hex, kind, visibility string, createdBy uuid.UUID) (uuid.UUID, error) {
+	id, err := r.queries(ctx).DisciplineCreateAsset(ctx, db.DisciplineCreateAssetParams{
+		TenantID: tenantID, Bucket: bucket, ObjectKey: objectKey, Mime: mime, SizeBytes: sizeBytes, Sha256: sha256Hex,
+		Kind: kind, Visibility: visibility, CreatedBy: pgtype.UUID{Bytes: createdBy, Valid: true},
+	})
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("create asset: %w", err)
+	}
+	return id, nil
+}
+
+func (r *Repository) GetAsset(ctx context.Context, tenantID, assetID uuid.UUID) (service.AssetInfo, bool, error) {
+	row, err := r.queries(ctx).DisciplineGetAsset(ctx, db.DisciplineGetAssetParams{TenantID: tenantID, ID: assetID})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return service.AssetInfo{}, false, nil
+	}
+	if err != nil {
+		return service.AssetInfo{}, false, fmt.Errorf("get asset: %w", err)
+	}
+	return service.AssetInfo{ObjectKey: row.ObjectKey, Mime: row.Mime, SizeBytes: row.SizeBytes}, true, nil
 }
 
 func (r *Repository) HasActiveDuty(ctx context.Context, tenantID, yearID, userID uuid.UUID, slug string, classID uuid.NullUUID) (bool, error) {
@@ -393,10 +517,12 @@ func toCounseling(row db.Counseling) service.EncryptedCounseling {
 	return service.EncryptedCounseling{
 		Counseling: domain.Counseling{
 			ID: row.ID, TenantID: row.TenantID, AcademicYearID: row.AcademicYearID, StudentUserID: row.StudentUserID, CounselorUserID: row.CounselorUserID,
-			SessionAt: pdatabase.TimeOrZero(row.SessionAt), Kind: domain.CounselingKind(row.Kind), Title: row.Title, Visibility: domain.Visibility(row.Visibility),
+			SessionAt: pdatabase.TimeOrZero(row.SessionAt), Kind: domain.CounselingKind(row.Kind), Topic: domain.CounselingTopic(row.Topic),
+			Title: row.Title, Visibility: domain.Visibility(row.Visibility),
 			CreatedAt: pdatabase.TimeOrZero(row.CreatedAt), UpdatedAt: pdatabase.TimeOrZero(row.UpdatedAt),
 		},
-		ContentEncrypted: row.ContentEncrypted, FollowUpPlanEncrypted: row.FollowUpPlanEncrypted, ContentKeyID: row.ContentKeyID,
+		ContentEncrypted: row.ContentEncrypted, FollowUpPlanEncrypted: row.FollowUpPlanEncrypted,
+		CareerGoalsEncrypted: row.CareerGoalsEncrypted, ProblemDescriptionEncrypted: row.ProblemDescriptionEncrypted, ContentKeyID: row.ContentKeyID,
 	}
 }
 
@@ -406,4 +532,10 @@ func toCounselings(rows []db.Counseling) []service.EncryptedCounseling {
 		out[i] = toCounseling(row)
 	}
 	return out
+}
+
+func toAttachment(row db.CounselingAttachment) domain.CounselingAttachment {
+	return domain.CounselingAttachment{
+		ID: row.ID, TenantID: row.TenantID, CounselingID: row.CounselingID, AssetID: row.AssetID, CreatedAt: pdatabase.TimeOrZero(row.CreatedAt),
+	}
 }

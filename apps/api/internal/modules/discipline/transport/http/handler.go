@@ -5,6 +5,7 @@ package http
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/google/uuid"
 	openapi_types "github.com/oapi-codegen/runtime/types"
@@ -35,6 +36,12 @@ var errorMap = map[error]*httpx.Error{
 	domain.ErrCounselingForbidden:     httpx.ErrCounselingForbidden,
 	domain.ErrInvalidInput:            httpx.ErrValidation,
 	domain.ErrNoActiveAcademicYear:    httpx.ErrValidation,
+	domain.ErrStudentNotEnrolled:      httpx.ErrStudentNotEnrolled,
+	domain.ErrStudentInactive:         httpx.ErrStudentInactive,
+	domain.ErrAttachmentNotFound:      httpx.ErrAttachmentNotFound,
+	domain.ErrAttachmentTooLarge:      httpx.ErrAttachmentTooLarge,
+	domain.ErrAttachmentInvalidType:   httpx.ErrAttachmentInvalidType,
+	domain.ErrReportUnavailable:       httpx.ErrReportUnavailable,
 }
 
 func mapError(err error) error {
@@ -83,7 +90,7 @@ func intOr(p *int, def int) int {
 
 func (h *DisciplineHandler) ListViolationTypes(ctx context.Context, request api.ListViolationTypesRequestObject) (api.ListViolationTypesResponseObject, error) {
 	includeInactive := request.Params.IncludeInactive != nil && *request.Params.IncludeInactive
-	types, err := h.service.ListViolationTypes(ctx, tenantID(ctx), includeInactive)
+	types, err := h.service.ListViolationTypes(ctx, tenantID(ctx), includeInactive, strOr(request.Params.Search))
 	if err != nil {
 		return nil, mapError(err)
 	}
@@ -142,6 +149,25 @@ func (h *DisciplineHandler) UpdateDisciplinePolicy(ctx context.Context, request 
 	return api.UpdateDisciplinePolicy200JSONResponse(toAPIPolicy(policy)), nil
 }
 
+func (h *DisciplineHandler) GetWarningLetterTemplatePolicy(ctx context.Context, _ api.GetWarningLetterTemplatePolicyRequestObject) (api.GetWarningLetterTemplatePolicyResponseObject, error) {
+	policy, err := h.service.WarningLetterTemplatePolicy(ctx, tenantID(ctx))
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return api.GetWarningLetterTemplatePolicy200JSONResponse(toAPILetterTemplatePolicy(policy)), nil
+}
+
+func (h *DisciplineHandler) UpdateWarningLetterTemplatePolicy(ctx context.Context, request api.UpdateWarningLetterTemplatePolicyRequestObject) (api.UpdateWarningLetterTemplatePolicyResponseObject, error) {
+	b := request.Body
+	policy, err := h.service.UpdateWarningLetterTemplatePolicy(ctx, tenantID(ctx), userID(ctx), domain.WarningLetterTemplatePolicy{
+		NumberPattern: b.NumberPattern, SeqPad: b.SeqPad, OpeningText: b.OpeningText, ClosingText: b.ClosingText,
+	})
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return api.UpdateWarningLetterTemplatePolicy200JSONResponse(toAPILetterTemplatePolicy(policy)), nil
+}
+
 // Records.
 
 func (h *DisciplineHandler) ListViolations(ctx context.Context, request api.ListViolationsRequestObject) (api.ListViolationsResponseObject, error) {
@@ -162,14 +188,22 @@ func (h *DisciplineHandler) ListViolations(ctx context.Context, request api.List
 
 func (h *DisciplineHandler) RecordViolation(ctx context.Context, request api.RecordViolationRequestObject) (api.RecordViolationResponseObject, error) {
 	b := request.Body
-	result, err := h.service.RecordViolation(ctx, tenantID(ctx), service.RecordInput{
-		StudentUserID: b.StudentUserId, ViolationTypeID: b.ViolationTypeId, OccurredOn: b.OccurredOn.Time, Notes: strOr(b.Notes),
+	in := service.RecordInput{
+		StudentUserID: b.StudentUserId, OccurredOn: b.OccurredOn.Time, Notes: strOr(b.Notes),
 		AttendanceSessionID: nullUUID(b.AttendanceSessionId), WorkflowInstanceID: nullUUID(b.WorkflowInstanceId), ReporterUserID: userID(ctx),
-	})
+	}
+	if b.ViolationTypeId != nil {
+		in.ViolationTypeID = *b.ViolationTypeId
+	}
+	if b.ViolationTypeIds != nil {
+		in.ViolationTypeIDs = *b.ViolationTypeIds
+	}
+	result, err := h.service.RecordViolation(ctx, tenantID(ctx), in)
 	if err != nil {
 		return nil, mapError(err)
 	}
-	return api.RecordViolation201JSONResponse{Record: toAPIRecord(result.Record), TotalPoints: result.TotalPoints, DueLevels: toAPILevels(result.DueLevels)}, nil
+	records := toAPIRecords(result.Records)
+	return api.RecordViolation201JSONResponse{Record: toAPIRecord(result.Record), Records: &records, TotalPoints: result.TotalPoints, DueLevels: toAPILevels(result.DueLevels)}, nil
 }
 
 func (h *DisciplineHandler) VoidViolation(ctx context.Context, request api.VoidViolationRequestObject) (api.VoidViolationResponseObject, error) {
@@ -188,6 +222,7 @@ func (h *DisciplineHandler) GetStudentDiscipline(ctx context.Context, request ap
 	return api.GetStudentDiscipline200JSONResponse{
 		StudentUserId: summary.StudentUserID, TotalPoints: summary.TotalPoints, Records: toAPIRecords(summary.Records),
 		Letters: toAPILetters(summary.Letters), DueLevels: toAPILevels(summary.DueLevels), Policy: toAPIPolicy(summary.Policy),
+		FirstCrossed: toAPICrossings(summary.Policy, firstCrossedFromSummary(summary)),
 	}, nil
 }
 
@@ -201,7 +236,31 @@ func (h *DisciplineHandler) GetMyDiscipline(ctx context.Context, _ api.GetMyDisc
 	return api.GetMyDiscipline200JSONResponse{
 		StudentUserId: summary.StudentUserID, TotalPoints: summary.TotalPoints, Records: toAPIRecords(summary.Records),
 		Letters: toAPILetters(summary.Letters), DueLevels: toAPILevels(summary.DueLevels), Policy: toAPIPolicy(summary.Policy),
+		FirstCrossed: toAPICrossings(summary.Policy, firstCrossedFromSummary(summary)),
 	}, nil
+}
+
+// firstCrossedFromSummary computes the "Status SP" dates straight from the
+// student's own records already fetched for the summary, rather than
+// re-querying every student in the tenant the way the XLSX report's bulk
+// FirstCrossedDates does -- this is a single-student read.
+func firstCrossedFromSummary(summary service.StudentSummary) map[int]time.Time {
+	records := make([]domain.PointRecord, 0, len(summary.Records))
+	for _, r := range summary.Records {
+		if r.IsVoided() {
+			continue
+		}
+		records = append(records, domain.PointRecord{Points: r.PointsSnapshot, OccurredOn: r.OccurredOn})
+	}
+	return summary.Policy.FirstCrossedDates(records)
+}
+
+func (h *DisciplineHandler) GetStudentDisciplineReport(ctx context.Context, request api.GetStudentDisciplineReportRequestObject) (api.GetStudentDisciplineReportResponseObject, error) {
+	url, err := h.service.StudentReportPDF(ctx, tenantID(ctx), request.StudentId)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return api.GetStudentDisciplineReport200JSONResponse{Url: url}, nil
 }
 
 func (h *DisciplineHandler) ListPointTotals(ctx context.Context, request api.ListPointTotalsRequestObject) (api.ListPointTotalsResponseObject, error) {
@@ -218,6 +277,21 @@ func (h *DisciplineHandler) ListPointTotals(ctx context.Context, request api.Lis
 		data[i] = item
 	}
 	return api.ListPointTotals200JSONResponse{Data: data}, nil
+}
+
+func (h *DisciplineHandler) ListSPCandidates(ctx context.Context, request api.ListSPCandidatesRequestObject) (api.ListSPCandidatesResponseObject, error) {
+	p := request.Params
+	candidates, err := h.service.ListSPCandidates(ctx, tenantID(ctx), nullUUID(p.ClassId), intOr(p.Level, 0), strOr(p.Search), intOr(p.Limit, 50), intOr(p.Offset, 0))
+	if err != nil {
+		return nil, mapError(err)
+	}
+	data := make([]api.SPCandidate, len(candidates))
+	for i, c := range candidates {
+		levels := make([]int, len(c.IssuedLevels))
+		copy(levels, c.IssuedLevels)
+		data[i] = api.SPCandidate{StudentUserId: c.StudentUserID, StudentName: c.StudentName, Nis: c.NIS, ClassName: c.ClassName, TotalPoints: c.TotalPoints, IssuedLevels: levels}
+	}
+	return api.ListSPCandidates200JSONResponse{Data: data}, nil
 }
 
 // Letters.
@@ -261,9 +335,14 @@ func counselingInput(b *api.CounselingWrite) service.CounselingInput {
 	if b.Visibility != nil {
 		visibility = domain.Visibility(*b.Visibility)
 	}
+	topic := domain.CounselingTopic("")
+	if b.Topic != nil {
+		topic = domain.CounselingTopic(*b.Topic)
+	}
 	return service.CounselingInput{
-		StudentUserID: b.StudentUserId, SessionAt: b.SessionAt, Kind: domain.CounselingKind(b.Kind), Title: b.Title,
-		Content: b.Content, FollowUpPlan: strOr(b.FollowUpPlan), Visibility: visibility,
+		StudentUserID: b.StudentUserId, SessionAt: b.SessionAt, Kind: domain.CounselingKind(b.Kind), Topic: topic, Title: b.Title,
+		Content: b.Content, FollowUpPlan: strOr(b.FollowUpPlan), CareerGoals: strOr(b.CareerGoals), ProblemDescription: strOr(b.ProblemDescription),
+		Visibility: visibility,
 	}
 }
 
@@ -273,6 +352,18 @@ func (h *DisciplineHandler) ListMyCounselings(ctx context.Context, request api.L
 		return nil, mapError(err)
 	}
 	return api.ListMyCounselings200JSONResponse{Data: toAPICounselings(notes)}, nil
+}
+
+func (h *DisciplineHandler) ListBKTeamCounselings(ctx context.Context, request api.ListBKTeamCounselingsRequestObject) (api.ListBKTeamCounselingsResponseObject, error) {
+	topic := domain.CounselingTopic("")
+	if request.Params.Topic != nil {
+		topic = domain.CounselingTopic(*request.Params.Topic)
+	}
+	notes, err := h.service.ListBKTeamCounselings(ctx, tenantID(ctx), userID(ctx), topic, intOr(request.Params.Limit, 50), intOr(request.Params.Offset, 0))
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return api.ListBKTeamCounselings200JSONResponse{Data: toAPICounselings(notes)}, nil
 }
 
 func (h *DisciplineHandler) CreateCounseling(ctx context.Context, request api.CreateCounselingRequestObject) (api.CreateCounselingResponseObject, error) {
@@ -314,6 +405,50 @@ func (h *DisciplineHandler) ListStudentCounselings(ctx context.Context, request 
 	return api.ListStudentCounselings200JSONResponse{Data: toAPICounselings(notes)}, nil
 }
 
+func (h *DisciplineHandler) GetCounselingReport(ctx context.Context, request api.GetCounselingReportRequestObject) (api.GetCounselingReportResponseObject, error) {
+	url, err := h.service.CounselingReportPDF(ctx, tenantID(ctx), request.CounselingId, userID(ctx))
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return api.GetCounselingReport200JSONResponse{Url: url}, nil
+}
+
+func (h *DisciplineHandler) ListCounselingAttachments(ctx context.Context, request api.ListCounselingAttachmentsRequestObject) (api.ListCounselingAttachmentsResponseObject, error) {
+	attachments, err := h.service.ListAttachments(ctx, tenantID(ctx), request.CounselingId, userID(ctx))
+	if err != nil {
+		return nil, mapError(err)
+	}
+	data := make([]api.CounselingAttachment, len(attachments))
+	for i, a := range attachments {
+		data[i] = api.CounselingAttachment{Id: a.ID, CounselingId: a.CounselingID, CreatedAt: a.CreatedAt}
+	}
+	return api.ListCounselingAttachments200JSONResponse{Data: data}, nil
+}
+
+func (h *DisciplineHandler) RequestCounselingAttachmentUpload(ctx context.Context, request api.RequestCounselingAttachmentUploadRequestObject) (api.RequestCounselingAttachmentUploadResponseObject, error) {
+	target, err := h.service.RequestAttachmentUpload(ctx, tenantID(ctx), request.CounselingId, userID(ctx))
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return api.RequestCounselingAttachmentUpload200JSONResponse{UploadUrl: target.UploadURL, ObjectKey: target.ObjectKey, ExpiresAt: target.ExpiresAt}, nil
+}
+
+func (h *DisciplineHandler) ConfirmCounselingAttachment(ctx context.Context, request api.ConfirmCounselingAttachmentRequestObject) (api.ConfirmCounselingAttachmentResponseObject, error) {
+	att, err := h.service.ConfirmAttachment(ctx, tenantID(ctx), request.CounselingId, userID(ctx), request.Body.ObjectKey)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return api.ConfirmCounselingAttachment201JSONResponse{Id: att.ID, CounselingId: att.CounselingID, CreatedAt: att.CreatedAt}, nil
+}
+
+func (h *DisciplineHandler) GetCounselingAttachmentUrl(ctx context.Context, request api.GetCounselingAttachmentUrlRequestObject) (api.GetCounselingAttachmentUrlResponseObject, error) {
+	url, err := h.service.AttachmentURL(ctx, tenantID(ctx), request.CounselingId, request.AttachmentId, userID(ctx))
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return api.GetCounselingAttachmentUrl200JSONResponse{Url: url}, nil
+}
+
 // Conversions.
 
 func toAPIType(t domain.ViolationType) api.ViolationType {
@@ -330,6 +465,24 @@ func toAPILevels(levels []domain.SPLevel) []api.SPLevel {
 
 func toAPIPolicy(p domain.SPPolicy) api.SPPolicy {
 	return api.SPPolicy{Version: p.Version, Levels: toAPILevels(p.Levels)}
+}
+
+func toAPILetterTemplatePolicy(p domain.WarningLetterTemplatePolicy) api.WarningLetterTemplatePolicy {
+	return api.WarningLetterTemplatePolicy{NumberPattern: p.NumberPattern, SeqPad: p.SeqPad, OpeningText: p.OpeningText, ClosingText: p.ClosingText}
+}
+
+// toAPICrossings orders a student's first-crossed dates by level and
+// labels each with the policy's current label for that level.
+func toAPICrossings(policy domain.SPPolicy, crossed map[int]time.Time) []api.SPCrossing {
+	out := make([]api.SPCrossing, 0, len(crossed))
+	for _, lvl := range policy.Levels {
+		date, ok := crossed[lvl.Level]
+		if !ok {
+			continue
+		}
+		out = append(out, api.SPCrossing{Level: lvl.Level, Label: lvl.Label, OccurredOn: openapi_types.Date{Time: date}})
+	}
+	return out
 }
 
 func toAPIRecord(r domain.ViolationRecord) api.ViolationRecord {
@@ -379,11 +532,19 @@ func toAPILetters(letters []domain.WarningLetter) []api.WarningLetter {
 func toAPICounseling(c domain.Counseling) api.Counseling {
 	out := api.Counseling{
 		Id: c.ID, StudentUserId: c.StudentUserID, CounselorUserId: c.CounselorUserID, SessionAt: c.SessionAt, Kind: api.CounselingKind(c.Kind),
-		Title: c.Title, Content: c.Content, Visibility: api.CounselingVisibility(c.Visibility), CreatedAt: c.CreatedAt,
+		Topic: api.CounselingTopic(c.Topic), Title: c.Title, Content: c.Content, Visibility: api.CounselingVisibility(c.Visibility), CreatedAt: c.CreatedAt,
 	}
 	if c.FollowUpPlan != "" {
 		plan := c.FollowUpPlan
 		out.FollowUpPlan = &plan
+	}
+	if c.CareerGoals != "" {
+		goals := c.CareerGoals
+		out.CareerGoals = &goals
+	}
+	if c.ProblemDescription != "" {
+		desc := c.ProblemDescription
+		out.ProblemDescription = &desc
 	}
 	if !c.UpdatedAt.IsZero() {
 		updated := c.UpdatedAt

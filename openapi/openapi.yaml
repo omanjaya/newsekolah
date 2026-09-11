@@ -3936,6 +3936,11 @@ paths:
           schema:
             type: boolean
             default: false
+        - name: search
+          in: query
+          schema:
+            type: string
+            maxLength: 160
       responses:
         "200":
           description: Types
@@ -4087,6 +4092,47 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+  /v1/discipline/warning-letter-template:
+    get:
+      tags:
+        - discipline
+      operationId: getWarningLetterTemplatePolicy
+      x-permission: view_discipline
+      summary: Warning-letter numbering pattern and opening/closing wording
+      responses:
+        "200":
+          description: Policy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WarningLetterTemplatePolicy"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    put:
+      tags:
+        - discipline
+      operationId: updateWarningLetterTemplatePolicy
+      x-permission: manage_settings
+      summary: Replace the warning-letter numbering pattern and wording
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WarningLetterTemplatePolicy"
+      responses:
+        "200":
+          description: Policy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WarningLetterTemplatePolicy"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /v1/discipline/violations:
     get:
       tags:
@@ -4151,7 +4197,7 @@ paths:
         - discipline
       operationId: recordViolation
       x-permission: record_violations
-      summary: Record a violation for a student (points snapshotted from the catalog)
+      summary: Record one or more violations for a student in one call (points snapshotted from the catalog)
       requestBody:
         required: true
         content:
@@ -4160,7 +4206,6 @@ paths:
               type: object
               required:
                 - student_user_id
-                - violation_type_id
                 - occurred_on
               properties:
                 student_user_id:
@@ -4169,6 +4214,15 @@ paths:
                 violation_type_id:
                   type: string
                   format: uuid
+                  description: Single-type form; use violation_type_ids for a batch of 1-50.
+                violation_type_ids:
+                  type: array
+                  minItems: 1
+                  maxItems: 50
+                  uniqueItems: true
+                  items:
+                    type: string
+                    format: uuid
                 occurred_on:
                   type: string
                   format: date
@@ -4196,6 +4250,8 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
   /v1/discipline/violations/{recordId}/void:
     post:
       tags:
@@ -4265,6 +4321,38 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+  /v1/discipline/students/{studentId}/report:
+    get:
+      tags:
+        - discipline
+      operationId: getStudentDisciplineReport
+      x-permission: view_discipline
+      summary: Individual student PDF report (violations, reporter names, signature block)
+      parameters:
+        - name: studentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: URL
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - url
+                properties:
+                  url:
+                    type: string
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /v1/me/discipline:
     get:
       tags:
@@ -4315,6 +4403,64 @@ paths:
                     type: array
                     items:
                       $ref: "#/components/schemas/PointTotal"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/discipline/sp-candidates:
+    get:
+      tags:
+        - discipline
+      operationId: listSPCandidates
+      x-permission: issue_warning_letters
+      summary: Students eligible for a warning letter (the counselor's issuing screen)
+      parameters:
+        - name: class_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: level
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+          description: Narrow to students whose total falls in this level's range.
+        - name: search
+          in: query
+          schema:
+            type: string
+            maxLength: 160
+          description: Name, NIS or class.
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        "200":
+          description: Candidates
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/SPCandidate"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -4634,6 +4780,232 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+  /v1/discipline/counselings/bk-team:
+    get:
+      tags:
+        - discipline
+      operationId: listBKTeamCounselings
+      x-permission: manage_counseling
+      summary: Notes any author shared with the whole BK team (requires duty counselor), optionally by topic
+      parameters:
+        - name: topic
+          in: query
+          schema:
+            $ref: "#/components/schemas/CounselingTopic"
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        "200":
+          description: Notes
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Counseling"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/discipline/counselings/{counselingId}/report:
+    get:
+      tags:
+        - discipline
+      operationId: getCounselingReport
+      x-permission: manage_counseling
+      summary: Printable A4 report for one note (visibility enforced server-side)
+      parameters:
+        - name: counselingId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: URL
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - url
+                properties:
+                  url:
+                    type: string
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/discipline/counselings/{counselingId}/attachments:
+    get:
+      tags:
+        - discipline
+      operationId: listCounselingAttachments
+      x-permission: manage_counseling
+      summary: Attachments on a note (visibility enforced server-side)
+      parameters:
+        - name: counselingId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Attachments
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/CounselingAttachment"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/discipline/counselings/{counselingId}/attachments/upload-url:
+    post:
+      tags:
+        - discipline
+      operationId: requestCounselingAttachmentUpload
+      x-permission: manage_counseling
+      summary: Presigned upload target for a new attachment (author only)
+      parameters:
+        - name: counselingId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Target
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - upload_url
+                  - object_key
+                  - expires_at
+                properties:
+                  upload_url:
+                    type: string
+                  object_key:
+                    type: string
+                  expires_at:
+                    type: string
+                    format: date-time
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/discipline/counselings/{counselingId}/attachments/confirm:
+    post:
+      tags:
+        - discipline
+      operationId: confirmCounselingAttachment
+      x-permission: manage_counseling
+      summary: Validate and record an uploaded attachment (JPEG/PNG, author only)
+      parameters:
+        - name: counselingId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - object_key
+              properties:
+                object_key:
+                  type: string
+      responses:
+        "201":
+          description: Recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CounselingAttachment"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/discipline/counselings/{counselingId}/attachments/{attachmentId}/url:
+    get:
+      tags:
+        - discipline
+      operationId: getCounselingAttachmentUrl
+      x-permission: manage_counseling
+      summary: Short-lived download URL for one attachment (visibility enforced server-side)
+      parameters:
+        - name: counselingId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: attachmentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: URL
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - url
+                properties:
+                  url:
+                    type: string
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /v1/children/{studentId}/attendance:
     get:
       tags:
@@ -16126,12 +16498,66 @@ components:
       properties:
         record:
           $ref: "#/components/schemas/ViolationRecord"
+          description: The first record from this call (single-type callers only ever get one).
+        records:
+          type: array
+          items:
+            $ref: "#/components/schemas/ViolationRecord"
+          description: Every record written this call, for batch callers.
         total_points:
           type: integer
         due_levels:
           type: array
           items:
             $ref: "#/components/schemas/SPLevel"
+    WarningLetterTemplatePolicy:
+      type: object
+      required:
+        - number_pattern
+        - seq_pad
+        - opening_text
+        - closing_text
+      properties:
+        number_pattern:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: "Placeholders: {{seq}}, {{sp_level_number}}, {{month_roman}}, {{year}}."
+        seq_pad:
+          type: integer
+          minimum: 0
+          maximum: 10
+        opening_text:
+          type: string
+          maxLength: 1000
+        closing_text:
+          type: string
+          maxLength: 1000
+    SPCandidate:
+      type: object
+      required:
+        - student_user_id
+        - student_name
+        - nis
+        - class_name
+        - total_points
+        - issued_levels
+      properties:
+        student_user_id:
+          type: string
+          format: uuid
+        student_name:
+          type: string
+        nis:
+          type: string
+        class_name:
+          type: string
+        total_points:
+          type: integer
+        issued_levels:
+          type: array
+          items:
+            type: integer
     PointTotal:
       type: object
       required:
@@ -16186,6 +16612,20 @@ components:
           format: date-time
         has_document:
           type: boolean
+    SPCrossing:
+      type: object
+      required:
+        - level
+        - label
+        - occurred_on
+      properties:
+        level:
+          type: integer
+        label:
+          type: string
+        occurred_on:
+          type: string
+          format: date
     StudentDiscipline:
       type: object
       required:
@@ -16195,6 +16635,7 @@ components:
         - letters
         - due_levels
         - policy
+        - first_crossed
       properties:
         student_user_id:
           type: string
@@ -16215,6 +16656,11 @@ components:
             $ref: "#/components/schemas/SPLevel"
         policy:
           $ref: "#/components/schemas/SPPolicy"
+        first_crossed:
+          type: array
+          items:
+            $ref: "#/components/schemas/SPCrossing"
+          description: The date each level was first reached ("Status SP").
     CounselingKind:
       type: string
       enum:
@@ -16222,6 +16668,16 @@ components:
         - group
         - parent
         - referral
+    CounselingTopic:
+      type: string
+      enum:
+        - career
+        - problem
+        - personal
+        - learning
+        - social
+        - other
+      default: problem
     CounselingVisibility:
       type: string
       enum:
@@ -16245,6 +16701,8 @@ components:
           format: date-time
         kind:
           $ref: "#/components/schemas/CounselingKind"
+        topic:
+          $ref: "#/components/schemas/CounselingTopic"
         title:
           type: string
           minLength: 1
@@ -16254,6 +16712,12 @@ components:
           minLength: 1
           maxLength: 20000
         follow_up_plan:
+          type: string
+          maxLength: 5000
+        career_goals:
+          type: string
+          maxLength: 5000
+        problem_description:
           type: string
           maxLength: 5000
         visibility:
@@ -16266,6 +16730,7 @@ components:
         - counselor_user_id
         - session_at
         - kind
+        - topic
         - title
         - content
         - visibility
@@ -16285,11 +16750,17 @@ components:
           format: date-time
         kind:
           $ref: "#/components/schemas/CounselingKind"
+        topic:
+          $ref: "#/components/schemas/CounselingTopic"
         title:
           type: string
         content:
           type: string
         follow_up_plan:
+          type: string
+        career_goals:
+          type: string
+        problem_description:
           type: string
         visibility:
           $ref: "#/components/schemas/CounselingVisibility"
@@ -16297,6 +16768,22 @@ components:
           type: string
           format: date-time
         updated_at:
+          type: string
+          format: date-time
+    CounselingAttachment:
+      type: object
+      required:
+        - id
+        - counseling_id
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        counseling_id:
+          type: string
+          format: uuid
+        created_at:
           type: string
           format: date-time
     ChildCalendarDay:

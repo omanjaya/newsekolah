@@ -96,6 +96,90 @@ func (q *Queries) GetWarningLetter(ctx context.Context, arg GetWarningLetterPara
 	return i, err
 }
 
+const listSPCandidates = `-- name: ListSPCandidates :many
+select vr.student_user_id, u.name as student_name, coalesce(sp.nis, '') as nis, coalesce(c.name, '') as class_name,
+  coalesce(sum(vr.points_snapshot), 0)::int as total,
+  coalesce(array_agg(distinct wl.level) filter (where wl.level is not null), '{}')::int[] as issued_levels
+from violation_records vr
+join users u on u.id = vr.student_user_id
+left join student_profiles sp on sp.user_id = vr.student_user_id
+left join enrollments e on e.tenant_id = vr.tenant_id and e.academic_year_id = vr.academic_year_id
+  and e.student_user_id = vr.student_user_id and e.status = 'active'
+left join classes c on c.id = e.class_id
+left join warning_letters wl on wl.tenant_id = vr.tenant_id and wl.academic_year_id = vr.academic_year_id
+  and wl.student_user_id = vr.student_user_id
+where vr.tenant_id = $1 and vr.academic_year_id = $2 and vr.voided_at is null
+  and ($5::uuid is null or e.class_id = $5::uuid)
+  and ($6::text is null or u.name ilike '%' || $6 || '%'
+    or sp.nis ilike '%' || $6 || '%' or c.name ilike '%' || $6 || '%')
+group by vr.student_user_id, u.name, sp.nis, c.name
+having coalesce(sum(vr.points_snapshot), 0) >= $7::int
+  and ($8::int is null or coalesce(sum(vr.points_snapshot), 0) <= $8::int)
+order by total desc
+limit $3 offset $4
+`
+
+type ListSPCandidatesParams struct {
+	TenantID       uuid.UUID   `json:"tenant_id"`
+	AcademicYearID uuid.UUID   `json:"academic_year_id"`
+	Limit          int32       `json:"limit"`
+	Offset         int32       `json:"offset"`
+	ClassID        pgtype.UUID `json:"class_id"`
+	Search         pgtype.Text `json:"search"`
+	MinPoints      int32       `json:"min_points"`
+	MaxPoints      pgtype.Int4 `json:"max_points"`
+}
+
+type ListSPCandidatesRow struct {
+	StudentUserID uuid.UUID `json:"student_user_id"`
+	StudentName   string    `json:"student_name"`
+	Nis           string    `json:"nis"`
+	ClassName     string    `json:"class_name"`
+	Total         int32     `json:"total"`
+	IssuedLevels  []int32   `json:"issued_levels"`
+}
+
+// The counselor's issuing screen: every student whose active total has
+// reached at least the first SP level, searchable by name/NIS/class, with
+// the levels already issued so the UI can grey them out. The level filter
+// itself is a points range (min_points/max_points) the service derives
+// from the policy, since only Go holds the level ladder.
+func (q *Queries) ListSPCandidates(ctx context.Context, arg ListSPCandidatesParams) ([]ListSPCandidatesRow, error) {
+	rows, err := q.db.Query(ctx, listSPCandidates,
+		arg.TenantID,
+		arg.AcademicYearID,
+		arg.Limit,
+		arg.Offset,
+		arg.ClassID,
+		arg.Search,
+		arg.MinPoints,
+		arg.MaxPoints,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListSPCandidatesRow{}
+	for rows.Next() {
+		var i ListSPCandidatesRow
+		if err := rows.Scan(
+			&i.StudentUserID,
+			&i.StudentName,
+			&i.Nis,
+			&i.ClassName,
+			&i.Total,
+			&i.IssuedLevels,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listWarningLetters = `-- name: ListWarningLetters :many
 select wl.id, wl.tenant_id, wl.academic_year_id, wl.student_user_id, wl.level, wl.level_label, wl.threshold_points, wl.total_points, wl.letter_number, wl.issued_by, wl.issued_at, wl.snapshot, wl.document_asset_id from warning_letters wl
 where wl.tenant_id = $1 and wl.academic_year_id = $2

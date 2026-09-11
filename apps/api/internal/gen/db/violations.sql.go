@@ -152,6 +152,45 @@ func (q *Queries) GetViolationRecord(ctx context.Context, arg GetViolationRecord
 	return i, err
 }
 
+const getViolationRecordByWorkflow = `-- name: GetViolationRecordByWorkflow :one
+select id, tenant_id, academic_year_id, student_user_id, violation_type_id, points_snapshot, occurred_on, attendance_session_id, workflow_instance_id, reporter_user_id, notes, created_at, updated_at, voided_at, voided_by, void_reason from violation_records
+where tenant_id = $1 and workflow_instance_id = $2 and violation_type_id = $3
+`
+
+type GetViolationRecordByWorkflowParams struct {
+	TenantID           uuid.UUID   `json:"tenant_id"`
+	WorkflowInstanceID pgtype.UUID `json:"workflow_instance_id"`
+	ViolationTypeID    uuid.UUID   `json:"violation_type_id"`
+}
+
+// Idempotency lookup for cross-module callers (attendance sessions, late
+// arrival review): a second call with the same (workflow_instance_id,
+// violation_type_id) returns the record already written instead of
+// creating a duplicate.
+func (q *Queries) GetViolationRecordByWorkflow(ctx context.Context, arg GetViolationRecordByWorkflowParams) (ViolationRecord, error) {
+	row := q.db.QueryRow(ctx, getViolationRecordByWorkflow, arg.TenantID, arg.WorkflowInstanceID, arg.ViolationTypeID)
+	var i ViolationRecord
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.AcademicYearID,
+		&i.StudentUserID,
+		&i.ViolationTypeID,
+		&i.PointsSnapshot,
+		&i.OccurredOn,
+		&i.AttendanceSessionID,
+		&i.WorkflowInstanceID,
+		&i.ReporterUserID,
+		&i.Notes,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.VoidedAt,
+		&i.VoidedBy,
+		&i.VoidReason,
+	)
+	return i, err
+}
+
 const getViolationType = `-- name: GetViolationType :one
 select id, tenant_id, code, name, points, category, is_active, created_at, updated_at, deleted_at from violation_types where tenant_id = $1 and id = $2 and deleted_at is null
 `
@@ -177,6 +216,53 @@ func (q *Queries) GetViolationType(ctx context.Context, arg GetViolationTypePara
 		&i.DeletedAt,
 	)
 	return i, err
+}
+
+const listActivePointsByYear = `-- name: ListActivePointsByYear :many
+select vr.student_user_id, vr.points_snapshot, vr.occurred_on
+from violation_records vr
+where vr.tenant_id = $1 and vr.academic_year_id = $2 and vr.voided_at is null
+  and ($3::uuid is null or exists (
+    select 1 from enrollments e where e.tenant_id = vr.tenant_id and e.academic_year_id = vr.academic_year_id
+      and e.student_user_id = vr.student_user_id and e.class_id = $3::uuid and e.status = 'active'))
+order by vr.student_user_id, vr.occurred_on
+`
+
+type ListActivePointsByYearParams struct {
+	TenantID       uuid.UUID   `json:"tenant_id"`
+	AcademicYearID uuid.UUID   `json:"academic_year_id"`
+	ClassID        pgtype.UUID `json:"class_id"`
+}
+
+type ListActivePointsByYearRow struct {
+	StudentUserID  uuid.UUID   `json:"student_user_id"`
+	PointsSnapshot int32       `json:"points_snapshot"`
+	OccurredOn     pgtype.Date `json:"occurred_on"`
+}
+
+// Every active violation's points and date this year, for computing when
+// each student first crossed each SP threshold (the report's "Status SP"
+// column). Grouped by student in Go rather than SQL so the same policy
+// logic (SPPolicy.FirstCrossedDates) drives both the API summary and the
+// exported report.
+func (q *Queries) ListActivePointsByYear(ctx context.Context, arg ListActivePointsByYearParams) ([]ListActivePointsByYearRow, error) {
+	rows, err := q.db.Query(ctx, listActivePointsByYear, arg.TenantID, arg.AcademicYearID, arg.ClassID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListActivePointsByYearRow{}
+	for rows.Next() {
+		var i ListActivePointsByYearRow
+		if err := rows.Scan(&i.StudentUserID, &i.PointsSnapshot, &i.OccurredOn); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listStudentPointTotals = `-- name: ListStudentPointTotals :many
@@ -414,16 +500,18 @@ func (q *Queries) ListViolationRecordsForStudent(ctx context.Context, arg ListVi
 const listViolationTypes = `-- name: ListViolationTypes :many
 select id, tenant_id, code, name, points, category, is_active, created_at, updated_at, deleted_at from violation_types
 where tenant_id = $1 and deleted_at is null and ($2::bool or is_active)
+  and ($3::text is null or name ilike '%' || $3 || '%' or code ilike '%' || $3 || '%')
 order by category, points desc, name
 `
 
 type ListViolationTypesParams struct {
-	TenantID        uuid.UUID `json:"tenant_id"`
-	IncludeInactive bool      `json:"include_inactive"`
+	TenantID        uuid.UUID   `json:"tenant_id"`
+	IncludeInactive bool        `json:"include_inactive"`
+	Search          pgtype.Text `json:"search"`
 }
 
 func (q *Queries) ListViolationTypes(ctx context.Context, arg ListViolationTypesParams) ([]ViolationType, error) {
-	rows, err := q.db.Query(ctx, listViolationTypes, arg.TenantID, arg.IncludeInactive)
+	rows, err := q.db.Query(ctx, listViolationTypes, arg.TenantID, arg.IncludeInactive, arg.Search)
 	if err != nil {
 		return nil, err
 	}

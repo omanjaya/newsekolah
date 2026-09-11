@@ -1,6 +1,7 @@
 -- name: ListViolationTypes :many
 select * from violation_types
 where tenant_id = $1 and deleted_at is null and (sqlc.arg(include_inactive)::bool or is_active)
+  and (sqlc.narg(search)::text is null or name ilike '%' || sqlc.narg(search) || '%' or code ilike '%' || sqlc.narg(search) || '%')
 order by category, points desc, name;
 
 -- name: GetViolationType :one
@@ -27,6 +28,14 @@ returning *;
 
 -- name: GetViolationRecord :one
 select * from violation_records where tenant_id = $1 and id = $2;
+
+-- name: GetViolationRecordByWorkflow :one
+-- Idempotency lookup for cross-module callers (attendance sessions, late
+-- arrival review): a second call with the same (workflow_instance_id,
+-- violation_type_id) returns the record already written instead of
+-- creating a duplicate.
+select * from violation_records
+where tenant_id = $1 and workflow_instance_id = $2 and violation_type_id = $3;
 
 -- name: VoidViolationRecord :one
 update violation_records set voided_at = now(), voided_by = $3, void_reason = $4
@@ -59,6 +68,20 @@ limit $3 offset $4;
 select coalesce(sum(points_snapshot), 0)::int as total
 from violation_records
 where tenant_id = $1 and academic_year_id = $2 and student_user_id = $3 and voided_at is null;
+
+-- name: ListActivePointsByYear :many
+-- Every active violation's points and date this year, for computing when
+-- each student first crossed each SP threshold (the report's "Status SP"
+-- column). Grouped by student in Go rather than SQL so the same policy
+-- logic (SPPolicy.FirstCrossedDates) drives both the API summary and the
+-- exported report.
+select vr.student_user_id, vr.points_snapshot, vr.occurred_on
+from violation_records vr
+where vr.tenant_id = $1 and vr.academic_year_id = $2 and vr.voided_at is null
+  and (sqlc.narg(class_id)::uuid is null or exists (
+    select 1 from enrollments e where e.tenant_id = vr.tenant_id and e.academic_year_id = vr.academic_year_id
+      and e.student_user_id = vr.student_user_id and e.class_id = sqlc.narg(class_id)::uuid and e.status = 'active'))
+order by vr.student_user_id, vr.occurred_on;
 
 -- name: ListStudentPointTotals :many
 -- Points per student in a class this year, for the homeroom and counselor overview.

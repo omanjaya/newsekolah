@@ -21,6 +21,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/billing"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/discipline"
+	disciplineservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/discipline/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/family"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/grading"
 	gradingservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/grading/service"
@@ -160,6 +161,8 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	disciplineModule := discipline.Register(discipline.Dependencies{
 		Pool: pool, Years: schoolModule.Service, Docs: wiring.DisciplineDocuments{Permits: permitsModule.Service},
 		Sealer: sealer, Bus: eventBus, Clock: clock.Real{},
+		Names: wiring.IdentityNames{Svc: identityModule.Service}, Guardians: wiring.DisciplineGuardians{Identity: identityModule.Service},
+		Storage: sharedStorage, Config: disciplineservice.DefaultConfig(cfg.S3Bucket),
 	})
 
 	// analytics composes its risk signals through adapters over

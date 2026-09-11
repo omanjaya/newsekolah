@@ -1882,6 +1882,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/discipline/warning-letter-template": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Warning-letter numbering pattern and opening/closing wording */
+        get: operations["getWarningLetterTemplatePolicy"];
+        /** Replace the warning-letter numbering pattern and wording */
+        put: operations["updateWarningLetterTemplatePolicy"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/discipline/violations": {
         parameters: {
             query?: never;
@@ -1892,7 +1910,7 @@ export interface paths {
         /** Violation records this year, filterable by class and date */
         get: operations["listViolations"];
         put?: never;
-        /** Record a violation for a student (points snapshotted from the catalog) */
+        /** Record one or more violations for a student in one call (points snapshotted from the catalog) */
         post: operations["recordViolation"];
         delete?: never;
         options?: never;
@@ -1934,6 +1952,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/discipline/students/{studentId}/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Individual student PDF report (violations, reporter names, signature block) */
+        get: operations["getStudentDisciplineReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/me/discipline": {
         parameters: {
             query?: never;
@@ -1960,6 +1995,23 @@ export interface paths {
         };
         /** Students ranked by active points this year */
         get: operations["listPointTotals"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/discipline/sp-candidates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Students eligible for a warning letter (the counselor's issuing screen) */
+        get: operations["listSPCandidates"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2066,6 +2118,108 @@ export interface paths {
         };
         /** Notes about one student the caller may read */
         get: operations["listStudentCounselings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/discipline/counselings/bk-team": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Notes any author shared with the whole BK team (requires duty counselor), optionally by topic */
+        get: operations["listBKTeamCounselings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/discipline/counselings/{counselingId}/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Printable A4 report for one note (visibility enforced server-side) */
+        get: operations["getCounselingReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/discipline/counselings/{counselingId}/attachments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Attachments on a note (visibility enforced server-side) */
+        get: operations["listCounselingAttachments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/discipline/counselings/{counselingId}/attachments/upload-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Presigned upload target for a new attachment (author only) */
+        post: operations["requestCounselingAttachmentUpload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/discipline/counselings/{counselingId}/attachments/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Validate and record an uploaded attachment (JPEG/PNG, author only) */
+        post: operations["confirmCounselingAttachment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/discipline/counselings/{counselingId}/attachments/{attachmentId}/url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Short-lived download URL for one attachment (visibility enforced server-side) */
+        get: operations["getCounselingAttachmentUrl"];
         put?: never;
         post?: never;
         delete?: never;
@@ -7044,9 +7198,28 @@ export interface components {
             void_reason?: string;
         };
         ViolationRecordResult: {
+            /** @description The first record from this call (single-type callers only ever get one). */
             record: components["schemas"]["ViolationRecord"];
+            /** @description Every record written this call, for batch callers. */
+            records?: components["schemas"]["ViolationRecord"][];
             total_points: number;
             due_levels: components["schemas"]["SPLevel"][];
+        };
+        WarningLetterTemplatePolicy: {
+            /** @description Placeholders: {{seq}}, {{sp_level_number}}, {{month_roman}}, {{year}}. */
+            number_pattern: string;
+            seq_pad: number;
+            opening_text: string;
+            closing_text: string;
+        };
+        SPCandidate: {
+            /** Format: uuid */
+            student_user_id: string;
+            student_name: string;
+            nis: string;
+            class_name: string;
+            total_points: number;
+            issued_levels: number[];
         };
         PointTotal: {
             /** Format: uuid */
@@ -7072,6 +7245,12 @@ export interface components {
             issued_at: string;
             has_document: boolean;
         };
+        SPCrossing: {
+            level: number;
+            label: string;
+            /** Format: date */
+            occurred_on: string;
+        };
         StudentDiscipline: {
             /** Format: uuid */
             student_user_id: string;
@@ -7080,9 +7259,16 @@ export interface components {
             letters: components["schemas"]["WarningLetter"][];
             due_levels: components["schemas"]["SPLevel"][];
             policy: components["schemas"]["SPPolicy"];
+            /** @description The date each level was first reached ("Status SP"). */
+            first_crossed: components["schemas"]["SPCrossing"][];
         };
         /** @enum {string} */
         CounselingKind: "individual" | "group" | "parent" | "referral";
+        /**
+         * @default problem
+         * @enum {string}
+         */
+        CounselingTopic: "career" | "problem" | "personal" | "learning" | "social" | "other";
         /** @enum {string} */
         CounselingVisibility: "counselor" | "bk_team" | "leadership";
         CounselingWrite: {
@@ -7091,9 +7277,12 @@ export interface components {
             /** Format: date-time */
             session_at: string;
             kind: components["schemas"]["CounselingKind"];
+            topic?: components["schemas"]["CounselingTopic"];
             title: string;
             content: string;
             follow_up_plan?: string;
+            career_goals?: string;
+            problem_description?: string;
             visibility?: components["schemas"]["CounselingVisibility"];
         };
         Counseling: {
@@ -7106,14 +7295,25 @@ export interface components {
             /** Format: date-time */
             session_at: string;
             kind: components["schemas"]["CounselingKind"];
+            topic: components["schemas"]["CounselingTopic"];
             title: string;
             content: string;
             follow_up_plan?: string;
+            career_goals?: string;
+            problem_description?: string;
             visibility: components["schemas"]["CounselingVisibility"];
             /** Format: date-time */
             created_at: string;
             /** Format: date-time */
             updated_at?: string;
+        };
+        CounselingAttachment: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            counseling_id: string;
+            /** Format: date-time */
+            created_at: string;
         };
         ChildCalendarDay: {
             /** Format: date */
@@ -12954,6 +13154,7 @@ export interface operations {
         parameters: {
             query?: {
                 include_inactive?: boolean;
+                search?: string;
             };
             header?: never;
             path?: never;
@@ -13107,6 +13308,54 @@ export interface operations {
             403: components["responses"]["Forbidden"];
         };
     };
+    getWarningLetterTemplatePolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Policy */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WarningLetterTemplatePolicy"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    updateWarningLetterTemplatePolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WarningLetterTemplatePolicy"];
+            };
+        };
+        responses: {
+            /** @description Policy */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WarningLetterTemplatePolicy"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
     listViolations: {
         parameters: {
             query?: {
@@ -13150,8 +13399,12 @@ export interface operations {
                 "application/json": {
                     /** Format: uuid */
                     student_user_id: string;
-                    /** Format: uuid */
-                    violation_type_id: string;
+                    /**
+                     * Format: uuid
+                     * @description Single-type form; use violation_type_ids for a batch of 1-50.
+                     */
+                    violation_type_id?: string;
+                    violation_type_ids?: string[];
                     /** Format: date */
                     occurred_on: string;
                     notes?: string;
@@ -13176,6 +13429,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
         };
     };
     voidViolation: {
@@ -13235,6 +13489,33 @@ export interface operations {
             403: components["responses"]["Forbidden"];
         };
     };
+    getStudentDisciplineReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description URL */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        url: string;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
     getMyDiscipline: {
         parameters: {
             query?: never;
@@ -13279,6 +13560,39 @@ export interface operations {
                     };
                 };
             };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    listSPCandidates: {
+        parameters: {
+            query?: {
+                class_id?: string;
+                /** @description Narrow to students whose total falls in this level's range. */
+                level?: number;
+                /** @description Name, NIS or class. */
+                search?: string;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Candidates */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["SPCandidate"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
         };
@@ -13549,6 +13863,178 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+        };
+    };
+    listBKTeamCounselings: {
+        parameters: {
+            query?: {
+                topic?: components["schemas"]["CounselingTopic"];
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Notes */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Counseling"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    getCounselingReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                counselingId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description URL */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        url: string;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listCounselingAttachments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                counselingId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Attachments */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["CounselingAttachment"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    requestCounselingAttachmentUpload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                counselingId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Target */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        upload_url: string;
+                        object_key: string;
+                        /** Format: date-time */
+                        expires_at: string;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    confirmCounselingAttachment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                counselingId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    object_key: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Recorded */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CounselingAttachment"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getCounselingAttachmentUrl: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                counselingId: string;
+                attachmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description URL */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        url: string;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     getChildAttendance: {
