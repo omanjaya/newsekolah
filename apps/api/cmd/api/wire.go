@@ -238,6 +238,13 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		Flags: wiring.BillingFlags{Platform: platformModule.Service}, Links: identityModule.Service, Clock: clock.Real{},
 	})
 
+	libraryModule := library.Register(library.Dependencies{
+		Pool: pool, Members: wiring.LibraryMembers{Svc: identityModule.Service},
+		Flags: wiring.LibraryFlags{Platform: platformModule.Service}, Permissions: wiring.LibraryPermissions{Identity: identityModule.Service},
+		Events: wiring.LibraryEvents{Bus: eventBus}, ScanTokens: wiring.LibraryScanTokens{Permits: permitsModule.Service},
+		Clock: clock.Real{},
+	})
+
 	var (
 		workers  *river.Workers
 		periodic []*river.PeriodicJob
@@ -252,6 +259,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		periodic = append(periodic, notificationPeriodic...)
 		periodic = append(periodic, announcementsModule.RegisterJobs(workers)...)
 		periodic = append(periodic, reportsModule.RegisterJobs(workers, wiring.ReportsEmailSender{Email: senders.Email}, logger)...)
+		periodic = append(periodic, libraryModule.RegisterJobs(workers, logger)...)
 		platformModule.RegisterJobs(workers)
 		integrationsModule.RegisterJobs(workers, clock.Real{})
 		// analyticsModule needs attendance/discipline/grading already
@@ -270,10 +278,6 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	}
 	jobInserter.client = riverClient
 	bg := &background{jobs: riverClient, runWorkers: cfg.WorkerInline, logger: logger}
-
-	libraryModule := library.Register(library.Dependencies{
-		Pool: pool, Members: wiring.LibraryMembers{Svc: identityModule.Service}, Clock: clock.Real{},
-	})
 
 	familyModule := family.Register(family.Dependencies{
 		Links:      identityModule.Service,

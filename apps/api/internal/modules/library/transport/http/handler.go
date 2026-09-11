@@ -5,6 +5,7 @@ package http
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/google/uuid"
 	openapi_types "github.com/oapi-codegen/runtime/types"
@@ -40,6 +41,27 @@ var errorMap = map[error]*httpx.Error{
 	domain.ErrStocktakeNotFound:      httpx.ErrLibraryStocktakeNotFound,
 	domain.ErrStocktakeClosed:        httpx.ErrLibraryStocktakeClosed,
 	domain.ErrInvalidInput:           httpx.ErrValidation,
+
+	domain.ErrModuleDisabled: httpx.ErrLibraryModuleDisabled,
+	domain.ErrLoansClosed:    httpx.ErrLibraryLoansClosed,
+	domain.ErrUnpaidFine:     httpx.ErrLibraryUnpaidFine,
+	domain.ErrForbidden:      httpx.ErrLibraryForbidden,
+
+	domain.ErrMemberNotFound:      httpx.ErrLibraryMemberNotFound,
+	domain.ErrMemberAlreadyExists: httpx.ErrLibraryMemberAlreadyExists,
+	domain.ErrMemberNotActive:     httpx.ErrLibraryMemberNotActive,
+	domain.ErrMemberSuspended:     httpx.ErrLibraryMemberSuspended,
+	domain.ErrMemberExpired:       httpx.ErrLibraryMemberExpired,
+	domain.ErrMemberNotClearable:  httpx.ErrLibraryMemberNotClearable,
+	domain.ErrMemberTypeNotFound:  httpx.ErrLibraryMemberTypeNotFound,
+	domain.ErrMemberTypeInUse:     httpx.ErrLibraryMemberTypeInUse,
+	domain.ErrMemberNoExhausted:   httpx.ErrLibraryMemberNoExhausted,
+	domain.ErrMemberNoCollision:   httpx.ErrLibraryMemberNoCollision,
+
+	domain.ErrViolationNotFound:       httpx.ErrLibraryViolationNotFound,
+	domain.ErrViolationAlreadySettled: httpx.ErrLibraryViolationAlreadySettled,
+
+	domain.ErrVisitNotFound: httpx.ErrLibraryVisitNotFound,
 }
 
 func mapError(err error) error {
@@ -67,6 +89,20 @@ func intOr(p *int, def int) int {
 		return def
 	}
 	return *p
+}
+
+func boolOr(p *bool) bool {
+	if p == nil {
+		return false
+	}
+	return *p
+}
+
+func barcodeSourceOr(p *api.LibraryPolicyWriteBarcodeSource, def string) string {
+	if p == nil || string(*p) == "" {
+		return def
+	}
+	return string(*p)
 }
 
 func toAPITitle(t service.TitleWithAvailability) api.LibraryTitle {
@@ -111,20 +147,29 @@ func toAPICopy(c domain.Copy) api.LibraryCopy {
 	return out
 }
 
+func openapiDate(t time.Time) openapi_types.Date { return openapi_types.Date{Time: t} }
+
 func toAPILoan(l domain.Loan) api.LibraryLoan {
+	channel := api.LibraryLoanChannel(l.Channel)
 	out := api.LibraryLoan{
 		Id: l.ID, CopyId: l.CopyID, TitleId: l.TitleID, MemberUserId: l.MemberUserID,
-		BorrowedAt: l.BorrowedAt, DueOn: openapi_types.Date{Time: l.DueOn}, RenewalCount: l.RenewalCount,
+		BorrowedAt: l.BorrowedAt, DueOn: openapiDate(l.DueOn), RenewalCount: l.RenewalCount,
 		Status: api.LibraryLoanStatus(l.Status), FineAmount: l.FineAmount, ReturnedAt: l.ReturnedAt, FinePaidAt: l.FinePaidAt,
+		Channel: &channel,
 	}
 	return out
 }
 
 func toAPIReservation(r domain.Reservation) api.LibraryReservation {
-	return api.LibraryReservation{
+	out := api.LibraryReservation{
 		Id: r.ID, TitleId: r.TitleID, MemberUserId: r.MemberUserID, Status: api.LibraryReservationStatus(r.Status),
 		RequestedAt: r.RequestedAt, ReadyAt: r.ReadyAt, ExpiresAt: r.ExpiresAt,
 	}
+	if r.HeldCopyID.Valid {
+		id := openapi_types.UUID(r.HeldCopyID.UUID)
+		out.HeldCopyId = &id
+	}
+	return out
 }
 
 func toAPIQueuedReservation(r service.QueuedReservation) api.LibraryReservation {
@@ -168,8 +213,14 @@ func toAPIStocktakeResult(r domain.StocktakeResult) api.LibraryStocktakeResult {
 }
 
 func toAPIPolicy(p domain.Policy) api.LibraryPolicy {
+	barcodeSource := api.LibraryPolicyBarcodeSource(p.BarcodeSource)
 	return api.LibraryPolicy{
 		Version: p.Version, LoanDays: p.LoanDays, MaxActiveLoans: p.MaxActiveLoans, MaxRenewals: p.MaxRenewals,
 		RenewalDays: p.RenewalDays, FinePerDay: p.FinePerDay, ReservationHoldDays: p.ReservationHoldDays,
+		Name: p.Name, Npp: &p.NPP, BarcodeSource: &barcodeSource, AccessionFormat: &p.AccessionFormat,
+		MemberNoFormat: &p.MemberNoFormat, SaturdayClosed: p.SaturdayClosed, SundayClosed: p.SundayClosed,
+		BookingEnabled: p.BookingEnabled, BookingMax: p.BookingMax, FineCurrencyEnabled: p.FineCurrencyEnabled,
+		BlockLoansWithUnpaidFines: p.BlockLoansWithUnpaidFines, DueReminderDays: p.DueReminderDays,
+		AutoRegisterMembers: p.AutoRegisterMembers,
 	}
 }

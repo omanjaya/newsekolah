@@ -57,6 +57,7 @@ const (
 	PermManageLibraryMembers     = "manage_library_members"
 	PermManageLibrarySettings    = "manage_library_settings"
 	PermViewLibraryReports       = "view_library_reports"
+	PermViewOwnLibraryLoans      = "view_own_library_loans"
 
 	PermViewChildAttendance = "view_child_attendance"
 	PermViewChildGrades     = "view_child_grades"
@@ -109,6 +110,7 @@ var Catalog = []Permission{
 	{PermManageLibraryMembers, "library", "Manage library members"},
 	{PermManageLibrarySettings, "library", "Manage library loan rules and settings"},
 	{PermViewLibraryReports, "library", "View library reports"},
+	{PermViewOwnLibraryLoans, "library", "View own library loans, reservations, and fines"},
 
 	{PermViewChildAttendance, "parent", "View a linked child's attendance"},
 	{PermViewChildGrades, "parent", "View a linked child's grades"},

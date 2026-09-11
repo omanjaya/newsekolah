@@ -20,12 +20,12 @@ func RoleDefaults() []RoleDefault {
 		{"teacher", "Guru", []string{
 			PermViewDashboard, PermViewAnnouncements, PermViewSchedules, PermViewAcademicData,
 			PermViewAttendance, PermManageAttendance, PermViewNotifications,
-			PermManageGrades, PermViewLibrary, PermIssueScanTokens,
+			PermManageGrades, PermViewLibrary, PermViewOwnLibraryLoans, PermIssueScanTokens,
 			PermCreateAnnouncements, PermEditAnnouncements, PermPublishAnnouncements,
 			PermViewDiscipline, PermRecordViolations, PermViewEarlyWarning,
 		}},
 		{"staff", "Pegawai", []string{
-			PermViewDashboard, PermViewAnnouncements, PermViewNotifications, PermViewLibrary, PermViewAcademicData, PermIssueScanTokens,
+			PermViewDashboard, PermViewAnnouncements, PermViewNotifications, PermViewLibrary, PermViewOwnLibraryLoans, PermViewAcademicData, PermIssueScanTokens,
 			PermCreateAnnouncements, PermEditAnnouncements, PermPublishAnnouncements,
 			PermViewDiscipline, PermRecordViolations, PermViewEarlyWarning,
 			PermViewVisitors, PermManageVisitors, PermViewVisitorIncidents, PermManageVisitorIncidents, PermViewVisitorReports,
@@ -33,14 +33,14 @@ func RoleDefaults() []RoleDefault {
 		}},
 		{"student", "Siswa", []string{
 			PermViewDashboard, PermViewAnnouncements, PermViewNotifications, PermViewSchedules, PermViewAcademicData,
-			PermViewOwnGrades, PermSubmitLeaveRequests, PermViewAttendance, PermViewLibrary,
+			PermViewOwnGrades, PermSubmitLeaveRequests, PermViewAttendance, PermViewOwnLibraryLoans,
 		}},
 		{"parent", "Orang Tua", []string{
 			PermViewDashboard, PermViewAnnouncements, PermViewNotifications,
-			PermViewChildAttendance, PermViewChildGrades, PermApproveChildLeaveRequests, PermViewChildBilling,
+			PermViewChildAttendance, PermViewChildGrades, PermApproveChildLeaveRequests, PermViewChildBilling, PermViewOwnLibraryLoans,
 		}},
 		{"librarian", "Pustakawan", []string{
-			PermViewDashboard, PermViewNotifications, PermViewLibrary,
+			PermViewDashboard, PermViewNotifications, PermViewLibrary, PermViewOwnLibraryLoans,
 			PermManageLibraryCatalog, PermManageLibraryCirculation,
 			PermManageLibraryMembers, PermManageLibrarySettings, PermViewLibraryReports,
 		}},

@@ -1,6 +1,8 @@
 // Package library wires the library module: title and copy catalogue,
-// circulation (borrow, return, renew, fines), the reservation queue,
-// stocktake sessions, the public OPAC, and circulation reports.
+// circulation (borrow, return, renew, fines, violations), members and
+// member types, the reservation queue and its expiry job, stocktake
+// sessions, visits and the guest-book kiosk, the public OPAC, and
+// circulation reports.
 package library
 
 import (
@@ -13,9 +15,13 @@ import (
 )
 
 type Dependencies struct {
-	Pool    *pgxpool.Pool
-	Members service.MemberDirectory // nil: reports and cards fall back to the member's user ID
-	Clock   clock.Clock
+	Pool        *pgxpool.Pool
+	Members     service.MemberDirectory // nil: reports and cards fall back to the member's user ID
+	Flags       service.FlagReader      // nil: module gate never blocks (used by tests)
+	Permissions service.PermissionChecker
+	Events      service.EventPublisher
+	ScanTokens  service.ScanTokens // nil: kiosk token endpoints return an error
+	Clock       clock.Clock
 }
 
 type Module struct {
@@ -24,6 +30,8 @@ type Module struct {
 }
 
 func Register(deps Dependencies) *Module {
-	svc := service.New(deps.Pool, repository.New(deps.Pool), deps.Members, deps.Clock)
+	svc := service.New(deps.Pool, repository.New(deps.Pool), deps.Members, deps.Clock, service.Deps{
+		Flags: deps.Flags, Permissions: deps.Permissions, Events: deps.Events, ScanTokens: deps.ScanTokens,
+	})
 	return &Module{Service: svc, Handler: transporthttp.New(svc)}
 }

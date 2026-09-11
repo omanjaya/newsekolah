@@ -29,6 +29,27 @@ var (
 	ErrStocktakeNotFound      = errors.New("stocktake not found")
 	ErrStocktakeClosed        = errors.New("stocktake is already closed")
 	ErrInvalidInput           = errors.New("invalid input")
+
+	ErrModuleDisabled = errors.New("library module is disabled for this tenant")
+	ErrLoansClosed    = errors.New("lending is closed for this date")
+	ErrUnpaidFine     = errors.New("member has an unpaid fine")
+	ErrForbidden      = errors.New("not permitted to view this member's records")
+
+	ErrMemberNotFound      = errors.New("library member not found")
+	ErrMemberAlreadyExists = errors.New("user is already a library member")
+	ErrMemberNotActive     = errors.New("library member is not active")
+	ErrMemberSuspended     = errors.New("library member is suspended")
+	ErrMemberExpired       = errors.New("library membership has expired")
+	ErrMemberNotClearable  = errors.New("member has active loans or unpaid fines")
+	ErrMemberTypeNotFound  = errors.New("library member type not found")
+	ErrMemberTypeInUse     = errors.New("library member type is in use")
+	ErrMemberNoExhausted   = errors.New("could not generate a unique member number")
+	ErrMemberNoCollision   = errors.New("member number already in use")
+
+	ErrViolationNotFound       = errors.New("library violation not found")
+	ErrViolationAlreadySettled = errors.New("library violation is already settled")
+
+	ErrVisitNotFound = errors.New("library visit not found")
 )
 
 // CopyCondition is the physical state of one copy, recorded at acquisition
@@ -72,6 +93,7 @@ type Title struct {
 	Classification string
 	Language       string
 	CoverAssetID   uuid.NullUUID
+	IsOPAC         bool
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 }
@@ -83,6 +105,7 @@ type Copy struct {
 	Barcode    string
 	Condition  CopyCondition
 	Status     CopyStatus
+	IsOPAC     bool
 	AcquiredOn *time.Time
 	Notes      string
 	CreatedAt  time.Time
@@ -99,6 +122,17 @@ func (c Copy) CanBorrow() error {
 	return nil
 }
 
+// CanBorrowBy is CanBorrow plus the one exception the old app allowed and
+// the rebuild's first pass lost: a copy the module has already set aside
+// (status reserved) for one member's ready hold is borrowable by that
+// member, and only that member. Every other status is unchanged.
+func (c Copy) CanBorrowBy(reservedForThisMember bool) error {
+	if c.Status == CopyReserved && reservedForThisMember {
+		return nil
+	}
+	return c.CanBorrow()
+}
+
 // LoanStatus is the state of one borrow record.
 type LoanStatus string
 
@@ -107,6 +141,25 @@ const (
 	LoanReturned LoanStatus = "returned"
 	LoanLost     LoanStatus = "lost"
 )
+
+// Channel is where a loan was checked out from, so reports can tell desk
+// traffic apart from self-service and the mobile app (old app's
+// library_circulation.go "channel" column, dropped in the first pass).
+type Channel string
+
+const (
+	ChannelDesk        Channel = "desk"
+	ChannelSelfService Channel = "self_service"
+	ChannelMobile      Channel = "mobile"
+)
+
+func (c Channel) Valid() bool {
+	switch c {
+	case ChannelDesk, ChannelSelfService, ChannelMobile:
+		return true
+	}
+	return false
+}
 
 type Loan struct {
 	ID           uuid.UUID
@@ -121,6 +174,7 @@ type Loan struct {
 	CheckedInBy  uuid.NullUUID
 	RenewalCount int
 	Status       LoanStatus
+	Channel      Channel
 	FineAmount   int
 	FinePaidAt   *time.Time
 	CreatedAt    time.Time
@@ -143,14 +197,18 @@ const (
 )
 
 type Reservation struct {
-	ID              uuid.UUID
-	TenantID        uuid.UUID
-	TitleID         uuid.UUID
-	MemberUserID    uuid.UUID
-	Status          ReservationStatus
-	RequestedAt     time.Time
-	ReadyAt         *time.Time
-	ExpiresAt       *time.Time
+	ID           uuid.UUID
+	TenantID     uuid.UUID
+	TitleID      uuid.UUID
+	MemberUserID uuid.UUID
+	Status       ReservationStatus
+	RequestedAt  time.Time
+	ReadyAt      *time.Time
+	ExpiresAt    *time.Time
+	// HeldCopyID is the specific copy set aside once the reservation
+	// becomes ready (regression fix: the first pass had no way to trace a
+	// reserved copy back to the member it was held for).
+	HeldCopyID      uuid.NullUUID
 	FulfilledLoanID uuid.NullUUID
 	CreatedAt       time.Time
 	UpdatedAt       time.Time

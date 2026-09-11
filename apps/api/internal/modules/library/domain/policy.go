@@ -9,7 +9,11 @@ import (
 
 // Policy is the tenant's circulation policy (docs/02-system-design.md style
 // tenant policy, stored by the library module itself rather than in
-// tenant_policies -- see the module's migration notes).
+// tenant_policies -- see the module's migration notes). It also carries the
+// library settings the old app kept in the generic settings table
+// (library_common.go:47-71): a school-wide default for the loan/fine
+// figures above (a member type or dated loan rule can still override
+// them), numbering formats, weekend closure, booking, and fines.
 type Policy struct {
 	Version             int `json:"version"`
 	LoanDays            int `json:"loan_days"`
@@ -18,7 +22,26 @@ type Policy struct {
 	RenewalDays         int `json:"renewal_days"`
 	FinePerDay          int `json:"fine_per_day"`
 	ReservationHoldDays int `json:"reservation_hold_days"`
+
+	Name                      string `json:"name"`
+	NPP                       string `json:"npp"`
+	BarcodeSource             string `json:"barcode_source"` // "no_induk" | "item_id"
+	AccessionFormat           string `json:"accession_format"`
+	MemberNoFormat            string `json:"member_no_format"`
+	SaturdayClosed            bool   `json:"saturday_closed"`
+	SundayClosed              bool   `json:"sunday_closed"`
+	BookingEnabled            bool   `json:"booking_enabled"`
+	BookingMax                int    `json:"booking_max"`
+	FineCurrencyEnabled       bool   `json:"fine_currency_enabled"`
+	BlockLoansWithUnpaidFines bool   `json:"block_loans_with_unpaid_fines"`
+	DueReminderDays           int    `json:"due_reminder_days"`
+	AutoRegisterMembers       bool   `json:"auto_register_members"`
 }
+
+const (
+	BarcodeSourceAccessionNumber = "no_induk"
+	BarcodeSourceItemID          = "item_id"
+)
 
 func DefaultPolicy() Policy {
 	return Policy{
@@ -29,15 +52,47 @@ func DefaultPolicy() Policy {
 		RenewalDays:         7,
 		FinePerDay:          1000,
 		ReservationHoldDays: 2,
+
+		Name:                      "Perpustakaan Sekolah",
+		BarcodeSource:             BarcodeSourceAccessionNumber,
+		AccessionFormat:           "YYYY/99999",
+		MemberNoFormat:            "PS-YYYY-99999",
+		SaturdayClosed:            true,
+		SundayClosed:              true,
+		BookingEnabled:            true,
+		BookingMax:                2,
+		FineCurrencyEnabled:       false,
+		BlockLoansWithUnpaidFines: true,
+		DueReminderDays:           2,
+		AutoRegisterMembers:       true,
 	}
 }
 
+//nolint:gocyclo // every field gets its own explicit range check; kept linear rather than a validation-rule table for a struct this size
 func (p Policy) Validate() error {
 	if p.LoanDays <= 0 || p.MaxActiveLoans <= 0 || p.MaxRenewals < 0 ||
 		p.RenewalDays <= 0 || p.FinePerDay < 0 || p.ReservationHoldDays <= 0 {
 		return ErrInvalidInput
 	}
+	if p.Name == "" || len(p.Name) > 150 || len(p.NPP) > 60 {
+		return ErrInvalidInput
+	}
+	if p.BarcodeSource != BarcodeSourceAccessionNumber && p.BarcodeSource != BarcodeSourceItemID {
+		return ErrInvalidInput
+	}
+	if p.AccessionFormat == "" || len(p.AccessionFormat) > 60 || p.MemberNoFormat == "" || len(p.MemberNoFormat) > 60 {
+		return ErrInvalidInput
+	}
+	if p.BookingMax < 0 || p.DueReminderDays < 0 {
+		return ErrInvalidInput
+	}
 	return nil
+}
+
+// WorkingDays is the weekend-closure half of the policy, for callers that
+// combine it with the tenant's holiday dates to build a WorkingDayRule.
+func (p Policy) WorkingDays(holidays map[string]bool) WorkingDayRule {
+	return WorkingDayRule{SaturdayClosed: p.SaturdayClosed, SundayClosed: p.SundayClosed, Holidays: holidays}
 }
 
 // DueDate is the day a loan started on borrowedAt falls due under the policy.

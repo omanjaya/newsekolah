@@ -19,4 +19,25 @@ var (
 	ErrLibraryCopyAvailableForLoan   = NewError(http.StatusConflict, "LIBRARY_COPY_AVAILABLE_FOR_LOAN")
 	ErrLibraryStocktakeNotFound      = NewError(http.StatusNotFound, "LIBRARY_STOCKTAKE_NOT_FOUND")
 	ErrLibraryStocktakeClosed        = NewError(http.StatusConflict, "LIBRARY_STOCKTAKE_CLOSED")
+
+	ErrLibraryModuleDisabled = NewError(http.StatusNotFound, "LIBRARY_MODULE_DISABLED")
+	ErrLibraryLoansClosed    = NewError(http.StatusConflict, "LIBRARY_LOANS_CLOSED")
+	ErrLibraryUnpaidFine     = NewError(http.StatusConflict, "LIBRARY_UNPAID_FINE")
+	ErrLibraryForbidden      = NewError(http.StatusForbidden, "LIBRARY_FORBIDDEN")
+
+	ErrLibraryMemberNotFound      = NewError(http.StatusNotFound, "LIBRARY_MEMBER_NOT_FOUND")
+	ErrLibraryMemberAlreadyExists = NewError(http.StatusConflict, "LIBRARY_MEMBER_ALREADY_EXISTS")
+	ErrLibraryMemberNotActive     = NewError(http.StatusConflict, "LIBRARY_MEMBER_NOT_ACTIVE")
+	ErrLibraryMemberSuspended     = NewError(http.StatusConflict, "LIBRARY_MEMBER_SUSPENDED")
+	ErrLibraryMemberExpired       = NewError(http.StatusConflict, "LIBRARY_MEMBER_EXPIRED")
+	ErrLibraryMemberNotClearable  = NewError(http.StatusConflict, "LIBRARY_MEMBER_NOT_CLEARABLE")
+	ErrLibraryMemberTypeNotFound  = NewError(http.StatusNotFound, "LIBRARY_MEMBER_TYPE_NOT_FOUND")
+	ErrLibraryMemberTypeInUse     = NewError(http.StatusConflict, "LIBRARY_MEMBER_TYPE_IN_USE")
+	ErrLibraryMemberNoExhausted   = NewError(http.StatusConflict, "LIBRARY_MEMBER_NO_EXHAUSTED")
+	ErrLibraryMemberNoCollision   = NewError(http.StatusConflict, "LIBRARY_MEMBER_NO_COLLISION")
+
+	ErrLibraryViolationNotFound       = NewError(http.StatusNotFound, "LIBRARY_VIOLATION_NOT_FOUND")
+	ErrLibraryViolationAlreadySettled = NewError(http.StatusConflict, "LIBRARY_VIOLATION_ALREADY_SETTLED")
+
+	ErrLibraryVisitNotFound = NewError(http.StatusNotFound, "LIBRARY_VISIT_NOT_FOUND")
 )
