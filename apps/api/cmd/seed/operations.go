@@ -85,6 +85,9 @@ func seedOperations(ctx context.Context, pool *pgxpool.Pool, q *db.Queries, tena
 	if err != nil {
 		return err
 	}
+	if err := ensureSubjectOfferings(ctx, q, academicSvc, tenantID, yearID, subjects); err != nil {
+		return err
+	}
 
 	class, err := findClass(ctx, academicSvc, tenantID, yearID, demoClassName)
 	if err != nil {
@@ -187,6 +190,51 @@ func ensureSubjects(ctx context.Context, svc *academicservice.Service, tenantID 
 		byCode[seed.code] = s
 	}
 	return byCode, nil
+}
+
+const offeringHoursPerWeek = 4
+
+// ensureSubjectOfferings creates a subject_offerings row for every
+// (grade level, subject) pair in the seeded curriculum. Teaching
+// assignments can only reference a subject that is offered in the
+// academic year (academic/service/teaching.go, requireValidTeachingReferences),
+// so this has to run before ensureTeaching.
+func ensureSubjectOfferings(ctx context.Context, q *db.Queries, svc *academicservice.Service, tenantID, yearID uuid.UUID, subjects map[string]academicdomain.Subject) error {
+	gradeLevels, err := q.AcademicListGradeLevels(ctx, tenantID)
+	if err != nil {
+		return fmt.Errorf("list grade levels: %w", err)
+	}
+	existing, err := svc.ListSubjectOfferings(ctx, tenantID, yearID)
+	if err != nil {
+		return fmt.Errorf("list subject offerings: %w", err)
+	}
+	type offeringKey struct {
+		subjectID    uuid.UUID
+		gradeLevelID uuid.UUID
+	}
+	have := make(map[offeringKey]bool, len(existing))
+	for _, o := range existing {
+		if o.GradeLevelID != nil {
+			have[offeringKey{o.SubjectID, *o.GradeLevelID}] = true
+		}
+	}
+	for _, level := range gradeLevels {
+		for _, subj := range subjects {
+			key := offeringKey{subj.ID, level.ID}
+			if have[key] {
+				continue
+			}
+			gradeLevelID := level.ID
+			if _, err := svc.CreateSubjectOffering(ctx, academicdomain.SubjectOffering{
+				TenantID: tenantID, AcademicYearID: yearID, SubjectID: subj.ID,
+				GradeLevelID: &gradeLevelID, HoursPerWeek: offeringHoursPerWeek,
+			}); err != nil && !errors.Is(err, academicdomain.ErrSubjectOfferingExists) {
+				return fmt.Errorf("create subject offering for %s grade %s: %w", subj.Code, level.Code, err)
+			}
+			have[key] = true
+		}
+	}
+	return nil
 }
 
 func findClass(ctx context.Context, svc *academicservice.Service, tenantID, yearID uuid.UUID, name string) (academicdomain.Class, error) {
