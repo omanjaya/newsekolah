@@ -2,11 +2,20 @@ package domain_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/discipline/domain"
 )
+
+func date(s string) time.Time {
+	t, err := time.Parse("2006-01-02", s)
+	if err != nil {
+		panic(err)
+	}
+	return t
+}
 
 func TestSPPolicyLevelFor(t *testing.T) {
 	policy := domain.DefaultSPPolicy()
@@ -64,6 +73,28 @@ func TestSPPolicyValidateRejectsBrokenLadders(t *testing.T) {
 		})
 	}
 	require.NoError(t, domain.DefaultSPPolicy().Validate())
+}
+
+func TestSPPolicyFirstCrossedDates(t *testing.T) {
+	policy := domain.DefaultSPPolicy()
+
+	// Out of order on purpose: FirstCrossedDates must sort before summing.
+	records := []domain.PointRecord{
+		{Points: 20, OccurredOn: date("2026-03-01")},
+		{Points: 10, OccurredOn: date("2026-01-15")}, // total after sort: 30
+		{Points: 20, OccurredOn: date("2026-02-01")}, // running total 10 -> 30 -> 50
+	}
+
+	crossed := policy.FirstCrossedDates(records)
+	require.Equal(t, date("2026-02-01"), crossed[1], "SP1 (25 pts) is first reached on the day the running total hits 30")
+	require.Equal(t, date("2026-03-01"), crossed[2], "SP2 (50 pts) is first reached once the last record lands")
+	require.NotContains(t, crossed, 3, "SP3 (75 pts) was never reached")
+}
+
+func TestWarningLetterTemplatePolicyValidate(t *testing.T) {
+	require.NoError(t, domain.DefaultWarningLetterTemplatePolicy().Validate())
+	require.Error(t, domain.WarningLetterTemplatePolicy{NumberPattern: "", SeqPad: 3}.Validate())
+	require.Error(t, domain.WarningLetterTemplatePolicy{NumberPattern: "{{seq}}", SeqPad: -1}.Validate())
 }
 
 func TestCounselingVisibility(t *testing.T) {

@@ -9,19 +9,20 @@ import "github.com/google/uuid"
 // publisher exists yet in this branch, so each handler is exercised by
 // unit tests calling Bus.Publish directly until the owning module merges.
 const (
-	AttendanceSubmitted    = "attendance.submitted"
-	SubstitutionRequested  = "substitution.requested"
-	SubstitutionResponded  = "substitution.responded"
-	LeaveRequestSubmitted  = "leave_request.submitted"
-	LeaveRequestReviewed   = "leave_request.reviewed"
-	LeaveRequestIssued     = "leave_request.issued"
-	ExitPermitStageChanged = "exit_permit.stage_changed"
-	ExitPermitIssued       = "exit_permit.issued"
-	ExitPermitExited       = "exit_permit.exited"
-	LateArrivalOpened      = "late_arrival.opened"
-	LateArrivalUpdated     = "late_arrival.updated"
-	WarningLetterIssued    = "warning_letter.issued"
-	AnnouncementPublished  = "announcement.published"
+	AttendanceSubmitted        = "attendance.submitted"
+	SubstitutionRequested      = "substitution.requested"
+	SubstitutionResponded      = "substitution.responded"
+	LeaveRequestSubmitted      = "leave_request.submitted"
+	LeaveRequestReviewed       = "leave_request.reviewed"
+	LeaveRequestIssued         = "leave_request.issued"
+	ExitPermitStageChanged     = "exit_permit.stage_changed"
+	ExitPermitIssued           = "exit_permit.issued"
+	ExitPermitExited           = "exit_permit.exited"
+	LateArrivalOpened          = "late_arrival.opened"
+	LateArrivalUpdated         = "late_arrival.updated"
+	WarningLetterIssued        = "warning_letter.issued"
+	DisciplineThresholdReached = "discipline.threshold_reached"
+	AnnouncementPublished      = "announcement.published"
 )
 
 // Envelope is the generic shape every domain event above is published as.

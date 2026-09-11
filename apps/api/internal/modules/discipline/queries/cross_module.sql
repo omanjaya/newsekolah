@@ -12,7 +12,7 @@ on conflict (tenant_id, kind, version) do nothing;
 -- name: DisciplineStudentSnapshot :one
 -- cross-module read: users (identity) and enrollments/classes (academic),
 -- for the name and class printed on a warning letter.
-select u.name as student_name, coalesce(c.name, '') as class_name, coalesce(sp.guardian_name, '') as guardian_name
+select u.name as student_name, coalesce(c.name, '') as class_name, coalesce(sp.guardian_name, '') as guardian_name, coalesce(sp.nis, '') as nis
 from users u
 left join enrollments e on e.student_user_id = u.id and e.academic_year_id = $3 and e.status = 'active'
 left join classes c on c.id = e.class_id
@@ -33,3 +33,23 @@ select exists (
 select class_id from enrollments
 where tenant_id = $1 and academic_year_id = $2 and student_user_id = $3 and status = 'active'
 limit 1;
+
+-- name: DisciplineStudentEligible :one
+-- Backs the RecordViolation/CreateCounseling regression fix: the subject
+-- must be an active user account with an active enrollment in the given
+-- (active) academic year -- the same two checks the old app made before
+-- recording (student_violations.go:108-122).
+select
+  exists(select 1 from users u where u.tenant_id = $1 and u.id = $2 and u.status = 'active' and u.deleted_at is null) as user_active,
+  exists(select 1 from enrollments e where e.tenant_id = $1 and e.academic_year_id = $3 and e.student_user_id = $2 and e.status = 'active') as enrolled;
+
+-- name: DisciplineUserName :one
+select name from users where tenant_id = $1 and id = $2;
+
+-- name: DisciplineCreateAsset :one
+insert into assets (tenant_id, bucket, object_key, mime, size_bytes, sha256, kind, visibility, created_by)
+values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+returning id;
+
+-- name: DisciplineGetAsset :one
+select object_key, mime, size_bytes from assets where tenant_id = $1 and id = $2 and deleted_at is null;

@@ -11,4 +11,10 @@ func init() {
 	catalog["WARNING_LETTER_ALREADY_ISSUED"] = map[string]string{Indonesian: "Surat peringatan level ini sudah diterbitkan.", English: "This warning letter level was already issued."}
 	catalog["COUNSELING_NOT_FOUND"] = map[string]string{Indonesian: "Catatan konseling tidak ditemukan.", English: "Counseling note not found."}
 	catalog["COUNSELING_FORBIDDEN"] = map[string]string{Indonesian: "Catatan konseling ini tidak dibagikan kepada Anda.", English: "This counseling note is not shared with you."}
+	catalog["STUDENT_NOT_ENROLLED"] = map[string]string{Indonesian: "Siswa tidak memiliki penugasan kelas aktif di tahun ajaran aktif.", English: "The student has no active class enrollment in the active academic year."}
+	catalog["STUDENT_INACTIVE"] = map[string]string{Indonesian: "Akun siswa ini tidak aktif.", English: "This student's account is not active."}
+	catalog["ATTACHMENT_NOT_FOUND"] = map[string]string{Indonesian: "Lampiran tidak ditemukan.", English: "Attachment not found."}
+	catalog["ATTACHMENT_TOO_LARGE"] = map[string]string{Indonesian: "Ukuran berkas lampiran melebihi batas.", English: "The attachment file exceeds the size limit."}
+	catalog["ATTACHMENT_INVALID_TYPE"] = map[string]string{Indonesian: "Berkas lampiran harus berupa gambar JPEG atau PNG.", English: "The attachment file must be a JPEG or PNG image."}
+	catalog["REPORT_UNAVAILABLE"] = map[string]string{Indonesian: "Pembuatan laporan PDF belum diaktifkan di server ini.", English: "PDF report generation is not enabled on this server."}
 }

@@ -279,20 +279,23 @@ type ClassJournal struct {
 }
 
 type Counseling struct {
-	ID                    uuid.UUID          `json:"id"`
-	TenantID              uuid.UUID          `json:"tenant_id"`
-	AcademicYearID        uuid.UUID          `json:"academic_year_id"`
-	StudentUserID         uuid.UUID          `json:"student_user_id"`
-	CounselorUserID       uuid.UUID          `json:"counselor_user_id"`
-	SessionAt             pgtype.Timestamptz `json:"session_at"`
-	Kind                  string             `json:"kind"`
-	Title                 string             `json:"title"`
-	ContentEncrypted      []byte             `json:"content_encrypted"`
-	ContentKeyID          string             `json:"content_key_id"`
-	FollowUpPlanEncrypted []byte             `json:"follow_up_plan_encrypted"`
-	Visibility            string             `json:"visibility"`
-	CreatedAt             pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt             pgtype.Timestamptz `json:"updated_at"`
+	ID                          uuid.UUID          `json:"id"`
+	TenantID                    uuid.UUID          `json:"tenant_id"`
+	AcademicYearID              uuid.UUID          `json:"academic_year_id"`
+	StudentUserID               uuid.UUID          `json:"student_user_id"`
+	CounselorUserID             uuid.UUID          `json:"counselor_user_id"`
+	SessionAt                   pgtype.Timestamptz `json:"session_at"`
+	Kind                        string             `json:"kind"`
+	Title                       string             `json:"title"`
+	ContentEncrypted            []byte             `json:"content_encrypted"`
+	ContentKeyID                string             `json:"content_key_id"`
+	FollowUpPlanEncrypted       []byte             `json:"follow_up_plan_encrypted"`
+	Visibility                  string             `json:"visibility"`
+	CreatedAt                   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                   pgtype.Timestamptz `json:"updated_at"`
+	Topic                       string             `json:"topic"`
+	CareerGoalsEncrypted        []byte             `json:"career_goals_encrypted"`
+	ProblemDescriptionEncrypted []byte             `json:"problem_description_encrypted"`
 }
 
 type CounselingAttachment struct {

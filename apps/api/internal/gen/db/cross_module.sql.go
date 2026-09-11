@@ -220,6 +220,41 @@ func (q *Queries) DisciplineActiveClassID(ctx context.Context, arg DisciplineAct
 	return class_id, err
 }
 
+const disciplineCreateAsset = `-- name: DisciplineCreateAsset :one
+insert into assets (tenant_id, bucket, object_key, mime, size_bytes, sha256, kind, visibility, created_by)
+values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+returning id
+`
+
+type DisciplineCreateAssetParams struct {
+	TenantID   uuid.UUID   `json:"tenant_id"`
+	Bucket     string      `json:"bucket"`
+	ObjectKey  string      `json:"object_key"`
+	Mime       string      `json:"mime"`
+	SizeBytes  int64       `json:"size_bytes"`
+	Sha256     string      `json:"sha256"`
+	Kind       string      `json:"kind"`
+	Visibility string      `json:"visibility"`
+	CreatedBy  pgtype.UUID `json:"created_by"`
+}
+
+func (q *Queries) DisciplineCreateAsset(ctx context.Context, arg DisciplineCreateAssetParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, disciplineCreateAsset,
+		arg.TenantID,
+		arg.Bucket,
+		arg.ObjectKey,
+		arg.Mime,
+		arg.SizeBytes,
+		arg.Sha256,
+		arg.Kind,
+		arg.Visibility,
+		arg.CreatedBy,
+	)
+	var id uuid.UUID
+	err := row.Scan(&id)
+	return id, err
+}
+
 const disciplineCreatePolicy = `-- name: DisciplineCreatePolicy :exec
 insert into tenant_policies (tenant_id, kind, version, config, effective_from, created_by)
 values ($1, $2, $3, $4, $5, $6)
@@ -245,6 +280,28 @@ func (q *Queries) DisciplineCreatePolicy(ctx context.Context, arg DisciplineCrea
 		arg.CreatedBy,
 	)
 	return err
+}
+
+const disciplineGetAsset = `-- name: DisciplineGetAsset :one
+select object_key, mime, size_bytes from assets where tenant_id = $1 and id = $2 and deleted_at is null
+`
+
+type DisciplineGetAssetParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	ID       uuid.UUID `json:"id"`
+}
+
+type DisciplineGetAssetRow struct {
+	ObjectKey string `json:"object_key"`
+	Mime      string `json:"mime"`
+	SizeBytes int64  `json:"size_bytes"`
+}
+
+func (q *Queries) DisciplineGetAsset(ctx context.Context, arg DisciplineGetAssetParams) (DisciplineGetAssetRow, error) {
+	row := q.db.QueryRow(ctx, disciplineGetAsset, arg.TenantID, arg.ID)
+	var i DisciplineGetAssetRow
+	err := row.Scan(&i.ObjectKey, &i.Mime, &i.SizeBytes)
+	return i, err
 }
 
 const disciplineGetLatestPolicy = `-- name: DisciplineGetLatestPolicy :one
@@ -303,8 +360,36 @@ func (q *Queries) DisciplineHasActiveDuty(ctx context.Context, arg DisciplineHas
 	return has_duty, err
 }
 
+const disciplineStudentEligible = `-- name: DisciplineStudentEligible :one
+select
+  exists(select 1 from users u where u.tenant_id = $1 and u.id = $2 and u.status = 'active' and u.deleted_at is null) as user_active,
+  exists(select 1 from enrollments e where e.tenant_id = $1 and e.academic_year_id = $3 and e.student_user_id = $2 and e.status = 'active') as enrolled
+`
+
+type DisciplineStudentEligibleParams struct {
+	TenantID       uuid.UUID `json:"tenant_id"`
+	ID             uuid.UUID `json:"id"`
+	AcademicYearID uuid.UUID `json:"academic_year_id"`
+}
+
+type DisciplineStudentEligibleRow struct {
+	UserActive bool `json:"user_active"`
+	Enrolled   bool `json:"enrolled"`
+}
+
+// Backs the RecordViolation/CreateCounseling regression fix: the subject
+// must be an active user account with an active enrollment in the given
+// (active) academic year -- the same two checks the old app made before
+// recording (student_violations.go:108-122).
+func (q *Queries) DisciplineStudentEligible(ctx context.Context, arg DisciplineStudentEligibleParams) (DisciplineStudentEligibleRow, error) {
+	row := q.db.QueryRow(ctx, disciplineStudentEligible, arg.TenantID, arg.ID, arg.AcademicYearID)
+	var i DisciplineStudentEligibleRow
+	err := row.Scan(&i.UserActive, &i.Enrolled)
+	return i, err
+}
+
 const disciplineStudentSnapshot = `-- name: DisciplineStudentSnapshot :one
-select u.name as student_name, coalesce(c.name, '') as class_name, coalesce(sp.guardian_name, '') as guardian_name
+select u.name as student_name, coalesce(c.name, '') as class_name, coalesce(sp.guardian_name, '') as guardian_name, coalesce(sp.nis, '') as nis
 from users u
 left join enrollments e on e.student_user_id = u.id and e.academic_year_id = $3 and e.status = 'active'
 left join classes c on c.id = e.class_id
@@ -322,6 +407,7 @@ type DisciplineStudentSnapshotRow struct {
 	StudentName  string `json:"student_name"`
 	ClassName    string `json:"class_name"`
 	GuardianName string `json:"guardian_name"`
+	Nis          string `json:"nis"`
 }
 
 // cross-module read: users (identity) and enrollments/classes (academic),
@@ -329,8 +415,29 @@ type DisciplineStudentSnapshotRow struct {
 func (q *Queries) DisciplineStudentSnapshot(ctx context.Context, arg DisciplineStudentSnapshotParams) (DisciplineStudentSnapshotRow, error) {
 	row := q.db.QueryRow(ctx, disciplineStudentSnapshot, arg.TenantID, arg.ID, arg.AcademicYearID)
 	var i DisciplineStudentSnapshotRow
-	err := row.Scan(&i.StudentName, &i.ClassName, &i.GuardianName)
+	err := row.Scan(
+		&i.StudentName,
+		&i.ClassName,
+		&i.GuardianName,
+		&i.Nis,
+	)
 	return i, err
+}
+
+const disciplineUserName = `-- name: DisciplineUserName :one
+select name from users where tenant_id = $1 and id = $2
+`
+
+type DisciplineUserNameParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	ID       uuid.UUID `json:"id"`
+}
+
+func (q *Queries) DisciplineUserName(ctx context.Context, arg DisciplineUserNameParams) (string, error) {
+	row := q.db.QueryRow(ctx, disciplineUserName, arg.TenantID, arg.ID)
+	var name string
+	err := row.Scan(&name)
+	return name, err
 }
 
 const getActiveEnrollment = `-- name: GetActiveEnrollment :one

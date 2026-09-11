@@ -238,6 +238,7 @@ type Querier interface {
 	CreateComponent(ctx context.Context, arg CreateComponentParams) (AssessmentComponent, error)
 	CreateCopy(ctx context.Context, arg CreateCopyParams) (LibraryCopy, error)
 	CreateCounseling(ctx context.Context, arg CreateCounselingParams) (Counseling, error)
+	CreateCounselingAttachment(ctx context.Context, arg CreateCounselingAttachmentParams) (CounselingAttachment, error)
 	CreateDapodikImportBatch(ctx context.Context, arg CreateDapodikImportBatchParams) (DapodikImportBatch, error)
 	CreateDiscount(ctx context.Context, arg CreateDiscountParams) (FeeDiscount, error)
 	CreateDocumentTemplate(ctx context.Context, arg CreateDocumentTemplateParams) (DocumentTemplate, error)
@@ -329,12 +330,20 @@ type Querier interface {
 	DeleteWhatsAppTemplate(ctx context.Context, arg DeleteWhatsAppTemplateParams) (int64, error)
 	DisableWebhookEndpoint(ctx context.Context, arg DisableWebhookEndpointParams) error
 	DisciplineActiveClassID(ctx context.Context, arg DisciplineActiveClassIDParams) (uuid.UUID, error)
+	DisciplineCreateAsset(ctx context.Context, arg DisciplineCreateAssetParams) (uuid.UUID, error)
 	DisciplineCreatePolicy(ctx context.Context, arg DisciplineCreatePolicyParams) error
+	DisciplineGetAsset(ctx context.Context, arg DisciplineGetAssetParams) (DisciplineGetAssetRow, error)
 	DisciplineGetLatestPolicy(ctx context.Context, arg DisciplineGetLatestPolicyParams) (DisciplineGetLatestPolicyRow, error)
 	DisciplineHasActiveDuty(ctx context.Context, arg DisciplineHasActiveDutyParams) (bool, error)
+	// Backs the RecordViolation/CreateCounseling regression fix: the subject
+	// must be an active user account with an active enrollment in the given
+	// (active) academic year -- the same two checks the old app made before
+	// recording (student_violations.go:108-122).
+	DisciplineStudentEligible(ctx context.Context, arg DisciplineStudentEligibleParams) (DisciplineStudentEligibleRow, error)
 	// cross-module read: users (identity) and enrollments/classes (academic),
 	// for the name and class printed on a warning letter.
 	DisciplineStudentSnapshot(ctx context.Context, arg DisciplineStudentSnapshotParams) (DisciplineStudentSnapshotRow, error)
+	DisciplineUserName(ctx context.Context, arg DisciplineUserNameParams) (string, error)
 	EmailExists(ctx context.Context, arg EmailExistsParams) (bool, error)
 	EndMembership(ctx context.Context, arg EndMembershipParams) (ExtracurricularMembership, error)
 	EnsureNotificationsPartition(ctx context.Context, targetMonth pgtype.Date) error
@@ -384,6 +393,7 @@ type Querier interface {
 	GetCopy(ctx context.Context, arg GetCopyParams) (LibraryCopy, error)
 	GetCopyByBarcode(ctx context.Context, arg GetCopyByBarcodeParams) (LibraryCopy, error)
 	GetCounseling(ctx context.Context, arg GetCounselingParams) (Counseling, error)
+	GetCounselingAttachment(ctx context.Context, arg GetCounselingAttachmentParams) (CounselingAttachment, error)
 	GetDefaultDocumentTemplate(ctx context.Context, arg GetDefaultDocumentTemplateParams) (DocumentTemplate, error)
 	GetDiscount(ctx context.Context, arg GetDiscountParams) (FeeDiscount, error)
 	GetDocumentTemplateByID(ctx context.Context, arg GetDocumentTemplateByIDParams) (DocumentTemplate, error)
@@ -481,6 +491,11 @@ type Querier interface {
 	GetUserName(ctx context.Context, arg GetUserNameParams) (string, error)
 	GetValidPasswordResetByHash(ctx context.Context, arg GetValidPasswordResetByHashParams) (PasswordReset, error)
 	GetViolationRecord(ctx context.Context, arg GetViolationRecordParams) (ViolationRecord, error)
+	// Idempotency lookup for cross-module callers (attendance sessions, late
+	// arrival review): a second call with the same (workflow_instance_id,
+	// violation_type_id) returns the record already written instead of
+	// creating a duplicate.
+	GetViolationRecordByWorkflow(ctx context.Context, arg GetViolationRecordByWorkflowParams) (ViolationRecord, error)
 	GetViolationType(ctx context.Context, arg GetViolationTypeParams) (ViolationType, error)
 	GetVisit(ctx context.Context, arg GetVisitParams) (VisitorVisit, error)
 	GetWarningLetter(ctx context.Context, arg GetWarningLetterParams) (WarningLetter, error)
@@ -567,6 +582,12 @@ type Querier interface {
 	ListActiveEnrollmentsRefByClass(ctx context.Context, arg ListActiveEnrollmentsRefByClassParams) ([]ListActiveEnrollmentsRefByClassRow, error)
 	ListActiveFeeTypes(ctx context.Context, arg ListActiveFeeTypesParams) ([]FeeType, error)
 	ListActiveMemberStudentIDs(ctx context.Context, arg ListActiveMemberStudentIDsParams) ([]uuid.UUID, error)
+	// Every active violation's points and date this year, for computing when
+	// each student first crossed each SP threshold (the report's "Status SP"
+	// column). Grouped by student in Go rather than SQL so the same policy
+	// logic (SPPolicy.FirstCrossedDates) drives both the API summary and the
+	// exported report.
+	ListActivePointsByYear(ctx context.Context, arg ListActivePointsByYearParams) ([]ListActivePointsByYearRow, error)
 	ListActiveSessionsForUser(ctx context.Context, arg ListActiveSessionsForUserParams) ([]Session, error)
 	// cross-module read: classes/enrollments tables are owned by the academic
 	// module. Not yet migrated in this branch; type-checked here against
@@ -622,7 +643,11 @@ type Querier interface {
 	ListCopiesForStocktake(ctx context.Context, tenantID uuid.UUID) ([]LibraryCopy, error)
 	ListCopiesForTitle(ctx context.Context, arg ListCopiesForTitleParams) ([]LibraryCopy, error)
 	ListCorrectionsByEntry(ctx context.Context, arg ListCorrectionsByEntryParams) ([]AttendanceCorrection, error)
+	ListCounselingAttachments(ctx context.Context, arg ListCounselingAttachmentsParams) ([]CounselingAttachment, error)
 	ListCounselingsByCounselor(ctx context.Context, arg ListCounselingsByCounselorParams) ([]Counseling, error)
+	// Cross-student view for any counselor (duty "counselor"): every note the
+	// author chose to share with the whole BK team, optionally by topic.
+	ListCounselingsByVisibility(ctx context.Context, arg ListCounselingsByVisibilityParams) ([]Counseling, error)
 	ListCounselingsForStudent(ctx context.Context, arg ListCounselingsForStudentParams) ([]Counseling, error)
 	// Every schedule occurrence whose period is currently running (start
 	// period's starts_at through end period's ends_at straddle now_time, in
@@ -701,6 +726,12 @@ type Querier interface {
 	ListRoleSlugsForUser(ctx context.Context, arg ListRoleSlugsForUserParams) ([]string, error)
 	ListRolesByTenant(ctx context.Context, tenantID uuid.UUID) ([]Role, error)
 	ListRolesForUser(ctx context.Context, userID uuid.UUID) ([]ListRolesForUserRow, error)
+	// The counselor's issuing screen: every student whose active total has
+	// reached at least the first SP level, searchable by name/NIS/class, with
+	// the levels already issued so the UI can grey them out. The level filter
+	// itself is a points range (min_points/max_points) the service derives
+	// from the policy, since only Go holds the level ladder.
+	ListSPCandidates(ctx context.Context, arg ListSPCandidatesParams) ([]ListSPCandidatesRow, error)
 	ListSchedulesByAcademicYear(ctx context.Context, arg ListSchedulesByAcademicYearParams) ([]Schedule, error)
 	ListSchedulesByClass(ctx context.Context, arg ListSchedulesByClassParams) ([]Schedule, error)
 	ListSchedulesByDay(ctx context.Context, arg ListSchedulesByDayParams) ([]Schedule, error)

@@ -108,7 +108,7 @@ func ensureTerm(ctx context.Context, svc *academicservice.Service, tenantID, yea
 }
 
 func ensureViolationTypes(ctx context.Context, module *discipline.Module, tenantID uuid.UUID) error {
-	existing, err := module.Service.ListViolationTypes(ctx, tenantID, true)
+	existing, err := module.Service.ListViolationTypes(ctx, tenantID, true, "")
 	if err != nil {
 		return fmt.Errorf("list violation types: %w", err)
 	}

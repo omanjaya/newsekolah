@@ -21,10 +21,19 @@ import (
 type IssueDocumentInput struct {
 	Kind              domain.TemplateKind
 	NumberingTemplate string
-	EntityType        string
-	EntityID          uuid.UUID
-	AcademicYearID    uuid.UUID
-	IssuerUserID      uuid.UUID
+	// SeqPad zero-pads the {{seq}} numbering placeholder to this many
+	// digits (0: unpadded, the historical behaviour every existing caller
+	// keeps by leaving this unset).
+	SeqPad int
+	// ExtraNumberingVars adds placeholders beyond the standard {{seq}},
+	// {{month}}, {{month_roman}}, {{year}} set (domain.NumberingVars) --
+	// e.g. discipline's {{sp_level_number}} -- without widening that
+	// standard set for every other caller.
+	ExtraNumberingVars map[string]string
+	EntityType         string
+	EntityID           uuid.UUID
+	AcademicYearID     uuid.UUID
+	IssuerUserID       uuid.UUID
 	// ObjectKey is where the PDF lands in the bucket; the caller owns the
 	// naming so its own module directory stays predictable.
 	ObjectKey   string
@@ -50,7 +59,14 @@ func (s *Service) IssueDocument(ctx context.Context, tenantID uuid.UUID, in Issu
 		if err != nil {
 			return fmt.Errorf("next document number: %w", err)
 		}
-		number := domain.RenderNumberingTemplate(in.NumberingTemplate, domain.NumberingVars(seq, now))
+		numberingVars := domain.NumberingVars(seq, now)
+		if in.SeqPad > 0 {
+			numberingVars["seq"] = fmt.Sprintf("%0*d", in.SeqPad, seq)
+		}
+		for k, v := range in.ExtraNumberingVars {
+			numberingVars[k] = v
+		}
+		number := domain.RenderNumberingTemplate(in.NumberingTemplate, numberingVars)
 		code, codeHash, err := documents.NewVerificationCode(s.cfg.DocumentSigningKey)
 		if err != nil {
 			return err

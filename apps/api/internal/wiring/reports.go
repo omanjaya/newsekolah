@@ -47,6 +47,11 @@ type NameLookup interface {
 	Names(ctx context.Context, tenantID uuid.UUID, ids []uuid.UUID) (map[uuid.UUID]string, error)
 }
 
+// PointTotalRows adds one column per SP level ("SP 1 Date", "SP 2
+// Date", ...) holding the date the student's running total first
+// crossed it -- the old app's "Status SP" column
+// (violation_reports.go:152-169), lost when the point recap moved to
+// this generic XLSX exporter.
 func (d DisciplineReports) PointTotalRows(ctx context.Context, tenantID uuid.UUID, classID uuid.NullUUID) (reportsservice.Sheet, error) {
 	totals, err := d.Svc.PointTotals(ctx, tenantID, classID, 500)
 	if err != nil {
@@ -60,17 +65,34 @@ func (d DisciplineReports) PointTotalRows(ctx context.Context, tenantID uuid.UUI
 	if err != nil {
 		return reportsservice.Sheet{}, err
 	}
-	sheet := reportsservice.Sheet{
-		Title:   "Discipline",
-		Headers: []string{"No", "Student", "Points", "Records", "Last Violation"},
-		Rows:    make([][]any, len(totals)),
+	policy, err := d.Svc.Policy(ctx, tenantID)
+	if err != nil {
+		return reportsservice.Sheet{}, err
 	}
+	crossed, err := d.Svc.FirstCrossedDates(ctx, tenantID, classID)
+	if err != nil {
+		return reportsservice.Sheet{}, err
+	}
+
+	headers := []string{"No", "Student", "Points", "Records", "Last Violation"}
+	for _, lvl := range policy.Levels {
+		headers = append(headers, lvl.Label+" Date")
+	}
+	sheet := reportsservice.Sheet{Title: "Discipline", Headers: headers, Rows: make([][]any, len(totals))}
 	for i, t := range totals {
 		last := ""
 		if !t.LastOccurredOn.IsZero() {
 			last = t.LastOccurredOn.Format("2006-01-02")
 		}
-		sheet.Rows[i] = []any{i + 1, names[t.StudentUserID], t.Total, t.RecordCount, last}
+		row := []any{i + 1, names[t.StudentUserID], t.Total, t.RecordCount, last}
+		for _, lvl := range policy.Levels {
+			date := ""
+			if d, ok := crossed[t.StudentUserID][lvl.Level]; ok {
+				date = d.Format("2006-01-02")
+			}
+			row = append(row, date)
+		}
+		sheet.Rows[i] = row
 	}
 	return sheet, nil
 }

@@ -17,6 +17,7 @@ type WarningLetterIssued struct {
 	LetterID      uuid.UUID
 	StudentUserID uuid.UUID
 	ClassID       uuid.NullUUID
+	GuardianIDs   []uuid.UUID
 	Level         int
 	LevelLabel    string
 	LetterNumber  string
@@ -72,9 +73,14 @@ func (s *Service) IssueWarningLetter(ctx context.Context, tenantID, studentID, i
 		if err != nil {
 			return err
 		}
+		tmpl, err := s.loadWarningLetterTemplatePolicy(ctx, tenantID)
+		if err != nil {
+			return err
+		}
+		issuerName := s.lookupName(ctx, tenantID, issuerUserID)
 
 		letterID := uuid.Must(uuid.NewV7())
-		doc, err := s.issueLetterDocument(ctx, tenantID, letterID, yearID, issuerUserID, student, target, total, records, len(issued))
+		doc, err := s.issueLetterDocument(ctx, tenantID, letterID, yearID, issuerUserID, student, target, total, records, len(issued), tmpl, issuerName)
 		if err != nil {
 			return err
 		}
@@ -90,24 +96,59 @@ func (s *Service) IssueWarningLetter(ctx context.Context, tenantID, studentID, i
 	}
 	if s.events != nil {
 		_ = s.events.Publish(ctx, WarningLetterIssued{
-			TenantID: tenantID, LetterID: out.ID, StudentUserID: studentID, ClassID: classID,
+			TenantID: tenantID, LetterID: out.ID, StudentUserID: studentID, ClassID: classID, GuardianIDs: s.guardianIDs(ctx, tenantID, studentID),
 			Level: out.Level, LevelLabel: out.LevelLabel, LetterNumber: out.LetterNumber, IssuedBy: issuerUserID,
 		})
 	}
 	return out, nil
 }
 
+// lookupName resolves a single user's display name through NameLookup,
+// tolerating a nil dependency or a lookup error (the letter is issued
+// either way; a blank issuer name is a cosmetic loss, not a failure).
+func (s *Service) lookupName(ctx context.Context, tenantID, userID uuid.UUID) string {
+	if s.names == nil {
+		return ""
+	}
+	names, err := s.names.Names(ctx, tenantID, []uuid.UUID{userID})
+	if err != nil {
+		return ""
+	}
+	return names[userID]
+}
+
+// guardianIDs resolves a student's guardians for the warning-letter
+// notification, tolerating a nil dependency or lookup error the same way
+// lookupName does.
+func (s *Service) guardianIDs(ctx context.Context, tenantID, studentID uuid.UUID) []uuid.UUID {
+	if s.guardians == nil {
+		return nil
+	}
+	ids, err := s.guardians.GuardianIDsOf(ctx, tenantID, studentID)
+	if err != nil {
+		return nil
+	}
+	return ids
+}
+
 // issueLetterDocument renders the PDF through the shared pipeline, or
 // numbers the letter locally when no document issuer is wired (tests).
-func (s *Service) issueLetterDocument(ctx context.Context, tenantID, letterID, yearID, issuerUserID uuid.UUID, student StudentSnapshot, target domain.SPLevel, total int, records []domain.ViolationRecord, issuedCount int) (IssuedDocument, error) {
+func (s *Service) issueLetterDocument(ctx context.Context, tenantID, letterID, yearID, issuerUserID uuid.UUID, student StudentSnapshot, target domain.SPLevel, total int, records []domain.ViolationRecord, issuedCount int, tmpl domain.WarningLetterTemplatePolicy, issuerName string) (IssuedDocument, error) {
 	if s.docs == nil {
-		return IssuedDocument{Number: fmt.Sprintf("%d/SP/%s", issuedCount+1, s.clock.Now().Format("2006"))}, nil
+		format := "%d/SP/%s"
+		if tmpl.SeqPad > 0 {
+			format = fmt.Sprintf("%%0%dd/SP/%%s", tmpl.SeqPad)
+		}
+		return IssuedDocument{Number: fmt.Sprintf(format, issuedCount+1, s.clock.Now().Format("2006"))}, nil
 	}
 	doc, err := s.docs.IssueWarningLetter(ctx, tenantID, WarningLetterDocument{
 		LetterID: letterID, AcademicYearID: yearID, IssuerUserID: issuerUserID,
+		NumberingTemplate: tmpl.NumberPattern, SeqPad: tmpl.SeqPad,
 		Vars: map[string]any{
 			"student_name": student.StudentName, "class_name": student.ClassName, "guardian_name": student.GuardianName,
+			"nis": student.NIS, "issuer_name": issuerName,
 			"level": target.Level, "level_label": target.Label, "threshold_points": target.MinPoints, "total_points": total,
+			"opening_text": tmpl.OpeningText, "closing_text": tmpl.ClosingText,
 			"violations": violationLines(records),
 		},
 	})
@@ -190,22 +231,43 @@ func (s *Service) WarningLetterURL(ctx context.Context, tenantID, id uuid.UUID) 
 	return s.docs.DocumentURL(ctx, tenantID, letter.DocumentAssetID.UUID)
 }
 
+// WarningLetterTemplatePolicy exposes the tenant's numbering pattern and
+// wording for the settings screen.
+func (s *Service) WarningLetterTemplatePolicy(ctx context.Context, tenantID uuid.UUID) (domain.WarningLetterTemplatePolicy, error) {
+	var out domain.WarningLetterTemplatePolicy
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		out, err = s.loadWarningLetterTemplatePolicy(ctx, tenantID)
+		return err
+	})
+	return out, err
+}
+
 // BuiltinWarningLetterHTML is the template used until a school uploads its
-// own under document_templates (kind warning_letter).
+// own under document_templates (kind warning_letter). NIS, the issuer's
+// name and a three-column signature block (Orang Tua / Siswa / Guru BK)
+// match the old app's DOCX (violation_warning_letters.go:447-503);
+// opening_text/closing_text come from the tenant's numbering-and-wording
+// policy so a school can reword the letter without a code change.
 const BuiltinWarningLetterHTML = `<html><body style="font-family: serif; font-size: 12pt; margin: 40px;">
 <h2 style="text-align:center; margin-bottom: 4px;">SURAT PERINGATAN {{.level}}</h2>
 <p style="text-align:center; margin-top:0;">Nomor: {{.letter_number}}</p>
 <p>Kepada Yth. Orang tua/wali dari:</p>
 <table>
 <tr><td>Nama</td><td>: {{.student_name}}</td></tr>
+<tr><td>NIS</td><td>: {{.nis}}</td></tr>
 <tr><td>Kelas</td><td>: {{.class_name}}</td></tr>
 <tr><td>Wali</td><td>: {{.guardian_name}}</td></tr>
 </table>
-<p>Berdasarkan catatan pelanggaran tata tertib, siswa tersebut telah mencapai {{.total_points}} poin (ambang {{.level_label}}: {{.threshold_points}} poin), dengan rincian:</p>
+<p>{{.opening_text}} (total {{.total_points}} poin, ambang {{.level_label}}: {{.threshold_points}} poin):</p>
 <table border="1" cellpadding="4" cellspacing="0">
 <tr><th>Tanggal</th><th>Pelanggaran</th><th>Poin</th></tr>
 {{range .violations}}<tr><td>{{.date}}</td><td>{{.name}}</td><td>{{.points}}</td></tr>{{end}}
 </table>
-<p>Kami mohon perhatian dan kerja sama orang tua/wali untuk pembinaan lebih lanjut.</p>
-<p>Surat ini diterbitkan pada {{.issued_at}}. Kode verifikasi: <strong>{{.verification_code}}</strong></p>
+<p>{{.closing_text}}</p>
+<p>Surat ini diterbitkan pada {{.issued_at}} oleh {{.issuer_name}}. Kode verifikasi: <strong>{{.verification_code}}</strong></p>
+<table style="width:100%; margin-top:60px; text-align:center;">
+<tr><td>Orang Tua/Wali</td><td>Siswa</td><td>Guru BK</td></tr>
+<tr><td style="padding-top:70px;">(....................)</td><td style="padding-top:70px;">(....................)</td><td style="padding-top:70px;">{{.issuer_name}}</td></tr>
+</table>
 </body></html>`

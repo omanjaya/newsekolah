@@ -6,6 +6,7 @@ package domain
 import (
 	"errors"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -24,6 +25,12 @@ var (
 	ErrCounselingForbidden     = errors.New("counseling not visible to this user")
 	ErrNoActiveAcademicYear    = errors.New("no active academic year")
 	ErrInvalidInput            = errors.New("invalid input")
+	ErrStudentNotEnrolled      = errors.New("student has no active enrollment in the active academic year")
+	ErrStudentInactive         = errors.New("student account is not active")
+	ErrAttachmentNotFound      = errors.New("attachment not found")
+	ErrAttachmentTooLarge      = errors.New("attachment file exceeds the size limit")
+	ErrAttachmentInvalidType   = errors.New("attachment file is not a supported image type")
+	ErrReportUnavailable       = errors.New("pdf report generation is not configured for this deployment")
 )
 
 type ViolationType struct {
@@ -142,6 +149,42 @@ func (p SPPolicy) DueLevels(total int, issued []WarningLetter) []SPLevel {
 	return due
 }
 
+// PointRecord is the minimal shape FirstCrossedDates needs: one active
+// violation's points and date, without pulling in the full ViolationRecord.
+type PointRecord struct {
+	Points     int
+	OccurredOn time.Time
+}
+
+// FirstCrossedDates returns, for each level in the policy, the earliest
+// date the running total (records applied in occurred_on order) first
+// reached that level's threshold -- the "Status SP" column the old app
+// printed on its point recap. A level absent from the result was never
+// reached. Records do not need to already be sorted.
+func (p SPPolicy) FirstCrossedDates(records []PointRecord) map[int]time.Time {
+	sorted := append([]PointRecord(nil), records...)
+	sort.Slice(sorted, func(i, j int) bool { return sorted[i].OccurredOn.Before(sorted[j].OccurredOn) })
+
+	out := make(map[int]time.Time, len(p.Levels))
+	remaining := make(map[int]int, len(p.Levels))
+	for _, lvl := range p.Levels {
+		remaining[lvl.Level] = lvl.MinPoints
+	}
+	total := 0
+	for _, r := range sorted {
+		total += r.Points
+		for _, lvl := range p.Levels {
+			if _, reached := out[lvl.Level]; reached {
+				continue
+			}
+			if total >= remaining[lvl.Level] {
+				out[lvl.Level] = r.OccurredOn
+			}
+		}
+	}
+	return out
+}
+
 type CounselingKind string
 
 const (
@@ -154,6 +197,32 @@ const (
 func (k CounselingKind) Valid() bool {
 	switch k {
 	case CounselingIndividual, CounselingGroup, CounselingParent, CounselingReferral:
+		return true
+	}
+	return false
+}
+
+// CounselingTopic is what the session was about, independent of its
+// format (Kind). The old app called this "jenis konseling"; here it sits
+// alongside the individual/group/parent/referral session format instead
+// of replacing it.
+type CounselingTopic string
+
+const (
+	TopicCareer   CounselingTopic = "career"
+	TopicProblem  CounselingTopic = "problem"
+	TopicPersonal CounselingTopic = "personal"
+	TopicLearning CounselingTopic = "learning"
+	TopicSocial   CounselingTopic = "social"
+	TopicOther    CounselingTopic = "other"
+)
+
+// DefaultCounselingTopic matches the old app's default (counseling.go:511).
+const DefaultCounselingTopic = TopicProblem
+
+func (t CounselingTopic) Valid() bool {
+	switch t {
+	case TopicCareer, TopicProblem, TopicPersonal, TopicLearning, TopicSocial, TopicOther:
 		return true
 	}
 	return false
@@ -178,19 +247,33 @@ func (v Visibility) Valid() bool {
 // Counseling notes are decrypted only for readers the visibility allows;
 // Content and FollowUpPlan are empty on rows the caller may list but not open.
 type Counseling struct {
-	ID              uuid.UUID
-	TenantID        uuid.UUID
-	AcademicYearID  uuid.UUID
-	StudentUserID   uuid.UUID
-	CounselorUserID uuid.UUID
-	SessionAt       time.Time
-	Kind            CounselingKind
-	Title           string
-	Content         string
-	FollowUpPlan    string
-	Visibility      Visibility
-	CreatedAt       time.Time
-	UpdatedAt       time.Time
+	ID                 uuid.UUID
+	TenantID           uuid.UUID
+	AcademicYearID     uuid.UUID
+	StudentUserID      uuid.UUID
+	CounselorUserID    uuid.UUID
+	SessionAt          time.Time
+	Kind               CounselingKind
+	Topic              CounselingTopic
+	Title              string
+	Content            string
+	FollowUpPlan       string
+	CareerGoals        string
+	ProblemDescription string
+	Visibility         Visibility
+	CreatedAt          time.Time
+	UpdatedAt          time.Time
+}
+
+// CounselingAttachment is one photo evidence file attached to a note
+// (counseling_attachments), mirroring a leave request's evidence: an
+// asset row plus who it belongs to.
+type CounselingAttachment struct {
+	ID           uuid.UUID
+	TenantID     uuid.UUID
+	CounselingID uuid.UUID
+	AssetID      uuid.UUID
+	CreatedAt    time.Time
 }
 
 // ReaderRole is what the service resolves about the caller before applying
@@ -217,3 +300,38 @@ func (c Counseling) VisibleTo(r ReaderRole) bool {
 }
 
 const DefaultWarningLetterNumberingTemplate = "{{seq}}/SP/{{month_roman}}/{{year}}"
+
+// DefaultWarningLetterOpeningText and DefaultWarningLetterClosingText are
+// the paragraphs printed before and after the violation table on a
+// warning letter, until a tenant configures its own under this policy.
+const (
+	DefaultWarningLetterOpeningText = "Berdasarkan catatan pelanggaran tata tertib, siswa tersebut telah mencapai ambang batas poin berikut, dengan rincian:"
+	DefaultWarningLetterClosingText = "Kami mohon perhatian dan kerja sama Orang Tua/Wali untuk pembinaan lebih lanjut."
+)
+
+// WarningLetterTemplatePolicy is the tenant-configurable numbering and
+// wording for warning letters (tenant_policies kind
+// "warning_letter_template"), replacing the old app's fixed
+// settings.WarningLetterTemplate. NumberPattern accepts {{seq}},
+// {{sp_level_number}}, {{month_roman}} and {{year}}; SeqPad zero-pads
+// {{seq}} (the old app used %03d).
+type WarningLetterTemplatePolicy struct {
+	NumberPattern string `json:"number_pattern"`
+	SeqPad        int    `json:"seq_pad"`
+	OpeningText   string `json:"opening_text"`
+	ClosingText   string `json:"closing_text"`
+}
+
+func DefaultWarningLetterTemplatePolicy() WarningLetterTemplatePolicy {
+	return WarningLetterTemplatePolicy{
+		NumberPattern: DefaultWarningLetterNumberingTemplate, SeqPad: 3,
+		OpeningText: DefaultWarningLetterOpeningText, ClosingText: DefaultWarningLetterClosingText,
+	}
+}
+
+func (p WarningLetterTemplatePolicy) Validate() error {
+	if strings.TrimSpace(p.NumberPattern) == "" || p.SeqPad < 0 || p.SeqPad > 10 {
+		return ErrInvalidInput
+	}
+	return nil
+}

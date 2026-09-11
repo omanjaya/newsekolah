@@ -13,24 +13,27 @@ import (
 )
 
 const createCounseling = `-- name: CreateCounseling :one
-insert into counselings (tenant_id, academic_year_id, student_user_id, counselor_user_id, session_at, kind, title,
-  content_encrypted, content_key_id, follow_up_plan_encrypted, visibility)
-values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-returning id, tenant_id, academic_year_id, student_user_id, counselor_user_id, session_at, kind, title, content_encrypted, content_key_id, follow_up_plan_encrypted, visibility, created_at, updated_at
+insert into counselings (tenant_id, academic_year_id, student_user_id, counselor_user_id, session_at, kind, topic, title,
+  content_encrypted, content_key_id, follow_up_plan_encrypted, career_goals_encrypted, problem_description_encrypted, visibility)
+values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+returning id, tenant_id, academic_year_id, student_user_id, counselor_user_id, session_at, kind, title, content_encrypted, content_key_id, follow_up_plan_encrypted, visibility, created_at, updated_at, topic, career_goals_encrypted, problem_description_encrypted
 `
 
 type CreateCounselingParams struct {
-	TenantID              uuid.UUID          `json:"tenant_id"`
-	AcademicYearID        uuid.UUID          `json:"academic_year_id"`
-	StudentUserID         uuid.UUID          `json:"student_user_id"`
-	CounselorUserID       uuid.UUID          `json:"counselor_user_id"`
-	SessionAt             pgtype.Timestamptz `json:"session_at"`
-	Kind                  string             `json:"kind"`
-	Title                 string             `json:"title"`
-	ContentEncrypted      []byte             `json:"content_encrypted"`
-	ContentKeyID          string             `json:"content_key_id"`
-	FollowUpPlanEncrypted []byte             `json:"follow_up_plan_encrypted"`
-	Visibility            string             `json:"visibility"`
+	TenantID                    uuid.UUID          `json:"tenant_id"`
+	AcademicYearID              uuid.UUID          `json:"academic_year_id"`
+	StudentUserID               uuid.UUID          `json:"student_user_id"`
+	CounselorUserID             uuid.UUID          `json:"counselor_user_id"`
+	SessionAt                   pgtype.Timestamptz `json:"session_at"`
+	Kind                        string             `json:"kind"`
+	Topic                       string             `json:"topic"`
+	Title                       string             `json:"title"`
+	ContentEncrypted            []byte             `json:"content_encrypted"`
+	ContentKeyID                string             `json:"content_key_id"`
+	FollowUpPlanEncrypted       []byte             `json:"follow_up_plan_encrypted"`
+	CareerGoalsEncrypted        []byte             `json:"career_goals_encrypted"`
+	ProblemDescriptionEncrypted []byte             `json:"problem_description_encrypted"`
+	Visibility                  string             `json:"visibility"`
 }
 
 func (q *Queries) CreateCounseling(ctx context.Context, arg CreateCounselingParams) (Counseling, error) {
@@ -41,10 +44,13 @@ func (q *Queries) CreateCounseling(ctx context.Context, arg CreateCounselingPara
 		arg.CounselorUserID,
 		arg.SessionAt,
 		arg.Kind,
+		arg.Topic,
 		arg.Title,
 		arg.ContentEncrypted,
 		arg.ContentKeyID,
 		arg.FollowUpPlanEncrypted,
+		arg.CareerGoalsEncrypted,
+		arg.ProblemDescriptionEncrypted,
 		arg.Visibility,
 	)
 	var i Counseling
@@ -63,6 +69,34 @@ func (q *Queries) CreateCounseling(ctx context.Context, arg CreateCounselingPara
 		&i.Visibility,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Topic,
+		&i.CareerGoalsEncrypted,
+		&i.ProblemDescriptionEncrypted,
+	)
+	return i, err
+}
+
+const createCounselingAttachment = `-- name: CreateCounselingAttachment :one
+insert into counseling_attachments (tenant_id, counseling_id, asset_id)
+values ($1, $2, $3)
+returning id, tenant_id, counseling_id, asset_id, created_at
+`
+
+type CreateCounselingAttachmentParams struct {
+	TenantID     uuid.UUID `json:"tenant_id"`
+	CounselingID uuid.UUID `json:"counseling_id"`
+	AssetID      uuid.UUID `json:"asset_id"`
+}
+
+func (q *Queries) CreateCounselingAttachment(ctx context.Context, arg CreateCounselingAttachmentParams) (CounselingAttachment, error) {
+	row := q.db.QueryRow(ctx, createCounselingAttachment, arg.TenantID, arg.CounselingID, arg.AssetID)
+	var i CounselingAttachment
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.CounselingID,
+		&i.AssetID,
+		&i.CreatedAt,
 	)
 	return i, err
 }
@@ -82,7 +116,7 @@ func (q *Queries) DeleteCounseling(ctx context.Context, arg DeleteCounselingPara
 }
 
 const getCounseling = `-- name: GetCounseling :one
-select id, tenant_id, academic_year_id, student_user_id, counselor_user_id, session_at, kind, title, content_encrypted, content_key_id, follow_up_plan_encrypted, visibility, created_at, updated_at from counselings where tenant_id = $1 and id = $2
+select id, tenant_id, academic_year_id, student_user_id, counselor_user_id, session_at, kind, title, content_encrypted, content_key_id, follow_up_plan_encrypted, visibility, created_at, updated_at, topic, career_goals_encrypted, problem_description_encrypted from counselings where tenant_id = $1 and id = $2
 `
 
 type GetCounselingParams struct {
@@ -108,12 +142,72 @@ func (q *Queries) GetCounseling(ctx context.Context, arg GetCounselingParams) (C
 		&i.Visibility,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Topic,
+		&i.CareerGoalsEncrypted,
+		&i.ProblemDescriptionEncrypted,
 	)
 	return i, err
 }
 
+const getCounselingAttachment = `-- name: GetCounselingAttachment :one
+select id, tenant_id, counseling_id, asset_id, created_at from counseling_attachments where tenant_id = $1 and id = $2
+`
+
+type GetCounselingAttachmentParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	ID       uuid.UUID `json:"id"`
+}
+
+func (q *Queries) GetCounselingAttachment(ctx context.Context, arg GetCounselingAttachmentParams) (CounselingAttachment, error) {
+	row := q.db.QueryRow(ctx, getCounselingAttachment, arg.TenantID, arg.ID)
+	var i CounselingAttachment
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.CounselingID,
+		&i.AssetID,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const listCounselingAttachments = `-- name: ListCounselingAttachments :many
+select id, tenant_id, counseling_id, asset_id, created_at from counseling_attachments where tenant_id = $1 and counseling_id = $2 order by created_at
+`
+
+type ListCounselingAttachmentsParams struct {
+	TenantID     uuid.UUID `json:"tenant_id"`
+	CounselingID uuid.UUID `json:"counseling_id"`
+}
+
+func (q *Queries) ListCounselingAttachments(ctx context.Context, arg ListCounselingAttachmentsParams) ([]CounselingAttachment, error) {
+	rows, err := q.db.Query(ctx, listCounselingAttachments, arg.TenantID, arg.CounselingID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []CounselingAttachment{}
+	for rows.Next() {
+		var i CounselingAttachment
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.CounselingID,
+			&i.AssetID,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listCounselingsByCounselor = `-- name: ListCounselingsByCounselor :many
-select id, tenant_id, academic_year_id, student_user_id, counselor_user_id, session_at, kind, title, content_encrypted, content_key_id, follow_up_plan_encrypted, visibility, created_at, updated_at from counselings
+select id, tenant_id, academic_year_id, student_user_id, counselor_user_id, session_at, kind, title, content_encrypted, content_key_id, follow_up_plan_encrypted, visibility, created_at, updated_at, topic, career_goals_encrypted, problem_description_encrypted from counselings
 where tenant_id = $1 and academic_year_id = $2 and counselor_user_id = $3
 order by session_at desc
 limit $4 offset $5
@@ -157,6 +251,71 @@ func (q *Queries) ListCounselingsByCounselor(ctx context.Context, arg ListCounse
 			&i.Visibility,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.Topic,
+			&i.CareerGoalsEncrypted,
+			&i.ProblemDescriptionEncrypted,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listCounselingsByVisibility = `-- name: ListCounselingsByVisibility :many
+select id, tenant_id, academic_year_id, student_user_id, counselor_user_id, session_at, kind, title, content_encrypted, content_key_id, follow_up_plan_encrypted, visibility, created_at, updated_at, topic, career_goals_encrypted, problem_description_encrypted from counselings
+where tenant_id = $1 and academic_year_id = $2 and visibility = 'bk_team'
+  and ($5::text is null or topic = $5)
+order by session_at desc
+limit $3 offset $4
+`
+
+type ListCounselingsByVisibilityParams struct {
+	TenantID       uuid.UUID   `json:"tenant_id"`
+	AcademicYearID uuid.UUID   `json:"academic_year_id"`
+	Limit          int32       `json:"limit"`
+	Offset         int32       `json:"offset"`
+	Topic          pgtype.Text `json:"topic"`
+}
+
+// Cross-student view for any counselor (duty "counselor"): every note the
+// author chose to share with the whole BK team, optionally by topic.
+func (q *Queries) ListCounselingsByVisibility(ctx context.Context, arg ListCounselingsByVisibilityParams) ([]Counseling, error) {
+	rows, err := q.db.Query(ctx, listCounselingsByVisibility,
+		arg.TenantID,
+		arg.AcademicYearID,
+		arg.Limit,
+		arg.Offset,
+		arg.Topic,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Counseling{}
+	for rows.Next() {
+		var i Counseling
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.AcademicYearID,
+			&i.StudentUserID,
+			&i.CounselorUserID,
+			&i.SessionAt,
+			&i.Kind,
+			&i.Title,
+			&i.ContentEncrypted,
+			&i.ContentKeyID,
+			&i.FollowUpPlanEncrypted,
+			&i.Visibility,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Topic,
+			&i.CareerGoalsEncrypted,
+			&i.ProblemDescriptionEncrypted,
 		); err != nil {
 			return nil, err
 		}
@@ -169,7 +328,7 @@ func (q *Queries) ListCounselingsByCounselor(ctx context.Context, arg ListCounse
 }
 
 const listCounselingsForStudent = `-- name: ListCounselingsForStudent :many
-select id, tenant_id, academic_year_id, student_user_id, counselor_user_id, session_at, kind, title, content_encrypted, content_key_id, follow_up_plan_encrypted, visibility, created_at, updated_at from counselings
+select id, tenant_id, academic_year_id, student_user_id, counselor_user_id, session_at, kind, title, content_encrypted, content_key_id, follow_up_plan_encrypted, visibility, created_at, updated_at, topic, career_goals_encrypted, problem_description_encrypted from counselings
 where tenant_id = $1 and academic_year_id = $2 and student_user_id = $3
 order by session_at desc
 `
@@ -204,6 +363,9 @@ func (q *Queries) ListCounselingsForStudent(ctx context.Context, arg ListCounsel
 			&i.Visibility,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.Topic,
+			&i.CareerGoalsEncrypted,
+			&i.ProblemDescriptionEncrypted,
 		); err != nil {
 			return nil, err
 		}
@@ -216,22 +378,25 @@ func (q *Queries) ListCounselingsForStudent(ctx context.Context, arg ListCounsel
 }
 
 const updateCounseling = `-- name: UpdateCounseling :one
-update counselings set session_at = $3, kind = $4, title = $5, content_encrypted = $6, content_key_id = $7,
-  follow_up_plan_encrypted = $8, visibility = $9
+update counselings set session_at = $3, kind = $4, topic = $5, title = $6, content_encrypted = $7, content_key_id = $8,
+  follow_up_plan_encrypted = $9, career_goals_encrypted = $10, problem_description_encrypted = $11, visibility = $12
 where tenant_id = $1 and id = $2
-returning id, tenant_id, academic_year_id, student_user_id, counselor_user_id, session_at, kind, title, content_encrypted, content_key_id, follow_up_plan_encrypted, visibility, created_at, updated_at
+returning id, tenant_id, academic_year_id, student_user_id, counselor_user_id, session_at, kind, title, content_encrypted, content_key_id, follow_up_plan_encrypted, visibility, created_at, updated_at, topic, career_goals_encrypted, problem_description_encrypted
 `
 
 type UpdateCounselingParams struct {
-	TenantID              uuid.UUID          `json:"tenant_id"`
-	ID                    uuid.UUID          `json:"id"`
-	SessionAt             pgtype.Timestamptz `json:"session_at"`
-	Kind                  string             `json:"kind"`
-	Title                 string             `json:"title"`
-	ContentEncrypted      []byte             `json:"content_encrypted"`
-	ContentKeyID          string             `json:"content_key_id"`
-	FollowUpPlanEncrypted []byte             `json:"follow_up_plan_encrypted"`
-	Visibility            string             `json:"visibility"`
+	TenantID                    uuid.UUID          `json:"tenant_id"`
+	ID                          uuid.UUID          `json:"id"`
+	SessionAt                   pgtype.Timestamptz `json:"session_at"`
+	Kind                        string             `json:"kind"`
+	Topic                       string             `json:"topic"`
+	Title                       string             `json:"title"`
+	ContentEncrypted            []byte             `json:"content_encrypted"`
+	ContentKeyID                string             `json:"content_key_id"`
+	FollowUpPlanEncrypted       []byte             `json:"follow_up_plan_encrypted"`
+	CareerGoalsEncrypted        []byte             `json:"career_goals_encrypted"`
+	ProblemDescriptionEncrypted []byte             `json:"problem_description_encrypted"`
+	Visibility                  string             `json:"visibility"`
 }
 
 func (q *Queries) UpdateCounseling(ctx context.Context, arg UpdateCounselingParams) (Counseling, error) {
@@ -240,10 +405,13 @@ func (q *Queries) UpdateCounseling(ctx context.Context, arg UpdateCounselingPara
 		arg.ID,
 		arg.SessionAt,
 		arg.Kind,
+		arg.Topic,
 		arg.Title,
 		arg.ContentEncrypted,
 		arg.ContentKeyID,
 		arg.FollowUpPlanEncrypted,
+		arg.CareerGoalsEncrypted,
+		arg.ProblemDescriptionEncrypted,
 		arg.Visibility,
 	)
 	var i Counseling
@@ -262,6 +430,9 @@ func (q *Queries) UpdateCounseling(ctx context.Context, arg UpdateCounselingPara
 		&i.Visibility,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Topic,
+		&i.CareerGoalsEncrypted,
+		&i.ProblemDescriptionEncrypted,
 	)
 	return i, err
 }

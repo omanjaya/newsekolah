@@ -123,10 +123,21 @@ func RegisterNotificationBridge(bus *events.Bus, duties DutyLookup, logger *slog
 		e := evt.(disciplineservice.WarningLetterIssued)
 		homeroom, err := b.holders(ctx, e.TenantID, "homeroom", e.ClassID)
 		summary := fmt.Sprintf("%s nomor %s telah diterbitkan.", e.LevelLabel, e.LetterNumber)
+		recipients := append([]uuid.UUID{e.StudentUserID}, without(homeroom, e.IssuedBy)...)
+		recipients = append(recipients, without(e.GuardianIDs, e.IssuedBy)...)
 		return []events.Envelope{{
-			Name: events.WarningLetterIssued, Tenant: e.TenantID, Actor: e.IssuedBy, Subject: append([]uuid.UUID{e.StudentUserID}, without(homeroom, e.IssuedBy)...),
+			Name: events.WarningLetterIssued, Tenant: e.TenantID, Actor: e.IssuedBy, Subject: recipients,
 			Payload: map[string]any{"letter_id": e.LetterID.String(), "level": e.Level, "summary": summary, "href": "/discipline/letters/" + e.LetterID.String()},
 		}}, err
+	}))
+	bus.Subscribe(disciplineservice.ThresholdReached{}.EventName(), b.handle(func(ctx context.Context, evt events.Event) ([]events.Envelope, error) {
+		e := evt.(disciplineservice.ThresholdReached)
+		counselors, err := b.holders(ctx, e.TenantID, "counselor", uuid.NullUUID{})
+		summary := fmt.Sprintf("Seorang siswa mencapai %s (%d poin).", e.LevelLabel, e.TotalPoints)
+		return one(events.Envelope{
+			Name: events.DisciplineThresholdReached, Tenant: e.TenantID, Subject: counselors,
+			Payload: map[string]any{"student_user_id": e.StudentUserID.String(), "level": e.Level, "summary": summary, "href": "/discipline/students/" + e.StudentUserID.String()},
+		}, err)
 	}))
 	bus.Subscribe(attendanceservice.Submitted{}.EventName(), b.handle(func(ctx context.Context, evt events.Event) ([]events.Envelope, error) {
 		e := evt.(attendanceservice.Submitted)
