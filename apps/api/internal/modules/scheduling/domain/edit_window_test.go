@@ -18,6 +18,14 @@ func TestTeacherEditAllowed(t *testing.T) {
 	require.False(t, domain.TeacherEditAllowed(occursAt.Add(-24*time.Hour), occursAt, deadline), "exactly at the deadline is not allowed")
 }
 
+func TestTeacherEditAllowedBefore(t *testing.T) {
+	deadline := time.Date(2026, 9, 1, 0, 0, 0, 0, time.UTC)
+
+	require.True(t, domain.TeacherEditAllowedBefore(deadline.Add(-1*time.Hour), deadline))
+	require.False(t, domain.TeacherEditAllowedBefore(deadline.Add(time.Hour), deadline))
+	require.False(t, domain.TeacherEditAllowedBefore(deadline, deadline), "exactly at the deadline is not allowed")
+}
+
 func TestValidatePeriodRange(t *testing.T) {
 	require.NoError(t, domain.ValidatePeriodRange(1, 2))
 	require.NoError(t, domain.ValidatePeriodRange(3, 3))

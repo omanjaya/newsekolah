@@ -37,7 +37,7 @@ paths:
     post:
       tags: [scheduling]
       operationId: createSchedule
-      x-permission: view_schedules
+      x-permission: authenticated
       summary: Create a schedule (admin for any teacher, or a teacher for themselves within the edit deadline)
       requestBody:
         required: true
@@ -103,6 +103,35 @@ paths:
       responses:
         "204": { description: Cleared }
         "400": { $ref: "#/components/responses/BadRequest" }
+  /v1/schedules/teacher-options:
+    get:
+      tags: [scheduling]
+      operationId: listTeacherOptions
+      x-permission: authenticated
+      summary: Active teachers for a schedule form's teacher dropdown; a teacher without manage_schedules or manage_master_data sees only themselves
+      parameters:
+        - name: academic_year_id
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+        - $ref: "#/components/parameters/SearchParam"
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 50, default: 20 }
+      responses:
+        "200":
+          description: Teacher options
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/UserOption" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "403": { $ref: "#/components/responses/Forbidden" }
   /v1/schedules/{scheduleId}:
     parameters:
       - name: scheduleId
@@ -124,7 +153,7 @@ paths:
     put:
       tags: [scheduling]
       operationId: updateSchedule
-      x-permission: view_schedules
+      x-permission: authenticated
       summary: Update a schedule (admin, or the owning teacher within the edit deadline)
       requestBody:
         required: true
@@ -144,7 +173,7 @@ paths:
     delete:
       tags: [scheduling]
       operationId: deleteSchedule
-      x-permission: view_schedules
+      x-permission: authenticated
       summary: Delete a schedule (admin, or the owning teacher within the edit deadline)
       responses:
         "204": { description: Deleted }
@@ -352,6 +381,12 @@ components:
         application/json:
           schema: { $ref: "#/components/schemas/Error" }
   schemas:
+    UserOption:
+      type: object
+      required: [id, name]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
     ScheduleSource:
       type: string
       enum: [admin, teacher, import]

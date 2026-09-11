@@ -10,10 +10,11 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
 )
 
-func (h *AcademicHandler) DownloadEnrollmentImportTemplate(_ context.Context, _ api.DownloadEnrollmentImportTemplateRequestObject) (api.DownloadEnrollmentImportTemplateResponseObject, error) {
-	file, err := h.service.ImportTemplate()
+func (h *AcademicHandler) DownloadEnrollmentImportTemplate(ctx context.Context, request api.DownloadEnrollmentImportTemplateRequestObject) (api.DownloadEnrollmentImportTemplateResponseObject, error) {
+	tenantID := tenantIDFromContext(ctx)
+	file, err := h.service.ImportTemplate(ctx, tenantID, request.Params.AcademicYearId)
 	if err != nil {
-		return nil, httpx.ErrInternal
+		return nil, mapDomainError(err)
 	}
 	return api.DownloadEnrollmentImportTemplate200ApplicationvndOpenxmlformatsOfficedocumentSpreadsheetmlSheetResponse{
 		Body: bytes.NewReader(file), ContentLength: int64(len(file)),
@@ -26,7 +27,8 @@ func (h *AcademicHandler) PreviewEnrollmentImport(ctx context.Context, request a
 	if err != nil {
 		return nil, httpx.ErrValidation
 	}
-	rows, err := h.service.ImportPreview(ctx, tenantID, request.Params.AcademicYearId, file)
+	moveExisting := request.Params.MoveExisting != nil && *request.Params.MoveExisting
+	rows, err := h.service.ImportPreview(ctx, tenantID, request.Params.AcademicYearId, file, moveExisting)
 	if err != nil {
 		return nil, mapDomainError(err)
 	}
@@ -39,7 +41,9 @@ func (h *AcademicHandler) CommitEnrollmentImport(ctx context.Context, request ap
 	if err != nil {
 		return nil, httpx.ErrValidation
 	}
-	rows, err := h.service.ImportCommit(ctx, tenantID, request.Params.AcademicYearId, file, h.clock.Now())
+	moveExisting := request.Params.MoveExisting != nil && *request.Params.MoveExisting
+	partial := request.Params.Partial != nil && *request.Params.Partial
+	rows, err := h.service.ImportCommit(ctx, tenantID, request.Params.AcademicYearId, file, h.clock.Now(), moveExisting, partial)
 	if err != nil {
 		return nil, mapDomainError(err)
 	}

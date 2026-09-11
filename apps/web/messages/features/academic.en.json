@@ -177,6 +177,8 @@
     "year": "Academic year",
     "downloadTemplate": "Download template",
     "chooseFile": "Choose an xlsx file",
+    "moveExisting": "Move students who already have a different class this year",
+    "partial": "Apply valid rows even if some rows have errors",
     "preview": "Preview",
     "commit": "Apply",
     "committedLabel": "Applied",
@@ -194,6 +196,7 @@
       "assign": "Assigned",
       "move": "Moved",
       "unchanged": "Unchanged",
+      "skipped": "Skipped",
       "error": "Needs attention"
     }
   },

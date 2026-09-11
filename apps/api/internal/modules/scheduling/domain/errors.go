@@ -8,6 +8,9 @@ var (
 	ErrDayNotSchoolDay    = errors.New("day of week is not an active school day")
 	ErrTeacherNotAssigned = errors.New("teacher has no active teaching assignment for this class and subject")
 	ErrPeriodNotFound     = errors.New("period not found in the school's period template")
+	ErrPeriodIsBreak      = errors.New("a break period cannot be scheduled as a lesson")
+	ErrPeriodTemplateDay  = errors.New("period does not belong to the template assigned to this day of week")
+	ErrYearArchived       = errors.New("academic year is archived")
 
 	// ErrConflictClass and ErrConflictTeacher map to HTTP 409
 	// SCHEDULE_CONFLICT_CLASS / SCHEDULE_CONFLICT_TEACHER in transport,

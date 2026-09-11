@@ -9,6 +9,7 @@ import (
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/identity/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/audit"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/authz"
 )
 
 // DutyTypeRecord is one duty_types row.
@@ -48,6 +49,7 @@ type DutyAssignmentRecord struct {
 type DutiesRepository interface {
 	ListDutyTypes(ctx context.Context, tenantID uuid.UUID, includeInactive bool) ([]DutyTypeRecord, error)
 	GetDutyTypeByID(ctx context.Context, tenantID, id uuid.UUID) (DutyTypeRecord, error)
+	GetDutyTypeBySlug(ctx context.Context, tenantID uuid.UUID, slug string) (DutyTypeRecord, bool, error)
 	CreateDutyTypeRecord(ctx context.Context, tenantID uuid.UUID, slug, name string, scope domain.DutyScopeKind) (DutyTypeRecord, error)
 	UpdateDutyTypeRecord(ctx context.Context, tenantID, id uuid.UUID, name string, scope domain.DutyScopeKind, isActive bool) error
 	SoftDeleteDutyType(ctx context.Context, tenantID, id uuid.UUID) error
@@ -63,7 +65,81 @@ type DutiesRepository interface {
 	DeleteDutyAssignmentRecord(ctx context.Context, tenantID, id uuid.UUID) error
 
 	ClassExists(ctx context.Context, tenantID, classID uuid.UUID) (bool, error)
+	ClassExistsInYear(ctx context.Context, tenantID, classID, academicYearID uuid.UUID) (bool, error)
 	UserExists(ctx context.Context, tenantID, userID uuid.UUID) (bool, error)
+	IsActiveTeacherOrStaff(ctx context.Context, tenantID, userID uuid.UUID) (bool, error)
+	UpdateClassHomeroomTeacher(ctx context.Context, tenantID, classID uuid.UUID, teacherID uuid.NullUUID) error
+	ListStaffOptions(ctx context.Context, tenantID uuid.UUID, search string, limit int32) ([]UserOption, error)
+}
+
+// UserOption is one entry in a dropdown of eligible duty assignees.
+type UserOption struct {
+	ID   uuid.UUID
+	Name string
+}
+
+// ListStaffOptions lists active teacher/staff users for a duty assignment
+// form's assignee dropdown.
+func (s *Service) ListStaffOptions(ctx context.Context, tenantID uuid.UUID, search string, limit int32) ([]UserOption, error) {
+	var out []UserOption
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		out, err = s.repo.ListStaffOptions(ctx, tenantID, search, limit)
+		return err
+	})
+	return out, err
+}
+
+// homeroomDutySlug is the duty type slug attendance and permits both
+// hard-code as "the homeroom teacher of this class" -- kept as one
+// constant here so CreateDutyAssignment, UpdateDutyAssignment, and
+// DeleteDutyAssignment all agree on which duty this sync rule applies to.
+const homeroomDutySlug = "homeroom"
+
+// syncClassHomeroom writes classes.homeroom_teacher_id to match a duty
+// assignment's outcome: teacherID set (Valid) points the class at that
+// teacher, teacherID zero-value clears it. Only called for a
+// class-scoped "homeroom" duty; every other duty type leaves the column
+// alone.
+func (s *Service) syncClassHomeroom(ctx context.Context, tenantID uuid.UUID, dutySlug string, scopeClassID uuid.NullUUID, teacherID uuid.NullUUID) error {
+	if dutySlug != homeroomDutySlug || !scopeClassID.Valid {
+		return nil
+	}
+	return s.repo.UpdateClassHomeroomTeacher(ctx, tenantID, scopeClassID.UUID, teacherID)
+}
+
+// SeedDefaultDuties creates the tenant's standard duty types (homeroom,
+// counselor, picket/duty-teacher, leadership, security, librarian) from
+// authz.DutyTypeDefaults, with their default permissions -- the same
+// catalog apps/api/cmd/seed builds for the local demo tenant, now also run
+// for every real tenant a platform admin provisions (attendance and
+// permits both hard-code the "homeroom" slug, so a tenant that never got
+// this seed would have no way to name a homeroom teacher at all). It is
+// idempotent: an existing duty type by that slug is left alone, and
+// AddDutyPermissionRecord itself no-ops on a permission it already grants.
+func (s *Service) SeedDefaultDuties(ctx context.Context, tenantID uuid.UUID) error {
+	return s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		for _, d := range authz.DutyTypeDefaults() {
+			existing, found, err := s.repo.GetDutyTypeBySlug(ctx, tenantID, d.Slug)
+			if err != nil {
+				return fmt.Errorf("look up duty type %s: %w", d.Slug, err)
+			}
+			dutyTypeID := existing.ID
+			if !found {
+				created, err := s.repo.CreateDutyTypeRecord(ctx, tenantID, d.Slug, d.Name, domain.DutyScopeKind(d.ScopeKind))
+				if err != nil {
+					return fmt.Errorf("create duty type %s: %w", d.Slug, err)
+				}
+				dutyTypeID = created.ID
+			}
+			for _, code := range d.Permissions {
+				if err := s.repo.AddDutyPermissionRecord(ctx, tenantID, dutyTypeID, code); err != nil {
+					return fmt.Errorf("grant %s to duty %s: %w", code, d.Slug, err)
+				}
+			}
+		}
+		return nil
+	})
 }
 
 // ListDutyTypes returns every duty type for the tenant.

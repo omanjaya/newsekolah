@@ -113,6 +113,15 @@ func (h *AcademicHandler) MoveStudent(ctx context.Context, request api.MoveStude
 	return api.MoveStudent201JSONResponse(toAPIEnrollment(enrollment)), nil
 }
 
+func (h *AcademicHandler) RemoveStudentFromClass(ctx context.Context, request api.RemoveStudentFromClassRequestObject) (api.RemoveStudentFromClassResponseObject, error) {
+	tenantID := tenantIDFromContext(ctx)
+	enrollment, err := h.service.RemoveStudent(ctx, tenantID, request.EnrollmentId, toDate(request.Body.LeftOn))
+	if err != nil {
+		return nil, mapDomainError(err)
+	}
+	return api.RemoveStudentFromClass200JSONResponse(toAPIEnrollment(enrollment)), nil
+}
+
 func (h *AcademicHandler) ListUnassignedStudents(ctx context.Context, request api.ListUnassignedStudentsRequestObject) (api.ListUnassignedStudentsResponseObject, error) {
 	tenantID := tenantIDFromContext(ctx)
 	students, total, err := h.service.ListUnassignedStudents(ctx, tenantID, request.YearId, searchValue(request.Params.Search), toPage(request.Params.Page, request.Params.PageSize))

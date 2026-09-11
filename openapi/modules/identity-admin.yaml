@@ -12,7 +12,11 @@ paths:
         - { name: role, in: query, description: Role slug, schema: { type: string } }
         - { name: include_archived, in: query, schema: { type: boolean, default: false } }
         - { name: cursor, in: query, schema: { type: string, format: uuid } }
-        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 25 } }
+        - {
+            name: limit,
+            in: query,
+            schema: { type: integer, minimum: 1, maximum: 100, default: 25 },
+          }
       responses:
         "200":
           description: Users page
@@ -550,7 +554,12 @@ paths:
       x-permission: view_users
       summary: Duty assignments in an academic year
       parameters:
-        - { name: academic_year_id, in: query, required: true, schema: { type: string, format: uuid } }
+        - {
+            name: academic_year_id,
+            in: query,
+            required: true,
+            schema: { type: string, format: uuid },
+          }
         - { name: duty_type_id, in: query, schema: { type: string, format: uuid } }
         - { name: user_id, in: query, schema: { type: string, format: uuid } }
       responses:
@@ -627,6 +636,32 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
 
+  /v1/staff-options:
+    get:
+      tags: [duties]
+      operationId: listStaffOptions
+      x-permission: view_users
+      summary: Active users with a teacher or staff profile, for a duty assignment form's assignee dropdown
+      parameters:
+        - $ref: "#/components/parameters/SearchParam"
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 50, default: 20 }
+      responses:
+        "200":
+          description: Staff options
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/UserOption" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
   /v1/audit-logs:
     get:
       tags: [audit]
@@ -640,7 +675,11 @@ paths:
         - { name: from, in: query, schema: { type: string, format: date-time } }
         - { name: to, in: query, schema: { type: string, format: date-time } }
         - { name: cursor, in: query, schema: { type: string, format: uuid } }
-        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 25 } }
+        - {
+            name: limit,
+            in: query,
+            schema: { type: integer, minimum: 1, maximum: 100, default: 25 },
+          }
       responses:
         "200":
           description: Audit page
@@ -1079,7 +1118,8 @@ components:
 
     DutyAssignment:
       type: object
-      required: [id, academic_year_id, duty_type_id, duty_slug, duty_name, user_id, is_active, starts_on]
+      required:
+        [id, academic_year_id, duty_type_id, duty_slug, duty_name, user_id, is_active, starts_on]
       properties:
         id: { type: string, format: uuid }
         academic_year_id: { type: string, format: uuid }

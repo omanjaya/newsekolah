@@ -99,17 +99,47 @@ func (s *Service) termCountPolicy(ctx context.Context, tenantID uuid.UUID) int {
 	return cfg.Terms
 }
 
+// UpdateAcademicYear checks the year exists and is not archived before
+// writing: the update query itself filters out archived rows
+// (archived_at is null), so without this check both "no such year" and
+// "year is archived" would surface as the same pgx.ErrNoRows -- and the
+// caller needs to tell a 404 (recreate the request with a valid id) apart
+// from a 409 (the id is valid but the year is closed to edits).
 func (s *Service) UpdateAcademicYear(ctx context.Context, tenantID, id uuid.UUID, label string, startsOn, endsOn time.Time) (domain.AcademicYear, error) {
 	if err := domain.ValidatePeriod(startsOn, endsOn); err != nil {
 		return domain.AcademicYear{}, err
 	}
 	var year domain.AcademicYear
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		var err error
+		existing, err := s.repo.GetYearByID(ctx, tenantID, id)
+		if err != nil {
+			return mapNotFound(err, domain.ErrAcademicYearNotFound)
+		}
+		if existing.IsArchived() {
+			return domain.ErrAcademicYearArchived
+		}
 		year, err = s.repo.UpdateYear(ctx, tenantID, id, label, startsOn, endsOn)
-		return mapUniqueViolation(err, domain.ErrAcademicYearNameExists)
+		return mapNotFound(mapUniqueViolation(err, domain.ErrAcademicYearNameExists), domain.ErrAcademicYearNotFound)
 	})
 	return year, err
+}
+
+// requireYearNotArchived refuses a mutation scoped to an archived academic
+// year: classes, enrollments, teaching assignments, and schedules must not
+// be created or changed once a year is closed, the same rule
+// UpdateAcademicYear enforces on the year record itself. Called from every
+// other service file in this module (Service.repo already satisfies
+// yearRepository through the module-wide Repository union), so it lives
+// here alongside the rest of the year lifecycle rules.
+func (s *Service) requireYearNotArchived(ctx context.Context, tenantID, yearID uuid.UUID) error {
+	year, err := s.repo.GetYearByID(ctx, tenantID, yearID)
+	if err != nil {
+		return mapNotFound(err, domain.ErrAcademicYearNotFound)
+	}
+	if year.IsArchived() {
+		return domain.ErrAcademicYearArchived
+	}
+	return nil
 }
 
 func (s *Service) GetAcademicYear(ctx context.Context, tenantID, id uuid.UUID) (domain.AcademicYear, error) {

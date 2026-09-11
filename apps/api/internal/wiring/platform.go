@@ -58,6 +58,10 @@ func (p PlatformIdentity) ProvisionAdmin(ctx context.Context, tenantID uuid.UUID
 	return platformservice.AdminResult{UserID: user.ID, Username: user.Username, Password: password}, nil
 }
 
+func (p PlatformIdentity) SeedDefaultDuties(ctx context.Context, tenantID uuid.UUID) error {
+	return p.Identity.SeedDefaultDuties(ctx, tenantID)
+}
+
 // tenantPermissionCodes is every permission code except the platform
 // console's own: a tenant admin must never be handed cross-tenant access.
 func tenantPermissionCodes() []string {

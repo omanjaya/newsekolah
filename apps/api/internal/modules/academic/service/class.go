@@ -20,6 +20,12 @@ type classRepository interface {
 	CountEnrollmentsForClass(ctx context.Context, tenantID, id uuid.UUID) (int64, error)
 	CountTeachingAssignmentsForClass(ctx context.Context, tenantID, id uuid.UUID) (int64, error)
 
+	FindHomeroomDutyTypeID(ctx context.Context, tenantID uuid.UUID) (uuid.UUID, bool, error)
+	FindActiveHomeroomAssignment(ctx context.Context, tenantID, yearID, dutyTypeID, classID uuid.UUID) (id, userID uuid.UUID, found bool, err error)
+	EndHomeroomAssignment(ctx context.Context, tenantID, id uuid.UUID, endsOn time.Time) error
+	CreateHomeroomAssignment(ctx context.Context, tenantID, yearID, dutyTypeID, teacherID, classID uuid.UUID, startsOn time.Time) error
+
+	IsActiveStudent(ctx context.Context, tenantID, userID uuid.UUID) (bool, error)
 	CreateEnrollment(ctx context.Context, tenantID, yearID, studentID, classID uuid.UUID, joinedOn time.Time) (domain.Enrollment, error)
 	GetActiveEnrollment(ctx context.Context, tenantID, yearID, studentID uuid.UUID) (domain.Enrollment, error)
 	GetEnrollmentByID(ctx context.Context, tenantID, id uuid.UUID) (domain.Enrollment, error)
@@ -35,9 +41,15 @@ type classRepository interface {
 func (s *Service) CreateClass(ctx context.Context, c domain.Class) (domain.Class, error) {
 	var class domain.Class
 	err := s.withTx(ctx, c.TenantID, func(ctx context.Context) error {
+		if err := s.requireYearNotArchived(ctx, c.TenantID, c.AcademicYearID); err != nil {
+			return err
+		}
 		var err error
 		class, err = s.repo.CreateClass(ctx, c)
-		return mapUniqueViolation(err, domain.ErrClassNameExists)
+		if err != nil {
+			return mapUniqueViolation(err, domain.ErrClassNameExists)
+		}
+		return s.syncHomeroomDuty(ctx, class, nil, class.HomeroomTeacherID)
 	})
 	return class, err
 }
@@ -45,11 +57,49 @@ func (s *Service) CreateClass(ctx context.Context, c domain.Class) (domain.Class
 func (s *Service) UpdateClass(ctx context.Context, c domain.Class) (domain.Class, error) {
 	var class domain.Class
 	err := s.withTx(ctx, c.TenantID, func(ctx context.Context) error {
-		var err error
+		if err := s.requireYearNotArchived(ctx, c.TenantID, c.AcademicYearID); err != nil {
+			return err
+		}
+		before, err := s.repo.GetClassByID(ctx, c.TenantID, c.ID)
+		if err != nil {
+			return mapNotFound(err, domain.ErrClassNotFound)
+		}
 		class, err = s.repo.UpdateClass(ctx, c)
-		return mapNotFound(mapUniqueViolation(err, domain.ErrClassNameExists), domain.ErrClassNotFound)
+		if err != nil {
+			return mapNotFound(mapUniqueViolation(err, domain.ErrClassNameExists), domain.ErrClassNotFound)
+		}
+		return s.syncHomeroomDuty(ctx, class, before.HomeroomTeacherID, class.HomeroomTeacherID)
 	})
 	return class, err
+}
+
+// syncHomeroomDuty keeps the class's "homeroom" duty assignment in step
+// with classes.homeroom_teacher_id when that column is edited directly
+// (through the class form) rather than through the duty assignment admin
+// screen -- the reverse of identity/service.syncClassHomeroom, which
+// writes this column when the duty assignment is what changed. A tenant
+// that predates duty-type seeding (no "homeroom" duty type yet) is left
+// alone: there is nothing to sync onto.
+func (s *Service) syncHomeroomDuty(ctx context.Context, class domain.Class, before, after *uuid.UUID) error {
+	changed := (before == nil) != (after == nil) || (before != nil && after != nil && *before != *after)
+	if !changed {
+		return nil
+	}
+	dutyTypeID, found, err := s.repo.FindHomeroomDutyTypeID(ctx, class.TenantID)
+	if err != nil || !found {
+		return err
+	}
+	if assignmentID, _, found, err := s.repo.FindActiveHomeroomAssignment(ctx, class.TenantID, class.AcademicYearID, dutyTypeID, class.ID); err != nil {
+		return err
+	} else if found {
+		if err := s.repo.EndHomeroomAssignment(ctx, class.TenantID, assignmentID, s.clock.Now()); err != nil {
+			return err
+		}
+	}
+	if after != nil {
+		return s.repo.CreateHomeroomAssignment(ctx, class.TenantID, class.AcademicYearID, dutyTypeID, *after, class.ID, s.clock.Now())
+	}
+	return nil
 }
 
 func (s *Service) GetClass(ctx context.Context, tenantID, id uuid.UUID) (domain.Class, error) {
@@ -140,14 +190,37 @@ func (s *Service) ListUnassignedStudents(ctx context.Context, tenantID, yearID u
 func (s *Service) AssignStudent(ctx context.Context, tenantID, yearID, studentID, classID uuid.UUID, joinedOn time.Time) (domain.Enrollment, error) {
 	var enrollment domain.Enrollment
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		if err := s.requireYearNotArchived(ctx, tenantID, yearID); err != nil {
+			return err
+		}
+		if err := s.requireActiveStudent(ctx, tenantID, studentID); err != nil {
+			return err
+		}
 		if _, err := s.repo.GetActiveEnrollment(ctx, tenantID, yearID, studentID); err == nil {
 			return domain.ErrEnrollmentExists
 		}
 		var err error
 		enrollment, err = s.repo.CreateEnrollment(ctx, tenantID, yearID, studentID, classID, joinedOn)
-		return err
+		return mapUniqueViolation(err, domain.ErrEnrollmentExists)
 	})
 	return enrollment, err
+}
+
+// requireActiveStudent fails a class/enrollment mutation early when the
+// given user id does not resolve to an active user with a student profile
+// -- the old app rejected the same case (student_classes.go,
+// studentExistsInAcademicYear), a check the enrollment table's foreign key
+// alone cannot enforce since it only knows "some user", not "an active
+// student".
+func (s *Service) requireActiveStudent(ctx context.Context, tenantID, studentID uuid.UUID) error {
+	ok, err := s.repo.IsActiveStudent(ctx, tenantID, studentID)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return domain.ErrStudentNotActive
+	}
+	return nil
 }
 
 // BulkAssignStudents assigns every listed student to classID, skipping (not
@@ -159,14 +232,20 @@ func (s *Service) BulkAssignStudents(ctx context.Context, tenantID, yearID, clas
 	assigned := make([]domain.Enrollment, 0, len(studentIDs))
 	skipped := make([]uuid.UUID, 0)
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		if err := s.requireYearNotArchived(ctx, tenantID, yearID); err != nil {
+			return err
+		}
 		for _, studentID := range studentIDs {
+			if err := s.requireActiveStudent(ctx, tenantID, studentID); err != nil {
+				return err
+			}
 			if _, err := s.repo.GetActiveEnrollment(ctx, tenantID, yearID, studentID); err == nil {
 				skipped = append(skipped, studentID)
 				continue
 			}
 			enrollment, err := s.repo.CreateEnrollment(ctx, tenantID, yearID, studentID, classID, joinedOn)
 			if err != nil {
-				return err
+				return mapUniqueViolation(err, domain.ErrEnrollmentExists)
 			}
 			assigned = append(assigned, enrollment)
 		}
@@ -181,6 +260,9 @@ func (s *Service) BulkAssignStudents(ctx context.Context, tenantID, yearID, clas
 func (s *Service) MoveStudent(ctx context.Context, tenantID, yearID, studentID, toClassID uuid.UUID, effectiveOn time.Time) (domain.Enrollment, error) {
 	var newEnrollment domain.Enrollment
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		if err := s.requireYearNotArchived(ctx, tenantID, yearID); err != nil {
+			return err
+		}
 		current, err := s.repo.GetActiveEnrollment(ctx, tenantID, yearID, studentID)
 		if err != nil {
 			return mapNotFound(err, domain.ErrEnrollmentNotOpen)
@@ -192,4 +274,28 @@ func (s *Service) MoveStudent(ctx context.Context, tenantID, yearID, studentID, 
 		return err
 	})
 	return newEnrollment, err
+}
+
+// RemoveStudent closes a student's active enrollment as "left" mid-year --
+// distinct from MoveStudent (which opens a new enrollment in another
+// class) and from promotion's "transfer" outcome (which closes it at
+// year-end). Use this when a student leaves the school entirely before
+// the year ends.
+func (s *Service) RemoveStudent(ctx context.Context, tenantID, id uuid.UUID, leftOn time.Time) (domain.Enrollment, error) {
+	var enrollment domain.Enrollment
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		current, err := s.repo.GetEnrollmentByID(ctx, tenantID, id)
+		if err != nil {
+			return mapNotFound(err, domain.ErrEnrollmentNotOpen)
+		}
+		if current.Status != domain.EnrollmentStatusActive {
+			return domain.ErrEnrollmentNotOpen
+		}
+		if err := s.requireYearNotArchived(ctx, tenantID, current.AcademicYearID); err != nil {
+			return err
+		}
+		enrollment, err = s.repo.CloseEnrollment(ctx, tenantID, id, domain.EnrollmentStatusLeft, leftOn)
+		return err
+	})
+	return enrollment, err
 }

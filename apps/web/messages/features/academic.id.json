@@ -177,6 +177,8 @@
     "year": "Tahun ajaran",
     "downloadTemplate": "Unduh template",
     "chooseFile": "Pilih berkas xlsx",
+    "moveExisting": "Pindahkan siswa yang sudah punya kelas lain tahun ini",
+    "partial": "Tetap terapkan baris yang valid meski ada baris bermasalah",
     "preview": "Tinjau",
     "commit": "Terapkan",
     "committedLabel": "Sudah diterapkan",
@@ -194,6 +196,7 @@
       "assign": "Ditempatkan",
       "move": "Dipindah",
       "unchanged": "Tidak berubah",
+      "skipped": "Dilewati",
       "error": "Bermasalah"
     }
   },

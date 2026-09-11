@@ -97,6 +97,28 @@ func (q *Queries) GetPeriodTemplateRefForDay(ctx context.Context, arg GetPeriodT
 	return template_id, err
 }
 
+const getStudentActiveClassRef = `-- name: GetStudentActiveClassRef :one
+select class_id
+from enrollments
+where tenant_id = $1 and academic_year_id = $2 and student_user_id = $3 and status = 'active'
+`
+
+type GetStudentActiveClassRefParams struct {
+	TenantID       uuid.UUID `json:"tenant_id"`
+	AcademicYearID uuid.UUID `json:"academic_year_id"`
+	StudentUserID  uuid.UUID `json:"student_user_id"`
+}
+
+// The class a student is actively enrolled in this academic year, for
+// scoping schedule reads: a student may only list their own class's
+// schedule, per teaching_schedules.go's studentClass lookup in the old app.
+func (q *Queries) GetStudentActiveClassRef(ctx context.Context, arg GetStudentActiveClassRefParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, getStudentActiveClassRef, arg.TenantID, arg.AcademicYearID, arg.StudentUserID)
+	var class_id uuid.UUID
+	err := row.Scan(&class_id)
+	return class_id, err
+}
+
 const getSubjectRefForSchedule = `-- name: GetSubjectRefForSchedule :one
 select id, tenant_id, code, name
 from subjects
@@ -158,6 +180,45 @@ func (q *Queries) GetTeachingAssignmentRef(ctx context.Context, arg GetTeachingA
 	var i GetTeachingAssignmentRefRow
 	err := row.Scan(&i.ID, &i.IsActive)
 	return i, err
+}
+
+const getUserRefForSchedule = `-- name: GetUserRefForSchedule :one
+select id, name
+from users
+where tenant_id = $1 and id = $2 and deleted_at is null
+`
+
+type GetUserRefForScheduleParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	ID       uuid.UUID `json:"id"`
+}
+
+type GetUserRefForScheduleRow struct {
+	ID   uuid.UUID `json:"id"`
+	Name string    `json:"name"`
+}
+
+func (q *Queries) GetUserRefForSchedule(ctx context.Context, arg GetUserRefForScheduleParams) (GetUserRefForScheduleRow, error) {
+	row := q.db.QueryRow(ctx, getUserRefForSchedule, arg.TenantID, arg.ID)
+	var i GetUserRefForScheduleRow
+	err := row.Scan(&i.ID, &i.Name)
+	return i, err
+}
+
+const isAcademicYearArchivedRef = `-- name: IsAcademicYearArchivedRef :one
+select (archived_at is not null)::bool from academic_years where tenant_id = $1 and id = $2
+`
+
+type IsAcademicYearArchivedRefParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	ID       uuid.UUID `json:"id"`
+}
+
+func (q *Queries) IsAcademicYearArchivedRef(ctx context.Context, arg IsAcademicYearArchivedRefParams) (bool, error) {
+	row := q.db.QueryRow(ctx, isAcademicYearArchivedRef, arg.TenantID, arg.ID)
+	var column_1 bool
+	err := row.Scan(&column_1)
+	return column_1, err
 }
 
 const isActiveTeacherRef = `-- name: IsActiveTeacherRef :one
@@ -269,6 +330,64 @@ func (q *Queries) ListPeriodsRefByTemplate(ctx context.Context, arg ListPeriodsR
 			&i.EndsAt,
 			&i.IsBreak,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listTeacherOptionsRef = `-- name: ListTeacherOptionsRef :many
+select distinct u.id, u.name
+from users u
+join user_profiles up on up.user_id = u.id and up.kind = 'teacher'
+join teaching_assignments ta on ta.tenant_id = u.tenant_id and ta.teacher_user_id = u.id
+  and ta.academic_year_id = $2 and ta.is_active
+where u.tenant_id = $1
+  and u.deleted_at is null
+  and u.status = 'active'
+  and ($4::text is null or u.name ilike '%' || $4 || '%')
+  and ($5::uuid is null or u.id = $5)
+order by u.name
+limit $3
+`
+
+type ListTeacherOptionsRefParams struct {
+	TenantID       uuid.UUID   `json:"tenant_id"`
+	AcademicYearID uuid.UUID   `json:"academic_year_id"`
+	Limit          int32       `json:"limit"`
+	Search         pgtype.Text `json:"search"`
+	SelfUserID     pgtype.UUID `json:"self_user_id"`
+}
+
+type ListTeacherOptionsRefRow struct {
+	ID   uuid.UUID `json:"id"`
+	Name string    `json:"name"`
+}
+
+// Active teachers with a teaching assignment in academic_year_id, for a
+// schedule form's teacher dropdown. self_user_id narrows to one teacher
+// (a caller without manage_schedules/manage_master_data sees only
+// themselves); pass null to see everyone.
+func (q *Queries) ListTeacherOptionsRef(ctx context.Context, arg ListTeacherOptionsRefParams) ([]ListTeacherOptionsRefRow, error) {
+	rows, err := q.db.Query(ctx, listTeacherOptionsRef,
+		arg.TenantID,
+		arg.AcademicYearID,
+		arg.Limit,
+		arg.Search,
+		arg.SelfUserID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListTeacherOptionsRefRow{}
+	for rows.Next() {
+		var i ListTeacherOptionsRefRow
+		if err := rows.Scan(&i.ID, &i.Name); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

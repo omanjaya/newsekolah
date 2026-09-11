@@ -263,6 +263,12 @@ func applyActor(in ScheduleInput, actor Actor) ScheduleInput {
 // school days, teaching assignment) and builds the domain.Schedule ready
 // for conflict checking and persistence.
 func (s *Service) resolveCandidate(ctx context.Context, tenantID uuid.UUID, in ScheduleInput) (domain.Schedule, error) {
+	if archived, err := s.repo.IsYearArchived(ctx, tenantID, in.AcademicYearID); err != nil {
+		return domain.Schedule{}, err
+	} else if archived {
+		return domain.Schedule{}, domain.ErrYearArchived
+	}
+
 	startPeriod, err := s.repo.GetPeriodRef(ctx, tenantID, in.StartPeriodID)
 	if err != nil {
 		return domain.Schedule{}, domain.ErrPeriodNotFound
@@ -277,10 +283,21 @@ func (s *Service) resolveCandidate(ctx context.Context, tenantID uuid.UUID, in S
 	if err := domain.ValidatePeriodRange(startPeriod.Sequence, endPeriod.Sequence); err != nil {
 		return domain.Schedule{}, err
 	}
+	if startPeriod.IsBreak || endPeriod.IsBreak {
+		return domain.Schedule{}, domain.ErrPeriodIsBreak
+	}
 
 	schoolDay, err := s.repo.IsSchoolDay(ctx, tenantID, in.AcademicYearID, in.DayOfWeek)
 	if err != nil || !schoolDay {
 		return domain.Schedule{}, domain.ErrDayNotSchoolDay
+	}
+
+	// The period template itself can be shared across weekdays; only the
+	// one period_day_assignments maps to in.DayOfWeek for this academic
+	// year is the one a schedule on that day may draw its periods from.
+	dayTemplateID, err := s.repo.GetPeriodTemplateForDay(ctx, tenantID, in.AcademicYearID, in.DayOfWeek)
+	if err != nil || dayTemplateID != startPeriod.TemplateID {
+		return domain.Schedule{}, domain.ErrPeriodTemplateDay
 	}
 
 	if _, err := s.repo.GetClassRef(ctx, tenantID, in.ClassID); err != nil {
@@ -318,15 +335,64 @@ func (s *Service) checkConflict(ctx context.Context, tenantID uuid.UUID, candida
 	if err != nil {
 		return err
 	}
-	return domain.DetectConflict(existing, candidate, selfID)
+	conflictErr := domain.DetectConflict(existing, candidate, selfID)
+	if conflictErr == nil {
+		return nil
+	}
+	var conflict *domain.ConflictError
+	if errors.As(conflictErr, &conflict) {
+		s.nameConflict(ctx, tenantID, conflict)
+	}
+	return conflictErr
 }
 
-// enforceTeacherWindow resolves the concrete next occurrence of sched's
-// day-of-week and start period, in the tenant's timezone, and checks it
-// against schedule.teacher_edit_deadline.
+// nameConflict resolves the class/subject/teacher names for a conflict's
+// "With" schedule, best-effort: a lookup failure here must not hide the
+// conflict itself, so a name simply stays blank rather than aborting the
+// request.
+func (s *Service) nameConflict(ctx context.Context, tenantID uuid.UUID, conflict *domain.ConflictError) {
+	if class, err := s.repo.GetClassRef(ctx, tenantID, conflict.With.ClassID); err == nil {
+		conflict.ClassName = class.Name
+	}
+	if subject, err := s.repo.GetSubjectRef(ctx, tenantID, conflict.With.SubjectID); err == nil {
+		conflict.SubjectName = subject.Name
+	}
+	if teacher, err := s.repo.GetUserRef(ctx, tenantID, conflict.With.TeacherUserID); err == nil {
+		conflict.TeacherName = teacher.Name
+	}
+	if start, err := s.repo.GetPeriodRef(ctx, tenantID, conflict.With.StartPeriodID); err == nil {
+		conflict.StartPeriodName = start.Name
+	}
+	if end, err := s.repo.GetPeriodRef(ctx, tenantID, conflict.With.EndPeriodID); err == nil {
+		conflict.EndPeriodName = end.Name
+	}
+}
+
+// enforceTeacherWindow checks schedule.teacher_edit_deadline, which comes
+// in two forms this tenant setting has carried over the app's history:
+// an RFC3339 timestamp -- a single absolute cutoff, the old app's format
+// ("fill in your schedule before the semester starts") -- or a
+// time.ParseDuration string -- the current rolling per-occurrence window
+// ("don't touch a lesson inside its last 24 hours"). Whichever the
+// setting parses as decides which rule applies; an unset or unparseable
+// setting falls back to the duration form with defaultTeacherEditDeadline.
 func (s *Service) enforceTeacherWindow(ctx context.Context, tenantID uuid.UUID, sched domain.Schedule, now time.Time) error {
+	raw, ok, err := s.repo.GetTenantSettingValue(ctx, tenantID, settingTeacherEditDeadline)
+	if err != nil {
+		ok = false
+	}
+
+	if ok {
+		if deadline, err := time.Parse(time.RFC3339, raw); err == nil {
+			if !domain.TeacherEditAllowedBefore(now, deadline) {
+				return domain.ErrTeacherEditDeadline
+			}
+			return nil
+		}
+	}
+
 	deadline := defaultTeacherEditDeadline
-	if raw, ok, err := s.repo.GetTenantSettingValue(ctx, tenantID, settingTeacherEditDeadline); err == nil && ok {
+	if ok {
 		if d, err := time.ParseDuration(raw); err == nil {
 			deadline = d
 		}

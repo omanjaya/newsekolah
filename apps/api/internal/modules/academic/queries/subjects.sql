@@ -49,3 +49,9 @@ order by id;
 
 -- name: AcademicDeleteSubjectOffering :exec
 delete from subject_offerings where tenant_id = $1 and id = $2;
+
+-- name: AcademicSubjectOfferedInYear :one
+select exists (
+  select 1 from subject_offerings
+  where tenant_id = $1 and academic_year_id = $2 and subject_id = $3
+);

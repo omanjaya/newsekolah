@@ -14,3 +14,12 @@ import "time"
 func TeacherEditAllowed(now, occursAt time.Time, deadline time.Duration) bool {
 	return now.Before(occursAt.Add(-deadline))
 }
+
+// TeacherEditAllowedBefore enforces the older, absolute form of
+// schedule.teacher_edit_deadline: an RFC3339 timestamp naming a single
+// cutoff (e.g. "fill in your schedule before the semester starts") rather
+// than a rolling per-occurrence duration. A teacher may edit only before
+// that instant.
+func TeacherEditAllowedBefore(now, deadline time.Time) bool {
+	return now.Before(deadline)
+}

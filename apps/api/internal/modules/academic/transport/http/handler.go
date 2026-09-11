@@ -111,6 +111,13 @@ var validationErrs = []error{
 	domain.ErrUnknownTemplate,
 	domain.ErrInvalidCalendarEventRange,
 	domain.ErrNewYearSameAsSource,
+	domain.ErrStudentNotActive,
+	domain.ErrTeacherNotActive,
+	domain.ErrSubjectNotOfferedInYear,
+	domain.ErrClassYearMismatch,
+	domain.ErrTooManyClasses,
+	domain.ErrImportRowInvalid,
+	domain.ErrImportHasInvalidRow,
 }
 
 // mapDomainError maps a domain sentinel error to a stable httpx.Error; any

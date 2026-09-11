@@ -84,11 +84,11 @@ func withConflictDetails(base *httpx.Error, err error) error {
 	}
 	with := conflict.With
 	return httpx.NewError(base.Status, base.Code).WithDetails(
-		httpx.ErrorDetail{Field: "class_id", Code: with.ClassID.String()},
-		httpx.ErrorDetail{Field: "subject_id", Code: with.SubjectID.String()},
-		httpx.ErrorDetail{Field: "teacher_user_id", Code: with.TeacherUserID.String()},
-		httpx.ErrorDetail{Field: "start_seq", Code: strconv.Itoa(int(with.StartSeq))},
-		httpx.ErrorDetail{Field: "end_seq", Code: strconv.Itoa(int(with.EndSeq))},
+		httpx.ErrorDetail{Field: "class_id", Code: with.ClassID.String(), Message: conflict.ClassName},
+		httpx.ErrorDetail{Field: "subject_id", Code: with.SubjectID.String(), Message: conflict.SubjectName},
+		httpx.ErrorDetail{Field: "teacher_user_id", Code: with.TeacherUserID.String(), Message: conflict.TeacherName},
+		httpx.ErrorDetail{Field: "start_seq", Code: strconv.Itoa(int(with.StartSeq)), Message: conflict.StartPeriodName},
+		httpx.ErrorDetail{Field: "end_seq", Code: strconv.Itoa(int(with.EndSeq)), Message: conflict.EndPeriodName},
 	)
 }
 
@@ -106,8 +106,11 @@ func mapScheduleError(err error) error {
 	case errors.Is(err, domain.ErrTeacherEditForbidden), errors.Is(err, domain.ErrTeacherEditDeadline), errors.Is(err, domain.ErrAdminOnlySource):
 		return httpx.ErrForbidden
 	case errors.Is(err, domain.ErrInvalidPeriodRange), errors.Is(err, domain.ErrDayNotSchoolDay),
-		errors.Is(err, domain.ErrTeacherNotAssigned), errors.Is(err, domain.ErrPeriodNotFound):
+		errors.Is(err, domain.ErrTeacherNotAssigned), errors.Is(err, domain.ErrPeriodNotFound),
+		errors.Is(err, domain.ErrPeriodIsBreak), errors.Is(err, domain.ErrPeriodTemplateDay):
 		return httpx.ErrValidation
+	case errors.Is(err, domain.ErrYearArchived):
+		return httpx.WrapError(409, "SCHEDULE_YEAR_ARCHIVED", err)
 	default:
 		var appErr *httpx.Error
 		if errors.As(err, &appErr) {

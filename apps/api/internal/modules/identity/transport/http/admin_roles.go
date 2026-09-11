@@ -146,6 +146,26 @@ func (h *Handler) ListDutyAssignments(ctx context.Context, request api.ListDutyA
 	return api.ListDutyAssignments200JSONResponse{Data: data}, nil
 }
 
+func (h *Handler) ListStaffOptions(ctx context.Context, request api.ListStaffOptionsRequestObject) (api.ListStaffOptionsResponseObject, error) {
+	limit := int32(20)
+	if request.Params.Limit != nil {
+		limit = int32(*request.Params.Limit) //nolint:gosec // bounded by the OpenAPI schema's minimum/maximum
+	}
+	search := ""
+	if request.Params.Search != nil {
+		search = *request.Params.Search
+	}
+	options, err := h.service.ListStaffOptions(ctx, tenantIDFromContext(ctx), search, limit)
+	if err != nil {
+		return nil, mapAdminError(err)
+	}
+	data := make([]api.UserOption, len(options))
+	for i, o := range options {
+		data[i] = api.UserOption{Id: o.ID, Name: o.Name}
+	}
+	return api.ListStaffOptions200JSONResponse{Data: data}, nil
+}
+
 func (h *Handler) CreateDutyAssignment(ctx context.Context, request api.CreateDutyAssignmentRequestObject) (api.CreateDutyAssignmentResponseObject, error) {
 	b := request.Body
 	created, err := h.service.CreateDutyAssignment(ctx, tenantIDFromContext(ctx), service.DutyAssignmentRecord{

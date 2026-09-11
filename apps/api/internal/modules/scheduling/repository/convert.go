@@ -57,7 +57,7 @@ func periodTimeOfDay(t pgtype.Time) time.Time {
 
 func toPeriodRef(row db.Period) service.PeriodRef {
 	return service.PeriodRef{
-		ID: row.ID, Sequence: row.Sequence, StartsAt: periodTimeOfDay(row.StartsAt),
-		EndsAt: periodTimeOfDay(row.EndsAt), TemplateID: row.TemplateID,
+		ID: row.ID, Name: row.Name, Sequence: row.Sequence, StartsAt: periodTimeOfDay(row.StartsAt),
+		EndsAt: periodTimeOfDay(row.EndsAt), TemplateID: row.TemplateID, IsBreak: row.IsBreak,
 	}
 }

@@ -39,6 +39,7 @@ var (
 	ErrDutyAssignmentNotFound = errors.New("duty assignment not found")
 	ErrInvalidScopeKind       = errors.New("invalid scope kind")
 	ErrScopeTargetNotFound    = errors.New("scope target (class or student) not found")
+	ErrAssigneeNotEligible    = errors.New("assignee must be an active user with a teacher or staff profile")
 
 	// Impersonation
 	ErrCannotImpersonateSelf       = errors.New("cannot impersonate own account")

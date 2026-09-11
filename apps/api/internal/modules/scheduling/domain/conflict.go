@@ -9,12 +9,19 @@ import (
 // ConflictError names the schedule that stands in the way. A bare "this
 // clashes" leaves the person to hunt the timetable for what it clashed
 // with; the old system named the class, teacher, subject and periods, and
-// so does this. The IDs travel rather than the names, because resolving a
-// name is the reading side's job and it already has every lookup.
+// so does this. DetectConflict fills only Kind and With (it has no
+// repository access); the service fills the *Name fields once it has
+// looked the ids up, before the error reaches transport.
 type ConflictError struct {
 	// Kind is either ErrConflictClass or ErrConflictTeacher.
 	Kind error
 	With Schedule
+
+	ClassName       string
+	SubjectName     string
+	TeacherName     string
+	StartPeriodName string
+	EndPeriodName   string
 }
 
 func (e *ConflictError) Error() string {

@@ -792,6 +792,38 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
+  /v1/academic/enrollments/{enrollmentId}/leave:
+    parameters:
+      - name: enrollmentId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags: [academic]
+      operationId: removeStudentFromClass
+      x-permission: manage_enrollments
+      summary: Close the student's active enrollment as "left" mid-year (leaving the school, not moving class)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RemoveStudentInput"
+      responses:
+        "200":
+          description: Closed enrollment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Enrollment"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /v1/academic/years/{yearId}/unassigned-students:
     parameters:
       - $ref: "#/components/parameters/YearIdParam"
@@ -914,7 +946,9 @@ paths:
       tags: [academic]
       operationId: downloadEnrollmentImportTemplate
       x-permission: view_academic_data
-      summary: Download the xlsx template for the class-assignment import
+      summary: Download the xlsx template for the class-assignment import, prefilled with the year's currently unassigned students and a class-name dropdown
+      parameters:
+        - $ref: "#/components/parameters/YearIdQueryParam"
       responses:
         "200":
           description: Workbook
@@ -933,6 +967,12 @@ paths:
       summary: Parse an uploaded workbook and report what each row would do, matching students by NIS or username, without writing anything
       parameters:
         - $ref: "#/components/parameters/YearIdQueryParam"
+        - name: move_existing
+          in: query
+          description: When false (default), a row for a student who already has an active enrollment elsewhere is reported but not applied on commit
+          schema:
+            type: boolean
+            default: false
       requestBody:
         required: true
         content:
@@ -956,9 +996,21 @@ paths:
       tags: [academic]
       operationId: commitEnrollmentImport
       x-permission: manage_enrollments
-      summary: Re-parse the same workbook and apply every row that isn't an error (assign or move)
+      summary: Re-parse the same workbook and apply every row that isn't an error (assign or move); the whole file is rejected if any row is invalid unless partial=true
       parameters:
         - $ref: "#/components/parameters/YearIdQueryParam"
+        - name: move_existing
+          in: query
+          description: When false (default), a row for a student who already has an active enrollment elsewhere is skipped, not moved
+          schema:
+            type: boolean
+            default: false
+        - name: partial
+          in: query
+          description: When false (default), the whole file is rejected (nothing is written) if any row is an error; when true, invalid rows are skipped and the rest is applied
+          schema:
+            type: boolean
+            default: false
       requestBody:
         required: true
         content:
@@ -1935,7 +1987,7 @@ components:
         name:
           type: string
           minLength: 1
-          maxLength: 100
+          maxLength: 150
         room_id:
           type: string
           format: uuid
@@ -2038,6 +2090,13 @@ components:
           type: string
           format: uuid
         effective_on:
+          type: string
+          format: date
+    RemoveStudentInput:
+      type: object
+      required: [left_on]
+      properties:
+        left_on:
           type: string
           format: date
     StudentSummary:
@@ -2204,7 +2263,7 @@ components:
           type: integer
     ImportRowAction:
       type: string
-      enum: [assign, move, unchanged, error]
+      enum: [assign, move, unchanged, skipped, error]
     ImportRowResult:
       type: object
       required: [row_number, action]
