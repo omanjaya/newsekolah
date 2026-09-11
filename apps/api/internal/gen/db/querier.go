@@ -457,6 +457,10 @@ type Querier interface {
 	// the caller release each held copy without a second lookup.
 	ExpireReadyReservations(ctx context.Context, arg ExpireReadyReservationsParams) ([]LibraryReservation, error)
 	FictionRatioCounts(ctx context.Context, tenantID uuid.UUID) (FictionRatioCountsRow, error)
+	// The identity-side mirror of academic's AcademicFindActiveHomeroomAssignment:
+	// lets CreateDutyAssignment end the class's previous active homeroom duty
+	// before creating a new one, so at most one stays active at a time.
+	FindActiveHomeroomAssignmentForClass(ctx context.Context, arg FindActiveHomeroomAssignmentForClassParams) (uuid.UUID, error)
 	// Matches barcode, accession number, or RFID tag, the same three columns
 	// the old app searched (libOpsFindItemByCode).
 	FindCopyByCode(ctx context.Context, arg FindCopyByCodeParams) (LibraryCopy, error)
@@ -742,6 +746,11 @@ type Querier interface {
 	InsertWebAuthnCredential(ctx context.Context, arg InsertWebAuthnCredentialParams) (WebauthnCredential, error)
 	InsertWhatsAppTemplate(ctx context.Context, arg InsertWhatsAppTemplateParams) (WhatsappTemplate, error)
 	IsAcademicYearArchivedRef(ctx context.Context, arg IsAcademicYearArchivedRefParams) (bool, error)
+	// A duty assignment's student-scope target must be an active user with a
+	// student profile -- the same strictness IsActiveTeacherOrStaff already
+	// applies to the assignee; UserExistsInTenant alone only proves "some
+	// user exists", not "an active student".
+	IsActiveStudentInTenant(ctx context.Context, arg IsActiveStudentInTenantParams) (bool, error)
 	IsActiveTeacher(ctx context.Context, arg IsActiveTeacherParams) (bool, error)
 	// A duty assignment's assignee must be an active user with a teacher or
 	// staff profile -- the old app kept teacher and employee duties in
@@ -1374,7 +1383,6 @@ type Querier interface {
 	UpsertTenantSetting(ctx context.Context, arg UpsertTenantSettingParams) error
 	UpsertUserProfile(ctx context.Context, arg UpsertUserProfileParams) error
 	UpsertWhatsAppProviderConfig(ctx context.Context, arg UpsertWhatsAppProviderConfigParams) error
-	UserExistsInTenant(ctx context.Context, arg UserExistsInTenantParams) (bool, error)
 	UsernameExists(ctx context.Context, arg UsernameExistsParams) (bool, error)
 	// cross-module read: users table is owned by the identity module.
 	ValidateUserIDsBelongToTenant(ctx context.Context, arg ValidateUserIDsBelongToTenantParams) ([]uuid.UUID, error)

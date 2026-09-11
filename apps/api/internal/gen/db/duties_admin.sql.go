@@ -92,6 +92,34 @@ func (q *Queries) DeleteDutyPermissions(ctx context.Context, arg DeleteDutyPermi
 	return err
 }
 
+const findActiveHomeroomAssignmentForClass = `-- name: FindActiveHomeroomAssignmentForClass :one
+select id from duty_assignments
+where tenant_id = $1 and academic_year_id = $2 and duty_type_id = $3 and scope_class_id = $4 and is_active
+limit 1
+`
+
+type FindActiveHomeroomAssignmentForClassParams struct {
+	TenantID       uuid.UUID   `json:"tenant_id"`
+	AcademicYearID uuid.UUID   `json:"academic_year_id"`
+	DutyTypeID     uuid.UUID   `json:"duty_type_id"`
+	ScopeClassID   pgtype.UUID `json:"scope_class_id"`
+}
+
+// The identity-side mirror of academic's AcademicFindActiveHomeroomAssignment:
+// lets CreateDutyAssignment end the class's previous active homeroom duty
+// before creating a new one, so at most one stays active at a time.
+func (q *Queries) FindActiveHomeroomAssignmentForClass(ctx context.Context, arg FindActiveHomeroomAssignmentForClassParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, findActiveHomeroomAssignmentForClass,
+		arg.TenantID,
+		arg.AcademicYearID,
+		arg.DutyTypeID,
+		arg.ScopeClassID,
+	)
+	var id uuid.UUID
+	err := row.Scan(&id)
+	return id, err
+}
+
 const getDutyAssignmentByID = `-- name: GetDutyAssignmentByID :one
 select id, tenant_id, academic_year_id, duty_type_id, user_id, scope_class_id, scope_student_id, is_active, starts_on, ends_on, created_at from duty_assignments where tenant_id = $1 and id = $2
 `
@@ -144,6 +172,30 @@ func (q *Queries) GetDutyTypeByID(ctx context.Context, arg GetDutyTypeByIDParams
 		&i.DeletedAt,
 	)
 	return i, err
+}
+
+const isActiveStudentInTenant = `-- name: IsActiveStudentInTenant :one
+select exists(
+  select 1 from users u
+  join user_profiles up on up.user_id = u.id and up.kind = 'student'
+  where u.tenant_id = $1 and u.id = $2 and u.deleted_at is null and u.status = 'active'
+)
+`
+
+type IsActiveStudentInTenantParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	ID       uuid.UUID `json:"id"`
+}
+
+// A duty assignment's student-scope target must be an active user with a
+// student profile -- the same strictness IsActiveTeacherOrStaff already
+// applies to the assignee; UserExistsInTenant alone only proves "some
+// user exists", not "an active student".
+func (q *Queries) IsActiveStudentInTenant(ctx context.Context, arg IsActiveStudentInTenantParams) (bool, error) {
+	row := q.db.QueryRow(ctx, isActiveStudentInTenant, arg.TenantID, arg.ID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
 }
 
 const isActiveTeacherOrStaff = `-- name: IsActiveTeacherOrStaff :one
@@ -436,20 +488,4 @@ func (q *Queries) UpdateDutyType(ctx context.Context, arg UpdateDutyTypeParams) 
 		arg.IsActive,
 	)
 	return err
-}
-
-const userExistsInTenant = `-- name: UserExistsInTenant :one
-select exists(select 1 from users where tenant_id = $1 and id = $2 and deleted_at is null)
-`
-
-type UserExistsInTenantParams struct {
-	TenantID uuid.UUID `json:"tenant_id"`
-	ID       uuid.UUID `json:"id"`
-}
-
-func (q *Queries) UserExistsInTenant(ctx context.Context, arg UserExistsInTenantParams) (bool, error) {
-	row := q.db.QueryRow(ctx, userExistsInTenant, arg.TenantID, arg.ID)
-	var exists bool
-	err := row.Scan(&exists)
-	return exists, err
 }

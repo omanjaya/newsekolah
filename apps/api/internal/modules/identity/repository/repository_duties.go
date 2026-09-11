@@ -123,6 +123,23 @@ func (r *Repository) ListDutyAssignments(ctx context.Context, tenantID, academic
 	return out, nil
 }
 
+// FindActiveAssignmentForClass returns the id of the class's currently
+// active assignment for dutyTypeID in this academic year, if any --
+// CreateDutyAssignment uses it to end a class's previous active homeroom
+// duty before creating a new one.
+func (r *Repository) FindActiveAssignmentForClass(ctx context.Context, tenantID, academicYearID, dutyTypeID, classID uuid.UUID) (uuid.UUID, bool, error) {
+	id, err := r.queries(ctx).FindActiveHomeroomAssignmentForClass(ctx, db.FindActiveHomeroomAssignmentForClassParams{
+		TenantID: tenantID, AcademicYearID: academicYearID, DutyTypeID: dutyTypeID, ScopeClassID: pdatabase.NullUUID(uuid.NullUUID{UUID: classID, Valid: true}),
+	})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return uuid.UUID{}, false, nil
+		}
+		return uuid.UUID{}, false, fmt.Errorf("find active assignment for class: %w", err)
+	}
+	return id, true, nil
+}
+
 func (r *Repository) GetDutyAssignmentByID(ctx context.Context, tenantID, id uuid.UUID) (service.DutyAssignmentRecord, error) {
 	row, err := r.queries(ctx).GetDutyAssignmentByID(ctx, db.GetDutyAssignmentByIDParams{TenantID: tenantID, ID: id})
 	if err != nil {
@@ -181,8 +198,8 @@ func (r *Repository) ClassExistsInYear(ctx context.Context, tenantID, classID, a
 	return r.queries(ctx).ClassExistsInYear(ctx, db.ClassExistsInYearParams{TenantID: tenantID, ID: classID, AcademicYearID: academicYearID})
 }
 
-func (r *Repository) UserExists(ctx context.Context, tenantID, userID uuid.UUID) (bool, error) {
-	return r.queries(ctx).UserExistsInTenant(ctx, db.UserExistsInTenantParams{TenantID: tenantID, ID: userID})
+func (r *Repository) IsActiveStudent(ctx context.Context, tenantID, userID uuid.UUID) (bool, error) {
+	return r.queries(ctx).IsActiveStudentInTenant(ctx, db.IsActiveStudentInTenantParams{TenantID: tenantID, ID: userID})
 }
 
 func (r *Repository) IsActiveTeacherOrStaff(ctx context.Context, tenantID, userID uuid.UUID) (bool, error) {

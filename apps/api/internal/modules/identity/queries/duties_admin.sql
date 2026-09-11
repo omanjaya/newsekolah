@@ -35,6 +35,14 @@ order by da.created_at desc;
 -- name: GetDutyAssignmentByID :one
 select * from duty_assignments where tenant_id = $1 and id = $2;
 
+-- name: FindActiveHomeroomAssignmentForClass :one
+-- The identity-side mirror of academic's AcademicFindActiveHomeroomAssignment:
+-- lets CreateDutyAssignment end the class's previous active homeroom duty
+-- before creating a new one, so at most one stays active at a time.
+select id from duty_assignments
+where tenant_id = $1 and academic_year_id = $2 and duty_type_id = $3 and scope_class_id = $4 and is_active
+limit 1;
+
 -- name: UpdateDutyAssignment :exec
 update duty_assignments set is_active = $3, ends_on = $4 where tenant_id = $1 and id = $2;
 
@@ -50,8 +58,16 @@ select exists(select 1 from classes where tenant_id = $1 and id = $2 and deleted
 -- enforce on their own class references.
 select exists(select 1 from classes where tenant_id = $1 and id = $2 and academic_year_id = $3 and deleted_at is null);
 
--- name: UserExistsInTenant :one
-select exists(select 1 from users where tenant_id = $1 and id = $2 and deleted_at is null);
+-- name: IsActiveStudentInTenant :one
+-- A duty assignment's student-scope target must be an active user with a
+-- student profile -- the same strictness IsActiveTeacherOrStaff already
+-- applies to the assignee; UserExistsInTenant alone only proves "some
+-- user exists", not "an active student".
+select exists(
+  select 1 from users u
+  join user_profiles up on up.user_id = u.id and up.kind = 'student'
+  where u.tenant_id = $1 and u.id = $2 and u.deleted_at is null and u.status = 'active'
+);
 
 -- name: UpdateClassHomeroomTeacher :exec
 -- Keeps classes.homeroom_teacher_id in sync with the "homeroom" duty
