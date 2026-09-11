@@ -274,6 +274,15 @@ func (s *Service) evaluate(ctx context.Context, tenantID, yearID uuid.UUID, row 
 	}
 	base.StudentName = student.Name
 
+	// resolveStudent only checks deleted_at, not status, so a suspended or
+	// inactive student can still match by NIS/username; apply the same
+	// active-student rule the direct assign endpoints enforce.
+	if err := s.requireActiveStudent(ctx, tenantID, student.ID); err != nil {
+		base.Action = ImportRowError
+		base.Message = "student is not active"
+		return evaluatedImportRow{ImportRowResult: base}
+	}
+
 	targetClass, ok := s.findClassByName(ctx, tenantID, yearID, row.className)
 	if !ok {
 		base.Action = ImportRowError
