@@ -89,11 +89,46 @@ type GuardianLinks interface {
 	ApprovingChildrenOf(ctx context.Context, tenantID, guardianUserID uuid.UUID) ([]uuid.UUID, error)
 }
 
+// DisciplineRecorder is what permits needs from the discipline module to
+// turn a late arrival's reviewed violation_ids into real
+// student_has_violations rows (docs/analysis/backend-inventory.md 1.16),
+// instead of leaving them as an opaque list on the workflow instance's
+// payload. Implemented in internal/wiring as an adapter over discipline's
+// own service.Service.RecordViolation -- permits never queries
+// discipline's tables directly, per docs/03-layered-architecture.md.
+//
+// NOT WIRED until the discipline module is constructed after permits
+// (cmd/api/wire.go breaks the construction cycle the same way it does for
+// AttendanceSync, with a late-bound adapter): until then Register injects
+// noDiscipline, and reviewing a late arrival with violation_ids fails
+// closed with ErrViolationInvalid rather than silently discarding them.
+type DisciplineRecorder interface {
+	// RecordLateArrivalViolation snapshots one violation type against the
+	// student, tagged with workflowInstanceID so discipline's own record
+	// stays traceable back to the late-arrival flow that reported it.
+	// note is the record's free-text explanation (e.g. "Proses masuk
+	// terlambat ke-3"). An unknown or inactive violationTypeID must be
+	// rejected, not silently skipped -- see ReviewLateArrival.
+	RecordLateArrivalViolation(ctx context.Context, tenantID, studentUserID, violationTypeID, workflowInstanceID, reporterUserID uuid.UUID, note string) error
+}
+
 // EventPublisher matches platform/events.Bus's Publish method
 // structurally, so this package does not need to import platform/events
 // beyond the Event interface itself.
 type EventPublisher interface {
 	Publish(ctx context.Context, evt events.Event) error
+}
+
+// RealtimePublisher pushes a live event straight to one user's own
+// WebSocket topic ("user:<tenantID>:<userID>", the same one cmd/api/ws.go's
+// wsMeHandler opens per session), bypassing the persisted notification
+// inbox the platform-wide events.Bus feeds -- appropriate for
+// classroom_entry_scanned, which a teacher's live "who just walked in"
+// view wants immediately and which would otherwise flood the inbox with
+// one row per scan. Implemented in module.go over platform/realtime.Hub,
+// mirroring attendance/service.RealtimePublisher's PublishMonitor.
+type RealtimePublisher interface {
+	PublishToUser(ctx context.Context, tenantID, userID uuid.UUID, event any) error
 }
 
 // Storage is the narrow slice of platform/storage.Client permits' leave
@@ -143,17 +178,19 @@ func DefaultConfig(documentSigningKey []byte, bucket string) Config {
 }
 
 type Service struct {
-	pool      *pgxpool.Pool
-	repo      Repository
-	years     AcademicYearReader
-	schedule  ScheduleLookup
-	sync      AttendanceSync
-	guardians GuardianLinks
-	events    EventPublisher
-	storage   Storage
-	renderer  documents.Renderer
-	clock     clock.Clock
-	cfg       Config
+	pool       *pgxpool.Pool
+	repo       Repository
+	years      AcademicYearReader
+	schedule   ScheduleLookup
+	sync       AttendanceSync
+	guardians  GuardianLinks
+	discipline DisciplineRecorder
+	events     EventPublisher
+	realtime   RealtimePublisher
+	storage    Storage
+	renderer   documents.Renderer
+	clock      clock.Clock
+	cfg        Config
 }
 
 func New(
@@ -163,15 +200,17 @@ func New(
 	schedule ScheduleLookup,
 	sync AttendanceSync,
 	guardians GuardianLinks,
+	discipline DisciplineRecorder,
 	publisher EventPublisher,
+	realtime RealtimePublisher,
 	storage Storage,
 	renderer documents.Renderer,
 	clk clock.Clock,
 	cfg Config,
 ) *Service {
 	return &Service{
-		pool: pool, repo: repo, years: years, schedule: schedule, sync: sync, guardians: guardians,
-		events: publisher, storage: storage, renderer: renderer, clock: clk, cfg: cfg,
+		pool: pool, repo: repo, years: years, schedule: schedule, sync: sync, guardians: guardians, discipline: discipline,
+		events: publisher, realtime: realtime, storage: storage, renderer: renderer, clock: clk, cfg: cfg,
 	}
 }
 

@@ -325,18 +325,19 @@ type DocumentSequence struct {
 }
 
 type DocumentTemplate struct {
-	ID        uuid.UUID          `json:"id"`
-	TenantID  uuid.UUID          `json:"tenant_id"`
-	Kind      string             `json:"kind"`
-	Name      string             `json:"name"`
-	Engine    string             `json:"engine"`
-	Body      string             `json:"body"`
-	Variables []byte             `json:"variables"`
-	IsDefault bool               `json:"is_default"`
-	CreatedBy pgtype.UUID        `json:"created_by"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
-	DeletedAt pgtype.Timestamptz `json:"deleted_at"`
+	ID                uuid.UUID          `json:"id"`
+	TenantID          uuid.UUID          `json:"tenant_id"`
+	Kind              string             `json:"kind"`
+	Name              string             `json:"name"`
+	Engine            string             `json:"engine"`
+	Body              string             `json:"body"`
+	Variables         []byte             `json:"variables"`
+	IsDefault         bool               `json:"is_default"`
+	CreatedBy         pgtype.UUID        `json:"created_by"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt         pgtype.Timestamptz `json:"updated_at"`
+	DeletedAt         pgtype.Timestamptz `json:"deleted_at"`
+	LetterheadAssetID pgtype.UUID        `json:"letterhead_asset_id"`
 }
 
 type DutyAssignment struct {
@@ -592,13 +593,14 @@ type IssuedDocument struct {
 }
 
 type LateArrival struct {
-	InstanceID       uuid.UUID          `json:"instance_id"`
-	TenantID         uuid.UUID          `json:"tenant_id"`
-	Reason           string             `json:"reason"`
-	OccurrenceNumber int32              `json:"occurrence_number"`
-	RequiredAction   string             `json:"required_action"`
-	HomeroomReported bool               `json:"homeroom_reported"`
-	CompletedAt      pgtype.Timestamptz `json:"completed_at"`
+	InstanceID        uuid.UUID          `json:"instance_id"`
+	TenantID          uuid.UUID          `json:"tenant_id"`
+	Reason            string             `json:"reason"`
+	OccurrenceNumber  int32              `json:"occurrence_number"`
+	RequiredAction    string             `json:"required_action"`
+	HomeroomReported  bool               `json:"homeroom_reported"`
+	CompletedAt       pgtype.Timestamptz `json:"completed_at"`
+	DutyTeacherUserID pgtype.UUID        `json:"duty_teacher_user_id"`
 }
 
 type LeaveDocument struct {

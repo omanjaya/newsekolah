@@ -107,6 +107,97 @@ func (s *Service) ConsumeScanToken(ctx context.Context, in ConsumeScanTokenInput
 	return token, nil
 }
 
+// ScanClassroomEntryInput is what a student calling /v1/classroom-entry/scan
+// supplies: the teacher's displayed token, and the (optional) reason they
+// are entering late/mid-lesson.
+type ScanClassroomEntryInput struct {
+	TenantID      uuid.UUID
+	StudentUserID uuid.UUID
+	RawToken      string
+	Reason        string
+}
+
+// ScanClassroomEntryResult is what the endpoint reports back to the
+// student's own device: who let them in.
+type ScanClassroomEntryResult struct {
+	TeacherUserID uuid.UUID
+	TeacherName   string
+}
+
+// classroomEntryScannedEvent is the realtime payload pushed to the
+// teacher's own topic (see RealtimePublisher) -- deliberately its own
+// small struct, not an events.Envelope, since this never goes through the
+// persisted notification inbox.
+type classroomEntryScannedEvent struct {
+	Type        string    `json:"type"`
+	StudentName string    `json:"student_name"`
+	NIS         string    `json:"nis"`
+	ClassName   string    `json:"class_name"`
+	Reason      string    `json:"reason"`
+	ScannedAt   time.Time `json:"scanned_at"`
+}
+
+// ScanClassroomEntry consumes a teacher's classroom-entry token. Missing
+// rule (docs/analysis/backend-inventory.md 1.13): only a student profile
+// may consume it -- a teacher or other staff account scanning it is not
+// "a student entering class" -- and the teacher is told live, over their
+// own realtime topic, who just walked in and why.
+func (s *Service) ScanClassroomEntry(ctx context.Context, in ScanClassroomEntryInput) (ScanClassroomEntryResult, error) {
+	reason := in.Reason
+	if reason == "" {
+		reason = "Izin masuk kelas"
+	}
+
+	var result ScanClassroomEntryResult
+	var evt classroomEntryScannedEvent
+	err := s.withTx(ctx, in.TenantID, func(ctx context.Context) error {
+		isStudent, err := s.repo.IsStudentProfile(ctx, in.TenantID, in.StudentUserID)
+		if err != nil {
+			return err
+		}
+		if !isStudent {
+			return domain.ErrScanTokenConsumerNotStudent
+		}
+
+		token, err := s.ConsumeScanToken(ctx, ConsumeScanTokenInput{
+			TenantID: in.TenantID, RawValue: in.RawToken, Purpose: domain.PurposeClassroomEntry, ConsumedByUserID: in.StudentUserID,
+		})
+		if err != nil {
+			return err
+		}
+		teacherName, err := s.repo.GetUserName(ctx, in.TenantID, token.IssuedByUserID)
+		if err != nil {
+			return err
+		}
+		result = ScanClassroomEntryResult{TeacherUserID: token.IssuedByUserID, TeacherName: teacherName}
+
+		studentName, err := s.repo.GetUserName(ctx, in.TenantID, in.StudentUserID)
+		if err != nil {
+			return err
+		}
+		nis, _, err := s.repo.GetStudentNISAndAddress(ctx, in.TenantID, in.StudentUserID)
+		if err != nil {
+			return err
+		}
+		className := ""
+		if yearID, ok, err := s.years.GetActiveAcademicYearID(ctx, in.TenantID); err == nil && ok {
+			if enrollment, ok, err := s.repo.GetActiveEnrollment(ctx, in.TenantID, yearID, in.StudentUserID); err == nil && ok {
+				className = enrollment.ClassName
+			}
+		}
+		evt = classroomEntryScannedEvent{
+			Type: "classroom_entry_scanned", StudentName: studentName, NIS: nis, ClassName: className,
+			Reason: reason, ScannedAt: s.clock.Now(),
+		}
+		return nil
+	})
+	if err != nil {
+		return ScanClassroomEntryResult{}, err
+	}
+	_ = s.realtime.PublishToUser(ctx, in.TenantID, result.TeacherUserID, evt)
+	return result, nil
+}
+
 func hashScanToken(rawValue string) []byte {
 	sum := sha256.Sum256([]byte(rawValue))
 	return sum[:]

@@ -94,6 +94,44 @@ func (q *Queries) CreateTenantPolicy(ctx context.Context, arg CreateTenantPolicy
 	return i, err
 }
 
+const createTenantPolicyForPermits = `-- name: CreateTenantPolicyForPermits :one
+insert into tenant_policies (tenant_id, kind, version, config, effective_from, created_by)
+values ($1, $2, $3, $4, $5, $6)
+on conflict (tenant_id, kind, version) do nothing
+returning tenant_id, kind, version, config, effective_from, created_by, created_at
+`
+
+type CreateTenantPolicyForPermitsParams struct {
+	TenantID      uuid.UUID   `json:"tenant_id"`
+	Kind          string      `json:"kind"`
+	Version       int32       `json:"version"`
+	Config        []byte      `json:"config"`
+	EffectiveFrom pgtype.Date `json:"effective_from"`
+	CreatedBy     pgtype.UUID `json:"created_by"`
+}
+
+func (q *Queries) CreateTenantPolicyForPermits(ctx context.Context, arg CreateTenantPolicyForPermitsParams) (TenantPolicy, error) {
+	row := q.db.QueryRow(ctx, createTenantPolicyForPermits,
+		arg.TenantID,
+		arg.Kind,
+		arg.Version,
+		arg.Config,
+		arg.EffectiveFrom,
+		arg.CreatedBy,
+	)
+	var i TenantPolicy
+	err := row.Scan(
+		&i.TenantID,
+		&i.Kind,
+		&i.Version,
+		&i.Config,
+		&i.EffectiveFrom,
+		&i.CreatedBy,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const getLatestTenantPolicy = `-- name: GetLatestTenantPolicy :one
 select tenant_id, kind, version, config, effective_from, created_by, created_at from tenant_policies
 where tenant_id = $1 and kind = $2
@@ -108,6 +146,33 @@ type GetLatestTenantPolicyParams struct {
 
 func (q *Queries) GetLatestTenantPolicy(ctx context.Context, arg GetLatestTenantPolicyParams) (TenantPolicy, error) {
 	row := q.db.QueryRow(ctx, getLatestTenantPolicy, arg.TenantID, arg.Kind)
+	var i TenantPolicy
+	err := row.Scan(
+		&i.TenantID,
+		&i.Kind,
+		&i.Version,
+		&i.Config,
+		&i.EffectiveFrom,
+		&i.CreatedBy,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const getLatestTenantPolicyForPermits = `-- name: GetLatestTenantPolicyForPermits :one
+select tenant_id, kind, version, config, effective_from, created_by, created_at from tenant_policies
+where tenant_id = $1 and kind = $2
+order by version desc
+limit 1
+`
+
+type GetLatestTenantPolicyForPermitsParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	Kind     string    `json:"kind"`
+}
+
+func (q *Queries) GetLatestTenantPolicyForPermits(ctx context.Context, arg GetLatestTenantPolicyForPermitsParams) (TenantPolicy, error) {
+	row := q.db.QueryRow(ctx, getLatestTenantPolicyForPermits, arg.TenantID, arg.Kind)
 	var i TenantPolicy
 	err := row.Scan(
 		&i.TenantID,

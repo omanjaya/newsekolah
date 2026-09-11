@@ -192,6 +192,32 @@ func (p PermitsReports) LeaveRequestRows(ctx context.Context, tenantID uuid.UUID
 	return sheet, nil
 }
 
+// ExitPermitYearlyRows is the counselor's yearly export (missing feature,
+// docs/analysis/backend-inventory.md 1.15): every exit permit opened this
+// academic year, regardless of status.
+func (p PermitsReports) ExitPermitYearlyRows(ctx context.Context, tenantID uuid.UUID) (reportsservice.Sheet, error) {
+	rows, err := p.Svc.ExitPermitYearlyReportRows(ctx, tenantID)
+	if err != nil {
+		return reportsservice.Sheet{}, err
+	}
+	sheet := reportsservice.Sheet{
+		Title:   "Exit Permits",
+		Headers: []string{"No", "Student", "Class", "Destination", "Opened At", "Status", "Exited At"},
+		Rows:    make([][]any, len(rows)),
+	}
+	for i, row := range rows {
+		exitedAt := ""
+		if row.ExitedAt != nil {
+			exitedAt = row.ExitedAt.Format("2006-01-02 15:04")
+		}
+		sheet.Rows[i] = []any{
+			i + 1, row.StudentNameSnapshot, row.ClassNameSnapshot, row.Destination,
+			row.OpenedAt.Format("2006-01-02 15:04"), string(row.Status), exitedAt,
+		}
+	}
+	return sheet, nil
+}
+
 // IdentityNames adapts identity's directory listing to the NameLookup the
 // report readers need.
 type IdentityNames struct{ Svc *identityservice.Service }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"time"
@@ -32,6 +33,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/mentoring"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/notifications"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/permits"
+	permitsdomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/domain"
 	permitsservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/platform"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/reports"
@@ -128,12 +130,17 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	sharedStorage := storageClientFor(cfg, logger)
 
 	sync := &lateBoundSync{}
+	// discipline also depends on permits (DisciplineDocuments, below), so
+	// its own RecordLateArrivalViolation adapter is late-bound the same
+	// way sync is, breaking the two-way construction cycle.
+	disc := &lateBoundDiscipline{}
 	permitsModule := permits.Register(permits.Dependencies{
-		Pool: pool, Years: schoolModule.Service, Bus: eventBus, Storage: sharedStorage,
-		Schedule:  permitsScheduleLookup{schedules: schedulingModule.ScheduleReader, periods: academicModule.Service, years: schoolModule.Service},
-		Sync:      sync,
-		Guardians: wiring.GuardianLinks{Identity: identityModule.Service},
-		Clock:     clock.Real{}, Config: permitsservice.DefaultConfig([]byte(cfg.DocumentSigningKey), cfg.S3Bucket), Logger: logger,
+		Pool: pool, Years: schoolModule.Service, Bus: eventBus, Hub: hub, Storage: sharedStorage,
+		Schedule:   permitsScheduleLookup{schedules: schedulingModule.ScheduleReader, periods: academicModule.Service, years: schoolModule.Service},
+		Sync:       sync,
+		Guardians:  wiring.GuardianLinks{Identity: identityModule.Service},
+		Discipline: disc,
+		Clock:      clock.Real{}, Config: permitsservice.DefaultConfig([]byte(cfg.DocumentSigningKey), cfg.S3Bucket), Logger: logger,
 	})
 	attendanceModule := attendance.Register(attendance.Dependencies{
 		Pool: pool, Bus: eventBus, Years: schoolModule.Service,
@@ -164,6 +171,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		Names: wiring.IdentityNames{Svc: identityModule.Service}, Guardians: wiring.DisciplineGuardians{Identity: identityModule.Service},
 		Storage: sharedStorage, Config: disciplineservice.DefaultConfig(cfg.S3Bucket),
 	})
+	disc.inner = wiring.LateArrivalDiscipline{Discipline: disciplineModule.Service, Clock: clock.Real{}}
 
 	// analytics composes its risk signals through adapters over
 	// attendance, discipline and grading's own services (never their
@@ -463,4 +471,20 @@ func (l *lateBoundGradingFlags) IsModuleEnabled(ctx context.Context, tenantID uu
 		return true, nil
 	}
 	return l.inner.IsModuleEnabled(ctx, tenantID)
+}
+
+// lateBoundDiscipline breaks the permits <-> discipline construction cycle
+// the same way lateBoundSync does for permits <-> attendance: discipline
+// needs permitsModule.Service (DisciplineDocuments) to issue warning
+// letters, and permits needs disciplineModule.Service to record a late
+// arrival's reviewed violations.
+type lateBoundDiscipline struct {
+	inner permitsservice.DisciplineRecorder
+}
+
+func (l *lateBoundDiscipline) RecordLateArrivalViolation(ctx context.Context, tenantID, studentUserID, violationTypeID, workflowInstanceID, reporterUserID uuid.UUID, note string) error {
+	if l.inner == nil {
+		return fmt.Errorf("%w: discipline module is not wired yet", permitsdomain.ErrViolationInvalid)
+	}
+	return l.inner.RecordLateArrivalViolation(ctx, tenantID, studentUserID, violationTypeID, workflowInstanceID, reporterUserID, note)
 }

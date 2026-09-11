@@ -89,8 +89,33 @@ func (s *Service) RequireSubject(ctx context.Context, tenantID, instanceID, user
 	return s.requireOwnInstance(ctx, tenantID, instanceID, userID, kind)
 }
 
+// reportPermissions are the two "or a general reports/attendance holder
+// may look too" permission codes every RequireCanView* check falls back
+// to (docs/analysis/backend-inventory.md 1.14/1.15/1.16), on top of the
+// subject and the workflow's own relevant approver duties.
+var reportPermissions = []string{"manage_attendance", "view_reports"}
+
+// hasReportPermission is the shared fallback RequireCanViewLeaveRequest,
+// RequireCanViewExitPermit and RequireCanViewLateArrival all use: a
+// manage_attendance or view_reports holder (role- or duty-granted) may
+// read any instance of the kind they are checking, on top of its own
+// relevant approvers.
+func (s *Service) hasReportPermission(ctx context.Context, tenantID, academicYearID, userID uuid.UUID) (bool, error) {
+	for _, code := range reportPermissions {
+		ok, err := s.repo.HasPermission(ctx, tenantID, academicYearID, userID, code)
+		if err != nil {
+			return false, err
+		}
+		if ok {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 // RequireCanViewLeaveRequest allows the subject, the homeroom teacher of
-// the request's class, and counselors to read a request's documents.
+// the request's class, counselors, leadership, and manage_attendance/
+// view_reports holders to read a request's documents.
 func (s *Service) RequireCanViewLeaveRequest(ctx context.Context, tenantID, instanceID, userID uuid.UUID) error {
 	return s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		inst, ok, err := s.repo.GetInstance(ctx, tenantID, instanceID)
@@ -115,6 +140,94 @@ func (s *Service) RequireCanViewLeaveRequest(ctx context.Context, tenantID, inst
 			if ok {
 				return nil
 			}
+		}
+		if ok, err := s.hasReportPermission(ctx, tenantID, inst.AcademicYearID, userID); err != nil {
+			return err
+		} else if ok {
+			return nil
+		}
+		return domain.ErrNotWorkflowSubject
+	})
+}
+
+// RequireCanViewExitPermit allows the subject, the homeroom teacher of the
+// permit's class, counselors, leadership, security (scan_exit_permits),
+// any active teacher (the duty_teacher/class_teacher stages' broad
+// "any_teacher"/"teacher_of_class_now" rules approximated for viewing
+// purposes), and manage_attendance/view_reports holders to read an exit
+// permit's detail (docs/analysis/backend-inventory.md 1.15: was
+// unrestricted to any authenticated user).
+func (s *Service) RequireCanViewExitPermit(ctx context.Context, tenantID, instanceID, userID uuid.UUID) error {
+	return s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		inst, ok, err := s.repo.GetInstance(ctx, tenantID, instanceID)
+		if err != nil {
+			return err
+		}
+		if !ok || inst.Kind != domain.KindExitPermit {
+			return domain.ErrInstanceNotFound
+		}
+		if inst.SubjectUserID == userID {
+			return nil
+		}
+		for _, slug := range []string{"homeroom", "counselor", "leadership", "security"} {
+			scope := uuid.NullUUID{}
+			if slug == "homeroom" {
+				scope = inst.ClassID
+			}
+			ok, err := s.repo.HasActiveDuty(ctx, tenantID, inst.AcademicYearID, userID, slug, scope)
+			if err != nil {
+				return err
+			}
+			if ok {
+				return nil
+			}
+		}
+		if ok, err := s.repo.IsActiveTeacher(ctx, tenantID, userID); err != nil {
+			return err
+		} else if ok {
+			return nil
+		}
+		if ok, err := s.hasReportPermission(ctx, tenantID, inst.AcademicYearID, userID); err != nil {
+			return err
+		} else if ok {
+			return nil
+		}
+		return domain.ErrNotWorkflowSubject
+	})
+}
+
+// RequireCanViewLateArrival allows the subject, the teacher whose token
+// opened the flow, leadership, and manage_attendance/view_reports holders
+// to read a late arrival's detail (docs/analysis/backend-inventory.md
+// 1.16: was unrestricted to any authenticated user).
+func (s *Service) RequireCanViewLateArrival(ctx context.Context, tenantID, instanceID, userID uuid.UUID) error {
+	return s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		inst, ok, err := s.repo.GetInstance(ctx, tenantID, instanceID)
+		if err != nil {
+			return err
+		}
+		if !ok || inst.Kind != domain.KindLateArrival {
+			return domain.ErrInstanceNotFound
+		}
+		if inst.SubjectUserID == userID {
+			return nil
+		}
+		late, ok, err := s.repo.GetLateArrival(ctx, tenantID, instanceID)
+		if err != nil {
+			return err
+		}
+		if ok && late.DutyTeacherUserID.Valid && late.DutyTeacherUserID.UUID == userID {
+			return nil
+		}
+		if ok, err := s.repo.HasActiveDuty(ctx, tenantID, inst.AcademicYearID, userID, "leadership", uuid.NullUUID{}); err != nil {
+			return err
+		} else if ok {
+			return nil
+		}
+		if ok, err := s.hasReportPermission(ctx, tenantID, inst.AcademicYearID, userID); err != nil {
+			return err
+		} else if ok {
+			return nil
 		}
 		return domain.ErrNotWorkflowSubject
 	})

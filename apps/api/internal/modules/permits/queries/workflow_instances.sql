@@ -32,6 +32,19 @@ where tenant_id = $1 and kind = $2 and subject_user_id = $3 and status in ('in_p
 order by opened_at desc
 limit 1;
 
+-- name: GetExitPermitInstanceForSubjectToday :one
+-- Regression fix (docs/analysis/backend-inventory.md 1.15): the old app
+-- capped a student at one exit-permit request per day "apa pun
+-- statusnya" -- including ones that already exited. opened_date mirrors
+-- the fixed-UTC approximation ux_workflow_instances_one_exit_permit_per_day
+-- itself uses, so this pre-check agrees with the constraint it exists to
+-- turn into a friendly 409 instead of a raw unique-violation error.
+select * from workflow_instances
+where tenant_id = $1 and kind = 'exit_permit' and subject_user_id = $2
+  and opened_date = (now() at time zone 'utc')::date
+  and status in ('in_progress', 'approved', 'completed')
+limit 1;
+
 -- name: LockSubjectForInstanceCounting :exec
 -- Transaction-scoped advisory lock so two concurrent late-arrival opens
 -- for the same student cannot both read the same

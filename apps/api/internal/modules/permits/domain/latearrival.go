@@ -51,4 +51,10 @@ type LateArrival struct {
 	RequiredAction   RequiredAction
 	HomeroomReported bool
 	CompletedAt      *time.Time
+	// DutyTeacherUserID is the teacher whose scan token opened this flow
+	// (the token's IssuedByUserID at OpenLateArrival time), not the
+	// student who scanned it. Review is restricted to this teacher, with
+	// a manage_attendance role holder as fallback -- see
+	// docs/analysis/backend-inventory.md 1.16.
+	DutyTeacherUserID uuid.NullUUID
 }

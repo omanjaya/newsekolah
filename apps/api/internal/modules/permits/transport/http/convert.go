@@ -33,6 +33,12 @@ var (
 	errEvidenceTooLarge    = httpx.NewError(http.StatusBadRequest, "EVIDENCE_TOO_LARGE")
 	errEvidenceType        = httpx.NewError(http.StatusBadRequest, "EVIDENCE_INVALID_TYPE")
 	errDefinitionInvalid   = httpx.NewError(http.StatusBadRequest, "WORKFLOW_DEFINITION_INVALID")
+	errEvidenceRequired    = httpx.NewError(http.StatusBadRequest, "EVIDENCE_REQUIRED")
+	errHomeroomRequired    = httpx.NewError(http.StatusConflict, "HOMEROOM_TEACHER_REQUIRED")
+	errExitPermitToday     = httpx.NewError(http.StatusConflict, "EXIT_PERMIT_ALREADY_TODAY")
+	errLateArrivalReviewer = httpx.NewError(http.StatusForbidden, "LATE_ARRIVAL_REVIEWER_ONLY")
+	errViolationInvalid    = httpx.NewError(http.StatusBadRequest, "VIOLATION_INVALID")
+	errScanConsumerStudent = httpx.NewError(http.StatusForbidden, "SCAN_TOKEN_CONSUMER_NOT_STUDENT")
 )
 
 var permitErrorMap = map[error]error{
@@ -64,6 +70,12 @@ var permitErrorMap = map[error]error{
 	domain.ErrTemplateNotFound:             httpx.ErrNotFound,
 	domain.ErrDocumentNotFound:             httpx.ErrNotFound,
 	domain.ErrDocumentRevoked:              httpx.ErrNotFound,
+	domain.ErrEvidenceRequired:             errEvidenceRequired,
+	domain.ErrHomeroomTeacherRequired:      errHomeroomRequired,
+	domain.ErrExitPermitAlreadyToday:       errExitPermitToday,
+	domain.ErrLateArrivalReviewerOnly:      errLateArrivalReviewer,
+	domain.ErrViolationInvalid:             errViolationInvalid,
+	domain.ErrScanTokenConsumerNotStudent:  errScanConsumerStudent,
 }
 
 func mapError(err error) error {
@@ -84,6 +96,13 @@ func strPtr(s string) *string {
 		return nil
 	}
 	return &s
+}
+
+func nullUUIDFromPtr(id *openapi_types.UUID) uuid.NullUUID {
+	if id == nil {
+		return uuid.NullUUID{}
+	}
+	return uuid.NullUUID{UUID: *id, Valid: true}
 }
 
 func uuidPtr(n uuid.NullUUID) *openapi_types.UUID {
@@ -195,6 +214,14 @@ func toAPILateArrival(d service.LateArrivalDetail) api.LateArrivalDetail {
 	}
 }
 
+func toAPIExitPermitSummary(i service.ExitPermitReviewItem) api.ExitPermitSummary {
+	return api.ExitPermitSummary{
+		InstanceId: i.InstanceID, StudentUserId: i.SubjectUserID, ClassId: uuidPtr(i.ClassID), Status: api.WorkflowStatus(i.Status),
+		CurrentStageIndex: i.CurrentStageIndex, Destination: i.Destination, OpenedAt: i.OpenedAt,
+		StudentName: strPtr(i.StudentNameSnapshot), ClassName: strPtr(i.ClassNameSnapshot),
+	}
+}
+
 func toAPILateArrivalSummary(i service.LateArrivalReviewItem) api.LateArrivalSummary {
 	reported := i.HomeroomReported
 	return api.LateArrivalSummary{
@@ -227,6 +254,6 @@ func toAPITemplate(t domain.Template) api.DocumentTemplate {
 	vars := t.Variables
 	return api.DocumentTemplate{
 		Id: t.ID, Kind: string(t.Kind), Name: t.Name, Engine: string(t.Engine), Body: t.Body, Variables: &vars,
-		IsDefault: t.IsDefault, CreatedAt: t.CreatedAt, UpdatedAt: t.UpdatedAt,
+		IsDefault: t.IsDefault, CreatedAt: t.CreatedAt, UpdatedAt: t.UpdatedAt, LetterheadAssetId: uuidPtr(t.LetterheadAssetID),
 	}
 }

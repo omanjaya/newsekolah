@@ -2,14 +2,17 @@ package wiring
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/google/uuid"
 
+	disciplinedomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/discipline/domain"
 	disciplineservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/discipline/service"
 	identityservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/identity/service"
 	permitsdomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/domain"
 	permitsservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/service"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 )
 
 // DisciplineDocuments issues warning letters through the permits module's
@@ -53,4 +56,31 @@ func (g DisciplineGuardians) GuardianIDsOf(ctx context.Context, tenantID, studen
 		out[i] = guardian.ParentUserID
 	}
 	return out, nil
+}
+
+// LateArrivalDiscipline implements permits/service.DisciplineRecorder over
+// discipline's own service.Service.RecordViolation, so a late arrival's
+// reviewed violation_ids become real student_has_violations rows instead
+// of an opaque payload list (docs/analysis/backend-inventory.md 1.16).
+// RecordViolation itself validates the violation type is active, so an
+// unknown or inactive id surfaces here as permitsdomain.ErrViolationInvalid
+// rather than a generic error the transport layer cannot map to 400.
+type LateArrivalDiscipline struct {
+	Discipline *disciplineservice.Service
+	Clock      clock.Clock
+}
+
+func (d LateArrivalDiscipline) RecordLateArrivalViolation(ctx context.Context, tenantID, studentUserID, violationTypeID, workflowInstanceID, reporterUserID uuid.UUID, note string) error {
+	occurredOn := d.Clock.Now()
+	_, err := d.Discipline.RecordViolation(ctx, tenantID, disciplineservice.RecordInput{
+		StudentUserID: studentUserID, ViolationTypeID: violationTypeID, OccurredOn: occurredOn, Notes: note,
+		WorkflowInstanceID: uuid.NullUUID{UUID: workflowInstanceID, Valid: true}, ReporterUserID: reporterUserID,
+	})
+	if err != nil {
+		if errors.Is(err, disciplinedomain.ErrViolationTypeNotFound) || errors.Is(err, disciplinedomain.ErrViolationTypeInactive) || errors.Is(err, disciplinedomain.ErrInvalidInput) {
+			return fmt.Errorf("%w: %v", permitsdomain.ErrViolationInvalid, err)
+		}
+		return err
+	}
+	return nil
 }

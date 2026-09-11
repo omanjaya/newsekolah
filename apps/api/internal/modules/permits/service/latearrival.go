@@ -57,7 +57,11 @@ func (s *Service) OpenLateArrival(ctx context.Context, in OpenLateArrivalInput) 
 			return err
 		}
 		occurrence := int(count) + 1
-		action := domain.ActionForOccurrence(occurrence, s.cfg.LateArrivalActions)
+		actions, err := s.lateArrivalActions(ctx, in.TenantID)
+		if err != nil {
+			return err
+		}
+		action := domain.ActionForOccurrence(occurrence, actions)
 
 		reason := in.Reason
 		if reason == "" {
@@ -74,6 +78,7 @@ func (s *Service) OpenLateArrival(ctx context.Context, in OpenLateArrivalInput) 
 		}
 		late, err := s.repo.CreateLateArrival(ctx, domain.LateArrival{
 			InstanceID: inst.ID, TenantID: in.TenantID, Reason: reason, OccurrenceNumber: occurrence, RequiredAction: action,
+			DutyTeacherUserID: uuid.NullUUID{UUID: token.IssuedByUserID, Valid: true},
 		})
 		if err != nil {
 			return err
@@ -97,9 +102,37 @@ type ReviewLateArrivalInput struct {
 	ViolationIDs     []uuid.UUID
 }
 
+// lateArrivalReviewPermission is the permission code ReviewLateArrival's
+// "admins as fallback" check looks for, matching this endpoint's own
+// x-permission in openapi/modules/permits.yaml so the fallback never grants
+// more than the endpoint gate already requires.
+const lateArrivalReviewPermission = "manage_attendance"
+
+// requireLateArrivalReviewer restricts review to the specific teacher whose
+// token opened the flow (docs/analysis/backend-inventory.md 1.16), with a
+// role-granted manage_attendance holder (an attendance administrator, or
+// super_admin) as fallback -- distinct from a picket-duty teacher's own
+// manage_attendance, which is duty-granted and only ever covers the flows
+// their own token opened.
+func (s *Service) requireLateArrivalReviewer(ctx context.Context, tenantID, actorUserID uuid.UUID, late domain.LateArrival) error {
+	if late.DutyTeacherUserID.Valid && late.DutyTeacherUserID.UUID == actorUserID {
+		return nil
+	}
+	ok, err := s.repo.HasRolePermission(ctx, tenantID, actorUserID, lateArrivalReviewPermission)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return domain.ErrLateArrivalReviewerOnly
+	}
+	return nil
+}
+
 // ReviewLateArrival is the duty teacher's manual approval of the first
-// stage: it records the reason, the homeroom report flag and any violation
-// ids (kept opaque here; discipline consumes them from the payload).
+// stage: it records the reason and the homeroom report flag, then, for
+// every reviewed violation_id, records a real violation against the
+// student through the discipline module (validating each id is an active
+// violation type as part of that call) -- see DisciplineRecorder.
 func (s *Service) ReviewLateArrival(ctx context.Context, in ReviewLateArrivalInput) (LateArrivalDetail, error) {
 	var detail LateArrivalDetail
 	err := s.withTx(ctx, in.TenantID, func(ctx context.Context) error {
@@ -109,6 +142,9 @@ func (s *Service) ReviewLateArrival(ctx context.Context, in ReviewLateArrivalInp
 		}
 		if !ok {
 			return domain.ErrInstanceNotFound
+		}
+		if err := s.requireLateArrivalReviewer(ctx, in.TenantID, in.ReviewerUserID, late); err != nil {
+			return err
 		}
 		inst, def, isLast, err := s.approveCurrentStage(ctx, stageTransitionInput{
 			tenantID: in.TenantID, instanceID: in.InstanceID, actorUserID: in.ReviewerUserID,
@@ -126,6 +162,12 @@ func (s *Service) ReviewLateArrival(ctx context.Context, in ReviewLateArrivalInp
 			return err
 		}
 		if len(in.ViolationIDs) > 0 {
+			note := fmt.Sprintf("Proses masuk terlambat ke-%d", late.OccurrenceNumber)
+			for _, violationTypeID := range in.ViolationIDs {
+				if err := s.discipline.RecordLateArrivalViolation(ctx, in.TenantID, inst.SubjectUserID, violationTypeID, in.InstanceID, in.ReviewerUserID, note); err != nil {
+					return err
+				}
+			}
 			ids := make([]string, len(in.ViolationIDs))
 			for i, id := range in.ViolationIDs {
 				ids[i] = id.String()
@@ -258,11 +300,11 @@ func (s *Service) CurrentLateArrival(ctx context.Context, tenantID, studentUserI
 	return detail, found, err
 }
 
-func (s *Service) ListLateArrivalsForReview(ctx context.Context, tenantID uuid.UUID) ([]LateArrivalReviewItem, error) {
+func (s *Service) ListLateArrivalsForReview(ctx context.Context, tenantID, callerUserID uuid.UUID) ([]LateArrivalReviewItem, error) {
 	var out []LateArrivalReviewItem
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error
-		out, err = s.repo.ListLateArrivalsForReview(ctx, tenantID)
+		out, err = s.repo.ListLateArrivalsForReview(ctx, tenantID, callerUserID)
 		return err
 	})
 	if err != nil {

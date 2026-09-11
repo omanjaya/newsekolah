@@ -191,6 +191,49 @@ func (q *Queries) ExpireHangingWorkflowInstances(ctx context.Context, arg Expire
 	return items, nil
 }
 
+const getExitPermitInstanceForSubjectToday = `-- name: GetExitPermitInstanceForSubjectToday :one
+select id, tenant_id, academic_year_id, definition_id, kind, subject_user_id, class_id, current_stage_index, status, payload, opened_date, opened_at, closed_at, created_by, created_at, updated_at from workflow_instances
+where tenant_id = $1 and kind = 'exit_permit' and subject_user_id = $2
+  and opened_date = (now() at time zone 'utc')::date
+  and status in ('in_progress', 'approved', 'completed')
+limit 1
+`
+
+type GetExitPermitInstanceForSubjectTodayParams struct {
+	TenantID      uuid.UUID `json:"tenant_id"`
+	SubjectUserID uuid.UUID `json:"subject_user_id"`
+}
+
+// Regression fix (docs/analysis/backend-inventory.md 1.15): the old app
+// capped a student at one exit-permit request per day "apa pun
+// statusnya" -- including ones that already exited. opened_date mirrors
+// the fixed-UTC approximation ux_workflow_instances_one_exit_permit_per_day
+// itself uses, so this pre-check agrees with the constraint it exists to
+// turn into a friendly 409 instead of a raw unique-violation error.
+func (q *Queries) GetExitPermitInstanceForSubjectToday(ctx context.Context, arg GetExitPermitInstanceForSubjectTodayParams) (WorkflowInstance, error) {
+	row := q.db.QueryRow(ctx, getExitPermitInstanceForSubjectToday, arg.TenantID, arg.SubjectUserID)
+	var i WorkflowInstance
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.AcademicYearID,
+		&i.DefinitionID,
+		&i.Kind,
+		&i.SubjectUserID,
+		&i.ClassID,
+		&i.CurrentStageIndex,
+		&i.Status,
+		&i.Payload,
+		&i.OpenedDate,
+		&i.OpenedAt,
+		&i.ClosedAt,
+		&i.CreatedBy,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getInProgressWorkflowInstance = `-- name: GetInProgressWorkflowInstance :one
 select id, tenant_id, academic_year_id, definition_id, kind, subject_user_id, class_id, current_stage_index, status, payload, opened_date, opened_at, closed_at, created_by, created_at, updated_at from workflow_instances
 where tenant_id = $1 and kind = $2 and subject_user_id = $3 and status in ('in_progress', 'approved')

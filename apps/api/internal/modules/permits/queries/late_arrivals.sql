@@ -1,6 +1,6 @@
 -- name: CreateLateArrival :one
-insert into late_arrivals (instance_id, tenant_id, reason, occurrence_number, required_action, homeroom_reported)
-values ($1, $2, $3, $4, $5, $6)
+insert into late_arrivals (instance_id, tenant_id, reason, occurrence_number, required_action, homeroom_reported, duty_teacher_user_id)
+values ($1, $2, $3, $4, $5, $6, $7)
 returning *;
 
 -- name: GetLateArrival :one
@@ -30,8 +30,21 @@ where wi.tenant_id = $1
 limit 1;
 
 -- name: ListLateArrivalsForReview :many
+-- Regression fix (docs/analysis/backend-inventory.md 1.16): the queue is
+-- scoped to the teacher whose own token opened each flow, matching
+-- ReviewLateArrival's actor check; a caller who holds manage_attendance
+-- through a directly assigned role (not a duty), the "admin" case, sees
+-- every open flow.
 select la.*, wi.subject_user_id, wi.class_id, wi.current_stage_index, wi.status, wi.opened_at
 from late_arrivals la
 join workflow_instances wi on wi.id = la.instance_id
 where la.tenant_id = $1 and wi.status = 'in_progress'
+  and (
+    la.duty_teacher_user_id = $2
+    or exists (
+      select 1 from user_roles ur
+      join role_permissions rp on rp.role_id = ur.role_id
+      where ur.tenant_id = $1 and ur.user_id = $2 and rp.permission_code = 'manage_attendance'
+    )
+  )
 order by wi.opened_at;

@@ -25,6 +25,24 @@ func (c Category) Valid() bool {
 	}
 }
 
+// defaultCategoryLabels mirrors the old app's defaultReasons
+// (student_leave_api.go): every category but "other" forces the reason to
+// this fixed label, since "sakit" or "upacara agama" needs no free text
+// and a student typing something else there is just noise on the letter.
+var defaultCategoryLabels = map[Category]string{
+	CategoryReligiousCeremony: "Upacara agama",
+	CategorySick:              "Sakit",
+	CategoryDispensation:      "Dispen",
+}
+
+// DefaultReasonFor returns the fixed reason a non-"other" category forces,
+// or ok=false for "other" (and any unrecognized category), where the
+// student's own free-text reason stands.
+func DefaultReasonFor(c Category) (label string, ok bool) {
+	label, ok = defaultCategoryLabels[c]
+	return label, ok
+}
+
 // LeaveRequest is one leave_requests row, 1:1 with a workflow_instances
 // row of kind leave_request. IssuedAt/LetterNumber/IssuedBy are set once
 // the counselor stage issues the letter (the instance moves to

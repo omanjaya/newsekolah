@@ -48,6 +48,12 @@ type Template struct {
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt *time.Time
+	// LetterheadAssetID points at an assets row (kind "branding") to
+	// render above the body -- the tenant's kop surat image, reusing
+	// whatever asset the school already uploaded rather than a
+	// template-specific upload path (docs/02-system-design.md leave
+	// letter template section).
+	LetterheadAssetID uuid.NullUUID
 }
 
 // IssuedDocument is one issued_documents row: the permanent record that a

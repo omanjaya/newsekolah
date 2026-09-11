@@ -85,6 +85,7 @@ func toLateArrival(row db.LateArrival) domain.LateArrival {
 	return domain.LateArrival{
 		InstanceID: row.InstanceID, TenantID: row.TenantID, Reason: row.Reason, OccurrenceNumber: int(row.OccurrenceNumber),
 		RequiredAction: domain.RequiredAction(row.RequiredAction), HomeroomReported: row.HomeroomReported, CompletedAt: pdatabase.TimePtr(row.CompletedAt),
+		DutyTeacherUserID: pdatabase.UUIDOrNil(row.DutyTeacherUserID),
 	}
 }
 
@@ -92,6 +93,7 @@ func (r *Repository) CreateLateArrival(ctx context.Context, l domain.LateArrival
 	row, err := r.queries(ctx).CreateLateArrival(ctx, db.CreateLateArrivalParams{
 		InstanceID: l.InstanceID, TenantID: l.TenantID, Reason: l.Reason, OccurrenceNumber: int32(l.OccurrenceNumber), //nolint:gosec // occurrence counts are tiny
 		RequiredAction: string(l.RequiredAction), HomeroomReported: l.HomeroomReported,
+		DutyTeacherUserID: pdatabase.NullUUID(l.DutyTeacherUserID),
 	})
 	if err != nil {
 		return domain.LateArrival{}, fmt.Errorf("create late arrival: %w", err)
@@ -131,9 +133,13 @@ func (r *Repository) MarkLateArrivalCompleted(ctx context.Context, tenantID, ins
 }
 
 // ListLateArrivalsForReview returns today's open late arrivals with their
-// workflow state, for the duty-teacher queue.
-func (r *Repository) ListLateArrivalsForReview(ctx context.Context, tenantID uuid.UUID) ([]service.LateArrivalReviewItem, error) {
-	rows, err := r.queries(ctx).ListLateArrivalsForReview(ctx, tenantID)
+// workflow state, scoped to the duty teacher who opened each one (or every
+// one, for a caller whose manage_attendance is role-granted -- see
+// queries/late_arrivals.sql).
+func (r *Repository) ListLateArrivalsForReview(ctx context.Context, tenantID, callerUserID uuid.UUID) ([]service.LateArrivalReviewItem, error) {
+	rows, err := r.queries(ctx).ListLateArrivalsForReview(ctx, db.ListLateArrivalsForReviewParams{
+		TenantID: tenantID, DutyTeacherUserID: pdatabase.NullUUID(uuid.NullUUID{UUID: callerUserID, Valid: true}),
+	})
 	if err != nil {
 		return nil, fmt.Errorf("list late arrivals for review: %w", err)
 	}
@@ -143,6 +149,7 @@ func (r *Repository) ListLateArrivalsForReview(ctx context.Context, tenantID uui
 			LateArrival: domain.LateArrival{
 				InstanceID: row.InstanceID, TenantID: row.TenantID, Reason: row.Reason, OccurrenceNumber: int(row.OccurrenceNumber),
 				RequiredAction: domain.RequiredAction(row.RequiredAction), HomeroomReported: row.HomeroomReported, CompletedAt: pdatabase.TimePtr(row.CompletedAt),
+				DutyTeacherUserID: pdatabase.UUIDOrNil(row.DutyTeacherUserID),
 			},
 			SubjectUserID: row.SubjectUserID, ClassID: pdatabase.UUIDOrNil(row.ClassID),
 			CurrentStageIndex: int(row.CurrentStageIndex), Status: domain.Status(row.Status), OpenedAt: pdatabase.TimeOrZero(row.OpenedAt),
@@ -342,6 +349,7 @@ func toTemplate(row db.DocumentTemplate) domain.Template {
 		ID: row.ID, TenantID: row.TenantID, Kind: domain.TemplateKind(row.Kind), Name: row.Name, Engine: domain.Engine(row.Engine),
 		Body: row.Body, Variables: vars, IsDefault: row.IsDefault, CreatedBy: pdatabase.UUIDOrNil(row.CreatedBy),
 		CreatedAt: pdatabase.TimeOrZero(row.CreatedAt), UpdatedAt: pdatabase.TimeOrZero(row.UpdatedAt), DeletedAt: pdatabase.TimePtr(row.DeletedAt),
+		LetterheadAssetID: pdatabase.UUIDOrNil(row.LetterheadAssetID),
 	}
 }
 
@@ -388,6 +396,7 @@ func (r *Repository) CreateTemplate(ctx context.Context, t domain.Template) (dom
 	row, err := r.queries(ctx).CreateDocumentTemplate(ctx, db.CreateDocumentTemplateParams{
 		TenantID: t.TenantID, Kind: string(t.Kind), Name: t.Name, Engine: string(t.Engine), Body: t.Body,
 		Variables: mustJSON(nonNilStrings(t.Variables)), IsDefault: t.IsDefault, CreatedBy: pdatabase.NullUUID(t.CreatedBy),
+		LetterheadAssetID: pdatabase.NullUUID(t.LetterheadAssetID),
 	})
 	if err != nil {
 		return domain.Template{}, fmt.Errorf("create template: %w", err)
@@ -395,9 +404,10 @@ func (r *Repository) CreateTemplate(ctx context.Context, t domain.Template) (dom
 	return toTemplate(row), nil
 }
 
-func (r *Repository) UpdateTemplate(ctx context.Context, tenantID, id uuid.UUID, name, body string, variables []string) (domain.Template, error) {
+func (r *Repository) UpdateTemplate(ctx context.Context, tenantID, id uuid.UUID, name, body string, variables []string, letterheadAssetID uuid.NullUUID) (domain.Template, error) {
 	row, err := r.queries(ctx).UpdateDocumentTemplate(ctx, db.UpdateDocumentTemplateParams{
 		TenantID: tenantID, ID: id, Name: name, Body: body, Variables: mustJSON(nonNilStrings(variables)),
+		LetterheadAssetID: pdatabase.NullUUID(letterheadAssetID),
 	})
 	if err != nil {
 		return domain.Template{}, fmt.Errorf("update template: %w", err)
@@ -538,6 +548,117 @@ func (r *Repository) CreateAsset(ctx context.Context, tenantID uuid.UUID, bucket
 
 func (r *Repository) GetAssetObjectKey(ctx context.Context, tenantID, assetID uuid.UUID) (string, error) {
 	return r.queries(ctx).GetAssetObjectKey(ctx, db.GetAssetObjectKeyParams{TenantID: tenantID, ID: assetID})
+}
+
+func (r *Repository) GetTenantTimezone(ctx context.Context, tenantID uuid.UUID) (string, error) {
+	return r.queries(ctx).GetTenantTimezoneForPermits(ctx, tenantID)
+}
+
+func (r *Repository) HasPermission(ctx context.Context, tenantID, academicYearID, userID uuid.UUID, permissionCode string) (bool, error) {
+	return r.queries(ctx).HasPermission(ctx, db.HasPermissionParams{
+		TenantID: tenantID, UserID: userID, PermissionCode: permissionCode, AcademicYearID: academicYearID,
+	})
+}
+
+func (r *Repository) HasRolePermission(ctx context.Context, tenantID, userID uuid.UUID, permissionCode string) (bool, error) {
+	return r.queries(ctx).HasRolePermission(ctx, db.HasRolePermissionParams{TenantID: tenantID, UserID: userID, PermissionCode: permissionCode})
+}
+
+func (r *Repository) IsStudentProfile(ctx context.Context, tenantID, userID uuid.UUID) (bool, error) {
+	return r.queries(ctx).IsStudentProfile(ctx, db.IsStudentProfileParams{TenantID: tenantID, UserID: userID})
+}
+
+func (r *Repository) GetStudentNISAndAddress(ctx context.Context, tenantID, studentUserID uuid.UUID) (string, string, error) {
+	row, err := r.queries(ctx).GetStudentNISAndAddress(ctx, db.GetStudentNISAndAddressParams{TenantID: tenantID, ID: studentUserID})
+	if notFound(err) {
+		return "", "", nil
+	}
+	if err != nil {
+		return "", "", fmt.Errorf("get student nis/address: %w", err)
+	}
+	return row.Nis, row.Address, nil
+}
+
+func (r *Repository) GetExitPermitInstanceForSubjectToday(ctx context.Context, tenantID, studentUserID uuid.UUID) (domain.Instance, bool, error) {
+	row, err := r.queries(ctx).GetExitPermitInstanceForSubjectToday(ctx, db.GetExitPermitInstanceForSubjectTodayParams{TenantID: tenantID, SubjectUserID: studentUserID})
+	if notFound(err) {
+		return domain.Instance{}, false, nil
+	}
+	if err != nil {
+		return domain.Instance{}, false, fmt.Errorf("get exit permit instance for subject today: %w", err)
+	}
+	return toInstance(row), true, nil
+}
+
+func (r *Repository) ListExitPermitsForApproval(ctx context.Context, tenantID, callerUserID uuid.UUID) ([]service.ExitPermitReviewItem, error) {
+	rows, err := r.queries(ctx).ListExitPermitsForApproval(ctx, db.ListExitPermitsForApprovalParams{TenantID: tenantID, UserID: callerUserID})
+	if err != nil {
+		return nil, fmt.Errorf("list exit permits for approval: %w", err)
+	}
+	out := make([]service.ExitPermitReviewItem, len(rows))
+	for i, row := range rows {
+		out[i] = service.ExitPermitReviewItem{
+			ExitPermit: domain.ExitPermit{
+				InstanceID: row.InstanceID, TenantID: row.TenantID, Destination: row.Destination,
+				StartPeriodID: row.StartPeriodID, EndPeriodID: row.EndPeriodID, IssuedAt: pdatabase.TimePtr(row.IssuedAt),
+				GateTokenID: pdatabase.UUIDOrNil(row.GateTokenID), ExitedAt: pdatabase.TimePtr(row.ExitedAt),
+				SecurityUserID: pdatabase.UUIDOrNil(row.SecurityUserID), StudentNameSnapshot: row.StudentNameSnapshot, ClassNameSnapshot: row.ClassNameSnapshot,
+			},
+			SubjectUserID: row.SubjectUserID, ClassID: pdatabase.UUIDOrNil(row.ClassID),
+			CurrentStageIndex: int(row.CurrentStageIndex), Status: domain.Status(row.Status), OpenedAt: pdatabase.TimeOrZero(row.OpenedAt),
+		}
+	}
+	return out, nil
+}
+
+func (r *Repository) ListExitPermitsForYear(ctx context.Context, tenantID, academicYearID uuid.UUID) ([]service.ExitPermitReportRow, error) {
+	yearRange, err := r.queries(ctx).GetAcademicYearRange(ctx, db.GetAcademicYearRangeParams{TenantID: tenantID, ID: academicYearID})
+	if err != nil {
+		return nil, fmt.Errorf("get academic year range: %w", err)
+	}
+	from := pdatabase.DateOrZero(yearRange.StartsOn)
+	// ends_on is inclusive; opened_at < to needs the day after.
+	to := pdatabase.DateOrZero(yearRange.EndsOn).AddDate(0, 0, 1)
+
+	rows, err := r.queries(ctx).ListExitPermitsForReport(ctx, db.ListExitPermitsForReportParams{
+		TenantID: tenantID, AcademicYearID: academicYearID,
+		OpenedAt: pdatabase.Timestamptz(from), OpenedAt_2: pdatabase.Timestamptz(to),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("list exit permits for year: %w", err)
+	}
+	out := make([]service.ExitPermitReportRow, len(rows))
+	for i, row := range rows {
+		out[i] = service.ExitPermitReportRow{
+			ExitPermit: domain.ExitPermit{
+				InstanceID: row.InstanceID, TenantID: row.TenantID, Destination: row.Destination,
+				StartPeriodID: row.StartPeriodID, EndPeriodID: row.EndPeriodID, IssuedAt: pdatabase.TimePtr(row.IssuedAt),
+				GateTokenID: pdatabase.UUIDOrNil(row.GateTokenID), ExitedAt: pdatabase.TimePtr(row.ExitedAt),
+				SecurityUserID: pdatabase.UUIDOrNil(row.SecurityUserID), StudentNameSnapshot: row.StudentNameSnapshot, ClassNameSnapshot: row.ClassNameSnapshot,
+			},
+			Status: domain.Status(row.Status), OpenedAt: pdatabase.TimeOrZero(row.OpenedAt), ClosedAt: pdatabase.TimePtr(row.ClosedAt),
+		}
+	}
+	return out, nil
+}
+
+func (r *Repository) GetLatestPolicy(ctx context.Context, tenantID uuid.UUID, kind string) ([]byte, int, bool, error) {
+	row, err := r.queries(ctx).GetLatestTenantPolicyForPermits(ctx, db.GetLatestTenantPolicyForPermitsParams{TenantID: tenantID, Kind: kind})
+	if notFound(err) {
+		return nil, 0, false, nil
+	}
+	if err != nil {
+		return nil, 0, false, fmt.Errorf("get latest tenant policy: %w", err)
+	}
+	return row.Config, int(row.Version), true, nil
+}
+
+func (r *Repository) CreatePolicy(ctx context.Context, tenantID uuid.UUID, kind string, version int, config []byte, effectiveFrom time.Time, createdBy uuid.NullUUID) error {
+	_, err := r.queries(ctx).CreateTenantPolicyForPermits(ctx, db.CreateTenantPolicyForPermitsParams{
+		TenantID: tenantID, Kind: kind, Version: int32(version), //nolint:gosec // policy versions are small
+		Config: config, EffectiveFrom: pdatabase.Date(effectiveFrom), CreatedBy: pdatabase.NullUUID(createdBy),
+	})
+	return err
 }
 
 func nonNilStrings(s []string) []string {

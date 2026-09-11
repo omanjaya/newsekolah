@@ -280,6 +280,7 @@ type Querier interface {
 	CreateSubstitutionRequest(ctx context.Context, arg CreateSubstitutionRequestParams) (SubstitutionRequest, error)
 	CreateTenant(ctx context.Context, arg CreateTenantParams) (Tenant, error)
 	CreateTenantPolicy(ctx context.Context, arg CreateTenantPolicyParams) (TenantPolicy, error)
+	CreateTenantPolicyForPermits(ctx context.Context, arg CreateTenantPolicyForPermitsParams) (TenantPolicy, error)
 	CreateTitle(ctx context.Context, arg CreateTitleParams) (LibraryTitle, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	CreateUserProfile(ctx context.Context, arg CreateUserProfileParams) error
@@ -359,6 +360,10 @@ type Querier interface {
 	FulfillReservation(ctx context.Context, arg FulfillReservationParams) (LibraryReservation, error)
 	GetAPIKeyByID(ctx context.Context, arg GetAPIKeyByIDParams) (IntegrationApiKey, error)
 	GetAcademicYearByID(ctx context.Context, arg GetAcademicYearByIDParams) (AcademicYear, error)
+	// Backs the exit-permit yearly report: ListExitPermitsForReport takes an
+	// opened_at range, so the caller needs the active academic year's own
+	// calendar bounds to build one.
+	GetAcademicYearRange(ctx context.Context, arg GetAcademicYearRangeParams) (GetAcademicYearRangeRow, error)
 	GetAcceptedSubstitutionForScheduleDate(ctx context.Context, arg GetAcceptedSubstitutionForScheduleDateParams) (SubstitutionRequest, error)
 	GetAchievement(ctx context.Context, arg GetAchievementParams) (StudentAchievement, error)
 	GetActiveAcademicYear(ctx context.Context, tenantID uuid.UUID) (AcademicYear, error)
@@ -409,6 +414,13 @@ type Querier interface {
 	GetEnrolledClassForAttendance(ctx context.Context, arg GetEnrolledClassForAttendanceParams) (uuid.UUID, error)
 	GetEntryBySessionStudent(ctx context.Context, arg GetEntryBySessionStudentParams) (AttendanceEntry, error)
 	GetExitPermit(ctx context.Context, arg GetExitPermitParams) (ExitPermit, error)
+	// Regression fix (docs/analysis/backend-inventory.md 1.15): the old app
+	// capped a student at one exit-permit request per day "apa pun
+	// statusnya" -- including ones that already exited. opened_date mirrors
+	// the fixed-UTC approximation ux_workflow_instances_one_exit_permit_per_day
+	// itself uses, so this pre-check agrees with the constraint it exists to
+	// turn into a friendly 409 instead of a raw unique-violation error.
+	GetExitPermitInstanceForSubjectToday(ctx context.Context, arg GetExitPermitInstanceForSubjectTodayParams) (WorkflowInstance, error)
 	GetExpectedGuest(ctx context.Context, arg GetExpectedGuestParams) (VisitorExpectedGuest, error)
 	GetExtracurricular(ctx context.Context, arg GetExtracurricularParams) (Extracurricular, error)
 	GetFeeType(ctx context.Context, arg GetFeeTypeParams) (FeeType, error)
@@ -440,6 +452,7 @@ type Querier interface {
 	GetLatestAttendanceSessionBeforeDate(ctx context.Context, arg GetLatestAttendanceSessionBeforeDateParams) (AttendanceSession, error)
 	GetLatestLibraryPolicy(ctx context.Context, tenantID uuid.UUID) (LibraryPolicy, error)
 	GetLatestTenantPolicy(ctx context.Context, arg GetLatestTenantPolicyParams) (TenantPolicy, error)
+	GetLatestTenantPolicyForPermits(ctx context.Context, arg GetLatestTenantPolicyForPermitsParams) (TenantPolicy, error)
 	GetLatestWorkflowDefinitionVersion(ctx context.Context, arg GetLatestWorkflowDefinitionVersionParams) (int32, error)
 	GetLeaveDocument(ctx context.Context, arg GetLeaveDocumentParams) (LeaveDocument, error)
 	GetLeaveRequest(ctx context.Context, arg GetLeaveRequestParams) (LeaveRequest, error)
@@ -474,6 +487,8 @@ type Querier interface {
 	GetStaffProfile(ctx context.Context, arg GetStaffProfileParams) (StaffProfile, error)
 	GetStocktake(ctx context.Context, arg GetStocktakeParams) (LibraryStocktake, error)
 	GetStudentGuardianName(ctx context.Context, arg GetStudentGuardianNameParams) (string, error)
+	// The leave-letter template's {{nis}} and {{address}} placeholders.
+	GetStudentNISAndAddress(ctx context.Context, arg GetStudentNISAndAddressParams) (GetStudentNISAndAddressRow, error)
 	GetStudentProfile(ctx context.Context, arg GetStudentProfileParams) (StudentProfile, error)
 	GetSubjectRefForSchedule(ctx context.Context, arg GetSubjectRefForScheduleParams) (GetSubjectRefForScheduleRow, error)
 	GetSubstitutionByID(ctx context.Context, arg GetSubstitutionByIDParams) (SubstitutionRequest, error)
@@ -487,6 +502,11 @@ type Querier interface {
 	// cross-module read: see ListActiveTenantsForMaintenance above.
 	GetTenantTimezone(ctx context.Context, id uuid.UUID) (string, error)
 	GetTenantTimezoneForAttendance(ctx context.Context, id uuid.UUID) (string, error)
+	// Mirrors attendance's GetTenantTimezoneForAttendance: permits must resolve
+	// gate-token expiry, forced attendance windows and the
+	// "teacher_of_class_now" approver rule's current time in the tenant's own
+	// timezone, never the server's UTC clock.
+	GetTenantTimezoneForPermits(ctx context.Context, id uuid.UUID) (string, error)
 	GetTitle(ctx context.Context, arg GetTitleParams) (LibraryTitle, error)
 	GetUserAdminByID(ctx context.Context, arg GetUserAdminByIDParams) (GetUserAdminByIDRow, error)
 	GetUserByID(ctx context.Context, arg GetUserByIDParams) (User, error)
@@ -545,6 +565,21 @@ type Querier interface {
 	// an active duty of this slug, and (for a class-scoped duty) does it cover
 	// class_id (NULL class_id matches only a school-scoped duty).
 	HasActiveDuty(ctx context.Context, arg HasActiveDutyParams) (bool, error)
+	// Whether user_id holds permission_code in the tenant, from either a
+	// directly assigned role (role_permissions) or an active duty
+	// (duty_permissions) -- the union authz.EffectivePermissions computes for
+	// the HTTP layer, reimplemented here for the service-level ownership
+	// checks permits itself must make on detail endpoints that carry no
+	// per-instance duty scope to check against (see RequireCanViewLeaveRequest
+	// and its exit-permit/late-arrival counterparts).
+	HasPermission(ctx context.Context, arg HasPermissionParams) (bool, error)
+	// Whether user_id holds permission_code through a directly assigned role,
+	// specifically excluding duty-granted permissions -- the distinction the
+	// late-arrival review "admins as fallback" rule needs: a picket-duty
+	// teacher's manage_attendance (duty-granted) only lets them review the
+	// flows their own token opened, while a role-granted manage_attendance
+	// (e.g. an attendance administrator, or super_admin) may review any.
+	HasRolePermission(ctx context.Context, arg HasRolePermissionParams) (bool, error)
 	IncrementPushDeviceFailure(ctx context.Context, arg IncrementPushDeviceFailureParams) error
 	IncrementWebhookEndpointFailure(ctx context.Context, arg IncrementWebhookEndpointFailureParams) (int32, error)
 	InsertImpersonationAction(ctx context.Context, arg InsertImpersonationActionParams) error
@@ -559,6 +594,10 @@ type Querier interface {
 	IsParentOfStudent(ctx context.Context, arg IsParentOfStudentParams) (bool, error)
 	IsSchoolDayRef(ctx context.Context, arg IsSchoolDayRefParams) (bool, error)
 	IsSessionActive(ctx context.Context, arg IsSessionActiveParams) (pgtype.Bool, error)
+	// Missing rule: classroom-entry tokens may only be consumed by a student
+	// profile (a teacher or any other staff scanning it is not "entering
+	// class late"), matching the old app's QR consumer check.
+	IsStudentProfile(ctx context.Context, arg IsStudentProfileParams) (bool, error)
 	IssueLeaveRequest(ctx context.Context, arg IssueLeaveRequestParams) (LeaveRequest, error)
 	LinkParentStudent(ctx context.Context, arg LinkParentStudentParams) (ParentStudent, error)
 	ListAPIKeys(ctx context.Context, tenantID uuid.UUID) ([]IntegrationApiKey, error)
@@ -682,6 +721,11 @@ type Querier interface {
 	// Every status code recorded for one student across the given date's
 	// submitted sessions -- the raw input to attendance/domain.ComputeDailyStatus.
 	ListEntryStatusesForStudentDate(ctx context.Context, arg ListEntryStatusesForStudentDateParams) ([]string, error)
+	// Missing feature (docs/analysis/backend-inventory.md 1.15): a queue for
+	// the counselor/leadership approval stages (the duty_teacher/class_teacher
+	// stages are QR-scan only, same as the old app -- no listing needed there)
+	// plus security, who see every 'approved' permit awaiting their gate scan.
+	ListExitPermitsForApproval(ctx context.Context, arg ListExitPermitsForApprovalParams) ([]ListExitPermitsForApprovalRow, error)
 	ListExitPermitsForReport(ctx context.Context, arg ListExitPermitsForReportParams) ([]ListExitPermitsForReportRow, error)
 	// The guard's lookup list: everyone expected on a given day, soonest first.
 	ListExpectedGuests(ctx context.Context, arg ListExpectedGuestsParams) ([]VisitorExpectedGuest, error)
@@ -695,12 +739,24 @@ type Querier interface {
 	ListIncidents(ctx context.Context, arg ListIncidentsParams) ([]VisitorIncident, error)
 	ListJournalsByClass(ctx context.Context, arg ListJournalsByClassParams) ([]ClassJournal, error)
 	ListJournalsByTeacher(ctx context.Context, arg ListJournalsByTeacherParams) ([]ClassJournal, error)
-	ListLateArrivalsForReview(ctx context.Context, tenantID uuid.UUID) ([]ListLateArrivalsForReviewRow, error)
+	// Regression fix (docs/analysis/backend-inventory.md 1.16): the queue is
+	// scoped to the teacher whose own token opened each flow, matching
+	// ReviewLateArrival's actor check; a caller who holds manage_attendance
+	// through a directly assigned role (not a duty), the "admin" case, sees
+	// every open flow.
+	ListLateArrivalsForReview(ctx context.Context, arg ListLateArrivalsForReviewParams) ([]ListLateArrivalsForReviewRow, error)
 	ListLeaveDocuments(ctx context.Context, arg ListLeaveDocumentsParams) ([]LeaveDocument, error)
 	ListLeaveRequestsBySubject(ctx context.Context, arg ListLeaveRequestsBySubjectParams) ([]ListLeaveRequestsBySubjectRow, error)
 	// The reviewer's queue: in-progress requests from classes where the
 	// caller is homeroom, or every class when the caller holds a school-scoped
 	// reviewing duty (counselor, leadership). class_id narrows further.
+	//
+	// Regression fix (docs/analysis/backend-inventory.md 1.14): a request only
+	// shows up for a duty holder when it is actually AT that duty's stage --
+	// the homeroom stage's approver_rule is "homeroom_of_student", the
+	// counselor/leadership stage's is "duty:<slug>" (domain.DefaultStages) --
+	// so a homeroom teacher no longer sees requests that already moved past
+	// their stage to counselor, and vice versa.
 	ListLeaveRequestsForReview(ctx context.Context, arg ListLeaveRequestsForReviewParams) ([]ListLeaveRequestsForReviewRow, error)
 	ListLoansForMember(ctx context.Context, arg ListLoansForMemberParams) ([]LibraryLoan, error)
 	ListLoansInPeriod(ctx context.Context, arg ListLoansInPeriodParams) ([]LibraryLoan, error)
