@@ -6700,6 +6700,21 @@ export interface components {
                 reflection?: string;
             };
         };
+        AttendanceCalendarDaySession: {
+            /** Format: uuid */
+            schedule_id: string;
+            /** Format: uuid */
+            subject_id: string;
+            subject_name?: string;
+            /** Format: uuid */
+            teacher_user_id?: string;
+            teacher_name?: string;
+            period_label?: string;
+            status_code?: string;
+            note?: string;
+            /** @enum {string} */
+            source?: "teacher" | "leave" | "permit" | "system";
+        };
         AttendanceCalendarDay: {
             /** Format: date */
             date: string;
@@ -6707,13 +6722,7 @@ export interface components {
             expected_sessions: number;
             submitted_sessions: number;
             complete: boolean;
-            sessions?: {
-                /** Format: uuid */
-                schedule_id: string;
-                /** Format: uuid */
-                subject_id: string;
-                status_code?: string;
-            }[];
+            sessions?: components["schemas"]["AttendanceCalendarDaySession"][];
         };
         AttendanceRosterEntry: {
             /** Format: uuid */

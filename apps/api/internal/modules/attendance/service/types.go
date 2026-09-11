@@ -70,11 +70,20 @@ type SessionSummary struct {
 	IsSubstitute bool
 }
 
-// CalendarDaySession is one schedule's contribution to a calendar day.
+// CalendarDaySession is one schedule's contribution to a calendar day: the
+// subject/teacher/period names and the student's own recorded status,
+// note, and source for that session (docs/analysis/backend-inventory.md
+// section 1.13's "detail per sesi: mapel, guru, periode, status, catatan").
 type CalendarDaySession struct {
-	ScheduleID uuid.UUID
-	SubjectID  uuid.UUID
-	StatusCode string
+	ScheduleID    uuid.UUID
+	SubjectID     uuid.UUID
+	SubjectName   string
+	TeacherUserID uuid.UUID
+	TeacherName   string
+	PeriodLabel   string
+	StatusCode    string
+	Note          string
+	Source        domain.EntrySource
 }
 
 // CalendarDay is one day of a student's month view or monthly summary.

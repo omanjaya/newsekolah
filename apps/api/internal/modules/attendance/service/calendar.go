@@ -95,12 +95,27 @@ func (s *Service) buildCalendarDays(
 				return nil, err
 			}
 		}
+		var sessionNames map[uuid.UUID]SessionDetailRow
+		if len(sessionsForDay) > 0 {
+			details, err := s.repo.ListSessionDetailsForClassDate(ctx, tenantID, classID, d)
+			if err != nil {
+				return nil, err
+			}
+			sessionNames = make(map[uuid.UUID]SessionDetailRow, len(details))
+			for _, det := range details {
+				sessionNames[det.SessionID] = det
+			}
+		}
 		for _, sess := range sessionsForDay {
-			cds := CalendarDaySession{ScheduleID: sess.ScheduleID, SubjectID: sess.SubjectID}
+			cds := CalendarDaySession{ScheduleID: sess.ScheduleID, SubjectID: sess.SubjectID, TeacherUserID: sess.TeacherUserID}
+			if names, ok := sessionNames[sess.ID]; ok {
+				cds.SubjectName, cds.TeacherName = names.SubjectName, names.TeacherName
+				cds.PeriodLabel = periodLabel(names.StartPeriodName, names.EndPeriodName)
+			}
 			if entry, found, err := s.repo.GetEntryBySessionStudent(ctx, tenantID, sess.ID, studentUserID); err != nil {
 				return nil, err
 			} else if found {
-				cds.StatusCode = entry.StatusCode
+				cds.StatusCode, cds.Note, cds.Source = entry.StatusCode, entry.Notes, entry.Source
 			}
 			day.Sessions = append(day.Sessions, cds)
 		}
@@ -108,6 +123,26 @@ func (s *Service) buildCalendarDays(
 		if row, ok := byDate[d.Format("2006-01-02")]; ok {
 			day.StatusCode, day.ExpectedSessions, day.SubmittedSessions = row.StatusCode, row.ExpectedSessions, row.SubmittedSessions
 			day.Complete = row.ExpectedSessions == 0 || row.SubmittedSessions >= row.ExpectedSessions
+			days = append(days, day)
+			continue
+		}
+
+		// A day forced by an issued leave letter or exit permit (via
+		// Overrider) shows that official status even when it has no
+		// session at all -- ForceStatus only ever writes into sessions
+		// that already exist (see service/force.go's doc comment), so a
+		// day with no schedule, or one whose sessions were never opened,
+		// would otherwise render INCOMPLETE/NONE despite the student
+		// having an approved leave that day (docs/analysis/backend-
+		// inventory.md section 1.13's "hari override tetap muncul walau
+		// tanpa sesi").
+		if overrideCode, overrideSource, ok, err := s.overrider.Override(ctx, tenantID, studentUserID, d); err != nil {
+			return nil, err
+		} else if ok {
+			day.StatusCode, day.Complete = overrideCode, true
+			if len(day.Sessions) == 0 {
+				day.Sessions = []CalendarDaySession{{StatusCode: overrideCode, Source: overrideSource}}
+			}
 			days = append(days, day)
 			continue
 		}

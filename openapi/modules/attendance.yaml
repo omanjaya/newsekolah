@@ -426,6 +426,19 @@ components:
             topic: { type: string, maxLength: 300 }
             activities: { type: string }
             reflection: { type: string }
+    AttendanceCalendarDaySession:
+      type: object
+      required: [schedule_id, subject_id]
+      properties:
+        schedule_id: { type: string, format: uuid }
+        subject_id: { type: string, format: uuid }
+        subject_name: { type: string }
+        teacher_user_id: { type: string, format: uuid }
+        teacher_name: { type: string }
+        period_label: { type: string }
+        status_code: { type: string }
+        note: { type: string }
+        source: { type: string, enum: [teacher, leave, permit, system] }
     AttendanceCalendarDay:
       type: object
       required: [date, status_code, expected_sessions, submitted_sessions, complete]
@@ -437,13 +450,7 @@ components:
         complete: { type: boolean }
         sessions:
           type: array
-          items:
-            type: object
-            required: [schedule_id, subject_id]
-            properties:
-              schedule_id: { type: string, format: uuid }
-              subject_id: { type: string, format: uuid }
-              status_code: { type: string }
+          items: { $ref: "#/components/schemas/AttendanceCalendarDaySession" }
     AttendanceRosterEntry:
       type: object
       required:

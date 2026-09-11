@@ -86,23 +86,37 @@ func toAPISessionDetail(d service.SessionDetail) api.AttendanceSessionDetail {
 	return out
 }
 
-func toAPICalendarDaySessions(sessions []service.CalendarDaySession) *[]struct {
-	ScheduleId openapi_types.UUID `json:"schedule_id"`
-	StatusCode *string            `json:"status_code,omitempty"`
-	SubjectId  openapi_types.UUID `json:"subject_id"`
-} {
+func toAPICalendarDaySession(s service.CalendarDaySession) api.AttendanceCalendarDaySession {
+	out := api.AttendanceCalendarDaySession{
+		ScheduleId: s.ScheduleID, SubjectId: s.SubjectID, SubjectName: strPtrOrNil(s.SubjectName),
+		TeacherUserId: nilUUIDPtr(s.TeacherUserID), TeacherName: strPtrOrNil(s.TeacherName),
+		PeriodLabel: strPtrOrNil(s.PeriodLabel), StatusCode: strPtrOrNil(s.StatusCode), Note: strPtrOrNil(s.Note),
+	}
+	if s.Source != "" {
+		source := api.AttendanceCalendarDaySessionSource(s.Source)
+		out.Source = &source
+	}
+	return out
+}
+
+// nilUUIDPtr is nullUUIDPtr's counterpart for a plain uuid.UUID that is
+// "unset" as the zero value (CalendarDaySession.TeacherUserID has no
+// uuid.NullUUID wrapper), used only where a zero UUID must render as an
+// absent field rather than an all-zero one.
+func nilUUIDPtr(id uuid.UUID) *uuid.UUID {
+	if id == uuid.Nil {
+		return nil
+	}
+	return &id
+}
+
+func toAPICalendarDaySessions(sessions []service.CalendarDaySession) *[]api.AttendanceCalendarDaySession {
 	if len(sessions) == 0 {
 		return nil
 	}
-	out := make([]struct {
-		ScheduleId openapi_types.UUID `json:"schedule_id"`
-		StatusCode *string            `json:"status_code,omitempty"`
-		SubjectId  openapi_types.UUID `json:"subject_id"`
-	}, len(sessions))
+	out := make([]api.AttendanceCalendarDaySession, len(sessions))
 	for i, s := range sessions {
-		out[i].ScheduleId = s.ScheduleID
-		out[i].SubjectId = s.SubjectID
-		out[i].StatusCode = strPtrOrNil(s.StatusCode)
+		out[i] = toAPICalendarDaySession(s)
 	}
 	return &out
 }
