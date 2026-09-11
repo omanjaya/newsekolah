@@ -207,7 +207,7 @@ func dapodikProfileFields(row domain.DapodikRow) identityservice.UserProfileFiel
 	}
 }
 
-// resolveStudentRoleID looks up the "siswa" role's ID once per commit,
+// resolveStudentRoleID looks up the "student" role's ID once per commit,
 // through identity's own ListRoles rather than a second identity method
 // dedicated to slug lookup.
 func (s *Service) resolveStudentRoleID(ctx context.Context, tenantID uuid.UUID) (uuid.UUID, error) {
