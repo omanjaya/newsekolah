@@ -61,4 +61,12 @@ func init() {
 		Indonesian: "Token layar monitor tidak valid atau belum dikonfigurasi.",
 		English:    "The monitor display token is invalid or not configured.",
 	}
+	catalog["ATTENDANCE_VIOLATION_TYPE_NOT_FOUND"] = map[string]string{
+		Indonesian: "Jenis pelanggaran kehadiran tidak ditemukan.",
+		English:    "Attendance violation type not found.",
+	}
+	catalog["ATTENDANCE_VIOLATION_TYPE_INACTIVE"] = map[string]string{
+		Indonesian: "Jenis pelanggaran kehadiran ini sudah tidak aktif.",
+		English:    "This attendance violation type is inactive.",
+	}
 }

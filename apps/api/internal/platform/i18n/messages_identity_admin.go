@@ -67,4 +67,36 @@ var identityAdminCatalog = map[string]map[string]string{
 		Indonesian: "Berkas impor tidak dapat dibaca atau formatnya tidak sesuai templat.",
 		English:    "The import file could not be read or does not match the template.",
 	},
+	"IMPORT_TOO_MANY_ROWS": {
+		Indonesian: "Berkas impor melebihi jumlah baris yang diizinkan.",
+		English:    "The import file exceeds the allowed number of rows.",
+	},
+	"PRIMARY_ROLE_NOT_SYSTEM": {
+		Indonesian: "Peran utama pengguna harus salah satu peran sistem.",
+		English:    "A user's primary role must be one of the system roles.",
+	},
+	"ADDITIONAL_ROLE_MUST_BE_CUSTOM": {
+		Indonesian: "Peran tambahan hanya boleh berupa peran kustom.",
+		English:    "An additional role must be a custom role.",
+	},
+	"LEAVE_PERMISSION_REQUIRES_DUTY": {
+		Indonesian: "Izin ini hanya dapat diberikan melalui penugasan tugas, bukan langsung ke peran.",
+		English:    "This permission can only be granted through a duty assignment, not directly on a role.",
+	},
+	"IMPERSONATION_NESTED_NOT_ALLOWED": {
+		Indonesian: "Tidak dapat memulai impersonasi baru saat sedang dalam sesi impersonasi.",
+		English:    "Cannot start a new impersonation while already in an impersonation session.",
+	},
+	"ORIGIN_NOT_ALLOWED": {
+		Indonesian: "Permintaan berasal dari domain yang tidak diizinkan.",
+		English:    "The request came from a domain that is not allowed.",
+	},
+	"PUSH_ENDPOINT_NOT_ALLOWED": {
+		Indonesian: "Alamat endpoint push ini tidak diizinkan.",
+		English:    "This push endpoint address is not allowed.",
+	},
+	"APNS_NOT_CONFIGURED": {
+		Indonesian: "Notifikasi push iOS belum dikonfigurasi di server ini.",
+		English:    "iOS push notifications are not configured on this server.",
+	},
 }
