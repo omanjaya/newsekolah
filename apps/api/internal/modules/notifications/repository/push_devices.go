@@ -3,10 +3,12 @@ package repository
 import (
 	"context"
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgconn"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/db"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/notifications/domain"
@@ -31,14 +33,45 @@ func (r *Repository) UpsertPushDevice(ctx context.Context, tenantID, userID uuid
 		ExpiresAt: pdatabase.Timestamptz(expiresAt),
 	})
 	if err != nil {
+		if isRegistrationConflict(err) {
+			return domain.PushDevice{}, domain.ErrPushDeviceRegistrationConflict
+		}
 		return domain.PushDevice{}, fmt.Errorf("upsert push device: %w", err)
 	}
 	return toPushDevice(row), nil
 }
 
+// isRegistrationConflict reports whether err is a Postgres error a
+// concurrent registration of the same endpoint could plausibly cause: the
+// cross-tenant cleanup in RegisterPushDevice and this upsert are two
+// separate transactions, so two requests racing the same endpoint_hash can
+// still collide on the unique index or deadlock against each other.
+func isRegistrationConflict(err error) bool {
+	var pgErr *pgconn.PgError
+	if !errors.As(err, &pgErr) {
+		return false
+	}
+	switch pgErr.Code {
+	case "23505", "40001", "40P01": // unique_violation, serialization_failure, deadlock_detected
+		return true
+	default:
+		return false
+	}
+}
+
 func (r *Repository) DeletePushDeviceByEndpoint(ctx context.Context, tenantID, userID uuid.UUID, tokenOrEndpoint string) error {
 	return r.queries(ctx).DeletePushDeviceByEndpointHash(ctx, db.DeletePushDeviceByEndpointHashParams{
 		TenantID: tenantID, UserID: userID, EndpointHash: endpointHash(tokenOrEndpoint),
+	})
+}
+
+// DeletePushDeviceByEndpointOtherTenant clears a device row left behind
+// under a tenant other than tenantID. The caller must run this inside
+// database.WithPlatformTx: endpoint_hash is only unique per tenant (0106),
+// and the row to remove is invisible under the caller's own tenant scope.
+func (r *Repository) DeletePushDeviceByEndpointOtherTenant(ctx context.Context, tenantID uuid.UUID, tokenOrEndpoint string) error {
+	return r.queries(ctx).DeletePushDeviceByEndpointHashOtherTenant(ctx, db.DeletePushDeviceByEndpointHashOtherTenantParams{
+		EndpointHash: endpointHash(tokenOrEndpoint), TenantID: tenantID,
 	})
 }
 

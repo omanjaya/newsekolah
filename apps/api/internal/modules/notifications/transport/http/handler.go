@@ -35,13 +35,14 @@ func userID(ctx context.Context) uuid.UUID {
 }
 
 var errorMap = map[error]*httpx.Error{
-	domain.ErrNotificationNotFound: httpx.ErrNotificationNotFound,
-	domain.ErrPushDeviceNotFound:   httpx.ErrPushDeviceNotFound,
-	domain.ErrInvalidChannel:       httpx.ErrValidation,
-	domain.ErrInvalidPlatform:      httpx.ErrValidation,
-	domain.ErrInvalidPushEndpoint:  httpx.ErrPushEndpointNotAllowed,
-	domain.ErrDeviceTokenTooLong:   httpx.ErrValidation,
-	domain.ErrApnsNotConfigured:    httpx.ErrApnsNotConfigured,
+	domain.ErrNotificationNotFound:           httpx.ErrNotificationNotFound,
+	domain.ErrPushDeviceNotFound:             httpx.ErrPushDeviceNotFound,
+	domain.ErrInvalidChannel:                 httpx.ErrValidation,
+	domain.ErrInvalidPlatform:                httpx.ErrValidation,
+	domain.ErrInvalidPushEndpoint:            httpx.ErrPushEndpointNotAllowed,
+	domain.ErrDeviceTokenTooLong:             httpx.ErrValidation,
+	domain.ErrApnsNotConfigured:              httpx.ErrApnsNotConfigured,
+	domain.ErrPushDeviceRegistrationConflict: httpx.ErrPushDeviceRegistrationConflict,
 }
 
 func mapError(err error) error {

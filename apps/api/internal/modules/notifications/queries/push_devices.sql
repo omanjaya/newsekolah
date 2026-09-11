@@ -1,7 +1,7 @@
 -- name: UpsertPushDevice :one
 insert into push_devices (tenant_id, user_id, platform, token_or_endpoint, endpoint_hash, p256dh, auth_key, device_name, expires_at)
 values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-on conflict (endpoint_hash) do update set
+on conflict (tenant_id, endpoint_hash) do update set
   user_id = excluded.user_id,
   platform = excluded.platform,
   token_or_endpoint = excluded.token_or_endpoint,
@@ -14,6 +14,13 @@ returning *;
 
 -- name: DeletePushDeviceByEndpointHash :exec
 delete from push_devices where tenant_id = $1 and user_id = $2 and endpoint_hash = $3;
+
+-- name: DeletePushDeviceByEndpointHashOtherTenant :exec
+-- Run under app.platform_admin (see push_devices platform_access policy,
+-- migration 0106): endpoint_hash is only unique per tenant now, so a device
+-- moving from one tenant to another leaves its old row behind unless this
+-- runs first to clear it.
+delete from push_devices where endpoint_hash = $1 and tenant_id != $2;
 
 -- name: DeletePushDeviceByID :exec
 delete from push_devices where tenant_id = $1 and id = $2;

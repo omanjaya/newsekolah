@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/notifications/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
 )
 
 // pushDeviceDefaultTTL is how long a registration is trusted without a
@@ -31,6 +32,17 @@ func (s *Service) RegisterPushDevice(ctx context.Context, tenantID, userID uuid.
 			return domain.PushDevice{}, domain.ErrApnsNotConfigured
 		}
 	}
+	// endpoint_hash is unique per tenant (migration 0106), not globally, so a
+	// device re-registering under a different tenant (a parent with children
+	// in two schools, or a recycled FCM token) would otherwise leave a stale
+	// row under its previous tenant that could still receive that tenant's
+	// push notifications. Clear it before the upsert.
+	if err := database.WithPlatformTx(ctx, s.pool, func(ctx context.Context) error {
+		return s.repo.DeletePushDeviceByEndpointOtherTenant(ctx, tenantID, reg.TokenOrEndpoint)
+	}); err != nil {
+		return domain.PushDevice{}, err
+	}
+
 	var device domain.PushDevice
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error

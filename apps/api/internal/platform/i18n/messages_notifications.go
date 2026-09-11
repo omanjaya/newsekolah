@@ -13,4 +13,8 @@ func init() {
 		Indonesian: "Perangkat push tidak ditemukan.",
 		English:    "Push device not found.",
 	}
+	catalog["PUSH_DEVICE_REGISTRATION_CONFLICT"] = map[string]string{
+		Indonesian: "Pendaftaran perangkat push sedang diproses di tempat lain, coba lagi.",
+		English:    "Push device registration is being processed elsewhere, please retry.",
+	}
 }

@@ -41,6 +41,7 @@ type Repository interface {
 
 	UpsertPushDevice(ctx context.Context, tenantID, userID uuid.UUID, reg PushDeviceRegistration, expiresAt time.Time) (domain.PushDevice, error)
 	DeletePushDeviceByEndpoint(ctx context.Context, tenantID, userID uuid.UUID, tokenOrEndpoint string) error
+	DeletePushDeviceByEndpointOtherTenant(ctx context.Context, tenantID uuid.UUID, tokenOrEndpoint string) error
 	DeletePushDeviceByID(ctx context.Context, tenantID, id uuid.UUID) error
 	DeleteAllPushDevicesForUser(ctx context.Context, tenantID, userID uuid.UUID) error
 	GetPushDeviceByID(ctx context.Context, tenantID, id uuid.UUID) (domain.PushDevice, error)

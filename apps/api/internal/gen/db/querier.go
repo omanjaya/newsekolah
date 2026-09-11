@@ -404,6 +404,11 @@ type Querier interface {
 	DeleteMfaTotp(ctx context.Context, arg DeleteMfaTotpParams) error
 	DeletePartner(ctx context.Context, arg DeletePartnerParams) (int64, error)
 	DeletePushDeviceByEndpointHash(ctx context.Context, arg DeletePushDeviceByEndpointHashParams) error
+	// Run under app.platform_admin (see push_devices platform_access policy,
+	// migration 0106): endpoint_hash is only unique per tenant now, so a device
+	// moving from one tenant to another leaves its old row behind unless this
+	// runs first to clear it.
+	DeletePushDeviceByEndpointHashOtherTenant(ctx context.Context, arg DeletePushDeviceByEndpointHashOtherTenantParams) error
 	DeletePushDeviceByID(ctx context.Context, arg DeletePushDeviceByIDParams) error
 	// Retention: read notifications older than the cutoff (180 days, per
 	// docs/06-database-schema.md section 10). Scoped by tenant_id explicitly

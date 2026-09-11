@@ -6,8 +6,9 @@ import "net/http"
 // their own file (rather than appended to errors.go) so parallel modules
 // adding their own domain errors never touch the same lines.
 var (
-	ErrNotificationNotFound = NewError(http.StatusNotFound, "NOTIFICATION_NOT_FOUND")
-	ErrPushDeviceNotFound   = NewError(http.StatusNotFound, "PUSH_DEVICE_NOT_FOUND")
+	ErrNotificationNotFound           = NewError(http.StatusNotFound, "NOTIFICATION_NOT_FOUND")
+	ErrPushDeviceNotFound             = NewError(http.StatusNotFound, "PUSH_DEVICE_NOT_FOUND")
+	ErrPushDeviceRegistrationConflict = NewError(http.StatusConflict, "PUSH_DEVICE_REGISTRATION_CONFLICT")
 
 	ErrAnnouncementNotFound      = NewError(http.StatusNotFound, "ANNOUNCEMENT_NOT_FOUND")
 	ErrAnnouncementInvalidState  = NewError(http.StatusConflict, "ANNOUNCEMENT_INVALID_STATUS")

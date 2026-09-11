@@ -10,6 +10,10 @@ var (
 	ErrInvalidPushEndpoint  = errors.New("web push endpoint is not https or not on an allowed provider host")
 	ErrDeviceTokenTooLong   = errors.New("device token exceeds 255 characters")
 	ErrApnsNotConfigured    = errors.New("apns is not configured on this server")
+	// ErrPushDeviceRegistrationConflict is a concurrent registration of the
+	// same endpoint under two tenants racing the other-tenant cleanup in
+	// RegisterPushDevice (see push_devices.go); the client should retry.
+	ErrPushDeviceRegistrationConflict = errors.New("push device registration conflict, retry")
 
 	ErrMissingTemplateVariable  = errors.New("missing template variable")
 	ErrWhatsAppTemplateNotFound = errors.New("whatsapp template not found")

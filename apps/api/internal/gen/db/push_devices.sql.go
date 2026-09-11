@@ -60,6 +60,24 @@ func (q *Queries) DeletePushDeviceByEndpointHash(ctx context.Context, arg Delete
 	return err
 }
 
+const deletePushDeviceByEndpointHashOtherTenant = `-- name: DeletePushDeviceByEndpointHashOtherTenant :exec
+delete from push_devices where endpoint_hash = $1 and tenant_id != $2
+`
+
+type DeletePushDeviceByEndpointHashOtherTenantParams struct {
+	EndpointHash []byte    `json:"endpoint_hash"`
+	TenantID     uuid.UUID `json:"tenant_id"`
+}
+
+// Run under app.platform_admin (see push_devices platform_access policy,
+// migration 0106): endpoint_hash is only unique per tenant now, so a device
+// moving from one tenant to another leaves its old row behind unless this
+// runs first to clear it.
+func (q *Queries) DeletePushDeviceByEndpointHashOtherTenant(ctx context.Context, arg DeletePushDeviceByEndpointHashOtherTenantParams) error {
+	_, err := q.db.Exec(ctx, deletePushDeviceByEndpointHashOtherTenant, arg.EndpointHash, arg.TenantID)
+	return err
+}
+
 const deletePushDeviceByID = `-- name: DeletePushDeviceByID :exec
 delete from push_devices where tenant_id = $1 and id = $2
 `
@@ -222,7 +240,7 @@ func (q *Queries) TouchPushDeviceUsed(ctx context.Context, arg TouchPushDeviceUs
 const upsertPushDevice = `-- name: UpsertPushDevice :one
 insert into push_devices (tenant_id, user_id, platform, token_or_endpoint, endpoint_hash, p256dh, auth_key, device_name, expires_at)
 values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-on conflict (endpoint_hash) do update set
+on conflict (tenant_id, endpoint_hash) do update set
   user_id = excluded.user_id,
   platform = excluded.platform,
   token_or_endpoint = excluded.token_or_endpoint,
