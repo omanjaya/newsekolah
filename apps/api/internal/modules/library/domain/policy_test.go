@@ -56,9 +56,9 @@ func TestCanBorrowRejectsCopyAlreadyOnLoan(t *testing.T) {
 	require.ErrorIs(t, err, domain.ErrCopyOnLoan)
 }
 
-func TestCanBorrowRejectsWithdrawnCopy(t *testing.T) {
+func TestCanBorrowRejectsLostCopy(t *testing.T) {
 	policy := domain.DefaultPolicy()
-	copy := domain.Copy{Status: domain.CopyWithdrawn}
+	copy := domain.Copy{Status: domain.CopyLost}
 
 	err := domain.CanBorrow(copy, 0, policy)
 
@@ -144,22 +144,69 @@ func TestQueuePosition(t *testing.T) {
 func TestDiffStocktakeFindsMissingAndUnexpected(t *testing.T) {
 	present := domain.Copy{ID: uuid.New(), Barcode: "BC-001"}
 	missingCopy := domain.Copy{ID: uuid.New(), Barcode: "BC-002"}
+	onLoanButOnShelf := domain.Copy{ID: uuid.New(), Barcode: "BC-999"}
 	expected := []domain.Copy{present, missingCopy}
+	scans := []domain.ScanRecord{
+		{Scan: domain.StocktakeScan{CopyID: uuid.NullUUID{UUID: present.ID, Valid: true}, Outcome: domain.ScanFound}, Copy: present},
+		{Scan: domain.StocktakeScan{CopyID: uuid.NullUUID{UUID: onLoanButOnShelf.ID, Valid: true}, Outcome: domain.ScanFound}, Copy: onLoanButOnShelf},
+		{Scan: domain.StocktakeScan{RawCode: "no-such-code", Outcome: domain.ScanRejected}},
+	}
 
-	result := domain.DiffStocktake(expected, []string{"BC-001", "BC-999"})
+	result := domain.DiffStocktake(expected, scans)
 
 	require.Equal(t, 2, result.ExpectedCount)
-	require.Equal(t, 2, result.ScannedCount)
+	require.Equal(t, 2, result.ScannedCount, "rejected scans do not count as scanned")
 	require.Len(t, result.Missing, 1)
 	require.Equal(t, missingCopy.ID, result.Missing[0].ID)
-	require.Equal(t, []string{"BC-999"}, result.Unexpected)
+	require.Len(t, result.Unexpected, 1)
+	require.Equal(t, onLoanButOnShelf.ID, result.Unexpected[0].ID)
 }
 
 func TestDiffStocktakeAllAccountedFor(t *testing.T) {
-	expected := []domain.Copy{{Barcode: "BC-001"}, {Barcode: "BC-002"}}
+	a := domain.Copy{ID: uuid.New(), Barcode: "BC-001"}
+	b := domain.Copy{ID: uuid.New(), Barcode: "BC-002"}
+	expected := []domain.Copy{a, b}
+	scans := []domain.ScanRecord{
+		{Scan: domain.StocktakeScan{CopyID: uuid.NullUUID{UUID: a.ID, Valid: true}, Outcome: domain.ScanFound}, Copy: a},
+		{Scan: domain.StocktakeScan{CopyID: uuid.NullUUID{UUID: b.ID, Valid: true}, Outcome: domain.ScanFound}, Copy: b},
+	}
 
-	result := domain.DiffStocktake(expected, []string{"BC-001", "BC-002"})
+	result := domain.DiffStocktake(expected, scans)
 
 	require.Empty(t, result.Missing)
 	require.Empty(t, result.Unexpected)
+}
+
+func TestDiffStocktakeFindsMisplacedCopy(t *testing.T) {
+	home := uuid.New()
+	shelf := uuid.New()
+	copyInWrongPlace := domain.Copy{ID: uuid.New(), Barcode: "BC-003", LocationID: uuid.NullUUID{UUID: home, Valid: true}}
+	expected := []domain.Copy{copyInWrongPlace}
+	scans := []domain.ScanRecord{
+		{
+			Scan: domain.StocktakeScan{
+				CopyID: uuid.NullUUID{UUID: copyInWrongPlace.ID, Valid: true}, Outcome: domain.ScanFound,
+				LocationID: uuid.NullUUID{UUID: shelf, Valid: true},
+			},
+			Copy: copyInWrongPlace,
+		},
+	}
+
+	result := domain.DiffStocktake(expected, scans)
+
+	require.Empty(t, result.Missing)
+	require.Len(t, result.Misplaced, 1)
+	require.Equal(t, copyInWrongPlace.ID, result.Misplaced[0].Copy.ID)
+	require.Equal(t, shelf, result.Misplaced[0].FoundLocationID)
+}
+
+func TestNormalizeISBN(t *testing.T) {
+	require.Equal(t, "9786021234X", domain.NormalizeISBN("978-602-1234-x"))
+	require.Equal(t, "9786021234X", domain.NormalizeISBN(" 978 602 1234 X "))
+}
+
+func TestGenerateCallNumber(t *testing.T) {
+	require.Equal(t, "813 KUR n", domain.GenerateCallNumber("813", "Kurniawan", "negeri"))
+	require.Equal(t, "", domain.GenerateCallNumber("", "", ""))
+	require.Equal(t, "813", domain.GenerateCallNumber("813", "", ""))
 }

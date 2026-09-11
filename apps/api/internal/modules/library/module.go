@@ -13,9 +13,10 @@ import (
 )
 
 type Dependencies struct {
-	Pool    *pgxpool.Pool
-	Members service.MemberDirectory // nil: reports and cards fall back to the member's user ID
-	Clock   clock.Clock
+	Pool     *pgxpool.Pool
+	Members  service.MemberDirectory // nil: reports and cards fall back to the member's user ID
+	Settings service.SettingsReader  // nil: accession numbers and barcodes use service.DefaultSettings
+	Clock    clock.Clock
 }
 
 type Module struct {
@@ -24,6 +25,6 @@ type Module struct {
 }
 
 func Register(deps Dependencies) *Module {
-	svc := service.New(deps.Pool, repository.New(deps.Pool), deps.Members, deps.Clock)
+	svc := service.New(deps.Pool, repository.New(deps.Pool), deps.Members, deps.Settings, deps.Clock)
 	return &Module{Service: svc, Handler: transporthttp.New(svc)}
 }

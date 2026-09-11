@@ -6,17 +6,25 @@ package domain
 
 import (
 	"errors"
+	"regexp"
+	"strings"
 	"time"
+	"unicode"
 
 	"github.com/google/uuid"
 )
 
 var (
 	ErrTitleNotFound          = errors.New("title not found")
+	ErrTitleHasCopies         = errors.New("title still has copies")
+	ErrControlNumberExists    = errors.New("control number already exists")
 	ErrCopyNotFound           = errors.New("copy not found")
 	ErrCopyBarcodeExists      = errors.New("copy barcode already exists")
+	ErrCopyAccessionExists    = errors.New("copy accession number already exists")
 	ErrCopyNotAvailable       = errors.New("copy is not available")
 	ErrCopyOnLoan             = errors.New("copy is already on loan")
+	ErrCopyHasLoanHistory     = errors.New("copy has loan history")
+	ErrCopyStatusNotManual    = errors.New("status can only be set through circulation")
 	ErrLoanNotFound           = errors.New("loan not found")
 	ErrLoanAlreadyReturned    = errors.New("loan is already returned")
 	ErrLoanLimitReached       = errors.New("member has reached the active loan limit")
@@ -28,11 +36,15 @@ var (
 	ErrCopyAvailableForLoan   = errors.New("a copy is already available, no need to reserve")
 	ErrStocktakeNotFound      = errors.New("stocktake not found")
 	ErrStocktakeClosed        = errors.New("stocktake is already closed")
+	ErrMasterDataNotFound     = errors.New("master data entry not found")
+	ErrMasterDataCodeExists   = errors.New("code already in use")
+	ErrMasterDataInUse        = errors.New("master data entry is still in use")
 	ErrInvalidInput           = errors.New("invalid input")
 )
 
 // CopyCondition is the physical state of one copy, recorded at acquisition
-// and updated at return or stocktake.
+// and updated at return or stocktake. It is orthogonal to CopyStatus: a
+// copy can be "available" and "fair" at once.
 type CopyCondition string
 
 const (
@@ -50,43 +62,113 @@ func (c CopyCondition) Valid() bool {
 	return false
 }
 
-// CopyStatus is the circulation state of one physical copy.
+// CopyStatus is the circulation and shelf-life state of one physical copy.
+// The vocabulary mirrors docs/06-database-schema.md:246 (English codes
+// replacing the old app's Indonesian ones).
 type CopyStatus string
 
 const (
-	CopyAvailable CopyStatus = "available"
-	CopyOnLoan    CopyStatus = "on_loan"
-	CopyReserved  CopyStatus = "reserved"
-	CopyWithdrawn CopyStatus = "withdrawn"
+	CopyAvailable    CopyStatus = "available"
+	CopyOnLoan       CopyStatus = "on_loan"
+	CopyReserved     CopyStatus = "reserved"
+	CopyDamaged      CopyStatus = "damaged"
+	CopyLost         CopyStatus = "lost"
+	CopyInRepair     CopyStatus = "in_repair"
+	CopyProcessing   CopyStatus = "processing"
+	CopyDonated      CopyStatus = "donated"
+	CopyReserveStack CopyStatus = "reserve_stack"
+	CopyUnknown      CopyStatus = "unknown"
 )
 
+// creatableStatuses is every status a copy may start in; on_loan and
+// reserved only ever come from circulation, never from a create or a
+// manual status change.
+var creatableStatuses = map[CopyStatus]bool{
+	CopyAvailable: true, CopyDamaged: true, CopyLost: true, CopyInRepair: true,
+	CopyProcessing: true, CopyDonated: true, CopyReserveStack: true, CopyUnknown: true,
+}
+
+func (s CopyStatus) Creatable() bool { return creatableStatuses[s] }
+
+// ManuallySettable is every status a librarian may switch a copy to by
+// hand: the creatable set minus "unknown", which only stocktake assigns
+// (mark_missing_as) since nobody chooses it on purpose.
+func (s CopyStatus) ManuallySettable() bool { return s != CopyUnknown && creatableStatuses[s] }
+
+// CopyAccess is how a copy may be used once borrowed at all: taken home,
+// read on site only, or never lent (reference).
+type CopyAccess string
+
+const (
+	AccessLoanable    CopyAccess = "loanable"
+	AccessReadInPlace CopyAccess = "read_in_place"
+	AccessReference   CopyAccess = "reference"
+)
+
+func (a CopyAccess) Valid() bool {
+	switch a {
+	case AccessLoanable, AccessReadInPlace, AccessReference:
+		return true
+	}
+	return false
+}
+
 type Title struct {
-	ID             uuid.UUID
-	TenantID       uuid.UUID
-	Title          string
-	Subtitle       string
-	Author         string
-	Publisher      string
-	PublishYear    int
-	ISBN           string
-	Classification string
-	Language       string
-	CoverAssetID   uuid.NullUUID
-	CreatedAt      time.Time
-	UpdatedAt      time.Time
+	ID                uuid.UUID
+	TenantID          uuid.UUID
+	ControlNumber     string
+	Title             string
+	Subtitle          string
+	Author            string
+	Responsibility    string
+	AdditionalAuthors string
+	Publisher         string
+	PublishPlace      string
+	PublishYear       int
+	Edition           string
+	Pages             string
+	Illustration      string
+	Dimensions        string
+	ISBN              string
+	ISSN              string
+	DDCNumber         string
+	CallNumber        string
+	Classification    string
+	Subjects          string
+	Language          string
+	LiteraryForm      string
+	TargetAudience    string
+	Notes             string
+	Abstract          string
+	MaterialTypeID    uuid.NullUUID
+	IsOPAC            bool
+	CoverAssetID      uuid.NullUUID
+	CreatedAt         time.Time
+	UpdatedAt         time.Time
 }
 
 type Copy struct {
-	ID         uuid.UUID
-	TenantID   uuid.UUID
-	TitleID    uuid.UUID
-	Barcode    string
-	Condition  CopyCondition
-	Status     CopyStatus
-	AcquiredOn *time.Time
-	Notes      string
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
+	ID              uuid.UUID
+	TenantID        uuid.UUID
+	TitleID         uuid.UUID
+	AccessionNumber string
+	Barcode         string
+	CopyNumber      int
+	CallNumber      string
+	CategoryID      uuid.NullUUID
+	LocationID      uuid.NullUUID
+	SourceID        uuid.NullUUID
+	PartnerID       uuid.NullUUID
+	Price           int
+	IsOPAC          bool
+	RFID            string
+	Access          CopyAccess
+	Condition       CopyCondition
+	Status          CopyStatus
+	AcquiredOn      *time.Time
+	Notes           string
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
 }
 
 func (c Copy) CanBorrow() error {
@@ -164,6 +246,25 @@ const (
 	StocktakeClosed StocktakeStatus = "closed"
 )
 
+// MarkMissingAs is what Close does to copies that were expected but never
+// scanned: mark them lost, mark them unknown (found nowhere, not
+// confirmed lost), or leave their status untouched.
+type MarkMissingAs string
+
+const (
+	MarkMissingAsLost    MarkMissingAs = "lost"
+	MarkMissingAsUnknown MarkMissingAs = "unknown"
+	MarkMissingAsNone    MarkMissingAs = "none"
+)
+
+func (m MarkMissingAs) Valid() bool {
+	switch m {
+	case MarkMissingAsLost, MarkMissingAsUnknown, MarkMissingAsNone, "":
+		return true
+	}
+	return false
+}
+
 type Stocktake struct {
 	ID                uuid.UUID
 	TenantID          uuid.UUID
@@ -173,18 +274,49 @@ type Stocktake struct {
 	CoordinatorUserID uuid.UUID
 	Status            StocktakeStatus
 	Notes             string
+	MissingCount      int
+	UnexpectedCount   int
+	MisplacedCount    int
+	MarkMissingAs     MarkMissingAs
 	CreatedAt         time.Time
 	UpdatedAt         time.Time
 }
+
+// StocktakeScanOutcome is what happened when a code was scanned: it
+// matched a known copy ("found"), or nothing in the catalogue recognised
+// it ("rejected", instead of failing the whole scan request with a 404).
+type StocktakeScanOutcome string
+
+const (
+	ScanFound    StocktakeScanOutcome = "found"
+	ScanRejected StocktakeScanOutcome = "rejected"
+)
 
 type StocktakeScan struct {
 	ID            uuid.UUID
 	TenantID      uuid.UUID
 	StocktakeID   uuid.UUID
-	CopyID        uuid.UUID
-	Barcode       string
+	CopyID        uuid.NullUUID
+	RawCode       string
+	Outcome       StocktakeScanOutcome
+	LocationID    uuid.NullUUID
 	ScannedAt     time.Time
 	ScannedByUser uuid.UUID
+}
+
+// ScanRecord pairs a recorded scan with the copy it matched, so the pure
+// reconciliation below never needs to reach into a repository. Copy is the
+// zero value when the scan was rejected.
+type ScanRecord struct {
+	Scan StocktakeScan
+	Copy Copy
+}
+
+// MisplacedCopy is an expected copy that was scanned in a location other
+// than the one it is shelved in.
+type MisplacedCopy struct {
+	Copy            Copy
+	FoundLocationID uuid.UUID
 }
 
 // StocktakeResult is the reconciliation of what should be on the shelf
@@ -192,36 +324,102 @@ type StocktakeScan struct {
 type StocktakeResult struct {
 	ExpectedCount int
 	ScannedCount  int
-	Missing       []Copy   // expected copies never scanned
-	Unexpected    []string // scanned barcodes that match no expected copy
+	Missing       []Copy          // expected copies never scanned as found
+	Unexpected    []Copy          // scanned copies that were not part of the expected set (e.g. on loan, yet on the shelf)
+	Misplaced     []MisplacedCopy // expected copies scanned at a location other than their own
 }
 
 // DiffStocktake compares the copies a stocktake session expected to find
-// (every copy not currently on loan) against the barcodes actually scanned.
-// It is pure so the reconciliation can be unit tested without a database.
-func DiffStocktake(expected []Copy, scannedBarcodes []string) StocktakeResult {
-	scanned := make(map[string]bool, len(scannedBarcodes))
-	for _, b := range scannedBarcodes {
-		scanned[b] = true
+// against what was actually scanned. It is pure so the reconciliation can
+// be unit tested without a database. expected already excludes copies
+// that cannot be on the shelf (on loan, lost, donated -- see
+// ListCopiesForStocktake).
+func DiffStocktake(expected []Copy, scans []ScanRecord) StocktakeResult {
+	expectedByID := make(map[uuid.UUID]Copy, len(expected))
+	for _, c := range expected {
+		expectedByID[c.ID] = c
 	}
-	byBarcode := make(map[string]bool, len(expected))
+
+	foundIDs := make(map[uuid.UUID]bool)
+	var unexpected []Copy
+	var misplaced []MisplacedCopy
+	scannedCount := 0
+	for _, rec := range scans {
+		if rec.Scan.Outcome != ScanFound || !rec.Scan.CopyID.Valid {
+			continue
+		}
+		scannedCount++
+		foundIDs[rec.Copy.ID] = true
+		exp, isExpected := expectedByID[rec.Copy.ID]
+		if !isExpected {
+			unexpected = append(unexpected, rec.Copy)
+			continue
+		}
+		if rec.Scan.LocationID.Valid && exp.LocationID.Valid && rec.Scan.LocationID.UUID != exp.LocationID.UUID {
+			misplaced = append(misplaced, MisplacedCopy{Copy: exp, FoundLocationID: rec.Scan.LocationID.UUID})
+		}
+	}
+
 	var missing []Copy
 	for _, c := range expected {
-		byBarcode[c.Barcode] = true
-		if !scanned[c.Barcode] {
+		if !foundIDs[c.ID] {
 			missing = append(missing, c)
 		}
 	}
-	var unexpected []string
-	for _, b := range scannedBarcodes {
-		if !byBarcode[b] {
-			unexpected = append(unexpected, b)
-		}
-	}
+
 	return StocktakeResult{
 		ExpectedCount: len(expected),
-		ScannedCount:  len(scannedBarcodes),
+		ScannedCount:  scannedCount,
 		Missing:       missing,
 		Unexpected:    unexpected,
+		Misplaced:     misplaced,
 	}
+}
+
+var isbnStripPattern = regexp.MustCompile(`[-\s]`)
+
+// NormalizeISBN strips hyphens and spaces and upper-cases the checksum
+// "X" so "978-602-1" and "978 602 1x" compare equal to "9786021X". Create,
+// update, search, and the external lookup all normalize before storing or
+// matching (old app: libraryNormalizeISBN).
+func NormalizeISBN(raw string) string {
+	return strings.ToUpper(isbnStripPattern.ReplaceAllString(strings.TrimSpace(raw), ""))
+}
+
+// GenerateCallNumber builds the default call number the old app derived
+// when a librarian left the field empty: the DDC number, then the first
+// three letters of the author's name upper-cased, then the first letter
+// of the title lower-cased (old app: libraryCallNumber). Returns "" when
+// there isn't enough information (no DDC and no author).
+func GenerateCallNumber(ddcNumber, author, title string) string {
+	parts := make([]string, 0, 3)
+	if ddcNumber != "" {
+		parts = append(parts, ddcNumber)
+	}
+	if letters := firstLetters(author, 3); letters != "" {
+		parts = append(parts, strings.ToUpper(letters))
+	}
+	if letter := firstLetters(title, 1); letter != "" {
+		parts = append(parts, strings.ToLower(letter))
+	}
+	if len(parts) == 0 {
+		return ""
+	}
+	return strings.Join(parts, " ")
+}
+
+// firstLetters returns the first n letters of s, skipping anything that
+// isn't a letter (so "de la Cruz" still yields "DEL" for n=3).
+func firstLetters(s string, n int) string {
+	var b strings.Builder
+	for _, r := range s {
+		if !unicode.IsLetter(r) {
+			continue
+		}
+		b.WriteRune(r)
+		if b.Len() >= n {
+			break
+		}
+	}
+	return b.String()
 }

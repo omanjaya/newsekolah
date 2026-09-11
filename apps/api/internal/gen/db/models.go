@@ -624,17 +624,78 @@ type LeaveRequest struct {
 	GuardianNameSnapshot pgtype.Text        `json:"guardian_name_snapshot"`
 }
 
+type LibraryAccessionSequence struct {
+	TenantID  uuid.UUID `json:"tenant_id"`
+	Year      int32     `json:"year"`
+	NextValue int64     `json:"next_value"`
+}
+
+type LibraryAcquisitionSource struct {
+	ID        uuid.UUID          `json:"id"`
+	TenantID  uuid.UUID          `json:"tenant_id"`
+	Code      string             `json:"code"`
+	Name      string             `json:"name"`
+	IsActive  bool               `json:"is_active"`
+	SortOrder int32              `json:"sort_order"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+}
+
+type LibraryBarcodeSequence struct {
+	TenantID  uuid.UUID `json:"tenant_id"`
+	NextValue int64     `json:"next_value"`
+}
+
+type LibraryCollectionCategory struct {
+	ID        uuid.UUID          `json:"id"`
+	TenantID  uuid.UUID          `json:"tenant_id"`
+	Code      string             `json:"code"`
+	Name      string             `json:"name"`
+	IsActive  bool               `json:"is_active"`
+	SortOrder int32              `json:"sort_order"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+}
+
 type LibraryCopy struct {
-	ID         uuid.UUID          `json:"id"`
-	TenantID   uuid.UUID          `json:"tenant_id"`
-	TitleID    uuid.UUID          `json:"title_id"`
-	Barcode    string             `json:"barcode"`
-	Condition  string             `json:"condition"`
-	Status     string             `json:"status"`
-	AcquiredOn pgtype.Date        `json:"acquired_on"`
-	Notes      string             `json:"notes"`
-	CreatedAt  pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
+	ID              uuid.UUID          `json:"id"`
+	TenantID        uuid.UUID          `json:"tenant_id"`
+	TitleID         uuid.UUID          `json:"title_id"`
+	Barcode         string             `json:"barcode"`
+	Condition       string             `json:"condition"`
+	Status          string             `json:"status"`
+	AcquiredOn      pgtype.Date        `json:"acquired_on"`
+	Notes           string             `json:"notes"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+	AccessionNumber string             `json:"accession_number"`
+	CopyNumber      int32              `json:"copy_number"`
+	CallNumber      string             `json:"call_number"`
+	CategoryID      pgtype.UUID        `json:"category_id"`
+	LocationID      pgtype.UUID        `json:"location_id"`
+	SourceID        pgtype.UUID        `json:"source_id"`
+	PartnerID       pgtype.UUID        `json:"partner_id"`
+	Price           int32              `json:"price"`
+	IsOpac          bool               `json:"is_opac"`
+	Rfid            string             `json:"rfid"`
+	Access          string             `json:"access"`
+}
+
+type LibraryDdcClass struct {
+	Code string `json:"code"`
+	Name string `json:"name"`
+}
+
+type LibraryItemEvent struct {
+	ID          uuid.UUID          `json:"id"`
+	TenantID    uuid.UUID          `json:"tenant_id"`
+	CopyID      uuid.UUID          `json:"copy_id"`
+	EventType   string             `json:"event_type"`
+	FromStatus  string             `json:"from_status"`
+	ToStatus    string             `json:"to_status"`
+	Note        string             `json:"note"`
+	ActorUserID pgtype.UUID        `json:"actor_user_id"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 }
 
 type LibraryLoan struct {
@@ -655,6 +716,45 @@ type LibraryLoan struct {
 	ActiveCopyID pgtype.UUID        `json:"active_copy_id"`
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+}
+
+type LibraryLocation struct {
+	ID        uuid.UUID          `json:"id"`
+	TenantID  uuid.UUID          `json:"tenant_id"`
+	Code      string             `json:"code"`
+	Name      string             `json:"name"`
+	IsActive  bool               `json:"is_active"`
+	SortOrder int32              `json:"sort_order"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+}
+
+type LibraryMaterialType struct {
+	ID           uuid.UUID          `json:"id"`
+	TenantID     uuid.UUID          `json:"tenant_id"`
+	Code         string             `json:"code"`
+	Name         string             `json:"name"`
+	MaxLoanItems int32              `json:"max_loan_items"`
+	MaxLoanDays  int32              `json:"max_loan_days"`
+	MaxRenewals  int32              `json:"max_renewals"`
+	IsActive     bool               `json:"is_active"`
+	SortOrder    int32              `json:"sort_order"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+}
+
+type LibraryPartner struct {
+	ID          uuid.UUID          `json:"id"`
+	TenantID    uuid.UUID          `json:"tenant_id"`
+	Code        string             `json:"code"`
+	Name        string             `json:"name"`
+	ContactName string             `json:"contact_name"`
+	Phone       string             `json:"phone"`
+	Address     string             `json:"address"`
+	IsActive    bool               `json:"is_active"`
+	SortOrder   int32              `json:"sort_order"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 }
 
 type LibraryPolicy struct {
@@ -691,34 +791,69 @@ type LibraryStocktake struct {
 	Notes             string             `json:"notes"`
 	CreatedAt         pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt         pgtype.Timestamptz `json:"updated_at"`
+	MissingCount      int32              `json:"missing_count"`
+	UnexpectedCount   int32              `json:"unexpected_count"`
+	MisplacedCount    int32              `json:"misplaced_count"`
+	MarkMissingAs     string             `json:"mark_missing_as"`
+}
+
+type LibraryStocktakeResult struct {
+	ID              uuid.UUID          `json:"id"`
+	TenantID        uuid.UUID          `json:"tenant_id"`
+	StocktakeID     uuid.UUID          `json:"stocktake_id"`
+	CopyID          pgtype.UUID        `json:"copy_id"`
+	Outcome         string             `json:"outcome"`
+	FoundLocationID pgtype.UUID        `json:"found_location_id"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
 }
 
 type LibraryStocktakeScan struct {
 	ID              uuid.UUID          `json:"id"`
 	TenantID        uuid.UUID          `json:"tenant_id"`
 	StocktakeID     uuid.UUID          `json:"stocktake_id"`
-	CopyID          uuid.UUID          `json:"copy_id"`
-	Barcode         string             `json:"barcode"`
+	CopyID          pgtype.UUID        `json:"copy_id"`
+	RawCode         string             `json:"raw_code"`
 	ScannedAt       pgtype.Timestamptz `json:"scanned_at"`
 	ScannedByUserID uuid.UUID          `json:"scanned_by_user_id"`
 	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	Outcome         string             `json:"outcome"`
+	LocationID      pgtype.UUID        `json:"location_id"`
 }
 
 type LibraryTitle struct {
-	ID             uuid.UUID          `json:"id"`
-	TenantID       uuid.UUID          `json:"tenant_id"`
-	Title          string             `json:"title"`
-	Subtitle       string             `json:"subtitle"`
-	Author         string             `json:"author"`
-	Publisher      string             `json:"publisher"`
-	PublishYear    pgtype.Int4        `json:"publish_year"`
-	Isbn           string             `json:"isbn"`
-	Classification string             `json:"classification"`
-	Language       string             `json:"language"`
-	CoverAssetID   pgtype.UUID        `json:"cover_asset_id"`
-	CreatedAt      pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
-	DeletedAt      pgtype.Timestamptz `json:"deleted_at"`
+	ID                uuid.UUID          `json:"id"`
+	TenantID          uuid.UUID          `json:"tenant_id"`
+	Title             string             `json:"title"`
+	Subtitle          string             `json:"subtitle"`
+	Author            string             `json:"author"`
+	Publisher         string             `json:"publisher"`
+	PublishYear       pgtype.Int4        `json:"publish_year"`
+	Isbn              string             `json:"isbn"`
+	Classification    string             `json:"classification"`
+	Language          string             `json:"language"`
+	CoverAssetID      pgtype.UUID        `json:"cover_asset_id"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt         pgtype.Timestamptz `json:"updated_at"`
+	DeletedAt         pgtype.Timestamptz `json:"deleted_at"`
+	ControlNumber     string             `json:"control_number"`
+	Responsibility    string             `json:"responsibility"`
+	AdditionalAuthors string             `json:"additional_authors"`
+	PublishPlace      string             `json:"publish_place"`
+	Edition           string             `json:"edition"`
+	Pages             string             `json:"pages"`
+	Illustration      string             `json:"illustration"`
+	Dimensions        string             `json:"dimensions"`
+	Issn              string             `json:"issn"`
+	DdcNumber         string             `json:"ddc_number"`
+	CallNumber        string             `json:"call_number"`
+	Subjects          string             `json:"subjects"`
+	LiteraryForm      string             `json:"literary_form"`
+	TargetAudience    string             `json:"target_audience"`
+	Notes             string             `json:"notes"`
+	Abstract          string             `json:"abstract"`
+	MaterialTypeID    pgtype.UUID        `json:"material_type_id"`
+	IsOpac            bool               `json:"is_opac"`
+	SearchVector      interface{}        `json:"search_vector"`
 }
 
 type LoginAttempt struct {

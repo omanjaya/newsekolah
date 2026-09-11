@@ -11,5 +11,5 @@ import (
 // public endpoint pass the tenant resolved from the host/header, never a
 // user's own tenant from a token.
 func (s *Service) SearchCatalogue(ctx context.Context, tenantID uuid.UUID, search string, limit, offset int) ([]TitleWithAvailability, error) {
-	return s.ListTitles(ctx, tenantID, search, limit, offset)
+	return s.ListTitles(ctx, tenantID, TitleSearch{Search: search, AvailableOnly: false, Limit: limit, Offset: offset})
 }

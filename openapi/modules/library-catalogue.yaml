@@ -1,0 +1,669 @@
+paths:
+  /v1/library/material-types:
+    get:
+      tags: [library]
+      operationId: listLibraryMaterialTypes
+      x-permission: view_library
+      summary: Material types (book, magazine, ...), each with its own loan limits
+      responses:
+        "200":
+          description: Material types
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/LibraryMaterialType" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: [library]
+      operationId: createLibraryMaterialType
+      x-permission: manage_library_catalog
+      summary: Add a material type
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LibraryMaterialTypeWrite" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LibraryMaterialType" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /v1/library/material-types/{id}:
+    put:
+      tags: [library]
+      operationId: updateLibraryMaterialType
+      x-permission: manage_library_catalog
+      summary: Edit a material type
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LibraryMaterialTypeWrite" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LibraryMaterialType" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+    delete:
+      tags: [library]
+      operationId: deleteLibraryMaterialType
+      x-permission: manage_library_catalog
+      summary: Remove a material type; refused while any title uses it
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "204": { description: Deleted }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /v1/library/collection-categories:
+    get:
+      tags: [library]
+      operationId: listLibraryCollectionCategories
+      x-permission: view_library
+      summary: Collection categories (fiction, reference, ...)
+      responses:
+        "200":
+          description: Categories
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/LibraryMasterEntry" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: [library]
+      operationId: createLibraryCollectionCategory
+      x-permission: manage_library_catalog
+      summary: Add a collection category
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LibraryMasterEntryWrite" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LibraryMasterEntry" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /v1/library/collection-categories/{id}:
+    put:
+      tags: [library]
+      operationId: updateLibraryCollectionCategory
+      x-permission: manage_library_catalog
+      summary: Edit a collection category
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LibraryMasterEntryWrite" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LibraryMasterEntry" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+    delete:
+      tags: [library]
+      operationId: deleteLibraryCollectionCategory
+      x-permission: manage_library_catalog
+      summary: Remove a collection category; refused while any copy uses it
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "204": { description: Deleted }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /v1/library/acquisition-sources:
+    get:
+      tags: [library]
+      operationId: listLibraryAcquisitionSources
+      x-permission: view_library
+      summary: Acquisition sources (purchase, donation, ...)
+      responses:
+        "200":
+          description: Sources
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/LibraryMasterEntry" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: [library]
+      operationId: createLibraryAcquisitionSource
+      x-permission: manage_library_catalog
+      summary: Add an acquisition source
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LibraryMasterEntryWrite" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LibraryMasterEntry" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /v1/library/acquisition-sources/{id}:
+    put:
+      tags: [library]
+      operationId: updateLibraryAcquisitionSource
+      x-permission: manage_library_catalog
+      summary: Edit an acquisition source
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LibraryMasterEntryWrite" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LibraryMasterEntry" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+    delete:
+      tags: [library]
+      operationId: deleteLibraryAcquisitionSource
+      x-permission: manage_library_catalog
+      summary: Remove an acquisition source; refused while any copy uses it
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "204": { description: Deleted }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /v1/library/partners:
+    get:
+      tags: [library]
+      operationId: listLibraryPartners
+      x-permission: view_library
+      summary: Donor and vendor partners
+      responses:
+        "200":
+          description: Partners
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/LibraryPartner" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: [library]
+      operationId: createLibraryPartner
+      x-permission: manage_library_catalog
+      summary: Add a partner
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LibraryPartnerWrite" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LibraryPartner" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /v1/library/partners/{id}:
+    put:
+      tags: [library]
+      operationId: updateLibraryPartner
+      x-permission: manage_library_catalog
+      summary: Edit a partner
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LibraryPartnerWrite" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LibraryPartner" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+    delete:
+      tags: [library]
+      operationId: deleteLibraryPartner
+      x-permission: manage_library_catalog
+      summary: Remove a partner; refused while any copy uses it
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "204": { description: Deleted }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /v1/library/locations:
+    get:
+      tags: [library]
+      operationId: listLibraryLocations
+      x-permission: view_library
+      summary: Shelf/room locations
+      responses:
+        "200":
+          description: Locations
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/LibraryMasterEntry" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: [library]
+      operationId: createLibraryLocation
+      x-permission: manage_library_catalog
+      summary: Add a location
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LibraryMasterEntryWrite" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LibraryMasterEntry" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /v1/library/locations/{id}:
+    put:
+      tags: [library]
+      operationId: updateLibraryLocation
+      x-permission: manage_library_catalog
+      summary: Edit a location
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LibraryMasterEntryWrite" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LibraryMasterEntry" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+    delete:
+      tags: [library]
+      operationId: deleteLibraryLocation
+      x-permission: manage_library_catalog
+      summary: Remove a location; refused while any copy uses it
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "204": { description: Deleted }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /v1/library/ddc-classes:
+    get:
+      tags: [library]
+      operationId: listLibraryDdcClasses
+      x-permission: view_library
+      summary: The ten top-level Dewey Decimal classes (read-only)
+      responses:
+        "200":
+          description: Classes
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/LibraryDDCClass" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /v1/library/catalogue/options:
+    get:
+      tags: [library]
+      operationId: getLibraryCatalogueOptions
+      x-permission: view_library
+      summary: Every master-data list the catalogue's forms need, in one round trip
+      responses:
+        "200":
+          description: Options
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LibraryCatalogueOptions" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /v1/library/reports/summary:
+    get:
+      tags: [library]
+      operationId: getLibraryCatalogueSummaryReport
+      x-permission: view_library_reports
+      summary: Accreditation-style catalogue summary (defaults to the last 30 days, inclusive of "to")
+      description: >
+        students_total, members_total, and the per-student ratios the old
+        app computed from them are not included: those figures need the
+        circulation half's member/enrollment tables, which this report
+        does not read.
+      parameters:
+        - { name: from, in: query, schema: { type: string, format: date } }
+        - { name: to, in: query, schema: { type: string, format: date } }
+      responses:
+        "200":
+          description: Summary
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LibraryCatalogueSummary" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /v1/library/reports/accession-register:
+    get:
+      tags: [library]
+      operationId: getLibraryAccessionRegisterReport
+      x-permission: view_library_reports
+      summary: "Accession register (Buku Induk): copies acquired in the period, in acquisition order"
+      parameters:
+        - { name: from, in: query, schema: { type: string, format: date } }
+        - { name: to, in: query, schema: { type: string, format: date } }
+      responses:
+        "200":
+          description: Register
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/LibraryCopy" } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /v1/library/dashboard:
+    get:
+      tags: [library]
+      operationId: getLibraryDashboard
+      x-permission: view_library
+      summary: Library dashboard summary, recent activity, and a 30-day trend
+      responses:
+        "200":
+          description: Dashboard
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LibraryDashboard" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+components:
+  schemas:
+    LibraryMasterEntry:
+      type: object
+      required: [id, code, name, is_active, sort_order]
+      properties:
+        id: { type: string, format: uuid }
+        code: { type: string }
+        name: { type: string }
+        is_active: { type: boolean }
+        sort_order: { type: integer }
+    LibraryMasterEntryWrite:
+      type: object
+      required: [code, name]
+      properties:
+        code: { type: string, minLength: 1, maxLength: 32 }
+        name: { type: string, minLength: 1, maxLength: 120 }
+        is_active: { type: boolean, default: true }
+        sort_order: { type: integer, default: 0 }
+
+    LibraryMaterialType:
+      type: object
+      required: [id, code, name, max_loan_items, max_loan_days, max_renewals, is_active, sort_order]
+      properties:
+        id: { type: string, format: uuid }
+        code: { type: string }
+        name: { type: string }
+        max_loan_items: { type: integer }
+        max_loan_days: { type: integer }
+        max_renewals: { type: integer }
+        is_active: { type: boolean }
+        sort_order: { type: integer }
+    LibraryMaterialTypeWrite:
+      type: object
+      required: [code, name, max_loan_items, max_loan_days, max_renewals]
+      properties:
+        code: { type: string, minLength: 1, maxLength: 32 }
+        name: { type: string, minLength: 1, maxLength: 120 }
+        max_loan_items: { type: integer, minimum: 1 }
+        max_loan_days: { type: integer, minimum: 1 }
+        max_renewals: { type: integer, minimum: 0 }
+        is_active: { type: boolean, default: true }
+        sort_order: { type: integer, default: 0 }
+
+    LibraryPartner:
+      type: object
+      required: [id, code, name, is_active, sort_order]
+      properties:
+        id: { type: string, format: uuid }
+        code: { type: string }
+        name: { type: string }
+        contact_name: { type: string }
+        phone: { type: string }
+        address: { type: string }
+        is_active: { type: boolean }
+        sort_order: { type: integer }
+    LibraryPartnerWrite:
+      type: object
+      required: [code, name]
+      properties:
+        code: { type: string, minLength: 1, maxLength: 32 }
+        name: { type: string, minLength: 1, maxLength: 200 }
+        contact_name: { type: string, maxLength: 120 }
+        phone: { type: string, maxLength: 40 }
+        address: { type: string, maxLength: 300 }
+        is_active: { type: boolean, default: true }
+        sort_order: { type: integer, default: 0 }
+
+    LibraryDDCClass:
+      type: object
+      required: [code, name]
+      properties:
+        code: { type: string }
+        name: { type: string }
+
+    LibraryCatalogueOptions:
+      type: object
+      required:
+        [
+          material_types,
+          collection_categories,
+          acquisition_sources,
+          partners,
+          locations,
+          ddc_classes,
+        ]
+      properties:
+        material_types: { type: array, items: { $ref: "#/components/schemas/LibraryMaterialType" } }
+        collection_categories:
+          { type: array, items: { $ref: "#/components/schemas/LibraryMasterEntry" } }
+        acquisition_sources:
+          { type: array, items: { $ref: "#/components/schemas/LibraryMasterEntry" } }
+        partners: { type: array, items: { $ref: "#/components/schemas/LibraryPartner" } }
+        locations: { type: array, items: { $ref: "#/components/schemas/LibraryMasterEntry" } }
+        ddc_classes: { type: array, items: { $ref: "#/components/schemas/LibraryDDCClass" } }
+
+    LibraryDDCClassCount:
+      type: object
+      required: [code, name, title_count]
+      properties:
+        code: { type: string }
+        name: { type: string }
+        title_count: { type: integer }
+    LibraryMasterEntryCount:
+      type: object
+      required: [id, code, name, count]
+      properties:
+        id: { type: string, format: uuid }
+        code: { type: string }
+        name: { type: string }
+        count: { type: integer }
+    LibraryCatalogueSummary:
+      type: object
+      required:
+        [
+          titles_by_ddc,
+          items_by_category,
+          items_by_material_type,
+          fiction_count,
+          fiction_total,
+          additions_in_period,
+          loans_in_period,
+          active_borrowers,
+          overdue_now,
+        ]
+      properties:
+        titles_by_ddc: { type: array, items: { $ref: "#/components/schemas/LibraryDDCClassCount" } }
+        items_by_category:
+          { type: array, items: { $ref: "#/components/schemas/LibraryMasterEntryCount" } }
+        items_by_material_type:
+          { type: array, items: { $ref: "#/components/schemas/LibraryMasterEntryCount" } }
+        fiction_count: { type: integer }
+        fiction_total: { type: integer }
+        additions_in_period: { type: integer }
+        loans_in_period: { type: integer }
+        active_borrowers: { type: integer }
+        overdue_now: { type: integer }
+        last_stocktake: { $ref: "#/components/schemas/LibraryStocktake" }
+
+    LibraryDashboardSummary:
+      type: object
+      required:
+        [
+          titles,
+          copies,
+          available,
+          on_loan,
+          overdue,
+          members,
+          active_members,
+          visits_today,
+          loans_today,
+          returns_today,
+          unpaid_fines_total,
+        ]
+      properties:
+        titles: { type: integer }
+        copies: { type: integer }
+        available: { type: integer }
+        on_loan: { type: integer }
+        overdue: { type: integer }
+        members:
+          { type: integer, description: "0 until the circulation module's member table exists" }
+        active_members:
+          { type: integer, description: "0 until the circulation module's member table exists" }
+        visits_today:
+          { type: integer, description: "0 until the circulation module's visits table exists" }
+        loans_today: { type: integer }
+        returns_today: { type: integer }
+        unpaid_fines_total: { type: integer }
+    LibraryDashboardSeriesPoint:
+      type: object
+      required: [day, loans, returns]
+      properties:
+        day: { type: string, format: date }
+        loans: { type: integer }
+        returns: { type: integer }
+    LibraryDashboard:
+      type: object
+      required: [summary, latest_loans, longest_overdue, popular_titles, series]
+      properties:
+        summary: { $ref: "#/components/schemas/LibraryDashboardSummary" }
+        latest_loans: { type: array, items: { $ref: "#/components/schemas/LibraryLoan" } }
+        longest_overdue: { type: array, items: { $ref: "#/components/schemas/LibraryLoan" } }
+        popular_titles:
+          { type: array, items: { $ref: "#/components/schemas/LibraryMostBorrowedTitle" } }
+        series: { type: array, items: { $ref: "#/components/schemas/LibraryDashboardSeriesPoint" } }
