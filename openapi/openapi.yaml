@@ -8915,6 +8915,1268 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+  /v1/library/member-types:
+    get:
+      tags:
+        - library
+      operationId: listLibraryMemberTypes
+      x-permission: manage_library_members
+      summary: Library member types (max loan items/days, renewal, fine rules)
+      responses:
+        "200":
+          description: Member types
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/LibraryMemberType"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags:
+        - library
+      operationId: createLibraryMemberType
+      x-permission: manage_library_members
+      summary: Create a member type
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LibraryMemberTypeWrite"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryMemberType"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/library/member-types/{memberTypeId}:
+    put:
+      tags:
+        - library
+      operationId: updateLibraryMemberType
+      x-permission: manage_library_members
+      summary: Update a member type
+      parameters:
+        - name: memberTypeId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LibraryMemberTypeWrite"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryMemberType"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags:
+        - library
+      operationId: deleteLibraryMemberType
+      x-permission: manage_library_members
+      summary: Delete a member type (refused while any member still uses it)
+      parameters:
+        - name: memberTypeId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/library/members:
+    get:
+      tags:
+        - library
+      operationId: listLibraryMembers
+      x-permission: manage_library_members
+      summary: List library members, filterable by status, type, and a name/member_no search
+      parameters:
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/LibraryMemberStatus"
+        - name: member_type_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: search
+          in: query
+          schema:
+            type: string
+            maxLength: 200
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        "200":
+          description: Members
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/LibraryMember"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags:
+        - library
+      operationId: registerLibraryMember
+      x-permission: manage_library_members
+      summary: Manually register a member (member_no generated from the tenant pattern unless given)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LibraryMemberRegister"
+      responses:
+        "201":
+          description: Registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryMember"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/library/members/bulk-register:
+    post:
+      tags:
+        - library
+      operationId: bulkRegisterLibraryMembers
+      x-permission: manage_library_members
+      summary: Register every user of one role (optionally one class) not already a member
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - member_type_id
+                - role
+              properties:
+                member_type_id:
+                  type: string
+                  format: uuid
+                role:
+                  type: string
+                  enum:
+                    - student
+                    - teacher
+                    - staff
+                    - parent
+                class_id:
+                  type: string
+                  format: uuid
+      responses:
+        "200":
+          description: Registration outcome
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryBulkRegisterResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/library/members/{userId}:
+    get:
+      tags:
+        - library
+      operationId: getLibraryMember
+      x-permission: manage_library_members
+      summary: One member's profile
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Member
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryMember"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      tags:
+        - library
+      operationId: updateLibraryMemberProfile
+      x-permission: manage_library_members
+      summary: Update a member's type, validity, or notes
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - member_type_id
+              properties:
+                member_type_id:
+                  type: string
+                  format: uuid
+                valid_until:
+                  type: string
+                  format: date
+                notes:
+                  type: string
+                  maxLength: 500
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryMember"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/library/members/{userId}/status:
+    put:
+      tags:
+        - library
+      operationId: updateLibraryMemberStatus
+      x-permission: manage_library_members
+      summary: Move a member between pending/active/inactive/suspended
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  $ref: "#/components/schemas/LibraryMemberStatus"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryMember"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/library/members/{userId}/clearance:
+    post:
+      tags:
+        - library
+      operationId: clearLibraryMember
+      x-permission: manage_library_members
+      summary: Grant clearance ("bebas pustaka"); refused with any active loan or unpaid fine
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Cleared
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryMember"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/library/members/{userId}/clearance-letter:
+    get:
+      tags:
+        - library
+      operationId: printLibraryClearanceLetter
+      x-permission: manage_library_members
+      summary: Clearance letter PDF (member must already have clearance)
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: PDF
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/library/loan-rules:
+    get:
+      tags:
+        - library
+      operationId: listLibraryLoanRules
+      x-permission: manage_library_settings
+      summary: Dated loan-rule overrides still in effect or upcoming
+      responses:
+        "200":
+          description: Loan rules
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/LibraryLoanRule"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags:
+        - library
+      operationId: createLibraryLoanRule
+      x-permission: manage_library_settings
+      summary: Create a dated loan-rule override (optionally closing lending, allow_loans=false)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LibraryLoanRuleWrite"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryLoanRule"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/library/loan-rules/{loanRuleId}:
+    delete:
+      tags:
+        - library
+      operationId: deleteLibraryLoanRule
+      x-permission: manage_library_settings
+      summary: Delete a loan-rule override
+      parameters:
+        - name: loanRuleId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/library/violations:
+    get:
+      tags:
+        - library
+      operationId: listLibraryViolations
+      x-permission: manage_library_circulation
+      summary: List violations, filterable by status and kind
+      parameters:
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/LibraryViolationStatus"
+        - name: kind
+          in: query
+          schema:
+            $ref: "#/components/schemas/LibraryViolationKind"
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        "200":
+          description: Violations
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/LibraryViolation"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags:
+        - library
+      operationId: createLibraryViolation
+      x-permission: manage_library_circulation
+      summary: Manually record a violation (damage found, or another issue not tied to a return)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LibraryViolationWrite"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryViolation"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/library/members/{userId}/violations:
+    get:
+      tags:
+        - library
+      operationId: listMemberViolations
+      x-permission: authenticated
+      summary: One member's violations (self, or manage_library_circulation staff)
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Violations
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/LibraryViolation"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/library/violations/{violationId}/settle:
+    post:
+      tags:
+        - library
+      operationId: settleLibraryViolation
+      x-permission: manage_library_circulation
+      summary: Settle a violation as paid or waived; reactivates the member once every violation is clear
+      parameters:
+        - name: violationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  enum:
+                    - paid
+                    - waived
+      responses:
+        "200":
+          description: Settled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryViolation"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/library/loans/batch-borrow:
+    post:
+      tags:
+        - library
+      operationId: batchBorrowLibraryLoans
+      x-permission: manage_library_circulation
+      summary: Borrow several barcodes for one member in one visit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - barcodes
+                - member_user_id
+              properties:
+                barcodes:
+                  type: array
+                  items:
+                    type: string
+                    minLength: 1
+                    maxLength: 64
+                  minItems: 1
+                  maxItems: 50
+                member_user_id:
+                  type: string
+                  format: uuid
+                channel:
+                  type: string
+                  enum:
+                    - desk
+                    - self_service
+                    - mobile
+                  default: desk
+      responses:
+        "200":
+          description: Batch result (partial success is possible; see rejected)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryBatchBorrowResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/library/loans/return-by-barcode:
+    post:
+      tags:
+        - library
+      operationId: returnLibraryLoanByBarcode
+      x-permission: manage_library_circulation
+      summary: Return a copy by scanning its barcode instead of knowing the loan id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - barcode
+              properties:
+                barcode:
+                  type: string
+                  minLength: 1
+                  maxLength: 64
+                condition:
+                  $ref: "#/components/schemas/LibraryCopyCondition"
+      responses:
+        "200":
+          description: Returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryLoan"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/library/loans/{loanId}/renewals:
+    get:
+      tags:
+        - library
+      operationId: listLibraryLoanRenewals
+      x-permission: view_library
+      summary: Renewal history for one loan
+      parameters:
+        - name: loanId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Renewals
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/LibraryLoanRenewal"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/library/loans/overdue-detailed:
+    get:
+      tags:
+        - library
+      operationId: listOverdueLibraryLoansDetailed
+      x-permission: view_library
+      summary: Overdue loans with the student's class and guardian phone
+      responses:
+        "200":
+          description: Overdue loans
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/LibraryOverdueLoanDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/library/lookup:
+    get:
+      tags:
+        - library
+      operationId: lookupLibrary
+      x-permission: manage_library_circulation
+      summary: Circulation-desk typeahead over members and copies (name, member_no, NIS, username, barcode, title)
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 100
+      responses:
+        "200":
+          description: Matches (at most 8, members and copies combined)
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/LibraryLookupResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/library/class-loans/preview:
+    post:
+      tags:
+        - library
+      operationId: previewLibraryClassLoans
+      x-permission: manage_library_circulation
+      summary: Auto-pair a class roster against one textbook title's available copies, without committing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - class_id
+                - title_id
+              properties:
+                class_id:
+                  type: string
+                  format: uuid
+                title_id:
+                  type: string
+                  format: uuid
+      responses:
+        "200":
+          description: Preview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryClassLoanPreview"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/library/class-loans:
+    post:
+      tags:
+        - library
+      operationId: commitLibraryClassLoans
+      x-permission: manage_library_circulation
+      summary: Commit a confirmed set of student/copy pairs as loans (from preview, or built by scanning)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - pairs
+              properties:
+                pairs:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - student_user_id
+                      - barcode
+                    properties:
+                      student_user_id:
+                        type: string
+                        format: uuid
+                      barcode:
+                        type: string
+                        minLength: 1
+                        maxLength: 64
+      responses:
+        "200":
+          description: Batch result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryBatchBorrowResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/library/class-returns:
+    post:
+      tags:
+        - library
+      operationId: commitLibraryClassReturns
+      x-permission: manage_library_circulation
+      summary: Return every roster student's active loan of one title
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - class_id
+                - title_id
+              properties:
+                class_id:
+                  type: string
+                  format: uuid
+                title_id:
+                  type: string
+                  format: uuid
+      responses:
+        "200":
+          description: Batch result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryBatchBorrowResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/library/reminders/send:
+    post:
+      tags:
+        - library
+      operationId: sendLibraryDueReminders
+      x-permission: manage_library_circulation
+      summary: Run the due-date reminder pass now, for loans due within due_reminder_days
+      responses:
+        "200":
+          description: Reminders queued
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - members_notified
+                properties:
+                  members_notified:
+                    type: integer
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/library/visits:
+    get:
+      tags:
+        - library
+      operationId: listLibraryVisits
+      x-permission: manage_library_circulation
+      summary: Guest-book entries in a date range
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+      responses:
+        "200":
+          description: Visits
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/LibraryVisit"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags:
+        - library
+      operationId: recordLibraryVisit
+      x-permission: manage_library_circulation
+      summary: Log a visit manually (member, non-member, or group)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LibraryVisitWrite"
+      responses:
+        "201":
+          description: Recorded (or the same visit within the 30-minute dedupe window)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryVisit"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/library/visits/today:
+    get:
+      tags:
+        - library
+      operationId: getTodayLibraryVisitSummary
+      x-permission: manage_library_circulation
+      summary: Today's guest-book totals
+      responses:
+        "200":
+          description: Summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryVisitSummary"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/library/visits/kiosk-token:
+    post:
+      tags:
+        - library
+      operationId: issueLibraryKioskToken
+      x-permission: manage_library_circulation
+      summary: Mint a short-lived kiosk check-in token for the guest-book screen
+      responses:
+        "201":
+          description: Token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryKioskToken"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/library/visits/kiosk-scan:
+    post:
+      tags:
+        - library
+      operationId: scanLibraryKioskVisit
+      x-permission: authenticated
+      summary: Consume a kiosk token and log a visit for the scanning user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+              properties:
+                token:
+                  type: string
+                  minLength: 1
+      responses:
+        "200":
+          description: Recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryVisit"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/library/copies/{copyId}/read-in-place:
+    get:
+      tags:
+        - library
+      operationId: listLibraryReadInPlace
+      x-permission: manage_library_circulation
+      summary: One copy's read-in-place log
+      parameters:
+        - name: copyId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Entries
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/LibraryReadInPlace"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      tags:
+        - library
+      operationId: startLibraryReadInPlace
+      x-permission: manage_library_circulation
+      summary: Log a copy being read at a library table rather than checked out
+      parameters:
+        - name: copyId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                member_user_id:
+                  type: string
+                  format: uuid
+                visitor_name:
+                  type: string
+                  maxLength: 150
+      responses:
+        "201":
+          description: Logged
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryReadInPlace"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/library/me:
+    get:
+      tags:
+        - library
+      operationId: getMyLibraryProfile
+      x-permission: view_own_library_loans
+      summary: The current user's own library profile, active loans, history, reservations, and fines
+      responses:
+        "200":
+          description: My library profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryMyProfile"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /v1/library/me/reservations:
+    post:
+      tags:
+        - library
+      operationId: reserveMyLibraryTitle
+      x-permission: view_own_library_loans
+      summary: Reserve a title for the current user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - title_id
+              properties:
+                title_id:
+                  type: string
+                  format: uuid
+      responses:
+        "201":
+          description: Reserved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryReservation"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /v1/library/me/reservations/{reservationId}/cancel:
+    post:
+      tags:
+        - library
+      operationId: cancelMyLibraryReservation
+      x-permission: view_own_library_loans
+      summary: Cancel the current user's own reservation
+      parameters:
+        - name: reservationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Cancelled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryReservation"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/opac/titles/{titleId}:
+    get:
+      tags:
+        - library
+      operationId: getOpacTitleDetail
+      x-public: true
+      security: []
+      summary: Public title detail with its visible copies (no session required)
+      parameters:
+        - $ref: "#/components/parameters/TenantHeader"
+        - name: titleId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Title detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryOpacTitleDetail"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/opac/highlights:
+    get:
+      tags:
+        - library
+      operationId: getOpacHighlights
+      x-public: true
+      security: []
+      summary: OPAC landing highlights, no session required
+      parameters:
+        - $ref: "#/components/parameters/TenantHeader"
+      responses:
+        "200":
+          description: Highlights
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryOpacHighlights"
   /v1/library/policy:
     get:
       tags:
@@ -9670,6 +10932,13 @@ paths:
                 member_user_id:
                   type: string
                   format: uuid
+                channel:
+                  type: string
+                  enum:
+                    - desk
+                    - self_service
+                    - mobile
+                  default: desk
       responses:
         "201":
           description: Borrowed
@@ -9779,6 +11048,15 @@ paths:
                 replacement_cost:
                   type: integer
                   minimum: 0
+                penalty:
+                  type: string
+                  enum:
+                    - fine
+                    - replace_book
+                  default: fine
+                notes:
+                  type: string
+                  maxLength: 500
       responses:
         "200":
           description: Closed
@@ -9826,8 +11104,8 @@ paths:
       tags:
         - library
       operationId: listMemberLoanHistory
-      x-permission: view_library
-      summary: One member's loan history
+      x-permission: authenticated
+      summary: One member's loan history (self, or view_library staff)
       parameters:
         - name: userId
           in: path
@@ -9876,8 +11154,8 @@ paths:
       tags:
         - library
       operationId: listMemberReservations
-      x-permission: view_library
-      summary: One member's reservations
+      x-permission: authenticated
+      summary: One member's reservations (self, or view_library staff)
       parameters:
         - name: userId
           in: path
@@ -10379,7 +11657,7 @@ paths:
       operationId: searchOpacTitles
       x-public: true
       security: []
-      summary: Public catalogue search (OPAC), no session required
+      summary: Public catalogue search (OPAC), no session required. Fulltext for a 3+ character query, LIKE below that.
       parameters:
         - $ref: "#/components/parameters/TenantHeader"
         - name: search
@@ -10387,6 +11665,16 @@ paths:
           schema:
             type: string
             maxLength: 200
+        - name: classification_prefix
+          in: query
+          schema:
+            type: string
+            maxLength: 60
+        - name: material_type_id
+          in: query
+          schema:
+            type: string
+            format: uuid
         - name: limit
           in: query
           schema:
@@ -10409,11 +11697,14 @@ paths:
                 type: object
                 required:
                   - data
+                  - library_name
                 properties:
                   data:
                     type: array
                     items:
                       $ref: "#/components/schemas/LibraryTitle"
+                  library_name:
+                    type: string
         "400":
           $ref: "#/components/responses/BadRequest"
   /v1/mentoring/settings/group-size-limit:
@@ -20412,6 +21703,663 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/LibraryDashboardSeriesPoint"
+    LibraryMemberStatus:
+      type: string
+      enum:
+        - pending
+        - active
+        - inactive
+        - suspended
+        - cleared
+    LibraryMember:
+      type: object
+      required:
+        - user_id
+        - member_no
+        - member_type_id
+        - registered_on
+        - status
+        - late_return_count
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        member_no:
+          type: string
+        member_type_id:
+          type: string
+          format: uuid
+        registered_on:
+          type: string
+          format: date
+        valid_until:
+          type: string
+          format: date
+        status:
+          $ref: "#/components/schemas/LibraryMemberStatus"
+        suspended_until:
+          type: string
+          format: date
+        late_return_count:
+          type: integer
+        notes:
+          type: string
+    LibraryMemberRegister:
+      type: object
+      required:
+        - user_id
+        - member_type_id
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        member_type_id:
+          type: string
+          format: uuid
+        member_no:
+          type: string
+          maxLength: 40
+        notes:
+          type: string
+          maxLength: 500
+    LibraryBulkRegisterResult:
+      type: object
+      required:
+        - registered
+        - failed
+      properties:
+        registered:
+          type: array
+          items:
+            $ref: "#/components/schemas/LibraryMember"
+        failed:
+          type: array
+          items:
+            type: object
+            required:
+              - user_id
+              - reason
+            properties:
+              user_id:
+                type: string
+              reason:
+                type: string
+    LibraryFineType:
+      type: string
+      enum:
+        - constant
+        - per_tenor
+    LibraryMemberType:
+      type: object
+      required:
+        - id
+        - name
+        - max_loan_items
+        - max_loan_days
+        - renewal_days
+        - max_renewals
+        - fine_type
+        - fine_per_tenor
+        - tenor_days
+        - suspend_days
+        - validity_months
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        max_loan_items:
+          type: integer
+        max_loan_days:
+          type: integer
+        renewal_days:
+          type: integer
+        max_renewals:
+          type: integer
+        fine_type:
+          $ref: "#/components/schemas/LibraryFineType"
+        fine_per_tenor:
+          type: integer
+        tenor_days:
+          type: integer
+        suspend_days:
+          type: integer
+        validity_months:
+          type: integer
+        default_for_role:
+          type: string
+          enum:
+            - student
+            - teacher
+            - staff
+            - parent
+    LibraryMemberTypeWrite:
+      type: object
+      required:
+        - name
+        - max_loan_items
+        - max_loan_days
+        - renewal_days
+        - max_renewals
+        - fine_type
+        - fine_per_tenor
+        - tenor_days
+        - suspend_days
+        - validity_months
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        max_loan_items:
+          type: integer
+          minimum: 1
+        max_loan_days:
+          type: integer
+          minimum: 1
+        renewal_days:
+          type: integer
+          minimum: 1
+        max_renewals:
+          type: integer
+          minimum: 0
+        fine_type:
+          $ref: "#/components/schemas/LibraryFineType"
+        fine_per_tenor:
+          type: integer
+          minimum: 0
+        tenor_days:
+          type: integer
+          minimum: 1
+        suspend_days:
+          type: integer
+          minimum: 0
+        validity_months:
+          type: integer
+          minimum: 1
+        default_for_role:
+          type: string
+          enum:
+            - student
+            - teacher
+            - staff
+            - parent
+    LibraryLoanRule:
+      type: object
+      required:
+        - id
+        - starts_on
+        - ends_on
+        - allow_loans
+      properties:
+        id:
+          type: string
+          format: uuid
+        member_type_id:
+          type: string
+          format: uuid
+          description: "absent: applies to every member type"
+        starts_on:
+          type: string
+          format: date
+        ends_on:
+          type: string
+          format: date
+        allow_loans:
+          type: boolean
+        max_loan_items:
+          type: integer
+        max_loan_days:
+          type: integer
+        notes:
+          type: string
+    LibraryLoanRuleWrite:
+      type: object
+      required:
+        - starts_on
+        - ends_on
+        - allow_loans
+      properties:
+        member_type_id:
+          type: string
+          format: uuid
+        starts_on:
+          type: string
+          format: date
+        ends_on:
+          type: string
+          format: date
+        allow_loans:
+          type: boolean
+        max_loan_items:
+          type: integer
+          minimum: 1
+        max_loan_days:
+          type: integer
+          minimum: 1
+        notes:
+          type: string
+          maxLength: 300
+    LibraryLoanRenewal:
+      type: object
+      required:
+        - id
+        - loan_id
+        - renewed_at
+        - previous_due_on
+        - new_due_on
+      properties:
+        id:
+          type: string
+          format: uuid
+        loan_id:
+          type: string
+          format: uuid
+        renewed_at:
+          type: string
+          format: date-time
+        previous_due_on:
+          type: string
+          format: date
+        new_due_on:
+          type: string
+          format: date
+    LibraryOverdueLoanDetail:
+      type: object
+      required:
+        - loan
+        - class_name
+        - guardian_phone
+      properties:
+        loan:
+          $ref: "#/components/schemas/LibraryLoan"
+        class_name:
+          type: string
+        guardian_phone:
+          type: string
+    LibraryViolationKind:
+      type: string
+      enum:
+        - late
+        - lost
+        - damaged
+        - other
+    LibraryPenalty:
+      type: string
+      enum:
+        - fine
+        - suspend
+        - warning
+        - replace_book
+    LibraryViolationStatus:
+      type: string
+      enum:
+        - unpaid
+        - paid
+        - waived
+    LibraryViolation:
+      type: object
+      required:
+        - id
+        - member_user_id
+        - kind
+        - penalty
+        - amount
+        - suspend_days
+        - status
+      properties:
+        id:
+          type: string
+          format: uuid
+        loan_id:
+          type: string
+          format: uuid
+        member_user_id:
+          type: string
+          format: uuid
+        kind:
+          $ref: "#/components/schemas/LibraryViolationKind"
+        penalty:
+          $ref: "#/components/schemas/LibraryPenalty"
+        amount:
+          type: integer
+        suspend_days:
+          type: integer
+        status:
+          $ref: "#/components/schemas/LibraryViolationStatus"
+        notes:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        settled_at:
+          type: string
+          format: date-time
+    LibraryViolationWrite:
+      type: object
+      required:
+        - member_user_id
+        - kind
+        - penalty
+      properties:
+        member_user_id:
+          type: string
+          format: uuid
+        loan_id:
+          type: string
+          format: uuid
+        kind:
+          $ref: "#/components/schemas/LibraryViolationKind"
+        penalty:
+          $ref: "#/components/schemas/LibraryPenalty"
+        amount:
+          type: integer
+          minimum: 0
+        suspend_days:
+          type: integer
+          minimum: 0
+        notes:
+          type: string
+          maxLength: 500
+    LibraryRejectedBarcode:
+      type: object
+      required:
+        - barcode
+        - reason
+      properties:
+        barcode:
+          type: string
+        reason:
+          type: string
+    LibraryBatchBorrowResult:
+      type: object
+      required:
+        - loans
+        - rejected
+      properties:
+        loans:
+          type: array
+          items:
+            $ref: "#/components/schemas/LibraryLoan"
+        rejected:
+          type: array
+          items:
+            $ref: "#/components/schemas/LibraryRejectedBarcode"
+    LibraryLookupResult:
+      type: object
+      properties:
+        member:
+          type: object
+          required:
+            - user_id
+            - user_name
+          properties:
+            user_id:
+              type: string
+              format: uuid
+            user_name:
+              type: string
+            username:
+              type: string
+            nis:
+              type: string
+            member_no:
+              type: string
+        copy:
+          type: object
+          required:
+            - copy_id
+            - barcode
+            - status
+            - title_id
+            - title
+          properties:
+            copy_id:
+              type: string
+              format: uuid
+            barcode:
+              type: string
+            status:
+              $ref: "#/components/schemas/LibraryCopyStatus"
+            title_id:
+              type: string
+              format: uuid
+            title:
+              type: string
+    LibraryClassLoanPair:
+      type: object
+      required:
+        - student_user_id
+        - student_name
+        - title_id
+        - copy_id
+        - barcode
+      properties:
+        student_user_id:
+          type: string
+          format: uuid
+        student_name:
+          type: string
+        title_id:
+          type: string
+          format: uuid
+        copy_id:
+          type: string
+          format: uuid
+        barcode:
+          type: string
+    LibraryClassLoanRejected:
+      type: object
+      required:
+        - student_user_id
+        - student_name
+        - reason
+      properties:
+        student_user_id:
+          type: string
+          format: uuid
+        student_name:
+          type: string
+        reason:
+          type: string
+    LibraryClassLoanPreview:
+      type: object
+      required:
+        - pairs
+        - rejected
+      properties:
+        pairs:
+          type: array
+          items:
+            $ref: "#/components/schemas/LibraryClassLoanPair"
+        rejected:
+          type: array
+          items:
+            $ref: "#/components/schemas/LibraryClassLoanRejected"
+    LibraryVisitKind:
+      type: string
+      enum:
+        - member
+        - non_member
+        - group
+    LibraryVisitSource:
+      type: string
+      enum:
+        - manual
+        - scan
+        - kiosk
+    LibraryVisit:
+      type: object
+      required:
+        - id
+        - kind
+        - source
+        - visited_at
+        - group_size
+      properties:
+        id:
+          type: string
+          format: uuid
+        member_user_id:
+          type: string
+          format: uuid
+        visitor_name:
+          type: string
+        kind:
+          $ref: "#/components/schemas/LibraryVisitKind"
+        purpose:
+          type: string
+        group_size:
+          type: integer
+        source:
+          $ref: "#/components/schemas/LibraryVisitSource"
+        visited_at:
+          type: string
+          format: date-time
+    LibraryVisitWrite:
+      type: object
+      required:
+        - kind
+      properties:
+        member_user_id:
+          type: string
+          format: uuid
+        visitor_name:
+          type: string
+          maxLength: 150
+        kind:
+          $ref: "#/components/schemas/LibraryVisitKind"
+        purpose:
+          type: string
+          maxLength: 200
+        group_size:
+          type: integer
+          minimum: 1
+          default: 1
+    LibraryVisitSummary:
+      type: object
+      required:
+        - total_visits
+        - unique_members
+        - total_people
+      properties:
+        total_visits:
+          type: integer
+        unique_members:
+          type: integer
+        total_people:
+          type: integer
+    LibraryKioskToken:
+      type: object
+      required:
+        - token
+        - expires_at
+      properties:
+        token:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+    LibraryReadInPlace:
+      type: object
+      required:
+        - id
+        - copy_id
+        - started_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        copy_id:
+          type: string
+          format: uuid
+        member_user_id:
+          type: string
+          format: uuid
+        visitor_name:
+          type: string
+        started_at:
+          type: string
+          format: date-time
+        ended_at:
+          type: string
+          format: date-time
+    LibraryMyProfile:
+      type: object
+      required:
+        - active_loans
+        - history
+        - reservations
+        - violations
+      properties:
+        member:
+          $ref: "#/components/schemas/LibraryMember"
+        active_loans:
+          type: array
+          items:
+            $ref: "#/components/schemas/LibraryLoan"
+        history:
+          type: array
+          items:
+            $ref: "#/components/schemas/LibraryLoan"
+        reservations:
+          type: array
+          items:
+            $ref: "#/components/schemas/LibraryReservation"
+        violations:
+          type: array
+          items:
+            $ref: "#/components/schemas/LibraryViolation"
+        booking_enabled:
+          type: boolean
+    LibraryOpacCopy:
+      type: object
+      required:
+        - barcode
+        - call_number
+        - status
+      properties:
+        barcode:
+          type: string
+        call_number:
+          type: string
+        location_id:
+          type: string
+          format: uuid
+        access:
+          $ref: "#/components/schemas/LibraryCopyAccess"
+        status:
+          $ref: "#/components/schemas/LibraryCopyStatus"
+    LibraryOpacTitleDetail:
+      type: object
+      required:
+        - title
+        - copies
+      properties:
+        title:
+          $ref: "#/components/schemas/LibraryTitle"
+        copies:
+          type: array
+          items:
+            $ref: "#/components/schemas/LibraryOpacCopy"
+    LibraryOpacHighlights:
+      type: object
+      required:
+        - newest
+        - most_borrowed
+        - library_name
+      properties:
+        newest:
+          type: array
+          items:
+            $ref: "#/components/schemas/LibraryTitle"
+        most_borrowed:
+          type: array
+          items:
+            $ref: "#/components/schemas/LibraryTitle"
+        library_name:
+          type: string
     LibraryPolicy:
       type: object
       required:
@@ -20422,6 +22370,15 @@ components:
         - renewal_days
         - fine_per_day
         - reservation_hold_days
+        - name
+        - saturday_closed
+        - sunday_closed
+        - booking_enabled
+        - booking_max
+        - fine_currency_enabled
+        - block_loans_with_unpaid_fines
+        - due_reminder_days
+        - auto_register_members
       properties:
         version:
           type: integer
@@ -20437,6 +22394,35 @@ components:
           type: integer
         reservation_hold_days:
           type: integer
+        name:
+          type: string
+        npp:
+          type: string
+        barcode_source:
+          type: string
+          enum:
+            - no_induk
+            - item_id
+        accession_format:
+          type: string
+        member_no_format:
+          type: string
+        saturday_closed:
+          type: boolean
+        sunday_closed:
+          type: boolean
+        booking_enabled:
+          type: boolean
+        booking_max:
+          type: integer
+        fine_currency_enabled:
+          type: boolean
+        block_loans_with_unpaid_fines:
+          type: boolean
+        due_reminder_days:
+          type: integer
+        auto_register_members:
+          type: boolean
     LibraryPolicyWrite:
       type: object
       required:
@@ -20465,6 +22451,42 @@ components:
         reservation_hold_days:
           type: integer
           minimum: 1
+        name:
+          type: string
+          minLength: 1
+          maxLength: 150
+        npp:
+          type: string
+          maxLength: 60
+        barcode_source:
+          type: string
+          enum:
+            - no_induk
+            - item_id
+        accession_format:
+          type: string
+          maxLength: 60
+        member_no_format:
+          type: string
+          maxLength: 60
+        saturday_closed:
+          type: boolean
+        sunday_closed:
+          type: boolean
+        booking_enabled:
+          type: boolean
+        booking_max:
+          type: integer
+          minimum: 0
+        fine_currency_enabled:
+          type: boolean
+        block_loans_with_unpaid_fines:
+          type: boolean
+        due_reminder_days:
+          type: integer
+          minimum: 0
+        auto_register_members:
+          type: boolean
     LibraryTitle:
       type: object
       required:
@@ -20849,6 +22871,12 @@ components:
         fine_paid_at:
           type: string
           format: date-time
+        channel:
+          type: string
+          enum:
+            - desk
+            - self_service
+            - mobile
     LibraryReservationStatus:
       type: string
       enum:
@@ -20886,6 +22914,10 @@ components:
         expires_at:
           type: string
           format: date-time
+        held_copy_id:
+          type: string
+          format: uuid
+          description: the copy set aside for this hold, once ready
         position:
           type: integer
           description: 1-based queue position, present only while waiting

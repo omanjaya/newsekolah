@@ -21,10 +21,17 @@ func (h *LibraryHandler) GetLibraryPolicy(ctx context.Context, _ api.GetLibraryP
 
 func (h *LibraryHandler) UpdateLibraryPolicy(ctx context.Context, request api.UpdateLibraryPolicyRequestObject) (api.UpdateLibraryPolicyResponseObject, error) {
 	b := request.Body
-	policy, err := h.service.UpdatePolicy(ctx, tenantID(ctx), userID(ctx), domain.Policy{
+	next := domain.Policy{
 		LoanDays: b.LoanDays, MaxActiveLoans: b.MaxActiveLoans, MaxRenewals: b.MaxRenewals,
 		RenewalDays: b.RenewalDays, FinePerDay: b.FinePerDay, ReservationHoldDays: b.ReservationHoldDays,
-	})
+		Name: strOr(b.Name), NPP: strOr(b.Npp), BarcodeSource: barcodeSourceOr(b.BarcodeSource, domain.BarcodeSourceAccessionNumber),
+		AccessionFormat: strOr(b.AccessionFormat), MemberNoFormat: strOr(b.MemberNoFormat),
+		SaturdayClosed: boolOr(b.SaturdayClosed, false), SundayClosed: boolOr(b.SundayClosed, false),
+		BookingEnabled: boolOr(b.BookingEnabled, false), BookingMax: intOr(b.BookingMax, 2),
+		FineCurrencyEnabled: boolOr(b.FineCurrencyEnabled, false), BlockLoansWithUnpaidFines: boolOr(b.BlockLoansWithUnpaidFines, false),
+		DueReminderDays: intOr(b.DueReminderDays, 2), AutoRegisterMembers: boolOr(b.AutoRegisterMembers, false),
+	}
+	policy, err := h.service.UpdatePolicy(ctx, tenantID(ctx), userID(ctx), next)
 	if err != nil {
 		return nil, mapError(err)
 	}
@@ -250,7 +257,15 @@ func (h *LibraryHandler) PrintLibraryMemberCard(ctx context.Context, request api
 }
 
 func (h *LibraryHandler) SearchOpacTitles(ctx context.Context, request api.SearchOpacTitlesRequestObject) (api.SearchOpacTitlesResponseObject, error) {
-	titles, err := h.service.SearchCatalogue(ctx, tenantID(ctx), strOr(request.Params.Search), intOr(request.Params.Limit, 20), intOr(request.Params.Offset, 0))
+	titles, err := h.service.OpacSearch(ctx, tenantID(ctx), service.OpacSearchParams{
+		Search: strOr(request.Params.Search), ClassificationPrefix: strOr(request.Params.ClassificationPrefix),
+		MaterialTypeID: nullUUID(request.Params.MaterialTypeId),
+		Limit:          intOr(request.Params.Limit, 20), Offset: intOr(request.Params.Offset, 0),
+	})
+	if err != nil {
+		return nil, mapError(err)
+	}
+	name, err := h.service.LibraryName(ctx, tenantID(ctx))
 	if err != nil {
 		return nil, mapError(err)
 	}
@@ -258,5 +273,5 @@ func (h *LibraryHandler) SearchOpacTitles(ctx context.Context, request api.Searc
 	for i, t := range titles {
 		data[i] = toAPITitle(t)
 	}
-	return api.SearchOpacTitles200JSONResponse{Data: data}, nil
+	return api.SearchOpacTitles200JSONResponse{Data: data, LibraryName: name}, nil
 }

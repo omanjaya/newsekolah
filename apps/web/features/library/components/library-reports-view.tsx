@@ -122,15 +122,15 @@ function LoansReportTable({ from, to }: { from: string; to: string }): ReactElem
           </tr>
         </thead>
         <tbody className="divide-y divide-border">
-          {loans.map((loan) => (
-            <tr key={loan.id}>
-              <td className="px-3 py-2 text-fg">{loan.copy_id}</td>
-              <td className="px-3 py-2 text-fg">{loan.member_user_id}</td>
+          {loans.map((row) => (
+            <tr key={row.loan.id}>
+              <td className="px-3 py-2 text-fg">{row.title}</td>
+              <td className="px-3 py-2 text-fg">{row.member_name}</td>
               <td className="px-3 py-2 text-fg-muted">
-                {formatDate(loan.borrowed_at, { locale })}
+                {formatDate(row.loan.borrowed_at, { locale })}
               </td>
-              <td className="px-3 py-2 text-fg-muted">{formatDate(loan.due_on, { locale })}</td>
-              <td className="px-3 py-2 text-fg-muted">{loan.status}</td>
+              <td className="px-3 py-2 text-fg-muted">{formatDate(row.loan.due_on, { locale })}</td>
+              <td className="px-3 py-2 text-fg-muted">{row.loan.status}</td>
             </tr>
           ))}
         </tbody>

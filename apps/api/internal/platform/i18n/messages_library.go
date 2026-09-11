@@ -25,4 +25,25 @@ func init() {
 	catalog["LIBRARY_MASTER_DATA_NOT_FOUND"] = map[string]string{Indonesian: "Data induk tidak ditemukan.", English: "Master data entry not found."}
 	catalog["LIBRARY_MASTER_DATA_CODE_EXISTS"] = map[string]string{Indonesian: "Kode ini sudah dipakai.", English: "This code is already in use."}
 	catalog["LIBRARY_MASTER_DATA_IN_USE"] = map[string]string{Indonesian: "Data induk ini masih dipakai, tidak dapat dihapus.", English: "This master data entry is still in use and cannot be deleted."}
+
+	catalog["LIBRARY_MODULE_DISABLED"] = map[string]string{Indonesian: "Modul perpustakaan belum diaktifkan untuk sekolah ini.", English: "The library module is not enabled for this school."}
+	catalog["LIBRARY_LOANS_CLOSED"] = map[string]string{Indonesian: "Peminjaman sedang ditutup untuk tanggal ini.", English: "Lending is closed for this date."}
+	catalog["LIBRARY_UNPAID_FINE"] = map[string]string{Indonesian: "Anggota memiliki denda yang belum dibayar.", English: "The member has an unpaid fine."}
+	catalog["LIBRARY_FORBIDDEN"] = map[string]string{Indonesian: "Anda tidak berhak melihat data anggota ini.", English: "You are not permitted to view this member's records."}
+
+	catalog["LIBRARY_MEMBER_NOT_FOUND"] = map[string]string{Indonesian: "Anggota perpustakaan tidak ditemukan.", English: "Library member not found."}
+	catalog["LIBRARY_MEMBER_ALREADY_EXISTS"] = map[string]string{Indonesian: "Pengguna ini sudah menjadi anggota perpustakaan.", English: "This user is already a library member."}
+	catalog["LIBRARY_MEMBER_NOT_ACTIVE"] = map[string]string{Indonesian: "Anggota perpustakaan tidak aktif.", English: "The library member is not active."}
+	catalog["LIBRARY_MEMBER_SUSPENDED"] = map[string]string{Indonesian: "Anggota perpustakaan sedang diskors.", English: "The library member is suspended."}
+	catalog["LIBRARY_MEMBER_EXPIRED"] = map[string]string{Indonesian: "Keanggotaan perpustakaan sudah kedaluwarsa.", English: "The library membership has expired."}
+	catalog["LIBRARY_MEMBER_NOT_CLEARABLE"] = map[string]string{Indonesian: "Anggota masih memiliki pinjaman aktif atau denda yang belum lunas.", English: "The member still has an active loan or an unpaid fine."}
+	catalog["LIBRARY_MEMBER_TYPE_NOT_FOUND"] = map[string]string{Indonesian: "Jenis anggota perpustakaan tidak ditemukan.", English: "Library member type not found."}
+	catalog["LIBRARY_MEMBER_TYPE_IN_USE"] = map[string]string{Indonesian: "Jenis anggota ini masih dipakai oleh anggota lain.", English: "This member type is still in use."}
+	catalog["LIBRARY_MEMBER_NO_EXHAUSTED"] = map[string]string{Indonesian: "Gagal membuat nomor anggota unik, coba lagi.", English: "Could not generate a unique member number, try again."}
+	catalog["LIBRARY_MEMBER_NO_COLLISION"] = map[string]string{Indonesian: "Nomor anggota sudah dipakai.", English: "This member number is already in use."}
+
+	catalog["LIBRARY_VIOLATION_NOT_FOUND"] = map[string]string{Indonesian: "Pelanggaran tidak ditemukan.", English: "Violation not found."}
+	catalog["LIBRARY_VIOLATION_ALREADY_SETTLED"] = map[string]string{Indonesian: "Pelanggaran ini sudah diselesaikan.", English: "This violation is already settled."}
+
+	catalog["LIBRARY_VISIT_NOT_FOUND"] = map[string]string{Indonesian: "Kunjungan tidak ditemukan.", English: "Visit not found."}
 }

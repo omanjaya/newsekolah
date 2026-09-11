@@ -265,7 +265,7 @@ export function useScanStocktakeMutation() {
     mutationFn: ({ stocktakeId, barcode }: { stocktakeId: string; barcode: string }) =>
       client.POST("/v1/library/stocktakes/{stocktakeId}/scans", {
         params: { path: { stocktakeId } },
-        body: { barcode },
+        body: { codes: [barcode] },
       }),
   });
 }

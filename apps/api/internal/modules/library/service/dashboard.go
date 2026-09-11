@@ -50,6 +50,9 @@ type Dashboard struct {
 }
 
 func (s *Service) Dashboard(ctx context.Context, tenantID uuid.UUID) (Dashboard, error) {
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return Dashboard{}, err
+	}
 	now := s.clock.Now()
 	dayStart := timeToDay(now)
 	dayEnd := dayStart.AddDate(0, 0, 1)

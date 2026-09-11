@@ -150,6 +150,7 @@ function TitleForm({ onDone }: { onDone: () => void }): ReactElement {
             publish_year: publishYear ? Number(publishYear) : undefined,
             isbn: isbn.trim() || undefined,
             classification: classification.trim() || undefined,
+            is_opac: true,
           },
           {
             onSuccess: () => {

@@ -34,6 +34,9 @@ func prepareTitle(t domain.Title) (domain.Title, error) {
 }
 
 func (s *Service) CreateTitle(ctx context.Context, t domain.Title, copyCount int, copyDefaults CopyDefaults) (domain.Title, []domain.Copy, error) {
+	if err := s.requireEnabled(ctx, t.TenantID); err != nil {
+		return domain.Title{}, nil, err
+	}
 	t, err := prepareTitle(t)
 	if err != nil {
 		return domain.Title{}, nil, err
@@ -65,6 +68,9 @@ func (s *Service) CreateTitle(ctx context.Context, t domain.Title, copyCount int
 }
 
 func (s *Service) UpdateTitle(ctx context.Context, t domain.Title) (domain.Title, error) {
+	if err := s.requireEnabled(ctx, t.TenantID); err != nil {
+		return domain.Title{}, err
+	}
 	t, err := prepareTitle(t)
 	if err != nil {
 		return domain.Title{}, err
@@ -73,6 +79,9 @@ func (s *Service) UpdateTitle(ctx context.Context, t domain.Title) (domain.Title
 }
 
 func (s *Service) GetTitle(ctx context.Context, tenantID, id uuid.UUID) (TitleWithAvailability, error) {
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return TitleWithAvailability{}, err
+	}
 	title, found, err := s.repo.GetTitle(ctx, tenantID, id)
 	if err != nil {
 		return TitleWithAvailability{}, err
@@ -87,6 +96,9 @@ func (s *Service) GetTitle(ctx context.Context, tenantID, id uuid.UUID) (TitleWi
 // ISBN, for the catalogue's duplicate check before someone types in a
 // book that is already on the shelf.
 func (s *Service) LookupTitleByISBN(ctx context.Context, tenantID uuid.UUID, isbn string) (TitleWithAvailability, bool, error) {
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return TitleWithAvailability{}, false, err
+	}
 	normalized := domain.NormalizeISBN(isbn)
 	if normalized == "" {
 		return TitleWithAvailability{}, false, domain.ErrInvalidInput
@@ -103,6 +115,9 @@ func (s *Service) LookupTitleByISBN(ctx context.Context, tenantID uuid.UUID, isb
 // weed the copies first (or move them to another title) so a bibliography
 // deletion can never silently orphan shelf items.
 func (s *Service) DeleteTitle(ctx context.Context, tenantID, id uuid.UUID) error {
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return err
+	}
 	count, err := s.repo.CountTitleCopies(ctx, tenantID, id)
 	if err != nil {
 		return err
@@ -133,6 +148,9 @@ type TitleSearch struct {
 }
 
 func (s *Service) ListTitles(ctx context.Context, tenantID uuid.UUID, q TitleSearch) ([]TitleWithAvailability, error) {
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return nil, err
+	}
 	filter := TitleFilter{
 		MaterialTypeID: q.MaterialTypeID, DDCClass: q.DDCClass, AvailableOnly: q.AvailableOnly, Sort: q.Sort,
 	}
@@ -167,6 +185,9 @@ func (s *Service) withAvailability(ctx context.Context, tenantID uuid.UUID, t do
 }
 
 func (s *Service) ListCopies(ctx context.Context, tenantID, titleID uuid.UUID) ([]domain.Copy, error) {
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return nil, err
+	}
 	return s.repo.ListCopiesForTitle(ctx, tenantID, titleID)
 }
 

@@ -16,9 +16,13 @@ import (
 )
 
 func (r *Repository) CreateLoan(ctx context.Context, l domain.Loan) (domain.Loan, error) {
+	channel := l.Channel
+	if channel == "" {
+		channel = domain.ChannelDesk
+	}
 	row, err := r.queries(ctx).CreateLoan(ctx, db.CreateLoanParams{
 		TenantID: l.TenantID, CopyID: l.CopyID, TitleID: l.TitleID, MemberUserID: l.MemberUserID, CheckedOutBy: l.CheckedOutBy,
-		BorrowedAt: pdatabase.Timestamptz(l.BorrowedAt), DueOn: pdatabase.Date(l.DueOn),
+		BorrowedAt: pdatabase.Timestamptz(l.BorrowedAt), DueOn: pdatabase.Date(l.DueOn), Channel: string(channel),
 	})
 	if isUnique(err) {
 		return domain.Loan{}, domain.ErrCopyOnLoan
@@ -149,6 +153,63 @@ func (r *Repository) MostBorrowedTitles(ctx context.Context, tenantID uuid.UUID,
 		out[i] = service.TitleLoanCount{TitleID: row.TitleID, LoanCount: int(row.LoanCount)}
 	}
 	return out, nil
+}
+
+func (r *Repository) CreateCirculationEvent(ctx context.Context, e domain.ItemEventRecord) (domain.ItemEventRecord, error) {
+	row, err := r.queries(ctx).CreateCirculationEvent(ctx, db.CreateCirculationEventParams{
+		TenantID: e.TenantID, CopyID: e.CopyID, LoanID: pdatabase.NullUUID(e.LoanID), MemberUserID: pdatabase.NullUUID(e.MemberUserID),
+		EventType: string(e.EventType), Note: e.Notes, ActorUserID: pdatabase.NullUUID(e.CreatedBy),
+	})
+	if err != nil {
+		return domain.ItemEventRecord{}, fmt.Errorf("create circulation event: %w", err)
+	}
+	return toItemEvent(row), nil
+}
+
+func (r *Repository) ListItemEventsForCopy(ctx context.Context, tenantID, copyID uuid.UUID) ([]domain.ItemEventRecord, error) {
+	rows, err := r.queries(ctx).ListItemEventsForCopy(ctx, db.ListItemEventsForCopyParams{TenantID: tenantID, CopyID: copyID})
+	if err != nil {
+		return nil, fmt.Errorf("list item events for copy: %w", err)
+	}
+	out := make([]domain.ItemEventRecord, len(rows))
+	for i, row := range rows {
+		out[i] = toItemEvent(row)
+	}
+	return out, nil
+}
+
+func (r *Repository) CreateLoanRenewal(ctx context.Context, ren domain.LoanRenewal) (domain.LoanRenewal, error) {
+	row, err := r.queries(ctx).CreateLoanRenewal(ctx, db.CreateLoanRenewalParams{
+		TenantID: ren.TenantID, LoanID: ren.LoanID, RenewedAt: pdatabase.Timestamptz(ren.RenewedAt),
+		PreviousDueOn: pdatabase.Date(ren.PreviousDueOn), NewDueOn: pdatabase.Date(ren.NewDueOn), RenewedBy: ren.RenewedBy,
+	})
+	if err != nil {
+		return domain.LoanRenewal{}, fmt.Errorf("create loan renewal: %w", err)
+	}
+	return toLoanRenewal(row), nil
+}
+
+func (r *Repository) ListLoanRenewalsForLoan(ctx context.Context, tenantID, loanID uuid.UUID) ([]domain.LoanRenewal, error) {
+	rows, err := r.queries(ctx).ListLoanRenewalsForLoan(ctx, db.ListLoanRenewalsForLoanParams{TenantID: tenantID, LoanID: loanID})
+	if err != nil {
+		return nil, fmt.Errorf("list loan renewals: %w", err)
+	}
+	out := make([]domain.LoanRenewal, len(rows))
+	for i, row := range rows {
+		out[i] = toLoanRenewal(row)
+	}
+	return out, nil
+}
+
+func (r *Repository) GetLoanByBarcode(ctx context.Context, tenantID uuid.UUID, barcode string) (domain.Loan, bool, error) {
+	row, err := r.queries(ctx).GetLoanByBarcode(ctx, db.GetLoanByBarcodeParams{TenantID: tenantID, Barcode: barcode})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return domain.Loan{}, false, nil
+	}
+	if err != nil {
+		return domain.Loan{}, false, fmt.Errorf("get loan by barcode: %w", err)
+	}
+	return toLoan(row), true, nil
 }
 
 func toLoans(rows []db.LibraryLoan) []domain.Loan {

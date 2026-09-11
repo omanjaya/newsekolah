@@ -9,6 +9,7 @@ import (
 
 	attendanceservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance/service"
 	disciplineservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/discipline/service"
+	libraryservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/library/service"
 	permitsservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/service"
 	schedulingservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/events"
@@ -147,6 +148,26 @@ func RegisterNotificationBridge(bus *events.Bus, duties DutyLookup, logger *slog
 			Payload: map[string]any{"session_id": e.SessionID.String(), "class_id": e.ClassID.String(),
 				"summary": fmt.Sprintf("Presensi %d siswa tercatat untuk kelas Anda.", e.StudentCount), "href": "/attendance"},
 		}, err)
+	}))
+
+	bus.Subscribe(libraryservice.ReservationReadyEvent{}.EventName(), b.handle(func(_ context.Context, evt events.Event) ([]events.Envelope, error) {
+		e := evt.(libraryservice.ReservationReadyEvent)
+		return one(events.Envelope{
+			Name: events.LibraryReservationReady, Tenant: e.TenantID, Subject: []uuid.UUID{e.MemberUserID},
+			Payload: map[string]any{"reservation_id": e.ReservationID.String(), "title_id": e.TitleID.String(),
+				"summary": "Judul yang Anda pesan sudah siap diambil di perpustakaan.", "href": "/library/me"},
+		}, nil)
+	}))
+	bus.Subscribe(libraryservice.LoanDueReminderEvent{}.EventName(), b.handle(func(_ context.Context, evt events.Event) ([]events.Envelope, error) {
+		e := evt.(libraryservice.LoanDueReminderEvent)
+		summary := "Ada buku yang harus segera dikembalikan."
+		if e.LoanCount > 1 {
+			summary = fmt.Sprintf("Ada %d buku yang harus segera dikembalikan.", e.LoanCount)
+		}
+		return one(events.Envelope{
+			Name: events.LibraryLoanDueReminder, Tenant: e.TenantID, Subject: []uuid.UUID{e.MemberUserID},
+			Payload: map[string]any{"loan_count": e.LoanCount, "summary": summary, "href": "/library/me"},
+		}, nil)
 	}))
 }
 

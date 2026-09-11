@@ -223,6 +223,7 @@ type Querier interface {
 	CountAcquisitionSourceUsage(ctx context.Context, arg CountAcquisitionSourceUsageParams) (int32, error)
 	CountActiveBorrowers(ctx context.Context, tenantID uuid.UUID) (int32, error)
 	CountActiveClubsForStudent(ctx context.Context, arg CountActiveClubsForStudentParams) (int32, error)
+	CountActiveLoansAndUnpaidFinesForClearance(ctx context.Context, arg CountActiveLoansAndUnpaidFinesForClearanceParams) (CountActiveLoansAndUnpaidFinesForClearanceRow, error)
 	CountActiveLoansForMember(ctx context.Context, arg CountActiveLoansForMemberParams) (int32, error)
 	CountActiveMembers(ctx context.Context, arg CountActiveMembersParams) (int32, error)
 	CountAnnouncementReads(ctx context.Context, arg CountAnnouncementReadsParams) (int64, error)
@@ -240,6 +241,7 @@ type Querier interface {
 	CountLoansBetween(ctx context.Context, arg CountLoansBetweenParams) (int32, error)
 	CountLocationUsage(ctx context.Context, arg CountLocationUsageParams) (int32, error)
 	CountMaterialTypeUsage(ctx context.Context, arg CountMaterialTypeUsageParams) (int32, error)
+	CountMembersByType(ctx context.Context, arg CountMembersByTypeParams) (int32, error)
 	CountOverdueNow(ctx context.Context, arg CountOverdueNowParams) (int32, error)
 	CountPartnerUsage(ctx context.Context, arg CountPartnerUsageParams) (int32, error)
 	CountReturnsBetween(ctx context.Context, arg CountReturnsBetweenParams) (int32, error)
@@ -257,6 +259,7 @@ type Querier interface {
 	// worktree; the service layer reports those as zero rather than failing.
 	CountTitlesActive(ctx context.Context, tenantID uuid.UUID) (int32, error)
 	CountTitlesAddedInPeriod(ctx context.Context, arg CountTitlesAddedInPeriodParams) (int32, error)
+	CountUnpaidViolations(ctx context.Context, arg CountUnpaidViolationsParams) (int32, error)
 	CountUnreadNotifications(ctx context.Context, arg CountUnreadNotificationsParams) (int64, error)
 	CountUsersForRole(ctx context.Context, arg CountUsersForRoleParams) (int64, error)
 	CountVisitsInRange(ctx context.Context, arg CountVisitsInRangeParams) (int32, error)
@@ -278,6 +281,13 @@ type Querier interface {
 	// Returns no row when the (fee_type_id, student_user_id, period) key
 	// already exists, which the repository reads as "already billed, skip".
 	CreateBill(ctx context.Context, arg CreateBillParams) (Bill, error)
+	// Renamed from CreateItemEvent (circulation) to avoid colliding with the
+	// catalogue's CreateItemEvent above: same library_item_events table, two
+	// different write shapes (catalogue: status change audit; circulation:
+	// borrow/return/renew/lost tied to a loan and member). Columns note and
+	// actor_user_id are shared with the catalogue write path (migration 0097
+	// unified the naming).
+	CreateCirculationEvent(ctx context.Context, arg CreateCirculationEventParams) (LibraryItemEvent, error)
 	CreateClass(ctx context.Context, arg CreateClassParams) (Class, error)
 	// Collection categories.
 	CreateCollectionCategory(ctx context.Context, arg CreateCollectionCategoryParams) (LibraryCollectionCategory, error)
@@ -305,7 +315,10 @@ type Querier interface {
 	CreateLeaveDocument(ctx context.Context, arg CreateLeaveDocumentParams) (LeaveDocument, error)
 	CreateLeaveRequest(ctx context.Context, arg CreateLeaveRequestParams) (LeaveRequest, error)
 	CreateLibraryPolicy(ctx context.Context, arg CreateLibraryPolicyParams) error
+	CreateLibraryVisit(ctx context.Context, arg CreateLibraryVisitParams) (LibraryVisit, error)
 	CreateLoan(ctx context.Context, arg CreateLoanParams) (LibraryLoan, error)
+	CreateLoanRenewal(ctx context.Context, arg CreateLoanRenewalParams) (LibraryLoanRenewal, error)
+	CreateLoanRule(ctx context.Context, arg CreateLoanRuleParams) (LibraryLoanRule, error)
 	// Locations.
 	CreateLocation(ctx context.Context, arg CreateLocationParams) (LibraryLocation, error)
 	// Catalogue master data: material types, collection categories,
@@ -315,6 +328,8 @@ type Querier interface {
 	// Material types.
 	CreateMaterialType(ctx context.Context, arg CreateMaterialTypeParams) (LibraryMaterialType, error)
 	CreateMeeting(ctx context.Context, arg CreateMeetingParams) (ExtracurricularMeeting, error)
+	CreateMember(ctx context.Context, arg CreateMemberParams) (LibraryMember, error)
+	CreateMemberType(ctx context.Context, arg CreateMemberTypeParams) (LibraryMemberType, error)
 	CreateMembership(ctx context.Context, arg CreateMembershipParams) (ExtracurricularMembership, error)
 	// Partners.
 	CreatePartner(ctx context.Context, arg CreatePartnerParams) (LibraryPartner, error)
@@ -325,6 +340,7 @@ type Querier interface {
 	// single feature module. permits writes here for evidence images it
 	// re-encodes and letters it renders, same as any other module would.
 	CreatePermitsAsset(ctx context.Context, arg CreatePermitsAssetParams) (uuid.UUID, error)
+	CreateReadInPlace(ctx context.Context, arg CreateReadInPlaceParams) (LibraryReadInPlace, error)
 	CreateReportSchedule(ctx context.Context, arg CreateReportScheduleParams) (ReportSchedule, error)
 	CreateReservation(ctx context.Context, arg CreateReservationParams) (LibraryReservation, error)
 	CreateRole(ctx context.Context, arg CreateRoleParams) (Role, error)
@@ -340,6 +356,7 @@ type Querier interface {
 	CreateTitle(ctx context.Context, arg CreateTitleParams) (LibraryTitle, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	CreateUserProfile(ctx context.Context, arg CreateUserProfileParams) error
+	CreateViolation(ctx context.Context, arg CreateViolationParams) (LibraryViolation, error)
 	CreateViolationRecord(ctx context.Context, arg CreateViolationRecordParams) (ViolationRecord, error)
 	CreateViolationType(ctx context.Context, arg CreateViolationTypeParams) (ViolationType, error)
 	CreateVisit(ctx context.Context, arg CreateVisitParams) (VisitorVisit, error)
@@ -373,8 +390,10 @@ type Querier interface {
 	DeleteGrade(ctx context.Context, arg DeleteGradeParams) error
 	DeleteGradeRange(ctx context.Context, arg DeleteGradeRangeParams) error
 	DeleteJournal(ctx context.Context, arg DeleteJournalParams) error
+	DeleteLoanRule(ctx context.Context, arg DeleteLoanRuleParams) (int64, error)
 	DeleteLocation(ctx context.Context, arg DeleteLocationParams) (int64, error)
 	DeleteMaterialType(ctx context.Context, arg DeleteMaterialTypeParams) (int64, error)
+	DeleteMemberType(ctx context.Context, arg DeleteMemberTypeParams) (int64, error)
 	DeleteMfaTotp(ctx context.Context, arg DeleteMfaTotpParams) error
 	DeletePartner(ctx context.Context, arg DeletePartnerParams) (int64, error)
 	DeletePushDeviceByEndpointHash(ctx context.Context, arg DeletePushDeviceByEndpointHashParams) error
@@ -426,6 +445,10 @@ type Querier interface {
 	// of local midnight for the tenant's timezone, computed by the caller so
 	// this query stays timezone-agnostic.
 	ExpireHangingWorkflowInstances(ctx context.Context, arg ExpireHangingWorkflowInstancesParams) ([]WorkflowInstance, error)
+	// Ready holds past their expires_at, for the periodic expiry job
+	// (old app: hourly job, library_circulation.go:1909-1993). copy_id lets
+	// the caller release each held copy without a second lookup.
+	ExpireReadyReservations(ctx context.Context, arg ExpireReadyReservationsParams) ([]LibraryReservation, error)
 	FictionRatioCounts(ctx context.Context, tenantID uuid.UUID) (FictionRatioCountsRow, error)
 	// Matches barcode, accession number, or RFID tag, the same three columns
 	// the old app searched (libOpsFindItemByCode).
@@ -445,6 +468,7 @@ type Querier interface {
 	GetAchievement(ctx context.Context, arg GetAchievementParams) (StudentAchievement, error)
 	GetAcquisitionSource(ctx context.Context, arg GetAcquisitionSourceParams) (LibraryAcquisitionSource, error)
 	GetActiveAcademicYear(ctx context.Context, tenantID uuid.UUID) (AcademicYear, error)
+	GetActiveClassNameForStudent(ctx context.Context, arg GetActiveClassNameForStudentParams) (string, error)
 	// cross-module read; replace with reader interface after merge.
 	//
 	// academic (classes, enrollments, periods) and identity (users,
@@ -529,6 +553,7 @@ type Querier interface {
 	GetJournalByID(ctx context.Context, arg GetJournalByIDParams) (ClassJournal, error)
 	GetJournalByUnique(ctx context.Context, arg GetJournalByUniqueParams) (ClassJournal, error)
 	GetLastClosedStocktake(ctx context.Context, tenantID uuid.UUID) (LibraryStocktake, error)
+	GetLastVisitForMember(ctx context.Context, arg GetLastVisitForMemberParams) (LibraryVisit, error)
 	GetLateArrival(ctx context.Context, arg GetLateArrivalParams) (LateArrival, error)
 	GetLatestActivitiesPolicy(ctx context.Context, tenantID uuid.UUID) (GetLatestActivitiesPolicyRow, error)
 	// The previous meeting of this schedule, used to look up its journal for
@@ -541,13 +566,21 @@ type Querier interface {
 	GetLeaveDocument(ctx context.Context, arg GetLeaveDocumentParams) (LeaveDocument, error)
 	GetLeaveRequest(ctx context.Context, arg GetLeaveRequestParams) (LeaveRequest, error)
 	GetLoan(ctx context.Context, arg GetLoanParams) (LibraryLoan, error)
+	// Return-by-barcode (old app libraryReturnOneCode): the active loan on the
+	// copy currently holding that barcode.
+	GetLoanByBarcode(ctx context.Context, arg GetLoanByBarcodeParams) (LibraryLoan, error)
 	GetLocation(ctx context.Context, arg GetLocationParams) (LibraryLocation, error)
 	GetMaterialType(ctx context.Context, arg GetMaterialTypeParams) (LibraryMaterialType, error)
 	GetMeeting(ctx context.Context, arg GetMeetingParams) (ExtracurricularMeeting, error)
+	GetMember(ctx context.Context, arg GetMemberParams) (LibraryMember, error)
+	GetMemberByNo(ctx context.Context, arg GetMemberByNoParams) (LibraryMember, error)
+	GetMemberType(ctx context.Context, arg GetMemberTypeParams) (LibraryMemberType, error)
+	GetMemberTypeByRole(ctx context.Context, arg GetMemberTypeByRoleParams) (LibraryMemberType, error)
 	GetMembership(ctx context.Context, arg GetMembershipParams) (ExtracurricularMembership, error)
 	GetMfaTotp(ctx context.Context, arg GetMfaTotpParams) (MfaTotp, error)
 	GetNotificationByID(ctx context.Context, arg GetNotificationByIDParams) (Notification, error)
 	GetNotificationSettings(ctx context.Context, arg GetNotificationSettingsParams) (NotificationSetting, error)
+	GetOpacTitle(ctx context.Context, arg GetOpacTitleParams) (LibraryTitle, error)
 	GetPartner(ctx context.Context, arg GetPartnerParams) (LibraryPartner, error)
 	GetPayment(ctx context.Context, arg GetPaymentParams) (Payment, error)
 	GetPeriod(ctx context.Context, arg GetPeriodParams) (GetPeriodRow, error)
@@ -562,6 +595,10 @@ type Querier interface {
 	GetReportSchedule(ctx context.Context, arg GetReportScheduleParams) (ReportSchedule, error)
 	GetReportScheduleTenantTimezone(ctx context.Context, id uuid.UUID) (string, error)
 	GetReservation(ctx context.Context, arg GetReservationParams) (LibraryReservation, error)
+	// The ready reservation currently holding this copy, if any -- lets Borrow
+	// tell whether a status='reserved' copy is being borrowed by the member it
+	// was set aside for (regression fix, see migrations/0094).
+	GetReservationForHeldCopy(ctx context.Context, arg GetReservationForHeldCopyParams) (LibraryReservation, error)
 	GetRoleByID(ctx context.Context, arg GetRoleByIDParams) (Role, error)
 	GetRoleBySlug(ctx context.Context, arg GetRoleBySlugParams) (Role, error)
 	GetScanTokenByHash(ctx context.Context, arg GetScanTokenByHashParams) (ScanToken, error)
@@ -593,6 +630,7 @@ type Querier interface {
 	// cross-module read: see ListActiveTenantsForMaintenance above.
 	GetTenantTimezone(ctx context.Context, id uuid.UUID) (string, error)
 	GetTenantTimezoneForAttendance(ctx context.Context, id uuid.UUID) (string, error)
+	GetTenantTimezoneForLibrary(ctx context.Context, id uuid.UUID) (string, error)
 	// Mirrors attendance's GetTenantTimezoneForAttendance: permits must resolve
 	// gate-token expiry, forced attendance windows and the
 	// "teacher_of_class_now" approver rule's current time in the tenant's own
@@ -611,6 +649,7 @@ type Querier interface {
 	GetUserNameRefForSchedule(ctx context.Context, arg GetUserNameRefForScheduleParams) (string, error)
 	GetUserRefForSchedule(ctx context.Context, arg GetUserRefForScheduleParams) (GetUserRefForScheduleRow, error)
 	GetValidPasswordResetByHash(ctx context.Context, arg GetValidPasswordResetByHashParams) (PasswordReset, error)
+	GetViolation(ctx context.Context, arg GetViolationParams) (LibraryViolation, error)
 	GetViolationRecord(ctx context.Context, arg GetViolationRecordParams) (ViolationRecord, error)
 	// Idempotency lookup for cross-module callers (attendance sessions, late
 	// arrival review): a second call with the same (workflow_instance_id,
@@ -662,6 +701,7 @@ type Querier interface {
 	// an active duty of this slug, and (for a class-scoped duty) does it cover
 	// class_id (NULL class_id matches only a school-scoped duty).
 	HasActiveDuty(ctx context.Context, arg HasActiveDutyParams) (bool, error)
+	HasActiveLoanForMemberAndTitle(ctx context.Context, arg HasActiveLoanForMemberAndTitleParams) (bool, error)
 	HasLoanHistory(ctx context.Context, arg HasLoanHistoryParams) (bool, error)
 	// Whether user_id holds permission_code in the tenant, from either a
 	// directly assigned role (role_permissions) or an active duty
@@ -678,6 +718,8 @@ type Querier interface {
 	// flows their own token opened, while a role-granted manage_attendance
 	// (e.g. an attendance administrator, or super_admin) may review any.
 	HasRolePermission(ctx context.Context, arg HasRolePermissionParams) (bool, error)
+	HasUnpaidFine(ctx context.Context, arg HasUnpaidFineParams) (bool, error)
+	IncrementLateReturnCount(ctx context.Context, arg IncrementLateReturnCountParams) (LibraryMember, error)
 	IncrementPushDeviceFailure(ctx context.Context, arg IncrementPushDeviceFailureParams) error
 	IncrementWebhookEndpointFailure(ctx context.Context, arg IncrementWebhookEndpointFailureParams) (int32, error)
 	InsertImpersonationAction(ctx context.Context, arg InsertImpersonationActionParams) error
@@ -739,6 +781,7 @@ type Querier interface {
 	// and guardian contact the roster and reports need -- the same shape
 	// scheduling's own cross-module reads use for ClassRef/SubjectRef.
 	ListActiveEnrollmentsForAttendance(ctx context.Context, arg ListActiveEnrollmentsForAttendanceParams) ([]ListActiveEnrollmentsForAttendanceRow, error)
+	ListActiveEnrollmentsForLibraryClass(ctx context.Context, arg ListActiveEnrollmentsForLibraryClassParams) ([]ListActiveEnrollmentsForLibraryClassRow, error)
 	ListActiveEnrollmentsRefByClass(ctx context.Context, arg ListActiveEnrollmentsRefByClassParams) ([]ListActiveEnrollmentsRefByClassRow, error)
 	ListActiveFeeTypes(ctx context.Context, arg ListActiveFeeTypesParams) ([]FeeType, error)
 	ListActiveMemberStudentIDs(ctx context.Context, arg ListActiveMemberStudentIDsParams) ([]uuid.UUID, error)
@@ -762,6 +805,15 @@ type Querier interface {
 	// this is safe to run off the pool directly for the platform-wide expiry
 	// and token-cleanup jobs, which must iterate every tenant.
 	ListActiveTenants(ctx context.Context) ([]ListActiveTenantsRow, error)
+	// Cross-module reads: every query below reads a table owned by another
+	// module (academic: academic_calendar_events/enrollments/classes; identity:
+	// users/user_profiles/student_profiles), the same convention
+	// internal/modules/attendance/queries/cross_reads.sql already established.
+	// tenants carries no RLS policy (see modules/school/repository.go), so this
+	// is safe to run off the pool directly for the platform-wide reservation
+	// expiry and daily reminder jobs, which must iterate every tenant (same
+	// convention as internal/modules/permits/queries/cross_module.sql).
+	ListActiveTenantsForLibrary(ctx context.Context) ([]ListActiveTenantsForLibraryRow, error)
 	// cross-module read: tenants is the platform-wide registry owned by the
 	// school module. Not RLS-protected (tenant resolution must work before any
 	// tenant context exists). Used by the digest/retention/pruning periodic
@@ -862,6 +914,7 @@ type Querier interface {
 	ListGuardianUserIDsForAttendance(ctx context.Context, arg ListGuardianUserIDsForAttendanceParams) ([]uuid.UUID, error)
 	ListIncidents(ctx context.Context, arg ListIncidentsParams) ([]VisitorIncident, error)
 	ListItemEvents(ctx context.Context, arg ListItemEventsParams) ([]LibraryItemEvent, error)
+	ListItemEventsForCopy(ctx context.Context, arg ListItemEventsForCopyParams) ([]LibraryItemEvent, error)
 	ListJournalsByClass(ctx context.Context, arg ListJournalsByClassParams) ([]ClassJournal, error)
 	ListJournalsByTeacher(ctx context.Context, arg ListJournalsByTeacherParams) ([]ClassJournal, error)
 	// The filtered/paginated list behind GET /v1/journals: exactly one of
@@ -890,6 +943,24 @@ type Querier interface {
 	// so a homeroom teacher no longer sees requests that already moved past
 	// their stage to counselor, and vice versa.
 	ListLeaveRequestsForReview(ctx context.Context, arg ListLeaveRequestsForReviewParams) ([]ListLeaveRequestsForReviewRow, error)
+	// Holiday date ranges overlapping [from, to] (docs/06-database-schema.md:246,
+	// "library_holidays digabung ke academic_calendar_events"): each row can
+	// span multiple days (migrations/0060_academic_calendar.up.sql end_date),
+	// the caller expands it into individual dates.
+	ListLibraryHolidaysInRange(ctx context.Context, arg ListLibraryHolidaysInRangeParams) ([]ListLibraryHolidaysInRangeRow, error)
+	// Users of one role (student|teacher|staff|parent) not yet registered as a
+	// library member, optionally narrowed to one class (role must be student
+	// when class_id is set) -- the bulk-register candidate list (old app
+	// library_members.go:783-859).
+	ListLibraryMemberCandidates(ctx context.Context, arg ListLibraryMemberCandidatesParams) ([]ListLibraryMemberCandidatesRow, error)
+	ListLoanRenewalsForLoan(ctx context.Context, arg ListLoanRenewalsForLoanParams) ([]LibraryLoanRenewal, error)
+	// Every rule that has not fully expired yet, so the caller can resolve the
+	// ones that cover today without another round trip per borrow check.
+	ListLoanRulesActive(ctx context.Context, arg ListLoanRulesActiveParams) ([]LibraryLoanRule, error)
+	// Active loans due within due_reminder_days from today, not yet overdue --
+	// the daily reminder job's source list (old app: reminders/send,
+	// library_circulation.go:1998-2090 daily 07:00 job).
+	ListLoansDueForReminder(ctx context.Context, arg ListLoansDueForReminderParams) ([]LibraryLoan, error)
 	ListLoansForMember(ctx context.Context, arg ListLoansForMemberParams) ([]LibraryLoan, error)
 	ListLoansInPeriod(ctx context.Context, arg ListLoansInPeriodParams) ([]LibraryLoan, error)
 	ListLoansInPeriodWithTitle(ctx context.Context, arg ListLoansInPeriodWithTitleParams) ([]ListLoansInPeriodWithTitleRow, error)
@@ -897,14 +968,23 @@ type Querier interface {
 	ListLongestOverdueLoans(ctx context.Context, arg ListLongestOverdueLoansParams) ([]LibraryLoan, error)
 	ListMaterialTypes(ctx context.Context, tenantID uuid.UUID) ([]LibraryMaterialType, error)
 	ListMeetingsForClub(ctx context.Context, arg ListMeetingsForClubParams) ([]ExtracurricularMeeting, error)
+	ListMemberTypes(ctx context.Context, tenantID uuid.UUID) ([]LibraryMemberType, error)
+	ListMembers(ctx context.Context, arg ListMembersParams) ([]LibraryMember, error)
 	ListMembershipsForClub(ctx context.Context, arg ListMembershipsForClubParams) ([]ExtracurricularMembership, error)
 	ListMembershipsForStudent(ctx context.Context, arg ListMembershipsForStudentParams) ([]ListMembershipsForStudentRow, error)
 	ListNotificationPreferencesForUser(ctx context.Context, arg ListNotificationPreferencesForUserParams) ([]NotificationPreference, error)
 	ListNotificationsForUser(ctx context.Context, arg ListNotificationsForUserParams) ([]Notification, error)
 	// The gate board: everyone who has not signed out, oldest arrival first.
 	ListOnCampus(ctx context.Context, tenantID uuid.UUID) ([]VisitorVisit, error)
+	ListOpacCopiesForTitle(ctx context.Context, arg ListOpacCopiesForTitleParams) ([]LibraryCopy, error)
+	ListOpacMostBorrowedTitles(ctx context.Context, arg ListOpacMostBorrowedTitlesParams) ([]ListOpacMostBorrowedTitlesRow, error)
+	ListOpacNewestTitles(ctx context.Context, arg ListOpacNewestTitlesParams) ([]LibraryTitle, error)
 	ListOutstandingBills(ctx context.Context, arg ListOutstandingBillsParams) ([]Bill, error)
 	ListOverdueLoans(ctx context.Context, arg ListOverdueLoansParams) ([]LibraryLoan, error)
+	// The overdue report the old app showed with class and guardian phone
+	// (library_circulation_v2.go:634-678), dropped from the rebuild's first
+	// pass overdue endpoint.
+	ListOverdueLoansDetailed(ctx context.Context, arg ListOverdueLoansDetailedParams) ([]ListOverdueLoansDetailedRow, error)
 	// The "own sessions" report scope (docs/analysis/backend-inventory.md
 	// section 1.10): every session teacherUserID submitted on a date, whether
 	// as the schedule's own teacher or an accepted substitute, with the
@@ -922,6 +1002,7 @@ type Querier interface {
 	ListPushDevicesForUser(ctx context.Context, arg ListPushDevicesForUserParams) ([]PushDevice, error)
 	ListPushDevicesForUsers(ctx context.Context, arg ListPushDevicesForUsersParams) ([]PushDevice, error)
 	ListReadAnnouncementIDsForUser(ctx context.Context, arg ListReadAnnouncementIDsForUserParams) ([]uuid.UUID, error)
+	ListReadInPlaceForCopy(ctx context.Context, arg ListReadInPlaceForCopyParams) ([]LibraryReadInPlace, error)
 	ListReportScheduleRuns(ctx context.Context, arg ListReportScheduleRunsParams) ([]ReportScheduleRun, error)
 	ListReportSchedules(ctx context.Context, tenantID uuid.UUID) ([]ReportSchedule, error)
 	ListReportScores(ctx context.Context, arg ListReportScoresParams) ([]ReportScore, error)
@@ -1010,7 +1091,10 @@ type Querier interface {
 	ListViolationRecords(ctx context.Context, arg ListViolationRecordsParams) ([]ListViolationRecordsRow, error)
 	ListViolationRecordsForStudent(ctx context.Context, arg ListViolationRecordsForStudentParams) ([]ListViolationRecordsForStudentRow, error)
 	ListViolationTypes(ctx context.Context, arg ListViolationTypesParams) ([]ViolationType, error)
+	ListViolations(ctx context.Context, arg ListViolationsParams) ([]LibraryViolation, error)
+	ListViolationsForMember(ctx context.Context, arg ListViolationsForMemberParams) ([]LibraryViolation, error)
 	ListVisits(ctx context.Context, arg ListVisitsParams) ([]VisitorVisit, error)
+	ListVisitsForRange(ctx context.Context, arg ListVisitsForRangeParams) ([]LibraryVisit, error)
 	ListWarningLetters(ctx context.Context, arg ListWarningLettersParams) ([]WarningLetter, error)
 	ListWarningLettersForStudent(ctx context.Context, arg ListWarningLettersForStudentParams) ([]WarningLetter, error)
 	ListWebAuthnCredentials(ctx context.Context, arg ListWebAuthnCredentialsParams) ([]WebauthnCredential, error)
@@ -1033,6 +1117,8 @@ type Querier interface {
 	// occurrence_number (docs/analysis/database-inventory.md 1.5: the old
 	// app's per-student late-arrival numbering had exactly this race).
 	LockSubjectForInstanceCounting(ctx context.Context, arg LockSubjectForInstanceCountingParams) error
+	LookupLibraryCopies(ctx context.Context, arg LookupLibraryCopiesParams) ([]LookupLibraryCopiesRow, error)
+	LookupLibraryMembers(ctx context.Context, arg LookupLibraryMembersParams) ([]LookupLibraryMembersRow, error)
 	MarkAllNotificationsRead(ctx context.Context, arg MarkAllNotificationsReadParams) error
 	MarkAnnouncementRead(ctx context.Context, arg MarkAnnouncementReadParams) error
 	MarkDigestSent(ctx context.Context, arg MarkDigestSentParams) error
@@ -1127,6 +1213,13 @@ type Querier interface {
 	RevokeOtherUserSessions(ctx context.Context, arg RevokeOtherUserSessionsParams) error
 	RevokeSession(ctx context.Context, arg RevokeSessionParams) error
 	RevokeSessionFamily(ctx context.Context, arg RevokeSessionFamilyParams) error
+	// For a query of 3+ characters: Postgres fulltext against search_vector
+	// (migrations/0094), the old app's MATCH AGAINST equivalent.
+	SearchOpacTitlesFulltext(ctx context.Context, arg SearchOpacTitlesFulltextParams) ([]LibraryTitle, error)
+	// For a query under 3 characters: a plain LIKE over title/author, plus an
+	// exact ISBN match, matching the old app's short-query fallback
+	// (library_opac.go).
+	SearchOpacTitlesShort(ctx context.Context, arg SearchOpacTitlesShortParams) ([]LibraryTitle, error)
 	SearchTenants(ctx context.Context, name string) ([]Tenant, error)
 	SetAnnouncementRecipientCount(ctx context.Context, arg SetAnnouncementRecipientCountParams) error
 	SetDefaultDocumentTemplate(ctx context.Context, arg SetDefaultDocumentTemplateParams) (DocumentTemplate, error)
@@ -1139,6 +1232,7 @@ type Querier interface {
 	SetReportScheduleEnabled(ctx context.Context, arg SetReportScheduleEnabledParams) (ReportSchedule, error)
 	SetUserAvatarAsset(ctx context.Context, arg SetUserAvatarAssetParams) error
 	SetUserStatus(ctx context.Context, arg SetUserStatusParams) error
+	SettleViolation(ctx context.Context, arg SettleViolationParams) (LibraryViolation, error)
 	// One round trip for the onboarding checklist: how much of the school's
 	// master data exists. Every count is scoped to the active academic year
 	// where the table has one.
@@ -1181,6 +1275,7 @@ type Querier interface {
 	// worktree; the service layer fills those fields with zero rather than
 	// failing the whole report.
 	TitlesByDDCClass(ctx context.Context, tenantID uuid.UUID) ([]TitlesByDDCClassRow, error)
+	TodayVisitSummary(ctx context.Context, arg TodayVisitSummaryParams) (TodayVisitSummaryRow, error)
 	TouchAPIKeyLastUsed(ctx context.Context, arg TouchAPIKeyLastUsedParams) error
 	TouchPushDeviceUsed(ctx context.Context, arg TouchPushDeviceUsedParams) error
 	TouchSessionLastSeen(ctx context.Context, arg TouchSessionLastSeenParams) error
@@ -1212,6 +1307,9 @@ type Querier interface {
 	UpdateLateArrivalReview(ctx context.Context, arg UpdateLateArrivalReviewParams) (LateArrival, error)
 	UpdateLocation(ctx context.Context, arg UpdateLocationParams) (LibraryLocation, error)
 	UpdateMaterialType(ctx context.Context, arg UpdateMaterialTypeParams) (LibraryMaterialType, error)
+	UpdateMemberProfile(ctx context.Context, arg UpdateMemberProfileParams) (LibraryMember, error)
+	UpdateMemberStatus(ctx context.Context, arg UpdateMemberStatusParams) (LibraryMember, error)
+	UpdateMemberType(ctx context.Context, arg UpdateMemberTypeParams) (LibraryMemberType, error)
 	UpdateOwnProfile(ctx context.Context, arg UpdateOwnProfileParams) error
 	UpdatePartner(ctx context.Context, arg UpdatePartnerParams) (LibraryPartner, error)
 	UpdateReportSchedule(ctx context.Context, arg UpdateReportScheduleParams) (ReportSchedule, error)

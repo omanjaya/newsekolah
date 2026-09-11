@@ -12,9 +12,12 @@ alter table library_copies
   add column source_id uuid references library_acquisition_sources (id),
   add column partner_id uuid references library_partners (id),
   add column price int not null default 0 check (price >= 0),
-  add column is_opac boolean not null default true,
   add column rfid text not null default '' check (length(rfid) <= 64),
   add column access text not null default 'loanable' check (access in ('loanable', 'read_in_place', 'reference'));
+
+-- is_opac already exists: migration 0093 (circulation, applied earlier)
+-- added it guarded with `if not exists` for exactly this reason.
+alter table library_copies add column if not exists is_opac boolean not null default true;
 
 create unique index ux_library_copies_accession_number on library_copies (tenant_id, accession_number)
   where accession_number <> '';
@@ -30,23 +33,22 @@ alter table library_copies add constraint library_copies_status_check check (
   status in ('available', 'on_loan', 'reserved', 'damaged', 'lost', 'in_repair', 'processing', 'donated', 'reserve_stack', 'unknown')
 );
 
-create table library_item_events (
-  id uuid primary key default uuidv7(),
-  tenant_id uuid not null references tenants (id) on delete cascade,
-  copy_id uuid not null references library_copies (id) on delete cascade,
-  event_type text not null check (event_type in ('created', 'status_changed', 'circulation', 'stocktake')),
-  from_status text not null default '',
-  to_status text not null default '',
-  note text not null default '' check (length(note) <= 500),
-  actor_user_id uuid,
-  created_at timestamptz not null default now()
+-- library_item_events already exists: migration 0093 (circulation, applied
+-- earlier) created it for the borrow/return/renew/lost trail. Extend it
+-- with the catalogue's status-change columns and widen event_type to the
+-- union of both vocabularies instead of recreating the table.
+alter table library_item_events rename column notes to note;
+alter table library_item_events rename constraint library_item_events_notes_check to library_item_events_note_check;
+alter table library_item_events rename column created_by to actor_user_id;
+alter table library_item_events add column from_status text not null default '';
+alter table library_item_events add column to_status text not null default '';
+alter table library_item_events drop constraint library_item_events_event_type_check;
+alter table library_item_events add constraint library_item_events_event_type_check check (
+  event_type in (
+    'created', 'status_changed', 'circulation', 'stocktake',
+    'borrowed', 'returned', 'renewed', 'lost', 'damaged', 'reserved'
+  )
 );
-create index ix_library_item_events_copy on library_item_events (tenant_id, copy_id, created_at desc);
-alter table library_item_events enable row level security;
-alter table library_item_events force row level security;
-create policy tenant_isolation on library_item_events
-  using (tenant_id = current_setting('app.tenant_id', true)::uuid)
-  with check (tenant_id = current_setting('app.tenant_id', true)::uuid);
 
 -- Accession numbers reset their running number every calendar year
 -- (default pattern YYYY/99999); the fallback 11-digit barcode uses a flat

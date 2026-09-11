@@ -167,7 +167,7 @@ func (q *Queries) DailyReturnsSeries(ctx context.Context, arg DailyReturnsSeries
 }
 
 const listLatestLoans = `-- name: ListLatestLoans :many
-select id, tenant_id, copy_id, title_id, member_user_id, checked_out_by, borrowed_at, due_on, returned_at, checked_in_by, renewal_count, status, fine_amount, fine_paid_at, active_copy_id, created_at, updated_at from library_loans where tenant_id = $1 order by borrowed_at desc limit $2
+select id, tenant_id, copy_id, title_id, member_user_id, checked_out_by, borrowed_at, due_on, returned_at, checked_in_by, renewal_count, status, fine_amount, fine_paid_at, active_copy_id, created_at, updated_at, channel from library_loans where tenant_id = $1 order by borrowed_at desc limit $2
 `
 
 type ListLatestLoansParams struct {
@@ -202,6 +202,7 @@ func (q *Queries) ListLatestLoans(ctx context.Context, arg ListLatestLoansParams
 			&i.ActiveCopyID,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.Channel,
 		); err != nil {
 			return nil, err
 		}
@@ -214,7 +215,7 @@ func (q *Queries) ListLatestLoans(ctx context.Context, arg ListLatestLoansParams
 }
 
 const listLongestOverdueLoans = `-- name: ListLongestOverdueLoans :many
-select id, tenant_id, copy_id, title_id, member_user_id, checked_out_by, borrowed_at, due_on, returned_at, checked_in_by, renewal_count, status, fine_amount, fine_paid_at, active_copy_id, created_at, updated_at from library_loans where tenant_id = $1 and status = 'active' and due_on < $2 order by due_on asc limit $3
+select id, tenant_id, copy_id, title_id, member_user_id, checked_out_by, borrowed_at, due_on, returned_at, checked_in_by, renewal_count, status, fine_amount, fine_paid_at, active_copy_id, created_at, updated_at, channel from library_loans where tenant_id = $1 and status = 'active' and due_on < $2 order by due_on asc limit $3
 `
 
 type ListLongestOverdueLoansParams struct {
@@ -250,6 +251,7 @@ func (q *Queries) ListLongestOverdueLoans(ctx context.Context, arg ListLongestOv
 			&i.ActiveCopyID,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.Channel,
 		); err != nil {
 			return nil, err
 		}

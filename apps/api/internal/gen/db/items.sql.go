@@ -13,7 +13,7 @@ import (
 )
 
 const findTitleForDedupe = `-- name: FindTitleForDedupe :many
-select id, tenant_id, title, subtitle, author, publisher, publish_year, isbn, classification, language, cover_asset_id, created_at, updated_at, deleted_at, control_number, responsibility, additional_authors, publish_place, edition, pages, illustration, dimensions, issn, ddc_number, call_number, subjects, literary_form, target_audience, notes, abstract, material_type_id, is_opac, search_vector from library_titles
+select id, tenant_id, title, subtitle, author, publisher, publish_year, isbn, classification, language, cover_asset_id, created_at, updated_at, deleted_at, is_opac, control_number, responsibility, additional_authors, publish_place, edition, pages, illustration, dimensions, issn, ddc_number, call_number, subjects, literary_form, target_audience, notes, abstract, material_type_id, search_vector from library_titles
 where tenant_id = $1 and deleted_at is null
   and (
     ($2::text is not null and isbn = $2::text and isbn <> '')
@@ -61,6 +61,7 @@ func (q *Queries) FindTitleForDedupe(ctx context.Context, arg FindTitleForDedupe
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.DeletedAt,
+			&i.IsOpac,
 			&i.ControlNumber,
 			&i.Responsibility,
 			&i.AdditionalAuthors,
@@ -78,7 +79,6 @@ func (q *Queries) FindTitleForDedupe(ctx context.Context, arg FindTitleForDedupe
 			&i.Notes,
 			&i.Abstract,
 			&i.MaterialTypeID,
-			&i.IsOpac,
 			&i.SearchVector,
 		); err != nil {
 			return nil, err
@@ -93,7 +93,7 @@ func (q *Queries) FindTitleForDedupe(ctx context.Context, arg FindTitleForDedupe
 
 const getCopiesByIDs = `-- name: GetCopiesByIDs :many
 
-select id, tenant_id, title_id, barcode, condition, status, acquired_on, notes, created_at, updated_at, accession_number, copy_number, call_number, category_id, location_id, source_id, partner_id, price, is_opac, rfid, access from library_copies where tenant_id = $1 and id = any($2::uuid[])
+select id, tenant_id, title_id, barcode, condition, status, acquired_on, notes, created_at, updated_at, is_opac, accession_number, copy_number, call_number, category_id, location_id, source_id, partner_id, price, rfid, access from library_copies where tenant_id = $1 and id = any($2::uuid[])
 `
 
 type GetCopiesByIDsParams struct {
@@ -124,6 +124,7 @@ func (q *Queries) GetCopiesByIDs(ctx context.Context, arg GetCopiesByIDsParams) 
 			&i.Notes,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.IsOpac,
 			&i.AccessionNumber,
 			&i.CopyNumber,
 			&i.CallNumber,
@@ -132,7 +133,6 @@ func (q *Queries) GetCopiesByIDs(ctx context.Context, arg GetCopiesByIDsParams) 
 			&i.SourceID,
 			&i.PartnerID,
 			&i.Price,
-			&i.IsOpac,
 			&i.Rfid,
 			&i.Access,
 		); err != nil {

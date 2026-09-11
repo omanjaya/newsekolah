@@ -50,6 +50,9 @@ type LoanReportRow struct {
 // in [from, to], with from/to defaulting to the last 30 days (inclusive
 // of "to") when left off.
 func (s *Service) LoansInPeriod(ctx context.Context, tenantID uuid.UUID, from, to *time.Time) ([]LoanReportRow, error) {
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return nil, err
+	}
 	fromDay, toExclusive := s.resolveReportPeriod(from, to)
 	rows, err := s.repo.ListLoansInPeriodWithTitle(ctx, tenantID, fromDay, toExclusive)
 	if err != nil {
@@ -79,6 +82,9 @@ type OverdueMemberSummary struct {
 // one active loan past its due date, with the fine each loan would carry
 // if returned today.
 func (s *Service) OverdueMembers(ctx context.Context, tenantID uuid.UUID) ([]OverdueMemberSummary, error) {
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return nil, err
+	}
 	policy, err := s.Policy(ctx, tenantID)
 	if err != nil {
 		return nil, err
@@ -114,6 +120,9 @@ type MostBorrowedTitle struct {
 }
 
 func (s *Service) MostBorrowedTitles(ctx context.Context, tenantID uuid.UUID, from, to *time.Time, limit int) ([]MostBorrowedTitle, error) {
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return nil, err
+	}
 	fromDay, toExclusive := s.resolveReportPeriod(from, to)
 	counts, err := s.repo.MostBorrowedTitles(ctx, tenantID, fromDay, toExclusive, clampLimit(limit))
 	if err != nil {
@@ -156,6 +165,9 @@ type CatalogueSummary struct {
 }
 
 func (s *Service) CatalogueSummary(ctx context.Context, tenantID uuid.UUID, from, to *time.Time) (CatalogueSummary, error) {
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return CatalogueSummary{}, err
+	}
 	fromDay, toExclusive := s.resolveReportPeriod(from, to)
 	byDDC, err := s.repo.TitlesByDDCClass(ctx, tenantID)
 	if err != nil {
@@ -209,6 +221,9 @@ func (s *Service) CatalogueSummary(ctx context.Context, tenantID uuid.UUID, from
 // column, so unlike the timestamp-based reports this compares with an
 // inclusive upper bound rather than the day-after used for [from, to).
 func (s *Service) AccessionRegister(ctx context.Context, tenantID uuid.UUID, from, to *time.Time) ([]domain.Copy, error) {
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return nil, err
+	}
 	fromDay, toExclusive := s.resolveReportPeriod(from, to)
 	toInclusive := toExclusive.AddDate(0, 0, -1)
 	return s.repo.ListCopiesAcquiredInPeriod(ctx, tenantID, fromDay, toInclusive)

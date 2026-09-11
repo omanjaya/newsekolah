@@ -110,6 +110,92 @@ func (q *Queries) CountVisitsInRange(ctx context.Context, arg CountVisitsInRange
 	return total, err
 }
 
+const createLibraryVisit = `-- name: CreateLibraryVisit :one
+insert into library_visits (tenant_id, member_user_id, visitor_name, kind, purpose, group_size, source, visited_at, created_by)
+values ($1, $8::uuid, $2, $3, $4, $5, $6, $7, $9::uuid)
+returning id, tenant_id, member_user_id, visitor_name, kind, purpose, group_size, source, visited_at, created_by, created_at
+`
+
+type CreateLibraryVisitParams struct {
+	TenantID     uuid.UUID          `json:"tenant_id"`
+	VisitorName  string             `json:"visitor_name"`
+	Kind         string             `json:"kind"`
+	Purpose      string             `json:"purpose"`
+	GroupSize    int32              `json:"group_size"`
+	Source       string             `json:"source"`
+	VisitedAt    pgtype.Timestamptz `json:"visited_at"`
+	MemberUserID pgtype.UUID        `json:"member_user_id"`
+	CreatedBy    pgtype.UUID        `json:"created_by"`
+}
+
+func (q *Queries) CreateLibraryVisit(ctx context.Context, arg CreateLibraryVisitParams) (LibraryVisit, error) {
+	row := q.db.QueryRow(ctx, createLibraryVisit,
+		arg.TenantID,
+		arg.VisitorName,
+		arg.Kind,
+		arg.Purpose,
+		arg.GroupSize,
+		arg.Source,
+		arg.VisitedAt,
+		arg.MemberUserID,
+		arg.CreatedBy,
+	)
+	var i LibraryVisit
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.MemberUserID,
+		&i.VisitorName,
+		&i.Kind,
+		&i.Purpose,
+		&i.GroupSize,
+		&i.Source,
+		&i.VisitedAt,
+		&i.CreatedBy,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const createReadInPlace = `-- name: CreateReadInPlace :one
+insert into library_read_in_place (tenant_id, copy_id, member_user_id, visitor_name, started_at, created_by)
+values ($1, $2, $5::uuid, $3, $4, $6::uuid)
+returning id, tenant_id, copy_id, member_user_id, visitor_name, started_at, ended_at, created_by, created_at
+`
+
+type CreateReadInPlaceParams struct {
+	TenantID     uuid.UUID          `json:"tenant_id"`
+	CopyID       uuid.UUID          `json:"copy_id"`
+	VisitorName  string             `json:"visitor_name"`
+	StartedAt    pgtype.Timestamptz `json:"started_at"`
+	MemberUserID pgtype.UUID        `json:"member_user_id"`
+	CreatedBy    pgtype.UUID        `json:"created_by"`
+}
+
+func (q *Queries) CreateReadInPlace(ctx context.Context, arg CreateReadInPlaceParams) (LibraryReadInPlace, error) {
+	row := q.db.QueryRow(ctx, createReadInPlace,
+		arg.TenantID,
+		arg.CopyID,
+		arg.VisitorName,
+		arg.StartedAt,
+		arg.MemberUserID,
+		arg.CreatedBy,
+	)
+	var i LibraryReadInPlace
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.CopyID,
+		&i.MemberUserID,
+		&i.VisitorName,
+		&i.StartedAt,
+		&i.EndedAt,
+		&i.CreatedBy,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const createVisit = `-- name: CreateVisit :one
 insert into visitor_visits (
   tenant_id, expected_guest_id, full_name, organization, host_user_id, purpose,
@@ -167,6 +253,34 @@ func (q *Queries) CreateVisit(ctx context.Context, arg CreateVisitParams) (Visit
 		&i.CheckedOutBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getLastVisitForMember = `-- name: GetLastVisitForMember :one
+select id, tenant_id, member_user_id, visitor_name, kind, purpose, group_size, source, visited_at, created_by, created_at from library_visits where tenant_id = $1 and member_user_id = $2 order by visited_at desc limit 1
+`
+
+type GetLastVisitForMemberParams struct {
+	TenantID     uuid.UUID   `json:"tenant_id"`
+	MemberUserID pgtype.UUID `json:"member_user_id"`
+}
+
+func (q *Queries) GetLastVisitForMember(ctx context.Context, arg GetLastVisitForMemberParams) (LibraryVisit, error) {
+	row := q.db.QueryRow(ctx, getLastVisitForMember, arg.TenantID, arg.MemberUserID)
+	var i LibraryVisit
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.MemberUserID,
+		&i.VisitorName,
+		&i.Kind,
+		&i.Purpose,
+		&i.GroupSize,
+		&i.Source,
+		&i.VisitedAt,
+		&i.CreatedBy,
+		&i.CreatedAt,
 	)
 	return i, err
 }
@@ -250,6 +364,45 @@ func (q *Queries) ListOnCampus(ctx context.Context, tenantID uuid.UUID) ([]Visit
 	return items, nil
 }
 
+const listReadInPlaceForCopy = `-- name: ListReadInPlaceForCopy :many
+select id, tenant_id, copy_id, member_user_id, visitor_name, started_at, ended_at, created_by, created_at from library_read_in_place where tenant_id = $1 and copy_id = $2 order by started_at desc
+`
+
+type ListReadInPlaceForCopyParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	CopyID   uuid.UUID `json:"copy_id"`
+}
+
+func (q *Queries) ListReadInPlaceForCopy(ctx context.Context, arg ListReadInPlaceForCopyParams) ([]LibraryReadInPlace, error) {
+	rows, err := q.db.Query(ctx, listReadInPlaceForCopy, arg.TenantID, arg.CopyID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []LibraryReadInPlace{}
+	for rows.Next() {
+		var i LibraryReadInPlace
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.CopyID,
+			&i.MemberUserID,
+			&i.VisitorName,
+			&i.StartedAt,
+			&i.EndedAt,
+			&i.CreatedBy,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listVisits = `-- name: ListVisits :many
 select id, tenant_id, expected_guest_id, full_name, organization, host_user_id, purpose, id_checked, id_type, badge_number, badge_asset_id, arrived_at, departed_at, checked_in_by, checked_out_by, created_at, updated_at from visitor_visits
 where tenant_id = $1
@@ -308,4 +461,74 @@ func (q *Queries) ListVisits(ctx context.Context, arg ListVisitsParams) ([]Visit
 		return nil, err
 	}
 	return items, nil
+}
+
+const listVisitsForRange = `-- name: ListVisitsForRange :many
+select id, tenant_id, member_user_id, visitor_name, kind, purpose, group_size, source, visited_at, created_by, created_at from library_visits where tenant_id = $1 and visited_at >= $2 and visited_at < $3 order by visited_at desc
+`
+
+type ListVisitsForRangeParams struct {
+	TenantID    uuid.UUID          `json:"tenant_id"`
+	VisitedAt   pgtype.Timestamptz `json:"visited_at"`
+	VisitedAt_2 pgtype.Timestamptz `json:"visited_at_2"`
+}
+
+func (q *Queries) ListVisitsForRange(ctx context.Context, arg ListVisitsForRangeParams) ([]LibraryVisit, error) {
+	rows, err := q.db.Query(ctx, listVisitsForRange, arg.TenantID, arg.VisitedAt, arg.VisitedAt_2)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []LibraryVisit{}
+	for rows.Next() {
+		var i LibraryVisit
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.MemberUserID,
+			&i.VisitorName,
+			&i.Kind,
+			&i.Purpose,
+			&i.GroupSize,
+			&i.Source,
+			&i.VisitedAt,
+			&i.CreatedBy,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const todayVisitSummary = `-- name: TodayVisitSummary :one
+select
+  count(*)::int as total_visits,
+  count(distinct member_user_id)::int as unique_members,
+  coalesce(sum(group_size), 0)::int as total_people
+from library_visits
+where tenant_id = $1 and visited_at >= $2 and visited_at < $3
+`
+
+type TodayVisitSummaryParams struct {
+	TenantID    uuid.UUID          `json:"tenant_id"`
+	VisitedAt   pgtype.Timestamptz `json:"visited_at"`
+	VisitedAt_2 pgtype.Timestamptz `json:"visited_at_2"`
+}
+
+type TodayVisitSummaryRow struct {
+	TotalVisits   int32 `json:"total_visits"`
+	UniqueMembers int32 `json:"unique_members"`
+	TotalPeople   int32 `json:"total_people"`
+}
+
+func (q *Queries) TodayVisitSummary(ctx context.Context, arg TodayVisitSummaryParams) (TodayVisitSummaryRow, error) {
+	row := q.db.QueryRow(ctx, todayVisitSummary, arg.TenantID, arg.VisitedAt, arg.VisitedAt_2)
+	var i TodayVisitSummaryRow
+	err := row.Scan(&i.TotalVisits, &i.UniqueMembers, &i.TotalPeople)
+	return i, err
 }

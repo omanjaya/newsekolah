@@ -151,7 +151,13 @@ function CopyForm({ titleId, onDone }: { titleId: string; onDone: () => void }):
       onSubmit={(e) => {
         e.preventDefault();
         create.mutate(
-          { titleId, barcode: barcode.trim(), condition, notes: notes.trim() || undefined },
+          {
+            titleId,
+            barcode: barcode.trim(),
+            condition,
+            notes: notes.trim() || undefined,
+            is_opac: true,
+          },
           {
             onSuccess: () => {
               toast.success(tCopies("form.saved"));

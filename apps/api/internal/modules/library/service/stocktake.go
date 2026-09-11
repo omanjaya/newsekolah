@@ -12,6 +12,9 @@ import (
 )
 
 func (s *Service) StartStocktake(ctx context.Context, tenantID uuid.UUID, name string, coordinatorUserID uuid.UUID, notes string) (domain.Stocktake, error) {
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return domain.Stocktake{}, err
+	}
 	if name == "" {
 		return domain.Stocktake{}, domain.ErrInvalidInput
 	}
@@ -21,6 +24,9 @@ func (s *Service) StartStocktake(ctx context.Context, tenantID uuid.UUID, name s
 }
 
 func (s *Service) GetStocktake(ctx context.Context, tenantID, id uuid.UUID) (domain.Stocktake, error) {
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return domain.Stocktake{}, err
+	}
 	st, found, err := s.repo.GetStocktake(ctx, tenantID, id)
 	if err != nil {
 		return domain.Stocktake{}, err
@@ -32,6 +38,9 @@ func (s *Service) GetStocktake(ctx context.Context, tenantID, id uuid.UUID) (dom
 }
 
 func (s *Service) ListStocktakes(ctx context.Context, tenantID uuid.UUID, limit, offset int) ([]domain.Stocktake, error) {
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return nil, err
+	}
 	return s.repo.ListStocktakes(ctx, tenantID, clampLimit(limit), offset)
 }
 
@@ -41,6 +50,9 @@ func (s *Service) ListStocktakes(ctx context.Context, tenantID uuid.UUID, limit,
 // librarian scanning a shelf of 200 books doesn't lose the whole batch
 // over one smudged barcode.
 func (s *Service) ScanCodes(ctx context.Context, tenantID, stocktakeID uuid.UUID, codes []string, locationID uuid.NullUUID, scannedBy uuid.UUID) ([]domain.StocktakeScan, error) {
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return nil, err
+	}
 	if len(codes) == 0 {
 		return nil, domain.ErrInvalidInput
 	}
@@ -87,6 +99,9 @@ type Progress struct {
 }
 
 func (s *Service) StocktakeProgress(ctx context.Context, tenantID, stocktakeID uuid.UUID) (Progress, error) {
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return Progress{}, err
+	}
 	if _, err := s.GetStocktake(ctx, tenantID, stocktakeID); err != nil {
 		return Progress{}, err
 	}
@@ -155,6 +170,9 @@ func (s *Service) reconcile(ctx context.Context, tenantID, stocktakeID uuid.UUID
 // page is closed, and optionally marks copies that were never scanned as
 // lost or unknown.
 func (s *Service) Close(ctx context.Context, tenantID, stocktakeID uuid.UUID, notes string, markMissingAs domain.MarkMissingAs, actorUserID uuid.UUID) (domain.StocktakeResult, error) {
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return domain.StocktakeResult{}, err
+	}
 	if !markMissingAs.Valid() {
 		return domain.StocktakeResult{}, domain.ErrInvalidInput
 	}
@@ -208,6 +226,9 @@ func (s *Service) Close(ctx context.Context, tenantID, stocktakeID uuid.UUID, no
 // closed session (or a live one, recomputed on the fly), for the results
 // screen and the XLSX report.
 func (s *Service) StocktakeResults(ctx context.Context, tenantID, stocktakeID uuid.UUID) (domain.StocktakeResult, error) {
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return domain.StocktakeResult{}, err
+	}
 	st, err := s.GetStocktake(ctx, tenantID, stocktakeID)
 	if err != nil {
 		return domain.StocktakeResult{}, err
@@ -260,6 +281,9 @@ func (s *Service) persistedResult(ctx context.Context, tenantID, stocktakeID uui
 // so a librarian can hand the missing list to whoever is chasing down
 // the books.
 func (s *Service) StocktakeReportXLSX(ctx context.Context, tenantID, stocktakeID uuid.UUID) ([]byte, error) {
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return nil, err
+	}
 	if _, err := s.GetStocktake(ctx, tenantID, stocktakeID); err != nil {
 		return nil, err
 	}

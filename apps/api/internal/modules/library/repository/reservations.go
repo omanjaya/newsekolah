@@ -51,9 +51,10 @@ func (r *Repository) ListReservationsForMember(ctx context.Context, tenantID, me
 	return toReservations(rows), nil
 }
 
-func (r *Repository) MarkReservationReady(ctx context.Context, tenantID, id uuid.UUID, readyAt, expiresAt time.Time) (domain.Reservation, bool, error) {
+func (r *Repository) MarkReservationReady(ctx context.Context, tenantID, id, copyID uuid.UUID, readyAt, expiresAt time.Time) (domain.Reservation, bool, error) {
 	row, err := r.queries(ctx).MarkReservationReady(ctx, db.MarkReservationReadyParams{
 		TenantID: tenantID, ID: id, ReadyAt: pdatabase.Timestamptz(readyAt), ExpiresAt: pdatabase.Timestamptz(expiresAt),
+		HeldCopyID: pdatabase.NullUUID(uuid.NullUUID{UUID: copyID, Valid: true}),
 	})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return domain.Reservation{}, false, nil
@@ -86,6 +87,27 @@ func (r *Repository) CancelReservation(ctx context.Context, tenantID, id uuid.UU
 		return domain.Reservation{}, false, fmt.Errorf("cancel reservation: %w", err)
 	}
 	return toReservation(row), true, nil
+}
+
+func (r *Repository) GetReservationForHeldCopy(ctx context.Context, tenantID, copyID uuid.UUID) (domain.Reservation, bool, error) {
+	row, err := r.queries(ctx).GetReservationForHeldCopy(ctx, db.GetReservationForHeldCopyParams{TenantID: tenantID, HeldCopyID: pdatabase.NullUUID(uuid.NullUUID{UUID: copyID, Valid: true})})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return domain.Reservation{}, false, nil
+	}
+	if err != nil {
+		return domain.Reservation{}, false, fmt.Errorf("get reservation for held copy: %w", err)
+	}
+	return toReservation(row), true, nil
+}
+
+// ExpireReadyReservations flips every ready hold past expiresAt to
+// expired, returning them so the caller can release each held copy.
+func (r *Repository) ExpireReadyReservations(ctx context.Context, tenantID uuid.UUID, asOf time.Time) ([]domain.Reservation, error) {
+	rows, err := r.queries(ctx).ExpireReadyReservations(ctx, db.ExpireReadyReservationsParams{TenantID: tenantID, ExpiresAt: pdatabase.Timestamptz(asOf)})
+	if err != nil {
+		return nil, fmt.Errorf("expire ready reservations: %w", err)
+	}
+	return toReservations(rows), nil
 }
 
 func toReservations(rows []db.LibraryReservation) []domain.Reservation {

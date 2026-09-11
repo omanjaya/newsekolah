@@ -23,6 +23,8 @@ const (
 	WarningLetterIssued        = "warning_letter.issued"
 	DisciplineThresholdReached = "discipline.threshold_reached"
 	AnnouncementPublished      = "announcement.published"
+	LibraryReservationReady    = "library.reservation_ready"
+	LibraryLoanDueReminder     = "library.loan_due_reminder"
 )
 
 // Envelope is the generic shape every domain event above is published as.

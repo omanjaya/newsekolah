@@ -186,7 +186,7 @@ func (q *Queries) ItemsByMaterialType(ctx context.Context, tenantID uuid.UUID) (
 }
 
 const listCopiesAcquiredInPeriod = `-- name: ListCopiesAcquiredInPeriod :many
-select id, tenant_id, title_id, barcode, condition, status, acquired_on, notes, created_at, updated_at, accession_number, copy_number, call_number, category_id, location_id, source_id, partner_id, price, is_opac, rfid, access from library_copies
+select id, tenant_id, title_id, barcode, condition, status, acquired_on, notes, created_at, updated_at, is_opac, accession_number, copy_number, call_number, category_id, location_id, source_id, partner_id, price, rfid, access from library_copies
 where tenant_id = $1 and acquired_on is not null and acquired_on >= $2 and acquired_on <= $3
 order by acquired_on, accession_number
 `
@@ -217,6 +217,7 @@ func (q *Queries) ListCopiesAcquiredInPeriod(ctx context.Context, arg ListCopies
 			&i.Notes,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.IsOpac,
 			&i.AccessionNumber,
 			&i.CopyNumber,
 			&i.CallNumber,
@@ -225,7 +226,6 @@ func (q *Queries) ListCopiesAcquiredInPeriod(ctx context.Context, arg ListCopies
 			&i.SourceID,
 			&i.PartnerID,
 			&i.Price,
-			&i.IsOpac,
 			&i.Rfid,
 			&i.Access,
 		); err != nil {
@@ -240,7 +240,7 @@ func (q *Queries) ListCopiesAcquiredInPeriod(ctx context.Context, arg ListCopies
 }
 
 const listLoansInPeriodWithTitle = `-- name: ListLoansInPeriodWithTitle :many
-select l.id, l.tenant_id, l.copy_id, l.title_id, l.member_user_id, l.checked_out_by, l.borrowed_at, l.due_on, l.returned_at, l.checked_in_by, l.renewal_count, l.status, l.fine_amount, l.fine_paid_at, l.active_copy_id, l.created_at, l.updated_at, t.title as title_name
+select l.id, l.tenant_id, l.copy_id, l.title_id, l.member_user_id, l.checked_out_by, l.borrowed_at, l.due_on, l.returned_at, l.checked_in_by, l.renewal_count, l.status, l.fine_amount, l.fine_paid_at, l.active_copy_id, l.created_at, l.updated_at, l.channel, t.title as title_name
 from library_loans l
 join library_titles t on t.id = l.title_id
 where l.tenant_id = $1 and l.borrowed_at >= $2 and l.borrowed_at < $3
@@ -271,6 +271,7 @@ type ListLoansInPeriodWithTitleRow struct {
 	ActiveCopyID pgtype.UUID        `json:"active_copy_id"`
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+	Channel      string             `json:"channel"`
 	TitleName    string             `json:"title_name"`
 }
 
@@ -301,6 +302,7 @@ func (q *Queries) ListLoansInPeriodWithTitle(ctx context.Context, arg ListLoansI
 			&i.ActiveCopyID,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.Channel,
 			&i.TitleName,
 		); err != nil {
 			return nil, err

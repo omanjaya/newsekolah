@@ -25,6 +25,9 @@ func (s *Service) ListDDCClasses(ctx context.Context) ([]domain.DDCClass, error)
 }
 
 func (s *Service) CatalogueOptions(ctx context.Context, tenantID uuid.UUID) (CatalogueOptions, error) {
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return CatalogueOptions{}, err
+	}
 	materialTypes, err := s.repo.ListMaterialTypes(ctx, tenantID)
 	if err != nil {
 		return CatalogueOptions{}, err
@@ -58,6 +61,9 @@ func (s *Service) CatalogueOptions(ctx context.Context, tenantID uuid.UUID) (Cat
 // Material types.
 
 func (s *Service) CreateMaterialType(ctx context.Context, e domain.MasterEntry) (domain.MasterEntry, error) {
+	if err := s.requireEnabled(ctx, e.TenantID); err != nil {
+		return domain.MasterEntry{}, err
+	}
 	if err := e.Validate(domain.MasterMaterialType); err != nil {
 		return domain.MasterEntry{}, err
 	}
@@ -65,6 +71,9 @@ func (s *Service) CreateMaterialType(ctx context.Context, e domain.MasterEntry) 
 }
 
 func (s *Service) UpdateMaterialType(ctx context.Context, e domain.MasterEntry) (domain.MasterEntry, error) {
+	if err := s.requireEnabled(ctx, e.TenantID); err != nil {
+		return domain.MasterEntry{}, err
+	}
 	if err := e.Validate(domain.MasterMaterialType); err != nil {
 		return domain.MasterEntry{}, err
 	}
@@ -72,10 +81,16 @@ func (s *Service) UpdateMaterialType(ctx context.Context, e domain.MasterEntry) 
 }
 
 func (s *Service) ListMaterialTypes(ctx context.Context, tenantID uuid.UUID) ([]domain.MasterEntry, error) {
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return nil, err
+	}
 	return s.repo.ListMaterialTypes(ctx, tenantID)
 }
 
 func (s *Service) DeleteMaterialType(ctx context.Context, tenantID, id uuid.UUID) error {
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return err
+	}
 	used, err := s.repo.CountMaterialTypeUsage(ctx, tenantID, id)
 	if err != nil {
 		return err
@@ -96,6 +111,9 @@ func (s *Service) DeleteMaterialType(ctx context.Context, tenantID, id uuid.UUID
 // Collection categories.
 
 func (s *Service) CreateCollectionCategory(ctx context.Context, e domain.MasterEntry) (domain.MasterEntry, error) {
+	if err := s.requireEnabled(ctx, e.TenantID); err != nil {
+		return domain.MasterEntry{}, err
+	}
 	if err := e.Validate(domain.MasterCollectionCategory); err != nil {
 		return domain.MasterEntry{}, err
 	}
@@ -103,6 +121,9 @@ func (s *Service) CreateCollectionCategory(ctx context.Context, e domain.MasterE
 }
 
 func (s *Service) UpdateCollectionCategory(ctx context.Context, e domain.MasterEntry) (domain.MasterEntry, error) {
+	if err := s.requireEnabled(ctx, e.TenantID); err != nil {
+		return domain.MasterEntry{}, err
+	}
 	if err := e.Validate(domain.MasterCollectionCategory); err != nil {
 		return domain.MasterEntry{}, err
 	}
@@ -110,10 +131,16 @@ func (s *Service) UpdateCollectionCategory(ctx context.Context, e domain.MasterE
 }
 
 func (s *Service) ListCollectionCategories(ctx context.Context, tenantID uuid.UUID) ([]domain.MasterEntry, error) {
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return nil, err
+	}
 	return s.repo.ListCollectionCategories(ctx, tenantID)
 }
 
 func (s *Service) DeleteCollectionCategory(ctx context.Context, tenantID, id uuid.UUID) error {
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return err
+	}
 	used, err := s.repo.CountCollectionCategoryUsage(ctx, tenantID, id)
 	if err != nil {
 		return err
@@ -134,6 +161,9 @@ func (s *Service) DeleteCollectionCategory(ctx context.Context, tenantID, id uui
 // Acquisition sources.
 
 func (s *Service) CreateAcquisitionSource(ctx context.Context, e domain.MasterEntry) (domain.MasterEntry, error) {
+	if err := s.requireEnabled(ctx, e.TenantID); err != nil {
+		return domain.MasterEntry{}, err
+	}
 	if err := e.Validate(domain.MasterAcquisitionSource); err != nil {
 		return domain.MasterEntry{}, err
 	}
@@ -141,6 +171,9 @@ func (s *Service) CreateAcquisitionSource(ctx context.Context, e domain.MasterEn
 }
 
 func (s *Service) UpdateAcquisitionSource(ctx context.Context, e domain.MasterEntry) (domain.MasterEntry, error) {
+	if err := s.requireEnabled(ctx, e.TenantID); err != nil {
+		return domain.MasterEntry{}, err
+	}
 	if err := e.Validate(domain.MasterAcquisitionSource); err != nil {
 		return domain.MasterEntry{}, err
 	}
@@ -148,10 +181,16 @@ func (s *Service) UpdateAcquisitionSource(ctx context.Context, e domain.MasterEn
 }
 
 func (s *Service) ListAcquisitionSources(ctx context.Context, tenantID uuid.UUID) ([]domain.MasterEntry, error) {
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return nil, err
+	}
 	return s.repo.ListAcquisitionSources(ctx, tenantID)
 }
 
 func (s *Service) DeleteAcquisitionSource(ctx context.Context, tenantID, id uuid.UUID) error {
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return err
+	}
 	used, err := s.repo.CountAcquisitionSourceUsage(ctx, tenantID, id)
 	if err != nil {
 		return err
@@ -172,6 +211,9 @@ func (s *Service) DeleteAcquisitionSource(ctx context.Context, tenantID, id uuid
 // Partners.
 
 func (s *Service) CreatePartner(ctx context.Context, e domain.MasterEntry) (domain.MasterEntry, error) {
+	if err := s.requireEnabled(ctx, e.TenantID); err != nil {
+		return domain.MasterEntry{}, err
+	}
 	if err := e.Validate(domain.MasterPartner); err != nil {
 		return domain.MasterEntry{}, err
 	}
@@ -179,6 +221,9 @@ func (s *Service) CreatePartner(ctx context.Context, e domain.MasterEntry) (doma
 }
 
 func (s *Service) UpdatePartner(ctx context.Context, e domain.MasterEntry) (domain.MasterEntry, error) {
+	if err := s.requireEnabled(ctx, e.TenantID); err != nil {
+		return domain.MasterEntry{}, err
+	}
 	if err := e.Validate(domain.MasterPartner); err != nil {
 		return domain.MasterEntry{}, err
 	}
@@ -186,10 +231,16 @@ func (s *Service) UpdatePartner(ctx context.Context, e domain.MasterEntry) (doma
 }
 
 func (s *Service) ListPartners(ctx context.Context, tenantID uuid.UUID) ([]domain.MasterEntry, error) {
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return nil, err
+	}
 	return s.repo.ListPartners(ctx, tenantID)
 }
 
 func (s *Service) DeletePartner(ctx context.Context, tenantID, id uuid.UUID) error {
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return err
+	}
 	used, err := s.repo.CountPartnerUsage(ctx, tenantID, id)
 	if err != nil {
 		return err
@@ -210,6 +261,9 @@ func (s *Service) DeletePartner(ctx context.Context, tenantID, id uuid.UUID) err
 // Locations.
 
 func (s *Service) CreateLocation(ctx context.Context, e domain.MasterEntry) (domain.MasterEntry, error) {
+	if err := s.requireEnabled(ctx, e.TenantID); err != nil {
+		return domain.MasterEntry{}, err
+	}
 	if err := e.Validate(domain.MasterLocation); err != nil {
 		return domain.MasterEntry{}, err
 	}
@@ -217,6 +271,9 @@ func (s *Service) CreateLocation(ctx context.Context, e domain.MasterEntry) (dom
 }
 
 func (s *Service) UpdateLocation(ctx context.Context, e domain.MasterEntry) (domain.MasterEntry, error) {
+	if err := s.requireEnabled(ctx, e.TenantID); err != nil {
+		return domain.MasterEntry{}, err
+	}
 	if err := e.Validate(domain.MasterLocation); err != nil {
 		return domain.MasterEntry{}, err
 	}
@@ -224,10 +281,16 @@ func (s *Service) UpdateLocation(ctx context.Context, e domain.MasterEntry) (dom
 }
 
 func (s *Service) ListLocations(ctx context.Context, tenantID uuid.UUID) ([]domain.MasterEntry, error) {
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return nil, err
+	}
 	return s.repo.ListLocations(ctx, tenantID)
 }
 
 func (s *Service) DeleteLocation(ctx context.Context, tenantID, id uuid.UUID) error {
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return err
+	}
 	used, err := s.repo.CountLocationUsage(ctx, tenantID, id)
 	if err != nil {
 		return err

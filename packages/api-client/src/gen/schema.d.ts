@@ -3887,6 +3887,558 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/library/member-types": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Library member types (max loan items/days, renewal, fine rules) */
+        get: operations["listLibraryMemberTypes"];
+        put?: never;
+        /** Create a member type */
+        post: operations["createLibraryMemberType"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/member-types/{memberTypeId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update a member type */
+        put: operations["updateLibraryMemberType"];
+        post?: never;
+        /** Delete a member type (refused while any member still uses it) */
+        delete: operations["deleteLibraryMemberType"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List library members, filterable by status, type, and a name/member_no search */
+        get: operations["listLibraryMembers"];
+        put?: never;
+        /** Manually register a member (member_no generated from the tenant pattern unless given) */
+        post: operations["registerLibraryMember"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/members/bulk-register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Register every user of one role (optionally one class) not already a member */
+        post: operations["bulkRegisterLibraryMembers"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/members/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One member's profile */
+        get: operations["getLibraryMember"];
+        /** Update a member's type, validity, or notes */
+        put: operations["updateLibraryMemberProfile"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/members/{userId}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Move a member between pending/active/inactive/suspended */
+        put: operations["updateLibraryMemberStatus"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/members/{userId}/clearance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Grant clearance ("bebas pustaka"); refused with any active loan or unpaid fine */
+        post: operations["clearLibraryMember"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/members/{userId}/clearance-letter": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Clearance letter PDF (member must already have clearance) */
+        get: operations["printLibraryClearanceLetter"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/loan-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Dated loan-rule overrides still in effect or upcoming */
+        get: operations["listLibraryLoanRules"];
+        put?: never;
+        /** Create a dated loan-rule override (optionally closing lending, allow_loans=false) */
+        post: operations["createLibraryLoanRule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/loan-rules/{loanRuleId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete a loan-rule override */
+        delete: operations["deleteLibraryLoanRule"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/violations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List violations, filterable by status and kind */
+        get: operations["listLibraryViolations"];
+        put?: never;
+        /** Manually record a violation (damage found, or another issue not tied to a return) */
+        post: operations["createLibraryViolation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/members/{userId}/violations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One member's violations (self, or manage_library_circulation staff) */
+        get: operations["listMemberViolations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/violations/{violationId}/settle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Settle a violation as paid or waived; reactivates the member once every violation is clear */
+        post: operations["settleLibraryViolation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/loans/batch-borrow": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Borrow several barcodes for one member in one visit */
+        post: operations["batchBorrowLibraryLoans"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/loans/return-by-barcode": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Return a copy by scanning its barcode instead of knowing the loan id */
+        post: operations["returnLibraryLoanByBarcode"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/loans/{loanId}/renewals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Renewal history for one loan */
+        get: operations["listLibraryLoanRenewals"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/loans/overdue-detailed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Overdue loans with the student's class and guardian phone */
+        get: operations["listOverdueLibraryLoansDetailed"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/lookup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Circulation-desk typeahead over members and copies (name, member_no, NIS, username, barcode, title) */
+        get: operations["lookupLibrary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/class-loans/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Auto-pair a class roster against one textbook title's available copies, without committing */
+        post: operations["previewLibraryClassLoans"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/class-loans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Commit a confirmed set of student/copy pairs as loans (from preview, or built by scanning) */
+        post: operations["commitLibraryClassLoans"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/class-returns": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Return every roster student's active loan of one title */
+        post: operations["commitLibraryClassReturns"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/reminders/send": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Run the due-date reminder pass now, for loans due within due_reminder_days */
+        post: operations["sendLibraryDueReminders"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/visits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Guest-book entries in a date range */
+        get: operations["listLibraryVisits"];
+        put?: never;
+        /** Log a visit manually (member, non-member, or group) */
+        post: operations["recordLibraryVisit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/visits/today": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Today's guest-book totals */
+        get: operations["getTodayLibraryVisitSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/visits/kiosk-token": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mint a short-lived kiosk check-in token for the guest-book screen */
+        post: operations["issueLibraryKioskToken"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/visits/kiosk-scan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Consume a kiosk token and log a visit for the scanning user */
+        post: operations["scanLibraryKioskVisit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/copies/{copyId}/read-in-place": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One copy's read-in-place log */
+        get: operations["listLibraryReadInPlace"];
+        put?: never;
+        /** Log a copy being read at a library table rather than checked out */
+        post: operations["startLibraryReadInPlace"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The current user's own library profile, active loans, history, reservations, and fines */
+        get: operations["getMyLibraryProfile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/me/reservations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reserve a title for the current user */
+        post: operations["reserveMyLibraryTitle"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/me/reservations/{reservationId}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel the current user's own reservation */
+        post: operations["cancelMyLibraryReservation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/opac/titles/{titleId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public title detail with its visible copies (no session required) */
+        get: operations["getOpacTitleDetail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/opac/highlights": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** OPAC landing highlights, no session required */
+        get: operations["getOpacHighlights"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/library/policy": {
         parameters: {
             query?: never;
@@ -4239,7 +4791,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** One member's loan history */
+        /** One member's loan history (self, or view_library staff) */
         get: operations["listMemberLoanHistory"];
         put?: never;
         post?: never;
@@ -4256,7 +4808,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** One member's reservations */
+        /** One member's reservations (self, or view_library staff) */
         get: operations["listMemberReservations"];
         put?: never;
         post?: never;
@@ -4481,7 +5033,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Public catalogue search (OPAC), no session required */
+        /** Public catalogue search (OPAC), no session required. Fulltext for a 3+ character query, LIKE below that. */
         get: operations["searchOpacTitles"];
         put?: never;
         post?: never;
@@ -8721,6 +9273,273 @@ export interface components {
             popular_titles: components["schemas"]["LibraryMostBorrowedTitle"][];
             series: components["schemas"]["LibraryDashboardSeriesPoint"][];
         };
+        /** @enum {string} */
+        LibraryMemberStatus: "pending" | "active" | "inactive" | "suspended" | "cleared";
+        LibraryMember: {
+            /** Format: uuid */
+            user_id: string;
+            member_no: string;
+            /** Format: uuid */
+            member_type_id: string;
+            /** Format: date */
+            registered_on: string;
+            /** Format: date */
+            valid_until?: string;
+            status: components["schemas"]["LibraryMemberStatus"];
+            /** Format: date */
+            suspended_until?: string;
+            late_return_count: number;
+            notes?: string;
+        };
+        LibraryMemberRegister: {
+            /** Format: uuid */
+            user_id: string;
+            /** Format: uuid */
+            member_type_id: string;
+            member_no?: string;
+            notes?: string;
+        };
+        LibraryBulkRegisterResult: {
+            registered: components["schemas"]["LibraryMember"][];
+            failed: {
+                user_id: string;
+                reason: string;
+            }[];
+        };
+        /** @enum {string} */
+        LibraryFineType: "constant" | "per_tenor";
+        LibraryMemberType: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            max_loan_items: number;
+            max_loan_days: number;
+            renewal_days: number;
+            max_renewals: number;
+            fine_type: components["schemas"]["LibraryFineType"];
+            fine_per_tenor: number;
+            tenor_days: number;
+            suspend_days: number;
+            validity_months: number;
+            /** @enum {string} */
+            default_for_role?: "student" | "teacher" | "staff" | "parent";
+        };
+        LibraryMemberTypeWrite: {
+            name: string;
+            max_loan_items: number;
+            max_loan_days: number;
+            renewal_days: number;
+            max_renewals: number;
+            fine_type: components["schemas"]["LibraryFineType"];
+            fine_per_tenor: number;
+            tenor_days: number;
+            suspend_days: number;
+            validity_months: number;
+            /** @enum {string} */
+            default_for_role?: "student" | "teacher" | "staff" | "parent";
+        };
+        LibraryLoanRule: {
+            /** Format: uuid */
+            id: string;
+            /**
+             * Format: uuid
+             * @description absent: applies to every member type
+             */
+            member_type_id?: string;
+            /** Format: date */
+            starts_on: string;
+            /** Format: date */
+            ends_on: string;
+            allow_loans: boolean;
+            max_loan_items?: number;
+            max_loan_days?: number;
+            notes?: string;
+        };
+        LibraryLoanRuleWrite: {
+            /** Format: uuid */
+            member_type_id?: string;
+            /** Format: date */
+            starts_on: string;
+            /** Format: date */
+            ends_on: string;
+            allow_loans: boolean;
+            max_loan_items?: number;
+            max_loan_days?: number;
+            notes?: string;
+        };
+        LibraryLoanRenewal: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            loan_id: string;
+            /** Format: date-time */
+            renewed_at: string;
+            /** Format: date */
+            previous_due_on: string;
+            /** Format: date */
+            new_due_on: string;
+        };
+        LibraryOverdueLoanDetail: {
+            loan: components["schemas"]["LibraryLoan"];
+            class_name: string;
+            guardian_phone: string;
+        };
+        /** @enum {string} */
+        LibraryViolationKind: "late" | "lost" | "damaged" | "other";
+        /** @enum {string} */
+        LibraryPenalty: "fine" | "suspend" | "warning" | "replace_book";
+        /** @enum {string} */
+        LibraryViolationStatus: "unpaid" | "paid" | "waived";
+        LibraryViolation: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            loan_id?: string;
+            /** Format: uuid */
+            member_user_id: string;
+            kind: components["schemas"]["LibraryViolationKind"];
+            penalty: components["schemas"]["LibraryPenalty"];
+            amount: number;
+            suspend_days: number;
+            status: components["schemas"]["LibraryViolationStatus"];
+            notes?: string;
+            /** Format: date-time */
+            created_at?: string;
+            /** Format: date-time */
+            settled_at?: string;
+        };
+        LibraryViolationWrite: {
+            /** Format: uuid */
+            member_user_id: string;
+            /** Format: uuid */
+            loan_id?: string;
+            kind: components["schemas"]["LibraryViolationKind"];
+            penalty: components["schemas"]["LibraryPenalty"];
+            amount?: number;
+            suspend_days?: number;
+            notes?: string;
+        };
+        LibraryRejectedBarcode: {
+            barcode: string;
+            reason: string;
+        };
+        LibraryBatchBorrowResult: {
+            loans: components["schemas"]["LibraryLoan"][];
+            rejected: components["schemas"]["LibraryRejectedBarcode"][];
+        };
+        LibraryLookupResult: {
+            member?: {
+                /** Format: uuid */
+                user_id: string;
+                user_name: string;
+                username?: string;
+                nis?: string;
+                member_no?: string;
+            };
+            copy?: {
+                /** Format: uuid */
+                copy_id: string;
+                barcode: string;
+                status: components["schemas"]["LibraryCopyStatus"];
+                /** Format: uuid */
+                title_id: string;
+                title: string;
+            };
+        };
+        LibraryClassLoanPair: {
+            /** Format: uuid */
+            student_user_id: string;
+            student_name: string;
+            /** Format: uuid */
+            title_id: string;
+            /** Format: uuid */
+            copy_id: string;
+            barcode: string;
+        };
+        LibraryClassLoanRejected: {
+            /** Format: uuid */
+            student_user_id: string;
+            student_name: string;
+            reason: string;
+        };
+        LibraryClassLoanPreview: {
+            pairs: components["schemas"]["LibraryClassLoanPair"][];
+            rejected: components["schemas"]["LibraryClassLoanRejected"][];
+        };
+        /** @enum {string} */
+        LibraryVisitKind: "member" | "non_member" | "group";
+        /** @enum {string} */
+        LibraryVisitSource: "manual" | "scan" | "kiosk";
+        LibraryVisit: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            member_user_id?: string;
+            visitor_name?: string;
+            kind: components["schemas"]["LibraryVisitKind"];
+            purpose?: string;
+            group_size: number;
+            source: components["schemas"]["LibraryVisitSource"];
+            /** Format: date-time */
+            visited_at: string;
+        };
+        LibraryVisitWrite: {
+            /** Format: uuid */
+            member_user_id?: string;
+            visitor_name?: string;
+            kind: components["schemas"]["LibraryVisitKind"];
+            purpose?: string;
+            /** @default 1 */
+            group_size: number;
+        };
+        LibraryVisitSummary: {
+            total_visits: number;
+            unique_members: number;
+            total_people: number;
+        };
+        LibraryKioskToken: {
+            token: string;
+            /** Format: date-time */
+            expires_at: string;
+        };
+        LibraryReadInPlace: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            copy_id: string;
+            /** Format: uuid */
+            member_user_id?: string;
+            visitor_name?: string;
+            /** Format: date-time */
+            started_at: string;
+            /** Format: date-time */
+            ended_at?: string;
+        };
+        LibraryMyProfile: {
+            member?: components["schemas"]["LibraryMember"];
+            active_loans: components["schemas"]["LibraryLoan"][];
+            history: components["schemas"]["LibraryLoan"][];
+            reservations: components["schemas"]["LibraryReservation"][];
+            violations: components["schemas"]["LibraryViolation"][];
+            booking_enabled?: boolean;
+        };
+        LibraryOpacCopy: {
+            barcode: string;
+            call_number: string;
+            /** Format: uuid */
+            location_id?: string;
+            access?: components["schemas"]["LibraryCopyAccess"];
+            status: components["schemas"]["LibraryCopyStatus"];
+        };
+        LibraryOpacTitleDetail: {
+            title: components["schemas"]["LibraryTitle"];
+            copies: components["schemas"]["LibraryOpacCopy"][];
+        };
+        LibraryOpacHighlights: {
+            newest: components["schemas"]["LibraryTitle"][];
+            most_borrowed: components["schemas"]["LibraryTitle"][];
+            library_name: string;
+        };
         LibraryPolicy: {
             version: number;
             loan_days: number;
@@ -8729,6 +9548,20 @@ export interface components {
             renewal_days: number;
             fine_per_day: number;
             reservation_hold_days: number;
+            name: string;
+            npp?: string;
+            /** @enum {string} */
+            barcode_source?: "no_induk" | "item_id";
+            accession_format?: string;
+            member_no_format?: string;
+            saturday_closed: boolean;
+            sunday_closed: boolean;
+            booking_enabled: boolean;
+            booking_max: number;
+            fine_currency_enabled: boolean;
+            block_loans_with_unpaid_fines: boolean;
+            due_reminder_days: number;
+            auto_register_members: boolean;
         };
         LibraryPolicyWrite: {
             loan_days: number;
@@ -8737,6 +9570,20 @@ export interface components {
             renewal_days: number;
             fine_per_day: number;
             reservation_hold_days: number;
+            name?: string;
+            npp?: string;
+            /** @enum {string} */
+            barcode_source?: "no_induk" | "item_id";
+            accession_format?: string;
+            member_no_format?: string;
+            saturday_closed?: boolean;
+            sunday_closed?: boolean;
+            booking_enabled?: boolean;
+            booking_max?: number;
+            fine_currency_enabled?: boolean;
+            block_loans_with_unpaid_fines?: boolean;
+            due_reminder_days?: number;
+            auto_register_members?: boolean;
         };
         LibraryTitle: {
             /** Format: uuid */
@@ -8904,6 +9751,8 @@ export interface components {
             fine_amount: number;
             /** Format: date-time */
             fine_paid_at?: string;
+            /** @enum {string} */
+            channel?: "desk" | "self_service" | "mobile";
         };
         /** @enum {string} */
         LibraryReservationStatus: "waiting" | "ready" | "fulfilled" | "cancelled" | "expired";
@@ -8921,6 +9770,11 @@ export interface components {
             ready_at?: string;
             /** Format: date-time */
             expires_at?: string;
+            /**
+             * Format: uuid
+             * @description the copy set aside for this hold, once ready
+             */
+            held_copy_id?: string;
             /** @description 1-based queue position, present only while waiting */
             position?: number;
         };
@@ -18401,6 +19255,1115 @@ export interface operations {
             403: components["responses"]["Forbidden"];
         };
     };
+    listLibraryMemberTypes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Member types */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["LibraryMemberType"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createLibraryMemberType: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LibraryMemberTypeWrite"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryMemberType"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    updateLibraryMemberType: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                memberTypeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LibraryMemberTypeWrite"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryMemberType"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteLibraryMemberType: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                memberTypeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listLibraryMembers: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["LibraryMemberStatus"];
+                member_type_id?: string;
+                search?: string;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Members */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["LibraryMember"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    registerLibraryMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LibraryMemberRegister"];
+            };
+        };
+        responses: {
+            /** @description Registered */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryMember"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    bulkRegisterLibraryMembers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    member_type_id: string;
+                    /** @enum {string} */
+                    role: "student" | "teacher" | "staff" | "parent";
+                    /** Format: uuid */
+                    class_id?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Registration outcome */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryBulkRegisterResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    getLibraryMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Member */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryMember"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateLibraryMemberProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    member_type_id: string;
+                    /** Format: date */
+                    valid_until?: string;
+                    notes?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryMember"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateLibraryMemberStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    status: components["schemas"]["LibraryMemberStatus"];
+                };
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryMember"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    clearLibraryMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cleared */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryMember"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    printLibraryClearanceLetter: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description PDF */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": string;
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listLibraryLoanRules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Loan rules */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["LibraryLoanRule"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createLibraryLoanRule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LibraryLoanRuleWrite"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryLoanRule"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    deleteLibraryLoanRule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                loanRuleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    listLibraryViolations: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["LibraryViolationStatus"];
+                kind?: components["schemas"]["LibraryViolationKind"];
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Violations */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["LibraryViolation"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createLibraryViolation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LibraryViolationWrite"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryViolation"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    listMemberViolations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Violations */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["LibraryViolation"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    settleLibraryViolation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                violationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    status: "paid" | "waived";
+                };
+            };
+        };
+        responses: {
+            /** @description Settled */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryViolation"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    batchBorrowLibraryLoans: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    barcodes: string[];
+                    /** Format: uuid */
+                    member_user_id: string;
+                    /**
+                     * @default desk
+                     * @enum {string}
+                     */
+                    channel?: "desk" | "self_service" | "mobile";
+                };
+            };
+        };
+        responses: {
+            /** @description Batch result (partial success is possible; see rejected) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryBatchBorrowResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    returnLibraryLoanByBarcode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    barcode: string;
+                    condition?: components["schemas"]["LibraryCopyCondition"];
+                };
+            };
+        };
+        responses: {
+            /** @description Returned */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryLoan"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listLibraryLoanRenewals: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                loanId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Renewals */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["LibraryLoanRenewal"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    listOverdueLibraryLoansDetailed: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Overdue loans */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["LibraryOverdueLoanDetail"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    lookupLibrary: {
+        parameters: {
+            query: {
+                q: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Matches (at most 8, members and copies combined) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["LibraryLookupResult"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    previewLibraryClassLoans: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    class_id: string;
+                    /** Format: uuid */
+                    title_id: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Preview */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryClassLoanPreview"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    commitLibraryClassLoans: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    pairs: {
+                        /** Format: uuid */
+                        student_user_id: string;
+                        barcode: string;
+                    }[];
+                };
+            };
+        };
+        responses: {
+            /** @description Batch result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryBatchBorrowResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    commitLibraryClassReturns: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    class_id: string;
+                    /** Format: uuid */
+                    title_id: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Batch result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryBatchBorrowResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    sendLibraryDueReminders: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Reminders queued */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        members_notified: number;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    listLibraryVisits: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Visits */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["LibraryVisit"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    recordLibraryVisit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LibraryVisitWrite"];
+            };
+        };
+        responses: {
+            /** @description Recorded (or the same visit within the 30-minute dedupe window) */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryVisit"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    getTodayLibraryVisitSummary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Summary */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryVisitSummary"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    issueLibraryKioskToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Token */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryKioskToken"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    scanLibraryKioskVisit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    token: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Recorded */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryVisit"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listLibraryReadInPlace: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                copyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Entries */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["LibraryReadInPlace"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    startLibraryReadInPlace: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                copyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    member_user_id?: string;
+                    visitor_name?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Logged */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryReadInPlace"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getMyLibraryProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description My library profile */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryMyProfile"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    reserveMyLibraryTitle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    title_id: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Reserved */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryReservation"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    cancelMyLibraryReservation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reservationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cancelled */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryReservation"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getOpacTitleDetail: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant slug for mobile clients before a token exists. Ignored when the host already resolves a tenant or in single-tenant mode. */
+                "X-Tenant"?: components["parameters"]["TenantHeader"];
+            };
+            path: {
+                titleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Title detail */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryOpacTitleDetail"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getOpacHighlights: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant slug for mobile clients before a token exists. Ignored when the host already resolves a tenant or in single-tenant mode. */
+                "X-Tenant"?: components["parameters"]["TenantHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Highlights */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryOpacHighlights"];
+                };
+            };
+        };
+    };
     getLibraryPolicy: {
         parameters: {
             query?: never;
@@ -18988,6 +20951,11 @@ export interface operations {
                     barcode: string;
                     /** Format: uuid */
                     member_user_id: string;
+                    /**
+                     * @default desk
+                     * @enum {string}
+                     */
+                    channel?: "desk" | "self_service" | "mobile";
                 };
             };
         };
@@ -19079,6 +21047,12 @@ export interface operations {
             content: {
                 "application/json": {
                     replacement_cost: number;
+                    /**
+                     * @default fine
+                     * @enum {string}
+                     */
+                    penalty?: "fine" | "replace_book";
+                    notes?: string;
                 };
             };
         };
@@ -19558,6 +21532,8 @@ export interface operations {
         parameters: {
             query?: {
                 search?: string;
+                classification_prefix?: string;
+                material_type_id?: string;
                 limit?: number;
                 offset?: number;
             };
@@ -19578,6 +21554,7 @@ export interface operations {
                 content: {
                     "application/json": {
                         data: components["schemas"]["LibraryTitle"][];
+                        library_name: string;
                     };
                 };
             };

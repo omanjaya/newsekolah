@@ -18,14 +18,23 @@ alter table library_titles
   add column target_audience text not null default '' check (length(target_audience) <= 60),
   add column notes text not null default '' check (length(notes) <= 1000),
   add column abstract text not null default '' check (length(abstract) <= 2000),
-  add column material_type_id uuid references library_material_types (id),
-  add column is_opac boolean not null default true;
+  add column material_type_id uuid references library_material_types (id);
+
+-- is_opac already exists: migration 0093 (circulation, applied earlier)
+-- added it guarded with `if not exists` for exactly this reason -- the two
+-- migration series were developed in parallel against the same table.
+alter table library_titles add column if not exists is_opac boolean not null default true;
 
 create unique index ux_library_titles_control_number on library_titles (tenant_id, control_number)
   where control_number <> '' and deleted_at is null;
 
 -- Fulltext search over the fields a librarian actually searches by; 'simple'
 -- avoids depending on an installed Indonesian text search configuration.
+-- Migration 0094 (circulation) already added a narrower search_vector
+-- (title/author/isbn); replace it here with the full bibliographic
+-- formula now that every field it covers exists.
+drop index if exists ix_library_titles_search_vector;
+alter table library_titles drop column if exists search_vector;
 alter table library_titles add column search_vector tsvector
   generated always as (
     to_tsvector('simple',

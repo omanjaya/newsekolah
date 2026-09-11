@@ -123,6 +123,9 @@ func (s *Service) addCopyTx(ctx context.Context, title domain.Title, defaults Co
 
 // AddCopy creates one copy for an existing title.
 func (s *Service) AddCopy(ctx context.Context, tenantID, titleID uuid.UUID, defaults CopyDefaults) (domain.Copy, error) {
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return domain.Copy{}, err
+	}
 	title, found, err := s.repo.GetTitle(ctx, tenantID, titleID)
 	if err != nil {
 		return domain.Copy{}, err
@@ -143,6 +146,9 @@ func (s *Service) AddCopy(ctx context.Context, tenantID, titleID uuid.UUID, defa
 // transaction (old app: "tambah eksemplar cepat", POST
 // /bibliographies/{id}/copies with a count).
 func (s *Service) AddCopies(ctx context.Context, tenantID, titleID uuid.UUID, count int, defaults CopyDefaults) ([]domain.Copy, error) {
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return nil, err
+	}
 	if count < 1 || count > 200 {
 		return nil, domain.ErrInvalidInput
 	}
@@ -175,6 +181,9 @@ func (s *Service) AddCopies(ctx context.Context, tenantID, titleID uuid.UUID, co
 }
 
 func (s *Service) FindCopyByCode(ctx context.Context, tenantID uuid.UUID, code string) (domain.Copy, error) {
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return domain.Copy{}, err
+	}
 	if code == "" {
 		return domain.Copy{}, domain.ErrInvalidInput
 	}
@@ -200,6 +209,9 @@ type CopySearch struct {
 }
 
 func (s *Service) ListCopiesFiltered(ctx context.Context, tenantID uuid.UUID, q CopySearch) ([]domain.Copy, error) {
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return nil, err
+	}
 	return s.repo.ListCopiesFiltered(ctx, tenantID, CopyFilter{
 		TitleID: q.TitleID, Status: q.Status, CategoryID: q.CategoryID, LocationID: q.LocationID, Search: q.Search,
 	}, clampLimit(q.Limit), q.Offset)
@@ -210,6 +222,9 @@ func (s *Service) ListCopiesFiltered(ctx context.Context, tenantID uuid.UUID, q 
 // and refused while the copy is out on loan (old app: PUT
 // /items/{id}/status).
 func (s *Service) SetCopyStatus(ctx context.Context, tenantID, copyID uuid.UUID, actorUserID uuid.UUID, status domain.CopyStatus, condition *domain.CopyCondition, note string) (domain.Copy, error) {
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return domain.Copy{}, err
+	}
 	if !status.ManuallySettable() {
 		return domain.Copy{}, domain.ErrCopyStatusNotManual
 	}
@@ -242,6 +257,9 @@ func (s *Service) SetCopyStatus(ctx context.Context, tenantID, copyID uuid.UUID,
 // Copies currently on loan are silently skipped (see
 // repository.BulkUpdateCopyStatus) rather than failing the whole batch.
 func (s *Service) BulkSetCopyStatus(ctx context.Context, tenantID uuid.UUID, actorUserID uuid.UUID, ids []uuid.UUID, status domain.CopyStatus, note string) ([]domain.Copy, error) {
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return nil, err
+	}
 	if len(ids) == 0 || len(ids) > 1000 {
 		return nil, domain.ErrInvalidInput
 	}
@@ -284,6 +302,9 @@ func (s *Service) BulkSetCopyStatus(ctx context.Context, tenantID uuid.UUID, act
 // history is kept for the audit trail; weed it with a status change to
 // "lost" or "donated" instead (old app: items.go:769-790).
 func (s *Service) DeleteCopy(ctx context.Context, tenantID, copyID uuid.UUID) error {
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return err
+	}
 	hasHistory, err := s.repo.HasLoanHistory(ctx, tenantID, copyID)
 	if err != nil {
 		return err
@@ -302,5 +323,8 @@ func (s *Service) DeleteCopy(ctx context.Context, tenantID, copyID uuid.UUID) er
 }
 
 func (s *Service) ListItemEvents(ctx context.Context, tenantID, copyID uuid.UUID) ([]domain.ItemEvent, error) {
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return nil, err
+	}
 	return s.repo.ListItemEvents(ctx, tenantID, copyID)
 }

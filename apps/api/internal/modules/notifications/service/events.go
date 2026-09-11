@@ -94,6 +94,18 @@ var eventMappings = map[string]eventMapping{
 			return "Surat peringatan diterbitkan", fieldOr(e, "summary", "Surat peringatan telah diterbitkan."), fieldOr(e, "href", "")
 		},
 	},
+	events.LibraryReservationReady: {
+		domain.KindLibraryReservationReady,
+		func(e events.Envelope) (string, string, string) {
+			return "Pesanan buku siap diambil", fieldOr(e, "summary", "Judul yang Anda pesan sudah siap diambil di perpustakaan."), fieldOr(e, "href", "")
+		},
+	},
+	events.LibraryLoanDueReminder: {
+		domain.KindLibraryLoanDueReminder,
+		func(e events.Envelope) (string, string, string) {
+			return "Pengingat jatuh tempo perpustakaan", fieldOr(e, "summary", "Ada buku yang harus segera dikembalikan."), fieldOr(e, "href", "")
+		},
+	},
 }
 
 func fieldOr(e events.Envelope, key, fallback string) string {
