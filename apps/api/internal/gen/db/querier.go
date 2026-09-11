@@ -348,6 +348,10 @@ type Querier interface {
 	FulfillReservation(ctx context.Context, arg FulfillReservationParams) (LibraryReservation, error)
 	GetAPIKeyByID(ctx context.Context, arg GetAPIKeyByIDParams) (IntegrationApiKey, error)
 	GetAcademicYearByID(ctx context.Context, arg GetAcademicYearByIDParams) (AcademicYear, error)
+	// Backs the exit-permit yearly report: ListExitPermitsForReport takes an
+	// opened_at range, so the caller needs the active academic year's own
+	// calendar bounds to build one.
+	GetAcademicYearRange(ctx context.Context, arg GetAcademicYearRangeParams) (GetAcademicYearRangeRow, error)
 	GetAcceptedSubstitutionForScheduleDate(ctx context.Context, arg GetAcceptedSubstitutionForScheduleDateParams) (SubstitutionRequest, error)
 	GetAchievement(ctx context.Context, arg GetAchievementParams) (StudentAchievement, error)
 	GetActiveAcademicYear(ctx context.Context, tenantID uuid.UUID) (AcademicYear, error)

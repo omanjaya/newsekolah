@@ -333,6 +333,30 @@ func (q *Queries) DisciplineStudentSnapshot(ctx context.Context, arg DisciplineS
 	return i, err
 }
 
+const getAcademicYearRange = `-- name: GetAcademicYearRange :one
+select starts_on, ends_on from academic_years where tenant_id = $1 and id = $2
+`
+
+type GetAcademicYearRangeParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	ID       uuid.UUID `json:"id"`
+}
+
+type GetAcademicYearRangeRow struct {
+	StartsOn pgtype.Date `json:"starts_on"`
+	EndsOn   pgtype.Date `json:"ends_on"`
+}
+
+// Backs the exit-permit yearly report: ListExitPermitsForReport takes an
+// opened_at range, so the caller needs the active academic year's own
+// calendar bounds to build one.
+func (q *Queries) GetAcademicYearRange(ctx context.Context, arg GetAcademicYearRangeParams) (GetAcademicYearRangeRow, error) {
+	row := q.db.QueryRow(ctx, getAcademicYearRange, arg.TenantID, arg.ID)
+	var i GetAcademicYearRangeRow
+	err := row.Scan(&i.StartsOn, &i.EndsOn)
+	return i, err
+}
+
 const getActiveEnrollment = `-- name: GetActiveEnrollment :one
 
 select e.student_user_id, e.class_id, c.name as class_name, c.homeroom_teacher_id

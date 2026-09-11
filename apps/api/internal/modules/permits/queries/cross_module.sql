@@ -123,6 +123,12 @@ select exists (
   select 1 from student_profiles where tenant_id = $1 and user_id = $2
 )::bool as is_student;
 
+-- name: GetAcademicYearRange :one
+-- Backs the exit-permit yearly report: ListExitPermitsForReport takes an
+-- opened_at range, so the caller needs the active academic year's own
+-- calendar bounds to build one.
+select starts_on, ends_on from academic_years where tenant_id = $1 and id = $2;
+
 -- name: GetStudentNISAndAddress :one
 -- The leave-letter template's {{nis}} and {{address}} placeholders.
 select

@@ -308,3 +308,20 @@ func (s *Service) ListExitPermitsForApproval(ctx context.Context, tenantID, call
 	})
 	return out, err
 }
+
+// ExitPermitYearlyReportRows is the counselor's yearly report (missing
+// feature, docs/analysis/backend-inventory.md 1.15): every exit permit
+// opened this academic year, regardless of status, via the reports
+// module's XLSX pipeline (see wiring.PermitsReports).
+func (s *Service) ExitPermitYearlyReportRows(ctx context.Context, tenantID uuid.UUID) ([]ExitPermitReportRow, error) {
+	var out []ExitPermitReportRow
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		yearID, err := s.activeAcademicYear(ctx, tenantID)
+		if err != nil {
+			return err
+		}
+		out, err = s.repo.ListExitPermitsForYear(ctx, tenantID, yearID)
+		return err
+	})
+	return out, err
+}

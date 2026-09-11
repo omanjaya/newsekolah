@@ -121,6 +121,10 @@ type Repository interface {
 	// queue: in-progress permits at a duty-scoped approval stage, plus
 	// every approved permit visible to scan_exit_permits holders.
 	ListExitPermitsForApproval(ctx context.Context, tenantID, callerUserID uuid.UUID) ([]ExitPermitReviewItem, error)
+	// ListExitPermitsForYear backs the counselor's yearly exit-permit
+	// report: every permit opened within academicYearID's own calendar
+	// bounds, regardless of status.
+	ListExitPermitsForYear(ctx context.Context, tenantID, academicYearID uuid.UUID) ([]ExitPermitReportRow, error)
 	// GetLatestPolicy/CreatePolicy read and seed tenant_policies rows for
 	// permits' own kinds ("permits", "late_arrival_actions"), mirroring
 	// attendance/service.Repository's identically-named pair.

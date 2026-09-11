@@ -611,6 +611,37 @@ func (r *Repository) ListExitPermitsForApproval(ctx context.Context, tenantID, c
 	return out, nil
 }
 
+func (r *Repository) ListExitPermitsForYear(ctx context.Context, tenantID, academicYearID uuid.UUID) ([]service.ExitPermitReportRow, error) {
+	yearRange, err := r.queries(ctx).GetAcademicYearRange(ctx, db.GetAcademicYearRangeParams{TenantID: tenantID, ID: academicYearID})
+	if err != nil {
+		return nil, fmt.Errorf("get academic year range: %w", err)
+	}
+	from := pdatabase.DateOrZero(yearRange.StartsOn)
+	// ends_on is inclusive; opened_at < to needs the day after.
+	to := pdatabase.DateOrZero(yearRange.EndsOn).AddDate(0, 0, 1)
+
+	rows, err := r.queries(ctx).ListExitPermitsForReport(ctx, db.ListExitPermitsForReportParams{
+		TenantID: tenantID, AcademicYearID: academicYearID,
+		OpenedAt: pdatabase.Timestamptz(from), OpenedAt_2: pdatabase.Timestamptz(to),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("list exit permits for year: %w", err)
+	}
+	out := make([]service.ExitPermitReportRow, len(rows))
+	for i, row := range rows {
+		out[i] = service.ExitPermitReportRow{
+			ExitPermit: domain.ExitPermit{
+				InstanceID: row.InstanceID, TenantID: row.TenantID, Destination: row.Destination,
+				StartPeriodID: row.StartPeriodID, EndPeriodID: row.EndPeriodID, IssuedAt: pdatabase.TimePtr(row.IssuedAt),
+				GateTokenID: pdatabase.UUIDOrNil(row.GateTokenID), ExitedAt: pdatabase.TimePtr(row.ExitedAt),
+				SecurityUserID: pdatabase.UUIDOrNil(row.SecurityUserID), StudentNameSnapshot: row.StudentNameSnapshot, ClassNameSnapshot: row.ClassNameSnapshot,
+			},
+			Status: domain.Status(row.Status), OpenedAt: pdatabase.TimeOrZero(row.OpenedAt), ClosedAt: pdatabase.TimePtr(row.ClosedAt),
+		}
+	}
+	return out, nil
+}
+
 func (r *Repository) GetLatestPolicy(ctx context.Context, tenantID uuid.UUID, kind string) ([]byte, int, bool, error) {
 	row, err := r.queries(ctx).GetLatestTenantPolicyForPermits(ctx, db.GetLatestTenantPolicyForPermitsParams{TenantID: tenantID, Kind: kind})
 	if notFound(err) {

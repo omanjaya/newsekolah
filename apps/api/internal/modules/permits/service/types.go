@@ -57,6 +57,16 @@ type LateArrivalReviewItem struct {
 	OpenedAt          time.Time
 }
 
+// ExitPermitReportRow is one exit_permits row for the counselor's yearly
+// report (docs/analysis/backend-inventory.md 1.15), spanning the whole
+// active academic year.
+type ExitPermitReportRow struct {
+	domain.ExitPermit
+	Status   domain.Status
+	OpenedAt time.Time
+	ClosedAt *time.Time
+}
+
 // ExitPermitReviewItem is an exit permit joined with its workflow state,
 // for the counselor/leadership/security approval queue.
 type ExitPermitReviewItem struct {

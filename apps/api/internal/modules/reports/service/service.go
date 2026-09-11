@@ -24,11 +24,12 @@ var (
 type Kind string
 
 const (
-	KindAttendanceDaily  Kind = "attendance.daily"
-	KindDisciplinePoints Kind = "discipline.points"
-	KindWarningLetters   Kind = "discipline.warning_letters"
-	KindGradingReport    Kind = "grading.report_scores"
-	KindLeaveRequests    Kind = "permits.leave_requests"
+	KindAttendanceDaily   Kind = "attendance.daily"
+	KindDisciplinePoints  Kind = "discipline.points"
+	KindWarningLetters    Kind = "discipline.warning_letters"
+	KindGradingReport     Kind = "grading.report_scores"
+	KindLeaveRequests     Kind = "permits.leave_requests"
+	KindExitPermitsYearly Kind = "permits.exit_permits_yearly"
 )
 
 // ArgumentKind tells the UI which control to render for a parameter.
@@ -63,6 +64,7 @@ func Catalog() []Definition {
 		{KindWarningLetters, "view_discipline", []Argument{{"class_id", ArgClass, false}}},
 		{KindGradingReport, "manage_grades", []Argument{{"class_id", ArgClass, true}, {"subject_id", ArgSubject, true}, {"term_id", ArgTerm, false}}},
 		{KindLeaveRequests, "view_reports", []Argument{{"class_id", ArgClass, false}}},
+		{KindExitPermitsYearly, "view_reports", nil},
 	}
 }
 
@@ -98,6 +100,7 @@ type GradingReader interface {
 
 type PermitsReader interface {
 	LeaveRequestRows(ctx context.Context, tenantID uuid.UUID, classID uuid.NullUUID) (Sheet, error)
+	ExitPermitYearlyRows(ctx context.Context, tenantID uuid.UUID) (Sheet, error)
 }
 
 type Service struct {
@@ -163,6 +166,11 @@ func (s *Service) sheet(ctx context.Context, tenantID uuid.UUID, kind Kind, args
 			return Sheet{}, ErrReportNotFound
 		}
 		return s.permits.LeaveRequestRows(ctx, tenantID, args.ClassID)
+	case KindExitPermitsYearly:
+		if s.permits == nil {
+			return Sheet{}, ErrReportNotFound
+		}
+		return s.permits.ExitPermitYearlyRows(ctx, tenantID)
 	default:
 		return Sheet{}, ErrReportNotFound
 	}
