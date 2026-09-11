@@ -51,4 +51,6 @@ var (
 
 	ErrImportRowInvalid    = errors.New("import row could not be matched to a student")
 	ErrImportHasInvalidRow = errors.New("the file has at least one invalid row; commit with partial=true to apply the valid rows and skip the rest")
+
+	ErrFieldTooLong = errors.New("field exceeds its maximum length")
 )

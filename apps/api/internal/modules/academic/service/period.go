@@ -43,6 +43,9 @@ func (s *Service) ListPeriodTemplates(ctx context.Context, tenantID uuid.UUID) (
 // one, so "is_default" is enforced application-side (the schema has no
 // partial unique index for it, unlike is_active on academic_years).
 func (s *Service) CreatePeriodTemplate(ctx context.Context, tenantID uuid.UUID, name string, isDefault bool) (domain.PeriodTemplate, error) {
+	if err := domain.ValidateMaxLength(name, domain.MaxPeriodTemplateNameLength); err != nil {
+		return domain.PeriodTemplate{}, err
+	}
 	var template domain.PeriodTemplate
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		if isDefault {
@@ -52,12 +55,15 @@ func (s *Service) CreatePeriodTemplate(ctx context.Context, tenantID uuid.UUID, 
 		}
 		var err error
 		template, err = s.repo.CreatePeriodTemplate(ctx, tenantID, name, isDefault)
-		return err
+		return mapCheckViolation(err, domain.ErrFieldTooLong)
 	})
 	return template, err
 }
 
 func (s *Service) UpdatePeriodTemplate(ctx context.Context, tenantID, id uuid.UUID, name string, isDefault bool) (domain.PeriodTemplate, error) {
+	if err := domain.ValidateMaxLength(name, domain.MaxPeriodTemplateNameLength); err != nil {
+		return domain.PeriodTemplate{}, err
+	}
 	var template domain.PeriodTemplate
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		if isDefault {
@@ -67,7 +73,7 @@ func (s *Service) UpdatePeriodTemplate(ctx context.Context, tenantID, id uuid.UU
 		}
 		var err error
 		template, err = s.repo.UpdatePeriodTemplate(ctx, tenantID, id, name, isDefault)
-		return mapNotFound(err, domain.ErrPeriodTemplateNotFound)
+		return mapNotFound(mapCheckViolation(err, domain.ErrFieldTooLong), domain.ErrPeriodTemplateNotFound)
 	})
 	return template, err
 }
@@ -112,11 +118,14 @@ func (s *Service) CreatePeriod(ctx context.Context, p domain.Period) (domain.Per
 	if err := domain.ValidatePeriodTimes(p.StartsAt, p.EndsAt); err != nil {
 		return domain.Period{}, err
 	}
+	if err := domain.ValidateMaxLength(p.Name, domain.MaxPeriodNameLength); err != nil {
+		return domain.Period{}, err
+	}
 	var period domain.Period
 	err := s.withTx(ctx, p.TenantID, func(ctx context.Context) error {
 		var err error
 		period, err = s.repo.CreatePeriod(ctx, p)
-		return mapUniqueViolation(err, domain.ErrPeriodSequenceTaken)
+		return mapCheckViolation(mapUniqueViolation(err, domain.ErrPeriodSequenceTaken), domain.ErrFieldTooLong)
 	})
 	return period, err
 }
@@ -125,11 +134,14 @@ func (s *Service) UpdatePeriod(ctx context.Context, p domain.Period) (domain.Per
 	if err := domain.ValidatePeriodTimes(p.StartsAt, p.EndsAt); err != nil {
 		return domain.Period{}, err
 	}
+	if err := domain.ValidateMaxLength(p.Name, domain.MaxPeriodNameLength); err != nil {
+		return domain.Period{}, err
+	}
 	var period domain.Period
 	err := s.withTx(ctx, p.TenantID, func(ctx context.Context) error {
 		var err error
 		period, err = s.repo.UpdatePeriod(ctx, p)
-		return mapNotFound(mapUniqueViolation(err, domain.ErrPeriodSequenceTaken), domain.ErrPeriodNotFound)
+		return mapNotFound(mapCheckViolation(mapUniqueViolation(err, domain.ErrPeriodSequenceTaken), domain.ErrFieldTooLong), domain.ErrPeriodNotFound)
 	})
 	return period, err
 }

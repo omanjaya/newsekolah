@@ -61,13 +61,16 @@ func (s *Service) CreateAcademicYear(ctx context.Context, tenantID uuid.UUID, la
 	if err := domain.ValidatePeriod(startsOn, endsOn); err != nil {
 		return domain.AcademicYear{}, err
 	}
+	if err := domain.ValidateMaxLength(label, domain.MaxAcademicYearLabelLength); err != nil {
+		return domain.AcademicYear{}, err
+	}
 
 	var year domain.AcademicYear
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error
 		year, err = s.repo.CreateYear(ctx, tenantID, label, startsOn, endsOn)
 		if err != nil {
-			return mapUniqueViolation(err, domain.ErrAcademicYearNameExists)
+			return mapCheckViolation(mapUniqueViolation(err, domain.ErrAcademicYearNameExists), domain.ErrFieldTooLong)
 		}
 
 		termCount := s.termCountPolicy(ctx, tenantID)
@@ -109,6 +112,9 @@ func (s *Service) UpdateAcademicYear(ctx context.Context, tenantID, id uuid.UUID
 	if err := domain.ValidatePeriod(startsOn, endsOn); err != nil {
 		return domain.AcademicYear{}, err
 	}
+	if err := domain.ValidateMaxLength(label, domain.MaxAcademicYearLabelLength); err != nil {
+		return domain.AcademicYear{}, err
+	}
 	var year domain.AcademicYear
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		existing, err := s.repo.GetYearByID(ctx, tenantID, id)
@@ -119,7 +125,7 @@ func (s *Service) UpdateAcademicYear(ctx context.Context, tenantID, id uuid.UUID
 			return domain.ErrAcademicYearArchived
 		}
 		year, err = s.repo.UpdateYear(ctx, tenantID, id, label, startsOn, endsOn)
-		return mapNotFound(mapUniqueViolation(err, domain.ErrAcademicYearNameExists), domain.ErrAcademicYearNotFound)
+		return mapNotFound(mapCheckViolation(mapUniqueViolation(err, domain.ErrAcademicYearNameExists), domain.ErrFieldTooLong), domain.ErrAcademicYearNotFound)
 	})
 	return year, err
 }
@@ -216,13 +222,16 @@ func (s *Service) CreateTerm(ctx context.Context, tenantID, yearID uuid.UUID, na
 	if err := domain.ValidatePeriod(startsOn, endsOn); err != nil {
 		return domain.Term{}, err
 	}
+	if err := domain.ValidateMaxLength(name, domain.MaxTermNameLength); err != nil {
+		return domain.Term{}, err
+	}
 	var term domain.Term
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error
 		term, err = s.repo.CreateTerm(ctx, domain.Term{
 			TenantID: tenantID, AcademicYearID: yearID, Name: name, Sequence: sequence, StartsOn: startsOn, EndsOn: endsOn,
 		})
-		return mapUniqueViolation(err, domain.ErrTermSequenceTaken)
+		return mapCheckViolation(mapUniqueViolation(err, domain.ErrTermSequenceTaken), domain.ErrFieldTooLong)
 	})
 	return term, err
 }
@@ -231,11 +240,14 @@ func (s *Service) UpdateTerm(ctx context.Context, tenantID, id uuid.UUID, name s
 	if err := domain.ValidatePeriod(startsOn, endsOn); err != nil {
 		return domain.Term{}, err
 	}
+	if err := domain.ValidateMaxLength(name, domain.MaxTermNameLength); err != nil {
+		return domain.Term{}, err
+	}
 	var term domain.Term
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error
 		term, err = s.repo.UpdateTerm(ctx, tenantID, id, name, startsOn, endsOn)
-		return mapNotFound(err, domain.ErrTermNotFound)
+		return mapNotFound(mapCheckViolation(err, domain.ErrFieldTooLong), domain.ErrTermNotFound)
 	})
 	return term, err
 }
@@ -276,13 +288,16 @@ func (s *Service) CreateCalendarEvent(ctx context.Context, tenantID, yearID uuid
 	if err := domain.ValidateCalendarEventRange(date, endDate); err != nil {
 		return domain.CalendarEvent{}, err
 	}
+	if err := domain.ValidateMaxLength(name, domain.MaxCalendarEventNameLength); err != nil {
+		return domain.CalendarEvent{}, err
+	}
 	var event domain.CalendarEvent
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error
 		event, err = s.repo.CreateCalendarEvent(ctx, domain.CalendarEvent{
 			TenantID: tenantID, AcademicYearID: yearID, Date: date, EndDate: endDate, Kind: kind, Name: name, GradeLevelIDs: gradeLevelIDs,
 		})
-		return err
+		return mapCheckViolation(err, domain.ErrFieldTooLong)
 	})
 	return event, err
 }
@@ -291,11 +306,14 @@ func (s *Service) UpdateCalendarEvent(ctx context.Context, tenantID, id uuid.UUI
 	if err := domain.ValidateCalendarEventRange(date, endDate); err != nil {
 		return domain.CalendarEvent{}, err
 	}
+	if err := domain.ValidateMaxLength(name, domain.MaxCalendarEventNameLength); err != nil {
+		return domain.CalendarEvent{}, err
+	}
 	var event domain.CalendarEvent
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error
 		event, err = s.repo.UpdateCalendarEvent(ctx, tenantID, id, date, endDate, kind, name, gradeLevelIDs)
-		return mapNotFound(err, domain.ErrCalendarEventNotFound)
+		return mapNotFound(mapCheckViolation(err, domain.ErrFieldTooLong), domain.ErrCalendarEventNotFound)
 	})
 	return event, err
 }

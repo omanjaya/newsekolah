@@ -36,23 +36,36 @@ func (s *Service) ListGradeLevels(ctx context.Context, tenantID uuid.UUID) ([]do
 }
 
 func (s *Service) CreateGradeLevel(ctx context.Context, tenantID uuid.UUID, code, name string, sequence int16) (domain.GradeLevel, error) {
+	if err := validateGradeLevelFields(code, name); err != nil {
+		return domain.GradeLevel{}, err
+	}
 	var level domain.GradeLevel
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error
 		level, err = s.repo.CreateGradeLevel(ctx, tenantID, code, name, sequence)
-		return mapUniqueViolation(err, domain.ErrGradeLevelCodeExists)
+		return mapCheckViolation(mapUniqueViolation(err, domain.ErrGradeLevelCodeExists), domain.ErrFieldTooLong)
 	})
 	return level, err
 }
 
 func (s *Service) UpdateGradeLevel(ctx context.Context, tenantID, id uuid.UUID, code, name string, sequence int16) (domain.GradeLevel, error) {
+	if err := validateGradeLevelFields(code, name); err != nil {
+		return domain.GradeLevel{}, err
+	}
 	var level domain.GradeLevel
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error
 		level, err = s.repo.UpdateGradeLevel(ctx, tenantID, id, code, name, sequence)
-		return mapNotFound(mapUniqueViolation(err, domain.ErrGradeLevelCodeExists), domain.ErrGradeLevelNotFound)
+		return mapNotFound(mapCheckViolation(mapUniqueViolation(err, domain.ErrGradeLevelCodeExists), domain.ErrFieldTooLong), domain.ErrGradeLevelNotFound)
 	})
 	return level, err
+}
+
+func validateGradeLevelFields(code, name string) error {
+	if err := domain.ValidateMaxLength(code, domain.MaxGradeLevelCodeLength); err != nil {
+		return err
+	}
+	return domain.ValidateMaxLength(name, domain.MaxGradeLevelNameLength)
 }
 
 // DeleteGradeLevel refuses to remove a grade level that any class still
@@ -109,23 +122,36 @@ func (s *Service) ListTracks(ctx context.Context, tenantID uuid.UUID) ([]domain.
 }
 
 func (s *Service) CreateTrack(ctx context.Context, tenantID uuid.UUID, code, name string) (domain.Track, error) {
+	if err := validateTrackFields(code, name); err != nil {
+		return domain.Track{}, err
+	}
 	var track domain.Track
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error
 		track, err = s.repo.CreateTrack(ctx, tenantID, code, name)
-		return mapUniqueViolation(err, domain.ErrTrackCodeExists)
+		return mapCheckViolation(mapUniqueViolation(err, domain.ErrTrackCodeExists), domain.ErrFieldTooLong)
 	})
 	return track, err
 }
 
 func (s *Service) UpdateTrack(ctx context.Context, tenantID, id uuid.UUID, code, name string) (domain.Track, error) {
+	if err := validateTrackFields(code, name); err != nil {
+		return domain.Track{}, err
+	}
 	var track domain.Track
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error
 		track, err = s.repo.UpdateTrack(ctx, tenantID, id, code, name)
-		return mapNotFound(mapUniqueViolation(err, domain.ErrTrackCodeExists), domain.ErrTrackNotFound)
+		return mapNotFound(mapCheckViolation(mapUniqueViolation(err, domain.ErrTrackCodeExists), domain.ErrFieldTooLong), domain.ErrTrackNotFound)
 	})
 	return track, err
+}
+
+func validateTrackFields(code, name string) error {
+	if err := domain.ValidateMaxLength(code, domain.MaxTrackCodeLength); err != nil {
+		return err
+	}
+	return domain.ValidateMaxLength(name, domain.MaxTrackNameLength)
 }
 
 func (s *Service) DeleteTrack(ctx context.Context, tenantID, id uuid.UUID) error {

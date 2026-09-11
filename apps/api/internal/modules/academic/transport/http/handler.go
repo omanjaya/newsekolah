@@ -118,6 +118,7 @@ var validationErrs = []error{
 	domain.ErrTooManyClasses,
 	domain.ErrImportRowInvalid,
 	domain.ErrImportHasInvalidRow,
+	domain.ErrFieldTooLong,
 }
 
 // mapDomainError maps a domain sentinel error to a stable httpx.Error; any
