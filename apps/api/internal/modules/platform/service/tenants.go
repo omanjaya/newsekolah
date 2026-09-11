@@ -98,6 +98,20 @@ func (s *Service) health(ctx context.Context, t domain.Tenant) (domain.TenantHea
 // in one call: the admin's role is granted every tenant-level permission
 // except the platform console itself, and its password is generated here
 // and returned exactly once (docs/08-security.md never persists it).
+//
+// All three steps -- create the tenant row, provision its admin user, seed
+// its default duty types -- run in one transaction (withPlatformTx) rather
+// than each committing independently. Without that, a failure in the last
+// step (say, seeding duty types) would leave a tenant and its admin already
+// committed but with no "homeroom" duty type, which SeedDefaultDuties's own
+// doc comment calls out as the thing that leaves a school unable to name a
+// homeroom teacher at all -- a half-provisioned tenant with no compensating
+// cleanup. One transaction was chosen over explicit cleanup-on-failure
+// because every step here already goes through the ordinary tenant-scoped
+// repository calls (no external side effects like sending an email that a
+// rollback could not undo), so there is nothing a transaction can't clean
+// up on its own, and it avoids a second failure mode (cleanup itself
+// failing and leaving the same half-provisioned tenant behind).
 func (s *Service) CreateTenant(ctx context.Context, in domain.TenantInput) (CreateTenantResult, error) {
 	if err := s.guard(); err != nil {
 		return CreateTenantResult{}, err
@@ -106,23 +120,28 @@ func (s *Service) CreateTenant(ctx context.Context, in domain.TenantInput) (Crea
 		return CreateTenantResult{}, err
 	}
 
-	tenant, err := s.repo.CreateTenant(ctx, in)
-	if err != nil {
-		return CreateTenantResult{}, err
-	}
+	var result CreateTenantResult
+	err := s.withPlatformTx(ctx, func(ctx context.Context) error {
+		tenant, err := s.repo.CreateTenant(ctx, in)
+		if err != nil {
+			return err
+		}
 
-	admin, err := s.admin.ProvisionAdmin(ctx, tenant.ID, AdminInput{
-		Username: in.AdminUsername, Email: in.AdminEmail, Name: in.AdminName,
+		admin, err := s.admin.ProvisionAdmin(ctx, tenant.ID, AdminInput{
+			Username: in.AdminUsername, Email: in.AdminEmail, Name: in.AdminName,
+		})
+		if err != nil {
+			return err
+		}
+
+		if err := s.admin.SeedDefaultDuties(ctx, tenant.ID); err != nil {
+			return err
+		}
+
+		result = CreateTenantResult{Tenant: tenant, AdminUsername: admin.Username, AdminPassword: admin.Password}
+		return nil
 	})
-	if err != nil {
-		return CreateTenantResult{}, err
-	}
-
-	if err := s.admin.SeedDefaultDuties(ctx, tenant.ID); err != nil {
-		return CreateTenantResult{}, err
-	}
-
-	return CreateTenantResult{Tenant: tenant, AdminUsername: admin.Username, AdminPassword: admin.Password}, nil
+	return result, err
 }
 
 // SuspendTenant blocks a tenant from signing in without deleting anything.
