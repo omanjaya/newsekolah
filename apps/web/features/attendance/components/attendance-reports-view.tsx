@@ -38,6 +38,8 @@ import {
   type RosterEntry,
 } from "../api";
 
+import { AttendanceDailySessions } from "./attendance-daily-sessions";
+
 const STATUS_TOKEN: Record<
   string,
   "present" | "sick" | "excused" | "dispensation" | "absent" | "late"
@@ -107,10 +109,19 @@ function DailyReportTab(): ReactElement {
         cell: ({ row }) => {
           const code = row.original.status_code;
           const token = STATUS_TOKEN[code];
-          return token ? (
-            <StatusBadge status={token} label={t(`codes.${code}`)} />
-          ) : (
-            <span className="text-fg-muted">{t(`codes.${code}`)}</span>
+          return (
+            <div className="flex items-center gap-2">
+              {token ? (
+                <StatusBadge status={token} label={t(`codes.${code}`)} />
+              ) : (
+                <span className="text-fg-muted">{t(`codes.${code}`)}</span>
+              )}
+              {row.original.partial_absence && (
+                <span className="text-[12px] text-status-absent" title={t("partialAbsenceHint")}>
+                  {t("partialAbsence")}
+                </span>
+              )}
+            </div>
           );
         },
       },
@@ -222,6 +233,7 @@ function DailyReportTab(): ReactElement {
               <EmptyState icon={<FileBarChart aria-hidden="true" />} title={t("emptyTitle")} />
             }
           />
+          <AttendanceDailySessions sessions={report.data?.sessions ?? []} />
         </>
       )}
     </div>

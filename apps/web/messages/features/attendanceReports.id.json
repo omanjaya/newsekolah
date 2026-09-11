@@ -15,6 +15,12 @@
     "pickClassBody": "Laporan harian menampilkan status kehadiran satu kelas pada satu tanggal.",
     "emptyTitle": "Belum ada siswa pada kelas ini",
     "summarySubmitted": "Sesi tercatat",
+    "partialAbsence": "Sebagian alpha",
+    "partialAbsenceHint": "Alpha pada sebagian sesi hari ini, meski status hariannya bukan Alpha.",
+    "sessionsTitle": "Rincian per sesi",
+    "sessionSubmitted": "Tersimpan",
+    "sessionPending": "Belum diisi",
+    "sessionNoEntries": "Tidak ada siswa pada sesi ini.",
     "columns": {
       "name": "Nama siswa",
       "status": "Status",

@@ -15,6 +15,12 @@
     "pickClassBody": "The daily report shows one class's attendance status for one date.",
     "emptyTitle": "No students in this class",
     "summarySubmitted": "Sessions recorded",
+    "partialAbsence": "Partial absence",
+    "partialAbsenceHint": "Absent in some of today's sessions, even though the daily status is not Absent.",
+    "sessionsTitle": "Session detail",
+    "sessionSubmitted": "Saved",
+    "sessionPending": "Not filled",
+    "sessionNoEntries": "No students in this session.",
     "columns": {
       "name": "Student name",
       "status": "Status",
