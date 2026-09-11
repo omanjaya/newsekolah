@@ -25,9 +25,11 @@ import (
 //
 // -- cross-module read; replace with academic reader interface after merge --
 type StudentRef struct {
-	ID   uuid.UUID
-	Name string
-	NIS  string
+	ID            uuid.UUID
+	Name          string
+	NIS           string
+	GuardianName  string
+	GuardianPhone string
 }
 
 // DailySummaryRow is one attendance_daily_summary row as the service reads
@@ -201,6 +203,12 @@ type ViolationRecorder interface {
 	ReplaceSessionViolations(ctx context.Context, tenantID, sessionID, studentUserID uuid.UUID, violationTypeIDs []uuid.UUID, occurredOn time.Time, reporterUserID uuid.UUID) error
 }
 
+// DisciplineReader lets the homeroom roster show each student's violation
+// count and total points without this package importing discipline.
+type DisciplineReader interface {
+	ViolationSummary(ctx context.Context, tenantID, academicYearID, studentUserID uuid.UUID) (count, points int, err error)
+}
+
 // RealtimePublisher lets the service push a live update to the monitor
 // display's WebSocket topic after a session is submitted, without this
 // package importing platform/realtime for anything but this one method
@@ -230,6 +238,7 @@ type Service struct {
 	blocker    Blocker
 	overrider  Overrider
 	violations ViolationRecorder
+	discipline DisciplineReader
 	events     EventPublisher
 	realtime   RealtimePublisher
 	presence   PresenceReader
@@ -239,12 +248,14 @@ type Service struct {
 func New(
 	pool *pgxpool.Pool, repo Repository, years AcademicYearReader,
 	schedules scheduling.ScheduleReader, access scheduling.AccessChecker, journals scheduling.JournalService,
-	blocker Blocker, overrider Overrider, violations ViolationRecorder, events EventPublisher, realtime RealtimePublisher, presence PresenceReader,
+	blocker Blocker, overrider Overrider, violations ViolationRecorder, discipline DisciplineReader,
+	events EventPublisher, realtime RealtimePublisher, presence PresenceReader,
 ) *Service {
 	return &Service{
 		clock: clock.Real{},
 		pool:  pool, repo: repo, years: years, schedules: schedules, access: access, journals: journals,
-		blocker: blocker, overrider: overrider, violations: violations, events: events, realtime: realtime, presence: presence,
+		blocker: blocker, overrider: overrider, violations: violations, discipline: discipline,
+		events: events, realtime: realtime, presence: presence,
 	}
 }
 

@@ -3172,7 +3172,7 @@ paths:
         - attendance
       operationId: getHomeroomAttendance
       x-permission: view_attendance
-      summary: One day's daily status for every student in the caller's homeroom class
+      summary: One day's daily status for every student in the caller's homeroom class, with guardian and discipline info
       parameters:
         - name: date
           in: query
@@ -3180,6 +3180,28 @@ paths:
           schema:
             type: string
             format: date
+        - name: search
+          in: query
+          description: Case-insensitive match on the student's name or NIS.
+          schema:
+            type: string
+        - name: status_code
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
       responses:
         "200":
           description: Homeroom roster with daily status
@@ -3189,11 +3211,20 @@ paths:
                 type: object
                 required:
                   - data
+                  - total
+                  - status_counts
                 properties:
                   data:
                     type: array
                     items:
-                      $ref: "#/components/schemas/AttendanceRosterEntry"
+                      $ref: "#/components/schemas/AttendanceHomeroomEntry"
+                  total:
+                    type: integer
+                    description: Total students matching search/status_code, ignoring limit/offset.
+                  status_counts:
+                    type: object
+                    additionalProperties:
+                      type: integer
         "403":
           $ref: "#/components/responses/Forbidden"
   /v1/attendance/reports/daily:
@@ -15493,6 +15524,21 @@ components:
         partial_absence:
           type: boolean
           description: At least one submitted session that day was Alpha, even when status_code resolved to something else.
+    AttendanceHomeroomEntry:
+      allOf:
+        - $ref: "#/components/schemas/AttendanceRosterEntry"
+        - type: object
+          properties:
+            nis:
+              type: string
+            guardian_name:
+              type: string
+            guardian_phone:
+              type: string
+            violation_count:
+              type: integer
+            violation_points:
+              type: integer
     AttendanceDailyReportSessionEntry:
       type: object
       required:

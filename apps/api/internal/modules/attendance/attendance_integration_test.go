@@ -80,7 +80,7 @@ func buildService(pool *pgxpool.Pool) *service.Service {
 	repo := repository.New(pool)
 	return service.New(
 		pool, repo, schoolModule.Service, schedulingModule.ScheduleReader, schedulingModule.AccessChecker, schedulingModule.JournalService,
-		NoOpBlocker{}, NoOpOverrider{}, NoOpViolationRecorder{}, nil, nil, nil,
+		NoOpBlocker{}, NoOpOverrider{}, NoOpViolationRecorder{}, NoOpDisciplineReader{}, nil, nil, nil,
 	)
 }
 
@@ -334,11 +334,11 @@ func TestHomeroomScopeForbidden(t *testing.T) {
 	svc := buildService(pool)
 	w := seedWorld(t, ctx, pool, "homeroom-scope")
 
-	roster, err := svc.GetHomeroomAttendance(ctx, w.tenantID, service.Actor{UserID: w.teacherID}, w.today)
+	roster, err := svc.GetHomeroomAttendance(ctx, w.tenantID, service.Actor{UserID: w.teacherID}, w.today, service.HomeroomFilter{})
 	require.NoError(t, err)
-	require.Len(t, roster, 2)
+	require.Len(t, roster.Students, 2)
 
-	_, err = svc.GetHomeroomAttendance(ctx, w.tenantID, service.Actor{UserID: w.otherTeacherID}, w.today)
+	_, err = svc.GetHomeroomAttendance(ctx, w.tenantID, service.Actor{UserID: w.otherTeacherID}, w.today, service.HomeroomFilter{})
 	require.True(t, errors.Is(err, domain.ErrNotHomeroomTeacher), "a teacher without the homeroom duty must be forbidden, got %v", err)
 }
 

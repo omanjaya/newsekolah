@@ -1423,7 +1423,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** One day's daily status for every student in the caller's homeroom class */
+        /** One day's daily status for every student in the caller's homeroom class, with guardian and discipline info */
         get: operations["getHomeroomAttendance"];
         put?: never;
         post?: never;
@@ -6751,6 +6751,13 @@ export interface components {
             complete: boolean;
             /** @description At least one submitted session that day was Alpha, even when status_code resolved to something else. */
             partial_absence?: boolean;
+        };
+        AttendanceHomeroomEntry: components["schemas"]["AttendanceRosterEntry"] & {
+            nis?: string;
+            guardian_name?: string;
+            guardian_phone?: string;
+            violation_count?: number;
+            violation_points?: number;
         };
         AttendanceDailyReportSessionEntry: {
             /** Format: uuid */
@@ -12206,6 +12213,11 @@ export interface operations {
         parameters: {
             query: {
                 date: string;
+                /** @description Case-insensitive match on the student's name or NIS. */
+                search?: string;
+                status_code?: string;
+                limit?: number;
+                offset?: number;
             };
             header?: never;
             path?: never;
@@ -12220,7 +12232,12 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        data: components["schemas"]["AttendanceRosterEntry"][];
+                        data: components["schemas"]["AttendanceHomeroomEntry"][];
+                        /** @description Total students matching search/status_code, ignoring limit/offset. */
+                        total: number;
+                        status_counts: {
+                            [key: string]: number;
+                        };
                     };
                 };
             };

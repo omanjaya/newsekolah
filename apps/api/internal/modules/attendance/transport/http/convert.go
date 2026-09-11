@@ -156,6 +156,31 @@ func toAPIRosterEntries(entries []service.RosterEntry) []api.AttendanceRosterEnt
 	return out
 }
 
+func toAPIHomeroomEntry(e service.HomeroomEntry) api.AttendanceHomeroomEntry {
+	out := api.AttendanceHomeroomEntry{
+		StudentUserId: e.StudentUserID, Name: e.Name, StatusCode: e.StatusCode,
+		ExpectedSessions: e.ExpectedSessions, SubmittedSessions: e.SubmittedSessions, Complete: e.Complete,
+		Nis: strPtrOrNil(e.NIS), GuardianName: strPtrOrNil(e.GuardianName), GuardianPhone: strPtrOrNil(e.GuardianPhone),
+	}
+	if e.PartialAbsence {
+		partial := true
+		out.PartialAbsence = &partial
+	}
+	if e.ViolationCount > 0 || e.ViolationPoints > 0 {
+		count, points := e.ViolationCount, e.ViolationPoints
+		out.ViolationCount, out.ViolationPoints = &count, &points
+	}
+	return out
+}
+
+func toAPIHomeroomEntries(entries []service.HomeroomEntry) []api.AttendanceHomeroomEntry {
+	out := make([]api.AttendanceHomeroomEntry, len(entries))
+	for i, e := range entries {
+		out[i] = toAPIHomeroomEntry(e)
+	}
+	return out
+}
+
 func toAPIDailyReportSessionEntry(e service.DailyReportSessionEntry) api.AttendanceDailyReportSessionEntry {
 	out := api.AttendanceDailyReportSessionEntry{StudentUserId: e.StudentUserID, Name: e.Name, StatusCode: e.StatusCode}
 	if e.Notes != "" {

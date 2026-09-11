@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -183,8 +184,39 @@ func (s *Service) buildCalendarDays(
 // student's daily status for date. actor must hold the homeroom duty for
 // some class this academic year -- there is no class_id parameter on this
 // endpoint (attendance.yaml), it is always the caller's own homeroom.
-func (s *Service) GetHomeroomAttendance(ctx context.Context, tenantID uuid.UUID, actor Actor, date time.Time) ([]RosterEntry, error) {
-	var out []RosterEntry
+// HomeroomFilter narrows and paginates it, and HomeroomRoster carries a
+// student card (guardian contact, violation summary) the plain daily
+// report has no need for (docs/analysis/backend-inventory.md section
+// 1.9's homeroom "kartu siswa").
+type HomeroomFilter struct {
+	// Search matches a student's name or NIS, case-insensitively.
+	Search        string
+	StatusCode    string
+	Limit, Offset int
+}
+
+// HomeroomEntry is one student's homeroom roster row: their daily status
+// plus the contact and discipline summary a homeroom teacher's card needs.
+type HomeroomEntry struct {
+	RosterEntry
+	NIS             string
+	GuardianName    string
+	GuardianPhone   string
+	ViolationCount  int
+	ViolationPoints int
+}
+
+// HomeroomRoster is GetHomeroomAttendance's full response: one page of
+// HomeroomFilter-matching students, plus the per-status counts and total
+// across every match (not just the page returned).
+type HomeroomRoster struct {
+	Students     []HomeroomEntry
+	StatusCounts map[string]int
+	Total        int
+}
+
+func (s *Service) GetHomeroomAttendance(ctx context.Context, tenantID uuid.UUID, actor Actor, date time.Time, f HomeroomFilter) (HomeroomRoster, error) {
+	var out HomeroomRoster
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		yearID, err := s.activeAcademicYear(ctx, tenantID)
 		if err != nil {
@@ -197,10 +229,88 @@ func (s *Service) GetHomeroomAttendance(ctx context.Context, tenantID uuid.UUID,
 		if !ok {
 			return domain.ErrNotHomeroomTeacher
 		}
-		out, _, _, err = s.buildRoster(ctx, tenantID, yearID, classID, date)
-		return err
+
+		roster, _, _, err := s.buildRoster(ctx, tenantID, yearID, classID, date)
+		if err != nil {
+			return err
+		}
+		students, err := s.repo.ListActiveEnrollments(ctx, tenantID, yearID, classID)
+		if err != nil {
+			return err
+		}
+		byStudent := make(map[uuid.UUID]StudentRef, len(students))
+		for _, st := range students {
+			byStudent[st.ID] = st
+		}
+
+		entries := make([]HomeroomEntry, 0, len(roster))
+		for _, r := range roster {
+			st := byStudent[r.StudentUserID]
+			entry := HomeroomEntry{RosterEntry: r, NIS: st.NIS, GuardianName: st.GuardianName, GuardianPhone: st.GuardianPhone}
+			entry.ViolationCount, entry.ViolationPoints, err = s.discipline.ViolationSummary(ctx, tenantID, yearID, r.StudentUserID)
+			if err != nil {
+				return err
+			}
+			entries = append(entries, entry)
+		}
+
+		entries = filterHomeroomEntries(entries, f)
+
+		counts := make(map[string]int, len(entries))
+		for _, e := range entries {
+			counts[e.StatusCode]++
+		}
+		total := len(entries)
+
+		limit := f.Limit
+		if limit <= 0 || limit > 200 {
+			limit = 50
+		}
+		offset := f.Offset
+		if offset < 0 {
+			offset = 0
+		}
+		if offset > len(entries) {
+			offset = len(entries)
+		}
+		end := offset + limit
+		if end > len(entries) {
+			end = len(entries)
+		}
+
+		out = HomeroomRoster{Students: entries[offset:end], StatusCounts: counts, Total: total}
+		return nil
 	})
 	return out, err
+}
+
+// filterHomeroomEntries applies f.Search (name or NIS, case-insensitive)
+// and f.StatusCode, in that order. The roster and every school class it
+// covers are small enough that filtering in Go, after computing each
+// student's daily status, is simpler than pushing the search into SQL
+// alongside domain.ComputeDailyStatus's in-memory algorithm.
+func filterHomeroomEntries(entries []HomeroomEntry, f HomeroomFilter) []HomeroomEntry {
+	out := entries
+	if f.Search != "" {
+		q := strings.ToLower(f.Search)
+		filtered := make([]HomeroomEntry, 0, len(out))
+		for _, e := range out {
+			if strings.Contains(strings.ToLower(e.Name), q) || strings.Contains(strings.ToLower(e.NIS), q) {
+				filtered = append(filtered, e)
+			}
+		}
+		out = filtered
+	}
+	if f.StatusCode != "" {
+		filtered := make([]HomeroomEntry, 0, len(out))
+		for _, e := range out {
+			if e.StatusCode == f.StatusCode {
+				filtered = append(filtered, e)
+			}
+		}
+		out = filtered
+	}
+	return out
 }
 
 // buildRoster is the shared roster-building step behind GetHomeroomAttendance

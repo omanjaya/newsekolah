@@ -66,3 +66,18 @@ type NoOpViolationRecorder struct{}
 func (NoOpViolationRecorder) ReplaceSessionViolations(context.Context, uuid.UUID, uuid.UUID, uuid.UUID, []uuid.UUID, time.Time, uuid.UUID) error {
 	return nil
 }
+
+// DisciplineReader lets the homeroom roster show each student's violation
+// count and total points, mirroring Blocker/Overrider/ViolationRecorder's
+// rationale.
+type DisciplineReader interface {
+	ViolationSummary(ctx context.Context, tenantID, academicYearID, studentUserID uuid.UUID) (count, points int, err error)
+}
+
+// NoOpDisciplineReader always reports zero; it is the default until
+// discipline is wired in.
+type NoOpDisciplineReader struct{}
+
+func (NoOpDisciplineReader) ViolationSummary(context.Context, uuid.UUID, uuid.UUID, uuid.UUID) (int, int, error) {
+	return 0, 0, nil
+}

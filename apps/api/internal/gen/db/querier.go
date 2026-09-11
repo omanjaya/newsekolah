@@ -569,9 +569,9 @@ type Querier interface {
 	// parallel in other worktrees. Names are suffixed "ForAttendance" to avoid
 	// colliding with those modules' own sqlc queries over the same tables once
 	// all are merged into one generated db package.
-	// Every actively enrolled student of a class, with the display name and
-	// NIS the roster and reports need -- the same shape scheduling's own
-	// cross-module reads use for ClassRef/SubjectRef.
+	// Every actively enrolled student of a class, with the display name, NIS,
+	// and guardian contact the roster and reports need -- the same shape
+	// scheduling's own cross-module reads use for ClassRef/SubjectRef.
 	ListActiveEnrollmentsForAttendance(ctx context.Context, arg ListActiveEnrollmentsForAttendanceParams) ([]ListActiveEnrollmentsForAttendanceRow, error)
 	ListActiveEnrollmentsRefByClass(ctx context.Context, arg ListActiveEnrollmentsRefByClassParams) ([]ListActiveEnrollmentsRefByClassRow, error)
 	ListActiveFeeTypes(ctx context.Context, arg ListActiveFeeTypesParams) ([]FeeType, error)

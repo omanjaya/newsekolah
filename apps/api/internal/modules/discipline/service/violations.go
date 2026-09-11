@@ -159,6 +159,28 @@ func (s *Service) ReplaceSessionViolations(
 	})
 }
 
+// ViolationSummary implements attendance's DisciplineReader for the
+// homeroom roster (docs/analysis/backend-inventory.md section 1.9's
+// student card): the count and total points of studentID's active
+// (non-voided) violations this academic year.
+func (s *Service) ViolationSummary(ctx context.Context, tenantID, academicYearID, studentUserID uuid.UUID) (count, points int, err error) {
+	err = s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		records, err := s.repo.ListRecordsForStudent(ctx, tenantID, academicYearID, studentUserID)
+		if err != nil {
+			return err
+		}
+		for _, r := range records {
+			if r.IsVoided() {
+				continue
+			}
+			count++
+			points += r.PointsSnapshot
+		}
+		return nil
+	})
+	return count, points, err
+}
+
 func (s *Service) dueLevels(ctx context.Context, tenantID, yearID, studentID uuid.UUID) (int, []domain.SPLevel, error) {
 	total, err := s.repo.SumActivePoints(ctx, tenantID, yearID, studentID)
 	if err != nil {

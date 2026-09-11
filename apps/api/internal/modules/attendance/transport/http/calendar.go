@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/api"
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
 )
 
@@ -27,11 +28,28 @@ func (h *AttendanceHandler) GetHomeroomAttendance(ctx context.Context, request a
 		return nil, err
 	}
 
-	roster, err := h.service.GetHomeroomAttendance(ctx, tenantID, actor, request.Params.Date.Time)
+	params := request.Params
+	f := service.HomeroomFilter{}
+	if params.Search != nil {
+		f.Search = *params.Search
+	}
+	if params.StatusCode != nil {
+		f.StatusCode = *params.StatusCode
+	}
+	if params.Limit != nil {
+		f.Limit = *params.Limit
+	}
+	if params.Offset != nil {
+		f.Offset = *params.Offset
+	}
+
+	roster, err := h.service.GetHomeroomAttendance(ctx, tenantID, actor, params.Date.Time, f)
 	if err != nil {
 		return nil, mapAttendanceError(err)
 	}
-	return api.GetHomeroomAttendance200JSONResponse{Data: toAPIRosterEntries(roster)}, nil
+	return api.GetHomeroomAttendance200JSONResponse{
+		Data: toAPIHomeroomEntries(roster.Students), Total: roster.Total, StatusCounts: roster.StatusCounts,
+	}, nil
 }
 
 func (h *AttendanceHandler) GetMonthlyAttendanceSummary(ctx context.Context, request api.GetMonthlyAttendanceSummaryRequestObject) (api.GetMonthlyAttendanceSummaryResponseObject, error) {

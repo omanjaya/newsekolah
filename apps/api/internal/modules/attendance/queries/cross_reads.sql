@@ -7,13 +7,15 @@
 -- all are merged into one generated db package.
 
 -- name: ListActiveEnrollmentsForAttendance :many
--- Every actively enrolled student of a class, with the display name and
--- NIS the roster and reports need -- the same shape scheduling's own
--- cross-module reads use for ClassRef/SubjectRef.
+-- Every actively enrolled student of a class, with the display name, NIS,
+-- and guardian contact the roster and reports need -- the same shape
+-- scheduling's own cross-module reads use for ClassRef/SubjectRef.
 select
   en.student_user_id,
   u.name,
-  sp.nis
+  sp.nis,
+  sp.guardian_name,
+  sp.guardian_phone
 from enrollments en
 join users u on u.id = en.student_user_id
 left join student_profiles sp on sp.user_id = en.student_user_id

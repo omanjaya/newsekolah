@@ -134,12 +134,13 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		Clock:     clock.Real{}, Config: permitsservice.DefaultConfig([]byte(cfg.DocumentSigningKey), cfg.S3Bucket), Logger: logger,
 	})
 	lateViolations := &lateBoundViolations{}
+	lateDiscipline := &lateBoundDisciplineReader{}
 	attendanceModule := attendance.Register(attendance.Dependencies{
 		Pool: pool, Bus: eventBus, Years: schoolModule.Service,
 		Schedules: schedulingModule.ScheduleReader, Access: schedulingModule.AccessChecker, Journals: schedulingModule.JournalService,
 		Perms: identityModule.Service, Hub: hub,
 		Blocker: permitsBlocker{svc: permitsModule.Service}, Overrider: permitsOverrider{svc: permitsModule.Service},
-		Violations: lateViolations,
+		Violations: lateViolations, Discipline: lateDiscipline,
 	})
 	sync.inner = attendanceSyncAdapter{force: attendanceModule.Service.ForceStatus}
 
@@ -157,6 +158,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		Sealer: sealer, Bus: eventBus, Clock: clock.Real{},
 	})
 	lateViolations.inner = disciplineViolationsAdapter{svc: disciplineModule.Service}
+	lateDiscipline.inner = disciplineModule.Service
 
 	// analytics composes its risk signals through adapters over
 	// attendance, discipline and grading's own services (never their
@@ -453,4 +455,15 @@ func (l *lateBoundViolations) ReplaceSessionViolations(ctx context.Context, tena
 		return nil
 	}
 	return l.inner.ReplaceSessionViolations(ctx, tenantID, sessionID, studentUserID, violationTypeIDs, occurredOn, reporterUserID)
+}
+
+// lateBoundDisciplineReader breaks the same attendance <-> discipline
+// construction cycle for the homeroom roster's violation summary.
+type lateBoundDisciplineReader struct{ inner attendance.DisciplineReader }
+
+func (l *lateBoundDisciplineReader) ViolationSummary(ctx context.Context, tenantID, academicYearID, studentUserID uuid.UUID) (int, int, error) {
+	if l.inner == nil {
+		return 0, 0, nil
+	}
+	return l.inner.ViolationSummary(ctx, tenantID, academicYearID, studentUserID)
 }

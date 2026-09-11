@@ -137,7 +137,9 @@ const listActiveEnrollmentsForAttendance = `-- name: ListActiveEnrollmentsForAtt
 select
   en.student_user_id,
   u.name,
-  sp.nis
+  sp.nis,
+  sp.guardian_name,
+  sp.guardian_phone
 from enrollments en
 join users u on u.id = en.student_user_id
 left join student_profiles sp on sp.user_id = en.student_user_id
@@ -155,6 +157,8 @@ type ListActiveEnrollmentsForAttendanceRow struct {
 	StudentUserID uuid.UUID   `json:"student_user_id"`
 	Name          string      `json:"name"`
 	Nis           pgtype.Text `json:"nis"`
+	GuardianName  pgtype.Text `json:"guardian_name"`
+	GuardianPhone pgtype.Text `json:"guardian_phone"`
 }
 
 // cross-module read; replace with academic/identity/school reader
@@ -164,9 +168,9 @@ type ListActiveEnrollmentsForAttendanceRow struct {
 // parallel in other worktrees. Names are suffixed "ForAttendance" to avoid
 // colliding with those modules' own sqlc queries over the same tables once
 // all are merged into one generated db package.
-// Every actively enrolled student of a class, with the display name and
-// NIS the roster and reports need -- the same shape scheduling's own
-// cross-module reads use for ClassRef/SubjectRef.
+// Every actively enrolled student of a class, with the display name, NIS,
+// and guardian contact the roster and reports need -- the same shape
+// scheduling's own cross-module reads use for ClassRef/SubjectRef.
 func (q *Queries) ListActiveEnrollmentsForAttendance(ctx context.Context, arg ListActiveEnrollmentsForAttendanceParams) ([]ListActiveEnrollmentsForAttendanceRow, error) {
 	rows, err := q.db.Query(ctx, listActiveEnrollmentsForAttendance, arg.TenantID, arg.AcademicYearID, arg.ClassID)
 	if err != nil {
@@ -176,7 +180,13 @@ func (q *Queries) ListActiveEnrollmentsForAttendance(ctx context.Context, arg Li
 	items := []ListActiveEnrollmentsForAttendanceRow{}
 	for rows.Next() {
 		var i ListActiveEnrollmentsForAttendanceRow
-		if err := rows.Scan(&i.StudentUserID, &i.Name, &i.Nis); err != nil {
+		if err := rows.Scan(
+			&i.StudentUserID,
+			&i.Name,
+			&i.Nis,
+			&i.GuardianName,
+			&i.GuardianPhone,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

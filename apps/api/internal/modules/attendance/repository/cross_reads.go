@@ -27,7 +27,10 @@ func (r *Repository) ListActiveEnrollments(ctx context.Context, tenantID, academ
 	}
 	out := make([]service.StudentRef, len(rows))
 	for i, row := range rows {
-		out[i] = service.StudentRef{ID: row.StudentUserID, Name: row.Name, NIS: pdatabase.TextOrEmpty(row.Nis)}
+		out[i] = service.StudentRef{
+			ID: row.StudentUserID, Name: row.Name, NIS: pdatabase.TextOrEmpty(row.Nis),
+			GuardianName: pdatabase.TextOrEmpty(row.GuardianName), GuardianPhone: pdatabase.TextOrEmpty(row.GuardianPhone),
+		}
 	}
 	return out, nil
 }
