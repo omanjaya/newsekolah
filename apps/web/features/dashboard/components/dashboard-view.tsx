@@ -8,7 +8,7 @@ import type { ReactElement, ReactNode } from "react";
 
 import { useCan } from "../../../lib/session/session-provider";
 import { AnnouncementFeed } from "../../announcements/components/announcement-feed";
-import { useTodaySessionsQuery } from "../../attendance/api";
+import { todayInZone, useTodaySessionsQuery } from "../../attendance/api";
 import { useUnreadCountQuery } from "../../notifications/api";
 import { useLateArrivalQueueQuery, useLeaveReviewQueueQuery } from "../../permits/api";
 import { useClassesQuery, useLookup, useSubjectsQuery } from "../../reference/api";
@@ -45,7 +45,10 @@ export function DashboardView(): ReactElement {
   const canManageAttendance = useCan("manage_attendance");
   const canReviewLeave = useCan("review_leave_requests");
   const canIssueLeave = useCan("issue_leave_letters");
-  const sessions = useTodaySessionsQuery(canManageAttendance);
+  const sessions = useTodaySessionsQuery(
+    { date: todayInZone(me?.tenant.timezone) },
+    canManageAttendance,
+  );
   const lateQueue = useLateArrivalQueueQuery(canManageAttendance);
   const leaveQueue = useLeaveReviewQueueQuery(canReviewLeave || canIssueLeave);
   const unread = useUnreadCountQuery(Boolean(me));

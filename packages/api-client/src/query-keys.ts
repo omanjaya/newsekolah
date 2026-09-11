@@ -46,13 +46,17 @@ export const queryKeys = {
 
   schedules: (params: Record<string, string | number | undefined>) =>
     ["schedules", params] as const,
+  teacherOptions: (yearId: string, search: string) =>
+    ["schedules", "teacher-options", yearId, search] as const,
   substitutions: (direction: string) => ["substitutions", direction] as const,
   journals: (yearId: string, classId?: string) => ["journals", yearId, classId ?? ""] as const,
   journal: (id: string) => ["journals", "detail", id] as const,
 
-  attendanceToday: () => ["attendance", "today"] as const,
+  attendanceToday: (date: string, teacherUserId?: string) =>
+    ["attendance", "today", date, teacherUserId ?? ""] as const,
   attendanceSession: (id: string) => ["attendance", "session", id] as const,
-  attendanceHomeroom: (date: string) => ["attendance", "homeroom", date] as const,
+  attendanceHomeroom: (date: string, params: Record<string, string | number | undefined>) =>
+    ["attendance", "homeroom", date, params] as const,
   attendanceCalendar: (month: string) => ["attendance", "calendar", month] as const,
   attendanceDailyReport: (classId: string, date: string) =>
     ["attendance", "report", classId, date] as const,

@@ -15,12 +15,26 @@ export type CalendarDay = components["schemas"]["AttendanceCalendarDay"];
 export type RosterEntry = components["schemas"]["AttendanceRosterEntry"];
 export type DailyReport = components["schemas"]["AttendanceDailyReport"];
 
-export function useTodaySessionsQuery(enabled = true) {
+export interface TodaySessionsFilter {
+  date: string;
+  /** Another teacher's day instead of the caller's own. Requires manage_attendance. */
+  teacherUserId?: string;
+}
+
+export function useTodaySessionsQuery(filter: TodaySessionsFilter, enabled = true) {
   const client = useApiClient();
   return useQuery({
-    queryKey: queryKeys.attendanceToday(),
-    queryFn: () => client.GET("/v1/attendance/me/today"),
-    enabled,
+    queryKey: queryKeys.attendanceToday(filter.date, filter.teacherUserId),
+    queryFn: () =>
+      client.GET("/v1/attendance/me/today", {
+        params: {
+          query: {
+            date: filter.date,
+            ...(filter.teacherUserId ? { teacher_user_id: filter.teacherUserId } : {}),
+          },
+        },
+      }),
+    enabled: enabled && filter.date !== "",
     refetchInterval: 60_000,
   });
 }
@@ -39,11 +53,11 @@ export function useOpenSessionMutation() {
   const client = useApiClient();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (body: { schedule_id: string; date: string }) =>
+    mutationFn: (body: { schedule_id: string; date: string; mode?: "normal" | "correction" }) =>
       client.POST("/v1/attendance/sessions", { body }),
     onSuccess: (detail) => {
       queryClient.setQueryData(queryKeys.attendanceSession(detail.id), detail);
-      void queryClient.invalidateQueries({ queryKey: queryKeys.attendanceToday() });
+      void queryClient.invalidateQueries({ queryKey: ["attendance", "today"] });
     },
   });
 }
@@ -59,7 +73,7 @@ export function useSaveEntriesMutation(sessionId: string) {
       }),
     onSuccess: (detail) => {
       queryClient.setQueryData(queryKeys.attendanceSession(sessionId), detail);
-      void queryClient.invalidateQueries({ queryKey: queryKeys.attendanceToday() });
+      void queryClient.invalidateQueries({ queryKey: ["attendance", "today"] });
       void queryClient.invalidateQueries({ queryKey: ["attendance", "homeroom"] });
     },
   });
@@ -74,12 +88,36 @@ export function useMyCalendarQuery(month: string) {
   });
 }
 
-export function useHomeroomAttendanceQuery(date: string, enabled = true) {
+export interface HomeroomAttendanceFilter {
+  date: string;
+  search?: string;
+  statusCode?: string;
+  limit: number;
+  offset: number;
+}
+
+export function useHomeroomAttendanceQuery(filter: HomeroomAttendanceFilter, enabled = true) {
   const client = useApiClient();
   return useQuery({
-    queryKey: queryKeys.attendanceHomeroom(date),
-    queryFn: () => client.GET("/v1/attendance/homeroom", { params: { query: { date } } }),
-    enabled: enabled && date !== "",
+    queryKey: queryKeys.attendanceHomeroom(filter.date, {
+      search: filter.search,
+      status: filter.statusCode,
+      limit: filter.limit,
+      offset: filter.offset,
+    }),
+    queryFn: () =>
+      client.GET("/v1/attendance/homeroom", {
+        params: {
+          query: {
+            date: filter.date,
+            ...(filter.search ? { search: filter.search } : {}),
+            ...(filter.statusCode ? { status_code: filter.statusCode } : {}),
+            limit: filter.limit,
+            offset: filter.offset,
+          },
+        },
+      }),
+    enabled: enabled && filter.date !== "",
   });
 }
 

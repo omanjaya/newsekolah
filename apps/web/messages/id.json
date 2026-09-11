@@ -400,9 +400,6 @@
     "attendance": {
       "eyebrow": "Akademik",
       "title": "Presensi",
-      "todayTitle": "Sesi hari ini",
-      "todayEmptyTitle": "Tidak ada sesi mengajar hari ini",
-      "todayEmptyBody": "Sesi muncul di sini sesuai jadwal Anda dan permintaan guru pengganti yang diterima.",
       "substituteBadge": "Pengganti",
       "statusSubmitted": "Tersimpan",
       "statusPending": "Belum diisi",
@@ -410,6 +407,22 @@
       "openSubmitted": "Buka",
       "unknownClass": "Kelas",
       "unknownSubject": "",
+      "dateLabel": "Tanggal",
+      "prevDay": "Hari sebelumnya",
+      "nextDay": "Hari berikutnya",
+      "today": "Hari ini",
+      "teacherLabel": "Guru",
+      "teacherPlaceholder": "Pilih guru",
+      "teacherSelf": "{name} (Saya)",
+      "pickTeacherTitle": "Pilih guru untuk melihat sesinya",
+      "pickTeacherBody": "Anda tidak memiliki jadwal mengajar. Pilih guru di atas untuk mengisi presensi kelasnya, atau buka laporan dan monitor presensi di bawah.",
+      "openReports": "Buka laporan presensi",
+      "openMonitor": "Buka monitor presensi",
+      "notSchoolDayTitle": "Bukan hari sekolah",
+      "notSchoolDayBody": "Tanggal ini bukan hari sekolah menurut kalender akademik.",
+      "noScheduleTitle": "Tidak ada jadwal mengajar",
+      "noScheduleSelfBody": "Anda tidak memiliki jadwal mengajar pada tanggal ini.",
+      "noScheduleOtherBody": "{name} tidak memiliki jadwal mengajar pada tanggal ini.",
       "calendar": {
         "prevMonth": "Bulan sebelumnya",
         "nextMonth": "Bulan berikutnya",
@@ -452,7 +465,12 @@
         "reasonPlaceholder": "Alasan koreksi (wajib)",
         "reasonRequired": "Isi alasan koreksi.",
         "saved": "Presensi tersimpan",
-        "loadError": "Sesi tidak bisa dimuat."
+        "loadError": "Sesi tidak bisa dimuat.",
+        "violations": {
+          "button": "Pelanggaran untuk {name}",
+          "title": "Pelanggaran",
+          "empty": "Tidak ada jenis pelanggaran."
+        }
       }
     },
     "homeroom": {
@@ -460,10 +478,21 @@
       "title": "Kelas binaan",
       "titleWithClass": "Kelas binaan {className}",
       "dateLabel": "Tanggal",
+      "searchPlaceholder": "Cari nama atau NIS",
+      "statusFilterLabel": "Status",
+      "statusFilterAll": "Semua status",
+      "statusFilterClear": "Hapus filter",
+      "noGuardian": "Belum ada data wali",
+      "noViolations": "Tidak ada",
+      "violationSummary": "{count} pelanggaran, {points} poin",
+      "noMatchTitle": "Tidak ada siswa yang cocok",
+      "noMatchBody": "Ubah kata kunci pencarian atau filter status.",
       "columns": {
         "name": "Nama",
         "status": "Status harian",
-        "sessions": "Sesi tercatat"
+        "sessions": "Sesi tercatat",
+        "guardian": "Wali",
+        "violations": "Pelanggaran"
       },
       "codes": {
         "H": "Hadir",

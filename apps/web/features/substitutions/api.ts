@@ -21,7 +21,7 @@ function useInvalidateSubstitutions() {
   const queryClient = useQueryClient();
   return () => {
     void queryClient.invalidateQueries({ queryKey: ["substitutions"] });
-    void queryClient.invalidateQueries({ queryKey: queryKeys.attendanceToday() });
+    void queryClient.invalidateQueries({ queryKey: ["attendance", "today"] });
   };
 }
 

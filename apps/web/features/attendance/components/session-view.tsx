@@ -5,11 +5,16 @@ import {
   Alert,
   Badge,
   Button,
+  Checkbox,
   Input,
   PageHeader,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
   Skeleton,
   Switch,
   Textarea,
+  domainIcons,
   cn,
   useToast,
 } from "@newsekolah/ui";
@@ -20,6 +25,7 @@ import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { useViolationTypesQuery, type ViolationType } from "../../discipline/api";
 import { useClassesQuery, useLookup, useSubjectsQuery } from "../../reference/api";
 import { type SessionDetail, useSaveEntriesMutation, useSessionQuery } from "../api";
 
@@ -29,7 +35,20 @@ import { type SessionDetail, useSaveEntriesMutation, useSessionQuery } from "../
  * "only not present" toggle keep a class of 36 under 30 seconds. Students
  * locked by an issued leave letter or an active permit show why.
  */
-export function SessionView({ sessionId }: { sessionId: string }): ReactElement {
+export function SessionView({
+  sessionId,
+  openedInCorrection = false,
+}: {
+  sessionId: string;
+  /**
+   * The session was opened for a class the caller neither teaches nor
+   * substitutes for (a corrector or homeroom teacher reaching a past,
+   * never-submitted session): the save must go through correction mode
+   * from the first save, not only once something has already been
+   * submitted.
+   */
+  openedInCorrection?: boolean;
+}): ReactElement {
   const t = useTranslations("app.attendance.session");
   const { data, isLoading, error } = useSessionQuery(sessionId);
 
@@ -44,10 +63,22 @@ export function SessionView({ sessionId }: { sessionId: string }): ReactElement 
   if (error) {
     return <Alert variant="warning" title={t("loadError")} className="m-6" />;
   }
-  return <SessionEditor key={data.submitted_at ?? "open"} session={data} />;
+  return (
+    <SessionEditor
+      key={data.submitted_at ?? "open"}
+      session={data}
+      openedInCorrection={openedInCorrection}
+    />
+  );
 }
 
-function SessionEditor({ session }: { session: SessionDetail }): ReactElement {
+function SessionEditor({
+  session,
+  openedInCorrection,
+}: {
+  session: SessionDetail;
+  openedInCorrection: boolean;
+}): ReactElement {
   const t = useTranslations("app.attendance.session");
   const router = useRouter();
   const toast = useToast();
@@ -75,8 +106,14 @@ function SessionEditor({ session }: { session: SessionDetail }): ReactElement {
   const [reflection, setReflection] = useState(session.journal_reflection ?? "");
   const [reason, setReason] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
+  // Violation types per student, additive to the roster and not
+  // round-tripped from the session payload: the API records what a save
+  // sends and does not report back what was attached before, so there is
+  // nothing to prefill here.
+  const [violations, setViolations] = useState<Record<string, string[]>>({});
+  const violationTypes = useViolationTypesQuery();
 
-  const isCorrection = Boolean(session.submitted_at);
+  const isCorrection = Boolean(session.submitted_at) || openedInCorrection;
   const presentCodes = useMemo(
     () => new Set(session.statuses.filter((s) => s.counts_as_present).map((s) => s.code)),
     [session.statuses],
@@ -97,6 +134,16 @@ function SessionEditor({ session }: { session: SessionDetail }): ReactElement {
     return out;
   }, [session.roster, statuses, defaultCode]);
 
+  function toggleViolation(studentId: string, violationTypeId: string) {
+    setViolations((prev) => {
+      const current = prev[studentId] ?? [];
+      const next = current.includes(violationTypeId)
+        ? current.filter((id) => id !== violationTypeId)
+        : [...current, violationTypeId];
+      return { ...prev, [studentId]: next };
+    });
+  }
+
   async function submit() {
     setFormError(null);
     if (isCorrection && reason.trim() === "") {
@@ -113,6 +160,9 @@ function SessionEditor({ session }: { session: SessionDetail }): ReactElement {
             student_user_id: item.student_user_id,
             status_code: statuses[item.student_user_id] ?? defaultCode,
             ...(notes[item.student_user_id] ? { notes: notes[item.student_user_id] } : {}),
+            ...(violations[item.student_user_id]?.length
+              ? { violation_ids: violations[item.student_user_id] }
+              : {}),
           })),
         ...(topic.trim()
           ? {
@@ -232,6 +282,17 @@ function SessionEditor({ session }: { session: SessionDetail }): ReactElement {
                     className="w-40"
                   />
                 )}
+                {!item.blocked && (
+                  <ViolationPicker
+                    studentName={item.name}
+                    selected={violations[item.student_user_id] ?? []}
+                    types={violationTypes.data?.data ?? []}
+                    loading={violationTypes.isLoading}
+                    onToggle={(violationTypeId) => {
+                      toggleViolation(item.student_user_id, violationTypeId);
+                    }}
+                  />
+                )}
               </div>
             </li>
           );
@@ -307,5 +368,70 @@ function SessionEditor({ session }: { session: SessionDetail }): ReactElement {
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * A student's violation types for this session, folded into a popover so
+ * it never sits on the row's main tap path: attendance marking is one tap
+ * per student, and this is an occasional second step, not part of it.
+ */
+function ViolationPicker({
+  studentName,
+  selected,
+  types,
+  loading,
+  onToggle,
+}: {
+  studentName: string;
+  selected: string[];
+  types: ViolationType[];
+  loading: boolean;
+  onToggle: (violationTypeId: string) => void;
+}): ReactElement {
+  const t = useTranslations("app.attendance.session.violations");
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          aria-label={t("button", { name: studentName })}
+          className={cn(
+            "flex h-11 min-w-11 items-center gap-1 rounded-xs border border-border px-2 md:h-8",
+            selected.length > 0 ? "border-status-absent text-status-absent" : "text-fg-muted",
+          )}
+        >
+          <domainIcons.violation className="size-4" aria-hidden="true" />
+          {selected.length > 0 && (
+            <span className="text-[12px] font-medium">{selected.length}</span>
+          )}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="end">
+        <p className="mb-2 text-[13px] font-medium text-fg">{t("title")}</p>
+        {loading ? (
+          <Skeleton className="h-16 w-full" />
+        ) : types.length === 0 ? (
+          <p className="text-[13px] text-fg-muted">{t("empty")}</p>
+        ) : (
+          <ul className="flex max-h-64 flex-col gap-2 overflow-y-auto">
+            {types.map((violationType) => (
+              <li key={violationType.id}>
+                <label className="flex items-center gap-2 text-[13px] text-fg">
+                  <Checkbox
+                    checked={selected.includes(violationType.id)}
+                    onCheckedChange={() => {
+                      onToggle(violationType.id);
+                    }}
+                  />
+                  <span className="flex-1">{violationType.name}</span>
+                  <span className="text-fg-muted">{violationType.points}</span>
+                </label>
+              </li>
+            ))}
+          </ul>
+        )}
+      </PopoverContent>
+    </Popover>
   );
 }

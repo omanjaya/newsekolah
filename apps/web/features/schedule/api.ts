@@ -7,6 +7,7 @@ import { useApiClient } from "../../lib/api/client";
 
 export type ScheduleBlock = components["schemas"]["ScheduleBlock"];
 export type ScheduleWrite = components["schemas"]["ScheduleWriteRequest"];
+export type TeacherOption = components["schemas"]["UserOption"];
 
 export interface ScheduleFilter {
   academicYearId: string;
@@ -42,6 +43,24 @@ export function useSchedulesQuery(filter: ScheduleFilter) {
         },
       }),
     enabled,
+  });
+}
+
+/**
+ * Teacher options for a picker: active teachers for the year, narrowed by
+ * a manage_attendance/manage_schedules check on the server, so a teacher
+ * without either sees only themselves.
+ */
+export function useTeacherOptionsQuery(academicYearId: string, search = "", enabled = true) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: queryKeys.teacherOptions(academicYearId, search),
+    queryFn: () =>
+      client.GET("/v1/schedules/teacher-options", {
+        params: { query: { academic_year_id: academicYearId, ...(search ? { search } : {}) } },
+      }),
+    enabled: enabled && academicYearId !== "",
+    staleTime: 5 * 60 * 1000,
   });
 }
 

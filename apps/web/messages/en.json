@@ -400,9 +400,6 @@
     "attendance": {
       "eyebrow": "Academic",
       "title": "Attendance",
-      "todayTitle": "Today's sessions",
-      "todayEmptyTitle": "No teaching sessions today",
-      "todayEmptyBody": "Sessions appear here from your timetable and accepted substitute requests.",
       "substituteBadge": "Substitute",
       "statusSubmitted": "Saved",
       "statusPending": "Not filled",
@@ -410,6 +407,22 @@
       "openSubmitted": "Open",
       "unknownClass": "Class",
       "unknownSubject": "",
+      "dateLabel": "Date",
+      "prevDay": "Previous day",
+      "nextDay": "Next day",
+      "today": "Today",
+      "teacherLabel": "Teacher",
+      "teacherPlaceholder": "Select a teacher",
+      "teacherSelf": "{name} (Me)",
+      "pickTeacherTitle": "Select a teacher to view their sessions",
+      "pickTeacherBody": "You have no teaching schedule. Select a teacher above to take their class's attendance, or open the attendance reports and monitor below.",
+      "openReports": "Open attendance reports",
+      "openMonitor": "Open the attendance monitor",
+      "notSchoolDayTitle": "Not a school day",
+      "notSchoolDayBody": "This date is not a school day according to the academic calendar.",
+      "noScheduleTitle": "No teaching schedule",
+      "noScheduleSelfBody": "You have no teaching schedule on this date.",
+      "noScheduleOtherBody": "{name} has no teaching schedule on this date.",
       "calendar": {
         "prevMonth": "Previous month",
         "nextMonth": "Next month",
@@ -452,7 +465,12 @@
         "reasonPlaceholder": "Correction reason (required)",
         "reasonRequired": "Enter the correction reason.",
         "saved": "Attendance saved",
-        "loadError": "The session could not be loaded."
+        "loadError": "The session could not be loaded.",
+        "violations": {
+          "button": "Violations for {name}",
+          "title": "Violations",
+          "empty": "No violation types."
+        }
       }
     },
     "homeroom": {
@@ -460,10 +478,21 @@
       "title": "Homeroom",
       "titleWithClass": "Homeroom {className}",
       "dateLabel": "Date",
+      "searchPlaceholder": "Search name or NIS",
+      "statusFilterLabel": "Status",
+      "statusFilterAll": "All statuses",
+      "statusFilterClear": "Clear filter",
+      "noGuardian": "No guardian on file",
+      "noViolations": "None",
+      "violationSummary": "{count} violations, {points} points",
+      "noMatchTitle": "No matching students",
+      "noMatchBody": "Try a different search or status filter.",
       "columns": {
         "name": "Name",
         "status": "Daily status",
-        "sessions": "Sessions recorded"
+        "sessions": "Sessions recorded",
+        "guardian": "Guardian",
+        "violations": "Violations"
       },
       "codes": {
         "H": "Present",
