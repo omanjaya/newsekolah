@@ -13,18 +13,19 @@ import (
 )
 
 const createLateArrival = `-- name: CreateLateArrival :one
-insert into late_arrivals (instance_id, tenant_id, reason, occurrence_number, required_action, homeroom_reported)
-values ($1, $2, $3, $4, $5, $6)
-returning instance_id, tenant_id, reason, occurrence_number, required_action, homeroom_reported, completed_at
+insert into late_arrivals (instance_id, tenant_id, reason, occurrence_number, required_action, homeroom_reported, duty_teacher_user_id)
+values ($1, $2, $3, $4, $5, $6, $7)
+returning instance_id, tenant_id, reason, occurrence_number, required_action, homeroom_reported, completed_at, duty_teacher_user_id
 `
 
 type CreateLateArrivalParams struct {
-	InstanceID       uuid.UUID `json:"instance_id"`
-	TenantID         uuid.UUID `json:"tenant_id"`
-	Reason           string    `json:"reason"`
-	OccurrenceNumber int32     `json:"occurrence_number"`
-	RequiredAction   string    `json:"required_action"`
-	HomeroomReported bool      `json:"homeroom_reported"`
+	InstanceID        uuid.UUID   `json:"instance_id"`
+	TenantID          uuid.UUID   `json:"tenant_id"`
+	Reason            string      `json:"reason"`
+	OccurrenceNumber  int32       `json:"occurrence_number"`
+	RequiredAction    string      `json:"required_action"`
+	HomeroomReported  bool        `json:"homeroom_reported"`
+	DutyTeacherUserID pgtype.UUID `json:"duty_teacher_user_id"`
 }
 
 func (q *Queries) CreateLateArrival(ctx context.Context, arg CreateLateArrivalParams) (LateArrival, error) {
@@ -35,6 +36,7 @@ func (q *Queries) CreateLateArrival(ctx context.Context, arg CreateLateArrivalPa
 		arg.OccurrenceNumber,
 		arg.RequiredAction,
 		arg.HomeroomReported,
+		arg.DutyTeacherUserID,
 	)
 	var i LateArrival
 	err := row.Scan(
@@ -45,6 +47,7 @@ func (q *Queries) CreateLateArrival(ctx context.Context, arg CreateLateArrivalPa
 		&i.RequiredAction,
 		&i.HomeroomReported,
 		&i.CompletedAt,
+		&i.DutyTeacherUserID,
 	)
 	return i, err
 }
@@ -94,7 +97,7 @@ func (q *Queries) GetInProgressLateArrivalToday(ctx context.Context, arg GetInPr
 }
 
 const getLateArrival = `-- name: GetLateArrival :one
-select instance_id, tenant_id, reason, occurrence_number, required_action, homeroom_reported, completed_at from late_arrivals where tenant_id = $1 and instance_id = $2
+select instance_id, tenant_id, reason, occurrence_number, required_action, homeroom_reported, completed_at, duty_teacher_user_id from late_arrivals where tenant_id = $1 and instance_id = $2
 `
 
 type GetLateArrivalParams struct {
@@ -113,17 +116,31 @@ func (q *Queries) GetLateArrival(ctx context.Context, arg GetLateArrivalParams) 
 		&i.RequiredAction,
 		&i.HomeroomReported,
 		&i.CompletedAt,
+		&i.DutyTeacherUserID,
 	)
 	return i, err
 }
 
 const listLateArrivalsForReview = `-- name: ListLateArrivalsForReview :many
-select la.instance_id, la.tenant_id, la.reason, la.occurrence_number, la.required_action, la.homeroom_reported, la.completed_at, wi.subject_user_id, wi.class_id, wi.current_stage_index, wi.status, wi.opened_at
+select la.instance_id, la.tenant_id, la.reason, la.occurrence_number, la.required_action, la.homeroom_reported, la.completed_at, la.duty_teacher_user_id, wi.subject_user_id, wi.class_id, wi.current_stage_index, wi.status, wi.opened_at
 from late_arrivals la
 join workflow_instances wi on wi.id = la.instance_id
 where la.tenant_id = $1 and wi.status = 'in_progress'
+  and (
+    la.duty_teacher_user_id = $2
+    or exists (
+      select 1 from user_roles ur
+      join role_permissions rp on rp.role_id = ur.role_id
+      where ur.tenant_id = $1 and ur.user_id = $2 and rp.permission_code = 'manage_attendance'
+    )
+  )
 order by wi.opened_at
 `
+
+type ListLateArrivalsForReviewParams struct {
+	TenantID          uuid.UUID   `json:"tenant_id"`
+	DutyTeacherUserID pgtype.UUID `json:"duty_teacher_user_id"`
+}
 
 type ListLateArrivalsForReviewRow struct {
 	InstanceID        uuid.UUID          `json:"instance_id"`
@@ -133,6 +150,7 @@ type ListLateArrivalsForReviewRow struct {
 	RequiredAction    string             `json:"required_action"`
 	HomeroomReported  bool               `json:"homeroom_reported"`
 	CompletedAt       pgtype.Timestamptz `json:"completed_at"`
+	DutyTeacherUserID pgtype.UUID        `json:"duty_teacher_user_id"`
 	SubjectUserID     uuid.UUID          `json:"subject_user_id"`
 	ClassID           pgtype.UUID        `json:"class_id"`
 	CurrentStageIndex int32              `json:"current_stage_index"`
@@ -140,8 +158,13 @@ type ListLateArrivalsForReviewRow struct {
 	OpenedAt          pgtype.Timestamptz `json:"opened_at"`
 }
 
-func (q *Queries) ListLateArrivalsForReview(ctx context.Context, tenantID uuid.UUID) ([]ListLateArrivalsForReviewRow, error) {
-	rows, err := q.db.Query(ctx, listLateArrivalsForReview, tenantID)
+// Regression fix (docs/analysis/backend-inventory.md 1.16): the queue is
+// scoped to the teacher whose own token opened each flow, matching
+// ReviewLateArrival's actor check; a caller who holds manage_attendance
+// through a directly assigned role (not a duty), the "admin" case, sees
+// every open flow.
+func (q *Queries) ListLateArrivalsForReview(ctx context.Context, arg ListLateArrivalsForReviewParams) ([]ListLateArrivalsForReviewRow, error) {
+	rows, err := q.db.Query(ctx, listLateArrivalsForReview, arg.TenantID, arg.DutyTeacherUserID)
 	if err != nil {
 		return nil, err
 	}
@@ -157,6 +180,7 @@ func (q *Queries) ListLateArrivalsForReview(ctx context.Context, tenantID uuid.U
 			&i.RequiredAction,
 			&i.HomeroomReported,
 			&i.CompletedAt,
+			&i.DutyTeacherUserID,
 			&i.SubjectUserID,
 			&i.ClassID,
 			&i.CurrentStageIndex,
@@ -176,7 +200,7 @@ func (q *Queries) ListLateArrivalsForReview(ctx context.Context, tenantID uuid.U
 const markLateArrivalCompleted = `-- name: MarkLateArrivalCompleted :one
 update late_arrivals set completed_at = $3
 where tenant_id = $1 and instance_id = $2
-returning instance_id, tenant_id, reason, occurrence_number, required_action, homeroom_reported, completed_at
+returning instance_id, tenant_id, reason, occurrence_number, required_action, homeroom_reported, completed_at, duty_teacher_user_id
 `
 
 type MarkLateArrivalCompletedParams struct {
@@ -196,6 +220,7 @@ func (q *Queries) MarkLateArrivalCompleted(ctx context.Context, arg MarkLateArri
 		&i.RequiredAction,
 		&i.HomeroomReported,
 		&i.CompletedAt,
+		&i.DutyTeacherUserID,
 	)
 	return i, err
 }
@@ -203,7 +228,7 @@ func (q *Queries) MarkLateArrivalCompleted(ctx context.Context, arg MarkLateArri
 const updateLateArrivalReview = `-- name: UpdateLateArrivalReview :one
 update late_arrivals set reason = $3, required_action = $4, homeroom_reported = $5
 where tenant_id = $1 and instance_id = $2
-returning instance_id, tenant_id, reason, occurrence_number, required_action, homeroom_reported, completed_at
+returning instance_id, tenant_id, reason, occurrence_number, required_action, homeroom_reported, completed_at, duty_teacher_user_id
 `
 
 type UpdateLateArrivalReviewParams struct {
@@ -231,6 +256,7 @@ func (q *Queries) UpdateLateArrivalReview(ctx context.Context, arg UpdateLateArr
 		&i.RequiredAction,
 		&i.HomeroomReported,
 		&i.CompletedAt,
+		&i.DutyTeacherUserID,
 	)
 	return i, err
 }

@@ -9620,7 +9620,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ScanRequest"
+              $ref: "#/components/schemas/ScanClassroomEntryRequest"
       responses:
         "200":
           description: Accepted
@@ -9630,16 +9630,21 @@ paths:
                 type: object
                 required:
                   - teacher_user_id
+                  - teacher_name
                   - scanned_at
                 properties:
                   teacher_user_id:
                     type: string
                     format: uuid
+                  teacher_name:
+                    type: string
                   scanned_at:
                     type: string
                     format: date-time
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "410":
           $ref: "#/components/responses/TokenGone"
   /v1/workflows/definitions:
@@ -9789,6 +9794,29 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "409":
           $ref: "#/components/responses/Conflict"
+  /v1/exit-permits/review-queue:
+    get:
+      tags:
+        - permits
+      operationId: listExitPermitsForApproval
+      x-permission: authenticated
+      summary: Exit permits awaiting the caller's counselor/leadership approval, or approved and awaiting a security gate scan
+      responses:
+        "200":
+          description: Permits
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ExitPermitSummary"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
   /v1/exit-permits/{instanceId}:
     get:
       tags:
@@ -10645,6 +10673,9 @@ paths:
                   type: array
                   items:
                     type: string
+                letterhead_asset_id:
+                  type: string
+                  format: uuid
       responses:
         "200":
           description: Updated
@@ -18530,6 +18561,19 @@ components:
           type: string
           minLength: 16
           maxLength: 128
+    ScanClassroomEntryRequest:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          type: string
+          minLength: 16
+          maxLength: 128
+        reason:
+          type: string
+          maxLength: 500
+          description: Defaults to "Izin masuk kelas" when omitted.
     IssuedScanToken:
       type: object
       required:
@@ -18730,6 +18774,38 @@ components:
         completed_at:
           type: string
           format: date-time
+    ExitPermitSummary:
+      type: object
+      required:
+        - instance_id
+        - student_user_id
+        - status
+        - current_stage_index
+        - destination
+        - opened_at
+      properties:
+        instance_id:
+          type: string
+          format: uuid
+        student_user_id:
+          type: string
+          format: uuid
+        class_id:
+          type: string
+          format: uuid
+        status:
+          $ref: "#/components/schemas/WorkflowStatus"
+        current_stage_index:
+          type: integer
+        destination:
+          type: string
+        student_name:
+          type: string
+        class_name:
+          type: string
+        opened_at:
+          type: string
+          format: date-time
     LateArrivalSummary:
       type: object
       required:
@@ -18915,6 +18991,10 @@ components:
         is_default:
           type: boolean
           default: false
+        letterhead_asset_id:
+          type: string
+          format: uuid
+          description: Tenant branding asset (kind branding) rendered above the body, e.g. a kop surat image.
     DocumentTemplate:
       type: object
       required:
@@ -18944,6 +19024,9 @@ components:
             type: string
         is_default:
           type: boolean
+        letterhead_asset_id:
+          type: string
+          format: uuid
         created_at:
           type: string
           format: date-time

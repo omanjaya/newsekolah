@@ -85,6 +85,121 @@ func (q *Queries) GetExitPermit(ctx context.Context, arg GetExitPermitParams) (E
 	return i, err
 }
 
+const listExitPermitsForApproval = `-- name: ListExitPermitsForApproval :many
+select ep.instance_id, ep.tenant_id, ep.destination, ep.start_period_id, ep.end_period_id, ep.issued_at, ep.gate_token_id, ep.exited_at, ep.security_user_id, ep.student_name_snapshot, ep.class_name_snapshot, wi.status, wi.opened_at, wi.current_stage_index, wi.class_id, wi.subject_user_id
+from exit_permits ep
+join workflow_instances wi on wi.id = ep.instance_id
+join workflow_definitions wd on wd.id = wi.definition_id
+where ep.tenant_id = $1
+  and wi.status in ('in_progress', 'approved')
+  and (
+    (
+      wi.status = 'approved'
+      and (
+        exists (
+          select 1 from user_roles ur
+          join role_permissions rp on rp.role_id = ur.role_id
+          where ur.tenant_id = $1 and ur.user_id = $2 and rp.permission_code = 'scan_exit_permits'
+        )
+        or exists (
+          select 1
+          from duty_assignments da
+          join duty_types dt on dt.id = da.duty_type_id
+          join duty_permissions dp on dp.duty_type_id = dt.id
+          where da.tenant_id = $1
+            and da.academic_year_id = wi.academic_year_id
+            and da.user_id = $2
+            and dp.permission_code = 'scan_exit_permits'
+            and da.is_active and dt.is_active and dt.deleted_at is null
+            and da.starts_on <= current_date and (da.ends_on is null or da.ends_on >= current_date)
+        )
+      )
+    )
+    or (
+      wi.status = 'in_progress'
+      and exists (
+        select 1
+        from duty_assignments da
+        join duty_types dt on dt.id = da.duty_type_id
+        where da.tenant_id = $1
+          and da.academic_year_id = wi.academic_year_id
+          and da.user_id = $2
+          and da.is_active and dt.is_active and dt.deleted_at is null
+          and da.starts_on <= current_date and (da.ends_on is null or da.ends_on >= current_date)
+          and dt.scope_kind = 'school'
+          and dt.slug in ('counselor', 'leadership')
+          and (wd.stages -> wi.current_stage_index ->> 'approver_rule') = 'duty:' || dt.slug
+      )
+    )
+  )
+order by wi.opened_at
+`
+
+type ListExitPermitsForApprovalParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	UserID   uuid.UUID `json:"user_id"`
+}
+
+type ListExitPermitsForApprovalRow struct {
+	InstanceID          uuid.UUID          `json:"instance_id"`
+	TenantID            uuid.UUID          `json:"tenant_id"`
+	Destination         string             `json:"destination"`
+	StartPeriodID       uuid.UUID          `json:"start_period_id"`
+	EndPeriodID         uuid.UUID          `json:"end_period_id"`
+	IssuedAt            pgtype.Timestamptz `json:"issued_at"`
+	GateTokenID         pgtype.UUID        `json:"gate_token_id"`
+	ExitedAt            pgtype.Timestamptz `json:"exited_at"`
+	SecurityUserID      pgtype.UUID        `json:"security_user_id"`
+	StudentNameSnapshot string             `json:"student_name_snapshot"`
+	ClassNameSnapshot   string             `json:"class_name_snapshot"`
+	Status              string             `json:"status"`
+	OpenedAt            pgtype.Timestamptz `json:"opened_at"`
+	CurrentStageIndex   int32              `json:"current_stage_index"`
+	ClassID             pgtype.UUID        `json:"class_id"`
+	SubjectUserID       uuid.UUID          `json:"subject_user_id"`
+}
+
+// Missing feature (docs/analysis/backend-inventory.md 1.15): a queue for
+// the counselor/leadership approval stages (the duty_teacher/class_teacher
+// stages are QR-scan only, same as the old app -- no listing needed there)
+// plus security, who see every 'approved' permit awaiting their gate scan.
+func (q *Queries) ListExitPermitsForApproval(ctx context.Context, arg ListExitPermitsForApprovalParams) ([]ListExitPermitsForApprovalRow, error) {
+	rows, err := q.db.Query(ctx, listExitPermitsForApproval, arg.TenantID, arg.UserID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListExitPermitsForApprovalRow{}
+	for rows.Next() {
+		var i ListExitPermitsForApprovalRow
+		if err := rows.Scan(
+			&i.InstanceID,
+			&i.TenantID,
+			&i.Destination,
+			&i.StartPeriodID,
+			&i.EndPeriodID,
+			&i.IssuedAt,
+			&i.GateTokenID,
+			&i.ExitedAt,
+			&i.SecurityUserID,
+			&i.StudentNameSnapshot,
+			&i.ClassNameSnapshot,
+			&i.Status,
+			&i.OpenedAt,
+			&i.CurrentStageIndex,
+			&i.ClassID,
+			&i.SubjectUserID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listExitPermitsForReport = `-- name: ListExitPermitsForReport :many
 select ep.instance_id, ep.tenant_id, ep.destination, ep.start_period_id, ep.end_period_id, ep.issued_at, ep.gate_token_id, ep.exited_at, ep.security_user_id, ep.student_name_snapshot, ep.class_name_snapshot, wi.status, wi.opened_at, wi.closed_at, wi.academic_year_id
 from exit_permits ep

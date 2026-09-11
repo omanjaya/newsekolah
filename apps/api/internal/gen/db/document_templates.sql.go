@@ -28,20 +28,21 @@ func (q *Queries) ClearDefaultDocumentTemplate(ctx context.Context, arg ClearDef
 }
 
 const createDocumentTemplate = `-- name: CreateDocumentTemplate :one
-insert into document_templates (tenant_id, kind, name, engine, body, variables, is_default, created_by)
-values ($1, $2, $3, $4, $5, $6, $7, $8)
-returning id, tenant_id, kind, name, engine, body, variables, is_default, created_by, created_at, updated_at, deleted_at
+insert into document_templates (tenant_id, kind, name, engine, body, variables, is_default, created_by, letterhead_asset_id)
+values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+returning id, tenant_id, kind, name, engine, body, variables, is_default, created_by, created_at, updated_at, deleted_at, letterhead_asset_id
 `
 
 type CreateDocumentTemplateParams struct {
-	TenantID  uuid.UUID   `json:"tenant_id"`
-	Kind      string      `json:"kind"`
-	Name      string      `json:"name"`
-	Engine    string      `json:"engine"`
-	Body      string      `json:"body"`
-	Variables []byte      `json:"variables"`
-	IsDefault bool        `json:"is_default"`
-	CreatedBy pgtype.UUID `json:"created_by"`
+	TenantID          uuid.UUID   `json:"tenant_id"`
+	Kind              string      `json:"kind"`
+	Name              string      `json:"name"`
+	Engine            string      `json:"engine"`
+	Body              string      `json:"body"`
+	Variables         []byte      `json:"variables"`
+	IsDefault         bool        `json:"is_default"`
+	CreatedBy         pgtype.UUID `json:"created_by"`
+	LetterheadAssetID pgtype.UUID `json:"letterhead_asset_id"`
 }
 
 func (q *Queries) CreateDocumentTemplate(ctx context.Context, arg CreateDocumentTemplateParams) (DocumentTemplate, error) {
@@ -54,6 +55,7 @@ func (q *Queries) CreateDocumentTemplate(ctx context.Context, arg CreateDocument
 		arg.Variables,
 		arg.IsDefault,
 		arg.CreatedBy,
+		arg.LetterheadAssetID,
 	)
 	var i DocumentTemplate
 	err := row.Scan(
@@ -69,12 +71,13 @@ func (q *Queries) CreateDocumentTemplate(ctx context.Context, arg CreateDocument
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.LetterheadAssetID,
 	)
 	return i, err
 }
 
 const getDefaultDocumentTemplate = `-- name: GetDefaultDocumentTemplate :one
-select id, tenant_id, kind, name, engine, body, variables, is_default, created_by, created_at, updated_at, deleted_at from document_templates
+select id, tenant_id, kind, name, engine, body, variables, is_default, created_by, created_at, updated_at, deleted_at, letterhead_asset_id from document_templates
 where tenant_id = $1 and kind = $2 and is_default and deleted_at is null
 limit 1
 `
@@ -100,12 +103,13 @@ func (q *Queries) GetDefaultDocumentTemplate(ctx context.Context, arg GetDefault
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.LetterheadAssetID,
 	)
 	return i, err
 }
 
 const getDocumentTemplateByID = `-- name: GetDocumentTemplateByID :one
-select id, tenant_id, kind, name, engine, body, variables, is_default, created_by, created_at, updated_at, deleted_at from document_templates where tenant_id = $1 and id = $2 and deleted_at is null
+select id, tenant_id, kind, name, engine, body, variables, is_default, created_by, created_at, updated_at, deleted_at, letterhead_asset_id from document_templates where tenant_id = $1 and id = $2 and deleted_at is null
 `
 
 type GetDocumentTemplateByIDParams struct {
@@ -129,12 +133,13 @@ func (q *Queries) GetDocumentTemplateByID(ctx context.Context, arg GetDocumentTe
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.LetterheadAssetID,
 	)
 	return i, err
 }
 
 const listDocumentTemplates = `-- name: ListDocumentTemplates :many
-select id, tenant_id, kind, name, engine, body, variables, is_default, created_by, created_at, updated_at, deleted_at from document_templates where tenant_id = $1 and deleted_at is null order by kind, name
+select id, tenant_id, kind, name, engine, body, variables, is_default, created_by, created_at, updated_at, deleted_at, letterhead_asset_id from document_templates where tenant_id = $1 and deleted_at is null order by kind, name
 `
 
 func (q *Queries) ListDocumentTemplates(ctx context.Context, tenantID uuid.UUID) ([]DocumentTemplate, error) {
@@ -159,6 +164,7 @@ func (q *Queries) ListDocumentTemplates(ctx context.Context, tenantID uuid.UUID)
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.DeletedAt,
+			&i.LetterheadAssetID,
 		); err != nil {
 			return nil, err
 		}
@@ -173,7 +179,7 @@ func (q *Queries) ListDocumentTemplates(ctx context.Context, tenantID uuid.UUID)
 const setDefaultDocumentTemplate = `-- name: SetDefaultDocumentTemplate :one
 update document_templates set is_default = true, updated_at = now()
 where tenant_id = $1 and id = $2 and deleted_at is null
-returning id, tenant_id, kind, name, engine, body, variables, is_default, created_by, created_at, updated_at, deleted_at
+returning id, tenant_id, kind, name, engine, body, variables, is_default, created_by, created_at, updated_at, deleted_at, letterhead_asset_id
 `
 
 type SetDefaultDocumentTemplateParams struct {
@@ -197,23 +203,25 @@ func (q *Queries) SetDefaultDocumentTemplate(ctx context.Context, arg SetDefault
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.LetterheadAssetID,
 	)
 	return i, err
 }
 
 const updateDocumentTemplate = `-- name: UpdateDocumentTemplate :one
 update document_templates
-set name = $3, body = $4, variables = $5, updated_at = now()
+set name = $3, body = $4, variables = $5, letterhead_asset_id = $6, updated_at = now()
 where tenant_id = $1 and id = $2 and deleted_at is null
-returning id, tenant_id, kind, name, engine, body, variables, is_default, created_by, created_at, updated_at, deleted_at
+returning id, tenant_id, kind, name, engine, body, variables, is_default, created_by, created_at, updated_at, deleted_at, letterhead_asset_id
 `
 
 type UpdateDocumentTemplateParams struct {
-	TenantID  uuid.UUID `json:"tenant_id"`
-	ID        uuid.UUID `json:"id"`
-	Name      string    `json:"name"`
-	Body      string    `json:"body"`
-	Variables []byte    `json:"variables"`
+	TenantID          uuid.UUID   `json:"tenant_id"`
+	ID                uuid.UUID   `json:"id"`
+	Name              string      `json:"name"`
+	Body              string      `json:"body"`
+	Variables         []byte      `json:"variables"`
+	LetterheadAssetID pgtype.UUID `json:"letterhead_asset_id"`
 }
 
 func (q *Queries) UpdateDocumentTemplate(ctx context.Context, arg UpdateDocumentTemplateParams) (DocumentTemplate, error) {
@@ -223,6 +231,7 @@ func (q *Queries) UpdateDocumentTemplate(ctx context.Context, arg UpdateDocument
 		arg.Name,
 		arg.Body,
 		arg.Variables,
+		arg.LetterheadAssetID,
 	)
 	var i DocumentTemplate
 	err := row.Scan(
@@ -238,6 +247,7 @@ func (q *Queries) UpdateDocumentTemplate(ctx context.Context, arg UpdateDocument
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.LetterheadAssetID,
 	)
 	return i, err
 }
