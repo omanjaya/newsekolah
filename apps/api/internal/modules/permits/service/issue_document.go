@@ -130,9 +130,24 @@ func (s *Service) DocumentDownloadURLForAsset(ctx context.Context, tenantID, ass
 	return u.String(), nil
 }
 
+// templateFor loads the tenant's default template for kind, with its
+// letterhead image bytes loaded (if the template names one) so Render can
+// place it above the body -- see documents.Template.Letterhead and
+// leaveLetterTemplate's identical loading, which this mirrors so every
+// IssueDocument caller (e.g. warning letters), not just leave letters,
+// gets its letterhead.
 func (s *Service) templateFor(ctx context.Context, tenantID uuid.UUID, kind domain.TemplateKind, builtin string) documents.Template {
-	if t, ok, err := s.repo.GetDefaultTemplate(ctx, tenantID, kind); err == nil && ok {
-		return documents.Template{Engine: documents.Engine(t.Engine), Body: t.Body}
+	t, ok, err := s.repo.GetDefaultTemplate(ctx, tenantID, kind)
+	if err != nil || !ok {
+		return documents.Template{Engine: documents.EngineHTML, Body: builtin}
 	}
-	return documents.Template{Engine: documents.EngineHTML, Body: builtin}
+	out := documents.Template{Engine: documents.Engine(t.Engine), Body: t.Body}
+	if s.storage != nil && t.LetterheadAssetID.Valid {
+		if key, err := s.repo.GetAssetObjectKey(ctx, tenantID, t.LetterheadAssetID.UUID); err == nil {
+			if bytes, err := s.storage.GetObject(ctx, key); err == nil {
+				out.Letterhead = bytes
+			}
+		}
+	}
+	return out
 }
