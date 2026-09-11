@@ -23,12 +23,22 @@ func (s *Service) DashboardActiveUsers(ctx context.Context, tenantID uuid.UUID) 
 	return out, err
 }
 
-// DashboardLoginHistogram returns a 24-entry (hour 0-23) slice of
-// successful-login counts over the last 7 days.
+// DashboardLoginHistogram returns a 24-entry (hour 0-23, tenant-local)
+// slice of successful-login counts over the last 7 days.
 func (s *Service) DashboardLoginHistogram(ctx context.Context, tenantID uuid.UUID) ([24]int, error) {
 	var buckets [24]int
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		byHour, err := s.repo.LoginHistogramByHour(ctx, tenantID, s.clock.Now().Add(-LoginHistogramWindow))
+		// Falls back to UTC on an unset or unrecognized tenant timezone,
+		// same as permits/attendance's tenantLocation, rather than
+		// failing the whole dashboard over a bad setting.
+		tz, err := s.repo.GetTenantTimezone(ctx, tenantID)
+		if err != nil {
+			return err
+		}
+		if _, err := time.LoadLocation(tz); tz == "" || err != nil {
+			tz = "UTC"
+		}
+		byHour, err := s.repo.LoginHistogramByHour(ctx, tenantID, s.clock.Now().Add(-LoginHistogramWindow), tz)
 		if err != nil {
 			return err
 		}

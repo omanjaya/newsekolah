@@ -200,6 +200,20 @@ func (q *Queries) DailyReturnsSeries(ctx context.Context, arg DailyReturnsSeries
 	return items, nil
 }
 
+const getTenantTimezoneForIdentity = `-- name: GetTenantTimezoneForIdentity :one
+select timezone from tenants where id = $1
+`
+
+// Mirrors permits/attendance's GetTenantTimezoneFor*: the admin
+// dashboard's login histogram must bucket in the tenant's own timezone,
+// never the server's UTC clock.
+func (q *Queries) GetTenantTimezoneForIdentity(ctx context.Context, id uuid.UUID) (string, error) {
+	row := q.db.QueryRow(ctx, getTenantTimezoneForIdentity, id)
+	var timezone string
+	err := row.Scan(&timezone)
+	return timezone, err
+}
+
 const listLatestLoans = `-- name: ListLatestLoans :many
 select id, tenant_id, copy_id, title_id, member_user_id, checked_out_by, borrowed_at, due_on, returned_at, checked_in_by, renewal_count, status, fine_amount, fine_paid_at, active_copy_id, created_at, updated_at, channel from library_loans where tenant_id = $1 order by borrowed_at desc limit $2
 `
@@ -298,7 +312,7 @@ func (q *Queries) ListLongestOverdueLoans(ctx context.Context, arg ListLongestOv
 }
 
 const loginHistogramByHour = `-- name: LoginHistogramByHour :many
-select extract(hour from occurred_at)::int as hour, count(*)::bigint as total
+select extract(hour from occurred_at at time zone $3::text)::int as hour, count(*)::bigint as total
 from login_attempts
 where tenant_id = $1 and success = true and occurred_at >= $2
 group by hour
@@ -307,6 +321,7 @@ group by hour
 type LoginHistogramByHourParams struct {
 	TenantID   uuid.UUID          `json:"tenant_id"`
 	OccurredAt pgtype.Timestamptz `json:"occurred_at"`
+	Tz         string             `json:"tz"`
 }
 
 type LoginHistogramByHourRow struct {
@@ -314,13 +329,13 @@ type LoginHistogramByHourRow struct {
 	Total int64 `json:"total"`
 }
 
-// Hour-of-day (0-23, UTC) histogram of successful logins in the last 7
-// days, for the admin dashboard. UTC rather than tenant-local: unlike an
-// attendance day boundary this is a rough usage-pattern chart, not a
-// compliance cutoff, so it does not carry the "never compute in UTC"
-// rule docs/03 attaches to school-day boundaries.
+// Hour-of-day (0-23, tenant-local) histogram of successful logins in the
+// last 7 days, for the admin dashboard. Converted with sqlc.arg('tz')
+// rather than read as bare UTC: a usage-pattern chart is only readable
+// against the hours staff actually work, and UTC is 7-9 hours off for
+// every Indonesian timezone.
 func (q *Queries) LoginHistogramByHour(ctx context.Context, arg LoginHistogramByHourParams) ([]LoginHistogramByHourRow, error) {
-	rows, err := q.db.Query(ctx, loginHistogramByHour, arg.TenantID, arg.OccurredAt)
+	rows, err := q.db.Query(ctx, loginHistogramByHour, arg.TenantID, arg.OccurredAt, arg.Tz)
 	if err != nil {
 		return nil, err
 	}

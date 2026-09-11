@@ -7,12 +7,18 @@ where u.tenant_id = $1 and u.status = 'active' and u.deleted_at is null
 group by up.kind;
 
 -- name: LoginHistogramByHour :many
--- Hour-of-day (0-23, UTC) histogram of successful logins in the last 7
--- days, for the admin dashboard. UTC rather than tenant-local: unlike an
--- attendance day boundary this is a rough usage-pattern chart, not a
--- compliance cutoff, so it does not carry the "never compute in UTC"
--- rule docs/03 attaches to school-day boundaries.
-select extract(hour from occurred_at)::int as hour, count(*)::bigint as total
+-- Hour-of-day (0-23, tenant-local) histogram of successful logins in the
+-- last 7 days, for the admin dashboard. Converted with sqlc.arg('tz')
+-- rather than read as bare UTC: a usage-pattern chart is only readable
+-- against the hours staff actually work, and UTC is 7-9 hours off for
+-- every Indonesian timezone.
+select extract(hour from occurred_at at time zone sqlc.arg('tz')::text)::int as hour, count(*)::bigint as total
 from login_attempts
 where tenant_id = $1 and success = true and occurred_at >= $2
 group by hour;
+
+-- name: GetTenantTimezoneForIdentity :one
+-- Mirrors permits/attendance's GetTenantTimezoneFor*: the admin
+-- dashboard's login histogram must bucket in the tenant's own timezone,
+-- never the server's UTC clock.
+select timezone from tenants where id = $1;

@@ -81,7 +81,11 @@ type AuthRepository interface {
 	// DashboardCounts/DashboardLoginHistogram below rather than calling
 	// these directly.
 	ActiveUsersByProfileKind(ctx context.Context, tenantID uuid.UUID) (map[string]int, error)
-	LoginHistogramByHour(ctx context.Context, tenantID uuid.UUID, since time.Time) (map[int]int, error)
+	LoginHistogramByHour(ctx context.Context, tenantID uuid.UUID, since time.Time, tz string) (map[int]int, error)
+	// GetTenantTimezone resolves the IANA name DashboardLoginHistogram
+	// buckets logins in, so the chart reads against the hours staff
+	// actually work rather than the server's UTC clock.
+	GetTenantTimezone(ctx context.Context, tenantID uuid.UUID) (string, error)
 }
 
 // NewSession is what the service asks the repository to persist when

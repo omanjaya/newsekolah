@@ -25,10 +25,11 @@ func (r *Repository) ActiveUsersByProfileKind(ctx context.Context, tenantID uuid
 	return out, nil
 }
 
-// LoginHistogramByHour returns, for every UTC hour (0-23) with at least
-// one successful login since since, how many. Backs the admin dashboard.
-func (r *Repository) LoginHistogramByHour(ctx context.Context, tenantID uuid.UUID, since time.Time) (map[int]int, error) {
-	rows, err := r.queries(ctx).LoginHistogramByHour(ctx, db.LoginHistogramByHourParams{TenantID: tenantID, OccurredAt: pdatabase.Timestamptz(since)})
+// LoginHistogramByHour returns, for every tenant-local hour (0-23) with at
+// least one successful login since since, how many. Backs the admin
+// dashboard.
+func (r *Repository) LoginHistogramByHour(ctx context.Context, tenantID uuid.UUID, since time.Time, tz string) (map[int]int, error) {
+	rows, err := r.queries(ctx).LoginHistogramByHour(ctx, db.LoginHistogramByHourParams{TenantID: tenantID, OccurredAt: pdatabase.Timestamptz(since), Tz: tz})
 	if err != nil {
 		return nil, fmt.Errorf("login histogram: %w", err)
 	}
@@ -37,4 +38,10 @@ func (r *Repository) LoginHistogramByHour(ctx context.Context, tenantID uuid.UUI
 		out[int(row.Hour)] = int(row.Total)
 	}
 	return out, nil
+}
+
+// GetTenantTimezone is the IANA name the admin dashboard's login histogram
+// must bucket in, mirroring permits/attendance's GetTenantTimezoneFor*.
+func (r *Repository) GetTenantTimezone(ctx context.Context, tenantID uuid.UUID) (string, error) {
+	return r.queries(ctx).GetTenantTimezoneForIdentity(ctx, tenantID)
 }

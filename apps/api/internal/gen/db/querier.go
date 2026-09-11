@@ -644,6 +644,10 @@ type Querier interface {
 	// cross-module read: see ListActiveTenantsForMaintenance above.
 	GetTenantTimezone(ctx context.Context, id uuid.UUID) (string, error)
 	GetTenantTimezoneForAttendance(ctx context.Context, id uuid.UUID) (string, error)
+	// Mirrors permits/attendance's GetTenantTimezoneFor*: the admin
+	// dashboard's login histogram must bucket in the tenant's own timezone,
+	// never the server's UTC clock.
+	GetTenantTimezoneForIdentity(ctx context.Context, id uuid.UUID) (string, error)
 	GetTenantTimezoneForLibrary(ctx context.Context, id uuid.UUID) (string, error)
 	// Mirrors attendance's GetTenantTimezoneForAttendance: permits must resolve
 	// gate-token expiry, forced attendance windows and the
@@ -1149,11 +1153,11 @@ type Querier interface {
 	// occurrence_number (docs/analysis/database-inventory.md 1.5: the old
 	// app's per-student late-arrival numbering had exactly this race).
 	LockSubjectForInstanceCounting(ctx context.Context, arg LockSubjectForInstanceCountingParams) error
-	// Hour-of-day (0-23, UTC) histogram of successful logins in the last 7
-	// days, for the admin dashboard. UTC rather than tenant-local: unlike an
-	// attendance day boundary this is a rough usage-pattern chart, not a
-	// compliance cutoff, so it does not carry the "never compute in UTC"
-	// rule docs/03 attaches to school-day boundaries.
+	// Hour-of-day (0-23, tenant-local) histogram of successful logins in the
+	// last 7 days, for the admin dashboard. Converted with sqlc.arg('tz')
+	// rather than read as bare UTC: a usage-pattern chart is only readable
+	// against the hours staff actually work, and UTC is 7-9 hours off for
+	// every Indonesian timezone.
 	LoginHistogramByHour(ctx context.Context, arg LoginHistogramByHourParams) ([]LoginHistogramByHourRow, error)
 	LookupLibraryCopies(ctx context.Context, arg LookupLibraryCopiesParams) ([]LookupLibraryCopiesRow, error)
 	LookupLibraryMembers(ctx context.Context, arg LookupLibraryMembersParams) ([]LookupLibraryMembersRow, error)
