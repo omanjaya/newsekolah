@@ -380,7 +380,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	// why a strict handler can never serve these itself. hub is the same
 	// instance passed into attendance.Register above, so a socket opened
 	// here is visible to the attendance module's monitor presence count.
-	mountRealtimeRoutes(router, pool, tokenIssuer, identityModule.Service, hub, cfg.AppOrigins, logger)
+	mountRealtimeRoutes(router, pool, tokenIssuer, identityModule.Service, hub, attendanceModule.Service, cfg.AppOrigins, logger)
 
 	return router, bg, nil
 }

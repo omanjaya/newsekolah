@@ -12,11 +12,21 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/omanjaya/newsekolah/apps/api/internal/gen/api"
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/db"
+	attendanceservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance/service"
+	attendancehttp "github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance/transport/http"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/auth"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/realtime"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/tenant"
 )
+
+// monitorSnapshotReader is the narrow slice of attendance/service.Service
+// wsMonitorHandler needs to send the initial snapshot on connect, so this
+// file does not have to depend on the whole attendance module wiring.
+type monitorSnapshotReader interface {
+	GetMonitorSnapshot(ctx context.Context, tenantID uuid.UUID) (attendanceservice.MonitorSnapshot, error)
+}
 
 // sessionRevocationCheckInterval bounds how long a revoked or expired
 // session can keep its socket open after logout/refresh-reuse/password
@@ -60,9 +70,9 @@ func watchSessionValidity(client *realtime.Client, sessions auth.SessionLookup, 
 // the real upgrade -- no double registration, and the routes still run
 // behind every middleware already attached to router (tenant resolution
 // in particular, which both handlers below depend on).
-func mountRealtimeRoutes(router chi.Router, pool *pgxpool.Pool, tokenIssuer *auth.TokenIssuer, sessions auth.SessionLookup, hub *realtime.Hub, appOrigins []string, logger *slog.Logger) {
+func mountRealtimeRoutes(router chi.Router, pool *pgxpool.Pool, tokenIssuer *auth.TokenIssuer, sessions auth.SessionLookup, hub *realtime.Hub, snapshots monitorSnapshotReader, appOrigins []string, logger *slog.Logger) {
 	router.Get("/ws/me", wsMeHandler(tokenIssuer, sessions, hub, appOrigins, logger))
-	router.Get("/ws/monitor", wsMonitorHandler(pool, hub, appOrigins, logger))
+	router.Get("/ws/monitor", wsMonitorHandler(pool, hub, snapshots, appOrigins, logger))
 }
 
 // wsMeHandler authenticates the caller's access token (header or
@@ -120,7 +130,7 @@ func wsMeHandler(tokenIssuer *auth.TokenIssuer, sessions auth.SessionLookup, hub
 // the setting directly via gen/db rather than through the (not yet built)
 // attendance or school service, since this is wiring code, not business
 // logic.
-func wsMonitorHandler(pool *pgxpool.Pool, hub *realtime.Hub, appOrigins []string, logger *slog.Logger) http.HandlerFunc {
+func wsMonitorHandler(pool *pgxpool.Pool, hub *realtime.Hub, snapshots monitorSnapshotReader, appOrigins []string, logger *slog.Logger) http.HandlerFunc {
 	const settingKey = "monitor.display_token"
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -149,8 +159,27 @@ func wsMonitorHandler(pool *pgxpool.Pool, hub *realtime.Hub, appOrigins []string
 		}
 
 		topic := "monitor:" + t.ID.String()
-		if _, err := realtime.Upgrade(w, r, hub, topic, appOrigins, logger); err != nil {
+		client, err := realtime.Upgrade(w, r, hub, topic, appOrigins, logger)
+		if err != nil {
 			logger.Warn("ws/monitor upgrade failed", "error", err)
+			return
+		}
+
+		// Send the current snapshot immediately: monitor_update (the only
+		// other message this topic carries) only fires on the next
+		// submission, so without this a display that connects mid-period
+		// would show nothing until something happens
+		// (docs/analysis/backend-inventory.md section 1.6: the old app's
+		// "monitoring_ready" on connect).
+		if snapshots != nil {
+			if snap, err := snapshots.GetMonitorSnapshot(r.Context(), t.ID); err == nil {
+				if payload, err := json.Marshal(struct {
+					Type    string              `json:"type"`
+					Payload api.MonitorSnapshot `json:"payload"`
+				}{Type: "monitor_ready", Payload: attendancehttp.ToAPIMonitorSnapshot(snap)}); err == nil {
+					client.Send(payload)
+				}
+			}
 		}
 	}
 }

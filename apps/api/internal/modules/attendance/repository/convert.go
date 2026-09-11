@@ -78,3 +78,15 @@ func timeOfDay(t time.Time) pgtype.Time {
 	micros := int64(h)*3600e6 + int64(m)*60e6 + int64(s)*1e6
 	return pgtype.Time{Microseconds: micros, Valid: true}
 }
+
+// dateAtTimeOfDay combines a date (only year/month/day matter) with a
+// `time` column's pgtype.Time, in date's own location -- the inverse of
+// timeOfDay, for turning a period's starts_at/ends_at into a full instant
+// on the monitor snapshot's date.
+func dateAtTimeOfDay(date time.Time, t pgtype.Time) time.Time {
+	if !t.Valid {
+		return time.Time{}
+	}
+	return time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, date.Location()).
+		Add(time.Duration(t.Microseconds) * time.Microsecond)
+}

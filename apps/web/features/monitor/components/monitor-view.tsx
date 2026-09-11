@@ -34,7 +34,12 @@ function storeToken(token: string): void {
   }
 }
 
-const STATUS_ORDER: MonitorSessionCard["status"][] = ["in_progress", "not_started", "submitted"];
+const STATUS_ORDER: MonitorSessionCard["status"][] = [
+  "in_progress",
+  "not_started",
+  "submitted",
+  "no_schedule",
+];
 
 /**
  * The wall display: a school opens this page once on a mounted screen and
@@ -205,6 +210,7 @@ const CARD_STATUS_CLASS: Record<MonitorSessionCard["status"], string> = {
   not_started: "border-border",
   in_progress: "border-accent",
   submitted: "border-status-present",
+  no_schedule: "border-border",
 };
 
 function SessionCard({ session }: { session: MonitorSessionCard }): ReactElement {
@@ -214,9 +220,14 @@ function SessionCard({ session }: { session: MonitorSessionCard }): ReactElement
       className={`flex flex-col gap-1 rounded-sm border-2 bg-surface p-4 ${CARD_STATUS_CLASS[session.status]}`}
     >
       <span className="text-[20px] font-medium text-fg">{session.class_name}</span>
-      <span className="text-[14px] text-fg-muted">
-        {session.subject_name} - {session.teacher_name}
-      </span>
+      {session.status !== "no_schedule" && (
+        <span className="text-[14px] text-fg-muted">
+          {session.subject_name}
+          {session.substitute_name
+            ? ` - ${session.substitute_name} (${t("substituteFor")} ${session.teacher_name})`
+            : ` - ${session.teacher_name}`}
+        </span>
+      )}
       <span className="text-[13px] font-medium text-fg">
         {t(`sessionStatus.${session.status}`)}
       </span>

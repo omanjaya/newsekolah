@@ -28,8 +28,10 @@
   "sessionStatus": {
     "not_started": "Belum mulai",
     "in_progress": "Sedang berlangsung",
-    "submitted": "Presensi selesai"
+    "submitted": "Presensi selesai",
+    "no_schedule": "Tidak ada jadwal"
   },
+  "substituteFor": "menggantikan",
   "noSessionsTitle": "Tidak ada sesi yang berlangsung",
   "noSessionsBody": "Belum ada jam pelajaran yang sedang berjalan saat ini."
 }

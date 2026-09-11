@@ -22,7 +22,7 @@ func (h *AttendanceHandler) GetMonitorSnapshot(ctx context.Context, request api.
 	if err != nil {
 		return nil, mapAttendanceError(err)
 	}
-	return api.GetMonitorSnapshot200JSONResponse(toAPIMonitorSnapshot(snapshot)), nil
+	return api.GetMonitorSnapshot200JSONResponse(ToAPIMonitorSnapshot(snapshot)), nil
 }
 
 func (h *AttendanceHandler) GetMonitorPresence(ctx context.Context, _ api.GetMonitorPresenceRequestObject) (api.GetMonitorPresenceResponseObject, error) {

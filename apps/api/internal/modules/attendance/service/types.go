@@ -99,19 +99,41 @@ type DailyReport struct {
 }
 
 // MonitorCard is one class's current-period card on the monitor snapshot.
+// A class with nothing scheduled right now still gets a card (Status
+// "no_schedule") instead of being silently omitted.
 type MonitorCard struct {
 	ClassName   string
 	SubjectName string
 	TeacherName string
-	// Status is one of "not_started", "in_progress", "submitted".
+	// SubstituteName is set only when a substitute teacher actually took
+	// the session (as opposed to TeacherName, the schedule's regular
+	// teacher).
+	SubstituteName string
+	// Status is one of "not_started", "in_progress", "submitted", or
+	// "no_schedule" (no lesson scheduled for this class right now --
+	// SubjectName/TeacherName/SubstituteName are empty on that card).
 	Status string
+}
+
+// MonitorPeriod identifies the period currently running, for the
+// monitor's "current period" banner.
+type MonitorPeriod struct {
+	Name     string
+	StartsAt time.Time
+	EndsAt   time.Time
 }
 
 // MonitorSnapshot is the public monitor display's full payload.
 type MonitorSnapshot struct {
-	GeneratedAt  time.Time
-	StatusCounts map[string]int
-	Sessions     []MonitorCard
+	GeneratedAt time.Time
+	// Date and DayName are the tenant-local calendar day the snapshot
+	// describes (docs/analysis/backend-inventory.md section 1.6: the old
+	// app's monitor header showed both).
+	Date          time.Time
+	DayName       string
+	CurrentPeriod *MonitorPeriod
+	StatusCounts  map[string]int
+	Sessions      []MonitorCard
 }
 
 // SaveEntryInput is one student's status in a SaveEntries call.

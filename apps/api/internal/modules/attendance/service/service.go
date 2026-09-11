@@ -53,6 +53,23 @@ type MonitorCardRow struct {
 	TeacherName   string
 	SessionOpen   bool
 	Submitted     bool
+	// SubstituteName is set when a substitute teacher (not TeacherName,
+	// the schedule's regular teacher) actually took today's session.
+	SubstituteName string
+	// PeriodName/PeriodStartsAt/PeriodEndsAt are the governing period's
+	// own identity: every card on one snapshot shares the same period
+	// (they all resolved against the same now_time), so the monitor's
+	// "current period" banner is this period.
+	PeriodName     string
+	PeriodStartsAt time.Time
+	PeriodEndsAt   time.Time
+}
+
+// NoScheduleClassRow is one class with nothing scheduled in the period
+// currently running, for the monitor snapshot's "no schedule" cards.
+type NoScheduleClassRow struct {
+	ClassID   uuid.UUID
+	ClassName string
 }
 
 // Repository is attendance's data-access boundary, declared here (the
@@ -101,6 +118,10 @@ type Repository interface {
 	GetHomeroomClassForTeacher(ctx context.Context, tenantID, academicYearID, teacherUserID uuid.UUID) (classID uuid.UUID, ok bool, err error)
 	GetTenantTimezone(ctx context.Context, tenantID uuid.UUID) (string, error)
 	ListCurrentPeriodScheduleCards(ctx context.Context, tenantID, academicYearID uuid.UUID, dayOfWeek int16, date, nowLocal time.Time) ([]MonitorCardRow, error)
+	// ListClassesWithoutCurrentSchedule backs the monitor snapshot's
+	// "no schedule" cards: classes that exist but have nothing scheduled
+	// in the period straddling nowLocal.
+	ListClassesWithoutCurrentSchedule(ctx context.Context, tenantID, academicYearID uuid.UUID, dayOfWeek int16, nowLocal time.Time) ([]NoScheduleClassRow, error)
 	GetMonitorDisplayToken(ctx context.Context, tenantID uuid.UUID) (token string, configured bool, err error)
 	GetCorrectionDays(ctx context.Context, tenantID uuid.UUID) (days int, configured bool, err error)
 

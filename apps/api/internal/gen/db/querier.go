@@ -625,6 +625,10 @@ type Querier interface {
 	ListBills(ctx context.Context, arg ListBillsParams) ([]Bill, error)
 	ListBillsForStudent(ctx context.Context, arg ListBillsForStudentParams) ([]Bill, error)
 	ListChildrenForParent(ctx context.Context, arg ListChildrenForParentParams) ([]ListChildrenForParentRow, error)
+	// Every non-deleted class of the academic year that has no schedule row
+	// straddling now_time on day_of_week -- the monitor snapshot shows these
+	// as "no schedule" cards instead of silently omitting them.
+	ListClassesWithoutCurrentPeriodScheduleForAttendance(ctx context.Context, arg ListClassesWithoutCurrentPeriodScheduleForAttendanceParams) ([]ListClassesWithoutCurrentPeriodScheduleForAttendanceRow, error)
 	ListComponents(ctx context.Context, arg ListComponentsParams) ([]AssessmentComponent, error)
 	// Every copy not currently on loan is expected on the shelf during a stocktake.
 	ListCopiesForStocktake(ctx context.Context, tenantID uuid.UUID) ([]LibraryCopy, error)
@@ -636,7 +640,10 @@ type Querier interface {
 	// period's starts_at through end period's ends_at straddle now_time, in
 	// the tenant's own timezone), left-joined with today's attendance session
 	// if one has been opened -- the raw input to the monitor snapshot's
-	// per-class submission cards.
+	// per-class submission cards. Also carries the governing period's own
+	// name/times (the monitor's "current period" banner is this period,
+	// shared by every card since they all resolved against the same
+	// now_time) and, when a substitute took the session, their name.
 	ListCurrentPeriodScheduleCardsForAttendance(ctx context.Context, arg ListCurrentPeriodScheduleCardsForAttendanceParams) ([]ListCurrentPeriodScheduleCardsForAttendanceRow, error)
 	ListDiscountsForFeeType(ctx context.Context, arg ListDiscountsForFeeTypeParams) ([]FeeDiscount, error)
 	ListDiscountsForStudent(ctx context.Context, arg ListDiscountsForStudentParams) ([]FeeDiscount, error)

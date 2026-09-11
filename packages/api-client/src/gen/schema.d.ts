@@ -6891,14 +6891,31 @@ export interface components {
         };
         MonitorSessionCard: {
             class_name: string;
+            /** @description Empty when status is no_schedule. */
             subject_name: string;
+            /** @description Empty when status is no_schedule. */
             teacher_name: string;
+            /** @description Set only when a substitute teacher actually took the session. */
+            substitute_name?: string;
             /** @enum {string} */
-            status: "not_started" | "in_progress" | "submitted";
+            status: "not_started" | "in_progress" | "submitted" | "no_schedule";
+        };
+        MonitorPeriod: {
+            name: string;
+            /** Format: date-time */
+            starts_at: string;
+            /** Format: date-time */
+            ends_at: string;
         };
         MonitorSnapshot: {
             /** Format: date-time */
             generated_at: string;
+            /** Format: date */
+            date: string;
+            /** @description English weekday name (Monday, Tuesday, ...); the client localizes. */
+            day_name: string;
+            /** @description Omitted when no schedule anywhere is currently in its period. */
+            current_period?: components["schemas"]["MonitorPeriod"];
             status_counts: {
                 [key: string]: number;
             };

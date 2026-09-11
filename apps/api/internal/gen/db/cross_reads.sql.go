@@ -171,6 +171,61 @@ func (q *Queries) ListActiveEnrollmentsForAttendance(ctx context.Context, arg Li
 	return items, nil
 }
 
+const listClassesWithoutCurrentPeriodScheduleForAttendance = `-- name: ListClassesWithoutCurrentPeriodScheduleForAttendance :many
+select c.id as class_id, c.name as class_name
+from classes c
+where c.tenant_id = $1 and c.academic_year_id = $2 and c.deleted_at is null
+  and not exists (
+    select 1
+    from schedules s
+    join periods sp on sp.id = s.start_period_id
+    join periods ep on ep.id = s.end_period_id
+    where s.tenant_id = $1 and s.academic_year_id = $2 and s.class_id = c.id and s.day_of_week = $3
+      and sp.starts_at <= $4 and ep.ends_at >= $4
+  )
+order by c.name
+`
+
+type ListClassesWithoutCurrentPeriodScheduleForAttendanceParams struct {
+	TenantID       uuid.UUID   `json:"tenant_id"`
+	AcademicYearID uuid.UUID   `json:"academic_year_id"`
+	DayOfWeek      int16       `json:"day_of_week"`
+	StartsAt       pgtype.Time `json:"starts_at"`
+}
+
+type ListClassesWithoutCurrentPeriodScheduleForAttendanceRow struct {
+	ClassID   uuid.UUID `json:"class_id"`
+	ClassName string    `json:"class_name"`
+}
+
+// Every non-deleted class of the academic year that has no schedule row
+// straddling now_time on day_of_week -- the monitor snapshot shows these
+// as "no schedule" cards instead of silently omitting them.
+func (q *Queries) ListClassesWithoutCurrentPeriodScheduleForAttendance(ctx context.Context, arg ListClassesWithoutCurrentPeriodScheduleForAttendanceParams) ([]ListClassesWithoutCurrentPeriodScheduleForAttendanceRow, error) {
+	rows, err := q.db.Query(ctx, listClassesWithoutCurrentPeriodScheduleForAttendance,
+		arg.TenantID,
+		arg.AcademicYearID,
+		arg.DayOfWeek,
+		arg.StartsAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListClassesWithoutCurrentPeriodScheduleForAttendanceRow{}
+	for rows.Next() {
+		var i ListClassesWithoutCurrentPeriodScheduleForAttendanceRow
+		if err := rows.Scan(&i.ClassID, &i.ClassName); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listCurrentPeriodScheduleCardsForAttendance = `-- name: ListCurrentPeriodScheduleCardsForAttendance :many
 select
   s.class_id,
@@ -180,7 +235,12 @@ select
   s.teacher_user_id,
   tu.name as teacher_name,
   ats.id as session_id,
-  ats.submitted_at
+  ats.submitted_at,
+  ats.substitute_user_id,
+  su.name as substitute_name,
+  sp.name as period_name,
+  sp.starts_at as period_starts_at,
+  ep.ends_at as period_ends_at
 from schedules s
 join classes c on c.id = s.class_id
 join subjects sub on sub.id = s.subject_id
@@ -188,6 +248,7 @@ join users tu on tu.id = s.teacher_user_id
 join periods sp on sp.id = s.start_period_id
 join periods ep on ep.id = s.end_period_id
 left join attendance_sessions ats on ats.schedule_id = s.id and ats.date = $4
+left join users su on su.id = ats.substitute_user_id
 where s.tenant_id = $1 and s.academic_year_id = $2 and s.day_of_week = $3
   and sp.starts_at <= $5 and ep.ends_at >= $5
 order by c.name
@@ -202,21 +263,29 @@ type ListCurrentPeriodScheduleCardsForAttendanceParams struct {
 }
 
 type ListCurrentPeriodScheduleCardsForAttendanceRow struct {
-	ClassID       uuid.UUID          `json:"class_id"`
-	ClassName     string             `json:"class_name"`
-	SubjectID     uuid.UUID          `json:"subject_id"`
-	SubjectName   string             `json:"subject_name"`
-	TeacherUserID uuid.UUID          `json:"teacher_user_id"`
-	TeacherName   string             `json:"teacher_name"`
-	SessionID     pgtype.UUID        `json:"session_id"`
-	SubmittedAt   pgtype.Timestamptz `json:"submitted_at"`
+	ClassID          uuid.UUID          `json:"class_id"`
+	ClassName        string             `json:"class_name"`
+	SubjectID        uuid.UUID          `json:"subject_id"`
+	SubjectName      string             `json:"subject_name"`
+	TeacherUserID    uuid.UUID          `json:"teacher_user_id"`
+	TeacherName      string             `json:"teacher_name"`
+	SessionID        pgtype.UUID        `json:"session_id"`
+	SubmittedAt      pgtype.Timestamptz `json:"submitted_at"`
+	SubstituteUserID pgtype.UUID        `json:"substitute_user_id"`
+	SubstituteName   pgtype.Text        `json:"substitute_name"`
+	PeriodName       string             `json:"period_name"`
+	PeriodStartsAt   pgtype.Time        `json:"period_starts_at"`
+	PeriodEndsAt     pgtype.Time        `json:"period_ends_at"`
 }
 
 // Every schedule occurrence whose period is currently running (start
 // period's starts_at through end period's ends_at straddle now_time, in
 // the tenant's own timezone), left-joined with today's attendance session
 // if one has been opened -- the raw input to the monitor snapshot's
-// per-class submission cards.
+// per-class submission cards. Also carries the governing period's own
+// name/times (the monitor's "current period" banner is this period,
+// shared by every card since they all resolved against the same
+// now_time) and, when a substitute took the session, their name.
 func (q *Queries) ListCurrentPeriodScheduleCardsForAttendance(ctx context.Context, arg ListCurrentPeriodScheduleCardsForAttendanceParams) ([]ListCurrentPeriodScheduleCardsForAttendanceRow, error) {
 	rows, err := q.db.Query(ctx, listCurrentPeriodScheduleCardsForAttendance,
 		arg.TenantID,
@@ -241,6 +310,11 @@ func (q *Queries) ListCurrentPeriodScheduleCardsForAttendance(ctx context.Contex
 			&i.TeacherName,
 			&i.SessionID,
 			&i.SubmittedAt,
+			&i.SubstituteUserID,
+			&i.SubstituteName,
+			&i.PeriodName,
+			&i.PeriodStartsAt,
+			&i.PeriodEndsAt,
 		); err != nil {
 			return nil, err
 		}
