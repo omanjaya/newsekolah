@@ -1,5 +1,18 @@
 package authz
 
+// System role slugs, seeded for every tenant. Modules that need to look up
+// a system role (e.g. the Dapodik import assigning the student role) should
+// reference these constants rather than hardcoding the slug string.
+const (
+	RoleSlugSuperAdmin = "super_admin"
+	RoleSlugAdmin      = "admin"
+	RoleSlugTeacher    = "teacher"
+	RoleSlugStaff      = "staff"
+	RoleSlugStudent    = "student"
+	RoleSlugParent     = "parent"
+	RoleSlugLibrarian  = "librarian"
+)
+
 // RoleDefault is the default permission set for one system role. Seeding a
 // new tenant creates these roles; cmd/migrate re-applies them additively so a
 // permission introduced by a newer module reaches existing tenants without
@@ -15,31 +28,31 @@ type RoleDefault struct {
 func RoleDefaults() []RoleDefault {
 	all := Codes()
 	return []RoleDefault{
-		{"super_admin", "Super Admin", all},
-		{"admin", "Admin Sekolah", without(all, PermManagePermissions)},
-		{"teacher", "Guru", []string{
+		{RoleSlugSuperAdmin, "Super Admin", all},
+		{RoleSlugAdmin, "Admin Sekolah", without(all, PermManagePermissions)},
+		{RoleSlugTeacher, "Guru", []string{
 			PermViewDashboard, PermViewAnnouncements, PermViewSchedules, PermViewAcademicData,
 			PermViewAttendance, PermManageAttendance, PermViewNotifications,
 			PermManageGrades, PermViewLibrary, PermIssueScanTokens,
 			PermCreateAnnouncements, PermEditAnnouncements, PermPublishAnnouncements,
 			PermViewDiscipline, PermRecordViolations, PermViewEarlyWarning,
 		}},
-		{"staff", "Pegawai", []string{
+		{RoleSlugStaff, "Pegawai", []string{
 			PermViewDashboard, PermViewAnnouncements, PermViewNotifications, PermViewLibrary, PermViewAcademicData, PermIssueScanTokens,
 			PermCreateAnnouncements, PermEditAnnouncements, PermPublishAnnouncements,
 			PermViewDiscipline, PermRecordViolations, PermViewEarlyWarning,
 			PermViewVisitors, PermManageVisitors, PermViewVisitorIncidents, PermManageVisitorIncidents, PermViewVisitorReports,
 			PermViewBilling, PermRecordPayments,
 		}},
-		{"student", "Siswa", []string{
+		{RoleSlugStudent, "Siswa", []string{
 			PermViewDashboard, PermViewAnnouncements, PermViewNotifications, PermViewSchedules, PermViewAcademicData,
 			PermViewOwnGrades, PermSubmitLeaveRequests, PermViewAttendance, PermViewLibrary,
 		}},
-		{"parent", "Orang Tua", []string{
+		{RoleSlugParent, "Orang Tua", []string{
 			PermViewDashboard, PermViewAnnouncements, PermViewNotifications,
 			PermViewChildAttendance, PermViewChildGrades, PermApproveChildLeaveRequests, PermViewChildBilling,
 		}},
-		{"librarian", "Pustakawan", []string{
+		{RoleSlugLibrarian, "Pustakawan", []string{
 			PermViewDashboard, PermViewNotifications, PermViewLibrary,
 			PermManageLibraryCatalog, PermManageLibraryCirculation,
 			PermManageLibraryMembers, PermManageLibrarySettings, PermViewLibraryReports,

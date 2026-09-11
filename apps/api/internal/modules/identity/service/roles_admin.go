@@ -194,6 +194,17 @@ func (s *Service) ReplaceRolePermissions(ctx context.Context, tenantID, roleID u
 		if err != nil {
 			return domain.ErrRoleNotFound
 		}
+		// review_leave_requests and issue_leave_letters must reach the
+		// teacher role only through a homeroom/counselor duty assignment,
+		// never as a direct grant (docs/analysis/backend-inventory.md
+		// section 1.3).
+		if role.Slug == authz.RoleSlugTeacher {
+			for _, c := range codes {
+				if c == authz.PermReviewLeaveRequests || c == authz.PermIssueLeaveLetters {
+					return domain.ErrLeavePermissionDirect
+				}
+			}
+		}
 		before, err := s.repo.ListRolePermissionCodes(ctx, tenantID, roleID)
 		if err != nil {
 			return fmt.Errorf("list current permissions: %w", err)

@@ -63,8 +63,17 @@ func TestValidateRoleGrants(t *testing.T) {
 		{
 			name:         "single primary role, non-super grant, ok",
 			actorIsSuper: false,
-			grants:       []RoleGrant{{RoleID: adminID, Slug: "teacher", IsPrimary: true}},
+			grants:       []RoleGrant{{RoleID: adminID, Slug: "teacher", IsPrimary: true, IsSystem: true}},
 			wantErr:      nil,
+		},
+		{
+			name:         "primary plus a custom additional role, ok",
+			actorIsSuper: false,
+			grants: []RoleGrant{
+				{Slug: "teacher", IsPrimary: true, IsSystem: true},
+				{Slug: "wali-kelas-7a", IsPrimary: false, IsSystem: false},
+			},
+			wantErr: nil,
 		},
 		{
 			name:         "no roles is rejected",
@@ -76,8 +85,8 @@ func TestValidateRoleGrants(t *testing.T) {
 			name:         "two primaries is rejected",
 			actorIsSuper: true,
 			grants: []RoleGrant{
-				{Slug: "teacher", IsPrimary: true},
-				{Slug: "staff", IsPrimary: true},
+				{Slug: "teacher", IsPrimary: true, IsSystem: true},
+				{Slug: "staff", IsPrimary: true, IsSystem: true},
 			},
 			wantErr: ErrNoPrimaryRole,
 		},
@@ -90,14 +99,29 @@ func TestValidateRoleGrants(t *testing.T) {
 		{
 			name:         "granting super_admin without being super_admin is rejected",
 			actorIsSuper: false,
-			grants:       []RoleGrant{{Slug: SuperAdminRoleSlug, IsPrimary: true}},
+			grants:       []RoleGrant{{Slug: SuperAdminRoleSlug, IsPrimary: true, IsSystem: true}},
 			wantErr:      ErrOnlySuperAdminGrants,
 		},
 		{
 			name:         "a super_admin can grant super_admin",
 			actorIsSuper: true,
-			grants:       []RoleGrant{{Slug: SuperAdminRoleSlug, IsPrimary: true}},
+			grants:       []RoleGrant{{Slug: SuperAdminRoleSlug, IsPrimary: true, IsSystem: true}},
 			wantErr:      nil,
+		},
+		{
+			name:         "a custom primary role is rejected",
+			actorIsSuper: true,
+			grants:       []RoleGrant{{Slug: "wali-kelas-7a", IsPrimary: true, IsSystem: false}},
+			wantErr:      ErrPrimaryRoleNotSystem,
+		},
+		{
+			name:         "a system role as an additional grant is rejected",
+			actorIsSuper: true,
+			grants: []RoleGrant{
+				{Slug: "teacher", IsPrimary: true, IsSystem: true},
+				{Slug: "staff", IsPrimary: false, IsSystem: true},
+			},
+			wantErr: ErrAdditionalRoleSystem,
 		},
 	}
 

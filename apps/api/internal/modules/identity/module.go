@@ -73,6 +73,7 @@ func Register(deps Dependencies) *Module {
 		SSOSealer:      deps.MfaSealer,
 		GoogleVerifier: googleVerifier,
 		Ceremony:       deps.Ceremony,
+		SessionCache:   deps.SessionCache,
 	})
 	handler := transporthttp.New(svc, deps.Branding, deps.SessionCache, deps.IsProduction)
 	return &Module{Service: svc, Handler: handler}

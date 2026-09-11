@@ -46,6 +46,7 @@ func (s *Service) RequestPasswordReset(ctx context.Context, tenantID uuid.UUID, 
 		}
 	}
 
+	usernameOrEmail = domain.NormalizeUsername(usernameOrEmail)
 	return s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		user, found, err := s.repo.GetUserByUsernameOrEmail(ctx, tenantID, usernameOrEmail)
 		if err != nil {
@@ -119,9 +120,11 @@ func (s *Service) ConfirmPasswordReset(ctx context.Context, tenantID uuid.UUID, 
 		// uuid.Nil never matches a real session id, so this revokes every
 		// session for the account -- there is no "current session" to
 		// exempt in this unauthenticated flow.
-		if err := s.repo.RevokeOtherSessions(ctx, tenantID, reset.UserID, uuid.Nil, "password_reset"); err != nil {
+		revokedIDs, err := s.repo.RevokeOtherSessions(ctx, tenantID, reset.UserID, uuid.Nil, "password_reset")
+		if err != nil {
 			return fmt.Errorf("revoke sessions: %w", err)
 		}
+		s.invalidateSessions(ctx, revokedIDs)
 		return audit.RecordSimple(ctx, tenantID, "password_reset.confirm", "user", reset.UserID)
 	})
 }

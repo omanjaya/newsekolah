@@ -12,13 +12,16 @@ select * from sessions where tenant_id = $1 and refresh_token_hash = $2;
 -- name: RevokeSession :exec
 update sessions set revoked_at = now(), revoked_reason = $3 where tenant_id = $1 and id = $2 and revoked_at is null;
 
--- name: RevokeSessionFamily :exec
-update sessions set revoked_at = now(), revoked_reason = $3 where tenant_id = $1 and family_id = $2 and revoked_at is null;
+-- name: RevokeSessionFamily :many
+update sessions set revoked_at = now(), revoked_reason = $3
+where tenant_id = $1 and family_id = $2 and revoked_at is null
+returning id;
 
--- name: RevokeOtherUserSessions :exec
+-- name: RevokeOtherUserSessions :many
 update sessions
 set revoked_at = now(), revoked_reason = $4
-where tenant_id = $1 and user_id = $2 and id != $3 and revoked_at is null;
+where tenant_id = $1 and user_id = $2 and id != $3 and revoked_at is null
+returning id;
 
 -- name: ListActiveSessionsForUser :many
 select * from sessions
@@ -27,6 +30,12 @@ order by last_seen_at desc;
 
 -- name: TouchSessionLastSeen :exec
 update sessions set last_seen_at = now() where tenant_id = $1 and id = $2;
+
+-- name: PruneOldSessions :execrows
+delete from sessions
+where tenant_id = $1
+  and ((revoked_at is not null and revoked_at < now() - interval '30 days')
+    or (expires_at < now() - interval '30 days'));
 
 -- name: InsertLoginAttempt :exec
 insert into login_attempts (tenant_id, username, ip, success)

@@ -186,7 +186,7 @@ func (s *Service) GoogleLogin(ctx context.Context, in GoogleLoginInput) (AuthRes
 			return domain.ErrSSOInvalidToken
 		}
 
-		user, found, err := s.repo.GetUserByUsernameOrEmail(ctx, in.TenantID, claims.Email)
+		user, found, err := s.repo.GetUserByUsernameOrEmail(ctx, in.TenantID, domain.NormalizeEmail(claims.Email))
 		if err != nil {
 			return fmt.Errorf("look up sso user: %w", err)
 		}

@@ -33,7 +33,7 @@ func (s *Service) BeginPasskeyLogin(ctx context.Context, in PasskeyLoginInput) (
 		return protocol.CredentialAssertion{}, "", err
 	}
 
-	user, found, err := s.repo.GetUserByUsernameOrEmail(ctx, in.TenantID, in.Username)
+	user, found, err := s.repo.GetUserByUsernameOrEmail(ctx, in.TenantID, domain.NormalizeUsername(in.Username))
 	if err != nil {
 		return protocol.CredentialAssertion{}, "", fmt.Errorf("look up passkey login user: %w", err)
 	}

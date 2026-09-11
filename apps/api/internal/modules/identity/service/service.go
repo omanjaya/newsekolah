@@ -58,10 +58,20 @@ type AuthRepository interface {
 	CreateSession(ctx context.Context, s NewSession) (domain.Session, error)
 	GetSessionByRefreshHash(ctx context.Context, tenantID uuid.UUID, hash []byte) (domain.Session, error)
 	RevokeSession(ctx context.Context, tenantID, sessionID uuid.UUID, reason string) error
-	RevokeSessionFamily(ctx context.Context, tenantID, familyID uuid.UUID, reason string) error
-	RevokeOtherSessions(ctx context.Context, tenantID, userID, keepSessionID uuid.UUID, reason string) error
+	// RevokeSessionFamily and RevokeOtherSessions return the ids they
+	// revoked so the caller can evict them from the session cache
+	// immediately (docs/analysis/backend-inventory.md section 1.1).
+	RevokeSessionFamily(ctx context.Context, tenantID, familyID uuid.UUID, reason string) ([]uuid.UUID, error)
+	RevokeOtherSessions(ctx context.Context, tenantID, userID, keepSessionID uuid.UUID, reason string) ([]uuid.UUID, error)
 	ListActiveSessions(ctx context.Context, tenantID, userID uuid.UUID) ([]SessionView, error)
 	IsSessionActive(ctx context.Context, tenantID, sessionID uuid.UUID) (bool, error)
+	TouchSessionLastSeen(ctx context.Context, tenantID, sessionID uuid.UUID) error
+	// PruneOldSessions deletes revoked/expired sessions older than 30 days
+	// and returns how many rows it removed, for the periodic retention job.
+	PruneOldSessions(ctx context.Context, tenantID uuid.UUID) (int64, error)
+	// ListActiveTenants backs the same periodic job: it loops every tenant
+	// one at a time rather than pruning across tenants in one statement.
+	ListActiveTenants(ctx context.Context) ([]uuid.UUID, error)
 }
 
 // NewSession is what the service asks the repository to persist when
@@ -158,6 +168,22 @@ type Extras struct {
 	// login between its Begin and Finish calls. nil disables passkeys
 	// entirely.
 	Ceremony CeremonyStore
+	// SessionCache lets the service evict a just-revoked session from the
+	// middleware's validity cache. nil (e.g. in a unit test) just skips
+	// the eviction -- the cache entry still expires on its own TTL.
+	SessionCache SessionInvalidator
+}
+
+// SessionInvalidator evicts a session from the authn middleware's
+// short-lived validity cache. Matches platform/auth.SessionCache's
+// Invalidate method structurally. A revocation the service makes on a
+// session other than "the current request's own" (password change,
+// password-reset confirm, refresh-reuse family revocation) must call this
+// itself -- there is no HTTP handler downstream of those to do it, unlike
+// logout or "revoke this session" (docs/analysis/backend-inventory.md
+// section 1.1).
+type SessionInvalidator interface {
+	Invalidate(ctx context.Context, sessionID uuid.UUID) error
 }
 
 // CeremonyStore is the narrow key-value contract passkey ceremonies need
@@ -220,6 +246,41 @@ func (s *Service) EffectivePermissions(ctx context.Context, tenantID, userID uui
 // IsSessionActive implements auth.SessionLookup for the authn middleware.
 func (s *Service) IsSessionActive(ctx context.Context, tenantID, sessionID uuid.UUID) (bool, error) {
 	return s.repo.IsSessionActive(ctx, tenantID, sessionID)
+}
+
+// TouchSessionLastSeen implements auth.SessionLookup for the authn
+// middleware, which throttles how often it calls this.
+func (s *Service) TouchSessionLastSeen(ctx context.Context, tenantID, sessionID uuid.UUID) error {
+	return s.repo.TouchSessionLastSeen(ctx, tenantID, sessionID)
+}
+
+// invalidateSessions evicts every id in ids from the middleware's
+// validity cache. Best-effort: a failure here just means the affected
+// sessions stay accepted for up to the cache's TTL instead of being
+// rejected immediately, not a correctness break (the database row is
+// already revoked).
+func (s *Service) invalidateSessions(ctx context.Context, ids []uuid.UUID) {
+	if s.extras.SessionCache == nil {
+		return
+	}
+	for _, id := range ids {
+		_ = s.extras.SessionCache.Invalidate(ctx, id)
+	}
+}
+
+// PruneSessions deletes revoked/expired sessions older than 30 days for
+// every active tenant. Wired as a periodic job (transport/jobs).
+func (s *Service) PruneSessions(ctx context.Context) error {
+	tenantIDs, err := s.repo.ListActiveTenants(ctx)
+	if err != nil {
+		return err
+	}
+	for _, tenantID := range tenantIDs {
+		if _, err := s.repo.PruneOldSessions(ctx, tenantID); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (s *Service) loadPrincipal(ctx context.Context, tenantID, userID uuid.UUID) (authz.Principal, error) {

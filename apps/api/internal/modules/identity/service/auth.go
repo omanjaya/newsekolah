@@ -42,6 +42,7 @@ type AuthResult struct {
 // itself happens before the transaction: it is Redis/in-memory state, not
 // tenant-scoped Postgres data.
 func (s *Service) Login(ctx context.Context, in LoginInput) (AuthResult, error) {
+	in.Username = domain.NormalizeUsername(in.Username)
 	allowed, err := s.limiter.Allow(ctx, in.TenantID.String(), in.Username, in.IP)
 	if err != nil {
 		return AuthResult{}, err
@@ -137,9 +138,13 @@ func (s *Service) refresh(ctx context.Context, tenantID uuid.UUID, refreshToken 
 		// It runs in its own, independent transaction (a separate pooled
 		// connection) so it commits even though the outer one will not.
 		familyID := session.FamilyID
+		var revokedIDs []uuid.UUID
 		_ = s.withTx(database.Detach(ctx), tenantID, func(ctx context.Context) error {
-			return s.repo.RevokeSessionFamily(ctx, tenantID, familyID, "reuse_detected")
+			var err error
+			revokedIDs, err = s.repo.RevokeSessionFamily(ctx, tenantID, familyID, "reuse_detected")
+			return err
 		})
+		s.invalidateSessions(ctx, revokedIDs)
 		return AuthResult{}, domain.ErrRefreshReuseDetected
 	case domain.RefreshExpired:
 		return AuthResult{}, domain.ErrSessionExpired
@@ -148,6 +153,9 @@ func (s *Service) refresh(ctx context.Context, tenantID uuid.UUID, refreshToken 
 	user, err := s.repo.GetUserByID(ctx, tenantID, session.UserID)
 	if err != nil {
 		return AuthResult{}, domain.ErrUserNotFound
+	}
+	if !user.CanAuthenticate() {
+		return AuthResult{}, domain.ErrAccountNotActive
 	}
 
 	if err := s.repo.RevokeSession(ctx, tenantID, session.ID, "rotated"); err != nil {
@@ -287,6 +295,11 @@ func (s *Service) ChangePassword(ctx context.Context, tenantID, userID, currentS
 			return err
 		}
 
-		return s.repo.RevokeOtherSessions(ctx, tenantID, userID, currentSessionID, "password_changed")
+		revokedIDs, err := s.repo.RevokeOtherSessions(ctx, tenantID, userID, currentSessionID, "password_changed")
+		if err != nil {
+			return err
+		}
+		s.invalidateSessions(ctx, revokedIDs)
+		return nil
 	})
 }

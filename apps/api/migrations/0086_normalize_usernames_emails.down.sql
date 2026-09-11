@@ -1,0 +1,2 @@
+-- Irreversible data backfill: the original mixed-case values were not
+-- preserved. Nothing to undo.

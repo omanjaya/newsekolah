@@ -19,6 +19,7 @@ func (s *Service) CreateUser(ctx context.Context, tenantID, actorID uuid.UUID, i
 	if !in.ProfileKind.Valid() {
 		return UserAdminView{}, domain.ErrInvalidProfileKind
 	}
+	in.Email = domain.NormalizeEmail(in.Email)
 
 	var view UserAdminView
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
@@ -85,6 +86,7 @@ func (s *Service) UpdateUser(ctx context.Context, tenantID, actorID, userID uuid
 	if !in.ProfileKind.Valid() {
 		return UserAdminView{}, domain.ErrInvalidProfileKind
 	}
+	in.Email = domain.NormalizeEmail(in.Email)
 
 	var view UserAdminView
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {

@@ -244,6 +244,12 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	)
 	if cfg.WorkerInline {
 		workers = jobs.NewWorkers()
+		// Like analyticsjobs below, this only runs in the inline
+		// (WORKER_INLINE=true) path: cmd/worker deliberately does not
+		// construct the identity module (see its comment on Perms: nil),
+		// so a school running a separate worker process needs its own
+		// session-retention sweep until that changes.
+		periodic = append(periodic, identityModule.RegisterJobs(workers, logger)...)
 		periodic = append(periodic, permitsModule.RegisterJobs(workers, logger)...)
 		notificationPeriodic, err := notificationsModule.RegisterJobs(workers)
 		if err != nil {

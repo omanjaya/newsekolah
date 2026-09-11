@@ -24,14 +24,17 @@ var (
 	ErrCannotArchiveSelf    = errors.New("cannot archive own account")
 	ErrOnlySuperAdminGrants = errors.New("only a super admin can grant the super admin role")
 	ErrNoPrimaryRole        = errors.New("exactly one role must be marked primary")
+	ErrPrimaryRoleNotSystem = errors.New("the primary role must be a system role")
+	ErrAdditionalRoleSystem = errors.New("additional roles must be custom roles, not system roles")
 	ErrInvalidProfileKind   = errors.New("invalid profile kind")
 
 	// Roles and permissions
-	ErrRoleNotFound        = errors.New("role not found")
-	ErrInvalidRoleSlug     = errors.New("role slug must be 2-50 lowercase letters, digits, or underscores")
-	ErrRoleSystemImmutable = errors.New("system role slug and name cannot be changed")
-	ErrRoleInUse           = errors.New("role is still assigned to one or more users")
-	ErrUnknownPermission   = errors.New("unknown permission code")
+	ErrRoleNotFound          = errors.New("role not found")
+	ErrInvalidRoleSlug       = errors.New("role slug must be 2-50 lowercase letters, digits, or underscores")
+	ErrRoleSystemImmutable   = errors.New("system role slug and name cannot be changed")
+	ErrRoleInUse             = errors.New("role is still assigned to one or more users")
+	ErrUnknownPermission     = errors.New("unknown permission code")
+	ErrLeavePermissionDirect = errors.New("review_leave_requests and issue_leave_letters cannot be granted directly to the teacher role; they must come from a duty assignment")
 
 	// Duties
 	ErrDutyTypeNotFound       = errors.New("duty type not found")

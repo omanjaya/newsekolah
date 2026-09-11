@@ -835,6 +835,7 @@ type Querier interface {
 	PlatformUpdateTenantDomain(ctx context.Context, arg PlatformUpdateTenantDomainParams) (Tenant, error)
 	PlatformUpdateTenantStatus(ctx context.Context, arg PlatformUpdateTenantStatusParams) (Tenant, error)
 	PlatformUpsertFeatureFlag(ctx context.Context, arg PlatformUpsertFeatureFlagParams) (FeatureFlag, error)
+	PruneOldSessions(ctx context.Context, tenantID uuid.UUID) (int64, error)
 	RecordDeliveryAttempt(ctx context.Context, arg RecordDeliveryAttemptParams) error
 	RecordStocktakeScan(ctx context.Context, arg RecordStocktakeScanParams) (LibraryStocktakeScan, error)
 	RemoveParticipant(ctx context.Context, arg RemoveParticipantParams) error
@@ -849,9 +850,9 @@ type Querier interface {
 	RestoreUser(ctx context.Context, arg RestoreUserParams) error
 	ReturnLoan(ctx context.Context, arg ReturnLoanParams) (LibraryLoan, error)
 	RevokeAPIKey(ctx context.Context, arg RevokeAPIKeyParams) (IntegrationApiKey, error)
-	RevokeOtherUserSessions(ctx context.Context, arg RevokeOtherUserSessionsParams) error
+	RevokeOtherUserSessions(ctx context.Context, arg RevokeOtherUserSessionsParams) ([]uuid.UUID, error)
 	RevokeSession(ctx context.Context, arg RevokeSessionParams) error
-	RevokeSessionFamily(ctx context.Context, arg RevokeSessionFamilyParams) error
+	RevokeSessionFamily(ctx context.Context, arg RevokeSessionFamilyParams) ([]uuid.UUID, error)
 	SearchTenants(ctx context.Context, name string) ([]Tenant, error)
 	SetAnnouncementRecipientCount(ctx context.Context, arg SetAnnouncementRecipientCountParams) error
 	SetDefaultDocumentTemplate(ctx context.Context, arg SetDefaultDocumentTemplateParams) (DocumentTemplate, error)
