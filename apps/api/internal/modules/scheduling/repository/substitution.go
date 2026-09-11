@@ -7,9 +7,11 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/db"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling/service"
 	pdatabase "github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
 )
 
@@ -91,6 +93,33 @@ func (r *Repository) ListSubstitutionsOutgoing(ctx context.Context, tenantID, us
 		return nil, err
 	}
 	return toSubstitutions(rows), nil
+}
+
+func (r *Repository) ListSubstitutionsAll(ctx context.Context, tenantID uuid.UUID, status *domain.SubstitutionStatus) ([]domain.Substitution, error) {
+	var statusFilter pgtype.Text
+	if status != nil {
+		statusFilter = pdatabase.Text(string(*status))
+	}
+	rows, err := r.queries(ctx).ListSubstitutionsAll(ctx, db.ListSubstitutionsAllParams{TenantID: tenantID, Status: statusFilter})
+	if err != nil {
+		return nil, err
+	}
+	return toSubstitutions(rows), nil
+}
+
+func (r *Repository) ListEligibleSubstituteTeachers(ctx context.Context, tenantID, academicYearID, excludeUserID uuid.UUID, search string, limit, offset int) ([]service.SubstituteCandidate, error) {
+	rows, err := r.queries(ctx).ListEligibleSubstituteTeachers(ctx, db.ListEligibleSubstituteTeachersParams{
+		TenantID: tenantID, AcademicYearID: academicYearID, ID: excludeUserID, Search: pdatabase.Text(search),
+		Limit: int32(limit), Offset: int32(offset), //nolint:gosec // clamped by the service
+	})
+	if err != nil {
+		return nil, err
+	}
+	out := make([]service.SubstituteCandidate, len(rows))
+	for i, row := range rows {
+		out[i] = service.SubstituteCandidate{UserID: row.ID, Name: row.Name}
+	}
+	return out, nil
 }
 
 func (r *Repository) ListAcceptedSubstitutionsForSubstituteDate(ctx context.Context, tenantID, substituteUserID uuid.UUID, date time.Time) ([]domain.Substitution, error) {

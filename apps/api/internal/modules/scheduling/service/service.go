@@ -42,6 +42,13 @@ type SubjectRef struct {
 	Name string
 }
 
+// SubstituteCandidate is one row of the eligible-substitutes picker: an
+// active teacher this academic year, other than the requester.
+type SubstituteCandidate struct {
+	UserID uuid.UUID
+	Name   string
+}
+
 // Repository is scheduling's data-access boundary, declared here (the
 // consumer) per docs/03-layered-architecture.md section 1. The
 // AcademicRead* methods read tables owned by the academic module; see the
@@ -67,6 +74,13 @@ type Repository interface {
 	ListSubstitutionsIncoming(ctx context.Context, tenantID, userID uuid.UUID) ([]domain.Substitution, error)
 	ListSubstitutionsOutgoing(ctx context.Context, tenantID, userID uuid.UUID) ([]domain.Substitution, error)
 	ListAcceptedSubstitutionsForSubstituteDate(ctx context.Context, tenantID, substituteUserID uuid.UUID, date time.Time) ([]domain.Substitution, error)
+	// ListSubstitutionsAll is the manage_schedules-only "all" list scope;
+	// status filters to one status when non-nil.
+	ListSubstitutionsAll(ctx context.Context, tenantID uuid.UUID, status *domain.SubstitutionStatus) ([]domain.Substitution, error)
+	// ListEligibleSubstituteTeachers backs the substitute picker: active
+	// teachers this academic year, excluding excludeUserID, with an
+	// optional name search.
+	ListEligibleSubstituteTeachers(ctx context.Context, tenantID, academicYearID, excludeUserID uuid.UUID, search string, limit, offset int) ([]SubstituteCandidate, error)
 
 	CreateJournal(ctx context.Context, j domain.Journal) (domain.Journal, error)
 	UpdateJournal(ctx context.Context, j domain.Journal) (domain.Journal, error)

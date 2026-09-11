@@ -647,6 +647,10 @@ type Querier interface {
 	ListDutyAssignmentsAdmin(ctx context.Context, arg ListDutyAssignmentsAdminParams) ([]ListDutyAssignmentsAdminRow, error)
 	ListDutyPermissionCodes(ctx context.Context, arg ListDutyPermissionCodesParams) ([]string, error)
 	ListDutyTypes(ctx context.Context, arg ListDutyTypesParams) ([]DutyType, error)
+	// Active teachers this academic year, excluding requesterUserID, with an
+	// optional name search -- the substitute-picker's option list
+	// (docs/analysis/backend-inventory.md section 1.13).
+	ListEligibleSubstituteTeachers(ctx context.Context, arg ListEligibleSubstituteTeachersParams) ([]ListEligibleSubstituteTeachersRow, error)
 	// Fetches every enabled schedule due at this tenant-local hour, whatever
 	// its cadence; the service filters weekday/day-of-month in Go (domain.
 	// Schedule.IsDueAt) since the day-of-month clamp for short months is not
@@ -754,6 +758,10 @@ type Querier interface {
 	ListStudentNISNs(ctx context.Context, tenantID uuid.UUID) ([]ListStudentNISNsRow, error)
 	// Points per student in a class this year, for the homeroom and counselor overview.
 	ListStudentPointTotals(ctx context.Context, arg ListStudentPointTotalsParams) ([]ListStudentPointTotalsRow, error)
+	// The manage_schedules-only "all" scope (docs/analysis/backend-inventory.md
+	// section 1.13): every substitution request tenant-wide, optionally
+	// narrowed to one status.
+	ListSubstitutionsAll(ctx context.Context, arg ListSubstitutionsAllParams) ([]SubstitutionRequest, error)
 	ListSubstitutionsIncoming(ctx context.Context, arg ListSubstitutionsIncomingParams) ([]SubstitutionRequest, error)
 	ListSubstitutionsOutgoing(ctx context.Context, arg ListSubstitutionsOutgoingParams) ([]SubstitutionRequest, error)
 	ListSystemRoles(ctx context.Context, tenantID uuid.UUID) ([]ListSystemRolesRow, error)

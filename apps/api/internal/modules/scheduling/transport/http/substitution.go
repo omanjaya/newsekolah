@@ -16,10 +16,25 @@ func (h *SchedulingHandler) ListSubstitutions(ctx context.Context, request api.L
 		subs []domain.Substitution
 		err  error
 	)
-	if request.Params.Direction == api.Incoming {
-		subs, err = h.service.ListSubstitutionsIncoming(ctx, tenantID, userID)
-	} else {
+	switch request.Params.Direction {
+	case api.ListSubstitutionsParamsDirectionAll:
+		actor, aerr := h.actorFor(ctx, tenantID, userID)
+		if aerr != nil {
+			return nil, aerr
+		}
+		if !actor.CanManage {
+			return nil, httpx.ErrForbidden
+		}
+		var status *domain.SubstitutionStatus
+		if request.Params.Status != nil {
+			s := domain.SubstitutionStatus(*request.Params.Status)
+			status = &s
+		}
+		subs, err = h.service.ListSubstitutionsAll(ctx, tenantID, status)
+	case api.ListSubstitutionsParamsDirectionOutgoing:
 		subs, err = h.service.ListSubstitutionsOutgoing(ctx, tenantID, userID)
+	default:
+		subs, err = h.service.ListSubstitutionsIncoming(ctx, tenantID, userID)
 	}
 	if err != nil {
 		return nil, mapSubstitutionError(err)
@@ -30,6 +45,35 @@ func (h *SchedulingHandler) ListSubstitutions(ctx context.Context, request api.L
 		data[i] = toAPISubstitution(s)
 	}
 	return api.ListSubstitutions200JSONResponse{Data: data}, nil
+}
+
+func (h *SchedulingHandler) ListEligibleSubstitutes(ctx context.Context, request api.ListEligibleSubstitutesRequestObject) (api.ListEligibleSubstitutesResponseObject, error) {
+	tenantID := tenantIDFromContext(ctx)
+	userID, _ := httpx.UserIDFromContext(ctx)
+	params := request.Params
+
+	search := ""
+	if params.Search != nil {
+		search = *params.Search
+	}
+	limit, offset := 0, 0
+	if params.Limit != nil {
+		limit = *params.Limit
+	}
+	if params.Offset != nil {
+		offset = *params.Offset
+	}
+
+	candidates, err := h.service.ListEligibleSubstitutes(ctx, tenantID, params.AcademicYearId, userID, search, limit, offset)
+	if err != nil {
+		return nil, mapSubstitutionError(err)
+	}
+
+	data := make([]api.SubstituteCandidate, len(candidates))
+	for i, c := range candidates {
+		data[i] = api.SubstituteCandidate{UserId: c.UserID, Name: c.Name}
+	}
+	return api.ListEligibleSubstitutes200JSONResponse{Data: data}, nil
 }
 
 func (h *SchedulingHandler) CreateSubstitution(ctx context.Context, request api.CreateSubstitutionRequestObject) (api.CreateSubstitutionResponseObject, error) {

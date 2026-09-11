@@ -237,6 +237,107 @@ func (q *Queries) ListAcceptedSubstitutionsForSubstituteDate(ctx context.Context
 	return items, nil
 }
 
+const listEligibleSubstituteTeachers = `-- name: ListEligibleSubstituteTeachers :many
+select distinct u.id, u.name
+from teaching_assignments ta
+join users u on u.id = ta.teacher_user_id
+where ta.tenant_id = $1 and ta.academic_year_id = $2 and ta.is_active and u.id != $3
+  and ($6::text is null or u.name ilike '%' || $6::text || '%')
+order by u.name
+limit $4 offset $5
+`
+
+type ListEligibleSubstituteTeachersParams struct {
+	TenantID       uuid.UUID   `json:"tenant_id"`
+	AcademicYearID uuid.UUID   `json:"academic_year_id"`
+	ID             uuid.UUID   `json:"id"`
+	Limit          int32       `json:"limit"`
+	Offset         int32       `json:"offset"`
+	Search         pgtype.Text `json:"search"`
+}
+
+type ListEligibleSubstituteTeachersRow struct {
+	ID   uuid.UUID `json:"id"`
+	Name string    `json:"name"`
+}
+
+// Active teachers this academic year, excluding requesterUserID, with an
+// optional name search -- the substitute-picker's option list
+// (docs/analysis/backend-inventory.md section 1.13).
+func (q *Queries) ListEligibleSubstituteTeachers(ctx context.Context, arg ListEligibleSubstituteTeachersParams) ([]ListEligibleSubstituteTeachersRow, error) {
+	rows, err := q.db.Query(ctx, listEligibleSubstituteTeachers,
+		arg.TenantID,
+		arg.AcademicYearID,
+		arg.ID,
+		arg.Limit,
+		arg.Offset,
+		arg.Search,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListEligibleSubstituteTeachersRow{}
+	for rows.Next() {
+		var i ListEligibleSubstituteTeachersRow
+		if err := rows.Scan(&i.ID, &i.Name); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listSubstitutionsAll = `-- name: ListSubstitutionsAll :many
+select id, tenant_id, academic_year_id, schedule_id, date, requester_user_id, substitute_user_id, status, requester_note, response_note, responded_at, created_at from substitution_requests
+where tenant_id = $1 and ($2::text is null or status = $2::text)
+order by date desc, created_at desc
+`
+
+type ListSubstitutionsAllParams struct {
+	TenantID uuid.UUID   `json:"tenant_id"`
+	Status   pgtype.Text `json:"status"`
+}
+
+// The manage_schedules-only "all" scope (docs/analysis/backend-inventory.md
+// section 1.13): every substitution request tenant-wide, optionally
+// narrowed to one status.
+func (q *Queries) ListSubstitutionsAll(ctx context.Context, arg ListSubstitutionsAllParams) ([]SubstitutionRequest, error) {
+	rows, err := q.db.Query(ctx, listSubstitutionsAll, arg.TenantID, arg.Status)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []SubstitutionRequest{}
+	for rows.Next() {
+		var i SubstitutionRequest
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.AcademicYearID,
+			&i.ScheduleID,
+			&i.Date,
+			&i.RequesterUserID,
+			&i.SubstituteUserID,
+			&i.Status,
+			&i.RequesterNote,
+			&i.ResponseNote,
+			&i.RespondedAt,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listSubstitutionsIncoming = `-- name: ListSubstitutionsIncoming :many
 select id, tenant_id, academic_year_id, schedule_id, date, requester_user_id, substitute_user_id, status, requester_note, response_note, responded_at, created_at from substitution_requests
 where tenant_id = $1 and substitute_user_id = $2

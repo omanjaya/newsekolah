@@ -5060,11 +5060,28 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Substitution requests directed at me (incoming) or made by me (outgoing) */
+        /** Substitution requests directed at me (incoming), made by me (outgoing), or (requires manage_schedules) every request tenant-wide (all) */
         get: operations["listSubstitutions"];
         put?: never;
         /** Request a substitute for one dated occurrence of my own schedule */
         post: operations["createSubstitution"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/substitutions/eligible-substitutes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Active teachers this academic year eligible to substitute, excluding the caller, with a name search */
+        get: operations["listEligibleSubstitutes"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -8516,6 +8533,11 @@ export interface components {
             responded_at?: string;
             /** Format: date-time */
             created_at: string;
+        };
+        SubstituteCandidate: {
+            /** Format: uuid */
+            user_id: string;
+            name: string;
         };
         SubstitutionCreateRequest: {
             /** Format: uuid */
@@ -19586,7 +19608,9 @@ export interface operations {
     listSubstitutions: {
         parameters: {
             query: {
-                direction: "incoming" | "outgoing";
+                direction: "incoming" | "outgoing" | "all";
+                /** @description Only with direction=all. */
+                status?: "pending" | "accepted" | "rejected" | "cancelled";
             };
             header?: never;
             path?: never;
@@ -19633,6 +19657,34 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             403: components["responses"]["Forbidden"];
             409: components["responses"]["Conflict"];
+        };
+    };
+    listEligibleSubstitutes: {
+        parameters: {
+            query: {
+                academic_year_id: string;
+                search?: string;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Eligible teachers */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["SubstituteCandidate"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
         };
     };
     respondSubstitution: {

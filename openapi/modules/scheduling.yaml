@@ -155,12 +155,18 @@ paths:
       tags: [scheduling]
       operationId: listSubstitutions
       x-permission: view_schedules
-      summary: Substitution requests directed at me (incoming) or made by me (outgoing)
+      summary:
+        Substitution requests directed at me (incoming), made by me (outgoing), or (requires manage_schedules) every
+        request tenant-wide (all)
       parameters:
         - name: direction
           in: query
           required: true
-          schema: { type: string, enum: [incoming, outgoing] }
+          schema: { type: string, enum: [incoming, outgoing, all] }
+        - name: status
+          in: query
+          description: Only with direction=all.
+          schema: { type: string, enum: [pending, accepted, rejected, cancelled] }
       responses:
         "200":
           description: Substitution requests
@@ -193,6 +199,39 @@ paths:
         "400": { $ref: "#/components/responses/BadRequest" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "409": { $ref: "#/components/responses/Conflict" }
+  /v1/substitutions/eligible-substitutes:
+    get:
+      tags: [scheduling]
+      operationId: listEligibleSubstitutes
+      x-permission: view_schedules
+      summary: Active teachers this academic year eligible to substitute, excluding the caller, with a name search
+      parameters:
+        - name: academic_year_id
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+        - name: search
+          in: query
+          schema: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+        - name: offset
+          in: query
+          schema: { type: integer, minimum: 0, default: 0 }
+      responses:
+        "200":
+          description: Eligible teachers
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/SubstituteCandidate" }
+        "400": { $ref: "#/components/responses/BadRequest" }
   /v1/substitutions/{substitutionId}/respond:
     parameters:
       - name: substitutionId
@@ -498,6 +537,12 @@ components:
         response_note: { type: string }
         responded_at: { type: string, format: date-time }
         created_at: { type: string, format: date-time }
+    SubstituteCandidate:
+      type: object
+      required: [user_id, name]
+      properties:
+        user_id: { type: string, format: uuid }
+        name: { type: string }
     SubstitutionCreateRequest:
       type: object
       required: [schedule_id, date, substitute_user_id]
