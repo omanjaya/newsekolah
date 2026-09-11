@@ -14,3 +14,15 @@ func IsoWeekday(t time.Time) int16 {
 	}
 	return w
 }
+
+// indonesianWeekdayNames is indexed by time.Weekday (Sunday=0..Saturday=6),
+// not IsoWeekday's schema convention.
+var indonesianWeekdayNames = [...]string{"Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"}
+
+// IndonesianWeekdayName is t's day name in Indonesian, for the monitor
+// board display (default language Bahasa Indonesia, CLAUDE.md) -- unlike
+// IsoWeekday this is presentation text, not a schema value, so it does not
+// go through the i18n error-code catalog.
+func IndonesianWeekdayName(t time.Time) string {
+	return indonesianWeekdayNames[t.Weekday()]
+}

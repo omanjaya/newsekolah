@@ -8317,7 +8317,7 @@ export interface components {
             generated_at: string;
             /** Format: date */
             date: string;
-            /** @description English weekday name (Monday, Tuesday, ...); the client localizes. */
+            /** @description Indonesian weekday name (Senin, Selasa, ...). */
             day_name: string;
             /** @description Omitted when no schedule anywhere is currently in its period. */
             current_period?: components["schemas"]["MonitorPeriod"];

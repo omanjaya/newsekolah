@@ -574,11 +574,7 @@ components:
       properties:
         generated_at: { type: string, format: date-time }
         date: { type: string, format: date }
-        day_name:
-          {
-            type: string,
-            description: "English weekday name (Monday, Tuesday, ...); the client localizes.",
-          }
+        day_name: { type: string, description: "Indonesian weekday name (Senin, Selasa, ...)." }
         current_period:
           $ref: "#/components/schemas/MonitorPeriod"
           description: Omitted when no schedule anywhere is currently in its period.

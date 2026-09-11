@@ -79,7 +79,7 @@ func (s *Service) GetMonitorSnapshot(ctx context.Context, tenantID uuid.UUID) (M
 		}
 
 		out = MonitorSnapshot{
-			GeneratedAt: s.clock.Now(), Date: today, DayName: now.Weekday().String(),
+			GeneratedAt: s.clock.Now(), Date: today, DayName: domain.IndonesianWeekdayName(now),
 			CurrentPeriod: currentPeriod, StatusCounts: counts, Sessions: sessions,
 		}
 		return nil
