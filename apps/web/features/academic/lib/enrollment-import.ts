@@ -28,10 +28,12 @@ function authHeaders(): Record<string, string> {
  * Downloads the class-assignment import template and saves it through a
  * throwaway link, the same pattern `features/reports/api.ts` uses for its
  * XLSX export: the generated client parses every response as JSON, but this
- * endpoint returns a binary workbook.
+ * endpoint returns a binary workbook. academicYearId picks which year's
+ * unassigned students and classes the template is prefilled with.
  */
-export async function downloadEnrollmentImportTemplate(): Promise<void> {
-  const response = await fetch(`${API_URL}/v1/academic/enrollments/import/template`, {
+export async function downloadEnrollmentImportTemplate(academicYearId: string): Promise<void> {
+  const query = new URLSearchParams({ academic_year_id: academicYearId }).toString();
+  const response = await fetch(`${API_URL}/v1/academic/enrollments/import/template?${query}`, {
     headers: authHeaders(),
   });
   if (!response.ok) {
@@ -62,13 +64,19 @@ export async function uploadEnrollmentWorkbook(
   step: "preview" | "commit",
   academicYearId: string,
   file: File,
+  options: { moveExisting?: boolean; partial?: boolean } = {},
 ): Promise<ImportRowResult[]> {
-  const query = new URLSearchParams({ academic_year_id: academicYearId }).toString();
-  const response = await fetch(`${API_URL}/v1/academic/enrollments/import/${step}?${query}`, {
-    method: "POST",
-    headers: { ...authHeaders(), "Content-Type": XLSX_CONTENT_TYPE },
-    body: file,
-  });
+  const query = new URLSearchParams({ academic_year_id: academicYearId });
+  if (options.moveExisting) query.set("move_existing", "true");
+  if (options.partial) query.set("partial", "true");
+  const response = await fetch(
+    `${API_URL}/v1/academic/enrollments/import/${step}?${query.toString()}`,
+    {
+      method: "POST",
+      headers: { ...authHeaders(), "Content-Type": XLSX_CONTENT_TYPE },
+      body: file,
+    },
+  );
   if (!response.ok) {
     const code = await readErrorCode(response);
     throw new ApiError({ status: response.status, code, message: code });

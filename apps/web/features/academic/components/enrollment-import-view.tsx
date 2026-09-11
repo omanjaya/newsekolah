@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Badge, Button, PageHeader, Select, useToast } from "@newsekolah/ui";
+import { Badge, Button, Checkbox, PageHeader, Select, useToast } from "@newsekolah/ui";
 import { Download, FileSpreadsheet } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -17,6 +17,7 @@ const ERROR_ACTION_TEXT: Record<ImportRowResult["action"], string> = {
   assign: "",
   move: "",
   unchanged: "",
+  skipped: "text-status-permitted",
   error: "text-status-absent",
 };
 
@@ -38,6 +39,8 @@ export function EnrollmentImportView(): ReactElement {
   const [rows, setRows] = useState<ImportRowResult[] | null>(null);
   const [committed, setCommitted] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [moveExisting, setMoveExisting] = useState(false);
+  const [partial, setPartial] = useState(false);
 
   const preview = useEnrollmentImportMutation("preview");
   const commit = useEnrollmentImportMutation("commit");
@@ -71,9 +74,10 @@ export function EnrollmentImportView(): ReactElement {
           size="sm"
           icon={<Download />}
           loading={downloading}
+          disabled={!effectiveYearId}
           onClick={() => {
             setDownloading(true);
-            downloadEnrollmentImportTemplate()
+            downloadEnrollmentImportTemplate(effectiveYearId)
               .catch(fail)
               .finally(() => {
                 setDownloading(false);
@@ -99,6 +103,26 @@ export function EnrollmentImportView(): ReactElement {
             className="text-[13px] text-fg file:mr-3 file:rounded-xs file:border file:border-border file:bg-bg file:px-3 file:py-1.5 file:text-[13px] file:font-medium"
           />
         </label>
+
+        <label className="flex items-center gap-2 text-[13px]">
+          <Checkbox
+            checked={moveExisting}
+            onCheckedChange={(v) => {
+              setMoveExisting(v === true);
+            }}
+          />
+          {t("moveExisting")}
+        </label>
+        <label className="flex items-center gap-2 text-[13px]">
+          <Checkbox
+            checked={partial}
+            onCheckedChange={(v) => {
+              setPartial(v === true);
+            }}
+          />
+          {t("partial")}
+        </label>
+
         <div>
           <Button
             size="sm"
@@ -108,7 +132,7 @@ export function EnrollmentImportView(): ReactElement {
             onClick={() => {
               if (!file) return;
               preview.mutate(
-                { academicYearId: effectiveYearId, file },
+                { academicYearId: effectiveYearId, file, moveExisting, partial },
                 {
                   onSuccess: (data) => {
                     setRows(data);
@@ -166,7 +190,7 @@ export function EnrollmentImportView(): ReactElement {
               onClick={() => {
                 if (!file) return;
                 commit.mutate(
-                  { academicYearId: effectiveYearId, file },
+                  { academicYearId: effectiveYearId, file, moveExisting, partial },
                   {
                     onSuccess: (data) => {
                       setRows(data);

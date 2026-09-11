@@ -19,8 +19,17 @@ export type Period = components["schemas"]["Period"];
 export function useEnrollmentImportMutation(step: "preview" | "commit") {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ academicYearId, file }: { academicYearId: string; file: File }) =>
-      uploadEnrollmentWorkbook(step, academicYearId, file),
+    mutationFn: ({
+      academicYearId,
+      file,
+      moveExisting,
+      partial,
+    }: {
+      academicYearId: string;
+      file: File;
+      moveExisting?: boolean;
+      partial?: boolean;
+    }) => uploadEnrollmentWorkbook(step, academicYearId, file, { moveExisting, partial }),
     onSuccess: () => {
       if (step === "commit") {
         void queryClient.invalidateQueries({ queryKey: ["academic"] });
