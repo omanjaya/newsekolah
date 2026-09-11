@@ -9,6 +9,7 @@ package scheduling
 import (
 	"context"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling/repository"
@@ -38,8 +39,33 @@ type busPublisher struct {
 	bus *events.Bus
 }
 
+// Publish wraps the two substitution events into the events.Envelope shape
+// notifications/service/events.go's subscriber requires (a bare struct
+// satisfying service.Event fails its type assertion to events.Envelope, so
+// the subscriber's handler always errored and notifications never fired --
+// see docs/03-layered-architecture.md section 1 on this wiring boundary).
+// Subject addresses the event at whoever needs to know: the substitute for
+// a request, the requester for a response.
 func (p busPublisher) Publish(ctx context.Context, evt service.Event) error {
-	return p.bus.Publish(ctx, evt)
+	switch e := evt.(type) {
+	case service.SubstitutionRequested:
+		return p.bus.Publish(ctx, events.Envelope{
+			Name: e.EventName(), Tenant: e.TenantID, Actor: e.RequesterUserID, Subject: []uuid.UUID{e.SubstituteUserID},
+			Payload: map[string]any{
+				"substitution_id": e.SubstitutionID.String(), "schedule_id": e.ScheduleID.String(), "date": e.Date.Format("2006-01-02"),
+			},
+		})
+	case service.SubstitutionResponded:
+		return p.bus.Publish(ctx, events.Envelope{
+			Name: e.EventName(), Tenant: e.TenantID, Actor: e.SubstituteUserID, Subject: []uuid.UUID{e.RequesterUserID},
+			Payload: map[string]any{
+				"substitution_id": e.SubstitutionID.String(), "schedule_id": e.ScheduleID.String(),
+				"date": e.Date.Format("2006-01-02"), "accepted": e.Accepted,
+			},
+		})
+	default:
+		return p.bus.Publish(ctx, evt)
+	}
 }
 
 func Register(pool *pgxpool.Pool, bus *events.Bus, perms authz.PermissionsProvider) *Module {

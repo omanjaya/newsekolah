@@ -61,7 +61,11 @@ func OriginChecker(appOrigins []string) func(r *http.Request) bool {
 // goroutine and returns immediately so the caller (an oapi-codegen strict
 // middleware, which cannot itself return a "no response" outcome cleanly)
 // can return right after.
-func Upgrade(w http.ResponseWriter, r *http.Request, hub *Hub, topic string, appOrigins []string, logger *slog.Logger) (*Client, error) {
+//
+// onClose, if given, runs after the hub unsubscribe once the connection's
+// pumps finish -- e.g. cmd/api/ws.go's wsMeHandler uses it to clear the
+// caller's presence heartbeat.
+func Upgrade(w http.ResponseWriter, r *http.Request, hub *Hub, topic string, appOrigins []string, logger *slog.Logger, onClose ...func()) (*Client, error) {
 	upgrader := websocket.Upgrader{
 		CheckOrigin:     OriginChecker(appOrigins),
 		ReadBufferSize:  1024,
@@ -80,7 +84,12 @@ func Upgrade(w http.ResponseWriter, r *http.Request, hub *Hub, topic string, app
 	}
 
 	client := newClient(conn, logger, nil)
-	client.onClose = func() { hub.Unsubscribe(topic, client) }
+	client.onClose = func() {
+		hub.Unsubscribe(topic, client)
+		for _, fn := range onClose {
+			fn()
+		}
+	}
 	hub.Subscribe(topic, client)
 
 	go client.serve()

@@ -236,6 +236,7 @@ type Querier interface {
 	CountCopiesTotal(ctx context.Context, tenantID uuid.UUID) (int32, error)
 	CountDailySummaryStatusesForAttendance(ctx context.Context, arg CountDailySummaryStatusesForAttendanceParams) ([]CountDailySummaryStatusesForAttendanceRow, error)
 	CountIncidentsBySeverityInRange(ctx context.Context, arg CountIncidentsBySeverityInRangeParams) ([]CountIncidentsBySeverityInRangeRow, error)
+	CountJournalsFiltered(ctx context.Context, arg CountJournalsFilteredParams) (int64, error)
 	CountLoansBetween(ctx context.Context, arg CountLoansBetweenParams) (int32, error)
 	CountLocationUsage(ctx context.Context, arg CountLocationUsageParams) (int32, error)
 	CountMaterialTypeUsage(ctx context.Context, arg CountMaterialTypeUsageParams) (int32, error)
@@ -392,6 +393,10 @@ type Querier interface {
 	DeleteTPMapping(ctx context.Context, arg DeleteTPMappingParams) error
 	DeleteTitle(ctx context.Context, arg DeleteTitleParams) (int64, error)
 	DeleteUserRoles(ctx context.Context, arg DeleteUserRolesParams) error
+	// Hard delete, not void: replacing an attendance session's per-student
+	// violations on resave is delete-then-reinsert, matching the old system's
+	// teacher_attendance.go L295-309, not an auditable void.
+	DeleteViolationRecordsBySessionStudent(ctx context.Context, arg DeleteViolationRecordsBySessionStudentParams) error
 	DeleteViolationType(ctx context.Context, arg DeleteViolationTypeParams) error
 	DeleteWebAuthnCredential(ctx context.Context, arg DeleteWebAuthnCredentialParams) error
 	DeleteWebhookEndpoint(ctx context.Context, arg DeleteWebhookEndpointParams) error
@@ -600,6 +605,10 @@ type Querier interface {
 	GetUserByUsername(ctx context.Context, arg GetUserByUsernameParams) (User, error)
 	GetUserByUsernameOrEmail(ctx context.Context, arg GetUserByUsernameOrEmailParams) (User, error)
 	GetUserName(ctx context.Context, arg GetUserNameParams) (string, error)
+	GetUserNameForAttendance(ctx context.Context, arg GetUserNameForAttendanceParams) (string, error)
+	// The display name backing a teacher/writer column in the journal XLSX
+	// export -- users is owned by the identity module, not scheduling.
+	GetUserNameRefForSchedule(ctx context.Context, arg GetUserNameRefForScheduleParams) (string, error)
 	GetUserRefForSchedule(ctx context.Context, arg GetUserRefForScheduleParams) (GetUserRefForScheduleRow, error)
 	GetValidPasswordResetByHash(ctx context.Context, arg GetValidPasswordResetByHashParams) (PasswordReset, error)
 	GetViolationRecord(ctx context.Context, arg GetViolationRecordParams) (ViolationRecord, error)
@@ -726,9 +735,9 @@ type Querier interface {
 	// parallel in other worktrees. Names are suffixed "ForAttendance" to avoid
 	// colliding with those modules' own sqlc queries over the same tables once
 	// all are merged into one generated db package.
-	// Every actively enrolled student of a class, with the display name and
-	// NIS the roster and reports need -- the same shape scheduling's own
-	// cross-module reads use for ClassRef/SubjectRef.
+	// Every actively enrolled student of a class, with the display name, NIS,
+	// and guardian contact the roster and reports need -- the same shape
+	// scheduling's own cross-module reads use for ClassRef/SubjectRef.
 	ListActiveEnrollmentsForAttendance(ctx context.Context, arg ListActiveEnrollmentsForAttendanceParams) ([]ListActiveEnrollmentsForAttendanceRow, error)
 	ListActiveEnrollmentsRefByClass(ctx context.Context, arg ListActiveEnrollmentsRefByClassParams) ([]ListActiveEnrollmentsRefByClassRow, error)
 	ListActiveFeeTypes(ctx context.Context, arg ListActiveFeeTypesParams) ([]FeeType, error)
@@ -820,6 +829,10 @@ type Querier interface {
 	ListDutyAssignmentsAdmin(ctx context.Context, arg ListDutyAssignmentsAdminParams) ([]ListDutyAssignmentsAdminRow, error)
 	ListDutyPermissionCodes(ctx context.Context, arg ListDutyPermissionCodesParams) ([]string, error)
 	ListDutyTypes(ctx context.Context, arg ListDutyTypesParams) ([]DutyType, error)
+	// Active teachers this academic year, excluding requesterUserID, with an
+	// optional name search -- the substitute-picker's option list
+	// (docs/analysis/backend-inventory.md section 1.13).
+	ListEligibleSubstituteTeachers(ctx context.Context, arg ListEligibleSubstituteTeachersParams) ([]ListEligibleSubstituteTeachersRow, error)
 	// Fetches every enabled schedule due at this tenant-local hour, whatever
 	// its cadence; the service filters weekday/day-of-month in Go (domain.
 	// Schedule.IsDueAt) since the day-of-month clamp for short months is not
@@ -844,10 +857,19 @@ type Querier interface {
 	// Every grade of one student in a term, joined to its component; the
 	// service hides subjects whose publication is still off.
 	ListGradesForStudent(ctx context.Context, arg ListGradesForStudentParams) ([]ListGradesForStudentRow, error)
+	// Every parent/guardian linked to a student, for the attendance.submitted
+	// event's Subject (docs/02-system-design.md:110).
+	ListGuardianUserIDsForAttendance(ctx context.Context, arg ListGuardianUserIDsForAttendanceParams) ([]uuid.UUID, error)
 	ListIncidents(ctx context.Context, arg ListIncidentsParams) ([]VisitorIncident, error)
 	ListItemEvents(ctx context.Context, arg ListItemEventsParams) ([]LibraryItemEvent, error)
 	ListJournalsByClass(ctx context.Context, arg ListJournalsByClassParams) ([]ClassJournal, error)
 	ListJournalsByTeacher(ctx context.Context, arg ListJournalsByTeacherParams) ([]ClassJournal, error)
+	// The filtered/paginated list behind GET /v1/journals: exactly one of
+	// teacher_user_id or class_id is set by the caller (self-service vs.
+	// view_journals_all), mirroring ListJournalsByTeacher/ListJournalsByClass's
+	// scoping but adding the date range/text search/pagination the old system
+	// had (class_journals.go L85-107) and this rebuild had dropped.
+	ListJournalsFiltered(ctx context.Context, arg ListJournalsFilteredParams) ([]ClassJournal, error)
 	// Regression fix (docs/analysis/backend-inventory.md 1.16): the queue is
 	// scoped to the teacher whose own token opened each flow, matching
 	// ReviewLateArrival's actor check; a caller who holds manage_attendance
@@ -883,6 +905,11 @@ type Querier interface {
 	ListOnCampus(ctx context.Context, tenantID uuid.UUID) ([]VisitorVisit, error)
 	ListOutstandingBills(ctx context.Context, arg ListOutstandingBillsParams) ([]Bill, error)
 	ListOverdueLoans(ctx context.Context, arg ListOverdueLoansParams) ([]LibraryLoan, error)
+	// The "own sessions" report scope (docs/analysis/backend-inventory.md
+	// section 1.10): every session teacherUserID submitted on a date, whether
+	// as the schedule's own teacher or an accepted substitute, with the
+	// class/subject/period names a report needs.
+	ListOwnSubmittedSessionDetailsForAttendance(ctx context.Context, arg ListOwnSubmittedSessionDetailsForAttendanceParams) ([]ListOwnSubmittedSessionDetailsForAttendanceRow, error)
 	ListParentsForStudent(ctx context.Context, arg ListParentsForStudentParams) ([]ListParentsForStudentRow, error)
 	ListParticipants(ctx context.Context, arg ListParticipantsParams) ([]ActivityParticipant, error)
 	ListPartners(ctx context.Context, tenantID uuid.UUID) ([]LibraryPartner, error)
@@ -917,6 +944,11 @@ type Querier interface {
 	ListSchedulesByClass(ctx context.Context, arg ListSchedulesByClassParams) ([]Schedule, error)
 	ListSchedulesByDay(ctx context.Context, arg ListSchedulesByDayParams) ([]Schedule, error)
 	ListSchedulesByTeacher(ctx context.Context, arg ListSchedulesByTeacherParams) ([]Schedule, error)
+	// The per-session detail rows behind the daily report (docs/analysis/
+	// backend-inventory.md section 1.10's "detail per jadwal x siswa"): every
+	// session already opened for a class on a date, with the subject/teacher/
+	// period names a report needs, ordered by when the period runs.
+	ListSessionDetailsForClassDateAttendance(ctx context.Context, arg ListSessionDetailsForClassDateAttendanceParams) ([]ListSessionDetailsForClassDateAttendanceRow, error)
 	ListStaffAttendanceCorrectionsByRecord(ctx context.Context, arg ListStaffAttendanceCorrectionsByRecordParams) ([]StaffAttendanceCorrection, error)
 	ListStaffAttendanceRecordsByDate(ctx context.Context, arg ListStaffAttendanceRecordsByDateParams) ([]StaffAttendanceRecord, error)
 	ListStaffAttendanceRecordsByEmployeeRange(ctx context.Context, arg ListStaffAttendanceRecordsByEmployeeRangeParams) ([]StaffAttendanceRecord, error)
@@ -943,6 +975,10 @@ type Querier interface {
 	ListStudentNISNs(ctx context.Context, tenantID uuid.UUID) ([]ListStudentNISNsRow, error)
 	// Points per student in a class this year, for the homeroom and counselor overview.
 	ListStudentPointTotals(ctx context.Context, arg ListStudentPointTotalsParams) ([]ListStudentPointTotalsRow, error)
+	// The manage_schedules-only "all" scope (docs/analysis/backend-inventory.md
+	// section 1.13): every substitution request tenant-wide, optionally
+	// narrowed to one status.
+	ListSubstitutionsAll(ctx context.Context, arg ListSubstitutionsAllParams) ([]SubstitutionRequest, error)
 	ListSubstitutionsIncoming(ctx context.Context, arg ListSubstitutionsIncomingParams) ([]SubstitutionRequest, error)
 	ListSubstitutionsOutgoing(ctx context.Context, arg ListSubstitutionsOutgoingParams) ([]SubstitutionRequest, error)
 	ListSystemRoles(ctx context.Context, tenantID uuid.UUID) ([]ListSystemRolesRow, error)

@@ -276,6 +276,71 @@ func recordOne(ctx context.Context, repo Repository, tenantID, yearID uuid.UUID,
 	return record, nil
 }
 
+// ReplaceSessionViolations implements attendance's ViolationRecorder: it
+// atomically replaces every violation recorded against
+// (attendance_session_id, student_user_id) with violationTypeIDs, mirroring
+// the old system's delete-then-reinsert per session
+// (reference/sion-rebuild-go teacher_attendance.go L295-309) rather than
+// discipline's usual audited void.
+func (s *Service) ReplaceSessionViolations(
+	ctx context.Context, tenantID, sessionID, studentUserID uuid.UUID, violationTypeIDs []uuid.UUID, occurredOn time.Time, reporterUserID uuid.UUID,
+) error {
+	return s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		if err := s.repo.DeleteRecordsBySessionStudent(ctx, tenantID, sessionID, studentUserID); err != nil {
+			return err
+		}
+		if len(violationTypeIDs) == 0 {
+			return nil
+		}
+		yearID, err := s.activeYear(ctx, tenantID)
+		if err != nil {
+			return err
+		}
+		for _, typeID := range violationTypeIDs {
+			vt, ok, err := s.repo.GetViolationType(ctx, tenantID, typeID)
+			if err != nil {
+				return err
+			}
+			if !ok {
+				return domain.ErrViolationTypeNotFound
+			}
+			if !vt.IsActive {
+				return domain.ErrViolationTypeInactive
+			}
+			if _, err := s.repo.CreateRecord(ctx, domain.ViolationRecord{
+				TenantID: tenantID, AcademicYearID: yearID, StudentUserID: studentUserID, ViolationTypeID: vt.ID,
+				PointsSnapshot: vt.Points, OccurredOn: occurredOn,
+				AttendanceSessionID: uuid.NullUUID{UUID: sessionID, Valid: true}, ReporterUserID: reporterUserID,
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
+// ViolationSummary implements attendance's DisciplineReader for the
+// homeroom roster (docs/analysis/backend-inventory.md section 1.9's
+// student card): the count and total points of studentID's active
+// (non-voided) violations this academic year.
+func (s *Service) ViolationSummary(ctx context.Context, tenantID, academicYearID, studentUserID uuid.UUID) (count, points int, err error) {
+	err = s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		records, err := s.repo.ListRecordsForStudent(ctx, tenantID, academicYearID, studentUserID)
+		if err != nil {
+			return err
+		}
+		for _, r := range records {
+			if r.IsVoided() {
+				continue
+			}
+			count++
+			points += r.PointsSnapshot
+		}
+		return nil
+	})
+	return count, points, err
+}
+
 func (s *Service) dueLevels(ctx context.Context, tenantID, yearID, studentID uuid.UUID) (int, []domain.SPLevel, error) {
 	total, err := s.repo.SumActivePoints(ctx, tenantID, yearID, studentID)
 	if err != nil {

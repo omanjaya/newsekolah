@@ -57,7 +57,7 @@ func toCorrection(row db.AttendanceCorrection) domain.Correction {
 func toSummaryRow(row db.AttendanceDailySummary) service.DailySummaryRow {
 	return service.DailySummaryRow{
 		StudentUserID: row.StudentUserID, Date: pdatabase.DateOrZero(row.Date), StatusCode: row.StatusCode,
-		ExpectedSessions: int(row.ExpectedSessions), SubmittedSessions: int(row.SubmittedSessions),
+		ExpectedSessions: int(row.ExpectedSessions), SubmittedSessions: int(row.SubmittedSessions), PartialAbsence: row.PartialAbsence,
 	}
 }
 

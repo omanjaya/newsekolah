@@ -35,6 +35,14 @@ type SaveWindowInput struct {
 	// use SaveModeCorrection at all.
 	IsGlobalCorrector bool
 	IsHomeroomOfClass bool
+	// IsScheduleOwner is true for the session's own teacher or an accepted
+	// substitute for this occurrence -- whoever already passed the
+	// per-schedule access check for a normal-mode save. Per the old
+	// system's requireAttendanceSaveAccess (teacher_attendance.go
+	// L939-970), this actor keeps saving in normal mode past the period
+	// end, without needing correct_attendance or a reason, until the same
+	// correction deadline a global corrector or homeroom teacher gets.
+	IsScheduleOwner bool
 }
 
 // ResolveSaveWindow decides whether a save in the given mode is currently
@@ -42,22 +50,28 @@ type SaveWindowInput struct {
 func ResolveSaveWindow(in SaveWindowInput, mode SaveMode) error {
 	switch mode {
 	case SaveModeNormal:
-		if in.Now.After(in.PeriodEndAt) {
-			return ErrSaveWindowClosed
+		if !in.Now.After(in.PeriodEndAt) {
+			return nil
 		}
-		return nil
+		if in.IsScheduleOwner && !in.Now.After(correctionDeadline(in.SessionDate, in.CorrectionDays)) {
+			return nil
+		}
+		return ErrSaveWindowClosed
 	case SaveModeCorrection:
 		if !in.IsGlobalCorrector && !in.IsHomeroomOfClass {
 			return ErrCorrectionNotAllowed
 		}
-		deadline := endOfDay(in.SessionDate).AddDate(0, 0, in.CorrectionDays)
-		if in.Now.After(deadline) {
+		if in.Now.After(correctionDeadline(in.SessionDate, in.CorrectionDays)) {
 			return ErrCorrectionWindowClosed
 		}
 		return nil
 	default:
 		return ErrCorrectionNotAllowed
 	}
+}
+
+func correctionDeadline(sessionDate time.Time, correctionDays int) time.Time {
+	return endOfDay(sessionDate).AddDate(0, 0, correctionDays)
 }
 
 func endOfDay(t time.Time) time.Time {

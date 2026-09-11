@@ -10,14 +10,30 @@ import (
 	scheduling "github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling"
 )
 
-// ListToday returns every session the teacher should see for today: their
-// own schedules plus any accepted substitution covering today, each
-// opened idempotently (see domain/session.go and
+// ListSessionsOptions narrows ListSessions: Date defaults to today (in the
+// tenant's timezone) when nil, and CurrentOnly restricts the result to
+// occurrences whose period is running right now, mirroring the old
+// system's "?date=" and "currentOnly" query parameters
+// (docs/analysis/backend-inventory.md section 1.9, teacher_attendance.go
+// L350-364/390-394).
+type ListSessionsOptions struct {
+	Date        *time.Time
+	CurrentOnly bool
+}
+
+// ListSessions returns every session teacherUserID should see for
+// opts.Date: their own schedules plus any accepted substitution covering
+// that date, each opened idempotently (see domain/session.go and
 // queries/sessions.sql's OpenAttendanceSession) so the list always carries
-// a real session ID the caller can act on next. ScheduleReader does not
-// expose period start times, so this is a de-duplicating concatenation of
-// the two sources (own schedules first) rather than a time-ordered merge.
-func (s *Service) ListToday(ctx context.Context, tenantID, teacherUserID uuid.UUID) ([]SessionSummary, error) {
+// a real session ID the caller can act on next. Returns an empty list
+// outright on a day the tenant does not hold school
+// (docs/analysis/backend-inventory.md section 1.9, L361-364), a case the
+// merge logic below would otherwise silently treat as "no schedules
+// today" -- functionally the same result, but this way a caller does not
+// have to open sessions for a normal school day. ScheduleReader does not
+// expose period start times for a time-ordered merge, so this is a
+// de-duplicating concatenation of the two sources (own schedules first).
+func (s *Service) ListSessions(ctx context.Context, tenantID, teacherUserID uuid.UUID, opts ListSessionsOptions) ([]SessionSummary, error) {
 	var out []SessionSummary
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		yearID, err := s.activeAcademicYear(ctx, tenantID)
@@ -27,14 +43,27 @@ func (s *Service) ListToday(ctx context.Context, tenantID, teacherUserID uuid.UU
 
 		loc := s.tenantLocation(ctx, tenantID)
 		now := s.clock.Now().In(loc)
-		today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, loc)
-		dayOfWeek := domain.IsoWeekday(now)
+		date := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, loc)
+		if opts.Date != nil {
+			y, m, d := opts.Date.Date()
+			date = time.Date(y, m, d, 0, 0, 0, 0, loc)
+		}
+		dayOfWeek := domain.IsoWeekday(date)
+
+		isSchoolDay, err := s.repo.IsSchoolDay(ctx, tenantID, yearID, dayOfWeek)
+		if err != nil {
+			return err
+		}
+		if !isSchoolDay {
+			out = []SessionSummary{}
+			return nil
+		}
 
 		own, err := s.schedules.ListSchedulesForTeacherDay(ctx, tenantID, yearID, teacherUserID, dayOfWeek)
 		if err != nil {
 			return err
 		}
-		subs, err := s.schedules.ListAcceptedSubstitutionsForSubstituteDate(ctx, tenantID, teacherUserID, today)
+		subs, err := s.schedules.ListAcceptedSubstitutionsForSubstituteDate(ctx, tenantID, teacherUserID, date)
 		if err != nil {
 			return err
 		}
@@ -62,13 +91,23 @@ func (s *Service) ListToday(ctx context.Context, tenantID, teacherUserID uuid.UU
 
 		out = make([]SessionSummary, 0, len(occurrences))
 		for _, occ := range occurrences {
+			if opts.CurrentOnly {
+				current, err := s.periodIsRunning(ctx, tenantID, occ.schedule.StartPeriodID, occ.schedule.EndPeriodID, now)
+				if err != nil {
+					return err
+				}
+				if !current {
+					continue
+				}
+			}
+
 			substituteUserID := uuid.NullUUID{}
 			if occ.isSubstitute {
 				substituteUserID = uuid.NullUUID{UUID: teacherUserID, Valid: true}
 			}
 
 			session, _, err := s.repo.OpenSession(ctx, domain.Session{
-				TenantID: tenantID, AcademicYearID: yearID, ScheduleID: occ.schedule.ID, Date: today,
+				TenantID: tenantID, AcademicYearID: yearID, ScheduleID: occ.schedule.ID, Date: date,
 				ClassID: occ.schedule.ClassID, SubjectID: occ.schedule.SubjectID, TeacherUserID: occ.schedule.TeacherUserID,
 				SubstituteUserID: substituteUserID, StartPeriodID: occ.schedule.StartPeriodID, EndPeriodID: occ.schedule.EndPeriodID,
 			})
@@ -82,12 +121,49 @@ func (s *Service) ListToday(ctx context.Context, tenantID, teacherUserID uuid.UU
 	return out, err
 }
 
+// canCorrectClass reports whether actor may open a session for classID
+// under SaveModeCorrection: a global corrector always may; the class's own
+// homeroom teacher may, for their class only.
+func (s *Service) canCorrectClass(ctx context.Context, tenantID uuid.UUID, actor Actor, academicYearID, classID uuid.UUID) (bool, error) {
+	if actor.IsGlobalCorrector {
+		return true, nil
+	}
+	homeroomClassID, hasHomeroom, err := s.repo.GetHomeroomClassForTeacher(ctx, tenantID, academicYearID, actor.UserID)
+	if err != nil {
+		return false, err
+	}
+	return hasHomeroom && homeroomClassID == classID, nil
+}
+
+// periodIsRunning reports whether now falls within [start, end] of a
+// schedule occurrence's periods, on now's own date and in the tenant's
+// timezone -- the "currentOnly" filter.
+func (s *Service) periodIsRunning(ctx context.Context, tenantID uuid.UUID, startPeriodID, endPeriodID uuid.UUID, now time.Time) (bool, error) {
+	startOfDay, err := s.repo.GetPeriodStartTime(ctx, tenantID, startPeriodID)
+	if err != nil {
+		return false, err
+	}
+	endOfDay, err := s.repo.GetPeriodEndTime(ctx, tenantID, endPeriodID)
+	if err != nil {
+		return false, err
+	}
+	y, m, d := now.Date()
+	dayStart := time.Date(y, m, d, 0, 0, 0, 0, now.Location())
+	startAt, endAt := dayStart.Add(startOfDay), dayStart.Add(endOfDay)
+	return !now.Before(startAt) && !now.After(endAt), nil
+}
+
 // OpenSession idempotently opens the session for scheduleID+date (or
 // returns the existing one) and returns its full recording payload.
 // SubstituteUserID is set on the created row only when actor is not the
 // schedule's own teacher, which HasAccess has already confirmed means an
-// accepted substitution.
-func (s *Service) OpenSession(ctx context.Context, tenantID uuid.UUID, actor Actor, scheduleID uuid.UUID, date time.Time) (SessionDetail, error) {
+// accepted substitution. mode=SaveModeCorrection additionally lets a
+// global corrector or the schedule class's homeroom teacher open a
+// session neither taught nor substituted for, mirroring the old system's
+// "?mode=correction" (docs/analysis/backend-inventory.md section 1.9,
+// teacher_attendance.go L411-415): without it, a corrector could only ever
+// open a session the original teacher had already opened first.
+func (s *Service) OpenSession(ctx context.Context, tenantID uuid.UUID, actor Actor, scheduleID uuid.UUID, date time.Time, mode domain.SaveMode) (SessionDetail, error) {
 	var detail SessionDetail
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		schedule, err := s.schedules.GetSchedule(ctx, tenantID, scheduleID)
@@ -95,16 +171,24 @@ func (s *Service) OpenSession(ctx context.Context, tenantID uuid.UUID, actor Act
 			return err
 		}
 
-		ok, err := s.access.HasAccess(ctx, tenantID, scheduleID, actor.UserID, date)
+		isSubstitute, err := s.access.HasAccess(ctx, tenantID, scheduleID, actor.UserID, date)
 		if err != nil {
 			return err
+		}
+		isSubstitute = isSubstitute && actor.UserID != schedule.TeacherUserID
+		ok := isSubstitute || actor.UserID == schedule.TeacherUserID
+		if !ok && mode == domain.SaveModeCorrection {
+			ok, err = s.canCorrectClass(ctx, tenantID, actor, schedule.AcademicYearID, schedule.ClassID)
+			if err != nil {
+				return err
+			}
 		}
 		if !ok {
 			return domain.ErrNoAccess
 		}
 
 		substituteUserID := uuid.NullUUID{}
-		if actor.UserID != schedule.TeacherUserID {
+		if isSubstitute {
 			substituteUserID = uuid.NullUUID{UUID: actor.UserID, Valid: true}
 		}
 
@@ -244,9 +328,14 @@ func (s *Service) buildSessionDetail(ctx context.Context, tenantID uuid.UUID, se
 	}, nil
 }
 
+// saveWindowGrace is the old system's "end_time:59" tolerance
+// (teacher_attendance.go L964-967): a period ending exactly on the minute
+// still leaves the closing seconds of that minute open to save in.
+const saveWindowGrace = 59 * time.Second
+
 // periodEndAt resolves the wall-clock instant a session's last period ends
-// on its own date, in the tenant's timezone -- the input ResolveSaveWindow
-// compares "now" against.
+// on its own date, in the tenant's timezone, plus saveWindowGrace -- the
+// input ResolveSaveWindow compares "now" against.
 func (s *Service) periodEndAt(ctx context.Context, tenantID uuid.UUID, session domain.Session) (time.Time, error) {
 	loc := s.tenantLocation(ctx, tenantID)
 	endOfDay, err := s.repo.GetPeriodEndTime(ctx, tenantID, session.EndPeriodID)
@@ -254,5 +343,5 @@ func (s *Service) periodEndAt(ctx context.Context, tenantID uuid.UUID, session d
 		return time.Time{}, err
 	}
 	y, m, d := session.Date.In(loc).Date()
-	return time.Date(y, m, d, 0, 0, 0, 0, loc).Add(endOfDay), nil
+	return time.Date(y, m, d, 0, 0, 0, 0, loc).Add(endOfDay).Add(saveWindowGrace), nil
 }

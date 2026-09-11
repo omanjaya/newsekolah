@@ -7,13 +7,15 @@
 -- all are merged into one generated db package.
 
 -- name: ListActiveEnrollmentsForAttendance :many
--- Every actively enrolled student of a class, with the display name and
--- NIS the roster and reports need -- the same shape scheduling's own
--- cross-module reads use for ClassRef/SubjectRef.
+-- Every actively enrolled student of a class, with the display name, NIS,
+-- and guardian contact the roster and reports need -- the same shape
+-- scheduling's own cross-module reads use for ClassRef/SubjectRef.
 select
   en.student_user_id,
   u.name,
-  sp.nis
+  sp.nis,
+  sp.guardian_name,
+  sp.guardian_phone
 from enrollments en
 join users u on u.id = en.student_user_id
 left join student_profiles sp on sp.user_id = en.student_user_id
@@ -81,3 +83,62 @@ select status_code, count(*)::bigint as total
 from attendance_daily_summary
 where tenant_id = $1 and academic_year_id = $2 and date = $3
 group by status_code;
+
+-- name: ListGuardianUserIDsForAttendance :many
+-- Every parent/guardian linked to a student, for the attendance.submitted
+-- event's Subject (docs/02-system-design.md:110).
+select parent_user_id
+from parent_students
+where tenant_id = $1 and student_user_id = $2;
+
+-- name: GetUserNameForAttendance :one
+select name from users where tenant_id = $1 and id = $2;
+
+-- name: ListSessionDetailsForClassDateAttendance :many
+-- The per-session detail rows behind the daily report (docs/analysis/
+-- backend-inventory.md section 1.10's "detail per jadwal x siswa"): every
+-- session already opened for a class on a date, with the subject/teacher/
+-- period names a report needs, ordered by when the period runs.
+select
+  ats.id as session_id,
+  ats.subject_id,
+  sub.name as subject_name,
+  ats.teacher_user_id,
+  tu.name as teacher_name,
+  sp.name as start_period_name,
+  ep.name as end_period_name,
+  ats.submitted_at
+from attendance_sessions ats
+join subjects sub on sub.id = ats.subject_id
+join users tu on tu.id = ats.teacher_user_id
+join periods sp on sp.id = ats.start_period_id
+join periods ep on ep.id = ats.end_period_id
+where ats.tenant_id = $1 and ats.class_id = $2 and ats.date = $3
+order by sp.sequence;
+
+-- name: ListOwnSubmittedSessionDetailsForAttendance :many
+-- The "own sessions" report scope (docs/analysis/backend-inventory.md
+-- section 1.10): every session teacherUserID submitted on a date, whether
+-- as the schedule's own teacher or an accepted substitute, with the
+-- class/subject/period names a report needs.
+select
+  ats.id as session_id,
+  ats.class_id,
+  c.name as class_name,
+  ats.subject_id,
+  sub.name as subject_name,
+  ats.teacher_user_id,
+  tu.name as teacher_name,
+  sp.name as start_period_name,
+  ep.name as end_period_name,
+  ats.submitted_at
+from attendance_sessions ats
+join classes c on c.id = ats.class_id
+join subjects sub on sub.id = ats.subject_id
+join users tu on tu.id = ats.teacher_user_id
+join periods sp on sp.id = ats.start_period_id
+join periods ep on ep.id = ats.end_period_id
+where ats.tenant_id = $1 and ats.date = $2
+  and (ats.teacher_user_id = $3 or ats.substitute_user_id = $3)
+  and ats.submitted_at is not null
+order by sp.sequence;

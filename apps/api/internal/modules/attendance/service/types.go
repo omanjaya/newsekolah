@@ -24,6 +24,11 @@ type Actor struct {
 	// SaveModeCorrection for any class, not just their own or their
 	// homeroom's.
 	IsGlobalCorrector bool
+	// CanManage lets ListSessions list another teacher's day (the
+	// "teacher_user_id" query parameter) and OpenSession open a session
+	// nobody has opened yet on behalf of that teacher, for a role holding
+	// manage_attendance -- e.g. an admin preparing a substitute's day.
+	CanManage bool
 }
 
 // RosterItem is one student's row in a session's recording payload.
@@ -51,6 +56,12 @@ type SessionDetail struct {
 	JournalTopic         string
 	JournalActivities    string
 	JournalReflection    string
+	// SkippedBlockedStudentIDs lists students SaveEntries silently skipped
+	// because Blocker reported an unresolved workflow for them (e.g. a
+	// late-arrival still pending review): their entry was neither saved
+	// nor rejected outright, matching the old system's "siswa dengan
+	// terlambat belum selesai dilewati" rule.
+	SkippedBlockedStudentIDs []uuid.UUID
 }
 
 // SessionSummary is one row of ListMyAttendanceToday.
@@ -59,11 +70,20 @@ type SessionSummary struct {
 	IsSubstitute bool
 }
 
-// CalendarDaySession is one schedule's contribution to a calendar day.
+// CalendarDaySession is one schedule's contribution to a calendar day: the
+// subject/teacher/period names and the student's own recorded status,
+// note, and source for that session (docs/analysis/backend-inventory.md
+// section 1.13's "detail per sesi: mapel, guru, periode, status, catatan").
 type CalendarDaySession struct {
-	ScheduleID uuid.UUID
-	SubjectID  uuid.UUID
-	StatusCode string
+	ScheduleID    uuid.UUID
+	SubjectID     uuid.UUID
+	SubjectName   string
+	TeacherUserID uuid.UUID
+	TeacherName   string
+	PeriodLabel   string
+	StatusCode    string
+	Note          string
+	Source        domain.EntrySource
 }
 
 // CalendarDay is one day of a student's month view or monthly summary.
@@ -85,6 +105,36 @@ type RosterEntry struct {
 	ExpectedSessions  int
 	SubmittedSessions int
 	Complete          bool
+	// PartialAbsence is the "A_SEBAGIAN" signal: at least one submitted
+	// session that day was Alpha, even when StatusCode resolved to
+	// something else. See domain.DailyStatus.PartialAbsence.
+	PartialAbsence bool
+}
+
+// DailyReportSessionEntry is one student's recorded status within one
+// session, for a daily report's per-session detail rows.
+type DailyReportSessionEntry struct {
+	StudentUserID uuid.UUID
+	Name          string
+	StatusCode    string
+	Notes         string
+}
+
+// DailyReportSession is one session's detail row in a daily report or the
+// "own sessions" scope: subject/teacher/period names plus every student's
+// recorded status, mirroring the old system's "detail per jadwal x siswa"
+// (docs/analysis/backend-inventory.md section 1.10).
+type DailyReportSession struct {
+	SessionID     uuid.UUID
+	ClassID       uuid.UUID
+	ClassName     string
+	SubjectID     uuid.UUID
+	SubjectName   string
+	TeacherUserID uuid.UUID
+	TeacherName   string
+	PeriodLabel   string
+	SubmittedAt   *time.Time
+	Entries       []DailyReportSessionEntry
 }
 
 // DailyReport is one class's full daily report.
@@ -96,6 +146,7 @@ type DailyReport struct {
 	Complete          bool
 	Students          []RosterEntry
 	StatusCounts      map[string]int
+	Sessions          []DailyReportSession
 }
 
 // MonitorCard is one class's current-period card on the monitor snapshot.
@@ -119,6 +170,12 @@ type SaveEntryInput struct {
 	StudentUserID uuid.UUID
 	StatusCode    string
 	Notes         string
+	// ViolationIDs are this session's discipline violation type IDs for
+	// this student, replacing whatever was previously recorded against
+	// this session for them (see Service.violations and
+	// docs/analysis/backend-inventory.md section 1.9's delete-then-reinsert
+	// rule). Nil/empty clears any violations previously recorded here.
+	ViolationIDs []uuid.UUID
 }
 
 // SaveJournalInput is the optional lesson journal accompanying a save.

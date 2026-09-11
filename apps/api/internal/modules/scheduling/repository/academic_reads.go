@@ -138,6 +138,10 @@ func (r *Repository) ListTeacherOptions(ctx context.Context, tenantID, academicY
 	return out, nil
 }
 
+func (r *Repository) GetUserName(ctx context.Context, tenantID, userID uuid.UUID) (string, error) {
+	return r.queries(ctx).GetUserNameRefForSchedule(ctx, db.GetUserNameRefForScheduleParams{TenantID: tenantID, ID: userID})
+}
+
 func (r *Repository) GetTenantSettingValue(ctx context.Context, tenantID uuid.UUID, key string) (string, bool, error) {
 	raw, err := r.queries(ctx).GetTenantSettingValue(ctx, db.GetTenantSettingValueParams{TenantID: tenantID, Key: key})
 	if err != nil {

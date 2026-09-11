@@ -80,7 +80,7 @@ func buildService(pool *pgxpool.Pool) *service.Service {
 	repo := repository.New(pool)
 	return service.New(
 		pool, repo, schoolModule.Service, schedulingModule.ScheduleReader, schedulingModule.AccessChecker, schedulingModule.JournalService,
-		NoOpBlocker{}, NoOpOverrider{}, nil, nil, nil,
+		NoOpBlocker{}, NoOpOverrider{}, NoOpViolationRecorder{}, NoOpDisciplineReader{}, nil, nil, nil,
 	)
 }
 
@@ -229,12 +229,12 @@ func TestOpenSessionIsIdempotent(t *testing.T) {
 
 	actor := service.Actor{UserID: w.teacherID}
 
-	first, err := svc.OpenSession(ctx, w.tenantID, actor, w.scheduleTodayID, w.today)
+	first, err := svc.OpenSession(ctx, w.tenantID, actor, w.scheduleTodayID, w.today, domain.SaveModeNormal)
 	require.NoError(t, err)
 	require.Len(t, first.Roster, 2, "both enrolled students must appear on the roster")
 	require.Equal(t, 1, first.MeetingNumber)
 
-	second, err := svc.OpenSession(ctx, w.tenantID, actor, w.scheduleTodayID, w.today)
+	second, err := svc.OpenSession(ctx, w.tenantID, actor, w.scheduleTodayID, w.today, domain.SaveModeNormal)
 	require.NoError(t, err)
 	require.Equal(t, first.Session.ID, second.Session.ID, "opening the same schedule+date twice must return the same session")
 }
@@ -249,7 +249,7 @@ func TestSaveEntriesPolicyAndWindow(t *testing.T) {
 
 	// Yesterday's session: the save window (period end + 0 grace, on
 	// yesterday's date) has already passed.
-	closedSession, err := svc.OpenSession(ctx, w.tenantID, actor, w.scheduleYesterdayID, w.yesterday)
+	closedSession, err := svc.OpenSession(ctx, w.tenantID, actor, w.scheduleYesterdayID, w.yesterday, domain.SaveModeNormal)
 	require.NoError(t, err)
 	_, err = svc.SaveEntries(ctx, w.tenantID, actor, closedSession.Session.ID, service.SaveEntriesInput{
 		Entries: []service.SaveEntryInput{{StudentUserID: w.student1ID, StatusCode: "H"}},
@@ -257,7 +257,7 @@ func TestSaveEntriesPolicyAndWindow(t *testing.T) {
 	require.ErrorIs(t, err, domain.ErrSaveWindowClosed)
 
 	// Today's session: still open.
-	todaySession, err := svc.OpenSession(ctx, w.tenantID, actor, w.scheduleTodayID, w.today)
+	todaySession, err := svc.OpenSession(ctx, w.tenantID, actor, w.scheduleTodayID, w.today, domain.SaveModeNormal)
 	require.NoError(t, err)
 
 	// An unrecognized status code is rejected before anything is written.
@@ -334,11 +334,11 @@ func TestHomeroomScopeForbidden(t *testing.T) {
 	svc := buildService(pool)
 	w := seedWorld(t, ctx, pool, "homeroom-scope")
 
-	roster, err := svc.GetHomeroomAttendance(ctx, w.tenantID, service.Actor{UserID: w.teacherID}, w.today)
+	roster, err := svc.GetHomeroomAttendance(ctx, w.tenantID, service.Actor{UserID: w.teacherID}, w.today, service.HomeroomFilter{})
 	require.NoError(t, err)
-	require.Len(t, roster, 2)
+	require.Len(t, roster.Students, 2)
 
-	_, err = svc.GetHomeroomAttendance(ctx, w.tenantID, service.Actor{UserID: w.otherTeacherID}, w.today)
+	_, err = svc.GetHomeroomAttendance(ctx, w.tenantID, service.Actor{UserID: w.otherTeacherID}, w.today, service.HomeroomFilter{})
 	require.True(t, errors.Is(err, domain.ErrNotHomeroomTeacher), "a teacher without the homeroom duty must be forbidden, got %v", err)
 }
 
@@ -350,7 +350,7 @@ func TestTenantIsolation(t *testing.T) {
 	tenantA := seedWorld(t, ctx, pool, fmt.Sprintf("iso-a-%d", time.Now().UnixNano()))
 	tenantB := seedWorld(t, ctx, pool, fmt.Sprintf("iso-b-%d", time.Now().UnixNano()))
 
-	sessionB, err := svc.OpenSession(ctx, tenantB.tenantID, service.Actor{UserID: tenantB.teacherID}, tenantB.scheduleTodayID, tenantB.today)
+	sessionB, err := svc.OpenSession(ctx, tenantB.tenantID, service.Actor{UserID: tenantB.teacherID}, tenantB.scheduleTodayID, tenantB.today, domain.SaveModeNormal)
 	require.NoError(t, err)
 
 	// Tenant A's own actor, asking for tenant B's session ID under tenant

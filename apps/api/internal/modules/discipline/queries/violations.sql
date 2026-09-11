@@ -37,6 +37,13 @@ select * from violation_records where tenant_id = $1 and id = $2;
 select * from violation_records
 where tenant_id = $1 and workflow_instance_id = $2 and violation_type_id = $3;
 
+-- name: DeleteViolationRecordsBySessionStudent :exec
+-- Hard delete, not void: replacing an attendance session's per-student
+-- violations on resave is delete-then-reinsert, matching the old system's
+-- teacher_attendance.go L295-309, not an auditable void.
+delete from violation_records
+where tenant_id = $1 and attendance_session_id = $2 and student_user_id = $3;
+
 -- name: VoidViolationRecord :one
 update violation_records set voided_at = now(), voided_by = $3, void_reason = $4
 where tenant_id = $1 and id = $2 and voided_at is null

@@ -72,7 +72,7 @@ func toAPIRosterItems(items []service.RosterItem) []api.AttendanceRosterItem {
 
 func toAPISessionDetail(d service.SessionDetail) api.AttendanceSessionDetail {
 	sess := d.Session
-	return api.AttendanceSessionDetail{
+	out := api.AttendanceSessionDetail{
 		Id: sess.ID, ScheduleId: sess.ScheduleID, Date: openapi_types.Date{Time: sess.Date}, ClassId: sess.ClassID,
 		SubjectId: sess.SubjectID, TeacherUserId: sess.TeacherUserID, SubstituteUserId: nullUUIDPtr(sess.SubstituteUserID),
 		StartPeriodId: sess.StartPeriodID, EndPeriodId: sess.EndPeriodID, IsSubstitute: d.IsSubstitute, SubmittedAt: sess.SubmittedAt,
@@ -80,25 +80,43 @@ func toAPISessionDetail(d service.SessionDetail) api.AttendanceSessionDetail {
 		Statuses: toAPIStatusDefs(d.Statuses), Roster: toAPIRosterItems(d.Roster),
 		JournalTopic: strPtrOrNil(d.JournalTopic), JournalActivities: strPtrOrNil(d.JournalActivities), JournalReflection: strPtrOrNil(d.JournalReflection),
 	}
+	if len(d.SkippedBlockedStudentIDs) > 0 {
+		out.SkippedBlockedStudentIds = &d.SkippedBlockedStudentIDs
+	}
+	return out
 }
 
-func toAPICalendarDaySessions(sessions []service.CalendarDaySession) *[]struct {
-	ScheduleId openapi_types.UUID `json:"schedule_id"`
-	StatusCode *string            `json:"status_code,omitempty"`
-	SubjectId  openapi_types.UUID `json:"subject_id"`
-} {
+func toAPICalendarDaySession(s service.CalendarDaySession) api.AttendanceCalendarDaySession {
+	out := api.AttendanceCalendarDaySession{
+		ScheduleId: s.ScheduleID, SubjectId: s.SubjectID, SubjectName: strPtrOrNil(s.SubjectName),
+		TeacherUserId: nilUUIDPtr(s.TeacherUserID), TeacherName: strPtrOrNil(s.TeacherName),
+		PeriodLabel: strPtrOrNil(s.PeriodLabel), StatusCode: strPtrOrNil(s.StatusCode), Note: strPtrOrNil(s.Note),
+	}
+	if s.Source != "" {
+		source := api.AttendanceCalendarDaySessionSource(s.Source)
+		out.Source = &source
+	}
+	return out
+}
+
+// nilUUIDPtr is nullUUIDPtr's counterpart for a plain uuid.UUID that is
+// "unset" as the zero value (CalendarDaySession.TeacherUserID has no
+// uuid.NullUUID wrapper), used only where a zero UUID must render as an
+// absent field rather than an all-zero one.
+func nilUUIDPtr(id uuid.UUID) *uuid.UUID {
+	if id == uuid.Nil {
+		return nil
+	}
+	return &id
+}
+
+func toAPICalendarDaySessions(sessions []service.CalendarDaySession) *[]api.AttendanceCalendarDaySession {
 	if len(sessions) == 0 {
 		return nil
 	}
-	out := make([]struct {
-		ScheduleId openapi_types.UUID `json:"schedule_id"`
-		StatusCode *string            `json:"status_code,omitempty"`
-		SubjectId  openapi_types.UUID `json:"subject_id"`
-	}, len(sessions))
+	out := make([]api.AttendanceCalendarDaySession, len(sessions))
 	for i, s := range sessions {
-		out[i].ScheduleId = s.ScheduleID
-		out[i].SubjectId = s.SubjectID
-		out[i].StatusCode = strPtrOrNil(s.StatusCode)
+		out[i] = toAPICalendarDaySession(s)
 	}
 	return &out
 }
@@ -119,10 +137,15 @@ func toAPICalendarDays(days []service.CalendarDay) []api.AttendanceCalendarDay {
 }
 
 func toAPIRosterEntry(r service.RosterEntry) api.AttendanceRosterEntry {
-	return api.AttendanceRosterEntry{
+	out := api.AttendanceRosterEntry{
 		StudentUserId: r.StudentUserID, Name: r.Name, StatusCode: r.StatusCode,
 		ExpectedSessions: r.ExpectedSessions, SubmittedSessions: r.SubmittedSessions, Complete: r.Complete,
 	}
+	if r.PartialAbsence {
+		partial := true
+		out.PartialAbsence = &partial
+	}
+	return out
 }
 
 func toAPIRosterEntries(entries []service.RosterEntry) []api.AttendanceRosterEntry {
@@ -133,10 +156,64 @@ func toAPIRosterEntries(entries []service.RosterEntry) []api.AttendanceRosterEnt
 	return out
 }
 
+func toAPIHomeroomEntry(e service.HomeroomEntry) api.AttendanceHomeroomEntry {
+	out := api.AttendanceHomeroomEntry{
+		StudentUserId: e.StudentUserID, Name: e.Name, StatusCode: e.StatusCode,
+		ExpectedSessions: e.ExpectedSessions, SubmittedSessions: e.SubmittedSessions, Complete: e.Complete,
+		Nis: strPtrOrNil(e.NIS), GuardianName: strPtrOrNil(e.GuardianName), GuardianPhone: strPtrOrNil(e.GuardianPhone),
+	}
+	if e.PartialAbsence {
+		partial := true
+		out.PartialAbsence = &partial
+	}
+	if e.ViolationCount > 0 || e.ViolationPoints > 0 {
+		count, points := e.ViolationCount, e.ViolationPoints
+		out.ViolationCount, out.ViolationPoints = &count, &points
+	}
+	return out
+}
+
+func toAPIHomeroomEntries(entries []service.HomeroomEntry) []api.AttendanceHomeroomEntry {
+	out := make([]api.AttendanceHomeroomEntry, len(entries))
+	for i, e := range entries {
+		out[i] = toAPIHomeroomEntry(e)
+	}
+	return out
+}
+
+func toAPIDailyReportSessionEntry(e service.DailyReportSessionEntry) api.AttendanceDailyReportSessionEntry {
+	out := api.AttendanceDailyReportSessionEntry{StudentUserId: e.StudentUserID, Name: e.Name, StatusCode: e.StatusCode}
+	if e.Notes != "" {
+		out.Notes = &e.Notes
+	}
+	return out
+}
+
+func toAPIDailyReportSession(s service.DailyReportSession) api.AttendanceDailyReportSession {
+	entries := make([]api.AttendanceDailyReportSessionEntry, len(s.Entries))
+	for i, e := range s.Entries {
+		entries[i] = toAPIDailyReportSessionEntry(e)
+	}
+	return api.AttendanceDailyReportSession{
+		SessionId: s.SessionID, ClassId: s.ClassID, ClassName: s.ClassName, SubjectId: s.SubjectID, SubjectName: s.SubjectName,
+		TeacherUserId: s.TeacherUserID, TeacherName: s.TeacherName, PeriodLabel: s.PeriodLabel, SubmittedAt: s.SubmittedAt, Entries: entries,
+	}
+}
+
+func toAPIDailyReportSessions(sessions []service.DailyReportSession) []api.AttendanceDailyReportSession {
+	out := make([]api.AttendanceDailyReportSession, len(sessions))
+	for i, s := range sessions {
+		out[i] = toAPIDailyReportSession(s)
+	}
+	return out
+}
+
 func toAPIDailyReport(r service.DailyReport) api.AttendanceDailyReport {
+	sessions := toAPIDailyReportSessions(r.Sessions)
 	return api.AttendanceDailyReport{
 		ClassId: r.ClassID, Date: openapi_types.Date{Time: r.Date}, ExpectedSessions: r.ExpectedSessions,
 		SubmittedSessions: r.SubmittedSessions, Complete: r.Complete, Students: toAPIRosterEntries(r.Students), StatusCounts: r.StatusCounts,
+		Sessions: &sessions,
 	}
 }
 

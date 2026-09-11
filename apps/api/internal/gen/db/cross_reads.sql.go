@@ -116,12 +116,30 @@ func (q *Queries) GetTenantTimezoneForAttendance(ctx context.Context, id uuid.UU
 	return timezone, err
 }
 
+const getUserNameForAttendance = `-- name: GetUserNameForAttendance :one
+select name from users where tenant_id = $1 and id = $2
+`
+
+type GetUserNameForAttendanceParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	ID       uuid.UUID `json:"id"`
+}
+
+func (q *Queries) GetUserNameForAttendance(ctx context.Context, arg GetUserNameForAttendanceParams) (string, error) {
+	row := q.db.QueryRow(ctx, getUserNameForAttendance, arg.TenantID, arg.ID)
+	var name string
+	err := row.Scan(&name)
+	return name, err
+}
+
 const listActiveEnrollmentsForAttendance = `-- name: ListActiveEnrollmentsForAttendance :many
 
 select
   en.student_user_id,
   u.name,
-  sp.nis
+  sp.nis,
+  sp.guardian_name,
+  sp.guardian_phone
 from enrollments en
 join users u on u.id = en.student_user_id
 left join student_profiles sp on sp.user_id = en.student_user_id
@@ -139,6 +157,8 @@ type ListActiveEnrollmentsForAttendanceRow struct {
 	StudentUserID uuid.UUID   `json:"student_user_id"`
 	Name          string      `json:"name"`
 	Nis           pgtype.Text `json:"nis"`
+	GuardianName  pgtype.Text `json:"guardian_name"`
+	GuardianPhone pgtype.Text `json:"guardian_phone"`
 }
 
 // cross-module read; replace with academic/identity/school reader
@@ -148,9 +168,9 @@ type ListActiveEnrollmentsForAttendanceRow struct {
 // parallel in other worktrees. Names are suffixed "ForAttendance" to avoid
 // colliding with those modules' own sqlc queries over the same tables once
 // all are merged into one generated db package.
-// Every actively enrolled student of a class, with the display name and
-// NIS the roster and reports need -- the same shape scheduling's own
-// cross-module reads use for ClassRef/SubjectRef.
+// Every actively enrolled student of a class, with the display name, NIS,
+// and guardian contact the roster and reports need -- the same shape
+// scheduling's own cross-module reads use for ClassRef/SubjectRef.
 func (q *Queries) ListActiveEnrollmentsForAttendance(ctx context.Context, arg ListActiveEnrollmentsForAttendanceParams) ([]ListActiveEnrollmentsForAttendanceRow, error) {
 	rows, err := q.db.Query(ctx, listActiveEnrollmentsForAttendance, arg.TenantID, arg.AcademicYearID, arg.ClassID)
 	if err != nil {
@@ -160,7 +180,13 @@ func (q *Queries) ListActiveEnrollmentsForAttendance(ctx context.Context, arg Li
 	items := []ListActiveEnrollmentsForAttendanceRow{}
 	for rows.Next() {
 		var i ListActiveEnrollmentsForAttendanceRow
-		if err := rows.Scan(&i.StudentUserID, &i.Name, &i.Nis); err != nil {
+		if err := rows.Scan(
+			&i.StudentUserID,
+			&i.Name,
+			&i.Nis,
+			&i.GuardianName,
+			&i.GuardianPhone,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -240,6 +266,186 @@ func (q *Queries) ListCurrentPeriodScheduleCardsForAttendance(ctx context.Contex
 			&i.TeacherUserID,
 			&i.TeacherName,
 			&i.SessionID,
+			&i.SubmittedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listGuardianUserIDsForAttendance = `-- name: ListGuardianUserIDsForAttendance :many
+select parent_user_id
+from parent_students
+where tenant_id = $1 and student_user_id = $2
+`
+
+type ListGuardianUserIDsForAttendanceParams struct {
+	TenantID      uuid.UUID `json:"tenant_id"`
+	StudentUserID uuid.UUID `json:"student_user_id"`
+}
+
+// Every parent/guardian linked to a student, for the attendance.submitted
+// event's Subject (docs/02-system-design.md:110).
+func (q *Queries) ListGuardianUserIDsForAttendance(ctx context.Context, arg ListGuardianUserIDsForAttendanceParams) ([]uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, listGuardianUserIDsForAttendance, arg.TenantID, arg.StudentUserID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []uuid.UUID{}
+	for rows.Next() {
+		var parent_user_id uuid.UUID
+		if err := rows.Scan(&parent_user_id); err != nil {
+			return nil, err
+		}
+		items = append(items, parent_user_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listOwnSubmittedSessionDetailsForAttendance = `-- name: ListOwnSubmittedSessionDetailsForAttendance :many
+select
+  ats.id as session_id,
+  ats.class_id,
+  c.name as class_name,
+  ats.subject_id,
+  sub.name as subject_name,
+  ats.teacher_user_id,
+  tu.name as teacher_name,
+  sp.name as start_period_name,
+  ep.name as end_period_name,
+  ats.submitted_at
+from attendance_sessions ats
+join classes c on c.id = ats.class_id
+join subjects sub on sub.id = ats.subject_id
+join users tu on tu.id = ats.teacher_user_id
+join periods sp on sp.id = ats.start_period_id
+join periods ep on ep.id = ats.end_period_id
+where ats.tenant_id = $1 and ats.date = $2
+  and (ats.teacher_user_id = $3 or ats.substitute_user_id = $3)
+  and ats.submitted_at is not null
+order by sp.sequence
+`
+
+type ListOwnSubmittedSessionDetailsForAttendanceParams struct {
+	TenantID      uuid.UUID   `json:"tenant_id"`
+	Date          pgtype.Date `json:"date"`
+	TeacherUserID uuid.UUID   `json:"teacher_user_id"`
+}
+
+type ListOwnSubmittedSessionDetailsForAttendanceRow struct {
+	SessionID       uuid.UUID          `json:"session_id"`
+	ClassID         uuid.UUID          `json:"class_id"`
+	ClassName       string             `json:"class_name"`
+	SubjectID       uuid.UUID          `json:"subject_id"`
+	SubjectName     string             `json:"subject_name"`
+	TeacherUserID   uuid.UUID          `json:"teacher_user_id"`
+	TeacherName     string             `json:"teacher_name"`
+	StartPeriodName string             `json:"start_period_name"`
+	EndPeriodName   string             `json:"end_period_name"`
+	SubmittedAt     pgtype.Timestamptz `json:"submitted_at"`
+}
+
+// The "own sessions" report scope (docs/analysis/backend-inventory.md
+// section 1.10): every session teacherUserID submitted on a date, whether
+// as the schedule's own teacher or an accepted substitute, with the
+// class/subject/period names a report needs.
+func (q *Queries) ListOwnSubmittedSessionDetailsForAttendance(ctx context.Context, arg ListOwnSubmittedSessionDetailsForAttendanceParams) ([]ListOwnSubmittedSessionDetailsForAttendanceRow, error) {
+	rows, err := q.db.Query(ctx, listOwnSubmittedSessionDetailsForAttendance, arg.TenantID, arg.Date, arg.TeacherUserID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListOwnSubmittedSessionDetailsForAttendanceRow{}
+	for rows.Next() {
+		var i ListOwnSubmittedSessionDetailsForAttendanceRow
+		if err := rows.Scan(
+			&i.SessionID,
+			&i.ClassID,
+			&i.ClassName,
+			&i.SubjectID,
+			&i.SubjectName,
+			&i.TeacherUserID,
+			&i.TeacherName,
+			&i.StartPeriodName,
+			&i.EndPeriodName,
+			&i.SubmittedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listSessionDetailsForClassDateAttendance = `-- name: ListSessionDetailsForClassDateAttendance :many
+select
+  ats.id as session_id,
+  ats.subject_id,
+  sub.name as subject_name,
+  ats.teacher_user_id,
+  tu.name as teacher_name,
+  sp.name as start_period_name,
+  ep.name as end_period_name,
+  ats.submitted_at
+from attendance_sessions ats
+join subjects sub on sub.id = ats.subject_id
+join users tu on tu.id = ats.teacher_user_id
+join periods sp on sp.id = ats.start_period_id
+join periods ep on ep.id = ats.end_period_id
+where ats.tenant_id = $1 and ats.class_id = $2 and ats.date = $3
+order by sp.sequence
+`
+
+type ListSessionDetailsForClassDateAttendanceParams struct {
+	TenantID uuid.UUID   `json:"tenant_id"`
+	ClassID  uuid.UUID   `json:"class_id"`
+	Date     pgtype.Date `json:"date"`
+}
+
+type ListSessionDetailsForClassDateAttendanceRow struct {
+	SessionID       uuid.UUID          `json:"session_id"`
+	SubjectID       uuid.UUID          `json:"subject_id"`
+	SubjectName     string             `json:"subject_name"`
+	TeacherUserID   uuid.UUID          `json:"teacher_user_id"`
+	TeacherName     string             `json:"teacher_name"`
+	StartPeriodName string             `json:"start_period_name"`
+	EndPeriodName   string             `json:"end_period_name"`
+	SubmittedAt     pgtype.Timestamptz `json:"submitted_at"`
+}
+
+// The per-session detail rows behind the daily report (docs/analysis/
+// backend-inventory.md section 1.10's "detail per jadwal x siswa"): every
+// session already opened for a class on a date, with the subject/teacher/
+// period names a report needs, ordered by when the period runs.
+func (q *Queries) ListSessionDetailsForClassDateAttendance(ctx context.Context, arg ListSessionDetailsForClassDateAttendanceParams) ([]ListSessionDetailsForClassDateAttendanceRow, error) {
+	rows, err := q.db.Query(ctx, listSessionDetailsForClassDateAttendance, arg.TenantID, arg.ClassID, arg.Date)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListSessionDetailsForClassDateAttendanceRow{}
+	for rows.Next() {
+		var i ListSessionDetailsForClassDateAttendanceRow
+		if err := rows.Scan(
+			&i.SessionID,
+			&i.SubjectID,
+			&i.SubjectName,
+			&i.TeacherUserID,
+			&i.TeacherName,
+			&i.StartPeriodName,
+			&i.EndPeriodName,
 			&i.SubmittedAt,
 		); err != nil {
 			return nil, err

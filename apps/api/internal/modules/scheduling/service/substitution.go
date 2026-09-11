@@ -38,7 +38,10 @@ type SubstitutionRequested struct {
 	SubstituteUserID uuid.UUID
 }
 
-func (SubstitutionRequested) EventName() string { return "scheduling.substitution_requested" }
+// EventName matches platform/events.SubstitutionRequested: notifications
+// subscribes by this exact string (see module.go's busPublisher, which also
+// wraps this struct into an events.Envelope before publishing).
+func (SubstitutionRequested) EventName() string { return "substitution.requested" }
 
 type SubstitutionResponded struct {
 	TenantID         uuid.UUID
@@ -50,7 +53,9 @@ type SubstitutionResponded struct {
 	Accepted         bool
 }
 
-func (SubstitutionResponded) EventName() string { return "scheduling.substitution_responded" }
+// EventName matches platform/events.SubstitutionResponded; see
+// SubstitutionRequested.EventName's comment.
+func (SubstitutionResponded) EventName() string { return "substitution.responded" }
 
 // RequestSubstitution validates and creates a substitution request. Only
 // the schedule's own teacher (or an admin acting for them) may request one;
@@ -166,6 +171,34 @@ func (s *Service) ListSubstitutionsOutgoing(ctx context.Context, tenantID, userI
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error
 		out, err = s.repo.ListSubstitutionsOutgoing(ctx, tenantID, userID)
+		return err
+	})
+	return out, err
+}
+
+// ListSubstitutionsAll is the manage_schedules-only "all" list scope; the
+// transport layer is responsible for the permission check.
+func (s *Service) ListSubstitutionsAll(ctx context.Context, tenantID uuid.UUID, status *domain.SubstitutionStatus) ([]domain.Substitution, error) {
+	var out []domain.Substitution
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		out, err = s.repo.ListSubstitutionsAll(ctx, tenantID, status)
+		return err
+	})
+	return out, err
+}
+
+// ListEligibleSubstitutes backs the substitute picker (docs/analysis/
+// backend-inventory.md section 1.13): active teachers this academic year,
+// other than requesterUserID, matching search.
+func (s *Service) ListEligibleSubstitutes(ctx context.Context, tenantID, academicYearID, requesterUserID uuid.UUID, search string, limit, offset int) ([]SubstituteCandidate, error) {
+	if limit <= 0 || limit > 200 {
+		limit = 50
+	}
+	var out []SubstituteCandidate
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		out, err = s.repo.ListEligibleSubstituteTeachers(ctx, tenantID, academicYearID, requesterUserID, search, limit, offset)
 		return err
 	})
 	return out, err

@@ -25,9 +25,11 @@ import (
 //
 // -- cross-module read; replace with academic reader interface after merge --
 type StudentRef struct {
-	ID   uuid.UUID
-	Name string
-	NIS  string
+	ID            uuid.UUID
+	Name          string
+	NIS           string
+	GuardianName  string
+	GuardianPhone string
 }
 
 // DailySummaryRow is one attendance_daily_summary row as the service reads
@@ -38,6 +40,25 @@ type DailySummaryRow struct {
 	StatusCode        string
 	ExpectedSessions  int
 	SubmittedSessions int
+	PartialAbsence    bool
+}
+
+// SessionDetailRow is one session's subject/teacher/period names, the raw
+// input to a DailyReportSession row (its per-student Entries are read
+// separately, via ListEntriesBySession).
+//
+// -- cross-module read; replace with academic/identity reader interface after merge --
+type SessionDetailRow struct {
+	SessionID       uuid.UUID
+	ClassID         uuid.UUID
+	ClassName       string
+	SubjectID       uuid.UUID
+	SubjectName     string
+	TeacherUserID   uuid.UUID
+	TeacherName     string
+	StartPeriodName string
+	EndPeriodName   string
+	SubmittedAt     *time.Time
 }
 
 // MonitorCardRow is one schedule occurrence currently in its period, the
@@ -82,7 +103,7 @@ type Repository interface {
 
 	CreateCorrection(ctx context.Context, c domain.Correction) (domain.Correction, error)
 
-	UpsertDailySummary(ctx context.Context, tenantID, academicYearID, studentUserID uuid.UUID, date time.Time, statusCode string, expected, submitted int) error
+	UpsertDailySummary(ctx context.Context, tenantID, academicYearID, studentUserID uuid.UUID, date time.Time, statusCode string, expected, submitted int, partialAbsence bool) error
 	GetDailySummary(ctx context.Context, tenantID, academicYearID, studentUserID uuid.UUID, date time.Time) (row DailySummaryRow, found bool, err error)
 	ListDailySummaryForStudentMonth(ctx context.Context, tenantID, academicYearID, studentUserID uuid.UUID, from, to time.Time) ([]DailySummaryRow, error)
 	ListDailySummaryForClassDate(ctx context.Context, tenantID, academicYearID, classID uuid.UUID, date time.Time) ([]DailySummaryRow, error)
@@ -116,6 +137,26 @@ type Repository interface {
 	IsSchoolDay(ctx context.Context, tenantID, academicYearID uuid.UUID, dayOfWeek int16) (bool, error)
 	GetPeriodEndTime(ctx context.Context, tenantID, periodID uuid.UUID) (time.Duration, error)
 	GetPeriodStartTime(ctx context.Context, tenantID, periodID uuid.UUID) (time.Duration, error)
+
+	// ListGuardianUserIDs resolves the parent/guardian user IDs linked to
+	// studentUserID, so SaveEntries can address the attendance.submitted
+	// event's Subject to them for a student marked absent
+	// (docs/02-system-design.md:110's "notifikasi orang tua untuk A").
+	//
+	// -- cross-module read; replace with identity reader interface after merge --
+	ListGuardianUserIDs(ctx context.Context, tenantID, studentUserID uuid.UUID) ([]uuid.UUID, error)
+
+	// ListSessionDetailsForClassDate and ListOwnSubmittedSessionDetails
+	// back the daily report's per-session rows and the "own sessions"
+	// scope respectively -- both cross-module reads for the same reason
+	// as ListCurrentPeriodScheduleCards above.
+	ListSessionDetailsForClassDate(ctx context.Context, tenantID, classID uuid.UUID, date time.Time) ([]SessionDetailRow, error)
+	ListOwnSubmittedSessionDetails(ctx context.Context, tenantID, teacherUserID uuid.UUID, date time.Time) ([]SessionDetailRow, error)
+	// GetUserName resolves a display name for a session-detail row's
+	// students, since ListEntriesBySession returns only IDs.
+	//
+	// -- cross-module read; replace with identity reader interface after merge --
+	GetUserName(ctx context.Context, tenantID, userID uuid.UUID) (string, error)
 }
 
 // AcademicYearReader is the narrow interface attendance needs from the
@@ -152,6 +193,22 @@ type Overrider interface {
 	Override(ctx context.Context, tenantID, studentUserID uuid.UUID, date time.Time) (statusCode string, source domain.EntrySource, ok bool, err error)
 }
 
+// ViolationRecorder lets SaveEntries record a session's per-student
+// discipline violations through the discipline module without this
+// package importing it, mirroring Blocker/Overrider's rationale.
+// violationTypeIDs replaces whatever was previously recorded against
+// (sessionID, studentUserID), per docs/analysis/backend-inventory.md
+// section 1.9's delete-then-reinsert rule.
+type ViolationRecorder interface {
+	ReplaceSessionViolations(ctx context.Context, tenantID, sessionID, studentUserID uuid.UUID, violationTypeIDs []uuid.UUID, occurredOn time.Time, reporterUserID uuid.UUID) error
+}
+
+// DisciplineReader lets the homeroom roster show each student's violation
+// count and total points without this package importing discipline.
+type DisciplineReader interface {
+	ViolationSummary(ctx context.Context, tenantID, academicYearID, studentUserID uuid.UUID) (count, points int, err error)
+}
+
 // RealtimePublisher lets the service push a live update to the monitor
 // display's WebSocket topic after a session is submitted, without this
 // package importing platform/realtime for anything but this one method
@@ -172,29 +229,33 @@ type PresenceReader interface {
 
 // Service implements attendance's use cases.
 type Service struct {
-	pool      *pgxpool.Pool
-	repo      Repository
-	years     AcademicYearReader
-	schedules scheduling.ScheduleReader
-	access    scheduling.AccessChecker
-	journals  scheduling.JournalService
-	blocker   Blocker
-	overrider Overrider
-	events    EventPublisher
-	realtime  RealtimePublisher
-	presence  PresenceReader
-	clock     clock.Clock
+	pool       *pgxpool.Pool
+	repo       Repository
+	years      AcademicYearReader
+	schedules  scheduling.ScheduleReader
+	access     scheduling.AccessChecker
+	journals   scheduling.JournalService
+	blocker    Blocker
+	overrider  Overrider
+	violations ViolationRecorder
+	discipline DisciplineReader
+	events     EventPublisher
+	realtime   RealtimePublisher
+	presence   PresenceReader
+	clock      clock.Clock
 }
 
 func New(
 	pool *pgxpool.Pool, repo Repository, years AcademicYearReader,
 	schedules scheduling.ScheduleReader, access scheduling.AccessChecker, journals scheduling.JournalService,
-	blocker Blocker, overrider Overrider, events EventPublisher, realtime RealtimePublisher, presence PresenceReader,
+	blocker Blocker, overrider Overrider, violations ViolationRecorder, discipline DisciplineReader,
+	events EventPublisher, realtime RealtimePublisher, presence PresenceReader,
 ) *Service {
 	return &Service{
 		clock: clock.Real{},
 		pool:  pool, repo: repo, years: years, schedules: schedules, access: access, journals: journals,
-		blocker: blocker, overrider: overrider, events: events, realtime: realtime, presence: presence,
+		blocker: blocker, overrider: overrider, violations: violations, discipline: discipline,
+		events: events, realtime: realtime, presence: presence,
 	}
 }
 

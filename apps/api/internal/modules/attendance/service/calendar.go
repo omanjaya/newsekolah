@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -95,12 +96,27 @@ func (s *Service) buildCalendarDays(
 				return nil, err
 			}
 		}
+		var sessionNames map[uuid.UUID]SessionDetailRow
+		if len(sessionsForDay) > 0 {
+			details, err := s.repo.ListSessionDetailsForClassDate(ctx, tenantID, classID, d)
+			if err != nil {
+				return nil, err
+			}
+			sessionNames = make(map[uuid.UUID]SessionDetailRow, len(details))
+			for _, det := range details {
+				sessionNames[det.SessionID] = det
+			}
+		}
 		for _, sess := range sessionsForDay {
-			cds := CalendarDaySession{ScheduleID: sess.ScheduleID, SubjectID: sess.SubjectID}
+			cds := CalendarDaySession{ScheduleID: sess.ScheduleID, SubjectID: sess.SubjectID, TeacherUserID: sess.TeacherUserID}
+			if names, ok := sessionNames[sess.ID]; ok {
+				cds.SubjectName, cds.TeacherName = names.SubjectName, names.TeacherName
+				cds.PeriodLabel = periodLabel(names.StartPeriodName, names.EndPeriodName)
+			}
 			if entry, found, err := s.repo.GetEntryBySessionStudent(ctx, tenantID, sess.ID, studentUserID); err != nil {
 				return nil, err
 			} else if found {
-				cds.StatusCode = entry.StatusCode
+				cds.StatusCode, cds.Note, cds.Source = entry.StatusCode, entry.Notes, entry.Source
 			}
 			day.Sessions = append(day.Sessions, cds)
 		}
@@ -108,6 +124,26 @@ func (s *Service) buildCalendarDays(
 		if row, ok := byDate[d.Format("2006-01-02")]; ok {
 			day.StatusCode, day.ExpectedSessions, day.SubmittedSessions = row.StatusCode, row.ExpectedSessions, row.SubmittedSessions
 			day.Complete = row.ExpectedSessions == 0 || row.SubmittedSessions >= row.ExpectedSessions
+			days = append(days, day)
+			continue
+		}
+
+		// A day forced by an issued leave letter or exit permit (via
+		// Overrider) shows that official status even when it has no
+		// session at all -- ForceStatus only ever writes into sessions
+		// that already exist (see service/force.go's doc comment), so a
+		// day with no schedule, or one whose sessions were never opened,
+		// would otherwise render INCOMPLETE/NONE despite the student
+		// having an approved leave that day (docs/analysis/backend-
+		// inventory.md section 1.13's "hari override tetap muncul walau
+		// tanpa sesi").
+		if overrideCode, overrideSource, ok, err := s.overrider.Override(ctx, tenantID, studentUserID, d); err != nil {
+			return nil, err
+		} else if ok {
+			day.StatusCode, day.Complete = overrideCode, true
+			if len(day.Sessions) == 0 {
+				day.Sessions = []CalendarDaySession{{StatusCode: overrideCode, Source: overrideSource}}
+			}
 			days = append(days, day)
 			continue
 		}
@@ -148,8 +184,39 @@ func (s *Service) buildCalendarDays(
 // student's daily status for date. actor must hold the homeroom duty for
 // some class this academic year -- there is no class_id parameter on this
 // endpoint (attendance.yaml), it is always the caller's own homeroom.
-func (s *Service) GetHomeroomAttendance(ctx context.Context, tenantID uuid.UUID, actor Actor, date time.Time) ([]RosterEntry, error) {
-	var out []RosterEntry
+// HomeroomFilter narrows and paginates it, and HomeroomRoster carries a
+// student card (guardian contact, violation summary) the plain daily
+// report has no need for (docs/analysis/backend-inventory.md section
+// 1.9's homeroom "kartu siswa").
+type HomeroomFilter struct {
+	// Search matches a student's name or NIS, case-insensitively.
+	Search        string
+	StatusCode    string
+	Limit, Offset int
+}
+
+// HomeroomEntry is one student's homeroom roster row: their daily status
+// plus the contact and discipline summary a homeroom teacher's card needs.
+type HomeroomEntry struct {
+	RosterEntry
+	NIS             string
+	GuardianName    string
+	GuardianPhone   string
+	ViolationCount  int
+	ViolationPoints int
+}
+
+// HomeroomRoster is GetHomeroomAttendance's full response: one page of
+// HomeroomFilter-matching students, plus the per-status counts and total
+// across every match (not just the page returned).
+type HomeroomRoster struct {
+	Students     []HomeroomEntry
+	StatusCounts map[string]int
+	Total        int
+}
+
+func (s *Service) GetHomeroomAttendance(ctx context.Context, tenantID uuid.UUID, actor Actor, date time.Time, f HomeroomFilter) (HomeroomRoster, error) {
+	var out HomeroomRoster
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		yearID, err := s.activeAcademicYear(ctx, tenantID)
 		if err != nil {
@@ -162,10 +229,88 @@ func (s *Service) GetHomeroomAttendance(ctx context.Context, tenantID uuid.UUID,
 		if !ok {
 			return domain.ErrNotHomeroomTeacher
 		}
-		out, _, _, err = s.buildRoster(ctx, tenantID, yearID, classID, date)
-		return err
+
+		roster, _, _, err := s.buildRoster(ctx, tenantID, yearID, classID, date)
+		if err != nil {
+			return err
+		}
+		students, err := s.repo.ListActiveEnrollments(ctx, tenantID, yearID, classID)
+		if err != nil {
+			return err
+		}
+		byStudent := make(map[uuid.UUID]StudentRef, len(students))
+		for _, st := range students {
+			byStudent[st.ID] = st
+		}
+
+		entries := make([]HomeroomEntry, 0, len(roster))
+		for _, r := range roster {
+			st := byStudent[r.StudentUserID]
+			entry := HomeroomEntry{RosterEntry: r, NIS: st.NIS, GuardianName: st.GuardianName, GuardianPhone: st.GuardianPhone}
+			entry.ViolationCount, entry.ViolationPoints, err = s.discipline.ViolationSummary(ctx, tenantID, yearID, r.StudentUserID)
+			if err != nil {
+				return err
+			}
+			entries = append(entries, entry)
+		}
+
+		entries = filterHomeroomEntries(entries, f)
+
+		counts := make(map[string]int, len(entries))
+		for _, e := range entries {
+			counts[e.StatusCode]++
+		}
+		total := len(entries)
+
+		limit := f.Limit
+		if limit <= 0 || limit > 200 {
+			limit = 50
+		}
+		offset := f.Offset
+		if offset < 0 {
+			offset = 0
+		}
+		if offset > len(entries) {
+			offset = len(entries)
+		}
+		end := offset + limit
+		if end > len(entries) {
+			end = len(entries)
+		}
+
+		out = HomeroomRoster{Students: entries[offset:end], StatusCounts: counts, Total: total}
+		return nil
 	})
 	return out, err
+}
+
+// filterHomeroomEntries applies f.Search (name or NIS, case-insensitive)
+// and f.StatusCode, in that order. The roster and every school class it
+// covers are small enough that filtering in Go, after computing each
+// student's daily status, is simpler than pushing the search into SQL
+// alongside domain.ComputeDailyStatus's in-memory algorithm.
+func filterHomeroomEntries(entries []HomeroomEntry, f HomeroomFilter) []HomeroomEntry {
+	out := entries
+	if f.Search != "" {
+		q := strings.ToLower(f.Search)
+		filtered := make([]HomeroomEntry, 0, len(out))
+		for _, e := range out {
+			if strings.Contains(strings.ToLower(e.Name), q) || strings.Contains(strings.ToLower(e.NIS), q) {
+				filtered = append(filtered, e)
+			}
+		}
+		out = filtered
+	}
+	if f.StatusCode != "" {
+		filtered := make([]HomeroomEntry, 0, len(out))
+		for _, e := range out {
+			if e.StatusCode == f.StatusCode {
+				filtered = append(filtered, e)
+			}
+		}
+		out = filtered
+	}
+	return out
 }
 
 // buildRoster is the shared roster-building step behind GetHomeroomAttendance
@@ -216,7 +361,8 @@ func (s *Service) buildRoster(ctx context.Context, tenantID, academicYearID, cla
 			roster = append(roster, RosterEntry{
 				StudentUserID: student.ID, Name: student.Name, StatusCode: row.StatusCode,
 				ExpectedSessions: row.ExpectedSessions, SubmittedSessions: row.SubmittedSessions,
-				Complete: row.ExpectedSessions == 0 || row.SubmittedSessions >= row.ExpectedSessions,
+				Complete:       row.ExpectedSessions == 0 || row.SubmittedSessions >= row.ExpectedSessions,
+				PartialAbsence: row.PartialAbsence,
 			})
 			continue
 		}
@@ -228,6 +374,7 @@ func (s *Service) buildRoster(ctx context.Context, tenantID, academicYearID, cla
 		roster = append(roster, RosterEntry{
 			StudentUserID: student.ID, Name: student.Name, StatusCode: result.StatusCode,
 			ExpectedSessions: result.Expected, SubmittedSessions: result.Submitted, Complete: result.Complete,
+			PartialAbsence: result.PartialAbsence,
 		})
 	}
 	return roster, expected, submitted, nil

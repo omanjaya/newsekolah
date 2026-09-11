@@ -153,7 +153,7 @@ func mapJournalError(err error) error {
 		return httpx.ErrForbidden
 	case errors.Is(err, domain.ErrJournalDuplicate):
 		return errJournalConflict
-	case errors.Is(err, domain.ErrJournalMissingTopic), errors.Is(err, domain.ErrJournalMissingActivity):
+	case errors.Is(err, domain.ErrJournalMissingTopic), errors.Is(err, domain.ErrJournalMissingActivity), errors.Is(err, domain.ErrTeacherNotAssigned):
 		return httpx.ErrValidation
 	default:
 		var appErr *httpx.Error

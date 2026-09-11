@@ -159,6 +159,7 @@ type AttendanceDailySummary struct {
 	ExpectedSessions  int32              `json:"expected_sessions"`
 	SubmittedSessions int32              `json:"submitted_sessions"`
 	ComputedAt        pgtype.Timestamptz `json:"computed_at"`
+	PartialAbsence    bool               `json:"partial_absence"`
 }
 
 type AttendanceEntry struct {

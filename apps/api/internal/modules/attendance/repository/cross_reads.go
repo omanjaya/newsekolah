@@ -27,7 +27,10 @@ func (r *Repository) ListActiveEnrollments(ctx context.Context, tenantID, academ
 	}
 	out := make([]service.StudentRef, len(rows))
 	for i, row := range rows {
-		out[i] = service.StudentRef{ID: row.StudentUserID, Name: row.Name, NIS: pdatabase.TextOrEmpty(row.Nis)}
+		out[i] = service.StudentRef{
+			ID: row.StudentUserID, Name: row.Name, NIS: pdatabase.TextOrEmpty(row.Nis),
+			GuardianName: pdatabase.TextOrEmpty(row.GuardianName), GuardianPhone: pdatabase.TextOrEmpty(row.GuardianPhone),
+		}
 	}
 	return out, nil
 }
@@ -128,6 +131,52 @@ func (r *Repository) GetPeriodEndTime(ctx context.Context, tenantID, periodID uu
 		return 0, err
 	}
 	return time.Duration(period.EndsAt.Microseconds) * time.Microsecond, nil
+}
+
+func (r *Repository) ListGuardianUserIDs(ctx context.Context, tenantID, studentUserID uuid.UUID) ([]uuid.UUID, error) {
+	return r.queries(ctx).ListGuardianUserIDsForAttendance(ctx, db.ListGuardianUserIDsForAttendanceParams{
+		TenantID: tenantID, StudentUserID: studentUserID,
+	})
+}
+
+func (r *Repository) GetUserName(ctx context.Context, tenantID, userID uuid.UUID) (string, error) {
+	return r.queries(ctx).GetUserNameForAttendance(ctx, db.GetUserNameForAttendanceParams{TenantID: tenantID, ID: userID})
+}
+
+func (r *Repository) ListSessionDetailsForClassDate(ctx context.Context, tenantID, classID uuid.UUID, date time.Time) ([]service.SessionDetailRow, error) {
+	rows, err := r.queries(ctx).ListSessionDetailsForClassDateAttendance(ctx, db.ListSessionDetailsForClassDateAttendanceParams{
+		TenantID: tenantID, ClassID: classID, Date: pdatabase.Date(date),
+	})
+	if err != nil {
+		return nil, err
+	}
+	out := make([]service.SessionDetailRow, len(rows))
+	for i, row := range rows {
+		out[i] = service.SessionDetailRow{
+			SessionID: row.SessionID, ClassID: classID, SubjectID: row.SubjectID, SubjectName: row.SubjectName,
+			TeacherUserID: row.TeacherUserID, TeacherName: row.TeacherName,
+			StartPeriodName: row.StartPeriodName, EndPeriodName: row.EndPeriodName, SubmittedAt: pdatabase.TimePtr(row.SubmittedAt),
+		}
+	}
+	return out, nil
+}
+
+func (r *Repository) ListOwnSubmittedSessionDetails(ctx context.Context, tenantID, teacherUserID uuid.UUID, date time.Time) ([]service.SessionDetailRow, error) {
+	rows, err := r.queries(ctx).ListOwnSubmittedSessionDetailsForAttendance(ctx, db.ListOwnSubmittedSessionDetailsForAttendanceParams{
+		TenantID: tenantID, Date: pdatabase.Date(date), TeacherUserID: teacherUserID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	out := make([]service.SessionDetailRow, len(rows))
+	for i, row := range rows {
+		out[i] = service.SessionDetailRow{
+			SessionID: row.SessionID, ClassID: row.ClassID, ClassName: row.ClassName, SubjectID: row.SubjectID, SubjectName: row.SubjectName,
+			TeacherUserID: row.TeacherUserID, TeacherName: row.TeacherName,
+			StartPeriodName: row.StartPeriodName, EndPeriodName: row.EndPeriodName, SubmittedAt: pdatabase.TimePtr(row.SubmittedAt),
+		}
+	}
+	return out, nil
 }
 
 func (r *Repository) getStringSetting(ctx context.Context, tenantID uuid.UUID, key string) (string, bool, error) {

@@ -12,6 +12,45 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countJournalsFiltered = `-- name: CountJournalsFiltered :one
+select count(*) from class_journals
+where tenant_id = $1 and academic_year_id = $2
+  and ($3::uuid is null or teacher_user_id = $3::uuid)
+  and ($4::uuid is null or class_id = $4::uuid)
+  and ($5::date is null or lesson_date >= $5::date)
+  and ($6::date is null or lesson_date <= $6::date)
+  and (
+    $7::text is null
+    or topic ilike '%' || $7::text || '%'
+    or activities ilike '%' || $7::text || '%'
+  )
+`
+
+type CountJournalsFilteredParams struct {
+	TenantID       uuid.UUID   `json:"tenant_id"`
+	AcademicYearID uuid.UUID   `json:"academic_year_id"`
+	TeacherUserID  pgtype.UUID `json:"teacher_user_id"`
+	ClassID        pgtype.UUID `json:"class_id"`
+	DateFrom       pgtype.Date `json:"date_from"`
+	DateTo         pgtype.Date `json:"date_to"`
+	Search         pgtype.Text `json:"search"`
+}
+
+func (q *Queries) CountJournalsFiltered(ctx context.Context, arg CountJournalsFilteredParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countJournalsFiltered,
+		arg.TenantID,
+		arg.AcademicYearID,
+		arg.TeacherUserID,
+		arg.ClassID,
+		arg.DateFrom,
+		arg.DateTo,
+		arg.Search,
+	)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createJournal = `-- name: CreateJournal :one
 insert into class_journals (
   tenant_id, academic_year_id, teacher_user_id, written_by_user_id, class_id, subject_id,
@@ -220,6 +259,85 @@ type ListJournalsByTeacherParams struct {
 
 func (q *Queries) ListJournalsByTeacher(ctx context.Context, arg ListJournalsByTeacherParams) ([]ClassJournal, error) {
 	rows, err := q.db.Query(ctx, listJournalsByTeacher, arg.TenantID, arg.AcademicYearID, arg.TeacherUserID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ClassJournal{}
+	for rows.Next() {
+		var i ClassJournal
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.AcademicYearID,
+			&i.TeacherUserID,
+			&i.WrittenByUserID,
+			&i.ClassID,
+			&i.SubjectID,
+			&i.LessonDate,
+			&i.Topic,
+			&i.Activities,
+			&i.Reflection,
+			&i.AttendanceSessionID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listJournalsFiltered = `-- name: ListJournalsFiltered :many
+select id, tenant_id, academic_year_id, teacher_user_id, written_by_user_id, class_id, subject_id, lesson_date, topic, activities, reflection, attendance_session_id, created_at, updated_at
+from class_journals
+where tenant_id = $1 and academic_year_id = $2
+  and ($5::uuid is null or teacher_user_id = $5::uuid)
+  and ($6::uuid is null or class_id = $6::uuid)
+  and ($7::date is null or lesson_date >= $7::date)
+  and ($8::date is null or lesson_date <= $8::date)
+  and (
+    $9::text is null
+    or topic ilike '%' || $9::text || '%'
+    or activities ilike '%' || $9::text || '%'
+  )
+order by lesson_date desc, created_at desc
+limit $3 offset $4
+`
+
+type ListJournalsFilteredParams struct {
+	TenantID       uuid.UUID   `json:"tenant_id"`
+	AcademicYearID uuid.UUID   `json:"academic_year_id"`
+	Limit          int32       `json:"limit"`
+	Offset         int32       `json:"offset"`
+	TeacherUserID  pgtype.UUID `json:"teacher_user_id"`
+	ClassID        pgtype.UUID `json:"class_id"`
+	DateFrom       pgtype.Date `json:"date_from"`
+	DateTo         pgtype.Date `json:"date_to"`
+	Search         pgtype.Text `json:"search"`
+}
+
+// The filtered/paginated list behind GET /v1/journals: exactly one of
+// teacher_user_id or class_id is set by the caller (self-service vs.
+// view_journals_all), mirroring ListJournalsByTeacher/ListJournalsByClass's
+// scoping but adding the date range/text search/pagination the old system
+// had (class_journals.go L85-107) and this rebuild had dropped.
+func (q *Queries) ListJournalsFiltered(ctx context.Context, arg ListJournalsFilteredParams) ([]ClassJournal, error) {
+	rows, err := q.db.Query(ctx, listJournalsFiltered,
+		arg.TenantID,
+		arg.AcademicYearID,
+		arg.Limit,
+		arg.Offset,
+		arg.TeacherUserID,
+		arg.ClassID,
+		arg.DateFrom,
+		arg.DateTo,
+		arg.Search,
+	)
 	if err != nil {
 		return nil, err
 	}

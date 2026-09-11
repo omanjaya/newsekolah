@@ -10,6 +10,8 @@ package attendance
 
 import (
 	"context"
+	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -35,8 +37,23 @@ type Module struct {
 // cannot satisfy service.EventPublisher directly.
 type busPublisher struct{ bus *events.Bus }
 
+// Publish wraps service.Submitted into the events.Envelope shape
+// notifications/service/events.go's subscriber requires (a bare struct
+// satisfying service.Event fails its type assertion to events.Envelope, so
+// the subscriber's handler always errored and notifications for a
+// submitted session never fired).
 func (p busPublisher) Publish(ctx context.Context, evt service.Event) error {
-	return p.bus.Publish(ctx, evt)
+	submitted, ok := evt.(service.Submitted)
+	if !ok {
+		return p.bus.Publish(ctx, evt)
+	}
+	return p.bus.Publish(ctx, events.Envelope{
+		Name: submitted.EventName(), Tenant: submitted.TenantID, Actor: submitted.SubmittedBy, Subject: submitted.GuardianUserIDs,
+		Payload: map[string]any{
+			"session_id": submitted.SessionID.String(), "class_id": submitted.ClassID.String(),
+			"date": submitted.Date.Format("2006-01-02"), "student_count": submitted.StudentCount,
+		},
+	})
 }
 
 // hubPublisher adapts platform/realtime's Hub to
@@ -49,10 +66,9 @@ func (p hubPublisher) PublishMonitor(tenantID uuid.UUID, event any) error {
 }
 
 // hubPresence is the fallback PresenceReader ("hub connection counts")
-// used because no dedicated realtime.Presence tracker is wired anywhere
-// yet: cmd/api/ws.go's wsMonitorHandler never calls Presence.Heartbeat, so
-// there is no per-role attribution to report. This simply counts open
-// sockets on the tenant's monitor topic.
+// used when no realtime.Presence tracker is wired in. This simply counts
+// open sockets on the tenant's monitor topic; it has no per-role
+// attribution to report.
 type hubPresence struct{ hub *realtime.Hub }
 
 func (p hubPresence) Snapshot(tenantID uuid.UUID) (int, []string) {
@@ -61,6 +77,27 @@ func (p hubPresence) Snapshot(tenantID uuid.UUID) (int, []string) {
 		return 0, nil
 	}
 	return n, []string{"monitor"}
+}
+
+// livePresence adapts platform/realtime's Presence tracker (fed by every
+// GET /ws/me connection's heartbeat, see cmd/api/ws.go) to
+// service.PresenceReader. Presence has no notion of tenant, so every key
+// carries "<tenantID>:<role>:<userID>" (see wsMeHandler), and Snapshot here
+// filters to tenantID's prefix and strips it back off before returning --
+// the "<role>:<userID>" remainder is what GetMonitorPresence parses for
+// its per-role counts.
+type livePresence struct{ presence *realtime.Presence }
+
+func (p livePresence) Snapshot(tenantID uuid.UUID) (int, []string) {
+	prefix := tenantID.String() + ":"
+	all := p.presence.Snapshot(context.Background(), time.Now())
+	out := make([]string, 0, len(all))
+	for _, key := range all {
+		if rest, ok := strings.CutPrefix(key, prefix); ok {
+			out = append(out, rest)
+		}
+	}
+	return len(out), out
 }
 
 // Dependencies is everything Register needs from other modules and
@@ -75,9 +112,16 @@ type Dependencies struct {
 	Journals  scheduling.JournalService
 	Perms     authz.PermissionsProvider
 	Hub       *realtime.Hub
-	// Blocker and Overrider are optional; permits supplies them after wiring.
-	Blocker   Blocker
-	Overrider Overrider
+	// Presence is optional: when set, GetMonitorPresence reports real
+	// per-user/per-role heartbeats from GET /ws/me instead of falling
+	// back to a plain monitor-topic socket count.
+	Presence *realtime.Presence
+	// Blocker, Overrider, Violations and Discipline are optional; permits
+	// and discipline supply them after wiring.
+	Blocker    Blocker
+	Overrider  Overrider
+	Violations ViolationRecorder
+	Discipline DisciplineReader
 }
 
 func Register(deps Dependencies) *Module {
@@ -90,10 +134,22 @@ func Register(deps Dependencies) *Module {
 	if deps.Overrider != nil {
 		overrider = deps.Overrider
 	}
+	var violations ViolationRecorder = NoOpViolationRecorder{}
+	if deps.Violations != nil {
+		violations = deps.Violations
+	}
+	var discipline DisciplineReader = NoOpDisciplineReader{}
+	if deps.Discipline != nil {
+		discipline = deps.Discipline
+	}
+	var presence service.PresenceReader = hubPresence{hub: deps.Hub}
+	if deps.Presence != nil {
+		presence = livePresence{presence: deps.Presence}
+	}
 	svc := service.New(
 		deps.Pool, repo, deps.Years, deps.Schedules, deps.Access, deps.Journals,
-		blocker, overrider,
-		busPublisher{bus: deps.Bus}, hubPublisher{hub: deps.Hub}, hubPresence{hub: deps.Hub},
+		blocker, overrider, violations, discipline,
+		busPublisher{bus: deps.Bus}, hubPublisher{hub: deps.Hub}, presence,
 	)
 	handler := transporthttp.New(svc, deps.Perms)
 

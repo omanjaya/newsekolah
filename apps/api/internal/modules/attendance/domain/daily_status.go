@@ -34,6 +34,15 @@ type DailyStatus struct {
 	// submitted. A day can have a meaningful StatusCode (computed from
 	// whatever has been submitted so far) while still being incomplete.
 	Complete bool
+	// PartialAbsence flags a day where at least one submitted session was
+	// marked Alpha but not every one was -- the old system's "A_SEBAGIAN"
+	// signal (docs/analysis/backend-inventory.md section 1.10/1.11). The
+	// majority/priority algorithm below can resolve StatusCode to
+	// something other than Alpha (e.g. two H sessions outvote one A) even
+	// though the student was unexcused-absent at least once that day;
+	// this field surfaces that regardless of which code wins StatusCode,
+	// rather than let it be masked the way a plain majority would.
+	PartialAbsence bool
 }
 
 // ComputeDailyStatus is the single canonical algorithm
@@ -82,6 +91,9 @@ func ComputeDailyStatus(expectedSessions, submittedSessions int, entries []strin
 	counts := make(map[string]int, len(entries))
 	for _, code := range entries {
 		counts[code]++
+	}
+	if n := counts[StatusCodeAlpha]; n > 0 && n < len(entries) {
+		result.PartialAbsence = true
 	}
 
 	if majority, ok := strictMajority(counts, len(entries)); ok {

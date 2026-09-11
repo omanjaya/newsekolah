@@ -4,7 +4,20 @@ paths:
       tags: [attendance]
       operationId: listMyAttendanceToday
       x-permission: view_attendance
-      summary: Today's sessions for the current teacher (own schedules plus accepted substitutions)
+      summary: Sessions for one day for the current teacher (own schedules plus accepted substitutions)
+      parameters:
+        - name: date
+          in: query
+          description: Defaults to today in the tenant's timezone.
+          schema: { type: string, format: date }
+        - name: current_only
+          in: query
+          description: Restrict to occurrences whose period is running right now.
+          schema: { type: boolean, default: false }
+        - name: teacher_user_id
+          in: query
+          description: List another teacher's day instead of the caller's own. Requires manage_attendance.
+          schema: { type: string, format: uuid }
       responses:
         "200":
           description: Sessions
@@ -34,6 +47,13 @@ paths:
               properties:
                 schedule_id: { type: string, format: uuid }
                 date: { type: string, format: date }
+                mode:
+                  type: string
+                  enum: [normal, correction]
+                  default: normal
+                  description:
+                    correction lets a global corrector or the class's homeroom teacher open a session neither
+                    taught nor substituted for.
       responses:
         "200":
           description: Session payload
@@ -122,12 +142,25 @@ paths:
       tags: [attendance]
       operationId: getHomeroomAttendance
       x-permission: view_attendance
-      summary: One day's daily status for every student in the caller's homeroom class
+      summary: One day's daily status for every student in the caller's homeroom class, with guardian and discipline info
       parameters:
         - name: date
           in: query
           required: true
           schema: { type: string, format: date }
+        - name: search
+          in: query
+          description: Case-insensitive match on the student's name or NIS.
+          schema: { type: string }
+        - name: status_code
+          in: query
+          schema: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+        - name: offset
+          in: query
+          schema: { type: integer, minimum: 0, default: 0 }
       responses:
         "200":
           description: Homeroom roster with daily status
@@ -135,11 +168,17 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [data]
+                required: [data, total, status_counts]
                 properties:
                   data:
                     type: array
-                    items: { $ref: "#/components/schemas/AttendanceRosterEntry" }
+                    items: { $ref: "#/components/schemas/AttendanceHomeroomEntry" }
+                  total:
+                    type: integer
+                    description: Total students matching search/status_code, ignoring limit/offset.
+                  status_counts:
+                    type: object
+                    additionalProperties: { type: integer }
         "403": { $ref: "#/components/responses/Forbidden" }
   /v1/attendance/reports/daily:
     get:
@@ -162,6 +201,32 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/AttendanceDailyReport" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+  /v1/attendance/reports/daily/mine:
+    get:
+      tags: [attendance]
+      operationId: getOwnDailyAttendanceReport
+      x-permission: view_attendance
+      summary:
+        The "own sessions" report scope for a teacher without view_reports -- every session they submitted on a
+        date, as the schedule's own teacher or an accepted substitute, across every class they taught that day.
+      parameters:
+        - name: date
+          in: query
+          required: true
+          schema: { type: string, format: date }
+      responses:
+        "200":
+          description: Own submitted sessions
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/AttendanceDailyReportSession" }
         "400": { $ref: "#/components/responses/BadRequest" }
   /v1/attendance/reports/daily/export:
     get:
@@ -348,6 +413,12 @@ components:
             journal_topic: { type: string }
             journal_activities: { type: string }
             journal_reflection: { type: string }
+            skipped_blocked_student_ids:
+              type: array
+              description:
+                Students silently skipped by the last save because Blocker reported an unresolved workflow for them
+                (e.g. a pending late-arrival review); neither saved nor rejected.
+              items: { type: string, format: uuid }
     SaveAttendanceEntriesRequest:
       type: object
       required: [entries]
@@ -363,6 +434,10 @@ components:
               student_user_id: { type: string, format: uuid }
               status_code: { type: string }
               notes: { type: string, maxLength: 300 }
+              violation_ids:
+                type: array
+                description: This session's discipline violation type IDs for this student, replacing whatever was recorded before.
+                items: { type: string, format: uuid }
         journal:
           type: object
           required: [topic, activities]
@@ -370,6 +445,19 @@ components:
             topic: { type: string, maxLength: 300 }
             activities: { type: string }
             reflection: { type: string }
+    AttendanceCalendarDaySession:
+      type: object
+      required: [schedule_id, subject_id]
+      properties:
+        schedule_id: { type: string, format: uuid }
+        subject_id: { type: string, format: uuid }
+        subject_name: { type: string }
+        teacher_user_id: { type: string, format: uuid }
+        teacher_name: { type: string }
+        period_label: { type: string }
+        status_code: { type: string }
+        note: { type: string }
+        source: { type: string, enum: [teacher, leave, permit, system] }
     AttendanceCalendarDay:
       type: object
       required: [date, status_code, expected_sessions, submitted_sessions, complete]
@@ -381,13 +469,7 @@ components:
         complete: { type: boolean }
         sessions:
           type: array
-          items:
-            type: object
-            required: [schedule_id, subject_id]
-            properties:
-              schedule_id: { type: string, format: uuid }
-              subject_id: { type: string, format: uuid }
-              status_code: { type: string }
+          items: { $ref: "#/components/schemas/AttendanceCalendarDaySession" }
     AttendanceRosterEntry:
       type: object
       required:
@@ -399,6 +481,54 @@ components:
         expected_sessions: { type: integer }
         submitted_sessions: { type: integer }
         complete: { type: boolean }
+        partial_absence:
+          type: boolean
+          description: At least one submitted session that day was Alpha, even when status_code resolved to something else.
+    AttendanceHomeroomEntry:
+      allOf:
+        - $ref: "#/components/schemas/AttendanceRosterEntry"
+        - type: object
+          properties:
+            nis: { type: string }
+            guardian_name: { type: string }
+            guardian_phone: { type: string }
+            violation_count: { type: integer }
+            violation_points: { type: integer }
+    AttendanceDailyReportSessionEntry:
+      type: object
+      required: [student_user_id, name, status_code]
+      properties:
+        student_user_id: { type: string, format: uuid }
+        name: { type: string }
+        status_code: { type: string }
+        notes: { type: string }
+    AttendanceDailyReportSession:
+      type: object
+      required:
+        [
+          session_id,
+          class_id,
+          class_name,
+          subject_id,
+          subject_name,
+          teacher_user_id,
+          teacher_name,
+          period_label,
+          entries,
+        ]
+      properties:
+        session_id: { type: string, format: uuid }
+        class_id: { type: string, format: uuid }
+        class_name: { type: string }
+        subject_id: { type: string, format: uuid }
+        subject_name: { type: string }
+        teacher_user_id: { type: string, format: uuid }
+        teacher_name: { type: string }
+        period_label: { type: string }
+        submitted_at: { type: string, format: date-time }
+        entries:
+          type: array
+          items: { $ref: "#/components/schemas/AttendanceDailyReportSessionEntry" }
     AttendanceDailyReport:
       type: object
       required:
@@ -415,6 +545,9 @@ components:
         status_counts:
           type: object
           additionalProperties: { type: integer }
+        sessions:
+          type: array
+          items: { $ref: "#/components/schemas/AttendanceDailyReportSession" }
     MonitorSessionCard:
       type: object
       required: [class_name, subject_name, teacher_name, status]
@@ -436,9 +569,13 @@ components:
           items: { $ref: "#/components/schemas/MonitorSessionCard" }
     PresenceSnapshot:
       type: object
-      required: [count, keys]
+      required: [count, keys, by_role]
       properties:
         count: { type: integer }
         keys:
           type: array
           items: { type: string }
+        by_role:
+          type: object
+          additionalProperties: { type: integer }
+          description: Open connections grouped by role, parsed from each key's "role:userID" shape.

@@ -4,32 +4,60 @@ import (
 	"bytes"
 	"context"
 	"net/http"
+	"time"
 
 	"github.com/google/uuid"
-	"github.com/xuri/excelize/v2"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/api"
-	"github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
 )
+
+// journalFilterFrom builds a service.JournalFilter shared by ListJournals
+// and ExportJournals: class_id given switches from "my own journals" to
+// "every journal for a class", gated by view_journals_all.
+func (h *SchedulingHandler) journalFilterFrom(
+	ctx context.Context, tenantID, userID uuid.UUID, classID *uuid.UUID, dateFrom, dateTo *time.Time, search *string,
+) (service.JournalFilter, error) {
+	f := service.JournalFilter{TeacherUserID: uuid.NullUUID{UUID: userID, Valid: true}}
+	if classID != nil {
+		if !h.canViewJournalsAll(ctx, tenantID, userID) {
+			return service.JournalFilter{}, httpx.ErrForbidden
+		}
+		f.TeacherUserID = uuid.NullUUID{}
+		f.ClassID = uuid.NullUUID{UUID: *classID, Valid: true}
+	}
+	f.DateFrom, f.DateTo = dateFrom, dateTo
+	if search != nil {
+		f.Search = *search
+	}
+	return f, nil
+}
 
 func (h *SchedulingHandler) ListJournals(ctx context.Context, request api.ListJournalsRequestObject) (api.ListJournalsResponseObject, error) {
 	tenantID := tenantIDFromContext(ctx)
 	userID, _ := httpx.UserIDFromContext(ctx)
 	params := request.Params
 
-	var classID uuid.NullUUID
-	teacherID := uuid.NullUUID{UUID: userID, Valid: true}
-	if params.ClassId != nil {
-		if !h.canViewJournalsAll(ctx, tenantID, userID) {
-			return nil, httpx.ErrForbidden
-		}
-		classID = uuid.NullUUID{UUID: *params.ClassId, Valid: true}
-		teacherID = uuid.NullUUID{}
+	var dateFrom, dateTo *time.Time
+	if params.DateFrom != nil {
+		dateFrom = &params.DateFrom.Time
+	}
+	if params.DateTo != nil {
+		dateTo = &params.DateTo.Time
+	}
+	f, err := h.journalFilterFrom(ctx, tenantID, userID, params.ClassId, dateFrom, dateTo, params.Search)
+	if err != nil {
+		return nil, err
+	}
+	if params.Limit != nil {
+		f.Limit = *params.Limit
+	}
+	if params.Offset != nil {
+		f.Offset = *params.Offset
 	}
 
-	journals, err := h.service.ListJournals(ctx, tenantID, params.AcademicYearId, teacherID, classID)
+	journals, total, err := h.service.ListJournals(ctx, tenantID, params.AcademicYearId, f)
 	if err != nil {
 		return nil, mapJournalError(err)
 	}
@@ -38,7 +66,7 @@ func (h *SchedulingHandler) ListJournals(ctx context.Context, request api.ListJo
 	for i, j := range journals {
 		data[i] = toAPIJournal(j)
 	}
-	return api.ListJournals200JSONResponse{Data: data}, nil
+	return api.ListJournals200JSONResponse{Data: data, Total: int(total)}, nil
 }
 
 func toJournalInput(body api.JournalWriteRequest) service.JournalInput {
@@ -74,7 +102,8 @@ func (h *SchedulingHandler) UpsertJournal(ctx context.Context, request api.Upser
 
 func (h *SchedulingHandler) GetJournal(ctx context.Context, request api.GetJournalRequestObject) (api.GetJournalResponseObject, error) {
 	tenantID := tenantIDFromContext(ctx)
-	j, err := h.service.GetJournal(ctx, tenantID, request.JournalId)
+	userID, _ := httpx.UserIDFromContext(ctx)
+	j, err := h.service.GetJournal(ctx, tenantID, request.JournalId, userID, h.canViewJournalsAll(ctx, tenantID, userID))
 	if err != nil {
 		return nil, mapJournalError(err)
 	}
@@ -91,6 +120,11 @@ func (h *SchedulingHandler) DeleteJournal(ctx context.Context, request api.Delet
 	return api.DeleteJournal204Response{}, nil
 }
 
+// ExportJournals renders XLSX with resolved class/subject/teacher names
+// (service.ExportJournalsXLSX). DOCX with a letterhead stays unimplemented:
+// platform/documents' renderer only ever produces PDF from HTML, never
+// DOCX (see its TestHTMLPDFRendererRejectsDocxEngine), so there is nothing
+// to route a docx request to yet.
 func (h *SchedulingHandler) ExportJournals(ctx context.Context, request api.ExportJournalsRequestObject) (api.ExportJournalsResponseObject, error) {
 	if request.Params.Format == api.ExportJournalsParamsFormatDocx {
 		return nil, httpx.NewError(http.StatusNotImplemented, "NOT_IMPLEMENTED")
@@ -100,71 +134,25 @@ func (h *SchedulingHandler) ExportJournals(ctx context.Context, request api.Expo
 	userID, _ := httpx.UserIDFromContext(ctx)
 	params := request.Params
 
-	var classID uuid.NullUUID
-	teacherID := uuid.NullUUID{UUID: userID, Valid: true}
-	if params.ClassId != nil {
-		if !h.canViewJournalsAll(ctx, tenantID, userID) {
-			return nil, httpx.ErrForbidden
-		}
-		classID = uuid.NullUUID{UUID: *params.ClassId, Valid: true}
-		teacherID = uuid.NullUUID{}
+	var dateFrom, dateTo *time.Time
+	if params.DateFrom != nil {
+		dateFrom = &params.DateFrom.Time
+	}
+	if params.DateTo != nil {
+		dateTo = &params.DateTo.Time
+	}
+	f, err := h.journalFilterFrom(ctx, tenantID, userID, params.ClassId, dateFrom, dateTo, params.Search)
+	if err != nil {
+		return nil, err
 	}
 
-	journals, err := h.service.ListJournals(ctx, tenantID, params.AcademicYearId, teacherID, classID)
+	xlsx, err := h.service.ExportJournalsXLSX(ctx, tenantID, params.AcademicYearId, f)
 	if err != nil {
 		return nil, mapJournalError(err)
 	}
 
-	buf, err := journalsToXLSX(journals)
-	if err != nil {
-		return nil, httpx.ErrInternal
-	}
-
 	return api.ExportJournals200ApplicationvndOpenxmlformatsOfficedocumentSpreadsheetmlSheetResponse{
-		Body:          bytes.NewReader(buf.Bytes()),
-		ContentLength: int64(buf.Len()),
+		Body:          bytes.NewReader(xlsx),
+		ContentLength: int64(len(xlsx)),
 	}, nil
-}
-
-// journalsToXLSX renders one sheet, one row per journal, in a fixed
-// column order a school office can open directly in Excel/LibreOffice.
-// It has no notion of class/subject/teacher display names -- those live
-// in the academic module -- so it exports raw IDs alongside the lesson
-// content, the same shape the old system's export used before names were
-// joined in client-side.
-func journalsToXLSX(journals []domain.Journal) (*bytes.Buffer, error) {
-	f := excelize.NewFile()
-	defer func() { _ = f.Close() }()
-
-	const sheet = "Journals"
-	if err := f.SetSheetName("Sheet1", sheet); err != nil {
-		return nil, err
-	}
-
-	headers := []string{
-		"Lesson Date", "Class ID", "Subject ID", "Teacher User ID", "Written By User ID",
-		"Topic", "Activities", "Reflection",
-	}
-	for col, header := range headers {
-		cell, _ := excelize.CoordinatesToCellName(col+1, 1)
-		_ = f.SetCellValue(sheet, cell, header)
-	}
-
-	for i, j := range journals {
-		row := i + 2
-		values := []any{
-			j.LessonDate.Format("2006-01-02"), j.ClassID.String(), j.SubjectID.String(),
-			j.TeacherUserID.String(), j.WrittenByUserID.String(), j.Topic, j.Activities, j.Reflection,
-		}
-		for col, v := range values {
-			cell, _ := excelize.CoordinatesToCellName(col+1, row)
-			_ = f.SetCellValue(sheet, cell, v)
-		}
-	}
-
-	buf, err := f.WriteToBuffer()
-	if err != nil {
-		return nil, err
-	}
-	return buf, nil
 }

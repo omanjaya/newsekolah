@@ -51,6 +51,13 @@ type UserRef struct {
 	Name string
 }
 
+// SubstituteCandidate is one row of the eligible-substitutes picker: an
+// active teacher this academic year, other than the requester.
+type SubstituteCandidate struct {
+	UserID uuid.UUID
+	Name   string
+}
+
 // Repository is scheduling's data-access boundary, declared here (the
 // consumer) per docs/03-layered-architecture.md section 1. The
 // AcademicRead* methods read tables owned by the academic module; see the
@@ -76,13 +83,20 @@ type Repository interface {
 	ListSubstitutionsIncoming(ctx context.Context, tenantID, userID uuid.UUID) ([]domain.Substitution, error)
 	ListSubstitutionsOutgoing(ctx context.Context, tenantID, userID uuid.UUID) ([]domain.Substitution, error)
 	ListAcceptedSubstitutionsForSubstituteDate(ctx context.Context, tenantID, substituteUserID uuid.UUID, date time.Time) ([]domain.Substitution, error)
+	// ListSubstitutionsAll is the manage_schedules-only "all" list scope;
+	// status filters to one status when non-nil.
+	ListSubstitutionsAll(ctx context.Context, tenantID uuid.UUID, status *domain.SubstitutionStatus) ([]domain.Substitution, error)
+	// ListEligibleSubstituteTeachers backs the substitute picker: active
+	// teachers this academic year, excluding excludeUserID, with an
+	// optional name search.
+	ListEligibleSubstituteTeachers(ctx context.Context, tenantID, academicYearID, excludeUserID uuid.UUID, search string, limit, offset int) ([]SubstituteCandidate, error)
 
 	CreateJournal(ctx context.Context, j domain.Journal) (domain.Journal, error)
 	UpdateJournal(ctx context.Context, j domain.Journal) (domain.Journal, error)
 	GetJournalByID(ctx context.Context, tenantID, id uuid.UUID) (domain.Journal, error)
 	GetJournalByUnique(ctx context.Context, tenantID, academicYearID, teacherID, classID, subjectID uuid.UUID, lessonDate time.Time) (domain.Journal, bool, error)
-	ListJournalsByTeacher(ctx context.Context, tenantID, academicYearID, teacherID uuid.UUID) ([]domain.Journal, error)
-	ListJournalsByClass(ctx context.Context, tenantID, academicYearID, classID uuid.UUID) ([]domain.Journal, error)
+	ListJournalsFiltered(ctx context.Context, tenantID, academicYearID uuid.UUID, f JournalFilter) ([]domain.Journal, error)
+	CountJournalsFiltered(ctx context.Context, tenantID, academicYearID uuid.UUID, f JournalFilter) (int64, error)
 	DeleteJournal(ctx context.Context, tenantID, id uuid.UUID) error
 
 	// -- cross-module read; replace with academic reader interface after merge --
@@ -99,6 +113,7 @@ type Repository interface {
 	GetStudentActiveClassID(ctx context.Context, tenantID, academicYearID, studentID uuid.UUID) (uuid.UUID, bool, error)
 	ListActiveEnrollments(ctx context.Context, tenantID, academicYearID, classID uuid.UUID) ([]uuid.UUID, error)
 	ListTeacherOptions(ctx context.Context, tenantID, academicYearID uuid.UUID, search string, selfUserID uuid.NullUUID, limit int32) ([]UserRef, error)
+	GetUserName(ctx context.Context, tenantID, userID uuid.UUID) (string, error)
 
 	GetTenantSettingValue(ctx context.Context, tenantID uuid.UUID, key string) (string, bool, error)
 }

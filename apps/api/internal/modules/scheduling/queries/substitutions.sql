@@ -41,6 +41,26 @@ select * from substitution_requests
 where tenant_id = $1 and requester_user_id = $2
 order by date desc, created_at desc;
 
+-- name: ListSubstitutionsAll :many
+-- The manage_schedules-only "all" scope (docs/analysis/backend-inventory.md
+-- section 1.13): every substitution request tenant-wide, optionally
+-- narrowed to one status.
+select * from substitution_requests
+where tenant_id = $1 and (sqlc.narg(status)::text is null or status = sqlc.narg(status)::text)
+order by date desc, created_at desc;
+
+-- name: ListEligibleSubstituteTeachers :many
+-- Active teachers this academic year, excluding requesterUserID, with an
+-- optional name search -- the substitute-picker's option list
+-- (docs/analysis/backend-inventory.md section 1.13).
+select distinct u.id, u.name
+from teaching_assignments ta
+join users u on u.id = ta.teacher_user_id
+where ta.tenant_id = $1 and ta.academic_year_id = $2 and ta.is_active and u.id != $3
+  and (sqlc.narg(search)::text is null or u.name ilike '%' || sqlc.narg(search)::text || '%')
+order by u.name
+limit $4 offset $5;
+
 -- name: ListAcceptedSubstitutionsForSubstituteDate :many
 -- Every schedule a teacher is standing in for on one date, accepted only --
 -- the input to the attendance module's "today's sessions" list

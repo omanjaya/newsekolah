@@ -123,6 +123,10 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	schedulingModule := scheduling.Register(pool, eventBus, identityModule.Service)
 
 	hub := realtime.NewHub(broadcasterFor(redisClient))
+	// presenceTTL mirrors the old system's presence.go (teacher_attendance
+	// dashboard): a connection not heard from in 90s is presumed gone.
+	const presenceTTL = 90 * time.Second
+	presence := realtime.NewPresence(presenceStoreFor(redisClient), presenceTTL)
 
 	// permits and attendance depend on each other only through adapters:
 	// permits is built first with a late-bound attendance sync, then
@@ -142,11 +146,14 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		Discipline: disc,
 		Clock:      clock.Real{}, Config: permitsservice.DefaultConfig([]byte(cfg.DocumentSigningKey), cfg.S3Bucket), Logger: logger,
 	})
+	lateViolations := &lateBoundViolations{}
+	lateDiscipline := &lateBoundDisciplineReader{}
 	attendanceModule := attendance.Register(attendance.Dependencies{
 		Pool: pool, Bus: eventBus, Years: schoolModule.Service,
 		Schedules: schedulingModule.ScheduleReader, Access: schedulingModule.AccessChecker, Journals: schedulingModule.JournalService,
 		Perms: identityModule.Service, Hub: hub,
 		Blocker: permitsBlocker{svc: permitsModule.Service}, Overrider: permitsOverrider{svc: permitsModule.Service},
+		Violations: lateViolations, Discipline: lateDiscipline, Presence: presence,
 	})
 	sync.inner = attendanceSyncAdapter{force: attendanceModule.Service.ForceStatus}
 
@@ -172,6 +179,8 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		Storage: sharedStorage, Config: disciplineservice.DefaultConfig(cfg.S3Bucket),
 	})
 	disc.inner = wiring.LateArrivalDiscipline{Discipline: disciplineModule.Service, Clock: clock.Real{}}
+	lateViolations.inner = disciplineViolationsAdapter{svc: disciplineModule.Service}
+	lateDiscipline.inner = disciplineModule.Service
 
 	// analytics composes its risk signals through adapters over
 	// attendance, discipline and grading's own services (never their
@@ -367,7 +376,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	// why a strict handler can never serve these itself. hub is the same
 	// instance passed into attendance.Register above, so a socket opened
 	// here is visible to the attendance module's monitor presence count.
-	mountRealtimeRoutes(router, pool, tokenIssuer, hub, cfg.AppOrigins, logger)
+	mountRealtimeRoutes(router, pool, tokenIssuer, hub, presence, cfg.AppOrigins, logger)
 
 	return router, bg, nil
 }
@@ -403,6 +412,16 @@ func broadcasterFor(redisClient *redis.Client) realtime.Broadcaster {
 		return nil
 	}
 	return realtime.NewRedisBroadcaster(redisClient)
+}
+
+// presenceStoreFor is broadcasterFor's counterpart for presence: nil in
+// single-instance mode (REDIS_URL unset), where realtime.Presence keeps its
+// heartbeats in-memory only.
+func presenceStoreFor(redisClient *redis.Client) realtime.PresenceStore {
+	if redisClient == nil {
+		return nil
+	}
+	return realtime.NewRedisPresenceStore(redisClient, "presence:ws-me")
 }
 
 func kvStoreFor(redisClient *redis.Client) auth.KVStore {
@@ -487,4 +506,27 @@ func (l *lateBoundDiscipline) RecordLateArrivalViolation(ctx context.Context, te
 		return fmt.Errorf("%w: discipline module is not wired yet", permitsdomain.ErrViolationInvalid)
 	}
 	return l.inner.RecordLateArrivalViolation(ctx, tenantID, studentUserID, violationTypeID, workflowInstanceID, reporterUserID, note)
+}
+
+// lateBoundViolations breaks the attendance <-> discipline construction
+// cycle: attendance is built before discipline, so it receives this and
+// discipline.Register's real adapter is attached to inner afterwards.
+type lateBoundViolations struct{ inner attendance.ViolationRecorder }
+
+func (l *lateBoundViolations) ReplaceSessionViolations(ctx context.Context, tenantID, sessionID, studentUserID uuid.UUID, violationTypeIDs []uuid.UUID, occurredOn time.Time, reporterUserID uuid.UUID) error {
+	if l.inner == nil {
+		return nil
+	}
+	return l.inner.ReplaceSessionViolations(ctx, tenantID, sessionID, studentUserID, violationTypeIDs, occurredOn, reporterUserID)
+}
+
+// lateBoundDisciplineReader breaks the same attendance <-> discipline
+// construction cycle for the homeroom roster's violation summary.
+type lateBoundDisciplineReader struct{ inner attendance.DisciplineReader }
+
+func (l *lateBoundDisciplineReader) ViolationSummary(ctx context.Context, tenantID, academicYearID, studentUserID uuid.UUID) (int, int, error) {
+	if l.inner == nil {
+		return 0, 0, nil
+	}
+	return l.inner.ViolationSummary(ctx, tenantID, academicYearID, studentUserID)
 }

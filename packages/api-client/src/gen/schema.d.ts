@@ -1353,7 +1353,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Today's sessions for the current teacher (own schedules plus accepted substitutions) */
+        /** Sessions for one day for the current teacher (own schedules plus accepted substitutions) */
         get: operations["listMyAttendanceToday"];
         put?: never;
         post?: never;
@@ -1442,7 +1442,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** One day's daily status for every student in the caller's homeroom class */
+        /** One day's daily status for every student in the caller's homeroom class, with guardian and discipline info */
         get: operations["getHomeroomAttendance"];
         put?: never;
         post?: never;
@@ -1461,6 +1461,23 @@ export interface paths {
         };
         /** One class's expected vs. submitted sessions and per-student status for one day */
         get: operations["getDailyAttendanceReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/attendance/reports/daily/mine": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The "own sessions" report scope for a teacher without view_reports -- every session they submitted on a date, as the schedule's own teacher or an accepted substitute, across every class they taught that day. */
+        get: operations["getOwnDailyAttendanceReport"];
         put?: never;
         post?: never;
         delete?: never;
@@ -5811,11 +5828,28 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Substitution requests directed at me (incoming) or made by me (outgoing) */
+        /** Substitution requests directed at me (incoming), made by me (outgoing), or (requires manage_schedules) every request tenant-wide (all) */
         get: operations["listSubstitutions"];
         put?: never;
         /** Request a substitute for one dated occurrence of my own schedule */
         post: operations["createSubstitution"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/substitutions/eligible-substitutes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Active teachers this academic year eligible to substitute, excluding the caller, with a name search */
+        get: operations["listEligibleSubstitutes"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -7430,6 +7464,8 @@ export interface components {
             journal_topic?: string;
             journal_activities?: string;
             journal_reflection?: string;
+            /** @description Students silently skipped by the last save because Blocker reported an unresolved workflow for them (e.g. a pending late-arrival review); neither saved nor rejected. */
+            skipped_blocked_student_ids?: string[];
         };
         SaveAttendanceEntriesRequest: {
             /**
@@ -7444,12 +7480,29 @@ export interface components {
                 student_user_id: string;
                 status_code: string;
                 notes?: string;
+                /** @description This session's discipline violation type IDs for this student, replacing whatever was recorded before. */
+                violation_ids?: string[];
             }[];
             journal?: {
                 topic: string;
                 activities: string;
                 reflection?: string;
             };
+        };
+        AttendanceCalendarDaySession: {
+            /** Format: uuid */
+            schedule_id: string;
+            /** Format: uuid */
+            subject_id: string;
+            subject_name?: string;
+            /** Format: uuid */
+            teacher_user_id?: string;
+            teacher_name?: string;
+            period_label?: string;
+            status_code?: string;
+            note?: string;
+            /** @enum {string} */
+            source?: "teacher" | "leave" | "permit" | "system";
         };
         AttendanceCalendarDay: {
             /** Format: date */
@@ -7458,13 +7511,7 @@ export interface components {
             expected_sessions: number;
             submitted_sessions: number;
             complete: boolean;
-            sessions?: {
-                /** Format: uuid */
-                schedule_id: string;
-                /** Format: uuid */
-                subject_id: string;
-                status_code?: string;
-            }[];
+            sessions?: components["schemas"]["AttendanceCalendarDaySession"][];
         };
         AttendanceRosterEntry: {
             /** Format: uuid */
@@ -7474,6 +7521,39 @@ export interface components {
             expected_sessions: number;
             submitted_sessions: number;
             complete: boolean;
+            /** @description At least one submitted session that day was Alpha, even when status_code resolved to something else. */
+            partial_absence?: boolean;
+        };
+        AttendanceHomeroomEntry: components["schemas"]["AttendanceRosterEntry"] & {
+            nis?: string;
+            guardian_name?: string;
+            guardian_phone?: string;
+            violation_count?: number;
+            violation_points?: number;
+        };
+        AttendanceDailyReportSessionEntry: {
+            /** Format: uuid */
+            student_user_id: string;
+            name: string;
+            status_code: string;
+            notes?: string;
+        };
+        AttendanceDailyReportSession: {
+            /** Format: uuid */
+            session_id: string;
+            /** Format: uuid */
+            class_id: string;
+            class_name: string;
+            /** Format: uuid */
+            subject_id: string;
+            subject_name: string;
+            /** Format: uuid */
+            teacher_user_id: string;
+            teacher_name: string;
+            period_label: string;
+            /** Format: date-time */
+            submitted_at?: string;
+            entries: components["schemas"]["AttendanceDailyReportSessionEntry"][];
         };
         AttendanceDailyReport: {
             /** Format: uuid */
@@ -7487,6 +7567,7 @@ export interface components {
             status_counts: {
                 [key: string]: number;
             };
+            sessions?: components["schemas"]["AttendanceDailyReportSession"][];
         };
         MonitorSessionCard: {
             class_name: string;
@@ -7506,6 +7587,10 @@ export interface components {
         PresenceSnapshot: {
             count: number;
             keys: string[];
+            /** @description Open connections grouped by role, parsed from each key's "role:userID" shape. */
+            by_role: {
+                [key: string]: number;
+            };
         };
         /** @enum {string} */
         Recurrence: "monthly" | "one_off";
@@ -9595,6 +9680,11 @@ export interface components {
             responded_at?: string;
             /** Format: date-time */
             created_at: string;
+        };
+        SubstituteCandidate: {
+            /** Format: uuid */
+            user_id: string;
+            name: string;
         };
         SubstitutionCreateRequest: {
             /** Format: uuid */
@@ -13141,7 +13231,14 @@ export interface operations {
     };
     listMyAttendanceToday: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Defaults to today in the tenant's timezone. */
+                date?: string;
+                /** @description Restrict to occurrences whose period is running right now. */
+                current_only?: boolean;
+                /** @description List another teacher's day instead of the caller's own. Requires manage_attendance. */
+                teacher_user_id?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -13176,6 +13273,12 @@ export interface operations {
                     schedule_id: string;
                     /** Format: date */
                     date: string;
+                    /**
+                     * @description correction lets a global corrector or the class's homeroom teacher open a session neither taught nor substituted for.
+                     * @default normal
+                     * @enum {string}
+                     */
+                    mode?: "normal" | "correction";
                 };
             };
         };
@@ -13287,6 +13390,11 @@ export interface operations {
         parameters: {
             query: {
                 date: string;
+                /** @description Case-insensitive match on the student's name or NIS. */
+                search?: string;
+                status_code?: string;
+                limit?: number;
+                offset?: number;
             };
             header?: never;
             path?: never;
@@ -13301,7 +13409,12 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        data: components["schemas"]["AttendanceRosterEntry"][];
+                        data: components["schemas"]["AttendanceHomeroomEntry"][];
+                        /** @description Total students matching search/status_code, ignoring limit/offset. */
+                        total: number;
+                        status_counts: {
+                            [key: string]: number;
+                        };
                     };
                 };
             };
@@ -13327,6 +13440,31 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AttendanceDailyReport"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+        };
+    };
+    getOwnDailyAttendanceReport: {
+        parameters: {
+            query: {
+                date: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Own submitted sessions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AttendanceDailyReportSession"][];
+                    };
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -22228,7 +22366,9 @@ export interface operations {
     listSubstitutions: {
         parameters: {
             query: {
-                direction: "incoming" | "outgoing";
+                direction: "incoming" | "outgoing" | "all";
+                /** @description Only with direction=all. */
+                status?: "pending" | "accepted" | "rejected" | "cancelled";
             };
             header?: never;
             path?: never;
@@ -22275,6 +22415,34 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             403: components["responses"]["Forbidden"];
             409: components["responses"]["Conflict"];
+        };
+    };
+    listEligibleSubstitutes: {
+        parameters: {
+            query: {
+                academic_year_id: string;
+                search?: string;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Eligible teachers */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["SubstituteCandidate"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
         };
     };
     respondSubstitution: {
@@ -22339,6 +22507,12 @@ export interface operations {
             query: {
                 academic_year_id: string;
                 class_id?: string;
+                date_from?: string;
+                date_to?: string;
+                /** @description Case-insensitive substring match on topic or activities. */
+                search?: string;
+                limit?: number;
+                offset?: number;
             };
             header?: never;
             path?: never;
@@ -22354,6 +22528,8 @@ export interface operations {
                 content: {
                     "application/json": {
                         data: components["schemas"]["Journal"][];
+                        /** @description Total journals matching the filter */
+                        total: number;
                     };
                 };
             };
@@ -22391,6 +22567,9 @@ export interface operations {
             query: {
                 academic_year_id: string;
                 class_id?: string;
+                date_from?: string;
+                date_to?: string;
+                search?: string;
                 format: "xlsx" | "docx";
             };
             header?: never;

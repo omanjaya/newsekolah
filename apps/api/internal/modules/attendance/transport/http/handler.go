@@ -48,6 +48,7 @@ func (h *AttendanceHandler) actorFor(ctx context.Context, tenantID, userID uuid.
 	}
 	return service.Actor{
 		UserID: userID, CanViewAll: perms.Has(authz.PermViewReports), IsGlobalCorrector: perms.Has(authz.PermCorrectAttendance),
+		CanManage: perms.Has(authz.PermManageAttendance),
 	}, nil
 }
 

@@ -88,3 +88,8 @@ where u.tenant_id = $1
   and (sqlc.narg('self_user_id')::uuid is null or u.id = sqlc.narg('self_user_id'))
 order by u.name
 limit $3;
+
+-- name: GetUserNameRefForSchedule :one
+-- The display name backing a teacher/writer column in the journal XLSX
+-- export -- users is owned by the identity module, not scheduling.
+select name from users where tenant_id = $1 and id = $2;

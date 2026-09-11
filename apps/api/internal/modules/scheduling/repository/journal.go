@@ -7,9 +7,11 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/db"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling/service"
 	pdatabase "github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
 )
 
@@ -60,9 +62,27 @@ func (r *Repository) GetJournalByUnique(ctx context.Context, tenantID, academicY
 	return toJournal(row), true, nil
 }
 
-func (r *Repository) ListJournalsByTeacher(ctx context.Context, tenantID, academicYearID, teacherID uuid.UUID) ([]domain.Journal, error) {
-	rows, err := r.queries(ctx).ListJournalsByTeacher(ctx, db.ListJournalsByTeacherParams{
-		TenantID: tenantID, AcademicYearID: academicYearID, TeacherUserID: teacherID,
+// journalFilterParams builds the shared narg set both ListJournalsFiltered
+// and CountJournalsFiltered take, so the two queries can never drift apart.
+func journalFilterParams(tenantID, academicYearID uuid.UUID, f service.JournalFilter) (teacherID, classID pgtype.UUID, from, to pgtype.Date, search pgtype.Text) {
+	teacherID = pdatabase.NullUUID(f.TeacherUserID)
+	classID = pdatabase.NullUUID(f.ClassID)
+	if f.DateFrom != nil {
+		from = pdatabase.Date(*f.DateFrom)
+	}
+	if f.DateTo != nil {
+		to = pdatabase.Date(*f.DateTo)
+	}
+	search = pdatabase.Text(f.Search)
+	return
+}
+
+func (r *Repository) ListJournalsFiltered(ctx context.Context, tenantID, academicYearID uuid.UUID, f service.JournalFilter) ([]domain.Journal, error) {
+	teacherID, classID, from, to, search := journalFilterParams(tenantID, academicYearID, f)
+	rows, err := r.queries(ctx).ListJournalsFiltered(ctx, db.ListJournalsFilteredParams{
+		TenantID: tenantID, AcademicYearID: academicYearID, TeacherUserID: teacherID, ClassID: classID,
+		DateFrom: from, DateTo: to, Search: search,
+		Limit: int32(f.Limit), Offset: int32(f.Offset), //nolint:gosec // clamped by the service
 	})
 	if err != nil {
 		return nil, err
@@ -70,14 +90,12 @@ func (r *Repository) ListJournalsByTeacher(ctx context.Context, tenantID, academ
 	return toJournals(rows), nil
 }
 
-func (r *Repository) ListJournalsByClass(ctx context.Context, tenantID, academicYearID, classID uuid.UUID) ([]domain.Journal, error) {
-	rows, err := r.queries(ctx).ListJournalsByClass(ctx, db.ListJournalsByClassParams{
-		TenantID: tenantID, AcademicYearID: academicYearID, ClassID: classID,
+func (r *Repository) CountJournalsFiltered(ctx context.Context, tenantID, academicYearID uuid.UUID, f service.JournalFilter) (int64, error) {
+	teacherID, classID, from, to, search := journalFilterParams(tenantID, academicYearID, f)
+	return r.queries(ctx).CountJournalsFiltered(ctx, db.CountJournalsFilteredParams{
+		TenantID: tenantID, AcademicYearID: academicYearID, TeacherUserID: teacherID, ClassID: classID,
+		DateFrom: from, DateTo: to, Search: search,
 	})
-	if err != nil {
-		return nil, err
-	}
-	return toJournals(rows), nil
 }
 
 func (r *Repository) DeleteJournal(ctx context.Context, tenantID, id uuid.UUID) error {
