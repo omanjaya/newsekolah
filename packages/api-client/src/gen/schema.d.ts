@@ -17672,6 +17672,10 @@ export interface operations {
         parameters: {
             query?: {
                 unread_only?: boolean;
+                /** @description Case-insensitive substring match against title or body. */
+                q?: string;
+                /** @description Exact notification kind (e.g. leave_request_submitted). */
+                kind?: string;
                 cursor?: string;
                 limit?: number;
             };

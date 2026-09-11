@@ -20,7 +20,7 @@ import (
 // concrete implementation lives in repository/ and is backed by sqlc.
 type Repository interface {
 	InsertNotification(ctx context.Context, tenantID, userID uuid.UUID, kind domain.Kind, title, body, href string, data map[string]any, announcementID uuid.NullUUID) (domain.Notification, error)
-	ListNotifications(ctx context.Context, tenantID, userID uuid.UUID, unreadOnly bool, cursor Cursor, limit int) ([]domain.Notification, error)
+	ListNotifications(ctx context.Context, tenantID, userID uuid.UUID, unreadOnly bool, search, kind string, cursor Cursor, limit int) ([]domain.Notification, error)
 	GetNotification(ctx context.Context, tenantID, id uuid.UUID) (domain.Notification, error)
 	MarkRead(ctx context.Context, tenantID, userID, id uuid.UUID) error
 	MarkAllRead(ctx context.Context, tenantID, userID uuid.UUID) error

@@ -9,6 +9,8 @@ from notifications
 where tenant_id = sqlc.arg(tenant_id)::uuid
   and user_id = sqlc.arg(user_id)::uuid
   and (sqlc.arg(unread_only)::boolean = false or read_at is null)
+  and (sqlc.arg(search)::text = '' or title ilike '%' || sqlc.arg(search) || '%' or body ilike '%' || sqlc.arg(search) || '%')
+  and (sqlc.arg(kind)::text = '' or kind = sqlc.arg(kind)::text)
   and (
     sqlc.arg(has_cursor)::boolean = false
     or created_at < sqlc.arg(cursor_created_at)::timestamptz

@@ -14,8 +14,10 @@ const (
 	maxInboxPageSize     = 100
 )
 
-// List returns one page of the caller's own inbox, newest first.
-func (s *Service) List(ctx context.Context, tenantID, userID uuid.UUID, unreadOnly bool, cursorStr string, limit int) (domain.Page, error) {
+// List returns one page of the caller's own inbox, newest first, optionally
+// filtered to a text search (title/body, case-insensitive substring) and/or
+// an exact notification kind.
+func (s *Service) List(ctx context.Context, tenantID, userID uuid.UUID, unreadOnly bool, search, kind, cursorStr string, limit int) (domain.Page, error) {
 	cursor, err := DecodeCursor(cursorStr)
 	if err != nil {
 		return domain.Page{}, err
@@ -30,7 +32,7 @@ func (s *Service) List(ctx context.Context, tenantID, userID uuid.UUID, unreadOn
 	var items []domain.Notification
 	err = s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var err error
-		items, err = s.repo.ListNotifications(ctx, tenantID, userID, unreadOnly, cursor, limit)
+		items, err = s.repo.ListNotifications(ctx, tenantID, userID, unreadOnly, search, kind, cursor, limit)
 		return err
 	})
 	if err != nil {

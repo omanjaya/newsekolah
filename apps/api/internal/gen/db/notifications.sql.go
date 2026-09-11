@@ -139,19 +139,23 @@ from notifications
 where tenant_id = $1::uuid
   and user_id = $2::uuid
   and ($3::boolean = false or read_at is null)
+  and ($4::text = '' or title ilike '%' || $4 || '%' or body ilike '%' || $4 || '%')
+  and ($5::text = '' or kind = $5::text)
   and (
-    $4::boolean = false
-    or created_at < $5::timestamptz
-    or (created_at = $5::timestamptz and id < $6::uuid)
+    $6::boolean = false
+    or created_at < $7::timestamptz
+    or (created_at = $7::timestamptz and id < $8::uuid)
   )
 order by created_at desc, id desc
-limit $7::int
+limit $9::int
 `
 
 type ListNotificationsForUserParams struct {
 	TenantID        uuid.UUID          `json:"tenant_id"`
 	UserID          uuid.UUID          `json:"user_id"`
 	UnreadOnly      bool               `json:"unread_only"`
+	Search          string             `json:"search"`
+	Kind            string             `json:"kind"`
 	HasCursor       bool               `json:"has_cursor"`
 	CursorCreatedAt pgtype.Timestamptz `json:"cursor_created_at"`
 	CursorID        uuid.UUID          `json:"cursor_id"`
@@ -163,6 +167,8 @@ func (q *Queries) ListNotificationsForUser(ctx context.Context, arg ListNotifica
 		arg.TenantID,
 		arg.UserID,
 		arg.UnreadOnly,
+		arg.Search,
+		arg.Kind,
 		arg.HasCursor,
 		arg.CursorCreatedAt,
 		arg.CursorID,
