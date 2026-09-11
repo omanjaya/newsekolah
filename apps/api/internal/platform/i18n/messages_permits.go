@@ -25,6 +25,7 @@ func init() {
 		"LATE_ARRIVAL_REVIEWER_ONLY":      {"Hanya petugas piket atau admin yang dapat meninjau keterlambatan ini.", "Only a picket-duty holder or an admin may review this late arrival."},
 		"SCAN_TOKEN_CONSUMER_NOT_STUDENT": {"Kode QR ini hanya dapat dipindai oleh siswa.", "This QR code can only be scanned by a student."},
 		"LEAVE_REJECTION_REASON_REQUIRED": {"Alasan wajib diisi saat menolak pengajuan izin.", "A reason is required when rejecting a leave request."},
+		"REASON_TOO_LONG":                 {"Alasan tidak boleh lebih dari 500 karakter.", "Reason must not exceed 500 characters."},
 	} {
 		catalog[code] = map[string]string{Indonesian: msg[0], English: msg[1]}
 	}

@@ -39,6 +39,7 @@ var (
 	errLateArrivalReviewer = httpx.NewError(http.StatusForbidden, "LATE_ARRIVAL_REVIEWER_ONLY")
 	errViolationInvalid    = httpx.NewError(http.StatusBadRequest, "VIOLATION_INVALID")
 	errScanConsumerStudent = httpx.NewError(http.StatusForbidden, "SCAN_TOKEN_CONSUMER_NOT_STUDENT")
+	errReasonTooLong       = httpx.NewError(http.StatusBadRequest, "REASON_TOO_LONG")
 )
 
 var permitErrorMap = map[error]error{
@@ -76,6 +77,7 @@ var permitErrorMap = map[error]error{
 	domain.ErrLateArrivalReviewerOnly:      errLateArrivalReviewer,
 	domain.ErrViolationInvalid:             errViolationInvalid,
 	domain.ErrScanTokenConsumerNotStudent:  errScanConsumerStudent,
+	domain.ErrReasonTooLong:                errReasonTooLong,
 }
 
 func mapError(err error) error {

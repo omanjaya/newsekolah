@@ -43,4 +43,5 @@ var (
 	ErrViolationInvalid        = errors.New("one or more violation ids are not valid active violation types")
 
 	ErrScanTokenConsumerNotStudent = errors.New("only a student profile may consume this token")
+	ErrReasonTooLong               = errors.New("reason exceeds 500 characters")
 )

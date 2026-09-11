@@ -137,12 +137,19 @@ type classroomEntryScannedEvent struct {
 	ScannedAt   time.Time `json:"scanned_at"`
 }
 
+// maxReasonLength matches openapi/modules/permits.yaml's
+// ScanClassroomEntryRequest.reason maxLength: 500.
+const maxReasonLength = 500
+
 // ScanClassroomEntry consumes a teacher's classroom-entry token. Missing
 // rule (docs/analysis/backend-inventory.md 1.13): only a student profile
 // may consume it -- a teacher or other staff account scanning it is not
 // "a student entering class" -- and the teacher is told live, over their
 // own realtime topic, who just walked in and why.
 func (s *Service) ScanClassroomEntry(ctx context.Context, in ScanClassroomEntryInput) (ScanClassroomEntryResult, error) {
+	if len(in.Reason) > maxReasonLength {
+		return ScanClassroomEntryResult{}, domain.ErrReasonTooLong
+	}
 	reason := in.Reason
 	if reason == "" {
 		reason = "Izin masuk kelas"
