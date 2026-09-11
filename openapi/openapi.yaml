@@ -5767,7 +5767,7 @@ paths:
         - me
       operationId: updateMyProfile
       x-permission: authenticated
-      summary: Update own name, email, phone and locale
+      summary: Update own username, name, email, phone, locale, and detail record (student/teacher/staff fields)
       requestBody:
         required: true
         content:
@@ -5775,6 +5775,11 @@ paths:
             schema:
               type: object
               properties:
+                username:
+                  type: string
+                  minLength: 3
+                  maxLength: 80
+                  description: Omit to keep the current username
                 name:
                   type: string
                   minLength: 1
@@ -5790,6 +5795,8 @@ paths:
                   enum:
                     - id
                     - en
+                detail:
+                  $ref: "#/components/schemas/UserProfileFields"
       responses:
         "200":
           description: Updated
@@ -17671,6 +17678,9 @@ components:
               format: uuid
             name:
               type: string
+        detail:
+          $ref: "#/components/schemas/UserProfileFields"
+          description: Omitted when the account has no profile_kind (e.g. a role with no student/teacher/staff record).
     GoogleSSOConfig:
       type: object
       required:

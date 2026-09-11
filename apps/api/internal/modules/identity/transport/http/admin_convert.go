@@ -138,8 +138,17 @@ func toAPIProfile(p service.UserProfileFields) *api.UserProfileFields {
 		LastEducation: strPtr(p.LastEducation), Specialization: strPtr(p.Specialization),
 		EmployeeNumber: strPtr(p.EmployeeNumber), Position: strPtr(p.Position),
 	}
-	if p.Gender != "" {
-		g := api.UserProfileFieldsGender(p.Gender)
+	// user_profiles.gender is stored as "male"/"female" (the check
+	// constraint's values); the wire format is the old app's L/P code, so
+	// this maps back rather than passing the stored value through
+	// literally, which would send an API consumer a value its own enum
+	// does not accept.
+	switch p.Gender {
+	case "male":
+		g := api.UserProfileFieldsGenderL
+		out.Gender = &g
+	case "female":
+		g := api.UserProfileFieldsGenderP
 		out.Gender = &g
 	}
 	if !p.BirthDate.IsZero() {
@@ -171,7 +180,13 @@ func fromAPIProfile(p *api.UserProfileFields) service.UserProfileFields {
 		EmployeeNumber: strOf(p.EmployeeNumber), Position: strOf(p.Position),
 	}
 	if p.Gender != nil {
-		out.Gender = string(*p.Gender)
+		// Accepts the wire format's L/P (or, leniently, male/female
+		// spelled out already) and always stores the check constraint's
+		// value, never the raw input -- see toAPIProfile's comment on the
+		// same mapping in reverse.
+		if g, ok := domain.NormalizeGender(string(*p.Gender)); ok {
+			out.Gender = g
+		}
 	}
 	return out
 }

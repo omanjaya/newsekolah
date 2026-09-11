@@ -41,6 +41,8 @@ type MeResult struct {
 	Email              string
 	Name               string
 	AvatarURL          string
+	ProfileKind        domain.ProfileKind
+	Detail             UserProfileFields
 	Roles              []domain.Role
 	Permissions        []string
 	Duties             []DutyView
@@ -120,6 +122,13 @@ func (s *Service) me(ctx context.Context, user domain.User) (MeResult, error) {
 	if yearID, ok, err := s.years.GetActiveAcademicYearID(ctx, user.TenantID); err == nil && ok {
 		label, _ := s.years.ActiveAcademicYearLabel(ctx, user.TenantID, yearID)
 		result.ActiveAcademicYear = &AcademicYearView{ID: yearID, Label: label}
+	}
+
+	if row, err := s.repo.GetUserAdminByID(ctx, user.TenantID, user.ID); err == nil && row.ProfileKind.Valid() {
+		result.ProfileKind = row.ProfileKind
+		if detail, found, err := s.loadProfileFields(ctx, user.TenantID, user.ID, row.ProfileKind); err == nil && found {
+			result.Detail = detail
+		}
 	}
 
 	return result, nil

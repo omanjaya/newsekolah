@@ -2602,7 +2602,7 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Update own name, email, phone and locale */
+        /** Update own username, name, email, phone, locale, and detail record (student/teacher/staff fields) */
         put: operations["updateMyProfile"];
         post?: never;
         delete?: never;
@@ -7736,6 +7736,8 @@ export interface components {
                 user_id?: string;
                 name?: string;
             };
+            /** @description Omitted when the account has no profile_kind (e.g. a role with no student/teacher/staff record). */
+            detail?: components["schemas"]["UserProfileFields"];
         };
         GoogleSSOConfig: {
             /** @description False when this school has never saved a configuration. */
@@ -14627,12 +14629,15 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
+                    /** @description Omit to keep the current username */
+                    username?: string;
                     name?: string;
                     /** Format: email */
                     email?: string;
                     phone?: string;
                     /** @enum {string} */
                     locale?: "id" | "en";
+                    detail?: components["schemas"]["UserProfileFields"];
                 };
             };
         };

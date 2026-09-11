@@ -480,6 +480,7 @@ type Querier interface {
 	GetUserByUsername(ctx context.Context, arg GetUserByUsernameParams) (User, error)
 	GetUserByUsernameOrEmail(ctx context.Context, arg GetUserByUsernameOrEmailParams) (User, error)
 	GetUserName(ctx context.Context, arg GetUserNameParams) (string, error)
+	GetUserProfile(ctx context.Context, arg GetUserProfileParams) (UserProfile, error)
 	GetValidPasswordResetByHash(ctx context.Context, arg GetValidPasswordResetByHashParams) (PasswordReset, error)
 	GetViolationRecord(ctx context.Context, arg GetViolationRecordParams) (ViolationRecord, error)
 	GetViolationType(ctx context.Context, arg GetViolationTypeParams) (ViolationType, error)

@@ -133,6 +133,11 @@ func (h *Handler) toAPIMe(ctx context.Context, tenantID uuid.UUID, me service.Me
 		avatar := me.AvatarURL
 		result.AvatarUrl = &avatar
 	}
+	if me.ProfileKind != "" {
+		kind := api.MeProfileKind(me.ProfileKind)
+		result.ProfileKind = &kind
+		result.Detail = toAPIProfile(me.Detail)
+	}
 
 	if branded, err := h.branding.Branding(ctx, tenantID); err == nil {
 		result.Tenant = branded

@@ -288,7 +288,7 @@ paths:
       tags: [me]
       operationId: updateMyProfile
       x-permission: authenticated
-      summary: Update own name, email, phone and locale
+      summary: Update own username, name, email, phone, locale, and detail record (student/teacher/staff fields)
       requestBody:
         required: true
         content:
@@ -296,10 +296,18 @@ paths:
             schema:
               type: object
               properties:
+                username:
+                  {
+                    type: string,
+                    minLength: 3,
+                    maxLength: 80,
+                    description: "Omit to keep the current username",
+                  }
                 name: { type: string, minLength: 1, maxLength: 150 }
                 email: { type: string, format: email }
                 phone: { type: string, maxLength: 30 }
                 locale: { type: string, enum: [id, en] }
+                detail: { $ref: "#/components/schemas/UserProfileFields" }
       responses:
         "200":
           description: Updated

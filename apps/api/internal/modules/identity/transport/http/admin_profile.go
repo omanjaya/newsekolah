@@ -22,7 +22,10 @@ func (h *Handler) UpdateMyProfile(ctx context.Context, request api.UpdateMyProfi
 	if b.Locale != nil {
 		locale = string(*b.Locale)
 	}
-	me, err := h.service.UpdateMyProfile(ctx, tenantID, userID, strOf(b.Name), email, strOf(b.Phone), locale)
+	me, err := h.service.UpdateMyProfile(ctx, tenantID, userID, service.UpdateMyProfileInput{
+		Username: strOf(b.Username), Name: strOf(b.Name), Email: email, Phone: strOf(b.Phone), Locale: locale,
+		Detail: fromAPIProfile(b.Detail),
+	})
 	if err != nil {
 		return nil, mapAdminError(err)
 	}
