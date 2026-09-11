@@ -15,6 +15,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/school/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/storage"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/tenant"
 )
 
@@ -28,6 +29,8 @@ type Repository interface {
 	GetPlatformSetting(ctx context.Context, key string) (string, bool, error)
 	SearchTenants(ctx context.Context, query string) ([]domain.TenantSummary, error)
 	ListBrandingSettings(ctx context.Context, tenantID uuid.UUID) (map[string]string, error)
+	SetBrandingSetting(ctx context.Context, tenantID, actorID uuid.UUID, key, value string) error
+	CreateAssetRecord(ctx context.Context, in NewAsset) (AssetRecord, error)
 
 	CreateAcademicYear(ctx context.Context, tenantID uuid.UUID, label string, startsOn, endsOn time.Time) (domain.AcademicYear, error)
 	GetActiveAcademicYear(ctx context.Context, tenantID uuid.UUID) (domain.AcademicYear, bool, error)
@@ -41,10 +44,32 @@ type Repository interface {
 	RecordDapodikImportBatch(ctx context.Context, tenantID uuid.UUID, rowCount, createdCount, updatedCount, errorCount int, createdBy uuid.UUID) error
 }
 
+// NewAsset is what CreateAssetRecord persists to assets, mirroring
+// identity/service.NewAsset (branding logo/favicon uses the same table and
+// upload pipeline as an avatar, just a different kind/visibility).
+type NewAsset struct {
+	TenantID   uuid.UUID
+	Bucket     string
+	ObjectKey  string
+	Mime       string
+	SizeBytes  int64
+	SHA256     string
+	Kind       string
+	Visibility string
+	CreatedBy  uuid.UUID
+}
+
+// AssetRecord is one assets row.
+type AssetRecord struct {
+	ID   uuid.UUID
+	Mime string
+}
+
 type Service struct {
-	pool *pgxpool.Pool
-	repo Repository
-	mode tenant.Mode
+	pool    *pgxpool.Pool
+	repo    Repository
+	mode    tenant.Mode
+	storage *storage.Client
 
 	// academic, identity, and clk back the onboarding wizard (level
 	// templates, Dapodik import): grade levels/subjects/periods/classes
@@ -60,8 +85,8 @@ type Service struct {
 	clk      clock.Clock
 }
 
-func New(pool *pgxpool.Pool, repo Repository, mode tenant.Mode) *Service {
-	return &Service{pool: pool, repo: repo, mode: mode}
+func New(pool *pgxpool.Pool, repo Repository, mode tenant.Mode, storageClient *storage.Client) *Service {
+	return &Service{pool: pool, repo: repo, mode: mode, storage: storageClient}
 }
 
 // SetOnboardingDependencies wires the academic and identity collaborators
@@ -121,8 +146,27 @@ func (s *Service) Branding(ctx context.Context, tenantID uuid.UUID) (domain.Bran
 	if v, ok := settings["branding.accent_color"]; ok && v != "" {
 		b.AccentColor = v
 	}
+	if s.storage != nil {
+		if key, ok := settings["branding.logo_object_key"]; ok && key != "" {
+			if u, err := s.storage.PresignedGetURL(ctx, key, brandingImageURLTTL); err == nil {
+				b.LogoURL = u.String()
+			}
+		}
+		if key, ok := settings["branding.favicon_object_key"]; ok && key != "" {
+			if u, err := s.storage.PresignedGetURL(ctx, key, brandingImageURLTTL); err == nil {
+				b.FaviconURL = u.String()
+			}
+		}
+	}
 	return b, nil
 }
+
+// brandingImageURLTTL is long relative to storage.DefaultUploadURLTTL (5
+// minutes, sized for a client to immediately PUT to): GetTenantBranding is
+// public and cached by browsers/the login screen, so its logo/favicon URL
+// needs to stay valid for a normal browsing session, not just one upload
+// round trip.
+const brandingImageURLTTL = 24 * time.Hour
 
 // LookupTenants searches schools by name or slug. In single-tenant mode it
 // returns only the one tenant when it matches the query, per the contract's

@@ -54,7 +54,7 @@ func run(logger *slog.Logger) error {
 	defer pool.Close()
 
 	workers := jobs.NewWorkers()
-	schoolModule := school.Register(pool, tenantModeFor(cfg))
+	schoolModule := school.Register(pool, tenantModeFor(cfg), nil)
 	permitsModule := permits.Register(permits.Dependencies{
 		Pool: pool, Years: schoolModule.Service, Clock: clock.Real{},
 		Config: permitsservice.DefaultConfig([]byte(cfg.DocumentSigningKey), cfg.S3Bucket), Logger: logger,

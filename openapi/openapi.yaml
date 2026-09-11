@@ -12552,6 +12552,31 @@ paths:
                 $ref: "#/components/schemas/TenantBranding"
         "404":
           $ref: "#/components/responses/NotFound"
+    put:
+      tags:
+        - tenant
+      operationId: updateTenantBranding
+      x-permission: manage_settings
+      summary: Change the school's name, short name, tagline, and accent color
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BrandingWrite"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TenantBranding"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /v1/tenants/lookup:
     get:
       tags:
@@ -12619,6 +12644,106 @@ paths:
       responses:
         "204":
           description: Saved
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/tenant/branding/logo/upload-url:
+    post:
+      tags:
+        - tenant
+      operationId: requestLogoUpload
+      x-permission: manage_settings
+      summary: Get a presigned upload URL for a new logo (PNG/WebP/SVG, max 2 MB)
+      responses:
+        "200":
+          description: Upload target
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AssetUploadTarget"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "503":
+          description: Object storage not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/tenant/branding/logo/confirm:
+    post:
+      tags:
+        - tenant
+      operationId: confirmLogoUpload
+      x-permission: manage_settings
+      summary: Confirm the uploaded object as the new logo (validated server-side)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConfirmAssetUpload"
+      responses:
+        "200":
+          description: Logo set
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TenantBranding"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/tenant/branding/favicon/upload-url:
+    post:
+      tags:
+        - tenant
+      operationId: requestFaviconUpload
+      x-permission: manage_settings
+      summary: Get a presigned upload URL for a new favicon (PNG/WebP/SVG, max 512 KB)
+      responses:
+        "200":
+          description: Upload target
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AssetUploadTarget"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "503":
+          description: Object storage not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/tenant/branding/favicon/confirm:
+    post:
+      tags:
+        - tenant
+      operationId: confirmFaviconUpload
+      x-permission: manage_settings
+      summary: Confirm the uploaded object as the new favicon (validated server-side)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConfirmAssetUpload"
+      responses:
+        "200":
+          description: Favicon set
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TenantBranding"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -20110,6 +20235,46 @@ components:
           enum:
             - id
             - en
+    BrandingWrite:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 160
+        short_name:
+          type: string
+          maxLength: 40
+        tagline:
+          type: string
+          maxLength: 200
+        accent_color:
+          type: string
+          pattern: ^#[0-9A-Fa-f]{6}$
+    AssetUploadTarget:
+      type: object
+      required:
+        - upload_url
+        - object_key
+        - expires_at
+      properties:
+        upload_url:
+          type: string
+          format: uri
+        object_key:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+    ConfirmAssetUpload:
+      type: object
+      required:
+        - object_key
+      properties:
+        object_key:
+          type: string
     TenantSummary:
       type: object
       required:

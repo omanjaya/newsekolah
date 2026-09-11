@@ -74,7 +74,7 @@ func (noopPerms) EffectivePermissions(context.Context, uuid.UUID, uuid.UUID) (au
 // cmd/api/wire.go does, so this test exercises the same composition
 // production uses instead of a hand-rolled substitute.
 func buildService(pool *pgxpool.Pool) *service.Service {
-	schoolModule := school.Register(pool, tenant.ModeSingle)
+	schoolModule := school.Register(pool, tenant.ModeSingle, nil)
 	eventBus := events.NewBus()
 	schedulingModule := scheduling.Register(pool, eventBus, noopPerms{})
 	repo := repository.New(pool)

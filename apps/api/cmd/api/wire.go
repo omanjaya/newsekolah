@@ -72,7 +72,19 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		mode = tenant.ModeMulti
 	}
 
-	schoolModule := school.Register(pool, mode)
+	// Built before schoolModule (branding logo/favicon upload needs it)
+	// and reused by permits/attendance/... below. storageClientFor returns
+	// the narrower permits-owned interface so permits/platform's own
+	// `== nil` checks stay correct when S3 is not configured; school wants
+	// the concrete type instead (DownloadBounded/RemoveObject/Bucket, none
+	// of which that interface has), and a comma-ok type assertion recovers
+	// it without breaking that nil-interface-vs-nil-pointer safety: when
+	// sharedStorage is a genuinely nil interface the assertion still just
+	// yields a nil *storage.Client, not a panic.
+	sharedStorage := storageClientFor(cfg, logger)
+	sharedStorageClient, _ := sharedStorage.(*storage.Client)
+
+	schoolModule := school.Register(pool, mode, sharedStorageClient)
 	senders := wiring.SendersFromConfig(cfg, logger)
 	sealer, err := crypto.NewSealer("v1", cfg.EncryptionSecret())
 	if err != nil {
@@ -128,8 +140,6 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	// permits and attendance depend on each other only through adapters:
 	// permits is built first with a late-bound attendance sync, then
 	// attendance receives permits' blocker/overrider.
-	sharedStorage := storageClientFor(cfg, logger)
-
 	sync := &lateBoundSync{}
 	permitsModule := permits.Register(permits.Dependencies{
 		Pool: pool, Years: schoolModule.Service, Bus: eventBus, Storage: sharedStorage,

@@ -5528,7 +5528,8 @@ export interface paths {
         };
         /** Public branding for the resolved tenant (login screen, manifest) */
         get: operations["getTenantBranding"];
-        put?: never;
+        /** Change the school's name, short name, tagline, and accent color */
+        put: operations["updateTenantBranding"];
         post?: never;
         delete?: never;
         options?: never;
@@ -5581,6 +5582,74 @@ export interface paths {
         /** The school's name, level, timezone and default language */
         put: operations["updateSchoolProfile"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tenant/branding/logo/upload-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Get a presigned upload URL for a new logo (PNG/WebP/SVG, max 2 MB) */
+        post: operations["requestLogoUpload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tenant/branding/logo/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm the uploaded object as the new logo (validated server-side) */
+        post: operations["confirmLogoUpload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tenant/branding/favicon/upload-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Get a presigned upload URL for a new favicon (PNG/WebP/SVG, max 512 KB) */
+        post: operations["requestFaviconUpload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tenant/branding/favicon/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm the uploaded object as the new favicon (validated server-side) */
+        post: operations["confirmFaviconUpload"];
         delete?: never;
         options?: never;
         head?: never;
@@ -8713,6 +8782,22 @@ export interface components {
             timezone: string;
             /** @enum {string} */
             locale: "id" | "en";
+        };
+        BrandingWrite: {
+            name: string;
+            short_name?: string;
+            tagline?: string;
+            accent_color?: string;
+        };
+        AssetUploadTarget: {
+            /** Format: uri */
+            upload_url: string;
+            object_key: string;
+            /** Format: date-time */
+            expires_at: string;
+        };
+        ConfirmAssetUpload: {
+            object_key: string;
         };
         TenantSummary: {
             /** Format: uuid */
@@ -20486,6 +20571,33 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    updateTenantBranding: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BrandingWrite"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantBranding"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
     lookupTenants: {
         parameters: {
             query: {
@@ -20552,6 +20664,122 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    requestLogoUpload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Upload target */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssetUploadTarget"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description Object storage not configured */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    confirmLogoUpload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfirmAssetUpload"];
+            };
+        };
+        responses: {
+            /** @description Logo set */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantBranding"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    requestFaviconUpload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Upload target */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssetUploadTarget"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description Object storage not configured */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    confirmFaviconUpload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfirmAssetUpload"];
+            };
+        };
+        responses: {
+            /** @description Favicon set */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantBranding"];
+                };
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
