@@ -2,6 +2,7 @@ package attendance
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"testing"
@@ -247,12 +248,31 @@ func TestSaveEntriesPolicyAndWindow(t *testing.T) {
 
 	actor := service.Actor{UserID: w.teacherID}
 
-	// Yesterday's session: the save window (period end + 0 grace, on
-	// yesterday's date) has already passed.
+	// Yesterday's session, saved by the schedule's own teacher in normal
+	// mode: the period end has passed, but the tenant's
+	// attendance.correction_days window (default 7 days, unconfigured
+	// here) has not, so the owner still saves without needing correction
+	// mode -- restoring the old SION rule
+	// (reference/sion-rebuild-go/backend/cmd/api/teacher_attendance.go
+	// L928-970).
 	closedSession, err := svc.OpenSession(ctx, w.tenantID, actor, w.scheduleYesterdayID, w.yesterday, domain.SaveModeNormal)
 	require.NoError(t, err)
 	_, err = svc.SaveEntries(ctx, w.tenantID, actor, closedSession.Session.ID, service.SaveEntriesInput{
 		Entries: []service.SaveEntryInput{{StudentUserID: w.student1ID, StatusCode: "H"}},
+	})
+	require.NoError(t, err, "the schedule owner must still save in normal mode while within the correction window")
+
+	// Once attendance.correction_days is exhausted (set to 0, so
+	// yesterday's deadline is end of yesterday), the same owner saving
+	// the same past session in normal mode is rejected again.
+	q := db.New(pool)
+	zeroDays, err := json.Marshal(0)
+	require.NoError(t, err)
+	require.NoError(t, q.UpsertTenantSetting(ctx, db.UpsertTenantSettingParams{
+		TenantID: w.tenantID, Key: "attendance.correction_days", Value: zeroDays,
+	}))
+	_, err = svc.SaveEntries(ctx, w.tenantID, actor, closedSession.Session.ID, service.SaveEntriesInput{
+		Entries: []service.SaveEntryInput{{StudentUserID: w.student1ID, StatusCode: "S"}},
 	})
 	require.ErrorIs(t, err, domain.ErrSaveWindowClosed)
 
