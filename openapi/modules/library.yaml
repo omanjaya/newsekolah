@@ -113,6 +113,57 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
 
+  /v1/library/titles/isbn-lookup:
+    get:
+      tags: [library]
+      operationId: lookupExternalIsbn
+      x-permission: manage_library_catalog
+      summary: >-
+        Look up bibliographic data for an ISBN: the local catalogue first, then Open Library,
+        then Google Books. Never fails on an upstream outage -- found=false just means no source had it.
+      parameters:
+        - { name: isbn, in: query, required: true, schema: { type: string, maxLength: 32 } }
+      responses:
+        "200":
+          description: Lookup result (found may be false)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LibraryIsbnLookupResult" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /v1/library/covers/download:
+    post:
+      tags: [library]
+      operationId: downloadLibraryCover
+      x-permission: manage_library_catalog
+      summary: >-
+        Download a cover image from an external URL (http/https, <=3MB, jpeg/png/webp) and store
+        it as an asset; pass the returned asset_id as a title's cover_asset_id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url]
+              properties:
+                url: { type: string, format: uri, maxLength: 2000 }
+      responses:
+        "201":
+          description: Stored
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [asset_id]
+                properties:
+                  asset_id: { type: string, format: uuid }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
   /v1/library/titles/{titleId}:
     get:
       tags: [library]
@@ -251,6 +302,69 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
+
+  /v1/library/import/template.xlsx:
+    get:
+      tags: [library]
+      operationId: getLibraryImportTemplateXlsx
+      x-permission: manage_library_catalog
+      summary: >-
+        XLSX template for a collection import: 18 entry columns plus a hidden Referensi sheet
+        with this tenant's master-data codes for dropdown validation
+      responses:
+        "200":
+          description: XLSX
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: { type: string, format: binary }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /v1/library/import/preview:
+    post:
+      tags: [library]
+      operationId: previewLibraryImport
+      x-permission: manage_library_catalog
+      summary: >-
+        Validate and dedupe-check up to 2000 import rows without writing anything
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LibraryImportRequest" }
+      responses:
+        "200":
+          description: Preview
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LibraryImportPreview" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /v1/library/import/commit:
+    post:
+      tags: [library]
+      operationId: commitLibraryImport
+      x-permission: manage_library_catalog
+      summary: >-
+        Create titles (auto call number when empty) and copies for every valid row, in one
+        transaction; an existing title (deduped by normalized ISBN, then title+author) only gets
+        new copies added
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LibraryImportRequest" }
+      responses:
+        "200":
+          description: Commit result
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LibraryImportCommitResult" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
 
   /v1/library/copies:
     get:
@@ -418,6 +532,38 @@ paths:
           content:
             application/pdf:
               schema: { type: string, format: binary }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /v1/library/copies/labels:
+    post:
+      tags: [library]
+      operationId: printLibraryCopyLabels
+      x-permission: manage_library_catalog
+      summary: >-
+        Printable spine/barcode labels for a batch of copies, one A4 page per 24 labels
+        (3 columns x 8 rows of 70x25mm labels), in the given order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [copy_ids]
+              properties:
+                copy_ids:
+                  type: array
+                  minItems: 1
+                  maxItems: 500
+                  items: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Labels PDF
+          content:
+            application/pdf:
+              schema: { type: string, format: binary }
+        "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
@@ -912,6 +1058,25 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
 
+  /v1/library/reports/loans.xlsx:
+    get:
+      tags: [library]
+      operationId: getLibraryLoansReportXlsx
+      x-permission: view_library_reports
+      summary: Loans report as XLSX
+      parameters:
+        - { name: from, in: query, schema: { type: string, format: date } }
+        - { name: to, in: query, schema: { type: string, format: date } }
+      responses:
+        "200":
+          description: XLSX
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: { type: string, format: binary }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
   /v1/library/reports/overdue-members:
     get:
       tags: [library]
@@ -932,12 +1097,27 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
 
+  /v1/library/reports/overdue-members.xlsx:
+    get:
+      tags: [library]
+      operationId: getLibraryOverdueMembersReportXlsx
+      x-permission: view_library_reports
+      summary: Overdue-members report as XLSX
+      responses:
+        "200":
+          description: XLSX
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: { type: string, format: binary }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
   /v1/library/reports/most-borrowed:
     get:
       tags: [library]
       operationId: getLibraryMostBorrowedReport
       x-permission: view_library_reports
-      summary: Most-borrowed titles within a period (defaults to the last 30 days, inclusive of "to")
+      summary: Most-borrowed titles and top borrowers within a period (defaults to the last 30 days, inclusive of "to")
       parameters:
         - { name: from, in: query, schema: { type: string, format: date } }
         - { name: to, in: query, schema: { type: string, format: date } }
@@ -948,18 +1128,44 @@ paths:
           }
       responses:
         "200":
-          description: Titles
+          description: Titles and borrowers
           content:
             application/json:
               schema:
                 type: object
-                required: [data]
+                required: [data, top_borrowers]
                 properties:
                   data:
                     {
                       type: array,
                       items: { $ref: "#/components/schemas/LibraryMostBorrowedTitle" },
                     }
+                  top_borrowers:
+                    { type: array, items: { $ref: "#/components/schemas/LibraryTopBorrower" } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /v1/library/reports/most-borrowed.xlsx:
+    get:
+      tags: [library]
+      operationId: getLibraryMostBorrowedReportXlsx
+      x-permission: view_library_reports
+      summary: Most-borrowed titles and top borrowers as XLSX
+      parameters:
+        - { name: from, in: query, schema: { type: string, format: date } }
+        - { name: to, in: query, schema: { type: string, format: date } }
+        - {
+            name: limit,
+            in: query,
+            schema: { type: integer, minimum: 1, maximum: 100, default: 20 },
+          }
+      responses:
+        "200":
+          description: XLSX
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: { type: string, format: binary }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
@@ -1070,6 +1276,97 @@ components:
         block_loans_with_unpaid_fines: { type: boolean }
         due_reminder_days: { type: integer, minimum: 0 }
         auto_register_members: { type: boolean }
+
+    LibraryImportRow:
+      type: object
+      additionalProperties: true
+      description: >-
+        One raw import row, keyed either by internal field name (title, main_author, publisher,
+        publish_place, publish_year, isbn, ddc_number, subjects, material_type, category, access,
+        location, source, acquired_on, price, no_induk, barcode, copies, call_number) when no
+        mapping is given, or by whatever source column name `mapping` points each field at.
+        row_number is always read directly.
+    LibraryImportRequest:
+      type: object
+      required: [rows]
+      properties:
+        rows:
+          type: array
+          minItems: 1
+          maxItems: 2000
+          items: { $ref: "#/components/schemas/LibraryImportRow" }
+        mapping:
+          type: object
+          additionalProperties: { type: string }
+          description: "Internal field name -> source column name, for a sheet using its own headers (INLISLite export aliases included)."
+    LibraryImportPreviewRow:
+      type: object
+      required: [row_number, status, message, title, copies]
+      properties:
+        row_number: { type: integer }
+        status: { type: string, enum: [new_title, existing_title, error] }
+        message: { type: string }
+        title: { type: string }
+        copies: { type: integer }
+    LibraryImportPreview:
+      type: object
+      required: [rows, summary]
+      properties:
+        rows: { type: array, items: { $ref: "#/components/schemas/LibraryImportPreviewRow" } }
+        summary:
+          type: object
+          required: [new_titles, existing_titles, copies, errors]
+          properties:
+            new_titles: { type: integer }
+            existing_titles: { type: integer }
+            copies: { type: integer }
+            errors: { type: integer }
+    LibraryImportCommitResult:
+      type: object
+      required: [created_titles, created_copies]
+      properties:
+        created_titles: { type: integer }
+        created_copies: { type: integer }
+
+    LibraryExternalBibliography:
+      type: object
+      required:
+        [
+          title,
+          subtitle,
+          main_author,
+          additional_authors,
+          publisher,
+          publish_place,
+          pages,
+          isbn,
+          subjects,
+          language,
+          abstract,
+          cover_image_url,
+        ]
+      properties:
+        title: { type: string }
+        subtitle: { type: string }
+        main_author: { type: string }
+        additional_authors: { type: string }
+        publisher: { type: string }
+        publish_place: { type: string }
+        publish_year: { type: integer, description: "0 when unknown" }
+        pages: { type: string }
+        isbn: { type: string }
+        subjects: { type: string }
+        language: { type: string }
+        abstract: { type: string }
+        cover_image_url: { type: string }
+    LibraryIsbnLookupResult:
+      type: object
+      required: [found]
+      properties:
+        found: { type: boolean }
+        source: { type: string, enum: [local, openlibrary, googlebooks] }
+        bibliography: { $ref: "#/components/schemas/LibraryExternalBibliography" }
+        local_title_id: { type: string, format: uuid }
 
     LibraryTitle:
       type: object
@@ -1386,6 +1683,15 @@ components:
       required: [title, loan_count]
       properties:
         title: { $ref: "#/components/schemas/LibraryTitle" }
+        loan_count: { type: integer }
+    LibraryTopBorrower:
+      type: object
+      required: [member_user_id, member_name, class_name, loan_count]
+      properties:
+        member_user_id: { type: string, format: uuid }
+        member_name: { type: string }
+        class_name:
+          { type: string, description: '"" when the member has no active class enrollment' }
         loan_count: { type: integer }
     LibraryLoanReportRow:
       type: object

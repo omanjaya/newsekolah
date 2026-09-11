@@ -12,6 +12,47 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const createLibraryAsset = `-- name: CreateLibraryAsset :one
+
+insert into assets (tenant_id, bucket, object_key, mime, size_bytes, sha256, kind, visibility, created_by)
+values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+returning id
+`
+
+type CreateLibraryAssetParams struct {
+	TenantID   uuid.UUID   `json:"tenant_id"`
+	Bucket     string      `json:"bucket"`
+	ObjectKey  string      `json:"object_key"`
+	Mime       string      `json:"mime"`
+	SizeBytes  int64       `json:"size_bytes"`
+	Sha256     string      `json:"sha256"`
+	Kind       string      `json:"kind"`
+	Visibility string      `json:"visibility"`
+	CreatedBy  pgtype.UUID `json:"created_by"`
+}
+
+// The assets table is shared platform infrastructure
+// (migrations/0001_platform_core.up.sql), not owned by any single
+// module. Library writes here for covers downloaded from an external
+// ISBN lookup, the same way permits writes evidence images and rendered
+// letters (internal/modules/permits/queries/assets.sql).
+func (q *Queries) CreateLibraryAsset(ctx context.Context, arg CreateLibraryAssetParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, createLibraryAsset,
+		arg.TenantID,
+		arg.Bucket,
+		arg.ObjectKey,
+		arg.Mime,
+		arg.SizeBytes,
+		arg.Sha256,
+		arg.Kind,
+		arg.Visibility,
+		arg.CreatedBy,
+	)
+	var id uuid.UUID
+	err := row.Scan(&id)
+	return id, err
+}
+
 const createPermitsAsset = `-- name: CreatePermitsAsset :one
 
 insert into assets (tenant_id, bucket, object_key, mime, size_bytes, sha256, kind, visibility, created_by)

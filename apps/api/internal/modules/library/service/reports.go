@@ -146,11 +146,141 @@ func (s *Service) MostBorrowedTitles(ctx context.Context, tenantID uuid.UUID, fr
 	return out, nil
 }
 
+// TopBorrower is one row of the popular report's top-borrowers side: a
+// member's loan count in the period, with their display name and current
+// class resolved so the report never shows a bare UUID (old app:
+// library_reports.go's top peminjam, dropped from the rebuild's first
+// popular-titles-only report).
+type TopBorrower struct {
+	MemberUserID uuid.UUID
+	MemberName   string
+	ClassName    string
+	LoanCount    int
+}
+
+// PopularReport is the "paling populer" report: the period's most
+// borrowed titles alongside its most active borrowers.
+type PopularReport struct {
+	Titles    []MostBorrowedTitle
+	Borrowers []TopBorrower
+}
+
+func (s *Service) PopularReport(ctx context.Context, tenantID uuid.UUID, from, to *time.Time, limit int) (PopularReport, error) {
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return PopularReport{}, err
+	}
+	titles, err := s.MostBorrowedTitles(ctx, tenantID, from, to, limit)
+	if err != nil {
+		return PopularReport{}, err
+	}
+	fromDay, toExclusive := s.resolveReportPeriod(from, to)
+	rows, err := s.repo.TopBorrowersInPeriod(ctx, tenantID, fromDay, toExclusive, clampLimit(limit))
+	if err != nil {
+		return PopularReport{}, err
+	}
+	borrowers := make([]TopBorrower, len(rows))
+	for i, r := range rows {
+		name := r.MemberUserID.String()
+		if s.members != nil {
+			if resolved, err := s.members.UserDisplayName(ctx, tenantID, r.MemberUserID); err == nil && resolved != "" {
+				name = resolved
+			}
+		}
+		borrowers[i] = TopBorrower{MemberUserID: r.MemberUserID, MemberName: name, ClassName: r.ClassName, LoanCount: r.LoanCount}
+	}
+	return PopularReport{Titles: titles, Borrowers: borrowers}, nil
+}
+
+// noClassLabel is the display label for a visit or member with no active
+// class enrollment (a teacher, staff, or a walk-in guest), matching the
+// old app's monthly report (library_monthly_report.go).
+const noClassLabel = "Lainnya"
+
+func labelClass(name string) string {
+	if name == "" {
+		return noClassLabel
+	}
+	return name
+}
+
+// VisitsReport is the visits-in-period report: the raw total plus a
+// per-day and per-class breakdown.
+type VisitsReport struct {
+	Total    int
+	PerDay   []DaySeriesPoint
+	PerClass []ClassCount
+}
+
+func (s *Service) VisitsReport(ctx context.Context, tenantID uuid.UUID, from, to *time.Time) (VisitsReport, error) {
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return VisitsReport{}, err
+	}
+	fromDay, toExclusive := s.resolveReportPeriod(from, to)
+	total, err := s.repo.CountVisitsBetween(ctx, tenantID, fromDay, toExclusive)
+	if err != nil {
+		return VisitsReport{}, err
+	}
+	perDay, err := s.repo.VisitsPerDay(ctx, tenantID, fromDay, toExclusive)
+	if err != nil {
+		return VisitsReport{}, err
+	}
+	perClass, err := s.repo.VisitsPerClass(ctx, tenantID, fromDay, toExclusive)
+	if err != nil {
+		return VisitsReport{}, err
+	}
+	for i := range perClass {
+		perClass[i].ClassName = labelClass(perClass[i].ClassName)
+	}
+	return VisitsReport{Total: total, PerDay: perDay, PerClass: perClass}, nil
+}
+
+// MembersReport is the members report: totals plus a per-type and
+// per-class breakdown.
+type MembersReport struct {
+	Total    int
+	Active   int
+	PerType  []MemberTypeCount
+	PerClass []ClassCount
+}
+
+func (s *Service) MembersReport(ctx context.Context, tenantID uuid.UUID) (MembersReport, error) {
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return MembersReport{}, err
+	}
+	total, err := s.repo.CountMembersTotal(ctx, tenantID)
+	if err != nil {
+		return MembersReport{}, err
+	}
+	active, err := s.repo.CountActiveMembersTotal(ctx, tenantID)
+	if err != nil {
+		return MembersReport{}, err
+	}
+	perType, err := s.repo.MembersByType(ctx, tenantID)
+	if err != nil {
+		return MembersReport{}, err
+	}
+	perClass, err := s.repo.MembersByClass(ctx, tenantID)
+	if err != nil {
+		return MembersReport{}, err
+	}
+	for i := range perClass {
+		perClass[i].ClassName = labelClass(perClass[i].ClassName)
+	}
+	return MembersReport{Total: total, Active: active, PerType: perType, PerClass: perClass}, nil
+}
+
+// safeDiv is the old app's libReportsSafeDiv: a per-student ratio is 0
+// rather than +Inf/NaN when there are no students yet to divide by.
+func safeDiv(a, b int) float64 {
+	if b == 0 {
+		return 0
+	}
+	return float64(a) / float64(b)
+}
+
 // CatalogueSummary is the accreditation-style summary report: catalogue
-// composition and this period's circulation activity. students_total,
-// members_total, and the per-student ratios the old app computed from
-// them are intentionally left out -- they need the circulation half's
-// member/enrollment tables, which this half of the module does not read.
+// composition plus this period's circulation, membership, and visit
+// activity (old app: library_reports.go's summary, section "SNP").
 type CatalogueSummary struct {
 	TitlesByDDC         []DDCClassCount
 	ItemsByCategory     []MasterEntryCount
@@ -162,6 +292,12 @@ type CatalogueSummary struct {
 	ActiveBorrowers     int
 	OverdueNow          int
 	LastStocktake       *domain.Stocktake
+	StudentsTotal       int
+	MembersTotal        int
+	ItemsPerStudent     float64
+	LoansPerStudent     float64
+	VisitsInPeriod      int
+	VisitsPerStudent    float64
 }
 
 func (s *Service) CatalogueSummary(ctx context.Context, tenantID uuid.UUID, from, to *time.Time) (CatalogueSummary, error) {
@@ -205,10 +341,30 @@ func (s *Service) CatalogueSummary(ctx context.Context, tenantID uuid.UUID, from
 	if err != nil {
 		return CatalogueSummary{}, err
 	}
+	studentsTotal, err := s.repo.CountActiveStudentsTotal(ctx, tenantID)
+	if err != nil {
+		return CatalogueSummary{}, err
+	}
+	membersTotal, err := s.repo.CountMembersTotal(ctx, tenantID)
+	if err != nil {
+		return CatalogueSummary{}, err
+	}
+	copiesTotal, err := s.repo.CountCopiesTotal(ctx, tenantID)
+	if err != nil {
+		return CatalogueSummary{}, err
+	}
+	visitsInPeriod, err := s.repo.CountVisitsBetween(ctx, tenantID, fromDay, toExclusive)
+	if err != nil {
+		return CatalogueSummary{}, err
+	}
 	summary := CatalogueSummary{
 		TitlesByDDC: byDDC, ItemsByCategory: byCategory, ItemsByMaterialType: byMaterialType,
 		FictionCount: fiction, FictionTotal: total, AdditionsInPeriod: additions, LoansInPeriod: len(loans),
 		ActiveBorrowers: activeBorrowers, OverdueNow: overdue,
+		StudentsTotal: studentsTotal, MembersTotal: membersTotal, VisitsInPeriod: visitsInPeriod,
+		ItemsPerStudent:  safeDiv(copiesTotal, studentsTotal),
+		LoansPerStudent:  safeDiv(len(loans), studentsTotal),
+		VisitsPerStudent: safeDiv(visitsInPeriod, studentsTotal),
 	}
 	if found {
 		summary.LastStocktake = &lastStocktake

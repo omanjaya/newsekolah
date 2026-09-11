@@ -65,6 +65,50 @@ type DaySeriesPoint struct {
 	Count int
 }
 
+// ClassCount is one row of a per-class breakdown (visits or members),
+// grouped by a student's current active class; ClassName is "" for a row
+// the service should relabel as "Lainnya" (no active enrollment, or a
+// visit that was never tied to a member at all).
+type ClassCount struct {
+	ClassName string
+	Count     int
+}
+
+// MemberTypeCount is one row of the members-by-type report.
+type MemberTypeCount struct {
+	ID    uuid.UUID
+	Name  string
+	Count int
+}
+
+// BorrowerCount is one row of the top-borrowers report: a member's loan
+// count in the period plus their current class, if any.
+type BorrowerCount struct {
+	MemberUserID uuid.UUID
+	ClassName    string
+	LoanCount    int
+}
+
+// TitleExportRow is one title plus the fields the catalogue XLSX export
+// needs beyond domain.Title itself.
+type TitleExportRow struct {
+	Title            domain.Title
+	MaterialTypeCode string
+	TotalCopies      int
+	AvailableCopies  int
+}
+
+// CopyExportRow is one copy plus its title and resolved master-data names
+// for the catalogue XLSX export's Copies sheet.
+type CopyExportRow struct {
+	Copy         domain.Copy
+	TitleName    string
+	TitleAuthor  string
+	CategoryName string
+	LocationName string
+	SourceName   string
+}
+
 // StocktakeResultRow is one persisted stocktake anomaly, with the copy it
 // refers to resolved (nil if the copy was later deleted).
 type StocktakeResultRow struct {
@@ -208,6 +252,28 @@ type Repository interface {
 	DailyLoansSeries(ctx context.Context, tenantID uuid.UUID, since time.Time) ([]DaySeriesPoint, error)
 	DailyReturnsSeries(ctx context.Context, tenantID uuid.UUID, since time.Time) ([]DaySeriesPoint, error)
 
+	CountActiveStudentsTotal(ctx context.Context, tenantID uuid.UUID) (int, error)
+	CountMembersTotal(ctx context.Context, tenantID uuid.UUID) (int, error)
+	CountActiveMembersTotal(ctx context.Context, tenantID uuid.UUID) (int, error)
+	CountVisitsBetween(ctx context.Context, tenantID uuid.UUID, from, to time.Time) (int, error)
+	CountCopiesAddedInPeriod(ctx context.Context, tenantID uuid.UUID, from, to time.Time) (int, error)
+	CountLateReturnsBetween(ctx context.Context, tenantID uuid.UUID, from, to time.Time) (int, error)
+	SumFinesRecordedBetween(ctx context.Context, tenantID uuid.UUID, from, to time.Time) (int, error)
+	VisitsPerDay(ctx context.Context, tenantID uuid.UUID, from, to time.Time) ([]DaySeriesPoint, error)
+	VisitsPerClass(ctx context.Context, tenantID uuid.UUID, from, to time.Time) ([]ClassCount, error)
+	MembersByType(ctx context.Context, tenantID uuid.UUID) ([]MemberTypeCount, error)
+	MembersByClass(ctx context.Context, tenantID uuid.UUID) ([]ClassCount, error)
+	TopBorrowersInPeriod(ctx context.Context, tenantID uuid.UUID, from, to time.Time, limit int) ([]BorrowerCount, error)
+
+	ListTitlesForExport(ctx context.Context, tenantID uuid.UUID) ([]TitleExportRow, error)
+	ListCopiesForExport(ctx context.Context, tenantID uuid.UUID) ([]CopyExportRow, error)
+
+	// CreateAsset records a stored file in the shared platform assets
+	// table (migrations/0001_platform_core.up.sql); the same table and
+	// convention internal/modules/permits/service already writes to for
+	// evidence images and rendered letters.
+	CreateAsset(ctx context.Context, tenantID uuid.UUID, bucket, objectKey, mime string, sizeBytes int64, sha256, kind, visibility string, createdBy uuid.UUID) (uuid.UUID, error)
+
 	CreateCirculationEvent(ctx context.Context, e domain.ItemEventRecord) (domain.ItemEventRecord, error)
 	ListItemEventsForCopy(ctx context.Context, tenantID, copyID uuid.UUID) ([]domain.ItemEventRecord, error)
 	CreateLoanRenewal(ctx context.Context, ren domain.LoanRenewal) (domain.LoanRenewal, error)
@@ -346,17 +412,29 @@ type SettingsReader interface {
 	LibrarySettings(ctx context.Context, tenantID uuid.UUID) (Settings, error)
 }
 
+// Storage is the subset of platform/storage's client the library module
+// needs: writing a downloaded cover image to the object store before
+// recording it as an asset (same interface shape as
+// internal/modules/permits/service.Storage, narrowed to the one method
+// this module calls).
+type Storage interface {
+	PutObject(ctx context.Context, objectKey string, content []byte, contentType string) error
+}
+
 type Service struct {
-	pool        *pgxpool.Pool
-	repo        Repository
-	members     MemberDirectory
-	settings    SettingsReader
-	flags       FlagReader
-	permissions PermissionChecker
-	events      EventPublisher
-	scanTokens  ScanTokens
-	renderer    documents.Renderer
-	clock       clock.Clock
+	pool          *pgxpool.Pool
+	repo          Repository
+	members       MemberDirectory
+	settings      SettingsReader
+	flags         FlagReader
+	permissions   PermissionChecker
+	events        EventPublisher
+	scanTokens    ScanTokens
+	renderer      documents.Renderer
+	clock         clock.Clock
+	storage       Storage
+	storageBucket string
+	isbnCache     *isbnCache
 }
 
 // Deps bundles Service's optional collaborators beyond members and
@@ -364,20 +442,26 @@ type Service struct {
 // since almost every use case needs them, but a test or a partially-wired
 // caller can omit the rest.
 type Deps struct {
-	Flags       FlagReader
-	Permissions PermissionChecker
-	Events      EventPublisher
-	ScanTokens  ScanTokens
+	Flags         FlagReader
+	Permissions   PermissionChecker
+	Events        EventPublisher
+	ScanTokens    ScanTokens
+	Storage       Storage // nil: cover download is disabled
+	StorageBucket string
 }
 
 func New(pool *pgxpool.Pool, repo Repository, members MemberDirectory, settings SettingsReader, clk clock.Clock, deps ...Deps) *Service {
 	if clk == nil {
 		clk = clock.Real{}
 	}
-	s := &Service{pool: pool, repo: repo, members: members, settings: settings, renderer: documents.NewHTMLPDFRenderer(), clock: clk}
+	s := &Service{
+		pool: pool, repo: repo, members: members, settings: settings, renderer: documents.NewHTMLPDFRenderer(), clock: clk,
+		isbnCache: newISBNCache(),
+	}
 	if len(deps) > 0 {
 		d := deps[0]
 		s.flags, s.permissions, s.events, s.scanTokens = d.Flags, d.Permissions, d.Events, d.ScanTokens
+		s.storage, s.storageBucket = d.Storage, d.StorageBucket
 	}
 	return s
 }

@@ -4,6 +4,7 @@ go 1.26.1
 
 require (
 	github.com/SherClockHolmes/webpush-go v1.4.0
+	github.com/boombuler/barcode v1.0.1
 	github.com/getkin/kin-openapi v0.142.0
 	github.com/go-chi/chi/v5 v5.3.2
 	github.com/go-pdf/fpdf v0.9.0
@@ -40,7 +41,6 @@ require (
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
 	github.com/aymerick/douceur v0.2.0 // indirect
-	github.com/boombuler/barcode v1.0.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect

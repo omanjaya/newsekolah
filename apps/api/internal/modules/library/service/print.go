@@ -16,13 +16,8 @@ import (
 // warning letter or a leave letter these are reprintable shop-floor
 // artifacts, not audited documents, so they are rendered on demand and
 // never numbered, stored as an asset, or given a verification code.
-
-const copyLabelTemplate = `
-<h1>{{.Title}}</h1>
-<p>{{.Author}}</p>
-<p>{{.Classification}}</p>
-<p>Barcode: {{.Barcode}}</p>
-`
+// Copy labels are the one exception to the shared documents.Renderer: see
+// service/labels.go for why they render directly with fpdf.
 
 // memberCardTemplate renders the QR value and a Code128-shaped monospace
 // fallback as plain text -- platform/documents has no barcode-drawing
@@ -51,29 +46,12 @@ const clearanceLetterTemplate = `
 <p>Tidak memiliki pinjaman aktif maupun denda yang belum diselesaikan pada Perpustakaan {{.SchoolName}} per tanggal {{.IssuedOn}}.</p>
 `
 
-// PrintCopyLabel renders one copy's spine/barcode label as a PDF.
+// PrintCopyLabel renders one copy's spine/barcode label as a single-label
+// PDF, delegating to the batch renderer (old app kept a single-item
+// convenience endpoint alongside the batch one; the rebuild does the
+// same by reusing it rather than a second template).
 func (s *Service) PrintCopyLabel(ctx context.Context, tenantID, copyID uuid.UUID) ([]byte, error) {
-	item, found, err := s.repo.GetCopy(ctx, tenantID, copyID)
-	if err != nil {
-		return nil, err
-	}
-	if !found {
-		return nil, domain.ErrCopyNotFound
-	}
-	title, found, err := s.repo.GetTitle(ctx, tenantID, item.TitleID)
-	if err != nil {
-		return nil, err
-	}
-	if !found {
-		return nil, domain.ErrTitleNotFound
-	}
-	rendered, err := s.renderer.Render(ctx, documents.Template{Engine: documents.EngineHTML, Body: copyLabelTemplate}, map[string]any{
-		"Title": title.Title, "Author": title.Author, "Classification": title.Classification, "Barcode": item.Barcode,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("render copy label: %w", err)
-	}
-	return rendered.PDF, nil
+	return s.PrintCopyLabels(ctx, tenantID, []uuid.UUID{copyID})
 }
 
 // memberCardVars resolves everything the card and clearance letter

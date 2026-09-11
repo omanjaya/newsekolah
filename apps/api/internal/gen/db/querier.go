@@ -226,6 +226,14 @@ type Querier interface {
 	CountActiveLoansAndUnpaidFinesForClearance(ctx context.Context, arg CountActiveLoansAndUnpaidFinesForClearanceParams) (CountActiveLoansAndUnpaidFinesForClearanceRow, error)
 	CountActiveLoansForMember(ctx context.Context, arg CountActiveLoansForMemberParams) (int32, error)
 	CountActiveMembers(ctx context.Context, arg CountActiveMembersParams) (int32, error)
+	CountActiveMembersTotal(ctx context.Context, tenantID uuid.UUID) (int32, error)
+	// Report figures that need library_members/library_visits plus the
+	// academic module's enrollments/classes, now that both exist in this
+	// worktree (migrations 0090-0092): the accreditation summary's
+	// students/members/visits counts, the visits and members reports, top
+	// borrowers with class for the popular report, and the monthly printable
+	// report's indicators.
+	CountActiveStudentsTotal(ctx context.Context, tenantID uuid.UUID) (int32, error)
 	// Backs the admin dashboard's "active users per profile kind" panel.
 	CountActiveUsersByProfileKind(ctx context.Context, tenantID uuid.UUID) ([]CountActiveUsersByProfileKindRow, error)
 	CountAnnouncementReads(ctx context.Context, arg CountAnnouncementReadsParams) (int64, error)
@@ -235,6 +243,7 @@ type Querier interface {
 	CountAttendanceSessionsForScheduleBeforeDate(ctx context.Context, arg CountAttendanceSessionsForScheduleBeforeDateParams) (int64, error)
 	CountAvailableCopies(ctx context.Context, arg CountAvailableCopiesParams) (int32, error)
 	CountCollectionCategoryUsage(ctx context.Context, arg CountCollectionCategoryUsageParams) (int32, error)
+	CountCopiesAddedInPeriod(ctx context.Context, arg CountCopiesAddedInPeriodParams) (int32, error)
 	CountCopiesByStatus(ctx context.Context, arg CountCopiesByStatusParams) (int32, error)
 	CountCopiesTotal(ctx context.Context, tenantID uuid.UUID) (int32, error)
 	CountDailySummaryStatusesForAttendance(ctx context.Context, arg CountDailySummaryStatusesForAttendanceParams) ([]CountDailySummaryStatusesForAttendanceRow, error)
@@ -244,10 +253,12 @@ type Querier interface {
 	CountInProgressWorkflowInstances(ctx context.Context, arg CountInProgressWorkflowInstancesParams) (int64, error)
 	CountIncidentsBySeverityInRange(ctx context.Context, arg CountIncidentsBySeverityInRangeParams) ([]CountIncidentsBySeverityInRangeRow, error)
 	CountJournalsFiltered(ctx context.Context, arg CountJournalsFilteredParams) (int64, error)
+	CountLateReturnsBetween(ctx context.Context, arg CountLateReturnsBetweenParams) (int32, error)
 	CountLoansBetween(ctx context.Context, arg CountLoansBetweenParams) (int32, error)
 	CountLocationUsage(ctx context.Context, arg CountLocationUsageParams) (int32, error)
 	CountMaterialTypeUsage(ctx context.Context, arg CountMaterialTypeUsageParams) (int32, error)
 	CountMembersByType(ctx context.Context, arg CountMembersByTypeParams) (int32, error)
+	CountMembersTotal(ctx context.Context, tenantID uuid.UUID) (int32, error)
 	CountOverdueNow(ctx context.Context, arg CountOverdueNowParams) (int32, error)
 	CountPartnerUsage(ctx context.Context, arg CountPartnerUsageParams) (int32, error)
 	CountReturnsBetween(ctx context.Context, arg CountReturnsBetweenParams) (int32, error)
@@ -258,16 +269,15 @@ type Querier interface {
 	CountStocktakeScans(ctx context.Context, arg CountStocktakeScansParams) (int32, error)
 	CountSubmittedSessionsByClassDate(ctx context.Context, arg CountSubmittedSessionsByClassDateParams) (int64, error)
 	CountTitleCopies(ctx context.Context, arg CountTitleCopiesParams) (int32, error)
-	// Library dashboard: counts, recent activity, and a 30-day series, built
-	// only from tables this half of the module owns (titles, copies, loans).
-	// Members and visits figures belong to the circulation half's tables
-	// (library_members, library_visits), which do not exist in this
-	// worktree; the service layer reports those as zero rather than failing.
+	// Library dashboard: counts, recent activity, and a 30-day series. Member
+	// and visit counts come from CountMembersTotal/CountActiveMembersTotal
+	// (queries/reports_extra.sql) and TodayVisitSummary (queries/visits.sql).
 	CountTitlesActive(ctx context.Context, tenantID uuid.UUID) (int32, error)
 	CountTitlesAddedInPeriod(ctx context.Context, arg CountTitlesAddedInPeriodParams) (int32, error)
 	CountUnpaidViolations(ctx context.Context, arg CountUnpaidViolationsParams) (int32, error)
 	CountUnreadNotifications(ctx context.Context, arg CountUnreadNotificationsParams) (int64, error)
 	CountUsersForRole(ctx context.Context, arg CountUsersForRoleParams) (int64, error)
+	CountVisitsBetween(ctx context.Context, arg CountVisitsBetweenParams) (int32, error)
 	CountVisitsInRange(ctx context.Context, arg CountVisitsInRangeParams) (int32, error)
 	CountWorkflowInstancesForSubjectYear(ctx context.Context, arg CountWorkflowInstancesForSubjectYearParams) (int64, error)
 	CreateAPIKey(ctx context.Context, arg CreateAPIKeyParams) (IntegrationApiKey, error)
@@ -320,6 +330,12 @@ type Querier interface {
 	CreateLateArrival(ctx context.Context, arg CreateLateArrivalParams) (LateArrival, error)
 	CreateLeaveDocument(ctx context.Context, arg CreateLeaveDocumentParams) (LeaveDocument, error)
 	CreateLeaveRequest(ctx context.Context, arg CreateLeaveRequestParams) (LeaveRequest, error)
+	// The assets table is shared platform infrastructure
+	// (migrations/0001_platform_core.up.sql), not owned by any single
+	// module. Library writes here for covers downloaded from an external
+	// ISBN lookup, the same way permits writes evidence images and rendered
+	// letters (internal/modules/permits/queries/assets.sql).
+	CreateLibraryAsset(ctx context.Context, arg CreateLibraryAssetParams) (uuid.UUID, error)
 	CreateLibraryPolicy(ctx context.Context, arg CreateLibraryPolicyParams) error
 	CreateLibraryVisit(ctx context.Context, arg CreateLibraryVisitParams) (LibraryVisit, error)
 	CreateLoan(ctx context.Context, arg CreateLoanParams) (LibraryLoan, error)
@@ -891,6 +907,7 @@ type Querier interface {
 	ListComponents(ctx context.Context, arg ListComponentsParams) ([]AssessmentComponent, error)
 	ListCopiesAcquiredInPeriod(ctx context.Context, arg ListCopiesAcquiredInPeriodParams) ([]LibraryCopy, error)
 	ListCopiesFiltered(ctx context.Context, arg ListCopiesFilteredParams) ([]LibraryCopy, error)
+	ListCopiesForExport(ctx context.Context, tenantID uuid.UUID) ([]ListCopiesForExportRow, error)
 	// Every copy that could plausibly still be on the shelf: not on loan, and
 	// not permanently removed from the collection (lost or donated away).
 	ListCopiesForStocktake(ctx context.Context, tenantID uuid.UUID) ([]LibraryCopy, error)
@@ -1117,6 +1134,11 @@ type Querier interface {
 	ListTenantIDs(ctx context.Context) ([]uuid.UUID, error)
 	ListTenantSettingsByPrefix(ctx context.Context, arg ListTenantSettingsByPrefixParams) ([]TenantSetting, error)
 	ListTitles(ctx context.Context, arg ListTitlesParams) ([]LibraryTitle, error)
+	// Full-catalogue XLSX export (old app: library_catalog_v2.go's
+	// exportLibraryCatalogXlsx): every title with its copy counts, and every
+	// copy with its category/location/source names already joined in so the
+	// service layer never has to N+1 master data lookups per row.
+	ListTitlesForExport(ctx context.Context, tenantID uuid.UUID) ([]ListTitlesForExportRow, error)
 	// Feeds the daily digest job: notifications created since the recipient's
 	// last digest run, still unread at digest time.
 	ListUnreadNotificationsSince(ctx context.Context, arg ListUnreadNotificationsSinceParams) ([]Notification, error)
@@ -1181,6 +1203,8 @@ type Querier interface {
 	MarkNotificationRead(ctx context.Context, arg MarkNotificationReadParams) error
 	MarkPasswordResetUsed(ctx context.Context, arg MarkPasswordResetUsedParams) error
 	MarkReservationReady(ctx context.Context, arg MarkReservationReadyParams) (LibraryReservation, error)
+	MembersByClass(ctx context.Context, tenantID uuid.UUID) ([]MembersByClassRow, error)
+	MembersByType(ctx context.Context, tenantID uuid.UUID) ([]MembersByTypeRow, error)
 	MentoringAddGroupMember(ctx context.Context, arg MentoringAddGroupMemberParams) (MentorGroupMember, error)
 	MentoringCountGroupMembers(ctx context.Context, arg MentoringCountGroupMembersParams) (int64, error)
 	MentoringCreateGroup(ctx context.Context, arg MentoringCreateGroupParams) (MentorGroup, error)
@@ -1301,6 +1325,7 @@ type Querier interface {
 	StarBalance(ctx context.Context, arg StarBalanceParams) (int32, error)
 	SubmitAttendanceSession(ctx context.Context, arg SubmitAttendanceSessionParams) (AttendanceSession, error)
 	SumActivePoints(ctx context.Context, arg SumActivePointsParams) (int32, error)
+	SumFinesRecordedBetween(ctx context.Context, arg SumFinesRecordedBetweenParams) (int32, error)
 	SumUnpaidFines(ctx context.Context, tenantID uuid.UUID) (int32, error)
 	SupervisionCreateCycle(ctx context.Context, arg SupervisionCreateCycleParams) (SupervisionCycle, error)
 	SupervisionCreateObservation(ctx context.Context, arg SupervisionCreateObservationParams) (SupervisionObservation, error)
@@ -1322,12 +1347,11 @@ type Querier interface {
 	SupervisionUpdateObservation(ctx context.Context, arg SupervisionUpdateObservationParams) (SupervisionObservation, error)
 	// Catalogue-side accreditation summary and the accession register (Buku
 	// Induk). Figures that need library_members/library_visits (students,
-	// members, visits) are intentionally not queried here: those tables
-	// belong to the circulation half of this module and do not exist in this
-	// worktree; the service layer fills those fields with zero rather than
-	// failing the whole report.
+	// members, visits) live in queries/reports_extra.sql, alongside the
+	// enrollments/classes joins those figures also need.
 	TitlesByDDCClass(ctx context.Context, tenantID uuid.UUID) ([]TitlesByDDCClassRow, error)
 	TodayVisitSummary(ctx context.Context, arg TodayVisitSummaryParams) (TodayVisitSummaryRow, error)
+	TopBorrowersInPeriod(ctx context.Context, arg TopBorrowersInPeriodParams) ([]TopBorrowersInPeriodRow, error)
 	TouchAPIKeyLastUsed(ctx context.Context, arg TouchAPIKeyLastUsedParams) error
 	TouchPushDeviceUsed(ctx context.Context, arg TouchPushDeviceUsedParams) error
 	TouchSessionLastSeen(ctx context.Context, arg TouchSessionLastSeenParams) error
@@ -1416,6 +1440,11 @@ type Querier interface {
 	// decide whether a reader may open an incident as campus security or
 	// school leadership rather than only its reporter.
 	VisitorsHasActiveDuty(ctx context.Context, arg VisitorsHasActiveDutyParams) (bool, error)
+	// "Lainnya" for a visit whose member has no active enrollment (or is not
+	// a member at all -- a walk-in guest) is applied by the service layer,
+	// which is where every other report's display labels are resolved.
+	VisitsPerClass(ctx context.Context, arg VisitsPerClassParams) ([]VisitsPerClassRow, error)
+	VisitsPerDay(ctx context.Context, arg VisitsPerDayParams) ([]VisitsPerDayRow, error)
 	VoidPayment(ctx context.Context, arg VoidPaymentParams) (Payment, error)
 	VoidViolationRecord(ctx context.Context, arg VoidViolationRecordParams) (ViolationRecord, error)
 }

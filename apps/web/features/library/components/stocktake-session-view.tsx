@@ -116,7 +116,7 @@ export function StocktakeSessionView({ stocktakeId }: { stocktakeId: string }): 
           )}
           {result.unexpected.length > 0 && (
             <Alert variant="warning" title={t("result.unexpected")}>
-              {result.unexpected.join(", ")}
+              {result.unexpected.map((copy) => copy.barcode).join(", ")}
             </Alert>
           )}
         </div>

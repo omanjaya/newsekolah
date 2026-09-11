@@ -61,6 +61,10 @@ var (
 	ErrViolationAlreadySettled = errors.New("library violation is already settled")
 
 	ErrVisitNotFound = errors.New("library visit not found")
+
+	ErrCoverTooLarge      = errors.New("cover image exceeds 3 MB")
+	ErrCoverInvalidType   = errors.New("cover image must be jpeg, png, or webp")
+	ErrStorageUnavailable = errors.New("file storage is not configured")
 )
 
 // CopyCondition is the physical state of one copy, recorded at acquisition
