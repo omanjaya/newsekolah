@@ -77,7 +77,7 @@ func (s *Service) SaveEntries(ctx context.Context, tenantID uuid.UUID, actor Act
 		loc := s.tenantLocation(ctx, tenantID)
 		if err := domain.ResolveSaveWindow(domain.SaveWindowInput{
 			Now: s.clock.Now().In(loc), SessionDate: session.Date, PeriodEndAt: periodEnd, CorrectionDays: correctionDays,
-			IsGlobalCorrector: actor.IsGlobalCorrector, IsHomeroomOfClass: isHomeroom,
+			IsGlobalCorrector: actor.IsGlobalCorrector, IsHomeroomOfClass: isHomeroom, IsScheduleOwner: accessOK,
 		}, mode); err != nil {
 			return err
 		}
@@ -98,11 +98,44 @@ func (s *Service) SaveEntries(ctx context.Context, tenantID uuid.UUID, actor Act
 
 		wasSubmitted := session.IsSubmitted()
 		affected := make([]uuid.UUID, 0, len(in.Entries))
+		var guardianIDs []uuid.UUID
+
+		// A student whose late-arrival workflow is still open is skipped
+		// silently -- not rejected outright -- so a batch save for the
+		// rest of the class still goes through; the caller sees who was
+		// skipped via SkippedBlockedStudentIDs. Mirrors the old system's
+		// "siswa dengan terlambat belum selesai dilewati" rule
+		// (docs/analysis/backend-inventory.md section 1.9), which this
+		// rebuild had stopped enforcing at save time. The blocked verdict
+		// is resolved once per student up front so domain.PartitionBlocked
+		// can decide who to skip as a pure function.
+		blockedByStudent := make(map[uuid.UUID]bool, len(in.Entries))
+		studentIDs := make([]uuid.UUID, len(in.Entries))
+		for i, entryIn := range in.Entries {
+			studentIDs[i] = entryIn.StudentUserID
+			if _, ok := blockedByStudent[entryIn.StudentUserID]; ok {
+				continue
+			}
+			blocked, _, err := s.blocker.IsBlocked(ctx, tenantID, entryIn.StudentUserID, session.Date)
+			if err != nil {
+				return err
+			}
+			blockedByStudent[entryIn.StudentUserID] = blocked
+		}
+		skippedBlocked := domain.PartitionBlocked(studentIDs, func(id uuid.UUID) bool { return blockedByStudent[id] })
+		skipSet := make(map[uuid.UUID]bool, len(skippedBlocked))
+		for _, id := range skippedBlocked {
+			skipSet[id] = true
+		}
 
 		for _, entryIn := range in.Entries {
 			if !enrolled[entryIn.StudentUserID] {
 				return domain.ErrStudentNotInClass
 			}
+			if skipSet[entryIn.StudentUserID] {
+				continue
+			}
+
 			if !policy.IsValid(entryIn.StatusCode) {
 				return domain.ErrInvalidStatusCode
 			}
@@ -137,6 +170,24 @@ func (s *Service) SaveEntries(ctx context.Context, tenantID uuid.UUID, actor Act
 				}
 			}
 
+			// Per-session violations replace whatever was previously
+			// recorded against this session for the student (delete-then-
+			// reinsert, docs/analysis/backend-inventory.md section 1.9),
+			// even when the list is now empty.
+			if err := s.violations.ReplaceSessionViolations(
+				ctx, tenantID, sessionID, entryIn.StudentUserID, entryIn.ViolationIDs, session.Date, actor.UserID,
+			); err != nil {
+				return err
+			}
+
+			if statusCode == domain.StatusCodeAlpha {
+				ids, err := s.repo.ListGuardianUserIDs(ctx, tenantID, entryIn.StudentUserID)
+				if err != nil {
+					return err
+				}
+				guardianIDs = append(guardianIDs, ids...)
+			}
+
 			affected = append(affected, entryIn.StudentUserID)
 		}
 
@@ -165,11 +216,12 @@ func (s *Service) SaveEntries(ctx context.Context, tenantID uuid.UUID, actor Act
 		if err != nil {
 			return err
 		}
+		detail.SkippedBlockedStudentIDs = skippedBlocked
 
 		if s.events != nil {
 			_ = s.events.Publish(ctx, Submitted{
 				TenantID: tenantID, SessionID: session.ID, ScheduleID: session.ScheduleID, ClassID: session.ClassID,
-				Date: session.Date, SubmittedBy: actor.UserID, StudentCount: len(affected),
+				Date: session.Date, SubmittedBy: actor.UserID, StudentCount: len(affected), GuardianUserIDs: guardianIDs,
 			})
 		}
 		return nil

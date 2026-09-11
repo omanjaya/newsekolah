@@ -51,6 +51,12 @@ type SessionDetail struct {
 	JournalTopic         string
 	JournalActivities    string
 	JournalReflection    string
+	// SkippedBlockedStudentIDs lists students SaveEntries silently skipped
+	// because Blocker reported an unresolved workflow for them (e.g. a
+	// late-arrival still pending review): their entry was neither saved
+	// nor rejected outright, matching the old system's "siswa dengan
+	// terlambat belum selesai dilewati" rule.
+	SkippedBlockedStudentIDs []uuid.UUID
 }
 
 // SessionSummary is one row of ListMyAttendanceToday.
@@ -119,6 +125,12 @@ type SaveEntryInput struct {
 	StudentUserID uuid.UUID
 	StatusCode    string
 	Notes         string
+	// ViolationIDs are this session's discipline violation type IDs for
+	// this student, replacing whatever was previously recorded against
+	// this session for them (see Service.violations and
+	// docs/analysis/backend-inventory.md section 1.9's delete-then-reinsert
+	// rule). Nil/empty clears any violations previously recorded here.
+	ViolationIDs []uuid.UUID
 }
 
 // SaveJournalInput is the optional lesson journal accompanying a save.

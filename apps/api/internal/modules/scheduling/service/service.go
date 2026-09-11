@@ -72,8 +72,8 @@ type Repository interface {
 	UpdateJournal(ctx context.Context, j domain.Journal) (domain.Journal, error)
 	GetJournalByID(ctx context.Context, tenantID, id uuid.UUID) (domain.Journal, error)
 	GetJournalByUnique(ctx context.Context, tenantID, academicYearID, teacherID, classID, subjectID uuid.UUID, lessonDate time.Time) (domain.Journal, bool, error)
-	ListJournalsByTeacher(ctx context.Context, tenantID, academicYearID, teacherID uuid.UUID) ([]domain.Journal, error)
-	ListJournalsByClass(ctx context.Context, tenantID, academicYearID, classID uuid.UUID) ([]domain.Journal, error)
+	ListJournalsFiltered(ctx context.Context, tenantID, academicYearID uuid.UUID, f JournalFilter) ([]domain.Journal, error)
+	CountJournalsFiltered(ctx context.Context, tenantID, academicYearID uuid.UUID, f JournalFilter) (int64, error)
 	DeleteJournal(ctx context.Context, tenantID, id uuid.UUID) error
 
 	// -- cross-module read; replace with academic reader interface after merge --
@@ -86,6 +86,7 @@ type Repository interface {
 	HasTeachingAssignment(ctx context.Context, tenantID, academicYearID, teacherID, subjectID, classID uuid.UUID) (bool, error)
 	IsActiveTeacher(ctx context.Context, tenantID, academicYearID, userID uuid.UUID) (bool, error)
 	ListActiveEnrollments(ctx context.Context, tenantID, academicYearID, classID uuid.UUID) ([]uuid.UUID, error)
+	GetUserName(ctx context.Context, tenantID, userID uuid.UUID) (string, error)
 
 	GetTenantSettingValue(ctx context.Context, tenantID uuid.UUID, key string) (string, bool, error)
 }

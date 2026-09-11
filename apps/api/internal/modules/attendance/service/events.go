@@ -19,6 +19,11 @@ type Submitted struct {
 	Date         time.Time
 	SubmittedBy  uuid.UUID
 	StudentCount int
+	// GuardianUserIDs are the parents/guardians of every student marked
+	// absent (A) in this submission, per docs/02-system-design.md:110's
+	// "notifikasi orang tua untuk A" -- module.go's busPublisher uses this
+	// as the published event's Subject.
+	GuardianUserIDs []uuid.UUID
 }
 
 func (Submitted) EventName() string { return "attendance.submitted" }

@@ -54,3 +54,8 @@ select student_user_id, joined_on
 from enrollments
 where tenant_id = $1 and academic_year_id = $2 and class_id = $3 and status = 'active'
 order by joined_on;
+
+-- name: GetUserNameRefForSchedule :one
+-- The display name backing a teacher/writer column in the journal XLSX
+-- export -- users is owned by the identity module, not scheduling.
+select name from users where tenant_id = $1 and id = $2;

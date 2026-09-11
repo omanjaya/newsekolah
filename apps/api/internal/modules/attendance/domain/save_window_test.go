@@ -76,6 +76,32 @@ func TestResolveSaveWindow(t *testing.T) {
 			},
 			mode: domain.SaveModeCorrection,
 		},
+		{
+			name: "schedule owner may still save in normal mode after period end, until the correction deadline",
+			in: domain.SaveWindowInput{
+				Now: sessionDate.AddDate(0, 0, 3), SessionDate: sessionDate, PeriodEndAt: periodEnd,
+				CorrectionDays: 7, IsScheduleOwner: true,
+			},
+			mode: domain.SaveModeNormal,
+		},
+		{
+			name: "schedule owner past the correction deadline in normal mode is rejected",
+			in: domain.SaveWindowInput{
+				Now: sessionDate.AddDate(0, 0, 9), SessionDate: sessionDate, PeriodEndAt: periodEnd,
+				CorrectionDays: 7, IsScheduleOwner: true,
+			},
+			mode:    domain.SaveModeNormal,
+			wantErr: domain.ErrSaveWindowClosed,
+		},
+		{
+			name: "non-owner in normal mode after period end is rejected even within the correction window",
+			in: domain.SaveWindowInput{
+				Now: sessionDate.AddDate(0, 0, 1), SessionDate: sessionDate, PeriodEndAt: periodEnd,
+				CorrectionDays: 7, IsScheduleOwner: false,
+			},
+			mode:    domain.SaveModeNormal,
+			wantErr: domain.ErrSaveWindowClosed,
+		},
 	}
 
 	for _, tc := range tests {

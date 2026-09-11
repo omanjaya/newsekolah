@@ -209,6 +209,7 @@ type Querier interface {
 	CountAvailableCopies(ctx context.Context, arg CountAvailableCopiesParams) (int32, error)
 	CountDailySummaryStatusesForAttendance(ctx context.Context, arg CountDailySummaryStatusesForAttendanceParams) ([]CountDailySummaryStatusesForAttendanceRow, error)
 	CountIncidentsBySeverityInRange(ctx context.Context, arg CountIncidentsBySeverityInRangeParams) ([]CountIncidentsBySeverityInRangeRow, error)
+	CountJournalsFiltered(ctx context.Context, arg CountJournalsFilteredParams) (int64, error)
 	// Read by the attendance module to compute a day's expected session count
 	// for a class (attendance/domain.ComputeDailyStatus's Expected input).
 	CountSchedulesForClassDay(ctx context.Context, arg CountSchedulesForClassDayParams) (int64, error)
@@ -323,6 +324,10 @@ type Querier interface {
 	DeleteSchedule(ctx context.Context, arg DeleteScheduleParams) error
 	DeleteSchedulesByAcademicYear(ctx context.Context, arg DeleteSchedulesByAcademicYearParams) error
 	DeleteUserRoles(ctx context.Context, arg DeleteUserRolesParams) error
+	// Hard delete, not void: replacing an attendance session's per-student
+	// violations on resave is delete-then-reinsert, matching the old system's
+	// teacher_attendance.go L295-309, not an auditable void.
+	DeleteViolationRecordsBySessionStudent(ctx context.Context, arg DeleteViolationRecordsBySessionStudentParams) error
 	DeleteViolationType(ctx context.Context, arg DeleteViolationTypeParams) error
 	DeleteWebAuthnCredential(ctx context.Context, arg DeleteWebAuthnCredentialParams) error
 	DeleteWebhookEndpoint(ctx context.Context, arg DeleteWebhookEndpointParams) error
@@ -479,6 +484,9 @@ type Querier interface {
 	GetUserByUsername(ctx context.Context, arg GetUserByUsernameParams) (User, error)
 	GetUserByUsernameOrEmail(ctx context.Context, arg GetUserByUsernameOrEmailParams) (User, error)
 	GetUserName(ctx context.Context, arg GetUserNameParams) (string, error)
+	// The display name backing a teacher/writer column in the journal XLSX
+	// export -- users is owned by the identity module, not scheduling.
+	GetUserNameRefForSchedule(ctx context.Context, arg GetUserNameRefForScheduleParams) (string, error)
 	GetValidPasswordResetByHash(ctx context.Context, arg GetValidPasswordResetByHashParams) (PasswordReset, error)
 	GetViolationRecord(ctx context.Context, arg GetViolationRecordParams) (ViolationRecord, error)
 	GetViolationType(ctx context.Context, arg GetViolationTypeParams) (ViolationType, error)
@@ -657,9 +665,18 @@ type Querier interface {
 	// Every grade of one student in a term, joined to its component; the
 	// service hides subjects whose publication is still off.
 	ListGradesForStudent(ctx context.Context, arg ListGradesForStudentParams) ([]ListGradesForStudentRow, error)
+	// Every parent/guardian linked to a student, for the attendance.submitted
+	// event's Subject (docs/02-system-design.md:110).
+	ListGuardianUserIDsForAttendance(ctx context.Context, arg ListGuardianUserIDsForAttendanceParams) ([]uuid.UUID, error)
 	ListIncidents(ctx context.Context, arg ListIncidentsParams) ([]VisitorIncident, error)
 	ListJournalsByClass(ctx context.Context, arg ListJournalsByClassParams) ([]ClassJournal, error)
 	ListJournalsByTeacher(ctx context.Context, arg ListJournalsByTeacherParams) ([]ClassJournal, error)
+	// The filtered/paginated list behind GET /v1/journals: exactly one of
+	// teacher_user_id or class_id is set by the caller (self-service vs.
+	// view_journals_all), mirroring ListJournalsByTeacher/ListJournalsByClass's
+	// scoping but adding the date range/text search/pagination the old system
+	// had (class_journals.go L85-107) and this rebuild had dropped.
+	ListJournalsFiltered(ctx context.Context, arg ListJournalsFilteredParams) ([]ClassJournal, error)
 	ListLateArrivalsForReview(ctx context.Context, tenantID uuid.UUID) ([]ListLateArrivalsForReviewRow, error)
 	ListLeaveDocuments(ctx context.Context, arg ListLeaveDocumentsParams) ([]LeaveDocument, error)
 	ListLeaveRequestsBySubject(ctx context.Context, arg ListLeaveRequestsBySubjectParams) ([]ListLeaveRequestsBySubjectRow, error)

@@ -46,6 +46,24 @@ type Session struct {
 // corrections/amendments, not the first submit).
 func (s Session) IsSubmitted() bool { return s.SubmittedAt != nil }
 
+// PartitionBlocked returns, in order, every studentID for which blocked
+// reports true -- students SaveEntries must silently skip rather than
+// record a status for, per the old system's "siswa dengan terlambat belum
+// selesai dilewati" rule (docs/analysis/backend-inventory.md section 1.9):
+// a manipulated or stale client payload must not be able to mark a student
+// present while their late-arrival workflow is still open. blocked is
+// injected so this stays a pure function over a caller-supplied verdict,
+// even though the real verdict comes from a per-student read (Blocker).
+func PartitionBlocked(studentIDs []uuid.UUID, blocked func(uuid.UUID) bool) []uuid.UUID {
+	var skipped []uuid.UUID
+	for _, id := range studentIDs {
+		if blocked(id) {
+			skipped = append(skipped, id)
+		}
+	}
+	return skipped
+}
+
 // Entry is one student's recorded status for a session.
 type Entry struct {
 	ID            uuid.UUID

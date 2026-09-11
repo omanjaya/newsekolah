@@ -80,7 +80,7 @@ func buildService(pool *pgxpool.Pool) *service.Service {
 	repo := repository.New(pool)
 	return service.New(
 		pool, repo, schoolModule.Service, schedulingModule.ScheduleReader, schedulingModule.AccessChecker, schedulingModule.JournalService,
-		NoOpBlocker{}, NoOpOverrider{}, nil, nil, nil,
+		NoOpBlocker{}, NoOpOverrider{}, NoOpViolationRecorder{}, nil, nil, nil,
 	)
 }
 

@@ -27,6 +27,7 @@ type Repository interface {
 	DeleteViolationType(ctx context.Context, tenantID, id uuid.UUID) error
 
 	CreateRecord(ctx context.Context, r domain.ViolationRecord) (domain.ViolationRecord, error)
+	DeleteRecordsBySessionStudent(ctx context.Context, tenantID, sessionID, studentUserID uuid.UUID) error
 	GetRecord(ctx context.Context, tenantID, id uuid.UUID) (domain.ViolationRecord, bool, error)
 	VoidRecord(ctx context.Context, tenantID, id, voidedBy uuid.UUID, reason string) (domain.ViolationRecord, bool, error)
 	ListRecordsForStudent(ctx context.Context, tenantID, yearID, studentID uuid.UUID) ([]domain.ViolationRecord, error)

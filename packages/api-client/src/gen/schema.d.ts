@@ -6658,6 +6658,8 @@ export interface components {
             journal_topic?: string;
             journal_activities?: string;
             journal_reflection?: string;
+            /** @description Students silently skipped by the last save because Blocker reported an unresolved workflow for them (e.g. a pending late-arrival review); neither saved nor rejected. */
+            skipped_blocked_student_ids?: string[];
         };
         SaveAttendanceEntriesRequest: {
             /**
@@ -6672,6 +6674,8 @@ export interface components {
                 student_user_id: string;
                 status_code: string;
                 notes?: string;
+                /** @description This session's discipline violation type IDs for this student, replacing whatever was recorded before. */
+                violation_ids?: string[];
             }[];
             journal?: {
                 topic: string;
@@ -19602,6 +19606,12 @@ export interface operations {
             query: {
                 academic_year_id: string;
                 class_id?: string;
+                date_from?: string;
+                date_to?: string;
+                /** @description Case-insensitive substring match on topic or activities. */
+                search?: string;
+                limit?: number;
+                offset?: number;
             };
             header?: never;
             path?: never;
@@ -19617,6 +19627,8 @@ export interface operations {
                 content: {
                     "application/json": {
                         data: components["schemas"]["Journal"][];
+                        /** @description Total journals matching the filter */
+                        total: number;
                     };
                 };
             };
@@ -19654,6 +19666,9 @@ export interface operations {
             query: {
                 academic_year_id: string;
                 class_id?: string;
+                date_from?: string;
+                date_to?: string;
+                search?: string;
                 format: "xlsx" | "docx";
             };
             header?: never;

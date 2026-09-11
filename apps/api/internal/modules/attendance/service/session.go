@@ -244,9 +244,14 @@ func (s *Service) buildSessionDetail(ctx context.Context, tenantID uuid.UUID, se
 	}, nil
 }
 
+// saveWindowGrace is the old system's "end_time:59" tolerance
+// (teacher_attendance.go L964-967): a period ending exactly on the minute
+// still leaves the closing seconds of that minute open to save in.
+const saveWindowGrace = 59 * time.Second
+
 // periodEndAt resolves the wall-clock instant a session's last period ends
-// on its own date, in the tenant's timezone -- the input ResolveSaveWindow
-// compares "now" against.
+// on its own date, in the tenant's timezone, plus saveWindowGrace -- the
+// input ResolveSaveWindow compares "now" against.
 func (s *Service) periodEndAt(ctx context.Context, tenantID uuid.UUID, session domain.Session) (time.Time, error) {
 	loc := s.tenantLocation(ctx, tenantID)
 	endOfDay, err := s.repo.GetPeriodEndTime(ctx, tenantID, session.EndPeriodID)
@@ -254,5 +259,5 @@ func (s *Service) periodEndAt(ctx context.Context, tenantID uuid.UUID, session d
 		return time.Time{}, err
 	}
 	y, m, d := session.Date.In(loc).Date()
-	return time.Date(y, m, d, 0, 0, 0, 0, loc).Add(endOfDay), nil
+	return time.Date(y, m, d, 0, 0, 0, 0, loc).Add(endOfDay).Add(saveWindowGrace), nil
 }

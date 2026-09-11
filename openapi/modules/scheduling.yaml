@@ -259,6 +259,22 @@ paths:
         - name: class_id
           in: query
           schema: { type: string, format: uuid }
+        - name: date_from
+          in: query
+          schema: { type: string, format: date }
+        - name: date_to
+          in: query
+          schema: { type: string, format: date }
+        - name: search
+          in: query
+          description: Case-insensitive substring match on topic or activities.
+          schema: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+        - name: offset
+          in: query
+          schema: { type: integer, minimum: 0, default: 0 }
       responses:
         "200":
           description: Journals
@@ -266,11 +282,17 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [data]
+                required: [data, total]
                 properties:
                   data:
                     type: array
                     items: { $ref: "#/components/schemas/Journal" }
+                  total:
+                    {
+                      type: integer,
+                      description: Total journals matching the filter,
+                      ignoring limit/offset.,
+                    }
         "403": { $ref: "#/components/responses/Forbidden" }
     post:
       tags: [journals]
@@ -304,6 +326,15 @@ paths:
         - name: class_id
           in: query
           schema: { type: string, format: uuid }
+        - name: date_from
+          in: query
+          schema: { type: string, format: date }
+        - name: date_to
+          in: query
+          schema: { type: string, format: date }
+        - name: search
+          in: query
+          schema: { type: string }
         - name: format
           in: query
           required: true

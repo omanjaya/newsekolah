@@ -6,6 +6,13 @@
 // gen/*, per docs/03-layered-architecture.md section 1.
 package domain
 
+// StatusCodeAlpha is the code the default (and every observed tenant)
+// policy uses for an unexcused absence. A few call sites need to single
+// out "absent" specifically rather than just "not present" -- e.g.
+// notifying guardians on submit -- so this is named rather than repeating
+// the literal "A".
+const StatusCodeAlpha = "A"
+
 // StatusDef is one attendance status code a tenant accepts, configured via
 // tenant_policies(kind='attendance_statuses'). Priority breaks a tie when
 // DailyStatus (see daily_status.go) cannot find a strict majority among a

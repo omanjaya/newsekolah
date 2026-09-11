@@ -72,7 +72,7 @@ func toAPIRosterItems(items []service.RosterItem) []api.AttendanceRosterItem {
 
 func toAPISessionDetail(d service.SessionDetail) api.AttendanceSessionDetail {
 	sess := d.Session
-	return api.AttendanceSessionDetail{
+	out := api.AttendanceSessionDetail{
 		Id: sess.ID, ScheduleId: sess.ScheduleID, Date: openapi_types.Date{Time: sess.Date}, ClassId: sess.ClassID,
 		SubjectId: sess.SubjectID, TeacherUserId: sess.TeacherUserID, SubstituteUserId: nullUUIDPtr(sess.SubstituteUserID),
 		StartPeriodId: sess.StartPeriodID, EndPeriodId: sess.EndPeriodID, IsSubstitute: d.IsSubstitute, SubmittedAt: sess.SubmittedAt,
@@ -80,6 +80,10 @@ func toAPISessionDetail(d service.SessionDetail) api.AttendanceSessionDetail {
 		Statuses: toAPIStatusDefs(d.Statuses), Roster: toAPIRosterItems(d.Roster),
 		JournalTopic: strPtrOrNil(d.JournalTopic), JournalActivities: strPtrOrNil(d.JournalActivities), JournalReflection: strPtrOrNil(d.JournalReflection),
 	}
+	if len(d.SkippedBlockedStudentIDs) > 0 {
+		out.SkippedBlockedStudentIds = &d.SkippedBlockedStudentIDs
+	}
+	return out
 }
 
 func toAPICalendarDaySessions(sessions []service.CalendarDaySession) *[]struct {

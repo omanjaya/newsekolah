@@ -160,6 +160,24 @@ func (q *Queries) GetTeachingAssignmentRef(ctx context.Context, arg GetTeachingA
 	return i, err
 }
 
+const getUserNameRefForSchedule = `-- name: GetUserNameRefForSchedule :one
+select name from users where tenant_id = $1 and id = $2
+`
+
+type GetUserNameRefForScheduleParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	ID       uuid.UUID `json:"id"`
+}
+
+// The display name backing a teacher/writer column in the journal XLSX
+// export -- users is owned by the identity module, not scheduling.
+func (q *Queries) GetUserNameRefForSchedule(ctx context.Context, arg GetUserNameRefForScheduleParams) (string, error) {
+	row := q.db.QueryRow(ctx, getUserNameRefForSchedule, arg.TenantID, arg.ID)
+	var name string
+	err := row.Scan(&name)
+	return name, err
+}
+
 const isActiveTeacherRef = `-- name: IsActiveTeacherRef :one
 select exists(
   select 1 from teaching_assignments

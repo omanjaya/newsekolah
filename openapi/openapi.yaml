@@ -11618,6 +11618,34 @@ paths:
           schema:
             type: string
             format: uuid
+        - name: date_from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: date_to
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: search
+          in: query
+          description: Case-insensitive substring match on topic or activities.
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
       responses:
         "200":
           description: Journals
@@ -11627,11 +11655,16 @@ paths:
                 type: object
                 required:
                   - data
+                  - total
                 properties:
                   data:
                     type: array
                     items:
                       $ref: "#/components/schemas/Journal"
+                  total:
+                    type: integer
+                    description: Total journals matching the filter
+                    ignoring limit/offset.: null
         "403":
           $ref: "#/components/responses/Forbidden"
     post:
@@ -11676,6 +11709,20 @@ paths:
           schema:
             type: string
             format: uuid
+        - name: date_from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: date_to
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: search
+          in: query
+          schema:
+            type: string
         - name: format
           in: query
           required: true
@@ -15190,6 +15237,13 @@ components:
               type: string
             journal_reflection:
               type: string
+            skipped_blocked_student_ids:
+              type: array
+              description: Students silently skipped by the last save because Blocker reported an unresolved workflow for them (e.g. a
+                pending late-arrival review); neither saved nor rejected.
+              items:
+                type: string
+                format: uuid
     SaveAttendanceEntriesRequest:
       type: object
       required:
@@ -15221,6 +15275,12 @@ components:
               notes:
                 type: string
                 maxLength: 300
+              violation_ids:
+                type: array
+                description: This session's discipline violation type IDs for this student, replacing whatever was recorded before.
+                items:
+                  type: string
+                  format: uuid
         journal:
           type: object
           required:

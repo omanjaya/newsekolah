@@ -35,8 +35,23 @@ type Module struct {
 // cannot satisfy service.EventPublisher directly.
 type busPublisher struct{ bus *events.Bus }
 
+// Publish wraps service.Submitted into the events.Envelope shape
+// notifications/service/events.go's subscriber requires (a bare struct
+// satisfying service.Event fails its type assertion to events.Envelope, so
+// the subscriber's handler always errored and notifications for a
+// submitted session never fired).
 func (p busPublisher) Publish(ctx context.Context, evt service.Event) error {
-	return p.bus.Publish(ctx, evt)
+	submitted, ok := evt.(service.Submitted)
+	if !ok {
+		return p.bus.Publish(ctx, evt)
+	}
+	return p.bus.Publish(ctx, events.Envelope{
+		Name: submitted.EventName(), Tenant: submitted.TenantID, Actor: submitted.SubmittedBy, Subject: submitted.GuardianUserIDs,
+		Payload: map[string]any{
+			"session_id": submitted.SessionID.String(), "class_id": submitted.ClassID.String(),
+			"date": submitted.Date.Format("2006-01-02"), "student_count": submitted.StudentCount,
+		},
+	})
 }
 
 // hubPublisher adapts platform/realtime's Hub to
@@ -75,9 +90,11 @@ type Dependencies struct {
 	Journals  scheduling.JournalService
 	Perms     authz.PermissionsProvider
 	Hub       *realtime.Hub
-	// Blocker and Overrider are optional; permits supplies them after wiring.
-	Blocker   Blocker
-	Overrider Overrider
+	// Blocker, Overrider and Violations are optional; permits and
+	// discipline supply them after wiring.
+	Blocker    Blocker
+	Overrider  Overrider
+	Violations ViolationRecorder
 }
 
 func Register(deps Dependencies) *Module {
@@ -90,9 +107,13 @@ func Register(deps Dependencies) *Module {
 	if deps.Overrider != nil {
 		overrider = deps.Overrider
 	}
+	var violations ViolationRecorder = NoOpViolationRecorder{}
+	if deps.Violations != nil {
+		violations = deps.Violations
+	}
 	svc := service.New(
 		deps.Pool, repo, deps.Years, deps.Schedules, deps.Access, deps.Journals,
-		blocker, overrider,
+		blocker, overrider, violations,
 		busPublisher{bus: deps.Bus}, hubPublisher{hub: deps.Hub}, hubPresence{hub: deps.Hub},
 	)
 	handler := transporthttp.New(svc, deps.Perms)

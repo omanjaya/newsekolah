@@ -116,6 +116,49 @@ func (s *Service) RecordViolation(ctx context.Context, tenantID uuid.UUID, in Re
 	return out, err
 }
 
+// ReplaceSessionViolations implements attendance's ViolationRecorder: it
+// atomically replaces every violation recorded against
+// (attendance_session_id, student_user_id) with violationTypeIDs, mirroring
+// the old system's delete-then-reinsert per session
+// (reference/sion-rebuild-go teacher_attendance.go L295-309) rather than
+// discipline's usual audited void.
+func (s *Service) ReplaceSessionViolations(
+	ctx context.Context, tenantID, sessionID, studentUserID uuid.UUID, violationTypeIDs []uuid.UUID, occurredOn time.Time, reporterUserID uuid.UUID,
+) error {
+	return s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		if err := s.repo.DeleteRecordsBySessionStudent(ctx, tenantID, sessionID, studentUserID); err != nil {
+			return err
+		}
+		if len(violationTypeIDs) == 0 {
+			return nil
+		}
+		yearID, err := s.activeYear(ctx, tenantID)
+		if err != nil {
+			return err
+		}
+		for _, typeID := range violationTypeIDs {
+			vt, ok, err := s.repo.GetViolationType(ctx, tenantID, typeID)
+			if err != nil {
+				return err
+			}
+			if !ok {
+				return domain.ErrViolationTypeNotFound
+			}
+			if !vt.IsActive {
+				return domain.ErrViolationTypeInactive
+			}
+			if _, err := s.repo.CreateRecord(ctx, domain.ViolationRecord{
+				TenantID: tenantID, AcademicYearID: yearID, StudentUserID: studentUserID, ViolationTypeID: vt.ID,
+				PointsSnapshot: vt.Points, OccurredOn: occurredOn,
+				AttendanceSessionID: uuid.NullUUID{UUID: sessionID, Valid: true}, ReporterUserID: reporterUserID,
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
 func (s *Service) dueLevels(ctx context.Context, tenantID, yearID, studentID uuid.UUID) (int, []domain.SPLevel, error) {
 	total, err := s.repo.SumActivePoints(ctx, tenantID, yearID, studentID)
 	if err != nil {

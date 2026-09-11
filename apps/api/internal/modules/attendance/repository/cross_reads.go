@@ -130,6 +130,12 @@ func (r *Repository) GetPeriodEndTime(ctx context.Context, tenantID, periodID uu
 	return time.Duration(period.EndsAt.Microseconds) * time.Microsecond, nil
 }
 
+func (r *Repository) ListGuardianUserIDs(ctx context.Context, tenantID, studentUserID uuid.UUID) ([]uuid.UUID, error) {
+	return r.queries(ctx).ListGuardianUserIDsForAttendance(ctx, db.ListGuardianUserIDsForAttendanceParams{
+		TenantID: tenantID, StudentUserID: studentUserID,
+	})
+}
+
 func (r *Repository) getStringSetting(ctx context.Context, tenantID uuid.UUID, key string) (string, bool, error) {
 	raw, err := r.queries(ctx).GetTenantSettingValue(ctx, db.GetTenantSettingValueParams{TenantID: tenantID, Key: key})
 	if err != nil {

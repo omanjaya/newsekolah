@@ -38,7 +38,10 @@ type SubstitutionRequested struct {
 	SubstituteUserID uuid.UUID
 }
 
-func (SubstitutionRequested) EventName() string { return "scheduling.substitution_requested" }
+// EventName matches platform/events.SubstitutionRequested: notifications
+// subscribes by this exact string (see module.go's busPublisher, which also
+// wraps this struct into an events.Envelope before publishing).
+func (SubstitutionRequested) EventName() string { return "substitution.requested" }
 
 type SubstitutionResponded struct {
 	TenantID         uuid.UUID
@@ -50,7 +53,9 @@ type SubstitutionResponded struct {
 	Accepted         bool
 }
 
-func (SubstitutionResponded) EventName() string { return "scheduling.substitution_responded" }
+// EventName matches platform/events.SubstitutionResponded; see
+// SubstitutionRequested.EventName's comment.
+func (SubstitutionResponded) EventName() string { return "substitution.responded" }
 
 // RequestSubstitution validates and creates a substitution request. Only
 // the schedule's own teacher (or an admin acting for them) may request one;

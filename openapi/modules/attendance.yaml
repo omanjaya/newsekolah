@@ -348,6 +348,12 @@ components:
             journal_topic: { type: string }
             journal_activities: { type: string }
             journal_reflection: { type: string }
+            skipped_blocked_student_ids:
+              type: array
+              description:
+                Students silently skipped by the last save because Blocker reported an unresolved workflow for them
+                (e.g. a pending late-arrival review); neither saved nor rejected.
+              items: { type: string, format: uuid }
     SaveAttendanceEntriesRequest:
       type: object
       required: [entries]
@@ -363,6 +369,10 @@ components:
               student_user_id: { type: string, format: uuid }
               status_code: { type: string }
               notes: { type: string, maxLength: 300 }
+              violation_ids:
+                type: array
+                description: This session's discipline violation type IDs for this student, replacing whatever was recorded before.
+                items: { type: string, format: uuid }
         journal:
           type: object
           required: [topic, activities]

@@ -22,6 +22,9 @@ func toSaveEntriesInput(body api.SaveAttendanceEntriesRequest) service.SaveEntri
 		if e.Notes != nil {
 			entry.Notes = *e.Notes
 		}
+		if e.ViolationIds != nil {
+			entry.ViolationIDs = *e.ViolationIds
+		}
 		in.Entries[i] = entry
 	}
 	if body.Journal != nil {

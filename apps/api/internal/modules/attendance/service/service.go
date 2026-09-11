@@ -116,6 +116,14 @@ type Repository interface {
 	IsSchoolDay(ctx context.Context, tenantID, academicYearID uuid.UUID, dayOfWeek int16) (bool, error)
 	GetPeriodEndTime(ctx context.Context, tenantID, periodID uuid.UUID) (time.Duration, error)
 	GetPeriodStartTime(ctx context.Context, tenantID, periodID uuid.UUID) (time.Duration, error)
+
+	// ListGuardianUserIDs resolves the parent/guardian user IDs linked to
+	// studentUserID, so SaveEntries can address the attendance.submitted
+	// event's Subject to them for a student marked absent
+	// (docs/02-system-design.md:110's "notifikasi orang tua untuk A").
+	//
+	// -- cross-module read; replace with identity reader interface after merge --
+	ListGuardianUserIDs(ctx context.Context, tenantID, studentUserID uuid.UUID) ([]uuid.UUID, error)
 }
 
 // AcademicYearReader is the narrow interface attendance needs from the
@@ -152,6 +160,16 @@ type Overrider interface {
 	Override(ctx context.Context, tenantID, studentUserID uuid.UUID, date time.Time) (statusCode string, source domain.EntrySource, ok bool, err error)
 }
 
+// ViolationRecorder lets SaveEntries record a session's per-student
+// discipline violations through the discipline module without this
+// package importing it, mirroring Blocker/Overrider's rationale.
+// violationTypeIDs replaces whatever was previously recorded against
+// (sessionID, studentUserID), per docs/analysis/backend-inventory.md
+// section 1.9's delete-then-reinsert rule.
+type ViolationRecorder interface {
+	ReplaceSessionViolations(ctx context.Context, tenantID, sessionID, studentUserID uuid.UUID, violationTypeIDs []uuid.UUID, occurredOn time.Time, reporterUserID uuid.UUID) error
+}
+
 // RealtimePublisher lets the service push a live update to the monitor
 // display's WebSocket topic after a session is submitted, without this
 // package importing platform/realtime for anything but this one method
@@ -172,29 +190,30 @@ type PresenceReader interface {
 
 // Service implements attendance's use cases.
 type Service struct {
-	pool      *pgxpool.Pool
-	repo      Repository
-	years     AcademicYearReader
-	schedules scheduling.ScheduleReader
-	access    scheduling.AccessChecker
-	journals  scheduling.JournalService
-	blocker   Blocker
-	overrider Overrider
-	events    EventPublisher
-	realtime  RealtimePublisher
-	presence  PresenceReader
-	clock     clock.Clock
+	pool       *pgxpool.Pool
+	repo       Repository
+	years      AcademicYearReader
+	schedules  scheduling.ScheduleReader
+	access     scheduling.AccessChecker
+	journals   scheduling.JournalService
+	blocker    Blocker
+	overrider  Overrider
+	violations ViolationRecorder
+	events     EventPublisher
+	realtime   RealtimePublisher
+	presence   PresenceReader
+	clock      clock.Clock
 }
 
 func New(
 	pool *pgxpool.Pool, repo Repository, years AcademicYearReader,
 	schedules scheduling.ScheduleReader, access scheduling.AccessChecker, journals scheduling.JournalService,
-	blocker Blocker, overrider Overrider, events EventPublisher, realtime RealtimePublisher, presence PresenceReader,
+	blocker Blocker, overrider Overrider, violations ViolationRecorder, events EventPublisher, realtime RealtimePublisher, presence PresenceReader,
 ) *Service {
 	return &Service{
 		clock: clock.Real{},
 		pool:  pool, repo: repo, years: years, schedules: schedules, access: access, journals: journals,
-		blocker: blocker, overrider: overrider, events: events, realtime: realtime, presence: presence,
+		blocker: blocker, overrider: overrider, violations: violations, events: events, realtime: realtime, presence: presence,
 	}
 }
 

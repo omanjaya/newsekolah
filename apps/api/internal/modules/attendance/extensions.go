@@ -50,3 +50,19 @@ type NoOpOverrider struct{}
 func (NoOpOverrider) Override(context.Context, uuid.UUID, uuid.UUID, time.Time) (string, domain.EntrySource, bool, error) {
 	return "", "", false, nil
 }
+
+// ViolationRecorder lets SaveEntries record a session's per-student
+// discipline violations (the "violation_ids" field of a save-entries
+// payload) through the not-yet-merged discipline module, mirroring
+// Blocker/Overrider's rationale.
+type ViolationRecorder interface {
+	ReplaceSessionViolations(ctx context.Context, tenantID, sessionID, studentUserID uuid.UUID, violationTypeIDs []uuid.UUID, occurredOn time.Time, reporterUserID uuid.UUID) error
+}
+
+// NoOpViolationRecorder records nothing; it is the default until discipline
+// is wired in.
+type NoOpViolationRecorder struct{}
+
+func (NoOpViolationRecorder) ReplaceSessionViolations(context.Context, uuid.UUID, uuid.UUID, uuid.UUID, []uuid.UUID, time.Time, uuid.UUID) error {
+	return nil
+}

@@ -133,11 +133,13 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		Guardians: wiring.GuardianLinks{Identity: identityModule.Service},
 		Clock:     clock.Real{}, Config: permitsservice.DefaultConfig([]byte(cfg.DocumentSigningKey), cfg.S3Bucket), Logger: logger,
 	})
+	lateViolations := &lateBoundViolations{}
 	attendanceModule := attendance.Register(attendance.Dependencies{
 		Pool: pool, Bus: eventBus, Years: schoolModule.Service,
 		Schedules: schedulingModule.ScheduleReader, Access: schedulingModule.AccessChecker, Journals: schedulingModule.JournalService,
 		Perms: identityModule.Service, Hub: hub,
 		Blocker: permitsBlocker{svc: permitsModule.Service}, Overrider: permitsOverrider{svc: permitsModule.Service},
+		Violations: lateViolations,
 	})
 	sync.inner = attendanceSyncAdapter{force: attendanceModule.Service.ForceStatus}
 
@@ -154,6 +156,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		Pool: pool, Years: schoolModule.Service, Docs: wiring.DisciplineDocuments{Permits: permitsModule.Service},
 		Sealer: sealer, Bus: eventBus, Clock: clock.Real{},
 	})
+	lateViolations.inner = disciplineViolationsAdapter{svc: disciplineModule.Service}
 
 	// analytics composes its risk signals through adapters over
 	// attendance, discipline and grading's own services (never their
@@ -438,4 +441,16 @@ func (l *lateBoundSync) ForceStatus(ctx context.Context, tenantID, studentUserID
 		return nil
 	}
 	return l.inner.ForceStatus(ctx, tenantID, studentUserID, from, to, statusCode, reason)
+}
+
+// lateBoundViolations breaks the attendance <-> discipline construction
+// cycle: attendance is built before discipline, so it receives this and
+// discipline.Register's real adapter is attached to inner afterwards.
+type lateBoundViolations struct{ inner attendance.ViolationRecorder }
+
+func (l *lateBoundViolations) ReplaceSessionViolations(ctx context.Context, tenantID, sessionID, studentUserID uuid.UUID, violationTypeIDs []uuid.UUID, occurredOn time.Time, reporterUserID uuid.UUID) error {
+	if l.inner == nil {
+		return nil
+	}
+	return l.inner.ReplaceSessionViolations(ctx, tenantID, sessionID, studentUserID, violationTypeIDs, occurredOn, reporterUserID)
 }

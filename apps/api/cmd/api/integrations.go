@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"net/http"
 	"time"
 
 	"github.com/google/uuid"
@@ -13,6 +14,8 @@ import (
 	academicdomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/academic/domain"
 	academicservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/academic/service"
 	attendancedomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance/domain"
+	disciplinedomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/discipline/domain"
+	disciplineservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/discipline/service"
 	identityservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/identity/service"
 	notificationsservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/notifications/service"
 	permitsservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/service"
@@ -111,6 +114,29 @@ func (o permitsOverrider) Override(ctx context.Context, tenantID, studentUserID 
 		return "", "", false, err
 	}
 	return status, attendancedomain.SourceLeave, true, nil
+}
+
+// disciplineViolationsAdapter exposes discipline's per-session violation
+// recording to attendance as a ViolationRecorder, translating discipline's
+// own domain sentinels into the *httpx.Error attendance's error mapper
+// already forwards unrecognized errors as, so a bad violation_ids entry
+// surfaces as 400/404 rather than a generic 500.
+type disciplineViolationsAdapter struct{ svc *disciplineservice.Service }
+
+func (a disciplineViolationsAdapter) ReplaceSessionViolations(
+	ctx context.Context, tenantID, sessionID, studentUserID uuid.UUID, violationTypeIDs []uuid.UUID, occurredOn time.Time, reporterUserID uuid.UUID,
+) error {
+	err := a.svc.ReplaceSessionViolations(ctx, tenantID, sessionID, studentUserID, violationTypeIDs, occurredOn, reporterUserID)
+	switch {
+	case err == nil:
+		return nil
+	case errors.Is(err, disciplinedomain.ErrViolationTypeNotFound):
+		return httpx.NewError(http.StatusBadRequest, "ATTENDANCE_VIOLATION_TYPE_NOT_FOUND")
+	case errors.Is(err, disciplinedomain.ErrViolationTypeInactive):
+		return httpx.NewError(http.StatusBadRequest, "ATTENDANCE_VIOLATION_TYPE_INACTIVE")
+	default:
+		return err
+	}
 }
 
 // Notifications and announcements adapters.
