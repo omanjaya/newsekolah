@@ -2759,6 +2759,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/auth/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Per-tenant session policy (session lifetime, single-device login) */
+        get: operations["getAuthSettings"];
+        /** Change the per-tenant session policy */
+        put: operations["updateAuthSettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/audit-logs": {
         parameters: {
             query?: never;
@@ -7247,6 +7265,14 @@ export interface components {
             term_id: string;
             rows: components["schemas"]["EraporRow"][];
             skipped: components["schemas"]["EraporSkip"][];
+        };
+        AuthSettings: {
+            session_days: number;
+            single_device: boolean;
+        };
+        AuthSettingsWrite: {
+            session_days: number;
+            single_device: boolean;
         };
         /** @enum {string} */
         ParentRelation: "father" | "mother" | "guardian";
@@ -14851,6 +14877,55 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    getAuthSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Settings */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthSettings"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    updateAuthSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AuthSettingsWrite"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthSettings"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
         };
     };
     listAuditLogs: {

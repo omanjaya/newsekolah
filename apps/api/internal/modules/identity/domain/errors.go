@@ -52,6 +52,9 @@ var (
 	// Password reset
 	ErrPasswordResetTokenInvalid = errors.New("password reset token is invalid, used, or expired")
 
+	// Auth settings
+	ErrInvalidSessionDays = errors.New("session_days must be between 1 and 365")
+
 	// Avatar / upload
 	ErrUploadNotConfigured   = errors.New("file storage is not configured")
 	ErrUploadInvalidFileType = errors.New("unsupported file type")

@@ -6275,6 +6275,49 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
+  /v1/auth/settings:
+    get:
+      tags:
+        - auth
+      operationId: getAuthSettings
+      x-permission: manage_settings
+      summary: Per-tenant session policy (session lifetime, single-device login)
+      responses:
+        "200":
+          description: Settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthSettings"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    put:
+      tags:
+        - auth
+      operationId: updateAuthSettings
+      x-permission: manage_settings
+      summary: Change the per-tenant session policy
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthSettingsWrite"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthSettings"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /v1/audit-logs:
     get:
       tags:
@@ -16599,6 +16642,30 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/EraporSkip"
+    AuthSettings:
+      type: object
+      required:
+        - session_days
+        - single_device
+      properties:
+        session_days:
+          type: integer
+          minimum: 1
+          maximum: 365
+        single_device:
+          type: boolean
+    AuthSettingsWrite:
+      type: object
+      required:
+        - session_days
+        - single_device
+      properties:
+        session_days:
+          type: integer
+          minimum: 1
+          maximum: 365
+        single_device:
+          type: boolean
     ParentRelation:
       type: string
       enum:

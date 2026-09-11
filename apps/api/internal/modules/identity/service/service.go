@@ -72,6 +72,9 @@ type AuthRepository interface {
 	// ListActiveTenants backs the same periodic job: it loops every tenant
 	// one at a time rather than pruning across tenants in one statement.
 	ListActiveTenants(ctx context.Context) ([]uuid.UUID, error)
+
+	GetAuthSettings(ctx context.Context, tenantID uuid.UUID) (domain.AuthSettings, error)
+	SetAuthSettings(ctx context.Context, tenantID, actorID uuid.UUID, in domain.AuthSettings) error
 }
 
 // NewSession is what the service asks the repository to persist when

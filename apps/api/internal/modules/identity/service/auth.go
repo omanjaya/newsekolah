@@ -96,7 +96,25 @@ func (s *Service) login(ctx context.Context, in LoginInput) (AuthResult, error) 
 	now := s.clock.Now()
 	_ = s.repo.UpdateLastLogin(ctx, in.TenantID, user.ID, now)
 
-	session, refreshToken, err := s.openSession(ctx, user, uuid.New(), in.Client, in.DeviceID, in.DeviceName, in.UserAgent, in.IP, now)
+	authSettings, err := s.repo.GetAuthSettings(ctx, in.TenantID)
+	if err != nil {
+		return AuthResult{}, err
+	}
+	if authSettings.SingleDevice {
+		// uuid.Nil never matches a real session id: every existing session
+		// of this user is revoked, since the one being opened here does
+		// not exist yet to exempt (docs/analysis/backend-inventory.md
+		// section 1.8).
+		revokedIDs, err := s.repo.RevokeOtherSessions(ctx, in.TenantID, user.ID, uuid.Nil, "single_device_login")
+		if err != nil {
+			return AuthResult{}, err
+		}
+		s.invalidateSessions(ctx, revokedIDs)
+		s.revokePushDevices(ctx, in.TenantID, user.ID)
+	}
+
+	ttl := time.Duration(authSettings.SessionDays) * 24 * time.Hour
+	session, refreshToken, err := s.openSessionWithTTL(ctx, user, uuid.New(), in.Client, in.DeviceID, in.DeviceName, in.UserAgent, in.IP, now, ttl)
 	if err != nil {
 		return AuthResult{}, err
 	}
@@ -162,7 +180,11 @@ func (s *Service) refresh(ctx context.Context, tenantID uuid.UUID, refreshToken 
 		return AuthResult{}, err
 	}
 
-	newSession, refreshTokenPlain, err := s.openSession(ctx, user, session.FamilyID, session.Client, "", "", userAgent, ip, now)
+	ttl, err := s.sessionTTL(ctx, tenantID)
+	if err != nil {
+		return AuthResult{}, err
+	}
+	newSession, refreshTokenPlain, err := s.openSessionWithTTL(ctx, user, session.FamilyID, session.Client, "", "", userAgent, ip, now, ttl)
 	if err != nil {
 		return AuthResult{}, err
 	}
@@ -181,7 +203,11 @@ func (s *Service) recordLoginAttemptDurably(ctx context.Context, tenantID uuid.U
 	})
 }
 
-func (s *Service) openSession(ctx context.Context, user domain.User, familyID uuid.UUID, client domain.ClientKind, deviceID, deviceName, userAgent, ip string, now time.Time) (domain.Session, string, error) {
+// openSessionWithTTL opens a session with an explicit refresh-token
+// lifetime -- every caller (login, refresh, passkey login, Google SSO)
+// passes the tenant's own auth.session_days (see sessionTTL), not the
+// deployment-wide REFRESH_TOKEN_TTL default.
+func (s *Service) openSessionWithTTL(ctx context.Context, user domain.User, familyID uuid.UUID, client domain.ClientKind, deviceID, deviceName, userAgent, ip string, now time.Time, ttl time.Duration) (domain.Session, string, error) {
 	refreshToken, hash, err := s.newRefresh()
 	if err != nil {
 		return domain.Session{}, "", err
@@ -198,7 +224,7 @@ func (s *Service) openSession(ctx context.Context, user domain.User, familyID uu
 		DeviceName:       deviceName,
 		UserAgent:        userAgent,
 		IP:               ip,
-		ExpiresAt:        now.Add(s.cfg.RefreshTokenTTL),
+		ExpiresAt:        now.Add(ttl),
 	})
 	if err != nil {
 		return domain.Session{}, "", err
