@@ -4278,6 +4278,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/exit-permits/review-queue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Exit permits awaiting the caller's counselor/leadership approval, or approved and awaiting a security gate scan */
+        get: operations["listExitPermitsForApproval"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/exit-permits/{instanceId}": {
         parameters: {
             query?: never;
@@ -8058,6 +8075,11 @@ export interface components {
         ScanRequest: {
             token: string;
         };
+        ScanClassroomEntryRequest: {
+            token: string;
+            /** @description Defaults to "Izin masuk kelas" when omitted. */
+            reason?: string;
+        };
         IssuedScanToken: {
             token: string;
             purpose: components["schemas"]["ScanPurpose"];
@@ -8144,6 +8166,21 @@ export interface components {
             /** Format: date-time */
             completed_at?: string;
         };
+        ExitPermitSummary: {
+            /** Format: uuid */
+            instance_id: string;
+            /** Format: uuid */
+            student_user_id: string;
+            /** Format: uuid */
+            class_id?: string;
+            status: components["schemas"]["WorkflowStatus"];
+            current_stage_index: number;
+            destination: string;
+            student_name?: string;
+            class_name?: string;
+            /** Format: date-time */
+            opened_at: string;
+        };
         LateArrivalSummary: {
             /** Format: uuid */
             instance_id: string;
@@ -8224,6 +8261,11 @@ export interface components {
             variables?: string[];
             /** @default false */
             is_default: boolean;
+            /**
+             * Format: uuid
+             * @description Tenant branding asset (kind branding) rendered above the body, e.g. a kop surat image.
+             */
+            letterhead_asset_id?: string;
         };
         DocumentTemplate: {
             /** Format: uuid */
@@ -8234,6 +8276,8 @@ export interface components {
             body: string;
             variables?: string[];
             is_default: boolean;
+            /** Format: uuid */
+            letterhead_asset_id?: string;
             /** Format: date-time */
             created_at: string;
             /** Format: date-time */
@@ -17905,7 +17949,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ScanRequest"];
+                "application/json": components["schemas"]["ScanClassroomEntryRequest"];
             };
         };
         responses: {
@@ -17918,12 +17962,14 @@ export interface operations {
                     "application/json": {
                         /** Format: uuid */
                         teacher_user_id: string;
+                        teacher_name: string;
                         /** Format: date-time */
                         scanned_at: string;
                     };
                 };
             };
             401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
             410: components["responses"]["TokenGone"];
         };
     };
@@ -18043,6 +18089,29 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             409: components["responses"]["Conflict"];
+        };
+    };
+    listExitPermitsForApproval: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Permits */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ExitPermitSummary"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
         };
     };
     getExitPermit: {
@@ -18760,6 +18829,8 @@ export interface operations {
                     name: string;
                     body: string;
                     variables?: string[];
+                    /** Format: uuid */
+                    letterhead_asset_id?: string;
                 };
             };
         };
