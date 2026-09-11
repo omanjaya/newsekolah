@@ -7,11 +7,14 @@ package repository
 import (
 	"context"
 	"encoding/json"
+	"errors"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/db"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling/service"
+	pdatabase "github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
 )
 
 func (r *Repository) GetClassRef(ctx context.Context, tenantID, classID uuid.UUID) (service.ClassRef, error) {
@@ -56,6 +59,10 @@ func (r *Repository) GetPeriodTemplateForDay(ctx context.Context, tenantID, acad
 	})
 }
 
+func (r *Repository) IsYearArchived(ctx context.Context, tenantID, academicYearID uuid.UUID) (bool, error) {
+	return r.queries(ctx).IsAcademicYearArchivedRef(ctx, db.IsAcademicYearArchivedRefParams{TenantID: tenantID, ID: academicYearID})
+}
+
 func (r *Repository) IsSchoolDay(ctx context.Context, tenantID, academicYearID uuid.UUID, dayOfWeek int16) (bool, error) {
 	return r.queries(ctx).IsSchoolDayRef(ctx, db.IsSchoolDayRefParams{
 		TenantID: tenantID, AcademicYearID: academicYearID, DayOfWeek: dayOfWeek,
@@ -88,6 +95,45 @@ func (r *Repository) ListActiveEnrollments(ctx context.Context, tenantID, academ
 	out := make([]uuid.UUID, len(rows))
 	for i, row := range rows {
 		out[i] = row.StudentUserID
+	}
+	return out, nil
+}
+
+func (r *Repository) GetUserRef(ctx context.Context, tenantID, userID uuid.UUID) (service.UserRef, error) {
+	row, err := r.queries(ctx).GetUserRefForSchedule(ctx, db.GetUserRefForScheduleParams{TenantID: tenantID, ID: userID})
+	if err != nil {
+		return service.UserRef{}, err
+	}
+	return service.UserRef{ID: row.ID, Name: row.Name}, nil
+}
+
+// GetStudentActiveClassID reads the class a student is actively enrolled
+// in for the given academic year, for scoping schedule reads to "their own
+// class". A student with no active enrollment (found=false) sees nothing.
+func (r *Repository) GetStudentActiveClassID(ctx context.Context, tenantID, academicYearID, studentID uuid.UUID) (uuid.UUID, bool, error) {
+	id, err := r.queries(ctx).GetStudentActiveClassRef(ctx, db.GetStudentActiveClassRefParams{
+		TenantID: tenantID, AcademicYearID: academicYearID, StudentUserID: studentID,
+	})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return uuid.UUID{}, false, nil
+		}
+		return uuid.UUID{}, false, err
+	}
+	return id, true, nil
+}
+
+func (r *Repository) ListTeacherOptions(ctx context.Context, tenantID, academicYearID uuid.UUID, search string, selfUserID uuid.NullUUID, limit int32) ([]service.UserRef, error) {
+	rows, err := r.queries(ctx).ListTeacherOptionsRef(ctx, db.ListTeacherOptionsRefParams{
+		TenantID: tenantID, AcademicYearID: academicYearID, Limit: limit,
+		Search: pdatabase.Text(search), SelfUserID: pdatabase.NullUUID(selfUserID),
+	})
+	if err != nil {
+		return nil, err
+	}
+	out := make([]service.UserRef, len(rows))
+	for i, row := range rows {
+		out[i] = service.UserRef{ID: row.ID, Name: row.Name}
 	}
 	return out, nil
 }

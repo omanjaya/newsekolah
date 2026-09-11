@@ -22,10 +22,12 @@ import (
 // brief, replaced by a real academic.PeriodReader interface after merge).
 type PeriodRef struct {
 	ID         uuid.UUID
+	Name       string
 	Sequence   int16
 	StartsAt   time.Time // wall-clock time-of-day, date component is meaningless
 	EndsAt     time.Time
 	TemplateID uuid.UUID
+	IsBreak    bool
 }
 
 // ClassRef and SubjectRef are the minimal academic facts scheduling needs
@@ -39,6 +41,13 @@ type ClassRef struct {
 type SubjectRef struct {
 	ID   uuid.UUID
 	Code string
+	Name string
+}
+
+// UserRef is the minimal identity fact scheduling needs to name a user in
+// a conflict error (the teacher a class or teacher conflict is with).
+type UserRef struct {
+	ID   uuid.UUID
 	Name string
 }
 
@@ -79,13 +88,17 @@ type Repository interface {
 	// -- cross-module read; replace with academic reader interface after merge --
 	GetClassRef(ctx context.Context, tenantID, classID uuid.UUID) (ClassRef, error)
 	GetSubjectRef(ctx context.Context, tenantID, subjectID uuid.UUID) (SubjectRef, error)
+	GetUserRef(ctx context.Context, tenantID, userID uuid.UUID) (UserRef, error)
 	GetPeriodRef(ctx context.Context, tenantID, periodID uuid.UUID) (PeriodRef, error)
 	ListPeriodsByTemplate(ctx context.Context, tenantID, templateID uuid.UUID) ([]PeriodRef, error)
 	GetPeriodTemplateForDay(ctx context.Context, tenantID, academicYearID uuid.UUID, dayOfWeek int16) (uuid.UUID, error)
 	IsSchoolDay(ctx context.Context, tenantID, academicYearID uuid.UUID, dayOfWeek int16) (bool, error)
+	IsYearArchived(ctx context.Context, tenantID, academicYearID uuid.UUID) (bool, error)
 	HasTeachingAssignment(ctx context.Context, tenantID, academicYearID, teacherID, subjectID, classID uuid.UUID) (bool, error)
 	IsActiveTeacher(ctx context.Context, tenantID, academicYearID, userID uuid.UUID) (bool, error)
+	GetStudentActiveClassID(ctx context.Context, tenantID, academicYearID, studentID uuid.UUID) (uuid.UUID, bool, error)
 	ListActiveEnrollments(ctx context.Context, tenantID, academicYearID, classID uuid.UUID) ([]uuid.UUID, error)
+	ListTeacherOptions(ctx context.Context, tenantID, academicYearID uuid.UUID, search string, selfUserID uuid.NullUUID, limit int32) ([]UserRef, error)
 
 	GetTenantSettingValue(ctx context.Context, tenantID uuid.UUID, key string) (string, bool, error)
 }
