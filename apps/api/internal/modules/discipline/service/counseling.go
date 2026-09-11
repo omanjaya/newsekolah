@@ -354,6 +354,9 @@ func (s *Service) RequestAttachmentUpload(ctx context.Context, tenantID, counsel
 // <= Config.AttachmentMaxBytes), re-encodes it to drop EXIF metadata, and
 // records it against the note.
 func (s *Service) ConfirmAttachment(ctx context.Context, tenantID, counselingID, actorUserID uuid.UUID, objectKey string) (domain.CounselingAttachment, error) {
+	if s.storage == nil {
+		return domain.CounselingAttachment{}, domain.ErrReportUnavailable
+	}
 	if err := s.requireCounselingOwner(ctx, tenantID, counselingID, actorUserID); err != nil {
 		return domain.CounselingAttachment{}, err
 	}
