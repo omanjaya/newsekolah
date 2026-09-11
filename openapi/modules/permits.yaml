@@ -329,7 +329,7 @@ paths:
     get:
       tags: [permits]
       operationId: listLateArrivalsForReview
-      x-permission: manage_attendance
+      x-permission: authenticated
       summary: Open late arrivals awaiting the duty teacher's review
       responses:
         "200":
@@ -365,7 +365,7 @@ paths:
     post:
       tags: [permits]
       operationId: reviewLateArrival
-      x-permission: manage_attendance
+      x-permission: authenticated
       summary: Duty teacher records the review and moves the flow to leadership
       parameters:
         - { name: instanceId, in: path, required: true, schema: { type: string, format: uuid } }
