@@ -11056,6 +11056,46 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
+  /v1/library/copies/labels:
+    post:
+      tags:
+        - library
+      operationId: printLibraryCopyLabels
+      x-permission: manage_library_catalog
+      summary: Printable spine/barcode labels for a batch of copies, one A4 page per 24 labels (3 columns x 8 rows of 70x25mm
+        labels), in the given order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - copy_ids
+              properties:
+                copy_ids:
+                  type: array
+                  minItems: 1
+                  maxItems: 500
+                  items:
+                    type: string
+                    format: uuid
+      responses:
+        "200":
+          description: Labels PDF
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /v1/library/members/{userId}/card:
     get:
       tags:

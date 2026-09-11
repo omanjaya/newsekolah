@@ -4798,6 +4798,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/library/copies/labels": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Printable spine/barcode labels for a batch of copies, one A4 page per 24 labels (3 columns x 8 rows of 70x25mm labels), in the given order */
+        post: operations["printLibraryCopyLabels"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/library/members/{userId}/card": {
         parameters: {
             query?: never;
@@ -21304,6 +21321,36 @@ export interface operations {
                     "application/pdf": string;
                 };
             };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    printLibraryCopyLabels: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    copy_ids: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description Labels PDF */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": string;
+                };
+            };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];

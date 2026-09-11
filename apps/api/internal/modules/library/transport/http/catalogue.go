@@ -248,6 +248,17 @@ func (h *LibraryHandler) PrintLibraryCopyLabel(ctx context.Context, request api.
 	return api.PrintLibraryCopyLabel200ApplicationpdfResponse{Body: bytes.NewReader(pdf), ContentLength: int64(len(pdf))}, nil
 }
 
+func (h *LibraryHandler) PrintLibraryCopyLabels(ctx context.Context, request api.PrintLibraryCopyLabelsRequestObject) (api.PrintLibraryCopyLabelsResponseObject, error) {
+	if request.Body == nil {
+		return nil, mapError(domain.ErrInvalidInput)
+	}
+	pdf, err := h.service.PrintCopyLabels(ctx, tenantID(ctx), request.Body.CopyIds)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return api.PrintLibraryCopyLabels200ApplicationpdfResponse{Body: bytes.NewReader(pdf), ContentLength: int64(len(pdf))}, nil
+}
+
 func (h *LibraryHandler) PrintLibraryMemberCard(ctx context.Context, request api.PrintLibraryMemberCardRequestObject) (api.PrintLibraryMemberCardResponseObject, error) {
 	pdf, err := h.service.PrintMemberCard(ctx, tenantID(ctx), request.UserId)
 	if err != nil {
