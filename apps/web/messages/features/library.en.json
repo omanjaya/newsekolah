@@ -111,6 +111,148 @@
     "printCard": "Print member card",
     "emptyTitle": "No loan history yet"
   },
+  "members": {
+    "navLabel": "Library members",
+    "eyebrow": "Library",
+    "title": "Members",
+    "register": "Register member",
+    "bulkRegister": "Bulk register",
+    "registered": "Member registered",
+    "searchPlaceholder": "Search by name or member number",
+    "unknownUser": "Unknown user",
+    "viewDetail": "View detail",
+    "noMatchTitle": "No matching members",
+    "noMatchBody": "Try a different filter or search term.",
+    "emptyTitle": "No members registered yet",
+    "emptyBody": "Register a user as a library member to get started.",
+    "statusUpdated": "Member status updated",
+    "columns": {
+      "name": "Name",
+      "type": "Type",
+      "status": "Status",
+      "validUntil": "Valid until",
+      "lateReturns": "Late returns",
+      "actions": "Actions"
+    },
+    "filters": {
+      "status": "Status",
+      "statusAll": "All statuses",
+      "type": "Member type",
+      "typeAll": "All types",
+      "clear": "Clear filters"
+    },
+    "status": {
+      "pending": "Pending",
+      "active": "Active",
+      "inactive": "Inactive",
+      "suspended": "Suspended",
+      "cleared": "Cleared"
+    },
+    "roles": {
+      "student": "Student",
+      "teacher": "Teacher",
+      "staff": "Staff",
+      "parent": "Parent"
+    },
+    "registerForm": {
+      "role": "Role",
+      "user": "User",
+      "loadingUsers": "Loading users...",
+      "userPlaceholder": "Choose a user",
+      "noUsers": "Every user in this role is already a member, or none exist yet.",
+      "memberType": "Member type",
+      "memberTypePlaceholder": "Choose a member type",
+      "memberNo": "Member number (optional)",
+      "memberNoPlaceholder": "Generated automatically when left blank",
+      "notes": "Notes",
+      "cancel": "Cancel",
+      "submit": "Register"
+    },
+    "bulkRegister": {
+      "title": "Bulk register members",
+      "description": "Registers every user in this role who is not already a member.",
+      "role": "Role",
+      "classOptional": "Class (optional)",
+      "classAll": "All classes",
+      "memberType": "Member type",
+      "memberTypePlaceholder": "Choose a member type",
+      "cancel": "Cancel",
+      "submit": "Register",
+      "resultSummary": "{registered} registered, {failed} failed",
+      "close": "Close"
+    }
+  },
+  "memberTypes": {
+    "navLabel": "Member types",
+    "eyebrow": "Library",
+    "title": "Member types",
+    "addType": "Add type",
+    "editType": "Edit member type",
+    "deleteTitle": "Delete member type",
+    "deleteBody": "The member type \"{name}\" will be deleted. This is refused while any member still uses it.",
+    "deleted": "Member type deleted",
+    "edit": "Edit",
+    "delete": "Delete",
+    "emptyTitle": "No member types yet",
+    "emptyBody": "Add a member type to set loan limits, fines, and membership validity.",
+    "columns": {
+      "name": "Name",
+      "loanLimit": "Loan limit",
+      "renewal": "Renewal",
+      "fine": "Fine",
+      "defaultForRole": "Default for role",
+      "actions": "Actions"
+    },
+    "loanLimitValue": "{items} copies, {days} days",
+    "renewalNone": "Cannot be renewed",
+    "renewalValue": "{count}x, +{days} days",
+    "fineNone": "No fine",
+    "fineValue": {
+      "constant": "Rp{amount} per day",
+      "per_tenor": "Rp{amount} per {tenor} days"
+    },
+    "form": {
+      "name": "Member type name",
+      "maxLoanItems": "Loan item limit",
+      "maxLoanDays": "Loan length (days)",
+      "renewalDays": "Extra days per renewal",
+      "maxRenewals": "Renewal limit",
+      "fineType": "Fine type",
+      "fineTypeOptions": {
+        "constant": "Fixed per day",
+        "per_tenor": "Per period"
+      },
+      "finePerTenor": "Fine amount (Rp)",
+      "tenorDays": "Fine period length (days)",
+      "suspendDays": "Suspension length (days)",
+      "validityMonths": "Membership validity (months)",
+      "defaultForRole": "Default type for role",
+      "defaultForRoleNone": "None",
+      "cancel": "Cancel",
+      "save": "Save"
+    }
+  },
+  "memberDetail": {
+    "eyebrow": "Library",
+    "notFoundTitle": "Member not found",
+    "notFoundBody": "This member may have been removed or was never registered.",
+    "memberNo": "Member number",
+    "memberType": "Member type",
+    "validUntil": "Valid until",
+    "statusLabel": "Status",
+    "status": {
+      "pending": "Pending",
+      "active": "Active",
+      "inactive": "Inactive",
+      "suspended": "Suspended",
+      "cleared": "Cleared"
+    },
+    "clearance": "Clearance",
+    "grantClearance": "Grant clearance",
+    "cleared": "Member granted clearance",
+    "printClearanceLetter": "Print clearance letter",
+    "clearanceBlockedByLoan": "Clearance cannot be granted while any loan is active or a fine is unpaid."
+  },
   "stocktake": {
     "eyebrow": "Library",
     "title": "Stocktake",

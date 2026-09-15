@@ -111,6 +111,148 @@
     "printCard": "Cetak kartu anggota",
     "emptyTitle": "Belum ada riwayat peminjaman"
   },
+  "members": {
+    "navLabel": "Anggota perpustakaan",
+    "eyebrow": "Perpustakaan",
+    "title": "Anggota",
+    "register": "Daftarkan anggota",
+    "bulkRegister": "Daftar massal",
+    "registered": "Anggota terdaftar",
+    "searchPlaceholder": "Cari nama atau nomor anggota",
+    "unknownUser": "Pengguna tidak dikenali",
+    "viewDetail": "Lihat detail",
+    "noMatchTitle": "Tidak ada anggota yang cocok",
+    "noMatchBody": "Coba ubah filter atau kata kunci pencarian.",
+    "emptyTitle": "Belum ada anggota terdaftar",
+    "emptyBody": "Daftarkan pengguna sebagai anggota perpustakaan untuk mulai.",
+    "statusUpdated": "Status anggota diperbarui",
+    "columns": {
+      "name": "Nama",
+      "type": "Jenis",
+      "status": "Status",
+      "validUntil": "Berlaku sampai",
+      "lateReturns": "Keterlambatan",
+      "actions": "Aksi"
+    },
+    "filters": {
+      "status": "Status",
+      "statusAll": "Semua status",
+      "type": "Jenis anggota",
+      "typeAll": "Semua jenis",
+      "clear": "Bersihkan filter"
+    },
+    "status": {
+      "pending": "Menunggu",
+      "active": "Aktif",
+      "inactive": "Tidak aktif",
+      "suspended": "Ditangguhkan",
+      "cleared": "Bebas pustaka"
+    },
+    "roles": {
+      "student": "Siswa",
+      "teacher": "Guru",
+      "staff": "Staf",
+      "parent": "Orang tua"
+    },
+    "registerForm": {
+      "role": "Peran",
+      "user": "Pengguna",
+      "loadingUsers": "Memuat daftar pengguna...",
+      "userPlaceholder": "Pilih pengguna",
+      "noUsers": "Semua pengguna pada peran ini sudah terdaftar atau belum ada datanya.",
+      "memberType": "Jenis anggota",
+      "memberTypePlaceholder": "Pilih jenis anggota",
+      "memberNo": "Nomor anggota (opsional)",
+      "memberNoPlaceholder": "Dibuat otomatis bila dikosongkan",
+      "notes": "Catatan",
+      "cancel": "Batal",
+      "submit": "Daftarkan"
+    },
+    "bulkRegister": {
+      "title": "Daftar anggota massal",
+      "description": "Mendaftarkan setiap pengguna pada peran ini yang belum menjadi anggota.",
+      "role": "Peran",
+      "classOptional": "Kelas (opsional)",
+      "classAll": "Semua kelas",
+      "memberType": "Jenis anggota",
+      "memberTypePlaceholder": "Pilih jenis anggota",
+      "cancel": "Batal",
+      "submit": "Daftarkan",
+      "resultSummary": "{registered} anggota terdaftar, {failed} gagal",
+      "close": "Tutup"
+    }
+  },
+  "memberTypes": {
+    "navLabel": "Jenis anggota",
+    "eyebrow": "Perpustakaan",
+    "title": "Jenis anggota",
+    "addType": "Tambah jenis",
+    "editType": "Ubah jenis anggota",
+    "deleteTitle": "Hapus jenis anggota",
+    "deleteBody": "Jenis anggota \"{name}\" akan dihapus. Tindakan ini ditolak bila masih ada anggota memakainya.",
+    "deleted": "Jenis anggota dihapus",
+    "edit": "Ubah",
+    "delete": "Hapus",
+    "emptyTitle": "Belum ada jenis anggota",
+    "emptyBody": "Tambahkan jenis anggota untuk mengatur batas pinjam, denda, dan masa berlaku keanggotaan.",
+    "columns": {
+      "name": "Nama",
+      "loanLimit": "Batas pinjam",
+      "renewal": "Perpanjangan",
+      "fine": "Denda",
+      "defaultForRole": "Bawaan untuk peran",
+      "actions": "Aksi"
+    },
+    "loanLimitValue": "{items} eksemplar, {days} hari",
+    "renewalNone": "Tidak bisa diperpanjang",
+    "renewalValue": "{count}x, tambah {days} hari",
+    "fineNone": "Tanpa denda",
+    "fineValue": {
+      "constant": "Rp{amount} per hari",
+      "per_tenor": "Rp{amount} per {tenor} hari"
+    },
+    "form": {
+      "name": "Nama jenis anggota",
+      "maxLoanItems": "Batas eksemplar dipinjam",
+      "maxLoanDays": "Lama pinjam (hari)",
+      "renewalDays": "Tambahan hari saat perpanjangan",
+      "maxRenewals": "Batas perpanjangan",
+      "fineType": "Tipe denda",
+      "fineTypeOptions": {
+        "constant": "Tetap per hari",
+        "per_tenor": "Per periode"
+      },
+      "finePerTenor": "Nominal denda (Rp)",
+      "tenorDays": "Panjang periode denda (hari)",
+      "suspendDays": "Lama penangguhan (hari)",
+      "validityMonths": "Masa berlaku keanggotaan (bulan)",
+      "defaultForRole": "Jenis bawaan untuk peran",
+      "defaultForRoleNone": "Tidak ada",
+      "cancel": "Batal",
+      "save": "Simpan"
+    }
+  },
+  "memberDetail": {
+    "eyebrow": "Perpustakaan",
+    "notFoundTitle": "Anggota tidak ditemukan",
+    "notFoundBody": "Anggota ini mungkin sudah dihapus atau belum pernah didaftarkan.",
+    "memberNo": "Nomor anggota",
+    "memberType": "Jenis anggota",
+    "validUntil": "Berlaku sampai",
+    "statusLabel": "Status",
+    "status": {
+      "pending": "Menunggu",
+      "active": "Aktif",
+      "inactive": "Tidak aktif",
+      "suspended": "Ditangguhkan",
+      "cleared": "Bebas pustaka"
+    },
+    "clearance": "Bebas pustaka",
+    "grantClearance": "Berikan bebas pustaka",
+    "cleared": "Anggota diberikan bebas pustaka",
+    "printClearanceLetter": "Cetak surat bebas pustaka",
+    "clearanceBlockedByLoan": "Bebas pustaka belum bisa diberikan selama masih ada peminjaman aktif atau denda belum lunas."
+  },
   "stocktake": {
     "eyebrow": "Perpustakaan",
     "title": "Opname",
