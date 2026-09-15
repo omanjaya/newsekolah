@@ -98,31 +98,36 @@ Rekomendasi bila nanti diganti: Wiyata (utama) atau NouSchool bila ingin satu pa
 Dikerjakan di luar urutan fase karena saling bergantung; yang sudah berjalan
 ujung ke ujung di lingkungan pengembangan:
 
-| Bagian                                             | Status                                               |
-| -------------------------------------------------- | ---------------------------------------------------- |
-| Fase 0 fondasi                                     | Selesai                                              |
-| Identitas, peran, tugas tambahan, audit            | Selesai, termasuk 2FA TOTP dan kode pemulihan        |
-| Akademik, jadwal, guru pengganti                   | Selesai                                              |
-| Presensi guru dan kalender siswa                   | Selesai                                              |
-| Perizinan (izin keluar, terlambat, izin terencana) | Selesai, surat PDF bernomor dengan verifikasi publik |
-| Notifikasi dan pengumuman                          | Selesai, kanal in-app, push, email, WhatsApp         |
-| Kesiswaan (pelanggaran, SP, konseling)             | Selesai, konseling terenkripsi AES-GCM               |
-| Penilaian (komponen, rapor, publikasi, bintang)    | Selesai                                              |
-| Pusat laporan (ekspor XLSX)                        | Selesai, termasuk ekspor terjadwal lewat surel       |
-| Onboarding: checklist, profil, wizard, Dapodik     | Selesai, termasuk template jenjang dan data contoh   |
-| Orang tua: tautan anak dan tampilan per anak       | Selesai di web dan mobile                            |
-| Perpustakaan                                       | Selesai, termasuk OPAC publik dan opname             |
-| Konsol platform multi-sekolah                      | Selesai, aktif hanya pada mode multi-tenant          |
-| Kalender akademik, tahun ajaran baru, kenaikan     | Selesai; salin jadwal antar tahun belum              |
-| ETL dari MySQL SION                                | Selesai, idempoten dengan laporan selisih            |
-| Rilis store iOS dan Android                        | Disiapkan; belum diunggah ke store                   |
-| Mobile: alur per peran dan presensi offline        | Selesai; layar jadwal siswa belum ada endpoint       |
-| SSO Google Workspace dan passkey                   | Selesai di web                                       |
-| API publik: kunci API dan webhook                  | Selesai, lihat `docs/14-public-api.md`               |
-| WhatsApp: Meta Cloud API dan gateway lokal         | Selesai, dengan template dan log pengiriman          |
+| Bagian                                             | Status                                                                                                                                    |
+| -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Fase 0 fondasi                                     | Selesai                                                                                                                                   |
+| Identitas, peran, tugas tambahan, audit            | Selesai, termasuk 2FA TOTP dan kode pemulihan                                                                                             |
+| Akademik, jadwal, guru pengganti                   | Selesai                                                                                                                                   |
+| Presensi guru dan kalender siswa                   | Selesai                                                                                                                                   |
+| Perizinan (izin keluar, terlambat, izin terencana) | Selesai, surat PDF bernomor dengan verifikasi publik                                                                                      |
+| Notifikasi dan pengumuman                          | Selesai, kanal in-app, push, email, WhatsApp                                                                                              |
+| Kesiswaan (pelanggaran, SP, konseling)             | Selesai, konseling terenkripsi AES-GCM                                                                                                    |
+| Penilaian (komponen, rapor, publikasi, bintang)    | Selesai                                                                                                                                   |
+| Pusat laporan (ekspor XLSX)                        | Selesai, termasuk ekspor terjadwal lewat surel                                                                                            |
+| Onboarding: checklist, profil, wizard, Dapodik     | Selesai, termasuk template jenjang dan data contoh                                                                                        |
+| Orang tua: tautan anak dan tampilan per anak       | Selesai di web dan mobile                                                                                                                 |
+| Perpustakaan                                       | Backend setara SION sejak 12 September 2026, layar anggota, denda, import, dan kunjungan sedang dibangun; lihat `docs/15-paritas-sion.md` |
+| Konsol platform multi-sekolah                      | Selesai, aktif hanya pada mode multi-tenant                                                                                               |
+| Kalender akademik, tahun ajaran baru, kenaikan     | Selesai; salin jadwal antar tahun belum                                                                                                   |
+| ETL dari MySQL SION                                | Selesai, idempoten dengan laporan selisih                                                                                                 |
+| Rilis store iOS dan Android                        | Disiapkan; belum diunggah ke store                                                                                                        |
+| Mobile: alur per peran dan presensi offline        | Selesai; layar jadwal siswa belum ada endpoint                                                                                            |
+| SSO Google Workspace dan passkey                   | Selesai di web                                                                                                                            |
+| API publik: kunci API dan webhook                  | Selesai, lihat `docs/14-public-api.md`                                                                                                    |
+| WhatsApp: Meta Cloud API dan gateway lokal         | Selesai, dengan template dan log pengiriman                                                                                               |
 
 Lingkungan pengembangan berjalan penuh lewat `pnpm dev:docker` dengan hot
 reload untuk API dan web; lihat `infra/docker/README.dev.md`.
+
+Status "Selesai" di tabel atas ditulis sebelum logika dibandingkan baris per
+baris dengan SION. Perbandingan itu menemukan celah di hampir semua modul, yang
+sudah ditutup di backend. Posisi terkini, termasuk layar yang belum dibangun,
+ada di `docs/15-paritas-sion.md`.
 
 ## Backlog teknis (ditemukan saat implementasi)
 
@@ -133,7 +138,7 @@ reload untuk API dan web; lihat `infra/docker/README.dev.md`.
 - ETL dari MySQL SION (`apps/api/cmd/etl`, `docs/13-etl-sion.md`) selesai: identitas, akademik, jadwal, presensi, disiplin, dan izin yang sudah terbit. Exit permit, late arrival, dan permohonan izin yang belum final sengaja tidak dimigrasikan (lihat dokumen).
 - Presensi masih membaca hari sekolah lewat query lintas modulnya sendiri; ganti ke pembaca kalender akademik yang sudah tersedia.
 - Mobile belum punya layar jadwal siswa: tidak ada endpoint yang memetakan siswa ke kelasnya sendiri.
-- Label dan kartu perpustakaan tercetak sebagai PDF teks; perender dokumen belum bisa menggambar barcode.
+- ~~Label perpustakaan tercetak sebagai PDF teks~~ selesai: label eksemplar kini dicetak batch dengan barcode Code 128. Kartu anggota masih mencetak nomor anggota sebagai teks tanpa barcode gambar.
 - Modul lain masih mengirim WhatsApp sebagai teks bebas lewat template bawaan, belum memilih template tertentu.
 - Login passkey masih meminta nama pengguna lebih dulu; login tanpa nama pengguna belum ada.
 - Menyalin jadwal saat membuka tahun ajaran baru menunggu modul penjadwalan mengekspos operasi salin.
