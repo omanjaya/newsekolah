@@ -292,6 +292,11 @@
     "SUPERVISION_SCORE_COUNT_MISMATCH": "Setiap kriteria wajib diberi tepat satu skor",
     "SUPERVISION_SCORE_OUT_OF_RANGE": "Ada skor di luar skala instrumen",
     "SUPERVISION_LESSON_NOT_RESOLVED": "Jadwal pelajaran yang dituju tidak ditemukan",
-    "SUPERVISION_MODULE_DISABLED": "Modul supervisi belum diaktifkan untuk sekolah ini"
+    "SUPERVISION_MODULE_DISABLED": "Modul supervisi belum diaktifkan untuk sekolah ini",
+    "PRIMARY_ROLE_NOT_SYSTEM": "Peran utama harus salah satu peran sistem (bukan peran khusus)",
+    "ADDITIONAL_ROLE_MUST_BE_CUSTOM": "Peran tambahan harus peran khusus, bukan peran sistem",
+    "LEAVE_PERMISSION_REQUIRES_DUTY": "Meninjau izin dan menerbitkan surat izin tidak bisa diberikan langsung ke peran guru, izin ini datang dari penugasan tugas",
+    "IMPORT_TOO_MANY_ROWS": "Berkas impor melebihi batas 5000 baris",
+    "IMPORT_FILE_INVALID": "Berkas impor tidak terbaca atau tidak sesuai format templat"
   }
 }

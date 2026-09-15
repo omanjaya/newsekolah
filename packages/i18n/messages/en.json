@@ -292,6 +292,11 @@
     "SUPERVISION_SCORE_COUNT_MISMATCH": "Every criterion needs exactly one score",
     "SUPERVISION_SCORE_OUT_OF_RANGE": "A score is outside the instrument's scale",
     "SUPERVISION_LESSON_NOT_RESOLVED": "The scheduled lesson could not be found",
-    "SUPERVISION_MODULE_DISABLED": "Supervision is not enabled for this school"
+    "SUPERVISION_MODULE_DISABLED": "Supervision is not enabled for this school",
+    "PRIMARY_ROLE_NOT_SYSTEM": "The primary role must be a system role, not a custom one",
+    "ADDITIONAL_ROLE_MUST_BE_CUSTOM": "Additional roles must be custom roles, not system roles",
+    "LEAVE_PERMISSION_REQUIRES_DUTY": "Reviewing leave requests and issuing leave letters cannot be granted directly to the teacher role, that access comes from a duty assignment",
+    "IMPORT_TOO_MANY_ROWS": "The import file exceeds the 5000 row limit",
+    "IMPORT_FILE_INVALID": "The import file is unreadable or does not match the template"
   }
 }
