@@ -281,6 +281,14 @@ export const navigation: NavItem[] = [
     group: GROUP.library,
   },
   {
+    key: "library-violations",
+    labelKey: "app.library.violations.navLabel",
+    href: "/library/violations",
+    icon: domainIcons.violation,
+    permission: "manage_library_circulation",
+    group: GROUP.library,
+  },
+  {
     key: "leave-requests",
     labelKey: "nav.permits.items.plannedLeave",
     tabLabelKey: "nav.compact.permits",

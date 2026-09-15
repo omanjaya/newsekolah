@@ -253,6 +253,73 @@
     "printClearanceLetter": "Print clearance letter",
     "clearanceBlockedByLoan": "Clearance cannot be granted while any loan is active or a fine is unpaid."
   },
+  "violations": {
+    "navLabel": "Library violations",
+    "eyebrow": "Library",
+    "title": "Violations and fines",
+    "record": "Record violation",
+    "settle": "Settle",
+    "unknownMember": "Unknown member",
+    "noMatchTitle": "No matching violations",
+    "noMatchBody": "Try a different type or status filter.",
+    "emptyTitle": "No violations recorded yet",
+    "emptyBody": "Violations are recorded automatically from late returns, or manually for damage and other cases.",
+    "amountValue": "Rp{amount}",
+    "suspendDaysValue": "{days} days",
+    "columns": {
+      "member": "Member",
+      "kind": "Type",
+      "penalty": "Penalty",
+      "createdAt": "Date",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "filters": {
+      "status": "Status",
+      "statusAll": "All statuses",
+      "kind": "Type",
+      "kindAll": "All types",
+      "clear": "Clear filters"
+    },
+    "kinds": {
+      "late": "Late",
+      "lost": "Lost",
+      "damaged": "Damaged",
+      "other": "Other"
+    },
+    "penalties": {
+      "fine": "Fine",
+      "suspend": "Suspension",
+      "warning": "Warning",
+      "replace_book": "Replace book"
+    },
+    "status": {
+      "unpaid": "Unpaid",
+      "paid": "Paid",
+      "waived": "Waived"
+    },
+    "form": {
+      "title": "Record violation",
+      "member": "Member",
+      "loadingMembers": "Loading members...",
+      "memberPlaceholder": "Choose a member",
+      "kind": "Type",
+      "penalty": "Penalty",
+      "amount": "Fine amount (Rp)",
+      "suspendDays": "Suspension length (days)",
+      "notes": "Notes",
+      "cancel": "Cancel",
+      "submit": "Save"
+    },
+    "settle": {
+      "title": "Settle violation",
+      "description": "Settle as paid or waived. A suspended member reactivates once every violation is clear.",
+      "waive": "Waive",
+      "markPaid": "Mark paid",
+      "settledPaid": "Violation marked paid",
+      "settledWaived": "Violation waived"
+    }
+  },
   "stocktake": {
     "eyebrow": "Library",
     "title": "Stocktake",

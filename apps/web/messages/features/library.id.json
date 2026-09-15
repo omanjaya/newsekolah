@@ -253,6 +253,73 @@
     "printClearanceLetter": "Cetak surat bebas pustaka",
     "clearanceBlockedByLoan": "Bebas pustaka belum bisa diberikan selama masih ada peminjaman aktif atau denda belum lunas."
   },
+  "violations": {
+    "navLabel": "Pelanggaran perpustakaan",
+    "eyebrow": "Perpustakaan",
+    "title": "Pelanggaran dan denda",
+    "record": "Catat pelanggaran",
+    "settle": "Selesaikan",
+    "unknownMember": "Anggota tidak dikenali",
+    "noMatchTitle": "Tidak ada pelanggaran yang cocok",
+    "noMatchBody": "Coba ubah filter jenis atau status.",
+    "emptyTitle": "Belum ada pelanggaran tercatat",
+    "emptyBody": "Pelanggaran otomatis dari pengembalian terlambat, atau catat manual untuk kerusakan dan kasus lain.",
+    "amountValue": "Rp{amount}",
+    "suspendDaysValue": "{days} hari",
+    "columns": {
+      "member": "Anggota",
+      "kind": "Jenis",
+      "penalty": "Sanksi",
+      "createdAt": "Tanggal",
+      "status": "Status",
+      "actions": "Aksi"
+    },
+    "filters": {
+      "status": "Status",
+      "statusAll": "Semua status",
+      "kind": "Jenis",
+      "kindAll": "Semua jenis",
+      "clear": "Bersihkan filter"
+    },
+    "kinds": {
+      "late": "Terlambat",
+      "lost": "Hilang",
+      "damaged": "Rusak",
+      "other": "Lainnya"
+    },
+    "penalties": {
+      "fine": "Denda",
+      "suspend": "Penangguhan",
+      "warning": "Peringatan",
+      "replace_book": "Ganti buku"
+    },
+    "status": {
+      "unpaid": "Belum lunas",
+      "paid": "Lunas",
+      "waived": "Dibebaskan"
+    },
+    "form": {
+      "title": "Catat pelanggaran",
+      "member": "Anggota",
+      "loadingMembers": "Memuat daftar anggota...",
+      "memberPlaceholder": "Pilih anggota",
+      "kind": "Jenis",
+      "penalty": "Sanksi",
+      "amount": "Nominal denda (Rp)",
+      "suspendDays": "Lama penangguhan (hari)",
+      "notes": "Catatan",
+      "cancel": "Batal",
+      "submit": "Simpan"
+    },
+    "settle": {
+      "title": "Selesaikan pelanggaran",
+      "description": "Menyelesaikan sebagai lunas atau dibebaskan. Anggota yang sedang ditangguhkan akan aktif kembali begitu semua pelanggarannya selesai.",
+      "waive": "Bebaskan",
+      "markPaid": "Tandai lunas",
+      "settledPaid": "Pelanggaran ditandai lunas",
+      "settledWaived": "Pelanggaran dibebaskan"
+    }
+  },
   "stocktake": {
     "eyebrow": "Perpustakaan",
     "title": "Opname",
