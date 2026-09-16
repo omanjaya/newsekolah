@@ -45,6 +45,7 @@ Dampak di kode, dihitung dari commit `cb4a908`:
 - Layar presensi dilihat langsung dari aplikasi yang berjalan: tampilan guru pada hari sekolah dan tampilan admin yang tidak mengajar.
 - `pnpm api:coverage` melaporkan 576 dari 576 operasi punya pemanggil, jadi tidak ada lagi kemampuan API yang tidak bisa dijangkau pengguna.
 - Seluruh layar baru dibuka satu per satu di aplikasi yang berjalan pada 16 September 2026. Semuanya tampil tanpa error, dan lima cacat yang ditemukan sudah diperbaiki: halaman impor koleksi gagal 500 karena dependensi belum terpasang di container, satu tombol menampilkan kunci terjemahan mentah, tiga label jenis kunjungan hilang, judul histogram masih menulis UTC, dan komponen kartu membungkus tombol di dalam tombol sehingga memicu galat hydration.
+- `cmd/seed` sekarang juga mengisi perpustakaan: jenis bahan, kategori, lokasi, sumber akuisisi, dua jenis anggota (siswa dan guru), siswa dan guru contoh terdaftar sebagai anggota, empat judul dengan 6 eksemplar, satu peminjaman masih berjalan, satu sudah dikembalikan, dan dua kunjungan. Diverifikasi idempoten tiga kali berturut-turut terhadap Postgres sekali pakai (jumlah baris sama persis di setiap run), dan terhadap dev stack: dashboard melaporkan 10 judul, 13 eksemplar, 2 anggota, 2 sedang dipinjam, dan preview impor koleksi dengan kode `BK` menghasilkan status `new_title`. Ditemukan bug laten di `library/service/members.go`: nomor anggota hasil generate bentrok antar jenis anggota karena urutannya dihitung per jenis padahal formatnya (`PS-YYYY-99999`) berlaku satu tenant; seeder menghindarinya dengan nomor anggota eksplisit, perbaikan modulnya sendiri belum dikerjakan.
 
 ## Keputusan yang diambil
 
@@ -80,7 +81,7 @@ Setiap layar baru sudah dibuka sekali dan hasilnya tercatat di bagian "Yang terv
 - Identitas: dashboard admin, import user, pengaturan sesi, branding dan logo, profil.
 - Presensi: popover pelanggaran per sesi, rincian laporan harian, roster wali kelas, detail kalender siswa.
 
-Uji ini butuh akun dengan peran wali kelas, guru BK, pustakawan, dan admin. Data demo hanya menyediakan sebagian, jadi siapkan penugasan tugas tambahan lebih dulu.
+Uji ini butuh akun dengan peran wali kelas, guru BK, pustakawan, dan admin. Data demo perpustakaan (anggota, katalog, peminjaman, kunjungan) kini tersedia lewat `cmd/seed`; modul lain masih menyediakan sebagian, jadi siapkan penugasan tugas tambahan lebih dulu.
 
 Satu hal yang paling perlu dibuktikan di browser: pembacaan berkas XLSX untuk import koleksi dan import user berjalan di sisi klien memakai `exceljs`, dan itu belum pernah dijalankan sungguhan.
 
