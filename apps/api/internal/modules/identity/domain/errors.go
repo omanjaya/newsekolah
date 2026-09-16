@@ -5,6 +5,7 @@ import "errors"
 var (
 	ErrUserNotFound         = errors.New("user not found")
 	ErrInvalidCredentials   = errors.New("invalid credentials")
+	ErrInvalidClient        = errors.New("client must be web, ios, or android")
 	ErrAccountNotActive     = errors.New("account is not active")
 	ErrInvalidRelation      = errors.New("parent-student link is invalid")
 	ErrMfaNotAvailable      = errors.New("two-factor authentication is not configured")

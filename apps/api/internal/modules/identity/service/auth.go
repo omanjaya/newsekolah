@@ -42,6 +42,9 @@ type AuthResult struct {
 // itself happens before the transaction: it is Redis/in-memory state, not
 // tenant-scoped Postgres data.
 func (s *Service) Login(ctx context.Context, in LoginInput) (AuthResult, error) {
+	if !in.Client.Valid() {
+		return AuthResult{}, domain.ErrInvalidClient
+	}
 	in.Username = domain.NormalizeUsername(in.Username)
 	allowed, err := s.limiter.Allow(ctx, in.TenantID.String(), in.Username, in.IP)
 	if err != nil {

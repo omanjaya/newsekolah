@@ -14,6 +14,19 @@ const (
 	ClientAndroid ClientKind = "android"
 )
 
+// Valid reports whether the caller named a client the sessions table will
+// accept. Nothing validates request bodies against the OpenAPI schema, so an
+// unknown value would otherwise reach the database and surface as a 500
+// instead of telling the caller what was wrong.
+func (c ClientKind) Valid() bool {
+	switch c {
+	case ClientWeb, ClientIOS, ClientAndroid:
+		return true
+	default:
+		return false
+	}
+}
+
 // Session mirrors the fields of a sessions row needed to decide what a
 // refresh request should do. It exists so RefreshOutcome is testable
 // without a database.

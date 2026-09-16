@@ -50,9 +50,15 @@ func Internal(cause error) *Error {
 	return WrapError(http.StatusInternalServerError, "INTERNAL_ERROR", cause)
 }
 
+// WithDetails returns a copy carrying the field-level details, leaving the
+// receiver untouched. The package-level sentinels below are shared by every
+// module, and several error maps are built at init time, so mutating the
+// receiver would pin one module's details onto every validation error the
+// API returns.
 func (e *Error) WithDetails(details ...ErrorDetail) *Error {
-	e.Details = details
-	return e
+	clone := *e
+	clone.Details = details
+	return &clone
 }
 
 var (

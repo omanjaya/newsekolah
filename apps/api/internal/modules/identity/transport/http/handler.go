@@ -69,6 +69,8 @@ func mapAuthError(err error) error {
 		return httpx.ErrTokenExpired
 	case errors.Is(err, domain.ErrPasswordTooShort), errors.Is(err, domain.ErrPasswordTooLong):
 		return httpx.ErrValidation.WithDetails(httpx.ErrorDetail{Field: "new_password", Code: "INVALID_LENGTH"})
+	case errors.Is(err, domain.ErrInvalidClient):
+		return httpx.ErrValidation.WithDetails(httpx.ErrorDetail{Field: "client", Code: "INVALID"})
 	default:
 		if mapped := mapSSOOrPasskeyError(err); mapped != nil {
 			return mapped

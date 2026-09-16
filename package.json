@@ -17,6 +17,7 @@
     "openapi:bundle": "node openapi/bundle.mjs",
     "openapi:check": "node openapi/bundle.mjs --check",
     "api:coverage": "node scripts/api-coverage.mjs",
+    "api:smoke": "node scripts/api-smoke.mjs",
     "dev:docker": "docker compose -f infra/docker/docker-compose.dev.yml up --build",
     "dev:docker:down": "docker compose -f infra/docker/docker-compose.dev.yml down",
     "dev:docker:seed": "docker compose -f infra/docker/docker-compose.dev.yml run --rm seed",
