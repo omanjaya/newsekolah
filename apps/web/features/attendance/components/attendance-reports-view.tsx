@@ -8,6 +8,7 @@ import {
   Input,
   PageHeader,
   Select,
+  Skeleton,
   StatusBadge,
   Tabs,
   TabsContent,
@@ -22,7 +23,7 @@ import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { useSession } from "../../../lib/session/session-provider";
+import { useCan, useSession } from "../../../lib/session/session-provider";
 import {
   useClassEnrollmentsQuery,
   useClassesQuery,
@@ -34,6 +35,7 @@ import {
   todayInZone,
   useDailyAttendanceReportQuery,
   useMonthlyAttendanceSummaryQuery,
+  useOwnDailyAttendanceReportQuery,
   type CalendarDay,
   type RosterEntry,
 } from "../api";
@@ -59,23 +61,76 @@ const STATUS_TOKEN: Record<
  */
 export function AttendanceReportsView(): ReactElement {
   const t = useTranslations("app.attendanceReports");
-  const [tab, setTab] = useState("daily");
+  const canViewReports = useCan("view_reports");
+  const [tab, setTab] = useState(canViewReports ? "daily" : "mine");
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
       <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
-          <TabsTrigger value="daily">{t("tabs.daily")}</TabsTrigger>
-          <TabsTrigger value="monthly">{t("tabs.monthly")}</TabsTrigger>
+          <TabsTrigger value="mine">{t("tabs.mine")}</TabsTrigger>
+          {canViewReports && <TabsTrigger value="daily">{t("tabs.daily")}</TabsTrigger>}
+          {canViewReports && <TabsTrigger value="monthly">{t("tabs.monthly")}</TabsTrigger>}
         </TabsList>
-        <TabsContent value="daily" className="pt-4">
-          <DailyReportTab />
+        <TabsContent value="mine" className="pt-4">
+          <MineReportTab />
         </TabsContent>
-        <TabsContent value="monthly" className="pt-4">
-          <MonthlyReportTab />
-        </TabsContent>
+        {canViewReports && (
+          <TabsContent value="daily" className="pt-4">
+            <DailyReportTab />
+          </TabsContent>
+        )}
+        {canViewReports && (
+          <TabsContent value="monthly" className="pt-4">
+            <MonthlyReportTab />
+          </TabsContent>
+        )}
       </Tabs>
+    </div>
+  );
+}
+
+/**
+ * A teacher's own submitted sessions for one day (/reports/daily/mine),
+ * scoped to what they taught or substituted -- unlike the "daily" tab,
+ * this needs no `view_reports` and no class picker, so it is the report a
+ * teacher without that permission can actually open.
+ */
+function MineReportTab(): ReactElement {
+  const t = useTranslations("app.attendanceReports.mine");
+  const { me } = useSession();
+
+  const [date, setDate] = useState(todayInZone(me?.tenant.timezone));
+  const report = useOwnDailyAttendanceReportQuery(date);
+  const sessions = report.data?.data ?? [];
+
+  return (
+    <div className="flex flex-col gap-4">
+      <label className="flex flex-col gap-1 text-[13px]">
+        <span className="font-medium text-fg">{t("date")}</span>
+        <Input
+          type="date"
+          value={date}
+          onChange={(e) => {
+            setDate(e.target.value);
+          }}
+          aria-label={t("date")}
+          className="w-44"
+        />
+      </label>
+
+      {report.isLoading ? (
+        <Skeleton className="h-40 w-full" aria-busy="true" />
+      ) : sessions.length === 0 ? (
+        <EmptyState
+          icon={<FileBarChart aria-hidden="true" />}
+          title={t("emptyTitle")}
+          description={t("emptyBody")}
+        />
+      ) : (
+        <AttendanceDailySessions sessions={sessions} />
+      )}
     </div>
   );
 }

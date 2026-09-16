@@ -526,6 +526,7 @@
       "pickTeacherTitle": "Select a teacher to view their sessions",
       "pickTeacherBody": "You have no teaching schedule. Select a teacher above to take their class's attendance, or open the attendance reports and monitor below.",
       "openReports": "Open attendance reports",
+      "myReportLink": "My attendance report",
       "openMonitor": "Open the attendance monitor",
       "notSchoolDayTitle": "Not a school day",
       "notSchoolDayBody": "This date is not a school day according to the academic calendar.",
