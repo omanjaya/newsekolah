@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/omanjaya/newsekolah/apps/api/cmd/etl/mapping"
@@ -19,6 +20,15 @@ import (
 )
 
 func notFound(err error) bool { return errors.Is(err, pgx.ErrNoRows) }
+
+// isPhoneUniqueViolation reports whether err is a unique-constraint
+// violation on users' (tenant_id, phone) constraint -- the live data has
+// (at least) two users sharing one recorded phone number, which the
+// target schema forbids per tenant.
+func isPhoneUniqueViolation(err error) bool {
+	var pgErr *pgconn.PgError
+	return errors.As(err, &pgErr) && pgErr.Code == "23505" && strings.Contains(pgErr.ConstraintName, "phone")
+}
 
 // ensureAcademicYear reuses a target academic year matching label, or
 // creates one when the tenant has none yet. sourceStartsOn/sourceEndsOn --
@@ -213,61 +223,75 @@ func (st *Store) migrateUsers(
 		// Every write below (user row, role assignment, profile rows) runs
 		// inside one savepoint: with 2500+ real, messy source rows a single
 		// user can violate a constraint the natural-key lookup does not
-		// catch (e.g. two users sharing one recorded phone number, which
-		// collides with users' unique (tenant_id, phone)). Without this,
-		// that one bad row would abort the transaction and silently fail
-		// every user and table processed after it, per store.go's
-		// withRowSavepoint doc.
+		// catch. Without this, that one bad row would abort the
+		// transaction and silently fail every user and table processed
+		// after it, per store.go's withRowSavepoint doc.
 		var targetUser db.User
 		created := false
-		err := st.withRowSavepoint(ctx, func() error {
-			placeholderHash, err := auth.HashPassword(uuid.NewString())
-			if err != nil {
-				return fmt.Errorf("generate placeholder hash: %w", err)
-			}
-
-			existing, err := q.GetUserByUsername(ctx, db.GetUserByUsernameParams{TenantID: tenantID, Username: username})
-			switch {
-			case notFound(err):
-				targetUser, err = q.CreateUser(ctx, db.CreateUserParams{
-					TenantID: tenantID, Username: username, Email: email, Phone: phone,
-					Name: mapping.CleanName(u.Name), PasswordHash: placeholderHash, Status: mapStatus(u.Status),
-					MustChangePassword: true, Locale: "id",
-				})
+		writeUser := func(phoneArg pgtype.Text) error {
+			return st.withRowSavepoint(ctx, func() error {
+				placeholderHash, err := auth.HashPassword(uuid.NewString())
 				if err != nil {
-					return fmt.Errorf("create user: %w", err)
+					return fmt.Errorf("generate placeholder hash: %w", err)
 				}
-				created = true
-			case err != nil:
-				return fmt.Errorf("lookup user: %w", err)
-			default:
-				targetUser = existing
-				if err := q.UpdateUserBasic(ctx, db.UpdateUserBasicParams{
-					TenantID: tenantID, ID: targetUser.ID, Name: mapping.CleanName(u.Name),
-					Email: email, Phone: phone, Locale: targetUser.Locale,
-				}); err != nil {
-					return fmt.Errorf("update user: %w", err)
-				}
-			}
 
-			if roleSlug != "" {
-				if roleID, ok := roleIDs[roleSlug]; ok {
-					if err := q.AssignUserRole(ctx, db.AssignUserRoleParams{
-						UserID: targetUser.ID, RoleID: roleID, TenantID: tenantID, IsPrimary: true,
+				existing, err := q.GetUserByUsername(ctx, db.GetUserByUsernameParams{TenantID: tenantID, Username: username})
+				switch {
+				case notFound(err):
+					targetUser, err = q.CreateUser(ctx, db.CreateUserParams{
+						TenantID: tenantID, Username: username, Email: email, Phone: phoneArg,
+						Name: mapping.CleanName(u.Name), PasswordHash: placeholderHash, Status: mapStatus(u.Status),
+						MustChangePassword: true, Locale: "id",
+					})
+					if err != nil {
+						return fmt.Errorf("create user: %w", err)
+					}
+					created = true
+				case err != nil:
+					return fmt.Errorf("lookup user: %w", err)
+				default:
+					targetUser = existing
+					if err := q.UpdateUserBasic(ctx, db.UpdateUserBasicParams{
+						TenantID: tenantID, ID: targetUser.ID, Name: mapping.CleanName(u.Name),
+						Email: email, Phone: phoneArg, Locale: targetUser.Locale,
 					}); err != nil {
-						return fmt.Errorf("assign role: %w", err)
+						return fmt.Errorf("update user: %w", err)
 					}
 				}
-			}
 
-			if err := st.upsertProfile(ctx, tenantID, targetUser.ID, roleSlug, managementPosition, u); err != nil {
-				return fmt.Errorf("upsert profile: %w", err)
-			}
-			return nil
-		})
+				if roleSlug != "" {
+					if roleID, ok := roleIDs[roleSlug]; ok {
+						if err := q.AssignUserRole(ctx, db.AssignUserRoleParams{
+							UserID: targetUser.ID, RoleID: roleID, TenantID: tenantID, IsPrimary: true,
+						}); err != nil {
+							return fmt.Errorf("assign role: %w", err)
+						}
+					}
+				}
+
+				if err := st.upsertProfile(ctx, tenantID, targetUser.ID, roleSlug, managementPosition, u); err != nil {
+					return fmt.Errorf("upsert profile: %w", err)
+				}
+				return nil
+			})
+		}
+
+		err := writeUser(phone)
+		phoneDropped := false
+		if err != nil && phone.Valid && isPhoneUniqueViolation(err) {
+			// Losing the whole account over a phone number shared with
+			// another user in this tenant is the wrong trade: migrate the
+			// user without it and let the school fix the duplicate later,
+			// rather than dropping the person entirely.
+			phoneDropped = true
+			err = writeUser(pgtype.Text{})
+		}
 		if err != nil {
 			stat.RecordFailure(fmt.Sprintf("%d", u.ID), err.Error())
 			continue
+		}
+		if phoneDropped {
+			stat.RecordGap(fmt.Sprintf("user %d: phone number dropped, it duplicates another user's phone in this tenant", u.ID))
 		}
 
 		if created {
