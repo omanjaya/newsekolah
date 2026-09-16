@@ -4,6 +4,9 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strconv"
+	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -24,12 +27,32 @@ func migrate(ctx context.Context, cfg Config, source *Source, pool *pgxpool.Pool
 		return nil, err
 	}
 
-	sionYearID, err := source.resolveAcademicYearID(cfg.SourceYear, cfg.SourceSemester)
+	startYear, endYear, err := parseSourceYear(cfg.SourceYear)
+	if err != nil {
+		return nil, err
+	}
+	semester, err := parseSourceSemester(cfg.SourceSemester)
 	if err != nil {
 		return nil, err
 	}
 
-	data, err := fetchAll(source, sionYearID)
+	sourceYearID, err := source.resolveYearID(startYear, endYear, semester)
+	if err != nil {
+		return nil, err
+	}
+	yearStartDate, yearEndDate, err := source.FetchYearDates(sourceYearID)
+	if err != nil {
+		return nil, fmt.Errorf("fetch source year dates: %w", err)
+	}
+
+	scheduleVersion, err := source.resolveScheduleVersion(sourceYearID)
+	if err != nil {
+		return nil, err
+	}
+	logger.Info("resolved schedule version for migrated year",
+		"id", scheduleVersion.ID, "name", scheduleVersion.Name, "status", scheduleVersion.Status)
+
+	data, err := fetchAll(source, sourceYearID, scheduleVersion.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -37,7 +60,7 @@ func migrate(ctx context.Context, cfg Config, source *Source, pool *pgxpool.Pool
 	report := NewReport(clk, cfg.TenantSlug, fmt.Sprintf("%s %s", cfg.SourceYear, cfg.SourceSemester), cfg.DryRun)
 
 	err = runInTransaction(ctx, pool, tenantID, cfg.DryRun, func(st *Store) error {
-		return runMigrationSteps(ctx, st, tenantID, cfg, source, sionYearID, data, report)
+		return runMigrationSteps(ctx, st, tenantID, cfg, source, sourceYearID, semester, yearStartDate, yearEndDate, scheduleVersion, data, report)
 	})
 	if err != nil {
 		return nil, fmt.Errorf("migration transaction: %w", err)
@@ -60,29 +83,63 @@ func resolveTenantID(ctx context.Context, pool *pgxpool.Pool, slug string) (uuid
 	return id, nil
 }
 
-// sourceData holds every row fetched from SION for the selected academic
-// year, read once up front so the transactional migration steps never touch
-// the MySQL connection (keeping the target transaction's lifetime short and
-// making a dry run's cost predictable).
-type sourceData struct {
-	users               []SionUser
-	classes             []SionClass
-	subjects            []SionSubject
-	enrollments         []SionEnrollment
-	teachingAssignments []SionTeachingAssignment
-	teacherDuties       []SionDutyAssignment
-	employeeDuties      []SionDutyAssignment
-	periods             []SionPeriod
-	schedules           []SionTeachingSchedule
-	sessions            []SionAttendanceSession
-	entries             []SionAttendanceEntry
-	violationTypes      []SionViolationType
-	violationRecords    []SionViolationRecord
-	warningLetters      []SionWarningLetter
-	leaveRequests       []SionLeaveRequest
+// parseSourceYear splits the operator-facing "YYYY/YYYY" --source-year flag
+// into its two years, validating they are consecutive -- the same contract
+// the flag has always had, now enforced here instead of inside the source
+// query itself.
+func parseSourceYear(label string) (start, end int, err error) {
+	parts := strings.Split(label, "/")
+	if len(parts) != 2 {
+		return 0, 0, fmt.Errorf("source year %q is not in YYYY/YYYY form", label)
+	}
+	start, startErr := strconv.Atoi(parts[0])
+	end, endErr := strconv.Atoi(parts[1])
+	if startErr != nil || endErr != nil {
+		return 0, 0, fmt.Errorf("source year %q is not in YYYY/YYYY form", label)
+	}
+	if end != start+1 {
+		return 0, 0, fmt.Errorf("source year %q does not span consecutive years", label)
+	}
+	return start, end, nil
 }
 
-func fetchAll(source *Source, sionYearID string) (sourceData, error) {
+// parseSourceSemester translates the operator-facing --source-semester flag
+// into the live schema's years.semester integer (1 = ganjil, 2 = genap).
+// config.go already validates the flag is one of these two values, so the
+// default branch here is unreachable in practice; it exists for the same
+// fail-fast defensiveness the rest of this command follows.
+func parseSourceSemester(semester string) (int, error) {
+	switch semester {
+	case "ganjil":
+		return 1, nil
+	case "genap":
+		return 2, nil
+	default:
+		return 0, fmt.Errorf("source semester %q must be ganjil or genap", semester)
+	}
+}
+
+// sourceData holds every row fetched from the live source for the selected
+// year and schedule version, read once up front so the transactional
+// migration steps never touch the MySQL connection (keeping the target
+// transaction's lifetime short and making a dry run's cost predictable).
+type sourceData struct {
+	users               []SionUser
+	userRoles           map[int64][]string
+	managementStaff     map[int64]string
+	classes             []SionClass
+	subjects            []SionSubject
+	rooms               []SionRoom
+	enrollments         []SionEnrollment
+	teachingAssignments []SionTeachingAssignment
+	classAdministrators []SionClassAdministrator
+	classOfBKCount      int
+	bkOnDutyCount       int
+	periods             []SionPeriod
+	schedules           []SionSchedule
+}
+
+func fetchAll(source *Source, sourceYearID, scheduleVersionID int64) (sourceData, error) {
 	var d sourceData
 	var err error
 	steps := []struct {
@@ -90,20 +147,21 @@ func fetchAll(source *Source, sionYearID string) (sourceData, error) {
 		fn   func() error
 	}{
 		{"users", func() (e error) { d.users, e = source.FetchUsers(); return }},
-		{"classes", func() (e error) { d.classes, e = source.FetchClasses(sionYearID); return }},
-		{"subjects", func() (e error) { d.subjects, e = source.FetchSubjects(sionYearID); return }},
-		{"enrollments", func() (e error) { d.enrollments, e = source.FetchEnrollments(sionYearID); return }},
-		{"teaching assignments", func() (e error) { d.teachingAssignments, e = source.FetchTeachingAssignments(sionYearID); return }},
-		{"teacher duty assignments", func() (e error) { d.teacherDuties, e = source.FetchTeacherDutyAssignments(sionYearID); return }},
-		{"employee duty assignments", func() (e error) { d.employeeDuties, e = source.FetchEmployeeDutyAssignments(sionYearID); return }},
-		{"periods", func() (e error) { d.periods, e = source.FetchPeriods(sionYearID); return }},
-		{"teaching schedules", func() (e error) { d.schedules, e = source.FetchTeachingSchedules(sionYearID); return }},
-		{"attendance sessions", func() (e error) { d.sessions, e = source.FetchAttendanceSessions(sionYearID); return }},
-		{"attendance entries", func() (e error) { d.entries, e = source.FetchAttendanceEntries(sionYearID); return }},
-		{"violation types", func() (e error) { d.violationTypes, e = source.FetchViolationTypes(sionYearID); return }},
-		{"violation records", func() (e error) { d.violationRecords, e = source.FetchViolationRecords(sionYearID); return }},
-		{"warning letters", func() (e error) { d.warningLetters, e = source.FetchWarningLetters(sionYearID); return }},
-		{"leave requests", func() (e error) { d.leaveRequests, e = source.FetchIssuedLeaveRequests(sionYearID); return }},
+		{"user roles", func() (e error) { d.userRoles, e = source.FetchUserRoles(); return }},
+		{"management staff", func() (e error) { d.managementStaff, e = source.FetchManagementStaff(); return }},
+		{"classes", func() (e error) { d.classes, e = source.FetchClasses(sourceYearID); return }},
+		{"subjects", func() (e error) { d.subjects, e = source.FetchSubjects(); return }},
+		{"rooms", func() (e error) { d.rooms, e = source.FetchRooms(); return }},
+		{"enrollments", func() (e error) { d.enrollments, e = source.FetchEnrollments(sourceYearID); return }},
+		{"teaching assignments", func() (e error) {
+			d.teachingAssignments, e = source.FetchTeachingAssignments(scheduleVersionID)
+			return
+		}},
+		{"class administrators", func() (e error) { d.classAdministrators, e = source.FetchClassAdministrators(sourceYearID); return }},
+		{"class of bks count", func() (e error) { d.classOfBKCount, e = source.CountClassOfBKAssignments(sourceYearID); return }},
+		{"bk on duty count", func() (e error) { d.bkOnDutyCount, e = source.CountBKOnDutyRecords(); return }},
+		{"periods", func() (e error) { d.periods, e = source.FetchPeriods(); return }},
+		{"schedules", func() (e error) { d.schedules, e = source.FetchSchedules(scheduleVersionID); return }},
 	}
 	for _, step := range steps {
 		if err = step.fn(); err != nil {
@@ -114,22 +172,39 @@ func fetchAll(source *Source, sionYearID string) (sourceData, error) {
 }
 
 // runMigrationSteps runs every migration step against the already-open
-// transaction, in the dependency order docs/13-etl-sion.md documents: roles
-// and duty types before users, users before enrollments and assignments,
-// classes and subjects before enrollments and teaching assignments, periods
-// before schedules, schedules before attendance.
-func runMigrationSteps(ctx context.Context, st *Store, tenantID uuid.UUID, cfg Config, source *Source, sionYearID string, d sourceData, report *Report) error {
+// transaction, in the dependency order docs/13-etl-sion.md documents:
+// academic year, term, roles/duties, users, grade levels/classes, rooms,
+// subjects, enrollments, teaching assignments, duty assignments, periods,
+// schedules.
+func runMigrationSteps(
+	ctx context.Context, st *Store, tenantID uuid.UUID, cfg Config, source *Source,
+	sourceYearID int64, semester int, yearStartDate, yearEndDate time.Time, scheduleVersion SionScheduleVersion,
+	d sourceData, report *Report,
+) error {
 	yearStat := report.Table("academic_years")
 	yearStat.Read++
-	academicYearID, created, err := st.ensureAcademicYear(ctx, tenantID, cfg.SourceYear)
+	academicYearID, yearCreated, err := st.ensureAcademicYear(ctx, tenantID, cfg.SourceYear, yearStartDate, yearEndDate)
 	if err != nil {
 		yearStat.RecordFailure(cfg.SourceYear, err.Error())
 		return fmt.Errorf("ensure academic year: %w", err)
 	}
-	if created {
+	if yearCreated {
 		yearStat.Created++
 	} else {
 		yearStat.Skipped++
+	}
+
+	termStat := report.Table("terms")
+	termStat.Read++
+	termID, termCreated, err := st.ensureTerm(ctx, tenantID, academicYearID, semester, yearStartDate, yearEndDate)
+	if err != nil {
+		termStat.RecordFailure(cfg.SourceYear, err.Error())
+		return fmt.Errorf("ensure term: %w", err)
+	}
+	if termCreated {
+		termStat.Created++
+	} else {
+		termStat.Skipped++
 	}
 
 	roleIDs, dutyIDs, err := st.ensureRolesAndDuties(ctx, tenantID)
@@ -137,7 +212,7 @@ func runMigrationSteps(ctx context.Context, st *Store, tenantID uuid.UUID, cfg C
 		return fmt.Errorf("ensure roles and duties: %w", err)
 	}
 
-	users, err := st.migrateUsers(ctx, tenantID, roleIDs, d.users, report.Table("users"))
+	users, err := st.migrateUsers(ctx, tenantID, roleIDs, d.users, d.userRoles, d.managementStaff, report.Table("users"))
 	if err != nil {
 		return fmt.Errorf("migrate users: %w", err)
 	}
@@ -145,6 +220,10 @@ func runMigrationSteps(ctx context.Context, st *Store, tenantID uuid.UUID, cfg C
 	classes, err := st.migrateGradeLevelsAndClasses(ctx, tenantID, academicYearID, d.classes, report.Table("classes"), report.Table("grade_levels"))
 	if err != nil {
 		return fmt.Errorf("migrate classes: %w", err)
+	}
+
+	if _, err := st.migrateRooms(ctx, tenantID, d.rooms, report.Table("rooms")); err != nil {
+		return fmt.Errorf("migrate rooms: %w", err)
 	}
 
 	subjects, err := st.migrateSubjects(ctx, tenantID, d.subjects, report.Table("subjects"))
@@ -160,34 +239,30 @@ func runMigrationSteps(ctx context.Context, st *Store, tenantID uuid.UUID, cfg C
 		return fmt.Errorf("migrate enrollments: %w", err)
 	}
 
-	if err := st.migrateTeachingAssignments(ctx, tenantID, academicYearID, d.teachingAssignments, users, classes, subjects, report.Table("teaching_assignments")); err != nil {
+	teachingAssignmentStat := report.Table("teaching_assignments")
+	if _, err := st.migrateTeachingAssignments(ctx, tenantID, academicYearID, d.teachingAssignments, users, classes, subjects, teachingAssignmentStat); err != nil {
 		return fmt.Errorf("migrate teaching assignments: %w", err)
 	}
+	teachingAssignmentStat.RecordGap(fmt.Sprintf(
+		"schedule_version used for this run: id=%d name=%q status=%q (selection rule in docs/13-etl-sion.md)",
+		scheduleVersion.ID, scheduleVersion.Name, scheduleVersion.Status,
+	))
 
-	allDuties := append(append([]SionDutyAssignment{}, d.teacherDuties...), d.employeeDuties...)
-	if err := st.migrateDutyAssignments(ctx, tenantID, academicYearID, academicYearStartsOn, allDuties, users, classes, dutyIDs, report.Table("duty_assignments")); err != nil {
+	dutyStat := report.Table("duty_assignments")
+	if err := st.migrateDutyAssignments(ctx, tenantID, academicYearID, academicYearStartsOn, d.classAdministrators, d.userRoles, d.managementStaff, users, classes, dutyIDs, dutyStat); err != nil {
 		return fmt.Errorf("migrate duty assignments: %w", err)
 	}
+	recordDutyGaps(d.classOfBKCount, d.bkOnDutyCount, dutyStat)
 
 	_, periods, err := st.migratePeriods(ctx, tenantID, cfg.SourceYear, d.periods, report.Table("periods"))
 	if err != nil {
 		return fmt.Errorf("migrate periods: %w", err)
 	}
 
-	schedules, err := st.migrateSchedules(ctx, tenantID, academicYearID, d.schedules, users, classes, subjects, periods, report.Table("schedules"))
-	if err != nil {
+	taIndex := IndexTeachingAssignmentsByID(d.teachingAssignments)
+	if _, err := st.migrateSchedules(ctx, tenantID, academicYearID, termID, d.schedules, taIndex, users, classes, subjects, periods, report.Table("schedules")); err != nil {
 		return fmt.Errorf("migrate schedules: %w", err)
 	}
-
-	lookups := attendanceLookups{users: users, classes: classes, subjects: subjects, periods: periods, schedules: schedules}
-	st.migrateAttendance(ctx, tenantID, d.sessions, d.entries, lookups,
-		report.Table("attendance_sessions"), report.Table("attendance_entries"))
-
-	violationTypes := st.migrateViolationTypes(ctx, tenantID, d.violationTypes, report.Table("violation_types"))
-	st.migrateViolationRecords(ctx, tenantID, academicYearID, d.violationRecords, users, violationTypes, report.Table("violation_records"))
-	st.migrateWarningLetters(ctx, tenantID, academicYearID, d.warningLetters, users, report.Table("warning_letters"))
-
-	st.migratePermits(ctx, tenantID, academicYearID, source, sionYearID, d.leaveRequests, users, classes, report.Table("leave_requests"))
 
 	return nil
 }

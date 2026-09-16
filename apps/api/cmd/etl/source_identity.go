@@ -2,76 +2,54 @@ package main
 
 import "database/sql"
 
-// SionUser is one row of SION's users table joined with the role it holds
-// (model_has_roles) and its optional user_details / *_details rows.
-// Identity is global in SION (not scoped to an academic year), so the ETL
-// migrates every user regardless of which year was selected.
+// SionUser is one live-schema users row joined with its optional
+// user_details / student_details rows (both LEFT JOINs: most staff have a
+// user_details row, most students have a student_details row, and a user
+// can lack both). "Sion" is kept as the struct prefix for continuity with
+// the rest of this package, even though the source is now the live Laravel
+// application, not the retired Go rewrite. Identity is global (not scoped
+// to an academic year), so every user is migrated regardless of which year
+// was selected. Role names and management_staff position are fetched
+// separately (FetchUserRoles, FetchManagementStaff) since a user can hold
+// several Spatie roles and a per-user LEFT JOIN would multiply this query's
+// other joined rows.
 type SionUser struct {
-	ID       string
+	ID       int64
 	Name     string
+	Email    string
 	Username string
-	Email    sql.NullString
-	Status   string
-	RoleID   sql.NullString // model_has_roles.role_id; a user can hold at most one in SION's schema
+	Status   int
 
-	// user_details
-	NIK        sql.NullString
-	Gender     sql.NullString
-	BirthPlace sql.NullString
-	BirthDate  sql.NullTime
-	Religion   sql.NullString
-	Address    sql.NullString
-	District   sql.NullString
-	City       sql.NullString
-	Phone      sql.NullString
+	// user_details: sparse, roughly the non-student users (~91 of 2518
+	// rows). no_id is a generic "identity number" column -- it doubles as
+	// user_profiles.nik for every kind, and additionally as
+	// teacher_profiles.nip / staff_profiles.employee_number, see
+	// upsertProfile.
+	NoID          sql.NullString
+	Address       sql.NullString
+	ContactNumber sql.NullString // -> users.phone
 
-	// student_details
-	NIS              sql.NullString
-	NISN             sql.NullString
-	EntryYear        sql.NullInt64
-	FatherName       sql.NullString
-	MotherName       sql.NullString
-	GuardianName     sql.NullString
-	GuardianPhone    sql.NullString
-	ParentOccupation sql.NullString
-	PreviousSchool   sql.NullString
-
-	// teacher_details
-	NIP                     sql.NullString
-	NUPTK                   sql.NullString
-	TeacherLastEducation    sql.NullString
-	TeacherEmploymentStatus sql.NullString
-	TeacherJoinedYear       sql.NullInt64
-	TeachingSpecialization  sql.NullString
-
-	// employee_details
-	EmployeeNumber           sql.NullString
-	EmployeePosition         sql.NullString
-	EmployeeLastEducation    sql.NullString
-	EmployeeEmploymentStatus sql.NullString
-	EmployeeJoinedYear       sql.NullInt64
+	// student_details: present for 2415 of 2429 students.
+	NIS               sql.NullString
+	NISN              sql.NullString
+	StudentBirthPlace sql.NullString
+	StudentBirthDate  sql.NullTime
+	StudentAddress    sql.NullString // fallback for user_profiles.address when user_details has none
 }
 
 const sionUsersQuery = `
 select
-  u.id, u.name, u.username, u.email, u.status,
-  mhr.role_id,
-  ud.nik, ud.gender, ud.birth_place, ud.birth_date, ud.religion, ud.address, ud.district, ud.city, ud.phone,
-  sd.nis, sd.nisn, sd.entry_year, sd.father_name, sd.mother_name, sd.guardian_name, sd.guardian_phone,
-  sd.parent_occupation, sd.previous_school,
-  td.nip, td.nuptk, td.last_education, td.employment_status, td.joined_year, td.teaching_specialization,
-  ed.employee_number, ed.position, ed.last_education, ed.employment_status, ed.joined_year
+  u.id, u.name, u.email, u.username, u.status,
+  ud.no_id, ud.address, ud.contact_number,
+  sd.nis, sd.nisn, sd.birth_place, sd.birth_date, sd.address
 from users u
-left join model_has_roles mhr on mhr.user_id = u.id
 left join user_details ud on ud.user_id = u.id
 left join student_details sd on sd.user_id = u.id
-left join teacher_details td on td.user_id = u.id
-left join employee_details ed on ed.user_id = u.id
 order by u.id
 `
 
-// FetchUsers reads every user in the SION database with its role and
-// per-kind detail row, if any.
+// FetchUsers reads every user in the live database with its optional
+// user_details / student_details row.
 func (s *Source) FetchUsers() ([]SionUser, error) {
 	rows, err := s.db.Query(sionUsersQuery)
 	if err != nil {
@@ -83,17 +61,64 @@ func (s *Source) FetchUsers() ([]SionUser, error) {
 	for rows.Next() {
 		var u SionUser
 		if err := rows.Scan(
-			&u.ID, &u.Name, &u.Username, &u.Email, &u.Status,
-			&u.RoleID,
-			&u.NIK, &u.Gender, &u.BirthPlace, &u.BirthDate, &u.Religion, &u.Address, &u.District, &u.City, &u.Phone,
-			&u.NIS, &u.NISN, &u.EntryYear, &u.FatherName, &u.MotherName, &u.GuardianName, &u.GuardianPhone,
-			&u.ParentOccupation, &u.PreviousSchool,
-			&u.NIP, &u.NUPTK, &u.TeacherLastEducation, &u.TeacherEmploymentStatus, &u.TeacherJoinedYear, &u.TeachingSpecialization,
-			&u.EmployeeNumber, &u.EmployeePosition, &u.EmployeeLastEducation, &u.EmployeeEmploymentStatus, &u.EmployeeJoinedYear,
+			&u.ID, &u.Name, &u.Email, &u.Username, &u.Status,
+			&u.NoID, &u.Address, &u.ContactNumber,
+			&u.NIS, &u.NISN, &u.StudentBirthPlace, &u.StudentBirthDate, &u.StudentAddress,
 		); err != nil {
 			return nil, err
 		}
 		out = append(out, u)
+	}
+	return out, rows.Err()
+}
+
+// FetchUserRoles reads every (user, Spatie role name) pair from the live
+// schema's model_has_roles/roles tables into one map, since a user can hold
+// several roles at once.
+func (s *Source) FetchUserRoles() (map[int64][]string, error) {
+	rows, err := s.db.Query(
+		`select mhr.model_id, r.name
+		 from model_has_roles mhr
+		 join roles r on r.id = mhr.role_id
+		 where mhr.model_type = ?`,
+		`App\Models\User`,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	out := make(map[int64][]string)
+	for rows.Next() {
+		var userID int64
+		var role string
+		if err := rows.Scan(&userID, &role); err != nil {
+			return nil, err
+		}
+		out[userID] = append(out[userID], role)
+	}
+	return out, rows.Err()
+}
+
+// FetchManagementStaff reads the live schema's small management_staff table
+// (4 rows, all "Waka ..." deputy-head positions): the source for the
+// "leadership" duty and for staff_profiles.position on that user, see
+// migrate_duties.go and upsertProfile.
+func (s *Source) FetchManagementStaff() (map[int64]string, error) {
+	rows, err := s.db.Query(`select user_id, position from management_staff`)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	out := make(map[int64]string)
+	for rows.Next() {
+		var userID int64
+		var position string
+		if err := rows.Scan(&userID, &position); err != nil {
+			return nil, err
+		}
+		out[userID] = position
 	}
 	return out, rows.Err()
 }

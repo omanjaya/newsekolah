@@ -2,28 +2,25 @@ package mapping
 
 import "testing"
 
-func TestMapDuty(t *testing.T) {
+func TestDutyForSpatieRole(t *testing.T) {
 	cases := []struct {
-		name     string
+		role     string
 		wantSlug string
 		wantOK   bool
 	}{
-		{"Wali Kelas X-A", DutyHomeroom, true},
-		{"WALIKELAS XI IPA 1", DutyHomeroom, true},
-		{"Guru BK", DutyCounselor, true},
-		{"Bimbingan dan Konseling", DutyCounselor, true},
-		{"Piket Harian", DutyPicket, true},
-		{"Wakil Kepala Sekolah Kurikulum", DutyLeadership, true},
-		{"Kepala Sekolah", DutyLeadership, true},
-		{"Satpam", DutySecurity, true},
-		{"Petugas Perpustakaan", DutyLibrarian, true},
-		{"Bendahara Sekolah", "", false},
+		{SpatieRoleBK, DutyCounselor, true},
+		{SpatieRolePicket, DutyPicket, true},
+		{SpatieRolePustakawan, DutyLibrarian, true},
+		{SpatieRoleSecurity, DutySecurity, true},
+		{SpatieRoleTeacher, "", false},
+		{SpatieRoleClassAdministrator, "", false},
+		{SpatieRoleSupervisor, "", false},
 		{"", "", false},
 	}
 	for _, tc := range cases {
-		slug, ok := MapDuty(tc.name)
+		slug, ok := DutyForSpatieRole(tc.role)
 		if slug != tc.wantSlug || ok != tc.wantOK {
-			t.Errorf("MapDuty(%q) = (%q, %v), want (%q, %v)", tc.name, slug, ok, tc.wantSlug, tc.wantOK)
+			t.Errorf("DutyForSpatieRole(%q) = (%q, %v), want (%q, %v)", tc.role, slug, ok, tc.wantSlug, tc.wantOK)
 		}
 	}
 }

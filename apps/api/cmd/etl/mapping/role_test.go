@@ -1,26 +1,49 @@
 package mapping
 
-import "testing"
+import (
+	"reflect"
+	"testing"
+)
 
-func TestMapRole(t *testing.T) {
+func TestMapIdentityRole(t *testing.T) {
 	cases := []struct {
-		sionID   string
-		wantSlug string
-		wantOK   bool
+		name         string
+		roles        []string
+		wantSlug     string
+		wantUnmapped []string
+		wantOK       bool
 	}{
-		{"super_admin", "super_admin", true},
-		{"admin", "admin", true},
-		{"guru", "teacher", true},
-		{"pegawai", "staff", true},
-		{"siswa", "student", true},
-		{"orang_tua", "", false},
-		{"", "", false},
+		{"super admin only", []string{SpatieRoleSuperAdmin}, RoleSuperAdmin, nil, true},
+		{"admin only", []string{SpatieRoleAdmin}, RoleAdmin, nil, true},
+		{"teacher only", []string{SpatieRoleTeacher}, RoleTeacher, nil, true},
+		{"student only", []string{SpatieRoleStudent}, RoleStudent, nil, true},
+		{"teacher plus class administrator", []string{SpatieRoleTeacher, SpatieRoleClassAdministrator}, RoleTeacher, nil, true},
+		{"teacher plus BK", []string{SpatieRoleTeacher, SpatieRoleBK}, RoleTeacher, nil, true},
+		{"picket only defaults to staff", []string{SpatieRolePicket}, RoleStaff, nil, true},
+		{"pustakawan only defaults to staff", []string{SpatieRolePustakawan}, RoleStaff, nil, true},
+		{"security only defaults to staff", []string{SpatieRoleSecurity}, RoleStaff, nil, true},
+		{"bk only defaults to staff", []string{SpatieRoleBK}, RoleStaff, nil, true},
+		{
+			"supervisor only defaults to staff and is reported unmapped",
+			[]string{SpatieRoleSupervisor}, RoleStaff, []string{SpatieRoleSupervisor}, true,
+		},
+		{
+			"koperasi and kiosk both reported unmapped",
+			[]string{SpatieRoleKoperasi, SpatieRoleKiosk}, RoleStaff, []string{SpatieRoleKoperasi, SpatieRoleKiosk}, true,
+		},
+		{"customer only has no identity role", []string{SpatieRoleCustomer}, "", nil, false},
+		{"no roles at all", nil, "", nil, false},
 	}
 	for _, tc := range cases {
-		slug, ok := MapRole(tc.sionID)
-		if slug != tc.wantSlug || ok != tc.wantOK {
-			t.Errorf("MapRole(%q) = (%q, %v), want (%q, %v)", tc.sionID, slug, ok, tc.wantSlug, tc.wantOK)
-		}
+		t.Run(tc.name, func(t *testing.T) {
+			slug, unmapped, ok := MapIdentityRole(tc.roles)
+			if slug != tc.wantSlug || ok != tc.wantOK {
+				t.Errorf("MapIdentityRole(%v) = (%q, _, %v), want (%q, _, %v)", tc.roles, slug, ok, tc.wantSlug, tc.wantOK)
+			}
+			if !reflect.DeepEqual(unmapped, tc.wantUnmapped) {
+				t.Errorf("MapIdentityRole(%v) unmapped = %v, want %v", tc.roles, unmapped, tc.wantUnmapped)
+			}
+		})
 	}
 }
 

@@ -4,12 +4,13 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"time"
 
 	_ "github.com/go-sql-driver/mysql" // registers the "mysql" database/sql driver
 )
 
-// Source wraps the SION MySQL connection. Every query lives in one of the
-// source_*.go files, grouped the same way the target's modules are.
+// Source wraps the live SION MySQL connection. Every query lives in one of
+// the source_*.go files, grouped the same way the target's modules are.
 type Source struct {
 	db *sql.DB
 }
@@ -48,17 +49,30 @@ func dsnSeparator(dsn string) string {
 	return "?"
 }
 
-// resolveAcademicYearID looks up the SION academic_years row identified by
-// its (year_label, semester) natural key -- SION's true unique constraint,
-// see reference/sion/backend/migrations/002_academic_years.up.sql.
-func (s *Source) resolveAcademicYearID(yearLabel, semester string) (string, error) {
-	var id string
+// resolveYearID looks up the live schema's years row identified by
+// (start_year, semester), validating that its end_year is the expected
+// start_year+1 -- the same "YYYY/YYYY spans consecutive years" contract the
+// operator-facing --source-year flag has always had.
+func (s *Source) resolveYearID(startYear, endYear, semester int) (int64, error) {
+	var id int64
+	var gotEndYear int
 	err := s.db.QueryRow(
-		`select id from academic_years where year_label = ? and semester = ?`,
-		yearLabel, semester,
-	).Scan(&id)
+		`select id, end_year from years where start_year = ? and semester = ?`,
+		startYear, semester,
+	).Scan(&id, &gotEndYear)
 	if err != nil {
-		return "", fmt.Errorf("resolve SION academic year %s/%s: %w", yearLabel, semester, err)
+		return 0, fmt.Errorf("resolve year %d/%d semester %d: %w", startYear, endYear, semester, err)
+	}
+	if gotEndYear != endYear {
+		return 0, fmt.Errorf("year %d/%d semester %d: source end_year is %d, not %d", startYear, endYear, semester, gotEndYear, endYear)
 	}
 	return id, nil
+}
+
+// FetchYearDates reads the resolved years row's own start_date/end_date, so
+// the target academic year and term can be created with real dates instead
+// of mapping.AcademicYearDates' July-to-June guess.
+func (s *Source) FetchYearDates(yearID int64) (startDate, endDate time.Time, err error) {
+	err = s.db.QueryRow(`select start_date, end_date from years where id = ?`, yearID).Scan(&startDate, &endDate)
+	return startDate, endDate, err
 }
