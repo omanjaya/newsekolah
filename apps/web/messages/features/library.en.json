@@ -139,7 +139,19 @@
     "eyebrow": "Library",
     "title": "Members",
     "register": "Register member",
-    "bulkRegister": "Bulk register",
+    "bulkRegister": {
+      "title": "Bulk register members",
+      "description": "Registers every user in this role who is not already a member.",
+      "role": "Role",
+      "classOptional": "Class (optional)",
+      "classAll": "All classes",
+      "memberType": "Member type",
+      "memberTypePlaceholder": "Choose a member type",
+      "cancel": "Cancel",
+      "submit": "Register",
+      "resultSummary": "{registered} registered, {failed} failed",
+      "close": "Close"
+    },
     "registered": "Member registered",
     "searchPlaceholder": "Search by name or member number",
     "unknownUser": "Unknown user",
@@ -190,19 +202,6 @@
       "notes": "Notes",
       "cancel": "Cancel",
       "submit": "Register"
-    },
-    "bulkRegister": {
-      "title": "Bulk register members",
-      "description": "Registers every user in this role who is not already a member.",
-      "role": "Role",
-      "classOptional": "Class (optional)",
-      "classAll": "All classes",
-      "memberType": "Member type",
-      "memberTypePlaceholder": "Choose a member type",
-      "cancel": "Cancel",
-      "submit": "Register",
-      "resultSummary": "{registered} registered, {failed} failed",
-      "close": "Close"
     }
   },
   "memberTypes": {
@@ -281,7 +280,14 @@
     "eyebrow": "Library",
     "title": "Violations and fines",
     "record": "Record violation",
-    "settle": "Settle",
+    "settle": {
+      "title": "Settle violation",
+      "description": "Settle as paid or waived. A suspended member reactivates once every violation is clear.",
+      "waive": "Waive",
+      "markPaid": "Mark paid",
+      "settledPaid": "Violation marked paid",
+      "settledWaived": "Violation waived"
+    },
     "unknownMember": "Unknown member",
     "noMatchTitle": "No matching violations",
     "noMatchBody": "Try a different type or status filter.",
@@ -333,14 +339,6 @@
       "notes": "Notes",
       "cancel": "Cancel",
       "submit": "Save"
-    },
-    "settle": {
-      "title": "Settle violation",
-      "description": "Settle as paid or waived. A suspended member reactivates once every violation is clear.",
-      "waive": "Waive",
-      "markPaid": "Mark paid",
-      "settledPaid": "Violation marked paid",
-      "settledWaived": "Violation waived"
     }
   },
   "import": {
@@ -626,7 +624,11 @@
     "available": "Available",
     "unavailable": "All copies out",
     "emptyTitle": "Nothing found",
-    "emptyBody": "Try a different search term."
+    "emptyBody": "Try a different search term.",
+    "highlights": {
+      "newest": "Newest",
+      "mostBorrowed": "Most borrowed"
+    }
   },
   "kiosk": {
     "navLabel": "Self-service kiosk",

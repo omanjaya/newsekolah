@@ -7,6 +7,8 @@ import { useState } from "react";
 
 import { useOpacTitlesQuery } from "../api";
 
+import { OpacHighlights } from "./opac-highlights";
+
 /** Public catalogue search: no session, reachable from a kiosk or a phone. */
 export function OpacView(): ReactElement {
   const t = useTranslations("app.library.opac");
@@ -24,6 +26,8 @@ export function OpacView(): ReactElement {
         }}
         placeholder={t("searchPlaceholder")}
       />
+
+      {search === "" && <OpacHighlights />}
 
       {isLoading ? (
         <Skeleton className="h-48 w-full" aria-busy="true" />
