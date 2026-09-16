@@ -46,19 +46,24 @@ func migrate(ctx context.Context, cfg Config, source *Source, pool *pgxpool.Pool
 		return nil, fmt.Errorf("fetch source year dates: %w", err)
 	}
 
-	scheduleVersion, err := source.resolveScheduleVersion(sourceYearID)
+	scheduleVersions, err := source.FetchScheduleVersions(sourceYearID)
 	if err != nil {
 		return nil, err
 	}
-	logger.Info("resolved schedule version for migrated year",
-		"id", scheduleVersion.ID, "name", scheduleVersion.Name, "status", scheduleVersion.Status)
+	scheduleVersionIDs := make([]int64, len(scheduleVersions))
+	for i, v := range scheduleVersions {
+		scheduleVersionIDs[i] = v.ID
+	}
+	primaryScheduleVersion := pickPrimaryScheduleVersion(scheduleVersions)
+	logger.Info("resolved schedule versions for migrated year",
+		"versions", scheduleVersionIDs, "primary_for_journals", primaryScheduleVersion.ID)
 
 	tenantLocation, err := loadTenantLocation(ctx, pool, tenantID)
 	if err != nil {
 		return nil, err
 	}
 
-	data, err := fetchAll(source, sourceYearID, scheduleVersion.ID, yearStartDate, yearEndDate)
+	data, err := fetchAll(source, sourceYearID, scheduleVersionIDs, primaryScheduleVersion.ID, yearStartDate, yearEndDate)
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +71,7 @@ func migrate(ctx context.Context, cfg Config, source *Source, pool *pgxpool.Pool
 	report := NewReport(clk, cfg.TenantSlug, fmt.Sprintf("%s %s", cfg.SourceYear, cfg.SourceSemester), cfg.DryRun)
 
 	err = runInTransaction(ctx, pool, tenantID, cfg.DryRun, func(st *Store) error {
-		return runMigrationSteps(ctx, st, tenantID, cfg, source, sourceYearID, semester, yearStartDate, yearEndDate, scheduleVersion, tenantLocation, data, report)
+		return runMigrationSteps(ctx, st, tenantID, cfg, source, sourceYearID, semester, yearStartDate, yearEndDate, scheduleVersions, tenantLocation, data, report)
 	})
 	if err != nil {
 		return nil, fmt.Errorf("migration transaction: %w", err)
@@ -191,7 +196,7 @@ type sourceData struct {
 	librarySettings []LibrarySetting
 }
 
-func fetchAll(source *Source, sourceYearID, scheduleVersionID int64, yearStartDate, yearEndDate time.Time) (sourceData, error) {
+func fetchAll(source *Source, sourceYearID int64, scheduleVersionIDs []int64, primaryScheduleVersionID int64, yearStartDate, yearEndDate time.Time) (sourceData, error) {
 	var d sourceData
 	var err error
 	steps := []struct {
@@ -207,19 +212,19 @@ func fetchAll(source *Source, sourceYearID, scheduleVersionID int64, yearStartDa
 		{"rooms", func() (e error) { d.rooms, e = source.FetchRooms(); return }},
 		{"enrollments", func() (e error) { d.enrollments, e = source.FetchEnrollments(sourceYearID); return }},
 		{"teaching assignments", func() (e error) {
-			d.teachingAssignments, e = source.FetchTeachingAssignments(scheduleVersionID)
+			d.teachingAssignments, e = source.FetchTeachingAssignments(scheduleVersionIDs)
 			return
 		}},
 		{"class administrators", func() (e error) { d.classAdministrators, e = source.FetchClassAdministrators(sourceYearID); return }},
 		{"class of bks count", func() (e error) { d.classOfBKCount, e = source.CountClassOfBKAssignments(sourceYearID); return }},
 		{"bk on duty count", func() (e error) { d.bkOnDutyCount, e = source.CountBKOnDutyRecords(); return }},
 		{"periods", func() (e error) { d.periods, e = source.FetchPeriods(); return }},
-		{"schedules", func() (e error) { d.schedules, e = source.FetchSchedules(scheduleVersionID); return }},
+		{"schedules", func() (e error) { d.schedules, e = source.FetchSchedules(scheduleVersionIDs); return }},
 
 		{"attendance sessions", func() (e error) { d.attendanceSessions, e = source.FetchAttendanceSessions(sourceYearID); return }},
 		{"attendance entries", func() (e error) { d.attendanceEntries, e = source.FetchAttendanceEntries(sourceYearID); return }},
 
-		{"journals", func() (e error) { d.journals, e = source.FetchJournals(scheduleVersionID); return }},
+		{"journals", func() (e error) { d.journals, e = source.FetchJournals(primaryScheduleVersionID); return }},
 
 		{"violation types", func() (e error) { d.violationTypes, e = source.FetchViolationTypes(); return }},
 		{"violation records", func() (e error) { d.violationRecords, e = source.FetchViolationRecords(sourceYearID); return }},
@@ -270,7 +275,7 @@ func fetchAll(source *Source, sourceYearID, scheduleVersionID int64, yearStartDa
 // schedules.
 func runMigrationSteps(
 	ctx context.Context, st *Store, tenantID uuid.UUID, cfg Config, source *Source,
-	sourceYearID int64, semester int, yearStartDate, yearEndDate time.Time, scheduleVersion SionScheduleVersion,
+	sourceYearID int64, semester int, yearStartDate, yearEndDate time.Time, scheduleVersions []SionScheduleVersion,
 	tenantLocation *time.Location, d sourceData, report *Report,
 ) error {
 	yearStat := report.Table("academic_years")
@@ -336,8 +341,8 @@ func runMigrationSteps(
 		return fmt.Errorf("migrate teaching assignments: %w", err)
 	}
 	teachingAssignmentStat.RecordGap(fmt.Sprintf(
-		"schedule_version used for this run: id=%d name=%q status=%q (selection rule in docs/13-etl-sion.md)",
-		scheduleVersion.ID, scheduleVersion.Name, scheduleVersion.Status,
+		"schedule_versions unioned into this run's timetable, newest effective_from winning per class/weekday/period slot (not status, see docs/13-etl-sion.md \"Union jadwal\"): %s",
+		summarizeScheduleVersions(scheduleVersions),
 	))
 
 	dutyStat := report.Table("duty_assignments")
@@ -352,13 +357,15 @@ func runMigrationSteps(
 	}
 
 	taIndex := IndexTeachingAssignmentsByID(d.teachingAssignments)
-	scheduleIDs, err := st.migrateSchedules(ctx, tenantID, academicYearID, termID, d.schedules, taIndex, users, classes, subjects, periods, report.Table("schedules"))
+	unionSchedules, winningScheduleIDBySlot := buildScheduleUnion(d.schedules, scheduleVersions, taIndex)
+	scheduleIDs, err := st.migrateSchedules(ctx, tenantID, academicYearID, termID, unionSchedules, taIndex, users, classes, subjects, periods, report.Table("schedules"))
 	if err != nil {
 		return fmt.Errorf("migrate schedules: %w", err)
 	}
 
+	resolution := buildScheduleResolution(d.schedules, winningScheduleIDBySlot, scheduleIDs)
 	attendanceSessions, err := st.migrateAttendanceSessions(
-		ctx, tenantID, academicYearID, d.attendanceSessions, scheduleIDs, users, classes, subjects, periods, tenantLocation,
+		ctx, tenantID, academicYearID, d.attendanceSessions, resolution, users, classes, subjects, periods, tenantLocation,
 		report.Table("attendance_sessions"),
 	)
 	if err != nil {
@@ -439,6 +446,22 @@ func runMigrationSteps(
 	recordLibrarySettingsGap(d.librarySettings, report.Table("library_settings"))
 
 	return nil
+}
+
+// summarizeScheduleVersions renders every schedule_versions row fetched for
+// this run's year into one line for the teaching_assignments report gap, so
+// an operator can see exactly which revisions were unioned, and in what
+// order, without opening the source database.
+func summarizeScheduleVersions(versions []SionScheduleVersion) string {
+	parts := make([]string, len(versions))
+	for i, v := range versions {
+		effective := "none"
+		if v.EffectiveFrom.Valid {
+			effective = v.EffectiveFrom.Time.Format("2006-01-02")
+		}
+		parts[i] = fmt.Sprintf("id=%d name=%q status=%q effective_from=%s", v.ID, v.Name, v.Status, effective)
+	}
+	return strings.Join(parts, "; ")
 }
 
 // indexUserNames builds a source user id -> cleaned display name lookup,

@@ -208,24 +208,66 @@ Menjalankan ETL dua kali berturut-turut (`--source-semester ganjil` lalu
 di academic_years yang sama; data yang sama pada kedua semester (mis. siswa
 yang tidak pindah kelas) ter-upsert, bukan dobel.
 
-## Pemilihan schedule_version
+## Union jadwal
 
 Satu tahun ajaran bisa punya lebih dari satu `schedule_versions` (mis.
-revisi jadwal di tengah semester). ETL memilih **tepat satu** versi per
-tahun ajaran yang dimigrasikan, dengan aturan (diimplementasikan sebagai
-satu `order by` di `resolveScheduleVersion`, `source_schedule.go`):
+revisi jadwal di tengah semester). Versi awal alat ini memilih **tepat
+satu** versi per tahun ajaran (lewat `resolveScheduleVersion`, dihapus):
+utamakan yang berstatus `active`, lalu `effective_from` paling baru, lalu
+`id` paling besar. Aturan itu ternyata salah asumsi: `status` di sumber
+adalah keputusan administratif sekolah, bukan penanda "revisi ini yang
+sungguh dipakai guru". Di data sekolah ini, revisi terbaru (`Perubahan
+Jadwal September 2026`, `effective_from` 7 September) tetap berstatus
+`scheduled` sampai alat ini diperbaiki, padahal guru sudah mengisi presensi
+terhadapnya sejak hari itu -- aturan lama memilih revisi sebelumnya (`Jadwal
+Awal`, status `active`) dan menjatuhkan seluruh presensi hari-hari
+terbarunya sebagai gagal, persis hari-hari yang paling penting bagi sekolah
+yang baru migrasi.
 
-1. Utamakan yang berstatus `active`.
-2. Bila tidak ada yang aktif, pakai yang `effective_from` paling baru.
-3. Bila masih seri, pakai `id` paling besar.
+ETL sekarang **tidak memilih satu versi untuk jadwal sama sekali**. Jadwal
+target dibentuk dari **union** setiap `schedule_versions` milik tahun
+sumber yang dimigrasikan (`buildScheduleUnion`, `migrate_schedule.go`):
 
-`teacher_classes` dan `schedules` sama-sama tergantung pada satu
-`schedule_version`; `schedules.schedule_version_id` sendiri **tidak
-dipakai** sebagai filter karena bisa redundan/tidak konsisten dengan
+1. Setiap baris `schedules` dari setiap versi diberi kunci slot
+   `(class_id, weekday, period_id)` -- persis sumbu yang dipakai constraint
+   unik `schedules` target sendiri (`academic_year_id, class_id,
+day_of_week, start_seq`), lewat `mapping.ScheduleSlot`.
+2. Kalau dua versi sama-sama punya baris untuk slot yang sama, yang menang
+   adalah baris dari versi dengan `effective_from` paling baru (`id` sebagai
+   tie-break) -- **bukan** `status`. `mapping.ResolveScheduleUnion`
+   (`mapping/schedule_union.go`, diuji unit) mengimplementasikan aturan
+   ini secara generik, lepas dari tipe database mana pun.
+3. Baris pemenang per slot itulah yang dimigrasikan ke `schedules` target --
+   tepat satu baris per slot, sesuai constraint target.
+
+`teacher_classes` (untuk `teaching_assignments` maupun untuk resolusi
+kelas/mapel tiap baris `schedules`) juga dibaca dari **semua** versi tahun
+itu sekaligus (`FetchTeachingAssignments`, kini menerima daftar id versi),
+bukan hanya satu. Ini aman: `teaching_assignments` target berkunci alami
+`(academic_year_id, teacher_user_id, subject_id, class_id)`, tak terikat
+versi apa pun, jadi baris dari versi berbeda yang kebetulan sama upsert ke
+baris target yang sama, dan baris yang benar-benar baru (guru/mapel yang
+cuma muncul di revisi terbaru) tetap termigrasi.
+
+`schedules.schedule_version_id` sendiri tetap **tidak dipakai** sebagai
+filter, karena bisa redundan/tidak konsisten dengan
 `teacher_classes.schedule_version_id` -- ETL selalu join lewat
-`teacher_classes` sebagai sumber kebenaran. Versi yang terpilih (id, nama,
-status) dicatat sebagai catatan pada `TableStat` tabel `teaching_assignments`
-di laporan, supaya operator bisa lihat revisi sumber mana yang dipakai.
+`teacher_classes` sebagai sumber kebenaran, sama seperti sebelumnya. Semua
+versi yang di-union (id, nama, status, `effective_from`) dicatat sebagai
+satu catatan pada `TableStat` tabel `teaching_assignments` di laporan,
+supaya operator bisa lihat persis revisi mana saja yang ikut dan urutan
+yang dipakai.
+
+**`journals` belum ikut union ini** -- `FetchJournals` masih menerima satu
+`schedule_version_id` (`pickPrimaryScheduleVersion`, replikasi persis aturan
+lama "utamakan `active`, lalu `effective_from` terbaru, lalu `id`
+terbesar"), jadi jurnal dari revisi yang tidak terpilih masih hilang dengan
+cara yang sama seperti presensi dulu (770 baris `journals` di data sekolah
+ini ada di revisi yang tidak terpilih pada satu arah pemilihan, 2.514 pada
+arah sebaliknya -- mengganti aturan pemilihan hanya memindahkan baris mana
+yang hilang, tidak menghilangkan gap-nya). Ini gap yang diketahui, di luar
+cakupan perbaikan presensi ini; memperluas union ke jurnal adalah kerja
+lanjutan.
 
 ## Role dan duty
 
@@ -338,15 +380,34 @@ sebagai gap terpisah, karena berlaku untuk semua user tanpa kecuali.
   Catatan "-" (placeholder "tidak ada catatan" dari aplikasi lama)
   diperlakukan sama dengan kosong/null.
 
-* **Sesi di luar `schedule_version` yang dipilih**: `attendances.schedule_id`
-  menunjuk baris `schedules` sumber apa adanya, tak difilter ke satu
-  `schedule_version`. Kalau kelas itu jadwalnya direvisi di tengah semester
-  tapi revisinya tak pernah ditandai `status = 'active'` di sumber,
-  sebagian presensi menunjuk jadwal di revisi itu -- di luar satu
-  `schedule_version` yang dipilih run ini (lihat "Pemilihan
-  schedule_version"). Baris begini gagal migrasi dengan alasan eksplisit
-  dan kehitung sebagai satu gap agregat, bukan sekadar "gagal" tanpa
-  penjelasan.
+* **Resolusi lewat slot, bukan `schedule_id`**: `attendances.schedule_id`
+  sumber **tidak** dipakai untuk mencari baris `schedules` target sesi itu
+  -- lihat "Union jadwal" untuk alasan lengkapnya (aturan lama yang memilih
+  satu `schedule_version` membuang seluruh presensi terhadap revisi yang
+  tidak terpilih). Sebagai gantinya, tiap sesi dicari lewat kunci slotnya
+  sendiri, `(group_id, weekday dari attendance_date, period_id)`
+  (`mapping.ScheduleSlot`, dihitung lewat `mapping.WeekdayFromDate`),
+  terhadap union jadwal target. Ini "apa yang sungguh terjadi" -- kelas,
+  hari, dan jam pelajaran itu -- bukan baris `schedules` sumber mana yang
+  kebetulan masih dirujuk `attendances.schedule_id` (yang bisa saja sudah
+  jadi baris basi: 3 baris di data sekolah ini merujuk `schedule_id` yang
+  sudah tak ada sama sekali di sumber, tapi tetap termigrasi lewat resolusi
+  slot ini).
+* **Sesi yang pindah revisi (re-pointed)**: kalau revisi terbaru mengganti
+  slot itu (mapel/guru pindah untuk kelas+hari+jam yang sama), sesi presensi
+  lama tetap dilekatkan ke jadwal yang menang di slot itu di target --
+  pelajarannya memang terjadi di kelas dan jam itu, walau jadwal yang kini
+  ada di target berasal dari revisi berikutnya. `migrateAttendanceSessions`
+  menghitung setiap sesi begini (`attendances.schedule_id` sumber menunjuk
+  revisi yang berbeda dari revisi pemenang slot itu) dan melaporkannya
+  sebagai satu gap agregat pada tabel `attendance_sessions`, supaya jumlah
+  sesi yang dipindah kelihatan di laporan, bukan terkubur diam-diam.
+* **Sesi yang benar-benar tak bisa dicari jadwalnya**: kalau slot
+  `(group_id, weekday, period_id)` sesi itu tak ada sama sekali di union
+  jadwal manapun (mis. kelas, periode, atau teaching assignment yang
+  dirujuknya sendiri gagal migrasi), sesi itu gagal migrasi dengan alasan
+  eksplisit dan kehitung sebagai satu gap agregat, bukan sekadar "gagal"
+  tanpa penjelasan.
 * Berjalan penuh untuk satu semester (26.291 baris `attendance_details`, DB
   sekolah sungguhan) makan waktu sekitar seperempat dari total waktu run
   penuh -- lihat "Waktu run" di bawah untuk angka keseluruhan.

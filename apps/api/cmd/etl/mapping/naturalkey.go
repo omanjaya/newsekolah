@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"time"
 )
 
 // StudentNaturalKey picks the stable identifier a re-run keys a student on:
@@ -105,6 +106,19 @@ var weekdaySequence = map[string]int16{
 func MapDayOfWeek(day string) (int16, bool) {
 	v, ok := weekdaySequence[strings.ToLower(strings.TrimSpace(day))]
 	return v, ok
+}
+
+// WeekdayFromDate derives the same 1-7 encoding MapDayOfWeek returns
+// (Monday=1..Sunday=7) directly from a calendar date, for source rows
+// (attendance sessions) that carry a date rather than a schedules.day
+// string. t should already be a bare calendar day (see LocalDate) -- a date
+// has no time-of-day component to shift, so no tenant timezone is needed
+// here, unlike LocalToUTC.
+func WeekdayFromDate(t time.Time) int16 {
+	if t.Weekday() == time.Sunday {
+		return 7
+	}
+	return int16(t.Weekday()) //nolint:gosec // time.Weekday is always 0-6, safe to narrow
 }
 
 // ClassNaturalKey identifies a class within one academic year: SION has no

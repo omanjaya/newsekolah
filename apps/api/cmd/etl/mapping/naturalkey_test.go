@@ -1,6 +1,9 @@
 package mapping
 
-import "testing"
+import (
+	"testing"
+	"time"
+)
 
 func TestStudentNaturalKey(t *testing.T) {
 	cases := []struct {
@@ -85,6 +88,22 @@ func TestMapDayOfWeek(t *testing.T) {
 		got, ok := MapDayOfWeek(tc.day)
 		if got != tc.want || ok != tc.wantOK {
 			t.Errorf("MapDayOfWeek(%q) = (%d,%v), want (%d,%v)", tc.day, got, ok, tc.want, tc.wantOK)
+		}
+	}
+}
+
+func TestWeekdayFromDate(t *testing.T) {
+	cases := []struct {
+		date time.Time
+		want int16
+	}{
+		{time.Date(2026, 9, 7, 0, 0, 0, 0, time.UTC), 1},  // Monday
+		{time.Date(2026, 9, 11, 0, 0, 0, 0, time.UTC), 5}, // Friday
+		{time.Date(2026, 9, 13, 0, 0, 0, 0, time.UTC), 7}, // Sunday
+	}
+	for _, tc := range cases {
+		if got := WeekdayFromDate(tc.date); got != tc.want {
+			t.Errorf("WeekdayFromDate(%s) = %d, want %d", tc.date.Format("2006-01-02"), got, tc.want)
 		}
 	}
 }

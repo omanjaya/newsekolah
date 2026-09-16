@@ -113,11 +113,12 @@ func (s *Source) FetchEnrollments(yearID int64) ([]SionEnrollment, error) {
 
 // SionTeachingAssignment is one live-schema teacher_classes row: a
 // teacher's assignment to teach one subject to one class, scoped to one
-// schedule_version (see resolveScheduleVersion in source_schedule.go).
-// There is no is_active column -- every row is a live assignment. ID is
-// teacher_classes.id itself, which source_schedule.go's schedules query
-// needs to resolve a schedule row's teacher/class/subject (schedules only
-// carries a teacher_class_id, not those three directly).
+// schedule_version (a migrated year can have several, see
+// SionScheduleVersion in source_schedule.go). There is no is_active column
+// -- every row is a live assignment. ID is teacher_classes.id itself, which
+// source_schedule.go's schedules query needs to resolve a schedule row's
+// teacher/class/subject (schedules only carries a teacher_class_id, not
+// those three directly).
 type SionTeachingAssignment struct {
 	ID            int64
 	TeacherUserID int64
@@ -125,10 +126,17 @@ type SionTeachingAssignment struct {
 	SubjectID     int64
 }
 
-func (s *Source) FetchTeachingAssignments(scheduleVersionID int64) ([]SionTeachingAssignment, error) {
+// FetchTeachingAssignments reads every teacher_classes row for every
+// schedule_version passed. The target's own teaching_assignments table
+// keys on (academic_year_id, teacher_user_id, subject_id, class_id) --
+// nothing per-revision -- so assignments from more than one version simply
+// upsert onto the same target row rather than conflicting.
+func (s *Source) FetchTeachingAssignments(scheduleVersionIDs []int64) ([]SionTeachingAssignment, error) {
+	placeholders, args := int64InClause(scheduleVersionIDs)
 	rows, err := s.db.Query(
-		`select id, user_id, group_id, subject_id from teacher_classes where schedule_version_id = ?`,
-		scheduleVersionID,
+		//nolint:gosec // placeholders is a "?,?,..." run built from len(scheduleVersionIDs), never from external input; the ids themselves are bound as args
+		`select id, user_id, group_id, subject_id from teacher_classes where schedule_version_id in (`+placeholders+`)`,
+		args...,
 	)
 	if err != nil {
 		return nil, err

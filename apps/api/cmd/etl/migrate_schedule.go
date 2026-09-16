@@ -67,6 +67,92 @@ func (st *Store) migratePeriods(ctx context.Context, tenantID uuid.UUID, yearLab
 	return templateID, result, nil
 }
 
+// buildScheduleUnion resolves every schedule_versions revision fetched for
+// a migrated year into the single timetable the target schema allows: one
+// row per (class, weekday, period) slot. Where two revisions claim the same
+// slot, the one with the latest effective_from wins -- never the source's
+// own status flag (see docs/13-etl-sion.md "Union jadwal" for why: this
+// school's teachers had already been taking attendance against a revision
+// still marked 'scheduled' for ten days by the time this was fixed).
+// versions must already be ordered oldest-to-last (FetchScheduleVersions'
+// own order), which becomes the rank ResolveScheduleUnion compares on.
+//
+// taIndex resolves each schedule row's class (a schedules row only carries
+// a teacher_class_id); a row whose teacher_class this ETL cannot resolve is
+// passed through unchanged rather than dropped, so migrateSchedules' own
+// per-row validation still reports it as a failure the way it always has --
+// buildScheduleUnion only competes rows it can place in a slot.
+//
+// The second return value maps each slot to the source id of the schedule
+// row that won it, which migrateAttendanceSessions needs (after resolving
+// that id through this function's own IDMap result) to attach an attendance
+// session to the schedule that actually survived for its class/weekday/
+// period, and to report when that schedule belongs to a different revision
+// than the one the session's own attendances.schedule_id named.
+func buildScheduleUnion(
+	schedules []SionSchedule, versions []SionScheduleVersion, taIndex map[int64]SionTeachingAssignment,
+) (unionRows []SionSchedule, winningScheduleIDBySlot map[mapping.ScheduleSlot]int64) {
+	rank := make(map[int64]int, len(versions))
+	for i, v := range versions {
+		rank[v.ID] = i
+	}
+
+	var slotRows []mapping.ScheduleRevisionRow[SionSchedule]
+	for _, sch := range schedules {
+		weekday, dayOK := mapping.MapDayOfWeek(sch.Day)
+		ta, taOK := taIndex[sch.TeacherClassID]
+		if !dayOK || !taOK {
+			unionRows = append(unionRows, sch)
+			continue
+		}
+		slotRows = append(slotRows, mapping.ScheduleRevisionRow[SionSchedule]{
+			Slot:      mapping.ScheduleSlot{ClassID: ta.ClassID, Weekday: weekday, PeriodID: sch.PeriodID},
+			VersionID: sch.VersionID,
+			Row:       sch,
+		})
+	}
+
+	winners := mapping.ResolveScheduleUnion(slotRows, rank)
+	winningScheduleIDBySlot = make(map[mapping.ScheduleSlot]int64, len(winners))
+	for slot, w := range winners {
+		unionRows = append(unionRows, w.Row)
+		winningScheduleIDBySlot[slot] = w.Row.ID
+	}
+	return unionRows, winningScheduleIDBySlot
+}
+
+// pickPrimaryScheduleVersion picks exactly one schedule_versions row out of
+// every version fetched for a year, for the one remaining caller that still
+// needs a single revision rather than the union (FetchJournals -- see
+// docs/13-etl-sion.md "Union jadwal" for why extending the union to
+// journals is left as a follow-up, not attempted here). This replicates the
+// rule the whole ETL used everywhere before the union fix: prefer
+// status = 'active'; if none is active, the latest effective_from; if still
+// tied, the highest id.
+func pickPrimaryScheduleVersion(versions []SionScheduleVersion) SionScheduleVersion {
+	best := versions[0]
+	for _, v := range versions[1:] {
+		if isPreferredPrimary(v, best) {
+			best = v
+		}
+	}
+	return best
+}
+
+func isPreferredPrimary(candidate, current SionScheduleVersion) bool {
+	candidateActive, currentActive := candidate.Status == "active", current.Status == "active"
+	if candidateActive != currentActive {
+		return candidateActive
+	}
+	if candidate.EffectiveFrom.Valid != current.EffectiveFrom.Valid {
+		return candidate.EffectiveFrom.Valid
+	}
+	if candidate.EffectiveFrom.Valid && !candidate.EffectiveFrom.Time.Equal(current.EffectiveFrom.Time) {
+		return candidate.EffectiveFrom.Time.After(current.EffectiveFrom.Time)
+	}
+	return candidate.ID > current.ID
+}
+
 // migrateSchedules keys on (academic_year_id, class_id, day_of_week,
 // start_seq), since the target's two exclusion constraints (class+day+period
 // range, teacher+day+period range) cannot be an `on conflict` target. Each

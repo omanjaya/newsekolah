@@ -76,3 +76,17 @@ func (s *Source) FetchYearDates(yearID int64) (startDate, endDate time.Time, err
 	err = s.db.QueryRow(`select start_date, end_date from years where id = ?`, yearID).Scan(&startDate, &endDate)
 	return startDate, endDate, err
 }
+
+// int64InClause builds a "?,?,..." placeholder list and its matching
+// argument slice for a `where col in (...)` query against a set of source
+// ids -- database/sql has no native slice-expansion for the MySQL driver,
+// unlike pgx on the target side.
+func int64InClause(ids []int64) (placeholders string, args []any) {
+	args = make([]any, len(ids))
+	parts := make([]string, len(ids))
+	for i, id := range ids {
+		parts[i] = "?"
+		args[i] = id
+	}
+	return strings.Join(parts, ","), args
+}
