@@ -289,6 +289,14 @@ export const navigation: NavItem[] = [
     group: GROUP.library,
   },
   {
+    key: "library-import",
+    labelKey: "app.library.import.navLabel",
+    href: "/library/import",
+    icon: domainIcons.library,
+    permission: "manage_library_catalog",
+    group: GROUP.library,
+  },
+  {
     key: "leave-requests",
     labelKey: "nav.permits.items.plannedLeave",
     tabLabelKey: "nav.compact.permits",

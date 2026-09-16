@@ -320,6 +320,79 @@
       "settledWaived": "Pelanggaran dibebaskan"
     }
   },
+  "import": {
+    "navLabel": "Impor koleksi",
+    "eyebrow": "Perpustakaan",
+    "title": "Impor koleksi",
+    "steps": {
+      "upload": "Unggah",
+      "mapping": "Pemetaan kolom",
+      "preview": "Pratinjau",
+      "result": "Hasil"
+    },
+    "uploadDescription": "Unduh templat, isi datanya, lalu unggah kembali berkas yang sudah terisi.",
+    "downloadTemplate": "Unduh templat XLSX",
+    "uploadLabel": "Berkas XLSX terisi",
+    "selectedFile": "Berkas dipilih: {name}",
+    "emptyFile": "Berkas tidak berisi baris data. Periksa kembali templat yang diisi.",
+    "parseError": "Berkas tidak dapat dibaca. Pastikan formatnya XLSX dan sesuai templat.",
+    "committed": "Impor berhasil diterapkan",
+    "resultSummary": "{titles} judul baru, {copies} eksemplar ditambahkan.",
+    "importAnother": "Impor berkas lain",
+    "mapping": {
+      "description": "Setiap kolom di berkas yang diunggah dipetakan ke bidang data perpustakaan. Pemetaan diisi otomatis; ubah bila kolom pada berkas berbeda nama.",
+      "unmapped": "Tidak dipetakan",
+      "back": "Kembali",
+      "continue": "Lanjut ke pratinjau",
+      "titleRequired": "Kolom Judul wajib dipetakan sebelum melanjutkan."
+    },
+    "fields": {
+      "title": "Judul",
+      "main_author": "Penulis utama",
+      "publisher": "Penerbit",
+      "publish_place": "Kota terbit",
+      "publish_year": "Tahun terbit",
+      "isbn": "ISBN",
+      "ddc_number": "Nomor DDC",
+      "subjects": "Subjek",
+      "material_type": "Jenis bahan",
+      "category": "Kategori",
+      "access": "Akses",
+      "location": "Lokasi",
+      "source": "Sumber",
+      "acquired_on": "Tanggal perolehan",
+      "price": "Harga",
+      "no_induk": "Nomor induk",
+      "barcode": "Barcode",
+      "copies": "Jumlah eksemplar",
+      "call_number": "Nomor panggil"
+    },
+    "preview": {
+      "summary": {
+        "newTitles": "Judul baru",
+        "existingTitles": "Judul sudah ada",
+        "copies": "Eksemplar",
+        "errors": "Galat"
+      },
+      "partialWarning": "{errors} baris bermasalah akan dilewati. {importable} baris lain siap diimpor.",
+      "allErrorWarning": "Semua {errors} baris bermasalah. Perbaiki berkas dan unggah ulang.",
+      "columns": {
+        "row": "Baris",
+        "title": "Judul",
+        "copies": "Eksemplar",
+        "status": "Status",
+        "message": "Keterangan"
+      },
+      "status": {
+        "new_title": "Judul baru",
+        "existing_title": "Judul sudah ada",
+        "error": "Galat"
+      },
+      "back": "Kembali",
+      "commit": "Terapkan impor",
+      "commitPartial": "Terapkan {count} baris yang valid"
+    }
+  },
   "stocktake": {
     "eyebrow": "Perpustakaan",
     "title": "Opname",

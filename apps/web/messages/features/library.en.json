@@ -320,6 +320,79 @@
       "settledWaived": "Violation waived"
     }
   },
+  "import": {
+    "navLabel": "Import collection",
+    "eyebrow": "Library",
+    "title": "Import collection",
+    "steps": {
+      "upload": "Upload",
+      "mapping": "Column mapping",
+      "preview": "Preview",
+      "result": "Result"
+    },
+    "uploadDescription": "Download the template, fill it in, then upload the completed file.",
+    "downloadTemplate": "Download XLSX template",
+    "uploadLabel": "Completed XLSX file",
+    "selectedFile": "Selected file: {name}",
+    "emptyFile": "The file has no data rows. Check the filled template again.",
+    "parseError": "The file could not be read. Make sure it is an XLSX file matching the template.",
+    "committed": "Import applied",
+    "resultSummary": "{titles} new titles, {copies} copies added.",
+    "importAnother": "Import another file",
+    "mapping": {
+      "description": "Each column in the uploaded file maps to a library data field. The mapping is filled in automatically; adjust it if your file uses different column names.",
+      "unmapped": "Not mapped",
+      "back": "Back",
+      "continue": "Continue to preview",
+      "titleRequired": "The Title column must be mapped before continuing."
+    },
+    "fields": {
+      "title": "Title",
+      "main_author": "Main author",
+      "publisher": "Publisher",
+      "publish_place": "Publish place",
+      "publish_year": "Publish year",
+      "isbn": "ISBN",
+      "ddc_number": "DDC number",
+      "subjects": "Subjects",
+      "material_type": "Material type",
+      "category": "Category",
+      "access": "Access",
+      "location": "Location",
+      "source": "Source",
+      "acquired_on": "Acquired on",
+      "price": "Price",
+      "no_induk": "Accession number",
+      "barcode": "Barcode",
+      "copies": "Copy count",
+      "call_number": "Call number"
+    },
+    "preview": {
+      "summary": {
+        "newTitles": "New titles",
+        "existingTitles": "Existing titles",
+        "copies": "Copies",
+        "errors": "Errors"
+      },
+      "partialWarning": "{errors} problem rows will be skipped. {importable} other rows are ready to import.",
+      "allErrorWarning": "All {errors} rows have a problem. Fix the file and upload it again.",
+      "columns": {
+        "row": "Row",
+        "title": "Title",
+        "copies": "Copies",
+        "status": "Status",
+        "message": "Message"
+      },
+      "status": {
+        "new_title": "New title",
+        "existing_title": "Existing title",
+        "error": "Error"
+      },
+      "back": "Back",
+      "commit": "Apply import",
+      "commitPartial": "Apply {count} valid rows"
+    }
+  },
   "stocktake": {
     "eyebrow": "Library",
     "title": "Stocktake",
