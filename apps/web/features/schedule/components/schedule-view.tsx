@@ -52,6 +52,12 @@ type Mode = "class" | "teacher" | "day";
 
 const WEEKDAYS = [1, 2, 3, 4, 5, 6, 7] as const;
 
+/** 1 (Monday) through 7 (Sunday), matching the schedule's own numbering. */
+function todayOfWeek(): number {
+  const jsDay = new Date().getDay();
+  return jsDay === 0 ? 7 : jsDay;
+}
+
 /**
  * Weekly timetable: rows are lesson periods, columns are school days, a
  * block spans its start to end period. Viewable by class or by teacher;
@@ -70,10 +76,7 @@ export function ScheduleView(): ReactElement {
   const [mode, setMode] = useState<Mode>(isTeacher ? "teacher" : "class");
   // The day view opens on today, because that is the day a person almost
   // always came to look at.
-  const [dayFilter, setDayFilter] = useState<number>(() => {
-    const jsDay = new Date().getDay();
-    return jsDay === 0 ? 7 : jsDay;
-  });
+  const [dayFilter, setDayFilter] = useState<number>(todayOfWeek);
   const [classId, setClassId] = useState("");
   const [teacherId, setTeacherId] = useState(isTeacher ? (me?.id ?? "") : "");
   const [creating, setCreating] = useState<{ day: number; startSeq: number } | null>(null);
@@ -387,6 +390,7 @@ export function ScheduleView(): ReactElement {
               onEdit={setEditing}
               onDelete={setPendingDelete}
               t={t}
+              currentSeq={dayFilter === todayOfWeek() ? periodNow.data?.sequence : undefined}
             />
           ) : null}
 

@@ -1,26 +1,23 @@
 "use client";
 
 import { cn } from "@newsekolah/ui";
-import { Copy, Pencil, Plus, Trash2 } from "lucide-react";
 import type { ReactElement } from "react";
 
 import type { ScheduleBlock } from "../api";
 
-import { BlockAction } from "./block-action";
-
-interface Named {
-  id: string;
-  name: string;
-}
-
-interface Period {
-  id: string;
-  name: string;
-  sequence: number;
-  starts_at: string;
-  ends_at: string;
-  is_break: boolean;
-}
+import {
+  BREAK_ROW,
+  EmptyCell,
+  EmptySlotCell,
+  GridColumns,
+  HeadCell,
+  LESSON_ROW,
+  LessonCell,
+  type Named,
+  type Period,
+  PeriodCell,
+  gridMinWidth,
+} from "./schedule-grid-cells";
 
 /**
  * One class or one teacher across the week. Rows are periods, columns are
@@ -83,44 +80,25 @@ export function ScheduleWeekGrid({
         hidden ? "hidden" : "hidden md:block",
       )}
     >
-      <table className="w-full min-w-[720px] border-collapse text-[13px]">
+      <table
+        className="w-full table-fixed border-collapse text-[13px]"
+        style={{ minWidth: gridMinWidth(activeDays.length) }}
+      >
+        <GridColumns columnCount={activeDays.length} />
         <thead>
           <tr className="bg-bg text-left text-fg-muted">
-            <th scope="col" className="w-28 border-b border-border px-3 py-2 font-medium">
-              {t("periodColumn")}
-            </th>
+            <HeadCell first>{t("periodColumn")}</HeadCell>
             {activeDays.map((day) => (
-              <th
-                key={day}
-                scope="col"
-                aria-current={day === today ? "date" : undefined}
-                className={cn(
-                  "border-b border-l border-border px-3 py-2 font-medium",
-                  day === today && "bg-accent/10 text-fg",
-                )}
-              >
+              <HeadCell key={day} current={day === today}>
                 {tDays(String(day))}
-              </th>
+              </HeadCell>
             ))}
           </tr>
         </thead>
         <tbody>
           {lessonPeriods.map((period) => (
-            <tr
-              key={period.id}
-              className={cn(
-                period.is_break && "bg-bg/60",
-                period.sequence === currentSeq && "bg-accent/5",
-              )}
-            >
-              <th scope="row" className="border-b border-border px-3 py-2 text-left font-normal">
-                <div className="flex flex-col">
-                  <span className="text-fg">{period.name}</span>
-                  <span className="text-[12px] text-fg-muted">
-                    {period.starts_at.slice(0, 5)}-{period.ends_at.slice(0, 5)}
-                  </span>
-                </div>
-              </th>
+            <tr key={period.id} className={cn(period.is_break ? BREAK_ROW : LESSON_ROW)}>
+              <PeriodCell period={period} current={period.sequence === currentSeq} />
               {activeDays.map((day) => {
                 const block = blockAt(day, period.sequence);
                 // A cell already covered by a block that started in
@@ -131,86 +109,46 @@ export function ScheduleWeekGrid({
                   return null;
                 }
                 if (period.is_break) {
+                  return <EmptyCell key={day} today={day === today} />;
+                }
+                if (!block) {
+                  if (!canManage) {
+                    return <EmptyCell key={day} today={day === today} />;
+                  }
                   return (
-                    <td
+                    <EmptySlotCell
                       key={day}
-                      className="border-b border-l border-border px-3 py-2 text-fg-muted"
+                      today={day === today}
+                      pasting={copied !== null}
+                      label={copied ? t("pasteHere") : t("addHere")}
+                      onClick={() => {
+                        if (copied) {
+                          onPaste(day, period.sequence);
+                          return;
+                        }
+                        onAdd(day, period.sequence);
+                      }}
                     />
                   );
                 }
-                if (!block) {
-                  return (
-                    <td key={day} className="border-b border-l border-border px-2 py-1 align-top">
-                      {canManage && (
-                        // Visible without hovering: a tablet has no
-                        // hover, and an invisible control is one
-                        // nobody finds.
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (copied) {
-                              onPaste(day, period.sequence);
-                              return;
-                            }
-                            onAdd(day, period.sequence);
-                          }}
-                          className="flex h-full min-h-10 w-full items-center justify-center gap-1 rounded-xs border border-dashed border-border text-[12px] text-fg-muted hover:border-accent hover:bg-accent/5 hover:text-accent"
-                        >
-                          {copied ? (
-                            <Copy className="size-3.5" aria-hidden="true" />
-                          ) : (
-                            <Plus className="size-3.5" aria-hidden="true" />
-                          )}
-                          {copied ? t("pasteHere") : t("addHere")}
-                        </button>
-                      )}
-                    </td>
-                  );
-                }
-                const span = block.end_seq - block.start_seq + 1;
-                const title =
-                  mode === "class"
-                    ? (teacherMap.get(block.teacher_user_id)?.name ?? t("unknownTeacher"))
-                    : (classMap.get(block.class_id)?.name ?? t("unknownClass"));
                 return (
-                  <td
+                  <LessonCell
                     key={day}
-                    rowSpan={span}
-                    className="border-b border-l border-border px-2 py-1 align-top"
-                  >
-                    <div className="group flex h-full min-h-10 flex-col gap-0.5 rounded-xs border border-accent/30 bg-accent/10 px-2 py-1.5">
-                      <span className="font-medium text-fg">
-                        {subjectMap.get(block.subject_id)?.name ?? t("unknownSubject")}
-                      </span>
-                      <span className="text-[12px] text-fg-muted">{title}</span>
-                      {canManage && (
-                        <div className="mt-1 flex items-center gap-1">
-                          <BlockAction
-                            label={t("copyBlock")}
-                            icon={<Copy className="size-3.5" aria-hidden="true" />}
-                            onClick={() => {
-                              onCopy(block);
-                            }}
-                          />
-                          <BlockAction
-                            label={t("editBlock")}
-                            icon={<Pencil className="size-3.5" aria-hidden="true" />}
-                            onClick={() => {
-                              onEdit(block);
-                            }}
-                          />
-                          <BlockAction
-                            label={t("deleteBlock")}
-                            danger
-                            icon={<Trash2 className="size-3.5" aria-hidden="true" />}
-                            onClick={() => {
-                              onDelete(block);
-                            }}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  </td>
+                    today={day === today}
+                    block={block}
+                    span={block.end_seq - block.start_seq + 1}
+                    subject={subjectMap.get(block.subject_id)?.name ?? t("unknownSubject")}
+                    detail={
+                      mode === "class"
+                        ? (teacherMap.get(block.teacher_user_id)?.name ?? t("unknownTeacher"))
+                        : (classMap.get(block.class_id)?.name ?? t("unknownClass"))
+                    }
+                    canManage={canManage}
+                    onCopy={onCopy}
+                    onEdit={onEdit}
+                    onDelete={onDelete}
+                    t={t}
+                  />
                 );
               })}
             </tr>
