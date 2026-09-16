@@ -3,6 +3,7 @@ import {
   Bell,
   Building2,
   FileSpreadsheet,
+  KeyRound,
   ListChecks,
   MessageCircle,
   Plug,
@@ -48,6 +49,14 @@ export const settingsNavItems: NavItem[] = [
     labelKey: "app.security.navLabel",
     href: "/settings/security",
     icon: ShieldCheck,
+    group: "nav.settings.label",
+  },
+  {
+    key: "settings-session",
+    labelKey: "app.settings.session.navLabel",
+    href: "/settings/session",
+    icon: KeyRound,
+    permission: "manage_settings",
     group: "nav.settings.label",
   },
   {

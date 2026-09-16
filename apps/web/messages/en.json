@@ -181,6 +181,23 @@
           "whatsapp": "WhatsApp"
         },
         "saved": "Defaults saved"
+      },
+      "session": {
+        "navLabel": "Session & Login",
+        "eyebrow": "Settings",
+        "title": "Session & Login",
+        "intro": "Applies to every user of this school, starting with the next session they open.",
+        "daysLabel": "Session length (days)",
+        "daysHint": "A user is asked to sign in again after this session ends. Between 1 and 365 days.",
+        "daysRangeError": "Session length must be between {min} and {max} days.",
+        "singleDeviceLabel": "Single-device login",
+        "singleDeviceHint": "Limit every user to one active device at a time.",
+        "singleDeviceExplain": "This change does not sign out anyone already signed in on another device right away. The next time any of them signs in anywhere, all of that user's other sessions end.",
+        "saved": "Session settings saved",
+        "save": "Save settings"
+      },
+      "branding": {
+        "navLabel": "School Branding"
       }
     },
     "forbidden": {
