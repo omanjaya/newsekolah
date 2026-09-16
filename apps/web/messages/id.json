@@ -64,7 +64,28 @@
       "unread": "{count, plural, =0 {Semua notifikasi sudah dibaca} one {# notifikasi belum dibaca} other {# notifikasi belum dibaca}}",
       "announcementsTitle": "Pengumuman terbaru",
       "openAnnouncements": "Lihat semua",
-      "footerHint": "Data di halaman ini diperbarui otomatis dari modul presensi, perizinan, dan komunikasi."
+      "footerHint": "Data di halaman ini diperbarui otomatis dari modul presensi, perizinan, dan komunikasi.",
+      "admin": {
+        "activeUsersTitle": "Pengguna aktif",
+        "kinds": {
+          "teacher": "Guru",
+          "staff": "Pegawai",
+          "student": "Siswa",
+          "parent": "Orang tua"
+        },
+        "loadError": "Ringkasan tidak bisa dimuat. Coba muat ulang halaman.",
+        "pendingTitle": "Sedang berjalan",
+        "pendingLabels": {
+          "leave_request": "Izin terencana",
+          "exit_permit": "Izin keluar",
+          "late_arrival": "Keterlambatan"
+        },
+        "onlineTitle": "Pengguna daring per peran",
+        "onlineUnavailableTitle": "Belum tersedia",
+        "onlineUnavailableBody": "Penghitung kehadiran daring belum tersambung ke layanan dashboard di server ini.",
+        "loginHistogramTitle": "Login per jam (UTC), 7 hari terakhir",
+        "histogramEmpty": "Belum ada login tercatat pada periode ini."
+      }
     },
     "profile": {
       "title": "Profil",

@@ -64,7 +64,28 @@
       "unread": "{count, plural, =0 {All notifications read} one {# unread notification} other {# unread notifications}}",
       "announcementsTitle": "Latest announcements",
       "openAnnouncements": "View all",
-      "footerHint": "This page updates automatically from the attendance, permits and communication modules."
+      "footerHint": "This page updates automatically from the attendance, permits and communication modules.",
+      "admin": {
+        "activeUsersTitle": "Active users",
+        "kinds": {
+          "teacher": "Teachers",
+          "staff": "Staff",
+          "student": "Students",
+          "parent": "Parents"
+        },
+        "loadError": "The summary could not load. Try reloading the page.",
+        "pendingTitle": "In progress",
+        "pendingLabels": {
+          "leave_request": "Planned leave",
+          "exit_permit": "Exit permits",
+          "late_arrival": "Late arrivals"
+        },
+        "onlineTitle": "Online users by role",
+        "onlineUnavailableTitle": "Not available yet",
+        "onlineUnavailableBody": "The online presence counter is not connected to this server's dashboard service yet.",
+        "loginHistogramTitle": "Logins per hour (UTC), last 7 days",
+        "histogramEmpty": "No logins recorded in this period yet."
+      }
     },
     "profile": {
       "title": "Profile",
