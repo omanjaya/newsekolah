@@ -68,6 +68,7 @@ export const queryKeys = {
 
   exitPermits: () => ["permits", "exit-permits"] as const,
   exitPermit: (id: string) => ["permits", "exit-permit", id] as const,
+  exitPermitReviewQueue: () => ["permits", "exit-permit-review-queue"] as const,
   leaveRequests: () => ["permits", "leave-requests"] as const,
   leaveRequest: (id: string) => ["permits", "leave-request", id] as const,
   leaveReviewQueue: () => ["permits", "leave-review-queue"] as const,

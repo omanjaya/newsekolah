@@ -4,7 +4,7 @@ import { ApiError } from "@newsekolah/api-client";
 import { Alert, Button, Input, useToast } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import {
@@ -19,13 +19,20 @@ import { QrPanel } from "./qr-panel";
 import { ScanTokenInput } from "./scan-token-input";
 import { WorkflowStepper } from "./workflow-stepper";
 
-/** Teacher: mint an approve-stage QR for the permit code the student shows. */
-export function ApprovePanel(): ReactElement {
+/**
+ * Teacher: mint an approve-stage QR for the permit code the student shows.
+ * `prefillId` lets the review queue jump straight here for one permit
+ * (typing the code by hand is the fallback when a student walks up
+ * without having been listed there yet). The caller keys this component on
+ * `prefillId` so a new value remounts it with a fresh initial state instead
+ * of needing an effect to resynchronize local state from a prop.
+ */
+export function ApprovePanel({ prefillId }: { prefillId?: string } = {}): ReactElement {
   const t = useTranslations("app.permits.exit.approve");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const issue = useIssueScanTokenMutation();
-  const [permitId, setPermitId] = useState("");
+  const [permitId, setPermitId] = useState(prefillId ?? "");
   const detail = useExitPermitQuery(issue.data?.context_id ?? "");
 
   function mint(id: string) {
@@ -40,6 +47,11 @@ export function ApprovePanel(): ReactElement {
       },
     );
   }
+
+  useEffect(() => {
+    if (prefillId) mint(prefillId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mint once on mount; the key remount covers a changed prefillId
+  }, []);
 
   return (
     <div className="flex flex-col gap-4">

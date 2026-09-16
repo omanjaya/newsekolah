@@ -583,6 +583,7 @@
         "eyebrow": "Perizinan",
         "title": "Izin keluar",
         "tabMine": "Izin saya",
+        "tabQueue": "Antrean",
         "tabApprove": "Setujui",
         "tabGate": "Gerbang",
         "noAccessTitle": "Tidak ada akses izin keluar",
@@ -624,6 +625,14 @@
           "needPayload": "Kode gerbang harus berasal dari QR siswa.",
           "passed": "Siswa diizinkan keluar",
           "lastTitle": "Terakhir keluar"
+        },
+        "queue": {
+          "emptyTitle": "Belum ada yang menunggu",
+          "emptyBody": "Izin keluar yang menunggu persetujuan atau pindai gerbang Anda akan muncul di sini.",
+          "unknownStudent": "Siswa tidak diketahui",
+          "process": "Proses",
+          "awaitingGate": "Menunggu pindai gerbang",
+          "yearlyReportLink": "Laporan tahunan izin keluar"
         }
       },
       "late": {
