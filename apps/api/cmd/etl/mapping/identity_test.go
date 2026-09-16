@@ -79,22 +79,23 @@ func TestMapEmploymentStatus(t *testing.T) {
 
 func TestMapAttendanceStatus(t *testing.T) {
 	cases := []struct {
-		code   string
+		word   string
 		want   string
 		wantOK bool
 	}{
-		{"h", "H", true},
-		{"S", "S", true},
-		{"I", "I", true},
-		{"D", "D", true},
-		{"A", "A", true},
-		{"Z", "", false},
+		{"Hadir", "H", true},
+		{"sakit", "S", true},
+		{"Izin", "I", true},
+		{"Dispen", "D", true},
+		{"Alpha", "A", true},
+		{" Hadir ", "H", true},
+		{"Terlambat", "", false},
 		{"", "", false},
 	}
 	for _, tc := range cases {
-		got, ok := MapAttendanceStatus(tc.code)
+		got, ok := MapAttendanceStatus(tc.word)
 		if got != tc.want || ok != tc.wantOK {
-			t.Errorf("MapAttendanceStatus(%q) = (%q, %v), want (%q, %v)", tc.code, got, ok, tc.want, tc.wantOK)
+			t.Errorf("MapAttendanceStatus(%q) = (%q, %v), want (%q, %v)", tc.word, got, ok, tc.want, tc.wantOK)
 		}
 	}
 }

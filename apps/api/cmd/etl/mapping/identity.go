@@ -68,29 +68,24 @@ func MapEmploymentStatus(raw string) (value string, ok bool) {
 	return value, ok
 }
 
-// attendanceStatusCodes are the default status codes both systems agree on:
-// SION's attendance_entries.status CHECK and the new tenant's default
-// tenant_policies(kind='attendance_statuses') seed (docs/06-database-schema.md
-// section 4.3). A tenant that has customised its status catalog away from
-// this default is out of scope for CleanAttendanceStatus; the ETL report
-// flags any code it does not recognise instead of writing it blind.
-var attendanceStatusCodes = map[string]bool{
-	"H": true, // hadir / present
-	"S": true, // sakit / sick
-	"I": true, // izin / permitted absence
-	"D": true, // dispensasi / dispensation
-	"A": true, // alpha / unexcused absence
+// attendanceStatusWords maps the live schema's attendance_details.status
+// enum (spelled-out Indonesian words) to the new tenant's default
+// tenant_policies(kind='attendance_statuses') single-letter codes
+// (docs/06-database-schema.md section 4.3). A tenant that has customised its
+// status catalog away from this default is out of scope for
+// MapAttendanceStatus; the ETL report flags any word it does not recognise
+// instead of writing it blind.
+var attendanceStatusWords = map[string]string{
+	"hadir":  "H",
+	"sakit":  "S",
+	"izin":   "I",
+	"dispen": "D",
+	"alpha":  "A",
 }
 
-// MapAttendanceStatus validates a SION attendance status code. The two
-// systems use the same single-letter codes, so this is a pass-through
-// validator rather than a translation table: it exists so a corrupt or
-// unexpected code in the source data is reported instead of silently
-// written to a column the target's UI does not know how to render.
-func MapAttendanceStatus(code string) (value string, ok bool) {
-	trimmed := strings.ToUpper(strings.TrimSpace(code))
-	if attendanceStatusCodes[trimmed] {
-		return trimmed, true
-	}
-	return "", false
+// MapAttendanceStatus translates a live-schema attendance status word to the
+// new schema's single-letter code.
+func MapAttendanceStatus(word string) (code string, ok bool) {
+	code, ok = attendanceStatusWords[strings.ToLower(strings.TrimSpace(word))]
+	return code, ok
 }
