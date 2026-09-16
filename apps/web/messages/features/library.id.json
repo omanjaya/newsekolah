@@ -25,12 +25,26 @@
       "title": "Judul",
       "subtitle": "Subjudul",
       "author": "Penulis",
+      "additionalAuthors": "Penulis tambahan",
       "publisher": "Penerbit",
+      "publishPlace": "Kota terbit",
       "publishYear": "Tahun terbit",
       "isbn": "ISBN",
       "classification": "Klasifikasi",
+      "pages": "Jumlah halaman",
+      "subjects": "Subjek",
+      "language": "Bahasa",
+      "abstract": "Abstrak",
       "save": "Simpan",
       "saved": "Judul disimpan"
+    },
+    "isbnLookup": {
+      "hint": "Cari data bibliografi dari ISBN di atas.",
+      "search": "Cari ISBN",
+      "notFound": "Tidak ditemukan data untuk ISBN ini. Isi manual di bawah.",
+      "apply": "Isi otomatis",
+      "importCover": "Impor sampul",
+      "coverImported": "Sampul diimpor"
     }
   },
   "copies": {

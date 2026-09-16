@@ -9,6 +9,7 @@ import {
   EmptyState,
   Input,
   PageHeader,
+  Textarea,
   domainIcons,
   useToast,
 } from "@newsekolah/ui";
@@ -21,6 +22,9 @@ import { useMemo, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { type LibraryTitle, useCreateLibraryTitleMutation, useLibraryTitlesQuery } from "../api";
+import type { LibraryExternalBibliography } from "../isbn-lookup-api";
+
+import { IsbnLookupPanel } from "./isbn-lookup-panel";
 
 export function CatalogueView(): ReactElement {
   const t = useTranslations("app.library.catalogue");
@@ -134,10 +138,31 @@ function TitleForm({ onDone }: { onDone: () => void }): ReactElement {
   const [title, setTitle] = useState("");
   const [subtitle, setSubtitle] = useState("");
   const [author, setAuthor] = useState("");
+  const [additionalAuthors, setAdditionalAuthors] = useState("");
   const [publisher, setPublisher] = useState("");
+  const [publishPlace, setPublishPlace] = useState("");
   const [publishYear, setPublishYear] = useState("");
   const [isbn, setIsbn] = useState("");
   const [classification, setClassification] = useState("");
+  const [pages, setPages] = useState("");
+  const [subjects, setSubjects] = useState("");
+  const [language, setLanguage] = useState("");
+  const [abstract, setAbstract] = useState("");
+  const [coverAssetId, setCoverAssetId] = useState("");
+
+  function applyLookup(bibliography: LibraryExternalBibliography) {
+    setTitle(bibliography.title);
+    if (bibliography.subtitle) setSubtitle(bibliography.subtitle);
+    if (bibliography.main_author) setAuthor(bibliography.main_author);
+    if (bibliography.additional_authors) setAdditionalAuthors(bibliography.additional_authors);
+    if (bibliography.publisher) setPublisher(bibliography.publisher);
+    if (bibliography.publish_place) setPublishPlace(bibliography.publish_place);
+    if (bibliography.publish_year) setPublishYear(String(bibliography.publish_year));
+    if (bibliography.pages) setPages(bibliography.pages);
+    if (bibliography.subjects) setSubjects(bibliography.subjects);
+    if (bibliography.language) setLanguage(bibliography.language);
+    if (bibliography.abstract) setAbstract(bibliography.abstract);
+  }
 
   return (
     <form
@@ -149,10 +174,17 @@ function TitleForm({ onDone }: { onDone: () => void }): ReactElement {
             title: title.trim(),
             subtitle: subtitle.trim() || undefined,
             author: author.trim() || undefined,
+            additional_authors: additionalAuthors.trim() || undefined,
             publisher: publisher.trim() || undefined,
+            publish_place: publishPlace.trim() || undefined,
             publish_year: publishYear ? Number(publishYear) : undefined,
             isbn: isbn.trim() || undefined,
             classification: classification.trim() || undefined,
+            pages: pages.trim() || undefined,
+            subjects: subjects.trim() || undefined,
+            language: language.trim() || undefined,
+            abstract: abstract.trim() || undefined,
+            cover_asset_id: coverAssetId || undefined,
             is_opac: true,
           },
           {
@@ -234,6 +266,7 @@ function TitleForm({ onDone }: { onDone: () => void }): ReactElement {
           maxLength={32}
         />
       </label>
+      <IsbnLookupPanel isbn={isbn} onApply={applyLookup} onCoverImported={setCoverAssetId} />
       <label className="flex flex-col gap-1 text-[13px]">
         <span className="font-medium">{t("classification")}</span>
         <Input
@@ -242,6 +275,67 @@ function TitleForm({ onDone }: { onDone: () => void }): ReactElement {
             setClassification(e.target.value);
           }}
           maxLength={60}
+        />
+      </label>
+      <label className="flex flex-col gap-1 text-[13px]">
+        <span className="font-medium">{t("additionalAuthors")}</span>
+        <Input
+          value={additionalAuthors}
+          onChange={(e) => {
+            setAdditionalAuthors(e.target.value);
+          }}
+          maxLength={500}
+        />
+      </label>
+      <label className="flex flex-col gap-1 text-[13px]">
+        <span className="font-medium">{t("publishPlace")}</span>
+        <Input
+          value={publishPlace}
+          onChange={(e) => {
+            setPublishPlace(e.target.value);
+          }}
+          maxLength={120}
+        />
+      </label>
+      <label className="flex flex-col gap-1 text-[13px]">
+        <span className="font-medium">{t("pages")}</span>
+        <Input
+          value={pages}
+          onChange={(e) => {
+            setPages(e.target.value);
+          }}
+          maxLength={60}
+        />
+      </label>
+      <label className="flex flex-col gap-1 text-[13px]">
+        <span className="font-medium">{t("subjects")}</span>
+        <Input
+          value={subjects}
+          onChange={(e) => {
+            setSubjects(e.target.value);
+          }}
+          maxLength={500}
+        />
+      </label>
+      <label className="flex flex-col gap-1 text-[13px]">
+        <span className="font-medium">{t("language")}</span>
+        <Input
+          value={language}
+          onChange={(e) => {
+            setLanguage(e.target.value);
+          }}
+          maxLength={10}
+        />
+      </label>
+      <label className="flex flex-col gap-1 text-[13px]">
+        <span className="font-medium">{t("abstract")}</span>
+        <Textarea
+          value={abstract}
+          onChange={(e) => {
+            setAbstract(e.target.value);
+          }}
+          rows={3}
+          maxLength={2000}
         />
       </label>
       <Button type="submit" loading={create.isPending}>

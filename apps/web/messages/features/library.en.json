@@ -25,12 +25,26 @@
       "title": "Title",
       "subtitle": "Subtitle",
       "author": "Author",
+      "additionalAuthors": "Additional authors",
       "publisher": "Publisher",
+      "publishPlace": "Publish place",
       "publishYear": "Publish year",
       "isbn": "ISBN",
       "classification": "Classification",
+      "pages": "Page count",
+      "subjects": "Subjects",
+      "language": "Language",
+      "abstract": "Abstract",
       "save": "Save",
       "saved": "Title saved"
+    },
+    "isbnLookup": {
+      "hint": "Look up bibliographic data from the ISBN above.",
+      "search": "Search ISBN",
+      "notFound": "No data found for this ISBN. Fill it in manually below.",
+      "apply": "Autofill",
+      "importCover": "Import cover",
+      "coverImported": "Cover imported"
     }
   },
   "copies": {
