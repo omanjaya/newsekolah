@@ -34,7 +34,7 @@ export default function GlobalError({
           fontFamily:
             "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
           backgroundColor: "#F7F6F3",
-          color: "#1A1A1A",
+          color: "#333333",
         }}
       >
         <div style={{ maxWidth: 360, textAlign: "center", padding: 24 }}>

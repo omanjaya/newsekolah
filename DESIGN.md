@@ -12,7 +12,8 @@ Bukan: startup gradien ungu, dashboard "AI", kartu-kartu melayang dengan bayanga
 
 ## Warna
 
-- Netral hangat sebagai dasar: latar `#F7F6F3` (terang) / `#141414` (gelap), permukaan `#FFFFFF` / `#1C1C1C`, teks `#1A1A1A` / `#ECECEC`, garis `#E3E1DC` / `#2A2A2A`.
+- Netral hangat sebagai dasar: latar `#F7F6F3` (terang) / `#141414` (gelap), permukaan `#FFFFFF` / `#1C1C1C`, teks `#333333` / `#ECECEC`, garis `#E3E1DC` / `#2A2A2A`.
+- Teks terang dulu `#1A1A1A` (17.4:1 di putih), hampir kontras maksimum dan terasa keras untuk layar yang dibaca berjam-jam. Diturunkan ke `#333333` (12.6:1), masih jauh di atas syarat 4.5:1. Mode gelap belum ikut turun: `#ECECEC` di `#1C1C1C` masih 14.4:1.
 - Satu warna aksen per sekolah (dari branding tenant; default biru tua `#1F3A5F`). Aksen dipakai hanya untuk tindakan utama, tautan, dan fokus. Tidak ada gradien.
 - Warna status tetap lintas sekolah, dipilih agar bisa dibedakan penyandang buta warna dan selalu disertai label teks atau ikon: Hadir `#2F6B3A`, Sakit `#8A6D1F`, Izin `#3F5F8A`, Dispensasi `#6B4A8A`, Alfa `#A3382F`, Terlambat `#B5651D`.
 - Kontras minimum 4.5:1 untuk teks, 3:1 untuk ikon dan garis komponen (diperiksa `contrast-check.py` dari antislop-human).

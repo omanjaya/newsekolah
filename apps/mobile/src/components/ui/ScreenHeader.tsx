@@ -32,7 +32,7 @@ export function ScreenHeader({
             onPress={() => router.back()}
             className="h-11 w-11 items-center justify-center"
           >
-            <ChevronLeft size={20} strokeWidth={1.75} color="#1A1A1A" />
+            <ChevronLeft size={20} strokeWidth={1.75} color="#333333" />
           </Pressable>
         ) : null}
         <Text className="text-xl font-medium text-ink dark:text-ink-dark" numberOfLines={1}>
