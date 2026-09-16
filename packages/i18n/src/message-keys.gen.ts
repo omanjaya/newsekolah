@@ -65,17 +65,22 @@ export type MessageKey =
   | "common.table.goToPreviousPage"
   | "common.table.page"
   | "common.table.rowsSelected"
+  | "errors.ATTACHMENT_INVALID_TYPE"
+  | "errors.ATTACHMENT_NOT_FOUND"
+  | "errors.ATTACHMENT_TOO_LARGE"
   | "errors.AUTH_INVALID_CREDENTIALS"
   | "errors.AUTH_TOKEN_EXPIRED"
   | "errors.BILLING_MODULE_DISABLED"
   | "errors.BILL_ALREADY_PAID"
   | "errors.BILL_NOT_FOUND"
+  | "errors.COUNSELING_FORBIDDEN"
   | "errors.DISCOUNT_NOT_FOUND"
   | "errors.DUTY_TYPE_IN_USE"
   | "errors.EXPECTED_GUEST_NOT_FOUND"
   | "errors.EXPECTED_GUEST_RESOLVED"
   | "errors.FEE_TYPE_NOT_FOUND"
   | "errors.FORBIDDEN"
+  | "errors.GRADE_RANGE_OVERLAP"
   | "errors.IMPERSONATION_NOT_ALLOWED"
   | "errors.INCIDENT_ALREADY_CLOSED"
   | "errors.INCIDENT_FORBIDDEN"
@@ -116,6 +121,7 @@ export type MessageKey =
   | "errors.PAYMENT_EXCEEDS_OUTSTANDING"
   | "errors.PAYMENT_NOT_FOUND"
   | "errors.RATE_LIMITED"
+  | "errors.REPORT_UNAVAILABLE"
   | "errors.SSO_ACCOUNT_NOT_FOUND"
   | "errors.SSO_CLIENT_SECRET_REQUIRED"
   | "errors.SSO_INVALID_TOKEN"
@@ -135,15 +141,21 @@ export type MessageKey =
   | "errors.SUPERVISION_SCORE_COUNT_MISMATCH"
   | "errors.SUPERVISION_SCORE_OUT_OF_RANGE"
   | "errors.TENANT_NOT_FOUND"
+  | "errors.TP_EXPORT_CODE_EXISTS"
+  | "errors.TP_KIND_NOT_ELIGIBLE"
   | "errors.UNKNOWN"
   | "errors.UPLOAD_FILE_TOO_LARGE"
   | "errors.UPLOAD_INVALID_FILE_TYPE"
   | "errors.UPLOAD_NOT_CONFIGURED"
   | "errors.USER_ALREADY_EXISTS"
   | "errors.VALIDATION_FAILED"
+  | "errors.VIOLATION_RECORD_VOIDED"
+  | "errors.VIOLATION_TYPE_INACTIVE"
   | "errors.VISITORS_MODULE_DISABLED"
   | "errors.VISIT_ALREADY_CHECKED_OUT"
   | "errors.VISIT_NOT_FOUND"
+  | "errors.WARNING_LETTER_ALREADY_ISSUED"
+  | "errors.WARNING_LETTER_NOT_DUE"
   | "nav.academic.items.attendance"
   | "nav.academic.items.grading"
   | "nav.academic.items.homeroomClass"
@@ -292,17 +304,22 @@ export const MESSAGE_KEYS: readonly MessageKey[] = [
   "common.table.goToPreviousPage",
   "common.table.page",
   "common.table.rowsSelected",
+  "errors.ATTACHMENT_INVALID_TYPE",
+  "errors.ATTACHMENT_NOT_FOUND",
+  "errors.ATTACHMENT_TOO_LARGE",
   "errors.AUTH_INVALID_CREDENTIALS",
   "errors.AUTH_TOKEN_EXPIRED",
   "errors.BILLING_MODULE_DISABLED",
   "errors.BILL_ALREADY_PAID",
   "errors.BILL_NOT_FOUND",
+  "errors.COUNSELING_FORBIDDEN",
   "errors.DISCOUNT_NOT_FOUND",
   "errors.DUTY_TYPE_IN_USE",
   "errors.EXPECTED_GUEST_NOT_FOUND",
   "errors.EXPECTED_GUEST_RESOLVED",
   "errors.FEE_TYPE_NOT_FOUND",
   "errors.FORBIDDEN",
+  "errors.GRADE_RANGE_OVERLAP",
   "errors.IMPERSONATION_NOT_ALLOWED",
   "errors.INCIDENT_ALREADY_CLOSED",
   "errors.INCIDENT_FORBIDDEN",
@@ -343,6 +360,7 @@ export const MESSAGE_KEYS: readonly MessageKey[] = [
   "errors.PAYMENT_EXCEEDS_OUTSTANDING",
   "errors.PAYMENT_NOT_FOUND",
   "errors.RATE_LIMITED",
+  "errors.REPORT_UNAVAILABLE",
   "errors.SSO_ACCOUNT_NOT_FOUND",
   "errors.SSO_CLIENT_SECRET_REQUIRED",
   "errors.SSO_INVALID_TOKEN",
@@ -362,15 +380,21 @@ export const MESSAGE_KEYS: readonly MessageKey[] = [
   "errors.SUPERVISION_SCORE_COUNT_MISMATCH",
   "errors.SUPERVISION_SCORE_OUT_OF_RANGE",
   "errors.TENANT_NOT_FOUND",
+  "errors.TP_EXPORT_CODE_EXISTS",
+  "errors.TP_KIND_NOT_ELIGIBLE",
   "errors.UNKNOWN",
   "errors.UPLOAD_FILE_TOO_LARGE",
   "errors.UPLOAD_INVALID_FILE_TYPE",
   "errors.UPLOAD_NOT_CONFIGURED",
   "errors.USER_ALREADY_EXISTS",
   "errors.VALIDATION_FAILED",
+  "errors.VIOLATION_RECORD_VOIDED",
+  "errors.VIOLATION_TYPE_INACTIVE",
   "errors.VISITORS_MODULE_DISABLED",
   "errors.VISIT_ALREADY_CHECKED_OUT",
   "errors.VISIT_NOT_FOUND",
+  "errors.WARNING_LETTER_ALREADY_ISSUED",
+  "errors.WARNING_LETTER_NOT_DUE",
   "nav.academic.items.attendance",
   "nav.academic.items.grading",
   "nav.academic.items.homeroomClass",
