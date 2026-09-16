@@ -22,6 +22,9 @@ export function VisitRecordDialog({
   onRecorded: () => void;
 }): ReactElement {
   const t = useTranslations("app.library.visits.form");
+  // The visitor-kind labels are shared with the visits table, so they live
+  // one level up rather than being duplicated inside the form namespace.
+  const tKind = useTranslations("app.library.visits.kinds");
   const apiErrorMessage = useApiErrorMessage();
   const directory = useDirectoryQuery();
   const record = useRecordLibraryVisitMutation();
@@ -91,7 +94,7 @@ export function VisitRecordDialog({
           <label className="flex flex-col gap-1 text-[13px]">
             <span className="font-medium">{t("kind")}</span>
             <Select
-              options={KINDS.map((k) => ({ value: k, label: t(`kinds.${k}`) }))}
+              options={KINDS.map((k) => ({ value: k, label: tKind(k) }))}
               value={kind}
               onValueChange={(v) => {
                 setKind(v as LibraryVisitKind);

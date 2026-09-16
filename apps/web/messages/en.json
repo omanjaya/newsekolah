@@ -82,7 +82,7 @@
         },
         "onlineTitle": "Online users by role",
         "onlineEmpty": "Nobody is connected right now.",
-        "loginHistogramTitle": "Logins per hour (UTC), last 7 days",
+        "loginHistogramTitle": "Logins per hour, last 7 days",
         "histogramEmpty": "No logins recorded in this period yet."
       }
     },

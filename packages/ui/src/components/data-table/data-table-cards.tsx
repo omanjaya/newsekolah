@@ -61,10 +61,11 @@ export function DataTableCards<TData>({
             }
           : undefined;
 
+        const titleId = `${row.id}-card-title`;
         const body = (
           <>
             {title && (
-              <div className="text-[14px] font-medium text-fg">
+              <div id={titleId} className="text-[14px] font-medium text-fg">
                 {flexRender(title.column.columnDef.cell, title.getContext())}
               </div>
             )}
@@ -77,7 +78,7 @@ export function DataTableCards<TData>({
                     on a phone, so give it a thumb-sized height here rather
                     than leaving it as tall as its text.
                   */}
-                  <dd className="min-w-0 text-right text-[13px] text-fg [&_a]:inline-flex [&_a]:min-h-11 [&_a]:items-center [&_button]:inline-flex [&_button]:min-h-11 [&_button]:items-center">
+                  <dd className="min-w-0 text-right text-[13px] text-fg [&_a]:relative [&_a]:z-10 [&_a]:inline-flex [&_a]:min-h-11 [&_a]:items-center [&_button]:relative [&_button]:z-10 [&_button]:inline-flex [&_button]:min-h-11 [&_button]:items-center">
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </dd>
                 </div>
@@ -91,20 +92,24 @@ export function DataTableCards<TData>({
             key={row.id}
             data-state={row.getIsSelected() ? "selected" : undefined}
             className={cn(
-              "rounded-sm border border-border bg-surface",
+              "relative rounded-sm border border-border bg-surface",
               "data-[state=selected]:border-accent",
             )}
           >
-            {activate ? (
+            <div className="flex flex-col gap-2 p-3">{body}</div>
+            {/*
+              The whole card opens the row, but a cell may hold its own
+              button or link, and one button cannot sit inside another. So
+              the row's tap target is an overlay covering the card, and the
+              cells lift their own controls above it with z-10.
+            */}
+            {activate && (
               <button
                 type="button"
                 onClick={activate}
-                className="flex w-full flex-col gap-2 p-3 text-left"
-              >
-                {body}
-              </button>
-            ) : (
-              <div className="flex flex-col gap-2 p-3">{body}</div>
+                aria-labelledby={title ? titleId : undefined}
+                className="absolute inset-0 rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              />
             )}
           </li>
         );

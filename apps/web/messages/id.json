@@ -82,7 +82,7 @@
         },
         "onlineTitle": "Pengguna daring per peran",
         "onlineEmpty": "Tidak ada yang sedang terhubung saat ini.",
-        "loginHistogramTitle": "Login per jam (UTC), 7 hari terakhir",
+        "loginHistogramTitle": "Login per jam, 7 hari terakhir",
         "histogramEmpty": "Belum ada login tercatat pada periode ini."
       }
     },

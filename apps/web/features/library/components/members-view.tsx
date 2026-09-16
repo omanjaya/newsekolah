@@ -136,7 +136,7 @@ export function MembersView(): ReactElement {
                   setBulkRegistering(true);
                 }}
               >
-                {t("bulkRegister")}
+                {t("bulkRegister.title")}
               </Button>
               <Button
                 size="sm"
