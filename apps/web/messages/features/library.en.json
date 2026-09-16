@@ -749,6 +749,43 @@
       "emptyBody": "Contact the platform operator if this list should be populated."
     }
   },
+  "loanRules": {
+    "eyebrow": "Library",
+    "title": "Loan rules",
+    "navLabel": "Loan rules",
+    "add": "Add rule",
+    "everyMemberType": "Every member type",
+    "columns": {
+      "memberType": "Member type",
+      "period": "Period",
+      "allowLoans": "Lending",
+      "limits": "Limits",
+      "actions": "Actions"
+    },
+    "loansOpen": "Open",
+    "loansClosed": "Closed",
+    "limitsValue": "{items} copies, {days} days",
+    "limitsDefault": "Follows member type",
+    "delete": "Delete",
+    "deleteTitle": "Delete rule",
+    "deleteBody": "This rule will be deleted. Add a new one if you need to change it.",
+    "deleted": "Rule deleted",
+    "emptyTitle": "No dated rules yet",
+    "emptyBody": "Add a rule to change loan limits temporarily, or close lending for a period such as a long holiday.",
+    "form": {
+      "memberType": "Member type",
+      "memberTypeAll": "Applies to every member type",
+      "startsOn": "Starts on",
+      "endsOn": "Ends on",
+      "allowLoans": "Lending is open during this period",
+      "maxLoanItems": "Max copies",
+      "maxLoanDays": "Max loan days",
+      "keepDefault": "Follows member type",
+      "notes": "Notes",
+      "cancel": "Cancel",
+      "save": "Save"
+    }
+  },
   "reports": {
     "navLabel": "Library reports",
     "eyebrow": "Library",

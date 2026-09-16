@@ -749,6 +749,43 @@
       "emptyBody": "Hubungi operator platform bila daftar ini seharusnya terisi."
     }
   },
+  "loanRules": {
+    "eyebrow": "Perpustakaan",
+    "title": "Aturan peminjaman",
+    "navLabel": "Aturan peminjaman",
+    "add": "Tambah aturan",
+    "everyMemberType": "Semua jenis anggota",
+    "columns": {
+      "memberType": "Jenis anggota",
+      "period": "Periode",
+      "allowLoans": "Peminjaman",
+      "limits": "Batas",
+      "actions": "Aksi"
+    },
+    "loansOpen": "Dibuka",
+    "loansClosed": "Ditutup",
+    "limitsValue": "{items} eksemplar, {days} hari",
+    "limitsDefault": "Ikuti jenis anggota",
+    "delete": "Hapus",
+    "deleteTitle": "Hapus aturan",
+    "deleteBody": "Aturan ini akan dihapus. Buat aturan baru bila perlu mengubahnya.",
+    "deleted": "Aturan dihapus",
+    "emptyTitle": "Belum ada aturan bertanggal",
+    "emptyBody": "Tambahkan aturan untuk mengubah batas pinjam sementara, atau menutup peminjaman pada periode tertentu, misalnya libur panjang.",
+    "form": {
+      "memberType": "Jenis anggota",
+      "memberTypeAll": "Berlaku untuk semua jenis anggota",
+      "startsOn": "Mulai",
+      "endsOn": "Berakhir",
+      "allowLoans": "Peminjaman dibuka pada periode ini",
+      "maxLoanItems": "Maks. eksemplar",
+      "maxLoanDays": "Maks. hari pinjam",
+      "keepDefault": "Ikuti jenis anggota",
+      "notes": "Catatan",
+      "cancel": "Batal",
+      "save": "Simpan"
+    }
+  },
   "reports": {
     "navLabel": "Laporan perpustakaan",
     "eyebrow": "Perpustakaan",

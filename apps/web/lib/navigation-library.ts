@@ -50,6 +50,14 @@ export const libraryNavItems: NavItem[] = [
     group: "nav.library.label",
   },
   {
+    key: "library-loan-rules",
+    labelKey: "app.library.loanRules.navLabel",
+    href: "/library/loan-rules",
+    icon: domainIcons.library,
+    permission: "manage_library_settings",
+    group: "nav.library.label",
+  },
+  {
     key: "library-reports",
     labelKey: "app.library.reports.navLabel",
     href: "/library/reports",
