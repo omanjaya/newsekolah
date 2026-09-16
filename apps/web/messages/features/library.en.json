@@ -36,6 +36,8 @@
       "subjects": "Subjects",
       "language": "Language",
       "abstract": "Abstract",
+      "materialType": "Material type",
+      "materialTypePlaceholder": "Pick a material type",
       "save": "Save",
       "saved": "Title saved"
     },
@@ -46,6 +48,11 @@
       "apply": "Autofill",
       "importCover": "Import cover",
       "coverImported": "Cover imported"
+    },
+    "duplicateCheck": {
+      "title": "Possible duplicate title",
+      "body": "A title with this ISBN already exists in the catalogue: {title}.",
+      "view": "View title"
     }
   },
   "copies": {
@@ -81,6 +88,14 @@
       "barcode": "Barcode",
       "condition": "Condition",
       "notes": "Notes",
+      "category": "Collection category",
+      "categoryPlaceholder": "Pick a category",
+      "location": "Shelf location",
+      "locationPlaceholder": "Pick a location",
+      "source": "Acquisition source",
+      "sourcePlaceholder": "Pick a source",
+      "partner": "Partner",
+      "partnerPlaceholder": "Pick a partner",
       "save": "Save",
       "saved": "Copy added"
     },
@@ -620,6 +635,118 @@
       "scanned": "Scanned",
       "missing": "Missing",
       "unexpected": "Unexpected"
+    }
+  },
+  "masterData": {
+    "eyebrow": "Library",
+    "title": "Library master data",
+    "navLabel": "Master data",
+    "tabs": {
+      "materialTypes": "Material types",
+      "acquisitionSources": "Acquisition sources",
+      "partners": "Partners",
+      "ddcClasses": "DDC classes"
+    },
+    "materialTypes": {
+      "add": "Add material type",
+      "editTitle": "Edit material type",
+      "columns": {
+        "code": "Code",
+        "name": "Name",
+        "loanLimit": "Loan limit",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "loanLimitValue": "{items} copies, {days} days",
+      "active": "Active",
+      "inactive": "Inactive",
+      "edit": "Edit",
+      "delete": "Delete",
+      "deleteTitle": "Delete material type",
+      "deleteBody": "Material type \"{name}\" will be deleted.",
+      "deleted": "Material type deleted",
+      "stillInUse": "This material type is still used by another title, so it cannot be deleted.",
+      "emptyTitle": "No material types yet",
+      "emptyBody": "Add a material type to set loan limits per kind of item, such as books and magazines.",
+      "form": {
+        "code": "Code",
+        "name": "Name",
+        "maxLoanItems": "Max copies",
+        "maxLoanDays": "Max loan days",
+        "maxRenewals": "Max renewals",
+        "sortOrder": "Sort order",
+        "isActive": "Active",
+        "cancel": "Cancel",
+        "save": "Save"
+      }
+    },
+    "acquisitionSources": {
+      "add": "Add source",
+      "editTitle": "Edit acquisition source",
+      "columns": {
+        "code": "Code",
+        "name": "Name",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "active": "Active",
+      "inactive": "Inactive",
+      "edit": "Edit",
+      "delete": "Delete",
+      "deleteTitle": "Delete acquisition source",
+      "deleteBody": "Acquisition source \"{name}\" will be deleted.",
+      "deleted": "Acquisition source deleted",
+      "stillInUse": "This source is still used by another copy, so it cannot be deleted.",
+      "emptyTitle": "No acquisition sources yet",
+      "emptyBody": "Add sources such as purchase or donation to record on each copy.",
+      "form": {
+        "code": "Code",
+        "name": "Name",
+        "sortOrder": "Sort order",
+        "isActive": "Active",
+        "cancel": "Cancel",
+        "save": "Save"
+      }
+    },
+    "partners": {
+      "add": "Add partner",
+      "editTitle": "Edit partner",
+      "columns": {
+        "code": "Code",
+        "name": "Name",
+        "contact": "Contact",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "active": "Active",
+      "inactive": "Inactive",
+      "edit": "Edit",
+      "delete": "Delete",
+      "deleteTitle": "Delete partner",
+      "deleteBody": "Partner \"{name}\" will be deleted.",
+      "deleted": "Partner deleted",
+      "stillInUse": "This partner is still used by another copy, so it cannot be deleted.",
+      "emptyTitle": "No partners yet",
+      "emptyBody": "Add the donors or vendors that copies come from.",
+      "form": {
+        "code": "Code",
+        "name": "Name",
+        "contactName": "Contact name",
+        "phone": "Phone",
+        "address": "Address",
+        "sortOrder": "Sort order",
+        "isActive": "Active",
+        "cancel": "Cancel",
+        "save": "Save"
+      }
+    },
+    "ddcClasses": {
+      "columns": {
+        "code": "Code",
+        "name": "Name"
+      },
+      "emptyTitle": "DDC class data is unavailable",
+      "emptyBody": "Contact the platform operator if this list should be populated."
     }
   },
   "reports": {

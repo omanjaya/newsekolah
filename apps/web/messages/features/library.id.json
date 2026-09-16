@@ -36,6 +36,8 @@
       "subjects": "Subjek",
       "language": "Bahasa",
       "abstract": "Abstrak",
+      "materialType": "Jenis bahan",
+      "materialTypePlaceholder": "Pilih jenis bahan",
       "save": "Simpan",
       "saved": "Judul disimpan"
     },
@@ -46,6 +48,11 @@
       "apply": "Isi otomatis",
       "importCover": "Impor sampul",
       "coverImported": "Sampul diimpor"
+    },
+    "duplicateCheck": {
+      "title": "Kemungkinan judul ganda",
+      "body": "Judul dengan ISBN ini sudah ada di katalog: {title}.",
+      "view": "Lihat judul"
     }
   },
   "copies": {
@@ -81,6 +88,14 @@
       "barcode": "Barcode",
       "condition": "Kondisi",
       "notes": "Catatan",
+      "category": "Kategori koleksi",
+      "categoryPlaceholder": "Pilih kategori",
+      "location": "Lokasi rak",
+      "locationPlaceholder": "Pilih lokasi",
+      "source": "Sumber perolehan",
+      "sourcePlaceholder": "Pilih sumber",
+      "partner": "Mitra",
+      "partnerPlaceholder": "Pilih mitra",
       "save": "Simpan",
       "saved": "Eksemplar ditambahkan"
     },
@@ -620,6 +635,118 @@
       "scanned": "Terpindai",
       "missing": "Hilang",
       "unexpected": "Tidak terduga"
+    }
+  },
+  "masterData": {
+    "eyebrow": "Perpustakaan",
+    "title": "Master data perpustakaan",
+    "navLabel": "Master data",
+    "tabs": {
+      "materialTypes": "Jenis bahan",
+      "acquisitionSources": "Sumber perolehan",
+      "partners": "Mitra",
+      "ddcClasses": "Kelas DDC"
+    },
+    "materialTypes": {
+      "add": "Tambah jenis bahan",
+      "editTitle": "Ubah jenis bahan",
+      "columns": {
+        "code": "Kode",
+        "name": "Nama",
+        "loanLimit": "Batas pinjam",
+        "status": "Status",
+        "actions": "Aksi"
+      },
+      "loanLimitValue": "{items} eksemplar, {days} hari",
+      "active": "Aktif",
+      "inactive": "Nonaktif",
+      "edit": "Ubah",
+      "delete": "Hapus",
+      "deleteTitle": "Hapus jenis bahan",
+      "deleteBody": "Jenis bahan \"{name}\" akan dihapus.",
+      "deleted": "Jenis bahan dihapus",
+      "stillInUse": "Jenis bahan ini masih dipakai oleh judul lain, sehingga tidak bisa dihapus.",
+      "emptyTitle": "Belum ada jenis bahan",
+      "emptyBody": "Tambahkan jenis bahan untuk mengatur batas pinjam per jenis, misalnya buku dan majalah.",
+      "form": {
+        "code": "Kode",
+        "name": "Nama",
+        "maxLoanItems": "Maks. eksemplar",
+        "maxLoanDays": "Maks. hari pinjam",
+        "maxRenewals": "Maks. perpanjangan",
+        "sortOrder": "Urutan",
+        "isActive": "Aktif",
+        "cancel": "Batal",
+        "save": "Simpan"
+      }
+    },
+    "acquisitionSources": {
+      "add": "Tambah sumber",
+      "editTitle": "Ubah sumber perolehan",
+      "columns": {
+        "code": "Kode",
+        "name": "Nama",
+        "status": "Status",
+        "actions": "Aksi"
+      },
+      "active": "Aktif",
+      "inactive": "Nonaktif",
+      "edit": "Ubah",
+      "delete": "Hapus",
+      "deleteTitle": "Hapus sumber perolehan",
+      "deleteBody": "Sumber perolehan \"{name}\" akan dihapus.",
+      "deleted": "Sumber perolehan dihapus",
+      "stillInUse": "Sumber ini masih dipakai oleh eksemplar lain, sehingga tidak bisa dihapus.",
+      "emptyTitle": "Belum ada sumber perolehan",
+      "emptyBody": "Tambahkan sumber seperti pembelian atau hibah untuk dicatat pada setiap eksemplar.",
+      "form": {
+        "code": "Kode",
+        "name": "Nama",
+        "sortOrder": "Urutan",
+        "isActive": "Aktif",
+        "cancel": "Batal",
+        "save": "Simpan"
+      }
+    },
+    "partners": {
+      "add": "Tambah mitra",
+      "editTitle": "Ubah mitra",
+      "columns": {
+        "code": "Kode",
+        "name": "Nama",
+        "contact": "Kontak",
+        "status": "Status",
+        "actions": "Aksi"
+      },
+      "active": "Aktif",
+      "inactive": "Nonaktif",
+      "edit": "Ubah",
+      "delete": "Hapus",
+      "deleteTitle": "Hapus mitra",
+      "deleteBody": "Mitra \"{name}\" akan dihapus.",
+      "deleted": "Mitra dihapus",
+      "stillInUse": "Mitra ini masih dipakai oleh eksemplar lain, sehingga tidak bisa dihapus.",
+      "emptyTitle": "Belum ada mitra",
+      "emptyBody": "Tambahkan donatur atau vendor yang menjadi sumber eksemplar.",
+      "form": {
+        "code": "Kode",
+        "name": "Nama",
+        "contactName": "Nama kontak",
+        "phone": "Telepon",
+        "address": "Alamat",
+        "sortOrder": "Urutan",
+        "isActive": "Aktif",
+        "cancel": "Batal",
+        "save": "Simpan"
+      }
+    },
+    "ddcClasses": {
+      "columns": {
+        "code": "Kode",
+        "name": "Nama"
+      },
+      "emptyTitle": "Data kelas DDC tidak tersedia",
+      "emptyBody": "Hubungi operator platform bila daftar ini seharusnya terisi."
     }
   },
   "reports": {

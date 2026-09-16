@@ -9,6 +9,7 @@ import {
   EmptyState,
   Input,
   PageHeader,
+  Select,
   Textarea,
   domainIcons,
   useToast,
@@ -29,7 +30,9 @@ import {
   useLibraryTitlesQuery,
 } from "../api";
 import type { LibraryExternalBibliography } from "../isbn-lookup-api";
+import { useLibraryCatalogueOptionsQuery } from "../master-data-api";
 
+import { DuplicateTitleWarning } from "./duplicate-title-warning";
 import { IsbnLookupPanel } from "./isbn-lookup-panel";
 
 export function CatalogueView(): ReactElement {
@@ -152,6 +155,7 @@ function TitleForm({ onDone }: { onDone: () => void }): ReactElement {
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const create = useCreateLibraryTitleMutation();
+  const options = useLibraryCatalogueOptionsQuery();
 
   const [title, setTitle] = useState("");
   const [subtitle, setSubtitle] = useState("");
@@ -167,6 +171,7 @@ function TitleForm({ onDone }: { onDone: () => void }): ReactElement {
   const [language, setLanguage] = useState("");
   const [abstract, setAbstract] = useState("");
   const [coverAssetId, setCoverAssetId] = useState("");
+  const [materialTypeId, setMaterialTypeId] = useState("");
 
   function applyLookup(bibliography: LibraryExternalBibliography) {
     setTitle(bibliography.title);
@@ -203,6 +208,7 @@ function TitleForm({ onDone }: { onDone: () => void }): ReactElement {
             language: language.trim() || undefined,
             abstract: abstract.trim() || undefined,
             cover_asset_id: coverAssetId || undefined,
+            material_type_id: materialTypeId || undefined,
             is_opac: true,
           },
           {
@@ -284,6 +290,7 @@ function TitleForm({ onDone }: { onDone: () => void }): ReactElement {
           maxLength={32}
         />
       </label>
+      <DuplicateTitleWarning isbn={isbn} />
       <IsbnLookupPanel isbn={isbn} onApply={applyLookup} onCoverImported={setCoverAssetId} />
       <label className="flex flex-col gap-1 text-[13px]">
         <span className="font-medium">{t("classification")}</span>
@@ -293,6 +300,19 @@ function TitleForm({ onDone }: { onDone: () => void }): ReactElement {
             setClassification(e.target.value);
           }}
           maxLength={60}
+        />
+      </label>
+      <label className="flex flex-col gap-1 text-[13px]">
+        <span className="font-medium">{t("materialType")}</span>
+        <Select
+          options={(options.data?.material_types ?? []).map((mt) => ({
+            value: mt.id,
+            label: mt.name,
+          }))}
+          value={materialTypeId}
+          onValueChange={setMaterialTypeId}
+          placeholder={t("materialTypePlaceholder")}
+          disabled={options.isLoading}
         />
       </label>
       <label className="flex flex-col gap-1 text-[13px]">

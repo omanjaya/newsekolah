@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 
 import { academicNavItems } from "./navigation-academic";
+import { libraryNavItems } from "./navigation-library";
 import { moduleNavItems } from "./navigation-modules";
 import { settingsNavItems } from "./navigation-settings";
 
@@ -225,102 +226,6 @@ export const navigation: NavItem[] = [
     group: GROUP.discipline,
   },
   {
-    key: "library-catalogue",
-    labelKey: "nav.library.items.catalog",
-    href: "/library/catalogue",
-    icon: domainIcons.library,
-    permission: "view_library",
-    group: GROUP.library,
-  },
-  {
-    key: "library-desk",
-    labelKey: "nav.library.items.circulation",
-    href: "/library/desk",
-    icon: domainIcons.library,
-    permission: "manage_library_circulation",
-    group: GROUP.library,
-  },
-  {
-    key: "library-class-loans",
-    labelKey: "app.library.classLoans.navLabel",
-    href: "/library/class-loans",
-    icon: domainIcons.library,
-    permission: "manage_library_circulation",
-    group: GROUP.library,
-  },
-  {
-    key: "library-stocktake",
-    labelKey: "nav.library.items.stockOpname",
-    href: "/library/stocktake",
-    icon: domainIcons.library,
-    permission: "manage_library_catalog",
-    group: GROUP.library,
-  },
-  {
-    key: "library-reports",
-    labelKey: "app.library.reports.navLabel",
-    href: "/library/reports",
-    icon: domainIcons.library,
-    permission: "view_library_reports",
-    group: GROUP.library,
-  },
-  {
-    key: "library-kiosk",
-    labelKey: "app.library.kiosk.navLabel",
-    href: "/library/kiosk",
-    icon: domainIcons.library,
-    permission: "manage_library_circulation",
-    group: GROUP.library,
-  },
-  {
-    key: "library-members",
-    labelKey: "app.library.members.navLabel",
-    href: "/library/members",
-    icon: domainIcons.library,
-    permission: "manage_library_members",
-    group: GROUP.library,
-  },
-  {
-    key: "library-member-types",
-    labelKey: "app.library.memberTypes.navLabel",
-    href: "/library/member-types",
-    icon: domainIcons.library,
-    permission: "manage_library_settings",
-    group: GROUP.library,
-  },
-  {
-    key: "library-violations",
-    labelKey: "app.library.violations.navLabel",
-    href: "/library/violations",
-    icon: domainIcons.violation,
-    permission: "manage_library_circulation",
-    group: GROUP.library,
-  },
-  {
-    key: "library-import",
-    labelKey: "app.library.import.navLabel",
-    href: "/library/import",
-    icon: domainIcons.library,
-    permission: "manage_library_catalog",
-    group: GROUP.library,
-  },
-  {
-    key: "library-visits",
-    labelKey: "app.library.visits.navLabel",
-    href: "/library/visits",
-    icon: domainIcons.library,
-    permission: "manage_library_circulation",
-    group: GROUP.library,
-  },
-  {
-    key: "library-visit-kiosk",
-    labelKey: "app.library.visitKiosk.navLabel",
-    href: "/library/visit-kiosk",
-    icon: domainIcons.library,
-    permission: "manage_library_circulation",
-    group: GROUP.library,
-  },
-  {
     key: "leave-requests",
     labelKey: "nav.permits.items.plannedLeave",
     tabLabelKey: "nav.compact.permits",
@@ -425,6 +330,7 @@ export const navigation: NavItem[] = [
   },
 
   ...academicNavItems,
+  ...libraryNavItems,
   ...moduleNavItems,
   ...settingsNavItems,
 ];
