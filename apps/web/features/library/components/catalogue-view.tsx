@@ -21,13 +21,20 @@ import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { type LibraryTitle, useCreateLibraryTitleMutation, useLibraryTitlesQuery } from "../api";
+import { useCan } from "../../../lib/session/session-provider";
+import {
+  type LibraryTitle,
+  downloadLibraryCatalogueExportXlsx,
+  useCreateLibraryTitleMutation,
+  useLibraryTitlesQuery,
+} from "../api";
 import type { LibraryExternalBibliography } from "../isbn-lookup-api";
 
 import { IsbnLookupPanel } from "./isbn-lookup-panel";
 
 export function CatalogueView(): ReactElement {
   const t = useTranslations("app.library.catalogue");
+  const canManage = useCan("manage_library_catalog");
   const [search, setSearch] = useState("");
   const [adding, setAdding] = useState(false);
   const { data, isLoading } = useLibraryTitlesQuery(search);
@@ -77,6 +84,17 @@ export function CatalogueView(): ReactElement {
         <Button asChild size="sm" variant="secondary">
           <Link href="/library/copies">{t("browseCopies")}</Link>
         </Button>
+        {canManage && (
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => {
+              void downloadLibraryCatalogueExportXlsx();
+            }}
+          >
+            {t("exportCatalogue")}
+          </Button>
+        )}
         <Button
           size="sm"
           icon={<Plus />}

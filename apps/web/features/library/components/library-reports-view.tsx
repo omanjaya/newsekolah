@@ -3,6 +3,7 @@
 import { formatDate } from "@newsekolah/i18n";
 import type { Locale } from "@newsekolah/i18n";
 import {
+  Button,
   EmptyState,
   Input,
   PageHeader,
@@ -12,11 +13,16 @@ import {
   TabsTrigger,
   domainIcons,
 } from "@newsekolah/ui";
+import { Download } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
 import {
+  downloadLoansReportXlsx,
+  downloadMonthlyLibraryReportPdf,
+  downloadMostBorrowedReportXlsx,
+  downloadOverdueMembersReportXlsx,
   useLoansReportQuery,
   useMostBorrowedReportQuery,
   useOverdueMembersReportQuery,
@@ -33,11 +39,22 @@ function firstOfMonthIso(): string {
   return new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
 }
 
+function monthIso(): string {
+  return new Date().toISOString().slice(0, 7);
+}
+
 export function LibraryReportsView(): ReactElement {
   const t = useTranslations("app.library.reports");
   const [tab, setTab] = useState<ReportTab>("loans");
   const [from, setFrom] = useState(firstOfMonthIso());
   const [to, setTo] = useState(todayIso());
+  const [month, setMonth] = useState(monthIso());
+
+  const exportXlsx = {
+    loans: () => downloadLoansReportXlsx(from, to),
+    overdueMembers: downloadOverdueMembersReportXlsx,
+    mostBorrowed: () => downloadMostBorrowedReportXlsx(from, to),
+  }[tab];
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
@@ -56,34 +73,71 @@ export function LibraryReportsView(): ReactElement {
         </TabsList>
       </Tabs>
 
-      {tab !== "overdueMembers" && (
-        <div className="flex flex-wrap items-end gap-3">
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium text-fg">{t("fromLabel")}</span>
-            <Input
-              type="date"
-              value={from}
-              onChange={(e) => {
-                setFrom(e.target.value);
-              }}
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium text-fg">{t("toLabel")}</span>
-            <Input
-              type="date"
-              value={to}
-              onChange={(e) => {
-                setTo(e.target.value);
-              }}
-            />
-          </label>
-        </div>
-      )}
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        {tab !== "overdueMembers" ? (
+          <div className="flex flex-wrap items-end gap-3">
+            <label className="flex flex-col gap-1 text-[13px]">
+              <span className="font-medium text-fg">{t("fromLabel")}</span>
+              <Input
+                type="date"
+                value={from}
+                onChange={(e) => {
+                  setFrom(e.target.value);
+                }}
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-[13px]">
+              <span className="font-medium text-fg">{t("toLabel")}</span>
+              <Input
+                type="date"
+                value={to}
+                onChange={(e) => {
+                  setTo(e.target.value);
+                }}
+              />
+            </label>
+          </div>
+        ) : (
+          <span />
+        )}
+        <Button
+          size="sm"
+          variant="secondary"
+          icon={<Download />}
+          onClick={() => {
+            void exportXlsx();
+          }}
+        >
+          {t("exportXlsx")}
+        </Button>
+      </div>
 
       {tab === "loans" && <LoansReportTable from={from} to={to} />}
       {tab === "overdueMembers" && <OverdueMembersReportTable />}
       {tab === "mostBorrowed" && <MostBorrowedReportTable from={from} to={to} />}
+
+      <div className="flex flex-wrap items-end gap-3 border-t border-border pt-6">
+        <label className="flex flex-col gap-1 text-[13px]">
+          <span className="font-medium text-fg">{t("monthly.monthLabel")}</span>
+          <Input
+            type="month"
+            value={month}
+            onChange={(e) => {
+              setMonth(e.target.value);
+            }}
+          />
+        </label>
+        <Button
+          size="sm"
+          variant="secondary"
+          icon={<Download />}
+          onClick={() => {
+            void downloadMonthlyLibraryReportPdf(month);
+          }}
+        >
+          {t("monthly.download")}
+        </Button>
+      </div>
     </div>
   );
 }

@@ -10,6 +10,7 @@
     "searchPlaceholder": "Cari judul, penulis, atau ISBN",
     "addTitle": "Tambah judul",
     "browseCopies": "Jelajahi eksemplar",
+    "exportCatalogue": "Ekspor katalog (XLSX)",
     "columns": {
       "title": "Judul",
       "author": "Penulis",
@@ -569,10 +570,15 @@
     "title": "Laporan perpustakaan",
     "fromLabel": "Dari tanggal",
     "toLabel": "Sampai tanggal",
+    "exportXlsx": "Ekspor XLSX",
     "tabs": {
       "loans": "Peminjaman",
       "overdueMembers": "Anggota terlambat",
       "mostBorrowed": "Paling sering dipinjam"
+    },
+    "monthly": {
+      "monthLabel": "Laporan bulanan",
+      "download": "Unduh PDF bulanan"
     },
     "loans": {
       "title": "Peminjaman dalam rentang tanggal",

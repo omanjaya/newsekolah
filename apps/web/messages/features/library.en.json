@@ -10,6 +10,7 @@
     "searchPlaceholder": "Search title, author, or ISBN",
     "addTitle": "Add title",
     "browseCopies": "Browse copies",
+    "exportCatalogue": "Export catalogue (XLSX)",
     "columns": {
       "title": "Title",
       "author": "Author",
@@ -569,10 +570,15 @@
     "title": "Library reports",
     "fromLabel": "From date",
     "toLabel": "To date",
+    "exportXlsx": "Export XLSX",
     "tabs": {
       "loans": "Loans",
       "overdueMembers": "Overdue members",
       "mostBorrowed": "Most borrowed"
+    },
+    "monthly": {
+      "monthLabel": "Monthly report",
+      "download": "Download monthly PDF"
     },
     "loans": {
       "title": "Loans within the date range",
