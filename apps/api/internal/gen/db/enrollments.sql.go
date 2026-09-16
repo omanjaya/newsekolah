@@ -179,10 +179,14 @@ func (q *Queries) AcademicListClassesForYear(ctx context.Context, arg AcademicLi
 }
 
 const academicListEnrollmentsByClass = `-- name: AcademicListEnrollmentsByClass :many
-select enrollments.id, enrollments.tenant_id, enrollments.academic_year_id, enrollments.student_user_id, enrollments.class_id, enrollments.status, enrollments.joined_on, enrollments.left_on, enrollments.created_at, count(*) over () as total_count
+select enrollments.id, enrollments.tenant_id, enrollments.academic_year_id, enrollments.student_user_id, enrollments.class_id, enrollments.status, enrollments.joined_on, enrollments.left_on, enrollments.created_at, u.name as student_name,
+  coalesce(sp.nis, '') as student_nis,
+  count(*) over () as total_count
 from enrollments
-where tenant_id = $1 and class_id = $2 and status = 'active'
-order by joined_on
+join users u on u.id = enrollments.student_user_id and u.tenant_id = enrollments.tenant_id
+left join student_profiles sp on sp.user_id = enrollments.student_user_id
+where enrollments.tenant_id = $1 and class_id = $2 and enrollments.status = 'active'
+order by u.name
 limit $3 offset $4
 `
 
@@ -194,10 +198,15 @@ type AcademicListEnrollmentsByClassParams struct {
 }
 
 type AcademicListEnrollmentsByClassRow struct {
-	Enrollment Enrollment `json:"enrollment"`
-	TotalCount int64      `json:"total_count"`
+	Enrollment  Enrollment `json:"enrollment"`
+	StudentName string     `json:"student_name"`
+	StudentNis  string     `json:"student_nis"`
+	TotalCount  int64      `json:"total_count"`
 }
 
+// Carries the student's name and NIS: a class roster showing only user ids
+// is unreadable, and resolving them one by one from the client would be a
+// request per student.
 func (q *Queries) AcademicListEnrollmentsByClass(ctx context.Context, arg AcademicListEnrollmentsByClassParams) ([]AcademicListEnrollmentsByClassRow, error) {
 	rows, err := q.db.Query(ctx, academicListEnrollmentsByClass,
 		arg.TenantID,
@@ -222,6 +231,8 @@ func (q *Queries) AcademicListEnrollmentsByClass(ctx context.Context, arg Academ
 			&i.Enrollment.JoinedOn,
 			&i.Enrollment.LeftOn,
 			&i.Enrollment.CreatedAt,
+			&i.StudentName,
+			&i.StudentNis,
 			&i.TotalCount,
 		); err != nil {
 			return nil, err

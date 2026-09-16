@@ -136,6 +136,8 @@ func (r *Repository) ListEnrollmentsByClass(ctx context.Context, tenantID, class
 	var total int64
 	for i, row := range rows {
 		enrollments[i] = toEnrollment(row.Enrollment)
+		enrollments[i].StudentName = row.StudentName
+		enrollments[i].StudentNIS = row.StudentNis
 		total = row.TotalCount
 	}
 	return enrollments, total, nil

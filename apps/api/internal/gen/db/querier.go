@@ -110,6 +110,9 @@ type Querier interface {
 	// Every class in one academic year (no pagination, no search): used to
 	// build the promotion planner's destination-year target list.
 	AcademicListClassesForYear(ctx context.Context, arg AcademicListClassesForYearParams) ([]AcademicListClassesForYearRow, error)
+	// Carries the student's name and NIS: a class roster showing only user ids
+	// is unreadable, and resolving them one by one from the client would be a
+	// request per student.
 	AcademicListEnrollmentsByClass(ctx context.Context, arg AcademicListEnrollmentsByClassParams) ([]AcademicListEnrollmentsByClassRow, error)
 	AcademicListEnrollmentsByYear(ctx context.Context, arg AcademicListEnrollmentsByYearParams) ([]Enrollment, error)
 	// Joins classes to scope active enrollments to one grade level, for

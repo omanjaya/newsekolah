@@ -190,10 +190,19 @@ func toAPIClass(c domain.Class) api.Class {
 }
 
 func toAPIEnrollment(e domain.Enrollment) api.Enrollment {
-	return api.Enrollment{
+	out := api.Enrollment{
 		Id: e.ID, AcademicYearId: e.AcademicYearID, StudentUserId: e.StudentUserID, ClassId: e.ClassID,
 		Status: api.EnrollmentStatus(e.Status), JoinedOn: toAPIDate(e.JoinedOn), LeftOn: toAPIDatePtr(e.LeftOn),
 	}
+	// Only the roster read fills these; a write returns the row it just
+	// created, where the caller already knows who the student is.
+	if e.StudentName != "" {
+		out.StudentName = &e.StudentName
+	}
+	if e.StudentNIS != "" {
+		out.StudentNis = &e.StudentNIS
+	}
+	return out
 }
 
 func fromAPIOverrides(overrides *[]api.PromotionOverride) []domain.PromotionOverride {

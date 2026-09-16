@@ -17,10 +17,17 @@ where tenant_id = $1 and id = $2
 returning *;
 
 -- name: AcademicListEnrollmentsByClass :many
-select sqlc.embed(enrollments), count(*) over () as total_count
+-- Carries the student's name and NIS: a class roster showing only user ids
+-- is unreadable, and resolving them one by one from the client would be a
+-- request per student.
+select sqlc.embed(enrollments), u.name as student_name,
+  coalesce(sp.nis, '') as student_nis,
+  count(*) over () as total_count
 from enrollments
-where tenant_id = $1 and class_id = $2 and status = 'active'
-order by joined_on
+join users u on u.id = enrollments.student_user_id and u.tenant_id = enrollments.tenant_id
+left join student_profiles sp on sp.user_id = enrollments.student_user_id
+where enrollments.tenant_id = $1 and class_id = $2 and enrollments.status = 'active'
+order by u.name
 limit $3 offset $4;
 
 -- name: AcademicListEnrollmentsByYear :many

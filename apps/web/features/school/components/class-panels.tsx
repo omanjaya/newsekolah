@@ -97,7 +97,7 @@ export function EnrollmentPanel({
             <li key={e.id} className="flex items-center gap-2 rounded-xs px-2 py-1">
               <span className="w-6 shrink-0 text-right text-fg-muted">{i + 1}</span>
               <span className="min-w-0 flex-1 truncate">
-                {studentMap.get(e.student_user_id)?.name ?? e.student_user_id}
+                {e.student_name ?? studentMap.get(e.student_user_id)?.name ?? e.student_user_id}
               </span>
               {canManage && (
                 <IconButton
@@ -193,7 +193,10 @@ export function EnrollmentPanel({
             <p className="text-[13px] text-fg-muted">
               {moving
                 ? t("moveBody", {
-                    name: studentMap.get(moving.student_user_id)?.name ?? moving.student_user_id,
+                    name:
+                      moving.student_name ??
+                      studentMap.get(moving.student_user_id)?.name ??
+                      moving.student_user_id,
                   })
                 : ""}
             </p>

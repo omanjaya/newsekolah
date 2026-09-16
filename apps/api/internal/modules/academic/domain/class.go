@@ -34,4 +34,8 @@ type Enrollment struct {
 	Status         string
 	JoinedOn       time.Time
 	LeftOn         *time.Time
+	// StudentName and StudentNIS are filled by the roster read only, so a
+	// class list can name its students without a lookup per row.
+	StudentName string
+	StudentNIS  string
 }

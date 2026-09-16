@@ -7868,6 +7868,9 @@ export interface components {
             academic_year_id: string;
             /** Format: uuid */
             student_user_id: string;
+            /** @description Filled by the class roster read, so a roster can name its students without a lookup per row. */
+            student_name?: string;
+            student_nis?: string;
             /** Format: uuid */
             class_id: string;
             status: components["schemas"]["EnrollmentStatus"];

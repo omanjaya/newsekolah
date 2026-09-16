@@ -2023,6 +2023,11 @@ components:
         student_user_id:
           type: string
           format: uuid
+        student_name:
+          type: string
+          description: Filled by the class roster read, so a roster can name its students without a lookup per row.
+        student_nis:
+          type: string
         class_id:
           type: string
           format: uuid
