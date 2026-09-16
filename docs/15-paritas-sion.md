@@ -6,7 +6,7 @@ Posisi terakhir: 16 September 2026.
 
 ## Ringkasan
 
-Logika backend sudah setara atau lebih baik dari SION di semua modul, dan sudah diverifikasi terhadap database Postgres sungguhan. Layar web menyusul sebagian besar kemampuan itu dan sudah dibuka satu per satu di aplikasi yang berjalan. Yang tersisa: 46 operasi API masih belum punya layar, dan alur panjang belum dicoba sampai tuntas.
+Logika backend sudah setara atau lebih baik dari SION di semua modul, dan sudah diverifikasi terhadap database Postgres sungguhan. Setiap operasi API kini punya layar yang memanggilnya, dan tiap layar baru sudah dibuka di aplikasi yang berjalan. Yang tersisa adalah mencoba alur panjang sampai tuntas dengan data dan peran yang tepat.
 
 | Bagian                                  | Status                                 |
 | --------------------------------------- | -------------------------------------- |
@@ -31,10 +31,10 @@ Dampak di kode, dihitung dari commit `cb4a908`:
 
 | Ukuran       | Nilai                     |
 | ------------ | ------------------------- |
-| Commit       | 101                       |
+| Commit       | 122                       |
 | Migrasi baru | 18, dari 0074 sampai 0106 |
 | Operasi API  | 449 menjadi 576           |
-| Rute web     | 94 halaman                |
+| Rute web     | 102 halaman               |
 
 ## Yang terverifikasi
 
@@ -43,6 +43,7 @@ Dampak di kode, dihitung dari commit `cb4a908`:
 - `go test ./...` tanpa `-short` lulus, termasuk test integrasi berbasis testcontainers.
 - `pnpm --filter web typecheck` bersih dan `pnpm --filter web lint` tanpa error.
 - Layar presensi dilihat langsung dari aplikasi yang berjalan: tampilan guru pada hari sekolah dan tampilan admin yang tidak mengajar.
+- `pnpm api:coverage` melaporkan 576 dari 576 operasi punya pemanggil, jadi tidak ada lagi kemampuan API yang tidak bisa dijangkau pengguna.
 - Seluruh layar baru dibuka satu per satu di aplikasi yang berjalan pada 16 September 2026. Semuanya tampil tanpa error, dan lima cacat yang ditemukan sudah diperbaiki: halaman impor koleksi gagal 500 karena dependensi belum terpasang di container, satu tombol menampilkan kunci terjemahan mentah, tiga label jenis kunjungan hilang, judul histogram masih menulis UTC, dan komponen kartu membungkus tombol di dalam tombol sehingga memicu galat hydration.
 
 ## Keputusan yang diambil
@@ -69,21 +70,7 @@ Keputusan ini sengaja. Jangan diubah balik tanpa membaca alasannya.
 
 Diurutkan dari yang paling berdampak bagi pengguna.
 
-### 1. Layar untuk endpoint yang belum terjangkau
-
-`pnpm api:coverage` membandingkan tiap operasi di OpenAPI dengan pemanggilnya di `apps/web`. Per 16 September 2026 ada 46 operasi tanpa layar, jadi kemampuannya ada di API tetapi tidak bisa dijangkau pengguna. Tiga puluh tujuh di antaranya milik perpustakaan.
-
-| Kelompok                | Yang belum ada layarnya                                                                                                                                                      |
-| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Sirkulasi cepat pustaka | Typeahead anggota dan eksemplar, pinjam batch, kembali lewat barcode, daftar telat rinci, kirim pengingat, buku paket kelas                                                  |
-| Master data pustaka     | Jenis bahan, sumber perolehan, mitra, kelas DDC, opsi katalog, aturan pinjam berjangka                                                                                       |
-| Laporan pustaka         | Ringkasan akreditasi, kunjungan, anggota, buku induk, beserta ekspor XLSX, dan dashboard modul                                                                               |
-| Lainnya di pustaka      | Cek duplikat ISBN, cari eksemplar, ubah status massal, reservasi mandiri anggota                                                                                             |
-| Di luar pustaka         | Daftar sesi dan perangkat, template dan nomor surat peringatan, laporan presensi lingkup sendiri, pemilih guru pengganti, pemilih pegawai untuk tugas tambahan, sorotan OPAC |
-
-Satu operasi sengaja dibiarkan: `GET /v1/tenants/lookup` untuk mencari sekolah saat masuk, yang baru berguna pada mode multi-sekolah.
-
-### 2. Uji di browser
+### 1. Uji di browser
 
 Setiap layar baru sudah dibuka sekali dan hasilnya tercatat di bagian "Yang terverifikasi". Yang belum dicoba adalah alurnya sampai tuntas, dengan data dan peran yang tepat:
 
@@ -97,7 +84,7 @@ Uji ini butuh akun dengan peran wali kelas, guru BK, pustakawan, dan admin. Data
 
 Satu hal yang paling perlu dibuktikan di browser: pembacaan berkas XLSX untuk import koleksi dan import user berjalan di sisi klien memakai `exceljs`, dan itu belum pernah dijalankan sungguhan.
 
-### 3. Pekerjaan yang ditunda
+### 2. Pekerjaan yang ditunda
 
 | Item                                                  | Keadaan sekarang                                                                                            |
 | ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
@@ -110,7 +97,7 @@ Satu hal yang paling perlu dibuktikan di browser: pembacaan berkas XLSX untuk im
 | Import user untuk memperbarui user yang sudah ada     | Baru mendukung pembuatan user baru                                                                          |
 | Validasi skema OpenAPI di middleware                  | Tidak ada. Batas panjang field harus ditegakkan manual per modul, dan baru sebagian modul yang melakukannya |
 
-### 4. Risiko terbuka
+### 3. Risiko terbuka
 
 - **Repo belum punya remote git.** Seluruh commit hanya ada di satu mesin, tanpa cadangan. Pasang remote dan push sebelum pekerjaan berikutnya.
 
