@@ -115,7 +115,8 @@
     "title": "Surat Peringatan",
     "tabs": {
       "issued": "Surat terbit",
-      "atRisk": "Siswa mendekati ambang"
+      "atRisk": "Siswa mendekati ambang",
+      "template": "Template surat"
     },
     "filters": {
       "class": "Kelas",
@@ -154,6 +155,20 @@
       "emptyBody": "Siswa yang mencapai tingkat SP pertama akan muncul di sini.",
       "noPolicyTitle": "Kebijakan SP belum diatur",
       "noPolicyBody": "Atur kebijakan SP di halaman Pelanggaran sebelum menerbitkan surat."
+    },
+    "template": {
+      "description": "Pengaturan pola penomoran dan naskah surat peringatan. Perubahan berlaku untuk surat yang diterbitkan setelah disimpan.",
+      "patternLabel": "Pola nomor surat",
+      "patternHint": "Placeholder yang diterima: {{seq}}, {{sp_level_number}}, {{month_roman}}, {{year}}.",
+      "missingSeqError": "Pola harus memuat {{seq}} agar setiap surat punya nomor berbeda.",
+      "seqPadLabel": "Panjang angka urut",
+      "seqPadHint": "Jumlah digit {{seq}}, diisi nol di depan. Contoh: 3 menghasilkan 001.",
+      "seqPadRangeError": "Panjang angka urut harus antara {min} dan {max}.",
+      "previewLabel": "Contoh nomor dengan pola saat ini",
+      "openingLabel": "Kalimat pembuka",
+      "closingLabel": "Kalimat penutup",
+      "save": "Simpan template",
+      "saved": "Template surat peringatan tersimpan"
     }
   },
   "counseling": {
