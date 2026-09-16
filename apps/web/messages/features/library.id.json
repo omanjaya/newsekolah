@@ -90,29 +90,51 @@
   "desk": {
     "eyebrow": "Perpustakaan",
     "title": "Meja sirkulasi",
+    "lookup": {
+      "label": "Cari anggota atau eksemplar",
+      "placeholder": "Nama, NIS, nomor anggota, atau judul",
+      "noMatch": "Tidak ada yang cocok"
+    },
     "borrow": {
       "heading": "Pinjam",
-      "barcode": "Barcode eksemplar",
-      "memberId": "ID anggota",
-      "memberIdRequired": "Isi ID anggota sebelum memindai eksemplar",
-      "submit": "Pinjamkan",
-      "success": "Peminjaman berhasil dicatat"
+      "searchPlaceholder": "Cari nama, NIS, atau nomor anggota",
+      "changeMember": "Ganti anggota",
+      "noMemberSelected": "Pilih anggota terlebih dahulu",
+      "scanLabel": "Pindai barcode eksemplar",
+      "scanSubmit": "Tambahkan",
+      "codeNotFound": "Kode {code} tidak ditemukan",
+      "removeFromList": "Hapus {barcode} dari daftar",
+      "rejectedTitle": "Ditolak",
+      "submit": "Pinjamkan {count} eksemplar",
+      "success": "{count} peminjaman berhasil dicatat",
+      "someRejected": "{count} barcode ditolak, lihat daftar di bawah"
+    },
+    "return": {
+      "heading": "Kembalikan",
+      "scanLabel": "Pindai barcode untuk mengembalikan",
+      "scanSubmit": "Kembalikan",
+      "success": "{title} berhasil dikembalikan",
+      "fine": "Denda Rp{amount}"
     },
     "overdue": {
       "heading": "Terlambat",
       "columns": {
         "member": "Anggota",
+        "class": "Kelas",
+        "guardianPhone": "HP orang tua/wali",
         "dueOn": "Jatuh tempo",
         "actions": "Aksi"
       },
+      "renew": "Perpanjang",
+      "renewed": "Peminjaman diperpanjang",
+      "return": "Kembalikan",
+      "returned": "Pengembalian dicatat",
+      "markLost": "Tandai hilang",
+      "sendReminders": "Kirim pengingat",
+      "remindersSent": "Pengingat terkirim ke {count} anggota",
       "emptyTitle": "Tidak ada yang terlambat",
       "emptyBody": "Semua peminjaman aktif masih dalam batas waktu."
-    },
-    "return": "Kembalikan",
-    "renew": "Perpanjang",
-    "returned": "Pengembalian dicatat",
-    "renewed": "Peminjaman diperpanjang",
-    "markLost": "Tandai hilang"
+    }
   },
   "memberHistory": {
     "title": "Riwayat peminjaman",

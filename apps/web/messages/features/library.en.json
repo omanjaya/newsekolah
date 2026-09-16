@@ -90,29 +90,51 @@
   "desk": {
     "eyebrow": "Library",
     "title": "Loan desk",
+    "lookup": {
+      "label": "Search a member or copy",
+      "placeholder": "Name, student ID, member number, or title",
+      "noMatch": "No match"
+    },
     "borrow": {
       "heading": "Borrow",
-      "barcode": "Copy barcode",
-      "memberId": "Member ID",
-      "memberIdRequired": "Enter the member ID before scanning a copy",
-      "submit": "Lend",
-      "success": "Loan recorded"
+      "searchPlaceholder": "Search by name, student ID, or member number",
+      "changeMember": "Change member",
+      "noMemberSelected": "Pick a member first",
+      "scanLabel": "Scan the copy's barcode",
+      "scanSubmit": "Add",
+      "codeNotFound": "Code {code} was not found",
+      "removeFromList": "Remove {barcode} from the list",
+      "rejectedTitle": "Rejected",
+      "submit": "Lend {count} copies",
+      "success": "{count} loans recorded",
+      "someRejected": "{count} barcodes rejected, see the list below"
+    },
+    "return": {
+      "heading": "Return",
+      "scanLabel": "Scan a barcode to return it",
+      "scanSubmit": "Return",
+      "success": "{title} returned",
+      "fine": "Fine Rp{amount}"
     },
     "overdue": {
       "heading": "Overdue",
       "columns": {
         "member": "Member",
+        "class": "Class",
+        "guardianPhone": "Guardian phone",
         "dueOn": "Due on",
         "actions": "Actions"
       },
+      "renew": "Renew",
+      "renewed": "Loan renewed",
+      "return": "Return",
+      "returned": "Return recorded",
+      "markLost": "Mark lost",
+      "sendReminders": "Send reminders",
+      "remindersSent": "Reminder sent to {count} members",
       "emptyTitle": "Nothing overdue",
       "emptyBody": "Every active loan is still within its due date."
-    },
-    "return": "Return",
-    "renew": "Renew",
-    "returned": "Return recorded",
-    "renewed": "Loan renewed",
-    "markLost": "Mark lost"
+    }
   },
   "memberHistory": {
     "title": "Loan history",
