@@ -136,6 +136,42 @@
       "emptyBody": "Every active loan is still within its due date."
     }
   },
+  "classLoans": {
+    "eyebrow": "Library",
+    "title": "Class textbook loans",
+    "navLabel": "Class loans",
+    "changeTitle": "Change title",
+    "titleSearchPlaceholder": "Search a textbook title",
+    "tabs": {
+      "borrow": "Borrow",
+      "returns": "Return"
+    },
+    "borrow": {
+      "heading": "Lend to one class",
+      "description": "Pick a class and a title, review the student/copy pairing, then commit it all at once.",
+      "classLabel": "Class",
+      "classPlaceholder": "Pick a class",
+      "loadingClasses": "Loading classes...",
+      "titleLabel": "Title",
+      "preview": "Preview pairing",
+      "previewEmptyTitle": "No pairs could be made",
+      "previewEmptyBody": "This title does not have enough copies for the class, or every student already has one on loan.",
+      "rejectedTitle": "Could not be lent",
+      "commit": "Lend {count} copies",
+      "committed": "{count} class loans recorded"
+    },
+    "returns": {
+      "heading": "Return from one class",
+      "description": "Returns this title's active loan for every student in the class, for example at the end of the school year.",
+      "classLabel": "Class",
+      "classPlaceholder": "Pick a class",
+      "loadingClasses": "Loading classes...",
+      "titleLabel": "Title",
+      "submit": "Return all",
+      "success": "{count} class returns recorded",
+      "rejectedTitle": "Could not be returned"
+    }
+  },
   "memberHistory": {
     "title": "Loan history",
     "columns": {

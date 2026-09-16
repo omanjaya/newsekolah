@@ -241,6 +241,14 @@ export const navigation: NavItem[] = [
     group: GROUP.library,
   },
   {
+    key: "library-class-loans",
+    labelKey: "app.library.classLoans.navLabel",
+    href: "/library/class-loans",
+    icon: domainIcons.library,
+    permission: "manage_library_circulation",
+    group: GROUP.library,
+  },
+  {
     key: "library-stocktake",
     labelKey: "nav.library.items.stockOpname",
     href: "/library/stocktake",

@@ -136,6 +136,42 @@
       "emptyBody": "Semua peminjaman aktif masih dalam batas waktu."
     }
   },
+  "classLoans": {
+    "eyebrow": "Perpustakaan",
+    "title": "Peminjaman buku pelajaran",
+    "navLabel": "Peminjaman kelas",
+    "changeTitle": "Ganti judul",
+    "titleSearchPlaceholder": "Cari judul buku pelajaran",
+    "tabs": {
+      "borrow": "Pinjam",
+      "returns": "Kembalikan"
+    },
+    "borrow": {
+      "heading": "Pinjamkan ke satu kelas",
+      "description": "Pilih kelas dan judul, tinjau pasangan siswa dan eksemplar, lalu konfirmasi sekaligus.",
+      "classLabel": "Kelas",
+      "classPlaceholder": "Pilih kelas",
+      "loadingClasses": "Memuat kelas...",
+      "titleLabel": "Judul",
+      "preview": "Tinjau pasangan",
+      "previewEmptyTitle": "Tidak ada pasangan yang bisa dibuat",
+      "previewEmptyBody": "Eksemplar judul ini tidak cukup untuk kelas yang dipilih, atau semua siswa sudah meminjamnya.",
+      "rejectedTitle": "Tidak bisa dipinjamkan",
+      "commit": "Pinjamkan {count} eksemplar",
+      "committed": "{count} peminjaman kelas berhasil dicatat"
+    },
+    "returns": {
+      "heading": "Kembalikan dari satu kelas",
+      "description": "Mengembalikan peminjaman aktif judul ini untuk seluruh siswa di kelas yang dipilih, misalnya di akhir tahun ajaran.",
+      "classLabel": "Kelas",
+      "classPlaceholder": "Pilih kelas",
+      "loadingClasses": "Memuat kelas...",
+      "titleLabel": "Judul",
+      "submit": "Kembalikan semua",
+      "success": "{count} pengembalian kelas berhasil dicatat",
+      "rejectedTitle": "Tidak bisa dikembalikan"
+    }
+  },
   "memberHistory": {
     "title": "Riwayat peminjaman",
     "columns": {
