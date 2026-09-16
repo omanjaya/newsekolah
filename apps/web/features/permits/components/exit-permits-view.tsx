@@ -25,20 +25,23 @@ import { type WorkflowInstance, useMyExitPermitsQuery } from "../api";
 
 import { CreateForm, ExitPermitDetail } from "./exit-permit-detail";
 import { ApprovePanel, GatePanel } from "./exit-permit-panels";
+import { ExitPermitReviewQueue } from "./exit-permit-review-queue";
 import { WorkflowStatusBadge } from "./workflow-stepper";
 
 /**
  * Students: request, follow the stages, scan the approving teacher's QR,
- * then show the gate QR. Teachers: approve by showing a stage QR for a
- * permit code. Security: scan the gate QR.
+ * then show the gate QR. Approvers and security: a shared queue of what is
+ * waiting for them, then the existing approve/gate panels to act on it.
  */
 export function ExitPermitsView(): ReactElement {
   const t = useTranslations("app.permits.exit");
   const canSubmit = useCan("submit_leave_requests");
   const canApprove = useCan("issue_scan_tokens");
   const canGate = useCan("scan_exit_permits");
+  const [prefillId, setPrefillId] = useState<string | undefined>(undefined);
 
   const tabs = [
+    ...(canApprove || canGate ? [{ value: "queue", label: t("tabQueue") }] : []),
     ...(canSubmit ? [{ value: "mine", label: t("tabMine") }] : []),
     ...(canApprove ? [{ value: "approve", label: t("tabApprove") }] : []),
     ...(canGate ? [{ value: "gate", label: t("tabGate") }] : []),
@@ -65,6 +68,18 @@ export function ExitPermitsView(): ReactElement {
               ))}
             </TabsList>
           )}
+          {(canApprove || canGate) && (
+            <TabsContent value="queue" className="pt-4">
+              <ExitPermitReviewQueue
+                canApprove={canApprove}
+                canGate={canGate}
+                onProcess={(instanceId) => {
+                  setPrefillId(instanceId);
+                  setTab("approve");
+                }}
+              />
+            </TabsContent>
+          )}
           {canSubmit && (
             <TabsContent value="mine" className="pt-4">
               <MyExitPermits />
@@ -72,7 +87,7 @@ export function ExitPermitsView(): ReactElement {
           )}
           {canApprove && (
             <TabsContent value="approve" className="pt-4">
-              <ApprovePanel />
+              <ApprovePanel key={prefillId ?? "manual"} prefillId={prefillId} />
             </TabsContent>
           )}
           {canGate && (

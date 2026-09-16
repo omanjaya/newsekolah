@@ -292,6 +292,18 @@
     "SUPERVISION_SCORE_COUNT_MISMATCH": "Every criterion needs exactly one score",
     "SUPERVISION_SCORE_OUT_OF_RANGE": "A score is outside the instrument's scale",
     "SUPERVISION_LESSON_NOT_RESOLVED": "The scheduled lesson could not be found",
-    "SUPERVISION_MODULE_DISABLED": "Supervision is not enabled for this school"
+    "SUPERVISION_MODULE_DISABLED": "Supervision is not enabled for this school",
+    "WARNING_LETTER_NOT_DUE": "This student has not reached that warning-letter level yet",
+    "WARNING_LETTER_ALREADY_ISSUED": "This warning-letter level was already issued",
+    "VIOLATION_TYPE_INACTIVE": "One of the chosen violation types was deactivated; refresh and try again",
+    "VIOLATION_RECORD_VOIDED": "This record was already voided",
+    "COUNSELING_FORBIDDEN": "You do not have access to this counseling note",
+    "ATTACHMENT_NOT_FOUND": "Attachment not found",
+    "ATTACHMENT_TOO_LARGE": "The file exceeds the 10 MB limit",
+    "ATTACHMENT_INVALID_TYPE": "Only JPEG or PNG images are accepted",
+    "REPORT_UNAVAILABLE": "The report could not be generated right now; try again shortly",
+    "GRADE_RANGE_OVERLAP": "These ranges overlap; adjust them so no score falls in two ranges",
+    "TP_EXPORT_CODE_EXISTS": "This export code is already used by another component in this class, subject and term",
+    "TP_KIND_NOT_ELIGIBLE": "Only formative components (or the tenant's configured TP kind) can be mapped"
   }
 }

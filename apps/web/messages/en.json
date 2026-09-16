@@ -583,6 +583,7 @@
         "eyebrow": "Permits",
         "title": "Exit permits",
         "tabMine": "My permits",
+        "tabQueue": "Queue",
         "tabApprove": "Approve",
         "tabGate": "Gate",
         "noAccessTitle": "No exit permit access",
@@ -624,6 +625,14 @@
           "needPayload": "The gate code must come from the student's QR.",
           "passed": "Student cleared to leave",
           "lastTitle": "Last exit"
+        },
+        "queue": {
+          "emptyTitle": "Nothing waiting right now",
+          "emptyBody": "Exit permits waiting for your approval or gate scan will appear here.",
+          "unknownStudent": "Unknown student",
+          "process": "Process",
+          "awaitingGate": "Awaiting gate scan",
+          "yearlyReportLink": "Yearly exit-permit report"
         }
       },
       "late": {

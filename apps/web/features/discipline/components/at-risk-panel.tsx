@@ -1,139 +1,252 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import type { Locale } from "@newsekolah/i18n";
-import { formatDate } from "@newsekolah/i18n";
 import {
-  Alert,
+  Badge,
   Button,
   DataTable,
   EmptyState,
-  Skeleton,
+  Select,
   domainIcons,
   useToast,
 } from "@newsekolah/ui";
-import type { ColumnDef } from "@tanstack/react-table";
-import { useLocale, useTranslations } from "next-intl";
+import type { ColumnDef, PaginationState } from "@tanstack/react-table";
+import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
-import { useDirectoryQuery, useLookup } from "../../reference/api";
+import { useClassesQuery } from "../../reference/api";
 import {
-  type PointTotal,
+  type SPCandidate,
+  type SPLevel,
   useDisciplinePolicyQuery,
-  useIssueNextDueWarningMutation,
-  usePointTotalsQuery,
+  useIssueWarningLetterMutation,
+  useSPCandidatesQuery,
 } from "../api";
+
+const PAGE_SIZE = 25;
+
+/**
+ * Levels the student has reached but not yet been issued, ascending. The
+ * API refuses issuing out of order, so only `dueLevels[0]` is ever offered.
+ */
+function dueLevels(candidate: SPCandidate, levels: SPLevel[]): SPLevel[] {
+  return levels
+    .filter(
+      (level) =>
+        candidate.total_points >= level.min_points &&
+        !candidate.issued_levels.includes(level.level),
+    )
+    .sort((a, b) => a.level - b.level);
+}
 
 export function AtRiskPanel(): ReactElement {
   const t = useTranslations("app.discipline.warningLetters.atRisk");
-  const locale = useLocale() as Locale;
+  const router = useRouter();
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const canIssue = useCan("issue_warning_letters");
 
+  const [classId, setClassId] = useState("");
+  const [level, setLevel] = useState("");
+  const [search, setSearch] = useState("");
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: PAGE_SIZE,
+  });
+
+  const classes = useClassesQuery();
   const policy = useDisciplinePolicyQuery();
-  const totals = usePointTotalsQuery();
-  const students = useDirectoryQuery("student");
-  const studentMap = useLookup(students.data?.data);
-  const issue = useIssueNextDueWarningMutation();
+  const levels = useMemo(() => policy.data?.levels ?? [], [policy.data]);
+  const levelLabel = useMemo(() => new Map(levels.map((l) => [l.level, l.label])), [levels]);
 
-  const minThreshold = useMemo(() => {
-    const points = (policy.data?.levels ?? []).map((level) => level.min_points);
-    return points.length > 0 ? Math.min(...points) : null;
-  }, [policy.data]);
+  // Ask for one extra row to know whether a next page exists: the API
+  // reports no total, only the page it returned.
+  const candidates = useSPCandidatesQuery({
+    classId,
+    level,
+    search,
+    limit: pagination.pageSize + 1,
+    offset: pagination.pageIndex * pagination.pageSize,
+  });
+  const issue = useIssueWarningLetterMutation();
 
-  const atRisk = useMemo(() => {
-    if (minThreshold === null) return [];
-    return (totals.data?.data ?? [])
-      .filter((row) => row.total_points >= minThreshold)
-      .sort((a, b) => b.total_points - a.total_points);
-  }, [totals.data, minThreshold]);
+  const allRows = candidates.data?.data ?? [];
+  const rows = allRows.slice(0, pagination.pageSize);
+  const hasNextPage = allRows.length > pagination.pageSize;
+  const rowCount = pagination.pageIndex * pagination.pageSize + rows.length + (hasNextPage ? 1 : 0);
 
-  const columns = useMemo<ColumnDef<PointTotal>[]>(
+  const classOptions = [
+    { value: "all", label: t("filters.classAll") },
+    ...(classes.data?.data ?? []).map((c) => ({ value: c.id, label: c.name })),
+  ];
+  const levelOptions = [
+    { value: "all", label: t("filters.levelAll") },
+    ...levels.map((l) => ({ value: String(l.level), label: l.label })),
+  ];
+
+  const columns = useMemo<ColumnDef<SPCandidate>[]>(
     () => [
       {
         id: "student",
         header: t("columns.student"),
         enableSorting: false,
-        cell: ({ row }) =>
-          studentMap.get(row.original.student_user_id)?.name ?? t("unknownStudent"),
+        cell: ({ row }) => (
+          <div className="flex flex-col">
+            <span className="text-fg">{row.original.student_name}</span>
+            <span className="text-[12px] text-fg-muted">
+              {row.original.nis} · {row.original.class_name}
+            </span>
+          </div>
+        ),
       },
       { accessorKey: "total_points", header: t("columns.points"), enableSorting: false },
       {
-        id: "lastOccurred",
-        header: t("columns.lastOccurred"),
+        id: "due",
+        header: t("columns.due"),
         enableSorting: false,
-        cell: ({ row }) =>
-          row.original.last_occurred_on
-            ? formatDate(row.original.last_occurred_on, { locale })
-            : "-",
+        cell: ({ row }) => {
+          const due = dueLevels(row.original, levels);
+          if (due.length === 0) return <span className="text-fg-muted">-</span>;
+          return (
+            <div className="flex flex-wrap gap-1">
+              {due.map((l) => (
+                <Badge key={l.level} variant="accent">
+                  {l.label}
+                </Badge>
+              ))}
+            </div>
+          );
+        },
+      },
+      {
+        id: "issued",
+        header: t("columns.issued"),
+        enableSorting: false,
+        cell: ({ row }) => {
+          const issuedLevels = row.original.issued_levels;
+          if (issuedLevels.length === 0) return <span className="text-fg-muted">-</span>;
+          return (
+            <div className="flex flex-wrap gap-1">
+              {issuedLevels.map((lvl) => (
+                <Badge key={lvl} variant="neutral">
+                  {levelLabel.get(lvl) ?? lvl}
+                </Badge>
+              ))}
+            </div>
+          );
+        },
       },
       {
         id: "actions",
         header: t("columns.actions"),
         enableSorting: false,
-        cell: ({ row }) =>
-          canIssue ? (
+        cell: ({ row }) => {
+          const nextDue = dueLevels(row.original, levels)[0];
+          if (!canIssue || !nextDue) return null;
+          return (
             <Button
               size="sm"
               loading={issue.isPending}
-              onClick={() => {
-                issue.mutate(row.original.student_user_id, {
-                  onSuccess: () => {
-                    toast.success(t("issued"));
+              onClick={(e) => {
+                e.stopPropagation();
+                issue.mutate(
+                  { student_user_id: row.original.student_user_id, level: nextDue.level },
+                  {
+                    onSuccess: () => {
+                      toast.success(t("issued", { level: nextDue.label }));
+                    },
+                    onError: (error) => {
+                      toast.error(
+                        error instanceof ApiError
+                          ? apiErrorMessage(error.code)
+                          : apiErrorMessage("UNKNOWN"),
+                      );
+                    },
                   },
-                  onError: (error) => {
-                    toast.error(
-                      error instanceof ApiError
-                        ? apiErrorMessage(error.code)
-                        : apiErrorMessage("UNKNOWN"),
-                    );
-                  },
-                });
+                );
               }}
             >
-              {t("issue")}
+              {t("issue", { level: nextDue.label })}
             </Button>
-          ) : null,
+          );
+        },
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps -- issue mutation identity is stable per render
-    [t, locale, studentMap, canIssue],
+    [t, levels, levelLabel, canIssue],
   );
 
-  if (policy.isLoading || totals.isLoading)
-    return <Skeleton className="h-40 w-full" aria-busy="true" />;
-
-  if (minThreshold === null) {
+  if (levels.length === 0 && !policy.isLoading) {
     return (
-      <Alert variant="warning" title={t("noPolicyTitle")}>
-        {t("noPolicyBody")}
-      </Alert>
+      <div className="rounded-sm border border-border bg-surface p-4 text-[13px] text-fg-muted">
+        {t("noPolicyTitle")}
+        <p className="mt-1">{t("noPolicyBody")}</p>
+      </div>
     );
   }
 
   return (
-    <DataTable
-      data={atRisk}
-      columns={columns}
-      rowCount={atRisk.length}
-      pagination={{ pageIndex: 0, pageSize: 50 }}
-      onPaginationChange={() => undefined}
-      sorting={[]}
-      onSortingChange={() => undefined}
-      globalFilter=""
-      onGlobalFilterChange={() => undefined}
-      getRowId={(item) => item.student_user_id}
-      emptyState={
-        <EmptyState
-          icon={<domainIcons.violation aria-hidden="true" />}
-          title={t("emptyTitle")}
-          description={t("emptyBody")}
-        />
-      }
-    />
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-end gap-2">
+        <label className="flex flex-col gap-1 text-[13px]">
+          <span className="font-medium">{t("filters.class")}</span>
+          <Select
+            options={classOptions}
+            value={classId || "all"}
+            onValueChange={(v) => {
+              setClassId(v === "all" ? "" : v);
+              setPagination((p) => ({ ...p, pageIndex: 0 }));
+            }}
+            className="w-44"
+            aria-label={t("filters.class")}
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-[13px]">
+          <span className="font-medium">{t("filters.level")}</span>
+          <Select
+            options={levelOptions}
+            value={level || "all"}
+            onValueChange={(v) => {
+              setLevel(v === "all" ? "" : v);
+              setPagination((p) => ({ ...p, pageIndex: 0 }));
+            }}
+            className="w-40"
+            aria-label={t("filters.level")}
+          />
+        </label>
+      </div>
+
+      <DataTable
+        data={rows}
+        columns={columns}
+        rowCount={rowCount}
+        pagination={pagination}
+        onPaginationChange={setPagination}
+        sorting={[]}
+        onSortingChange={() => undefined}
+        globalFilter={search}
+        onGlobalFilterChange={(value) => {
+          setSearch(value);
+          setPagination((p) => ({ ...p, pageIndex: 0 }));
+        }}
+        isLoading={candidates.isLoading}
+        getRowId={(item) => item.student_user_id}
+        onRowActivate={(item) => {
+          router.push(`/discipline/students/${item.student_user_id}`);
+        }}
+        toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
+        emptyState={
+          <EmptyState
+            icon={<domainIcons.violation aria-hidden="true" />}
+            title={t("emptyTitle")}
+            description={t("emptyBody")}
+          />
+        }
+      />
+    </div>
   );
 }

@@ -19,6 +19,7 @@ import {
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
@@ -36,16 +37,18 @@ import {
 import { ViolationRecordForm } from "./violation-record-form";
 import { ViolationVoidDialog } from "./violation-void-dialog";
 
-/** Shown after a record pushes the student's total past a warning-letter threshold. */
-interface DuePrompt {
+/** Shown after a batch of records lands, with the student's new total and any due levels. */
+interface SaveSummary {
   studentId: string;
   studentName: string;
-  level: SPLevel;
+  totalPoints: number;
+  dueLevels: SPLevel[];
 }
 
 export function ViolationsLedgerView(): ReactElement {
   const t = useTranslations("app.discipline.violations");
   const locale = useLocale() as Locale;
+  const router = useRouter();
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const canRecord = useCan("record_violations");
@@ -56,7 +59,7 @@ export function ViolationsLedgerView(): ReactElement {
   const [includeVoided, setIncludeVoided] = useState(false);
   const [recording, setRecording] = useState(false);
   const [voiding, setVoiding] = useState<ViolationRecord | null>(null);
-  const [duePrompt, setDuePrompt] = useState<DuePrompt | null>(null);
+  const [saveSummary, setSaveSummary] = useState<SaveSummary | null>(null);
 
   const classes = useClassesQuery();
   const students = useDirectoryQuery("student");
@@ -122,7 +125,8 @@ export function ViolationsLedgerView(): ReactElement {
             <Button
               size="sm"
               variant="secondary"
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
                 setVoiding(row.original);
               }}
             >
@@ -136,46 +140,68 @@ export function ViolationsLedgerView(): ReactElement {
 
   return (
     <div className="flex flex-col gap-4">
-      {duePrompt && (
-        <Alert variant="warning" title={t("dueLevelTitle")}>
+      {saveSummary && (
+        <Alert
+          variant={saveSummary.dueLevels.length > 0 ? "warning" : "info"}
+          title={t("saveSummaryTitle", {
+            student: saveSummary.studentName,
+            points: saveSummary.totalPoints,
+          })}
+        >
           <div className="flex flex-col gap-2">
-            <p>
-              {t("dueLevelBody", {
-                student: duePrompt.studentName,
-                level: duePrompt.level.label,
-                points: duePrompt.level.min_points,
-              })}
-            </p>
+            {saveSummary.dueLevels[0] && (
+              <p>
+                {t("dueLevelBody", {
+                  student: saveSummary.studentName,
+                  level: saveSummary.dueLevels[0].label,
+                  points: saveSummary.dueLevels[0].min_points,
+                })}
+              </p>
+            )}
+            {saveSummary.dueLevels.length > 1 && (
+              <p>
+                {t("dueLevelMore", {
+                  levels: saveSummary.dueLevels
+                    .slice(1)
+                    .map((l) => l.label)
+                    .join(", "),
+                })}
+              </p>
+            )}
             <div className="flex gap-2">
-              <Button
-                size="sm"
-                loading={issueLetter.isPending}
-                onClick={() => {
-                  issueLetter.mutate(
-                    { student_user_id: duePrompt.studentId, level: duePrompt.level.level },
-                    {
-                      onSuccess: () => {
-                        toast.success(t("issueNow"));
-                        setDuePrompt(null);
+              {saveSummary.dueLevels[0] && (
+                <Button
+                  size="sm"
+                  loading={issueLetter.isPending}
+                  onClick={() => {
+                    const nextDue = saveSummary.dueLevels[0];
+                    if (!nextDue) return;
+                    issueLetter.mutate(
+                      { student_user_id: saveSummary.studentId, level: nextDue.level },
+                      {
+                        onSuccess: () => {
+                          toast.success(t("issueNow"));
+                          setSaveSummary(null);
+                        },
+                        onError: (error) => {
+                          toast.error(
+                            error instanceof ApiError
+                              ? apiErrorMessage(error.code)
+                              : apiErrorMessage("UNKNOWN"),
+                          );
+                        },
                       },
-                      onError: (error) => {
-                        toast.error(
-                          error instanceof ApiError
-                            ? apiErrorMessage(error.code)
-                            : apiErrorMessage("UNKNOWN"),
-                        );
-                      },
-                    },
-                  );
-                }}
-              >
-                {t("issueNow")}
-              </Button>
+                    );
+                  }}
+                >
+                  {t("issueNow")}
+                </Button>
+              )}
               <Button
                 size="sm"
                 variant="secondary"
                 onClick={() => {
-                  setDuePrompt(null);
+                  setSaveSummary(null);
                 }}
               >
                 {t("dismiss")}
@@ -254,6 +280,9 @@ export function ViolationsLedgerView(): ReactElement {
         onGlobalFilterChange={() => undefined}
         isLoading={isLoading}
         getRowId={(item) => item.id}
+        onRowActivate={(item) => {
+          router.push(`/discipline/students/${item.student_user_id}`);
+        }}
         emptyState={
           <EmptyState
             icon={<domainIcons.violation aria-hidden="true" />}
@@ -274,13 +303,13 @@ export function ViolationsLedgerView(): ReactElement {
             <ViolationRecordForm
               onDone={(result) => {
                 setRecording(false);
-                const nextDue = result?.due_levels[0];
-                if (result && nextDue) {
+                if (result) {
                   const student = studentMap.get(result.record.student_user_id);
-                  setDuePrompt({
+                  setSaveSummary({
                     studentId: result.record.student_user_id,
                     studentName: student?.name ?? t("unknownStudent"),
-                    level: nextDue,
+                    totalPoints: result.total_points,
+                    dueLevels: [...result.due_levels].sort((a, b) => a.level - b.level),
                   });
                 }
               }}

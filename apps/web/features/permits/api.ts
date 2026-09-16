@@ -7,6 +7,7 @@ import { useApiClient } from "../../lib/api/client";
 
 export type WorkflowInstance = components["schemas"]["WorkflowInstance"];
 export type ExitPermitDetail = components["schemas"]["ExitPermitDetail"];
+export type ExitPermitSummary = components["schemas"]["ExitPermitSummary"];
 export type LateArrivalDetail = components["schemas"]["LateArrivalDetail"];
 export type LateArrivalSummary = components["schemas"]["LateArrivalSummary"];
 export type LeaveRequestDetail = components["schemas"]["LeaveRequestDetail"];
@@ -73,6 +74,17 @@ export function useExitPermitQuery(id: string) {
       client.GET("/v1/exit-permits/{instanceId}", { params: { path: { instanceId: id } } }),
     enabled: id !== "",
     refetchInterval: 15_000,
+  });
+}
+
+/** Permits waiting at whichever stage the caller's role covers: their own approval, or a security gate scan. */
+export function useExitPermitReviewQueueQuery(enabled = true) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: queryKeys.exitPermitReviewQueue(),
+    queryFn: () => client.GET("/v1/exit-permits/review-queue"),
+    enabled,
+    refetchInterval: 30_000,
   });
 }
 

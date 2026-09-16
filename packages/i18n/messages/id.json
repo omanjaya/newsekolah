@@ -292,6 +292,18 @@
     "SUPERVISION_SCORE_COUNT_MISMATCH": "Setiap kriteria wajib diberi tepat satu skor",
     "SUPERVISION_SCORE_OUT_OF_RANGE": "Ada skor di luar skala instrumen",
     "SUPERVISION_LESSON_NOT_RESOLVED": "Jadwal pelajaran yang dituju tidak ditemukan",
-    "SUPERVISION_MODULE_DISABLED": "Modul supervisi belum diaktifkan untuk sekolah ini"
+    "SUPERVISION_MODULE_DISABLED": "Modul supervisi belum diaktifkan untuk sekolah ini",
+    "WARNING_LETTER_NOT_DUE": "Siswa ini belum mencapai tingkat surat peringatan tersebut",
+    "WARNING_LETTER_ALREADY_ISSUED": "Tingkat surat peringatan ini sudah diterbitkan",
+    "VIOLATION_TYPE_INACTIVE": "Salah satu jenis pelanggaran yang dipilih sudah dinonaktifkan; muat ulang dan coba lagi",
+    "VIOLATION_RECORD_VOIDED": "Catatan ini sudah dibatalkan",
+    "COUNSELING_FORBIDDEN": "Anda tidak punya akses ke catatan konseling ini",
+    "ATTACHMENT_NOT_FOUND": "Lampiran tidak ditemukan",
+    "ATTACHMENT_TOO_LARGE": "Berkas melebihi batas 10 MB",
+    "ATTACHMENT_INVALID_TYPE": "Hanya gambar JPEG atau PNG yang diterima",
+    "REPORT_UNAVAILABLE": "Laporan belum bisa dibuat saat ini, coba lagi sebentar lagi",
+    "GRADE_RANGE_OVERLAP": "Rentang ini saling tumpang tindih; atur ulang agar tidak ada nilai yang masuk ke dua rentang",
+    "TP_EXPORT_CODE_EXISTS": "Kode ekspor ini sudah dipakai komponen lain pada kelas, mapel, dan semester yang sama",
+    "TP_KIND_NOT_ELIGIBLE": "Hanya komponen formatif (atau jenis TP yang dikonfigurasi sekolah) yang bisa dipetakan"
   }
 }

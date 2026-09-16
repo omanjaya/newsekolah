@@ -1,44 +1,31 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import {
-  Button,
-  ConfirmDialog,
-  EmptyState,
-  IconButton,
-  Input,
-  Select,
-  Skeleton,
-  domainIcons,
-  useToast,
-} from "@newsekolah/ui";
-import { Plus, Trash2 } from "lucide-react";
+import { Button, Input, Skeleton, useToast } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { useSubjectsQuery } from "../../reference/api";
-import {
-  type GradeRange,
-  useCreateGradeRangeMutation,
-  useDeleteGradeRangeMutation,
-  useGradeRangesQuery,
-  useGradingScaleQuery,
-  useUpdateGradingScaleMutation,
-} from "../api";
+import { useGradingScaleQuery, useUpdateGradingScaleMutation } from "../api";
+
+import { GradeRangesEditor } from "./grade-ranges-editor";
 
 /**
- * The school-wide grading policy: the 0-100 scale used across every
- * gradebook, and the ranges that cap how much a manual report-score
- * increase may add for a given raw-score band. Gated by manage_settings
- * at the call site (grading-view.tsx).
+ * The school-wide grading scale (edit needs manage_settings) and the
+ * report-score increase ranges (any manage_grades holder maintains their
+ * own scope; manage_settings can target other teachers or the whole
+ * school). Reachable from grading-view.tsx once either permission holds.
  */
-export function GradingSettings(): ReactElement {
+export function GradingSettings({
+  canManageSettings,
+}: {
+  canManageSettings: boolean;
+}): ReactElement {
   return (
     <div className="flex flex-col gap-8">
-      <ScaleForm />
-      <RangesList />
+      {canManageSettings && <ScaleForm />}
+      <GradeRangesEditor canManageSettings={canManageSettings} />
     </div>
   );
 }
@@ -168,171 +155,4 @@ function toFormState(scale: {
     default_kktp: String(scale.default_kktp),
     round_decimal: String(scale.round_decimal),
   };
-}
-
-function RangesList(): ReactElement {
-  const t = useTranslations("app.grading.settings");
-  const toast = useToast();
-  const apiErrorMessage = useApiErrorMessage();
-  const { data, isLoading } = useGradeRangesQuery();
-  const subjects = useSubjectsQuery();
-  const create = useCreateGradeRangeMutation();
-  const remove = useDeleteGradeRangeMutation();
-  const [pendingDelete, setPendingDelete] = useState<GradeRange | null>(null);
-  const [minScore, setMinScore] = useState("");
-  const [maxScore, setMaxScore] = useState("");
-  const [increase, setIncrease] = useState("");
-  const [subjectId, setSubjectId] = useState("");
-
-  const subjectOptions = [
-    { value: "", label: t("rangeAllSubjects") },
-    ...(subjects.data?.data ?? []).map((s) => ({ value: s.id, label: s.name })),
-  ];
-  const subjectMap = new Map((subjects.data?.data ?? []).map((s) => [s.id, s.name]));
-
-  async function addRange() {
-    if (!minScore.trim() || !maxScore.trim() || !increase.trim()) return;
-    try {
-      await create.mutateAsync({
-        min_score: Number(minScore),
-        max_score: Number(maxScore),
-        increase_amount: Number(increase),
-        ...(subjectId ? { subject_id: subjectId } : {}),
-      });
-      toast.success(t("rangeSaved"));
-      setMinScore("");
-      setMaxScore("");
-      setIncrease("");
-      setSubjectId("");
-    } catch (error) {
-      toast.error(
-        error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
-      );
-    }
-  }
-
-  const ranges = data?.data ?? [];
-
-  return (
-    <section className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-4">
-      <h2 className="text-[16px] font-medium text-fg">{t("rangesTitle")}</h2>
-      <p className="text-[13px] text-fg-muted">{t("rangesHint")}</p>
-
-      {isLoading ? (
-        <Skeleton className="h-24 w-full" aria-busy="true" />
-      ) : ranges.length === 0 ? (
-        <EmptyState
-          icon={<domainIcons.grades aria-hidden="true" />}
-          title={t("rangesEmptyTitle")}
-          description={t("rangesEmptyBody")}
-        />
-      ) : (
-        <ul className="divide-y divide-border rounded-sm border border-border">
-          {ranges.map((range) => (
-            <li key={range.id} className="flex items-center justify-between gap-3 px-3 py-2">
-              <span className="text-[13px] text-fg">
-                {t("rangeRow", {
-                  min: range.min_score,
-                  max: range.max_score,
-                  increase: range.increase_amount,
-                  subject: range.subject_id
-                    ? (subjectMap.get(range.subject_id) ?? t("rangeAllSubjects"))
-                    : t("rangeAllSubjects"),
-                })}
-              </span>
-              <IconButton
-                icon={<Trash2 />}
-                aria-label={t("rangeDelete")}
-                onClick={() => {
-                  setPendingDelete(range);
-                }}
-              />
-            </li>
-          ))}
-        </ul>
-      )}
-
-      <form
-        className="flex flex-wrap items-end gap-3"
-        onSubmit={(e) => {
-          e.preventDefault();
-          void addRange();
-        }}
-      >
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("rangeMin")}</span>
-          <Input
-            type="number"
-            className="w-24"
-            value={minScore}
-            onChange={(e) => {
-              setMinScore(e.target.value);
-            }}
-            required
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("rangeMax")}</span>
-          <Input
-            type="number"
-            className="w-24"
-            value={maxScore}
-            onChange={(e) => {
-              setMaxScore(e.target.value);
-            }}
-            required
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("rangeIncrease")}</span>
-          <Input
-            type="number"
-            className="w-24"
-            value={increase}
-            onChange={(e) => {
-              setIncrease(e.target.value);
-            }}
-            required
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("rangeSubject")}</span>
-          <Select
-            options={subjectOptions}
-            value={subjectId}
-            onValueChange={setSubjectId}
-            className="w-48"
-          />
-        </label>
-        <Button type="submit" icon={<Plus />} loading={create.isPending}>
-          {t("rangeAdd")}
-        </Button>
-      </form>
-
-      <ConfirmDialog
-        open={pendingDelete !== null}
-        onOpenChange={(open) => {
-          if (!open) setPendingDelete(null);
-        }}
-        title={t("rangeDeleteTitle")}
-        description={t("rangeDeleteBody")}
-        confirmLabel={t("rangeDelete")}
-        destructive
-        confirming={remove.isPending}
-        onConfirm={async () => {
-          if (!pendingDelete) return;
-          try {
-            await remove.mutateAsync(pendingDelete.id);
-            toast.success(t("rangeDeleted"));
-          } catch (error) {
-            toast.error(
-              error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
-            );
-          } finally {
-            setPendingDelete(null);
-          }
-        }}
-      />
-    </section>
-  );
 }

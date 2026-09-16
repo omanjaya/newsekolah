@@ -18,16 +18,19 @@ export type GradebookStudent = components["schemas"]["GradebookStudent"];
 export type ReportScore = components["schemas"]["ReportScore"];
 export type GradePublication = components["schemas"]["GradePublication"];
 export type GradeRange = components["schemas"]["GradeRange"];
-export type GradeRangeWrite = components["schemas"]["GradeRangeWrite"];
 export type MyGrades = components["schemas"]["MyGrades"];
 export type MySubjectGrade = components["schemas"]["MySubjectGrade"];
 export type MyComponentScore = components["schemas"]["MyComponentScore"];
 export type StarEvent = components["schemas"]["StarEvent"];
+export type MyStars = components["schemas"]["MyStars"];
+export type MyStarGroup = components["schemas"]["MyStarGroup"];
 export type EraporFormat = components["schemas"]["EraporFormat"];
 export type EraporRow = components["schemas"]["EraporRow"];
 export type EraporSkip = components["schemas"]["EraporSkip"];
 export type EraporSkipReason = components["schemas"]["EraporSkipReason"];
 export type EraporPreview = components["schemas"]["EraporPreview"];
+export type TPMapping = components["schemas"]["TPMapping"];
+export type TPMappingWrite = components["schemas"]["TPMappingWrite"];
 
 /**
  * Local query keys, kept in this feature per the grading build's scope
@@ -45,6 +48,8 @@ export const gradingKeys = {
   classStarBalances: (classId: string) => ["grading", "stars", "class", classId] as const,
   eraporPreview: (classId: string, termId?: string) =>
     ["grading", "erapor", "preview", classId, termId ?? ""] as const,
+  tpMappings: (classId: string, subjectId: string, termId?: string) =>
+    ["grading", "tp-mappings", classId, subjectId, termId ?? ""] as const,
 };
 
 function useInvalidate(prefix: readonly unknown[]) {
@@ -199,21 +204,65 @@ export function useGradeRangesQuery() {
   });
 }
 
-export function useCreateGradeRangeMutation() {
+export interface GradeRangeEntry {
+  min_score: number;
+  max_score: number;
+  increase_amount: number;
+}
+
+/**
+ * Replaces every range of one subject-teacher scope in a single call: the
+ * API validates the whole set together and refuses an overlapping set
+ * (GRADE_RANGE_OVERLAP), rather than accepting ranges one at a time.
+ */
+export function useReplaceGradeRangesMutation() {
   const client = useApiClient();
   const invalidate = useInvalidate(gradingKeys.gradeRanges());
   return useMutation({
-    mutationFn: (body: GradeRangeWrite) => client.POST("/v1/grading/grade-ranges", { body }),
+    mutationFn: (body: {
+      subject_id: string;
+      teacher_user_id?: string;
+      ranges: GradeRangeEntry[];
+    }) => client.PUT("/v1/grading/grade-ranges", { body }),
     onSuccess: invalidate,
   });
 }
 
-export function useDeleteGradeRangeMutation() {
+// TP export-code mappings.
+
+export function useTPMappingsQuery(classId: string, subjectId: string, termId?: string) {
   const client = useApiClient();
-  const invalidate = useInvalidate(gradingKeys.gradeRanges());
+  return useQuery({
+    queryKey: gradingKeys.tpMappings(classId, subjectId, termId),
+    queryFn: () =>
+      client.GET("/v1/grading/tp-mappings", {
+        params: {
+          query: {
+            class_id: classId,
+            subject_id: subjectId,
+            ...(termId ? { term_id: termId } : {}),
+          },
+        },
+      }),
+    enabled: classId !== "" && subjectId !== "",
+  });
+}
+
+export function useSaveTPMappingMutation() {
+  const client = useApiClient();
+  const invalidate = useInvalidate(["grading", "tp-mappings"]);
+  return useMutation({
+    mutationFn: (body: TPMappingWrite) => client.POST("/v1/grading/tp-mappings", { body }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useDeleteTPMappingMutation() {
+  const client = useApiClient();
+  const invalidate = useInvalidate(["grading", "tp-mappings"]);
   return useMutation({
     mutationFn: (id: string) =>
-      client.DELETE("/v1/grading/grade-ranges/{rangeId}", { params: { path: { rangeId: id } } }),
+      client.DELETE("/v1/grading/tp-mappings/{mappingId}", { params: { path: { mappingId: id } } }),
     onSuccess: invalidate,
   });
 }
@@ -226,6 +275,15 @@ export function useMyGradesQuery(termId?: string) {
     queryKey: gradingKeys.myGrades(termId),
     queryFn: () =>
       client.GET("/v1/me/grades", { params: { query: termId ? { term_id: termId } : {} } }),
+  });
+}
+
+/** The current student's own star total, grouped by subject and teacher. */
+export function useMyStarsQuery() {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: ["grading", "my-stars"] as const,
+    queryFn: () => client.GET("/v1/me/stars"),
   });
 }
 
@@ -340,6 +398,40 @@ export async function downloadEraporExport(
     const link = document.createElement("a");
     link.href = url;
     link.download = `e-rapor.${format}`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+/**
+ * Downloads the legacy per-subject e-Rapor sheet (No / NIS / Nama / Nilai
+ * Rapor / one T|R column per mapped TP export code / Validasi), kept next
+ * to the current export for schools whose import tooling still expects it.
+ */
+export async function downloadEraporExportLegacy(
+  classId: string,
+  subjectId: string,
+  termId: string | undefined,
+): Promise<void> {
+  const token = getAccessToken();
+  const params = new URLSearchParams({ class_id: classId, subject_id: subjectId });
+  if (termId) params.set("term_id", termId);
+  const response = await fetch(`${API_URL}/v1/grading/erapor/export-legacy?${params.toString()}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  });
+  if (!response.ok) {
+    const code = await readErrorCode(response);
+    throw new ApiError({ status: response.status, code, message: code });
+  }
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  try {
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "e-rapor-legacy.xlsx";
     document.body.appendChild(link);
     link.click();
     link.remove();

@@ -5,6 +5,7 @@ import type { Locale } from "@newsekolah/i18n";
 import { formatDateTime } from "@newsekolah/i18n";
 import { Button, DataTable, EmptyState, Select, domainIcons, useToast } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
+import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
@@ -21,6 +22,7 @@ import {
 export function IssuedLettersPanel(): ReactElement {
   const t = useTranslations("app.discipline.warningLetters");
   const locale = useLocale() as Locale;
+  const router = useRouter();
   const { me } = useSession();
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
@@ -79,7 +81,8 @@ export function IssuedLettersPanel(): ReactElement {
             <Button
               size="sm"
               variant="secondary"
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
                 download(row.original.id);
               }}
             >
@@ -115,6 +118,9 @@ export function IssuedLettersPanel(): ReactElement {
         onGlobalFilterChange={() => undefined}
         isLoading={isLoading}
         getRowId={(item) => item.id}
+        onRowActivate={(item) => {
+          router.push(`/discipline/students/${item.student_user_id}`);
+        }}
         emptyState={
           <EmptyState
             icon={<domainIcons.violation aria-hidden="true" />}

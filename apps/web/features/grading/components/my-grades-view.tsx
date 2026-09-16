@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import { useLookup, useSubjectsQuery } from "../../reference/api";
-import { type MySubjectGrade, useMyGradesQuery } from "../api";
+import { type MySubjectGrade, useMyGradesQuery, useMyStarsQuery } from "../api";
 
 /**
  * The student's own grades: one card per subject the teacher has
@@ -17,6 +17,7 @@ import { type MySubjectGrade, useMyGradesQuery } from "../api";
 export function MyGradesView(): ReactElement {
   const t = useTranslations("app.grading.myGrades");
   const { data, isLoading, error } = useMyGradesQuery();
+  const stars = useMyStarsQuery();
   const subjects = useSubjectsQuery();
   const subjectMap = useLookup(subjects.data?.data);
 
@@ -62,6 +63,32 @@ export function MyGradesView(): ReactElement {
             />
           ))}
         </div>
+      )}
+
+      {data.stars > 0 && (
+        <section className="flex flex-col gap-2 rounded-sm border border-border bg-surface p-4">
+          <h2 className="text-[16px] font-medium text-fg">{t("starsBreakdown")}</h2>
+          {stars.isLoading ? (
+            <Skeleton className="h-16 w-full" aria-busy="true" />
+          ) : (stars.data?.subjects.length ?? 0) === 0 ? (
+            <p className="text-[13px] text-fg-muted">{t("starsBreakdownEmpty")}</p>
+          ) : (
+            <ul className="flex flex-col gap-1.5">
+              {stars.data?.subjects.map((group, index) => (
+                <li key={index} className="flex items-center justify-between gap-2 text-[13px]">
+                  <span className="text-fg">
+                    {group.subject_name ??
+                      subjectMap.get(group.subject_id ?? "")?.name ??
+                      t("unknownSubject")}
+                  </span>
+                  <span className="[font-variant-numeric:tabular-nums] text-fg-muted">
+                    {t("starsBreakdownRow", { count: group.total, teacher: group.teacher_name })}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       )}
     </div>
   );

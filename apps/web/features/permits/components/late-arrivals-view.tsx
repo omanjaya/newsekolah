@@ -44,7 +44,14 @@ import { WorkflowStatusBadge, WorkflowStepper } from "./workflow-stepper";
 
 export function LateArrivalsView(): ReactElement {
   const t = useTranslations("app.permits.late");
-  const canReview = useCan("manage_attendance");
+  const { me } = useSession();
+  // Reviewing a late arrival is scoped server-side to the duty teacher who
+  // opened it (or a manage_attendance administrator, per
+  // requireLateArrivalReviewer): any teacher can finish one they opened,
+  // not only a picket/duty-scheduled teacher, so the queue tab is offered
+  // to every teacher and staff account rather than gated by a permission
+  // that only some of them hold.
+  const canReview = me?.profile_kind === "teacher" || me?.profile_kind === "staff";
   const isStudent = useCan("submit_leave_requests");
   const [tab, setTab] = useState(canReview ? "queue" : "mine");
 
