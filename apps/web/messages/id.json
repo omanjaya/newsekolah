@@ -1085,6 +1085,8 @@
         "ended": "Tugas diakhiri",
         "duty": "Tugas",
         "person": "Pemegang tugas",
+        "personSearchPlaceholder": "Cari nama guru atau staf",
+        "personEmpty": "Tidak ada guru atau staf yang cocok.",
         "class": "Kelas",
         "startsOn": "Mulai",
         "pick": "Pilih",

@@ -1085,6 +1085,8 @@
         "ended": "Duty ended",
         "duty": "Duty",
         "person": "Holder",
+        "personSearchPlaceholder": "Search teacher or staff name",
+        "personEmpty": "No matching teacher or staff member.",
         "class": "Class",
         "startsOn": "From",
         "pick": "Pick",

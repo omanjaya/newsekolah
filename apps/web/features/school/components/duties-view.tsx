@@ -6,6 +6,7 @@ import { formatDate } from "@newsekolah/i18n";
 import {
   Badge,
   Button,
+  Combobox,
   Dialog,
   DialogContent,
   EmptyState,
@@ -17,12 +18,13 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
+  useDebouncedCallback,
   useToast,
 } from "@newsekolah/ui";
 import { Plus, ShieldCheck } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { useActiveYear } from "../../../lib/hooks/use-active-year";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
@@ -33,6 +35,7 @@ import {
   useDutyAssignmentsQuery,
   useDutyTypesQuery,
   useEndDutyAssignmentMutation,
+  useStaffOptionsQuery,
 } from "../duties-api";
 
 import { DutyTypesPanel } from "./duty-types-panel";
@@ -167,15 +170,31 @@ function AssignForm({
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const year = useActiveYear();
-  const people = useDirectoryQuery();
   const classes = useClassesQuery();
   const create = useCreateDutyAssignmentMutation();
   const [typeId, setTypeId] = useState("");
   const [userId, setUserId] = useState("");
+  const [userLabel, setUserLabel] = useState("");
+  const [userSearch, setUserSearch] = useState("");
   const [classId, setClassId] = useState("");
   const [startsOn, setStartsOn] = useState(new Date().toISOString().slice(0, 10));
   const [error, setError] = useState<string | null>(null);
   const type = types.find((x) => x.id === typeId);
+
+  const debounceUserSearch = useDebouncedCallback(setUserSearch, 300);
+  const staffOptionsQuery = useStaffOptionsQuery(userSearch);
+  // Keeps the picked name showing in the trigger even after the search
+  // text moves on and the person falls out of the latest results.
+  const userOptions = useMemo(() => {
+    const base = (staffOptionsQuery.data?.data ?? []).map((option) => ({
+      value: option.id,
+      label: option.name,
+    }));
+    if (userId && !base.some((option) => option.value === userId)) {
+      return [{ value: userId, label: userLabel }, ...base];
+    }
+    return base;
+  }, [staffOptionsQuery.data, userId, userLabel]);
 
   async function submit() {
     setError(null);
@@ -222,13 +241,20 @@ function AssignForm({
       </label>
       <label className="flex flex-col gap-1 text-[13px]">
         <span className="font-medium">{t("person")}</span>
-        <Select
-          options={(people.data?.data ?? [])
-            .filter((p) => p.profile_kind !== "student" && p.profile_kind !== "parent")
-            .map((p) => ({ value: p.id, label: p.name }))}
+        <Combobox
+          options={userOptions}
           value={userId}
-          onValueChange={setUserId}
+          onValueChange={(value) => {
+            setUserId(value);
+            setUserLabel(userOptions.find((option) => option.value === value)?.label ?? "");
+          }}
+          search={userSearch}
+          onSearchChange={debounceUserSearch}
           placeholder={t("pick")}
+          searchPlaceholder={t("personSearchPlaceholder")}
+          emptyLabel={t("personEmpty")}
+          loading={staffOptionsQuery.isLoading}
+          aria-label={t("person")}
         />
       </label>
       {type?.scope_kind === "class" && (
