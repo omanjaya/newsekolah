@@ -29,5 +29,6 @@ Lampiran (sumber kebenaran fitur lama, sangat rinci):
 - [B. Inventaris database dan PRD](analysis/database-inventory.md)
 - [C. Inventaris backend](analysis/backend-inventory.md)
 - [D. Perbandingan logika SION dan newsekolah, sebelum perbaikan](analysis/parity-sion-before.md)
+- [E. Perbandingan fitur: sistem produksi (Laravel) dan newsekolah](analysis/parity-sion-laravel.md)
 
 Arah desain visual: [DESIGN.md](../DESIGN.md). Aturan kerja agen: [CLAUDE.md](../CLAUDE.md). Kode lama: `reference/sion` dan `reference/sion-rebuild-go` (hanya dibaca).
