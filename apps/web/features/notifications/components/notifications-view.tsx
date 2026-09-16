@@ -6,7 +6,9 @@ import { formatRelative } from "@newsekolah/i18n";
 import {
   Button,
   EmptyState,
+  Input,
   PageHeader,
+  Select,
   Skeleton,
   Tabs,
   TabsList,
@@ -20,20 +22,34 @@ import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { useSession } from "../../../lib/session/session-provider";
-import { useMarkAllReadMutation, useMarkReadMutation, useNotificationsQuery } from "../api";
+import {
+  NOTIFICATION_KINDS,
+  type NotificationKind,
+  useMarkAllReadMutation,
+  useMarkReadMutation,
+  useNotificationsQuery,
+} from "../api";
 
 type Notification = components["schemas"]["Notification"];
 
 export function NotificationsView(): ReactElement {
   const t = useTranslations("app.notifications");
+  const tKinds = useTranslations("app.notifications.kinds");
   const locale = useLocale() as Locale;
   const { me } = useSession();
   const [filter, setFilter] = useState<"all" | "unread">("all");
-  const { data, isLoading } = useNotificationsQuery(filter === "unread");
+  const [search, setSearch] = useState("");
+  const [kind, setKind] = useState<NotificationKind | "">("");
+  const { data, isLoading } = useNotificationsQuery({
+    unreadOnly: filter === "unread",
+    q: search.trim() || undefined,
+    kind: kind || undefined,
+  });
   const markRead = useMarkReadMutation();
   const markAllRead = useMarkAllReadMutation();
   const items = data?.data ?? [];
   const hasUnread = items.some((n) => !n.read_at);
+  const isFiltering = search.trim() !== "" || kind !== "";
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
@@ -67,6 +83,30 @@ export function NotificationsView(): ReactElement {
         </TabsList>
       </Tabs>
 
+      <div className="flex flex-wrap items-center gap-2">
+        <Input
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+          }}
+          placeholder={t("searchPlaceholder")}
+          aria-label={t("searchPlaceholder")}
+          className="w-full sm:w-64"
+        />
+        <Select
+          options={[
+            { value: "all", label: t("kindAll") },
+            ...NOTIFICATION_KINDS.map((k) => ({ value: k, label: tKinds(k) })),
+          ]}
+          value={kind || "all"}
+          onValueChange={(v) => {
+            setKind(v === "all" ? "" : (v as NotificationKind));
+          }}
+          aria-label={t("kindFilterLabel")}
+          className="w-full sm:w-56"
+        />
+      </div>
+
       {isLoading ? (
         <div className="flex flex-col gap-2" aria-busy="true">
           <Skeleton className="h-16 w-full" />
@@ -76,8 +116,14 @@ export function NotificationsView(): ReactElement {
       ) : items.length === 0 ? (
         <EmptyState
           icon={<Bell aria-hidden="true" />}
-          title={filter === "unread" ? t("emptyUnreadTitle") : t("emptyTitle")}
-          description={t("emptyBody")}
+          title={
+            isFiltering
+              ? t("emptyFilteredTitle")
+              : filter === "unread"
+                ? t("emptyUnreadTitle")
+                : t("emptyTitle")
+          }
+          description={isFiltering ? t("emptyFilteredBody") : t("emptyBody")}
         />
       ) : (
         <ul className="flex flex-col divide-y divide-border rounded-sm border border-border bg-surface">

@@ -2,16 +2,12 @@ import { ApiError } from "@newsekolah/api-client";
 
 /**
  * PUTs a file straight to a presigned object-storage URL with
- * upload-progress reporting, the same way
- * features/onboarding/lib/dapodik-upload.ts goes around the generated
- * `NewsekolahApiClient` for its one long-running upload: openapi-fetch has
- * no progress hook, so this uses a plain `XMLHttpRequest` instead.
- *
- * Unlike the Dapodik upload, this never sends our own API's bearer token:
- * the presigned URL points at object storage (MinIO/S3-compatible), not
- * our API, and a signed URL's authorization is already baked into its
- * query string. Adding an unrelated `Authorization` header would only
- * risk the storage provider rejecting the request.
+ * upload-progress reporting: openapi-fetch has no progress hook, so every
+ * presigned-upload flow (avatar, tenant logo, tenant favicon) goes around
+ * the generated client with a plain `XMLHttpRequest` instead. Never sends
+ * our own API's bearer token: the presigned URL points at object storage
+ * (MinIO/S3-compatible), not our API, and a signed URL's authorization is
+ * already baked into its query string.
  */
 export function uploadToPresignedUrl(
   uploadUrl: string,

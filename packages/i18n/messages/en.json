@@ -304,6 +304,11 @@
     "REPORT_UNAVAILABLE": "The report could not be generated right now; try again shortly",
     "GRADE_RANGE_OVERLAP": "These ranges overlap; adjust them so no score falls in two ranges",
     "TP_EXPORT_CODE_EXISTS": "This export code is already used by another component in this class, subject and term",
-    "TP_KIND_NOT_ELIGIBLE": "Only formative components (or the tenant's configured TP kind) can be mapped"
+    "TP_KIND_NOT_ELIGIBLE": "Only formative components (or the tenant's configured TP kind) can be mapped",
+    "PRIMARY_ROLE_NOT_SYSTEM": "The primary role must be a system role, not a custom one",
+    "ADDITIONAL_ROLE_MUST_BE_CUSTOM": "Additional roles must be custom roles, not system roles",
+    "LEAVE_PERMISSION_REQUIRES_DUTY": "Reviewing leave requests and issuing leave letters cannot be granted directly to the teacher role, that access comes from a duty assignment",
+    "IMPORT_TOO_MANY_ROWS": "The import file exceeds the 5000 row limit",
+    "IMPORT_FILE_INVALID": "The import file is unreadable or does not match the template"
   }
 }

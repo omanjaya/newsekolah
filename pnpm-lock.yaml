@@ -217,7 +217,7 @@ importers:
         specifier: ^8.21.3
         version: 8.21.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       exceljs:
-        specifier: 4.4.0
+        specifier: ^4.4.0
         version: 4.4.0
       lucide-react:
         specifier: ^1.43.0

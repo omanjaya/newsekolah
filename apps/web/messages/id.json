@@ -64,7 +64,28 @@
       "unread": "{count, plural, =0 {Semua notifikasi sudah dibaca} one {# notifikasi belum dibaca} other {# notifikasi belum dibaca}}",
       "announcementsTitle": "Pengumuman terbaru",
       "openAnnouncements": "Lihat semua",
-      "footerHint": "Data di halaman ini diperbarui otomatis dari modul presensi, perizinan, dan komunikasi."
+      "footerHint": "Data di halaman ini diperbarui otomatis dari modul presensi, perizinan, dan komunikasi.",
+      "admin": {
+        "activeUsersTitle": "Pengguna aktif",
+        "kinds": {
+          "teacher": "Guru",
+          "staff": "Pegawai",
+          "student": "Siswa",
+          "parent": "Orang tua"
+        },
+        "loadError": "Ringkasan tidak bisa dimuat. Coba muat ulang halaman.",
+        "pendingTitle": "Sedang berjalan",
+        "pendingLabels": {
+          "leave_request": "Izin terencana",
+          "exit_permit": "Izin keluar",
+          "late_arrival": "Keterlambatan"
+        },
+        "onlineTitle": "Pengguna daring per peran",
+        "onlineUnavailableTitle": "Belum tersedia",
+        "onlineUnavailableBody": "Penghitung kehadiran daring belum tersambung ke layanan dashboard di server ini.",
+        "loginHistogramTitle": "Login per jam (UTC), 7 hari terakhir",
+        "histogramEmpty": "Belum ada login tercatat pada periode ini."
+      }
     },
     "profile": {
       "title": "Profil",
@@ -98,7 +119,42 @@
         "localeEn": "Bahasa Inggris",
         "requiredError": "Nama lengkap wajib diisi.",
         "save": "Simpan perubahan",
-        "saved": "Profil diperbarui"
+        "saved": "Profil diperbarui",
+        "usernameLabel": "Nama pengguna",
+        "usernameLengthError": "Nama pengguna minimal 3 karakter."
+      },
+      "detail": {
+        "title": "Data diri",
+        "nik": "NIK",
+        "gender": "Jenis kelamin",
+        "genderUnset": "Belum dipilih",
+        "genderMale": "Laki-laki",
+        "genderFemale": "Perempuan",
+        "birthPlace": "Tempat lahir",
+        "birthDate": "Tanggal lahir",
+        "religion": "Agama",
+        "bloodType": "Golongan darah",
+        "city": "Kota/Kabupaten",
+        "district": "Kecamatan",
+        "address": "Alamat",
+        "studentSection": "Data siswa",
+        "nis": "NIS",
+        "nisn": "NISN",
+        "previousSchool": "Sekolah asal",
+        "fatherName": "Nama ayah",
+        "motherName": "Nama ibu",
+        "guardianName": "Nama wali",
+        "guardianPhone": "Telepon wali",
+        "employmentSection": "Data kepegawaian",
+        "nip": "NIP",
+        "nuptk": "NUPTK",
+        "employmentStatus": "Status kepegawaian",
+        "lastEducation": "Pendidikan terakhir",
+        "specialization": "Bidang keahlian",
+        "employeeNumber": "Nomor induk pegawai",
+        "position": "Jabatan",
+        "save": "Simpan data diri",
+        "saved": "Data diri diperbarui"
       }
     },
     "settings": {
@@ -160,6 +216,55 @@
           "whatsapp": "WhatsApp"
         },
         "saved": "Default disimpan"
+      },
+      "session": {
+        "navLabel": "Sesi & Login",
+        "eyebrow": "Pengaturan",
+        "title": "Sesi & Login",
+        "intro": "Berlaku untuk semua pengguna sekolah ini, mulai sesi berikutnya yang dibuka.",
+        "daysLabel": "Lama sesi (hari)",
+        "daysHint": "Pengguna diminta masuk kembali setelah sesi ini berakhir. Antara 1 dan 365 hari.",
+        "daysRangeError": "Lama sesi harus antara {min} dan {max} hari.",
+        "singleDeviceLabel": "Login satu perangkat",
+        "singleDeviceHint": "Batasi setiap pengguna hanya aktif di satu perangkat pada satu waktu.",
+        "singleDeviceExplain": "Perubahan ini tidak langsung mengeluarkan pengguna yang sedang masuk di perangkat lain. Begitu salah satu dari mereka masuk lagi di perangkat mana pun, semua sesi lain milik pengguna itu akan diakhiri.",
+        "saved": "Pengaturan sesi tersimpan",
+        "save": "Simpan pengaturan"
+      },
+      "branding": {
+        "navLabel": "Merek Sekolah",
+        "eyebrow": "Pengaturan",
+        "title": "Merek Sekolah",
+        "identityTitle": "Identitas",
+        "nameLabel": "Nama sekolah",
+        "nameRequiredError": "Nama sekolah wajib diisi.",
+        "shortNameLabel": "Nama singkat",
+        "shortNamePlaceholder": "Muncul di ruang sempit seperti tab bar",
+        "taglineLabel": "Tagline",
+        "taglinePlaceholder": "Kalimat pendek di bawah nama sekolah",
+        "accentColorLabel": "Warna aksen",
+        "accentColorHint": "Dipakai untuk tombol utama, tautan, dan fokus di seluruh aplikasi.",
+        "accentColorError": "Warna aksen harus kode heksadesimal 6 digit, contoh #1F3A5F.",
+        "saved": "Perubahan merek tersimpan",
+        "save": "Simpan perubahan",
+        "logo": {
+          "title": "Logo",
+          "previewAlt": "Logo sekolah",
+          "none": "Belum ada",
+          "change": "Ganti logo",
+          "hint": "PNG, WebP, atau SVG, maksimal 2 MB.",
+          "uploading": "Mengunggah... {percent}%",
+          "updated": "Logo diperbarui"
+        },
+        "favicon": {
+          "title": "Favicon",
+          "previewAlt": "Favicon sekolah",
+          "none": "Belum ada",
+          "change": "Ganti favicon",
+          "hint": "PNG, WebP, atau SVG, maksimal 512 KB.",
+          "uploading": "Mengunggah... {percent}%",
+          "updated": "Favicon diperbarui"
+        }
       }
     },
     "forbidden": {
@@ -208,7 +313,12 @@
         "late_arrival_opened": "Keterlambatan tercatat",
         "late_arrival_updated": "Keterlambatan diperbarui"
       },
-      "seeAll": "Lihat semua"
+      "seeAll": "Lihat semua",
+      "searchPlaceholder": "Cari judul atau isi notifikasi",
+      "kindAll": "Semua jenis",
+      "kindFilterLabel": "Jenis notifikasi",
+      "emptyFilteredTitle": "Tidak ada notifikasi yang cocok",
+      "emptyFilteredBody": "Coba ubah kata pencarian atau pilih jenis lain."
     },
     "announcements": {
       "eyebrow": "Komunikasi",
@@ -783,7 +893,8 @@
           "archived": "Pengguna diarsipkan",
           "restored": "Pengguna dipulihkan",
           "impersonate": "Masuk sebagai pengguna ini",
-          "impersonateBody": "Anda akan bertindak sebagai {name} selama maksimal 30 menit. Semua tindakan selama itu dicatat."
+          "impersonateBody": "Anda akan bertindak sebagai {name} selama maksimal 30 menit. Semua tindakan selama itu dicatat.",
+          "import": "Impor pengguna"
         },
         "form": {
           "createTitle": "Pengguna baru",
@@ -803,7 +914,58 @@
           "created": "Pengguna dibuat",
           "updated": "Perubahan tersimpan",
           "cancel": "Batal",
-          "save": "Simpan"
+          "save": "Simpan",
+          "primaryRole": "Peran utama",
+          "primaryRolePlaceholder": "Pilih peran utama",
+          "primaryRoleHint": "Peran utama menentukan hak akses dasar pengguna dan harus salah satu peran sistem.",
+          "teacherLeaveHint": "Meninjau izin dan menerbitkan surat izin tidak ikut peran guru. Berikan lewat penugasan tugas di Data Sekolah > Penugasan.",
+          "additionalRoles": "Peran tambahan",
+          "additionalRolesHint": "Peran tambahan hanya bisa peran khusus (bukan peran sistem).",
+          "noCustomRoles": "Belum ada peran khusus. Buat di Pengaturan > Peran dan Akses."
+        },
+        "import": {
+          "eyebrow": "Data Sekolah",
+          "title": "Impor pengguna",
+          "description": "Unduh templat, isi di luar sistem, unggah kembali, lalu periksa hasilnya sebelum benar-benar dibuat.",
+          "steps": {
+            "upload": "Unggah",
+            "preview": "Pratinjau",
+            "done": "Selesai"
+          },
+          "step1Title": "1. Unduh templat",
+          "step1Body": "Templat berisi contoh baris dan sheet Referensi berisi kode yang diterima untuk setiap kolom (jenis kelamin, golongan darah, peran, dan sejenisnya).",
+          "downloadTemplate": "Unduh templat XLSX",
+          "step2Title": "2. Unggah berkas yang sudah diisi",
+          "step2Body": "Maksimal 5000 baris dalam satu berkas. Baris kosong dilewati.",
+          "chooseFile": "Pilih berkas",
+          "parsing": "Membaca {file}...",
+          "parseError": {
+            "unreadable": "Berkas tidak bisa dibaca. Pastikan formatnya XLSX dan tidak rusak.",
+            "no-sheet": "Berkas tidak memiliki sheet data sama sekali.",
+            "empty": "Tidak ada baris data yang terbaca dari berkas ini."
+          },
+          "step3Title": "3. Pratinjau",
+          "rowCount": "{n} baris",
+          "invalidCount": "{n} baris tidak valid",
+          "blockedTitle": "Belum bisa diimpor",
+          "blockedBody": "Impor berjalan dalam satu transaksi: selama masih ada satu baris tidak valid, tidak ada satu pun pengguna yang akan dibuat. Perbaiki baris yang ditandai, lalu unggah ulang berkasnya.",
+          "readyTitle": "Siap diimpor",
+          "readyBody": "Semua {n} baris valid. Semua akan dibuat sekaligus saat Anda menekan Impor sekarang.",
+          "doneTitle": "Impor selesai",
+          "doneBody": "{n} pengguna berhasil dibuat.",
+          "startOver": "Mulai ulang",
+          "commit": "Impor sekarang",
+          "importAnother": "Impor berkas lain",
+          "committed": "{n} pengguna berhasil dibuat",
+          "table": {
+            "row": "Baris",
+            "name": "Nama",
+            "kind": "Jenis",
+            "username": "Nama pengguna",
+            "status": "Status",
+            "valid": "Valid",
+            "invalid": "Tidak valid"
+          }
         }
       },
       "classes": {
@@ -985,7 +1147,8 @@
         "settings": "Pengaturan",
         "reports": "Laporan",
         "audit": "Audit"
-      }
+      },
+      "dutyOnlyHint": "Tidak bisa diberikan langsung ke peran guru. Berikan lewat penugasan tugas di Data Sekolah > Penugasan."
     }
   }
 }

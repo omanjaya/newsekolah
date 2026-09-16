@@ -25,13 +25,28 @@ export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 export const NOTIFICATION_CHANNELS = ["inapp", "push", "email", "whatsapp"] as const;
 export type NotificationChannel = (typeof NOTIFICATION_CHANNELS)[number];
 
-export function useNotificationsQuery(unreadOnly: boolean) {
+export interface NotificationsFilter {
+  unreadOnly: boolean;
+  /** Case-insensitive substring match against title or body. */
+  q?: string;
+  /** Exact notification kind, e.g. "leave_request_submitted". */
+  kind?: NotificationKind;
+}
+
+export function useNotificationsQuery(filter: NotificationsFilter) {
   const client = useApiClient();
   return useQuery({
-    queryKey: queryKeys.notifications(unreadOnly),
+    queryKey: queryKeys.notifications(filter),
     queryFn: () =>
       client.GET("/v1/notifications", {
-        params: { query: { unread_only: unreadOnly, limit: 50 } },
+        params: {
+          query: {
+            unread_only: filter.unreadOnly,
+            ...(filter.q ? { q: filter.q } : {}),
+            ...(filter.kind ? { kind: filter.kind } : {}),
+            limit: 50,
+          },
+        },
       }),
   });
 }

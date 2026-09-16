@@ -9,7 +9,8 @@ export const queryKeys = {
   tenantBranding: (tenantSlug?: string) => ["tenant", "branding", tenantSlug ?? "default"] as const,
   tenantLookup: (query: string) => ["tenant", "lookup", query] as const,
 
-  notifications: (unreadOnly: boolean) => ["notifications", "list", unreadOnly] as const,
+  notifications: (filter: { unreadOnly: boolean; q?: string; kind?: string; cursor?: string }) =>
+    ["notifications", "list", filter] as const,
   notificationsUnreadCount: () => ["notifications", "unread-count"] as const,
   notificationPreferences: (kinds: string) => ["notifications", "preferences", kinds] as const,
   notificationSettings: () => ["notifications", "settings"] as const,
@@ -95,4 +96,7 @@ export const queryKeys = {
   webhookEventTypes: () => ["integrations", "event-types"] as const,
   webhookDeliveries: (endpointId: string, cursor: string) =>
     ["integrations", "webhook-deliveries", endpointId, cursor] as const,
+
+  adminDashboard: () => ["analytics", "admin-dashboard"] as const,
+  authSettings: () => ["identity-admin", "auth-settings"] as const,
 };

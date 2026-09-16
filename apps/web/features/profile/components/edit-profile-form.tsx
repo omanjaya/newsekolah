@@ -11,7 +11,7 @@ import { useSession } from "../../../lib/session/session-provider";
 import { useUpdateProfileMutation } from "../api";
 
 /**
- * `Me` only exposes name, username and email (see the schema in
+ * `Me` exposes name, username and email (see the schema in
  * packages/api-client's generated types) -- phone and locale are
  * write-only from this screen's point of view, so those two fields start
  * blank/at the current UI locale rather than pretending to show a stored
@@ -25,6 +25,7 @@ export function EditProfileForm(): ReactElement | null {
   const apiErrorMessage = useApiErrorMessage();
   const update = useUpdateProfileMutation();
 
+  const [username, setUsername] = useState(me?.username ?? "");
   const [name, setName] = useState(me?.name ?? "");
   const [email, setEmail] = useState(me?.email ?? "");
   const [phone, setPhone] = useState("");
@@ -39,8 +40,13 @@ export function EditProfileForm(): ReactElement | null {
       setError(t("requiredError"));
       return;
     }
+    if (username.trim().length < 3) {
+      setError(t("usernameLengthError"));
+      return;
+    }
     try {
       await update.mutateAsync({
+        ...(username.trim() !== me?.username ? { username: username.trim() } : {}),
         name: name.trim(),
         ...(email.trim() ? { email: email.trim() } : {}),
         ...(phone.trim() ? { phone: phone.trim() } : {}),
@@ -65,6 +71,18 @@ export function EditProfileForm(): ReactElement | null {
           {error}
         </p>
       )}
+      <label className="flex flex-col gap-1 text-[13px]">
+        <span className="font-medium">{t("usernameLabel")}</span>
+        <Input
+          value={username}
+          onChange={(e) => {
+            setUsername(e.target.value);
+          }}
+          minLength={3}
+          maxLength={80}
+          required
+        />
+      </label>
       <label className="flex flex-col gap-1 text-[13px]">
         <span className="font-medium">{t("nameLabel")}</span>
         <Input

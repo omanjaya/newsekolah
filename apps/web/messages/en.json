@@ -64,7 +64,28 @@
       "unread": "{count, plural, =0 {All notifications read} one {# unread notification} other {# unread notifications}}",
       "announcementsTitle": "Latest announcements",
       "openAnnouncements": "View all",
-      "footerHint": "This page updates automatically from the attendance, permits and communication modules."
+      "footerHint": "This page updates automatically from the attendance, permits and communication modules.",
+      "admin": {
+        "activeUsersTitle": "Active users",
+        "kinds": {
+          "teacher": "Teachers",
+          "staff": "Staff",
+          "student": "Students",
+          "parent": "Parents"
+        },
+        "loadError": "The summary could not load. Try reloading the page.",
+        "pendingTitle": "In progress",
+        "pendingLabels": {
+          "leave_request": "Planned leave",
+          "exit_permit": "Exit permits",
+          "late_arrival": "Late arrivals"
+        },
+        "onlineTitle": "Online users by role",
+        "onlineUnavailableTitle": "Not available yet",
+        "onlineUnavailableBody": "The online presence counter is not connected to this server's dashboard service yet.",
+        "loginHistogramTitle": "Logins per hour (UTC), last 7 days",
+        "histogramEmpty": "No logins recorded in this period yet."
+      }
     },
     "profile": {
       "title": "Profile",
@@ -98,7 +119,42 @@
         "localeEn": "English",
         "requiredError": "Full name is required.",
         "save": "Save changes",
-        "saved": "Profile updated"
+        "saved": "Profile updated",
+        "usernameLabel": "Username",
+        "usernameLengthError": "Username must be at least 3 characters."
+      },
+      "detail": {
+        "title": "Personal details",
+        "nik": "National ID (NIK)",
+        "gender": "Gender",
+        "genderUnset": "Not set",
+        "genderMale": "Male",
+        "genderFemale": "Female",
+        "birthPlace": "Birth place",
+        "birthDate": "Birth date",
+        "religion": "Religion",
+        "bloodType": "Blood type",
+        "city": "City/Regency",
+        "district": "District",
+        "address": "Address",
+        "studentSection": "Student details",
+        "nis": "Student ID (NIS)",
+        "nisn": "National student ID (NISN)",
+        "previousSchool": "Previous school",
+        "fatherName": "Father's name",
+        "motherName": "Mother's name",
+        "guardianName": "Guardian's name",
+        "guardianPhone": "Guardian's phone",
+        "employmentSection": "Employment details",
+        "nip": "Civil service ID (NIP)",
+        "nuptk": "Teacher registration ID (NUPTK)",
+        "employmentStatus": "Employment status",
+        "lastEducation": "Last education",
+        "specialization": "Specialization",
+        "employeeNumber": "Employee number",
+        "position": "Position",
+        "save": "Save personal details",
+        "saved": "Personal details updated"
       }
     },
     "settings": {
@@ -160,6 +216,55 @@
           "whatsapp": "WhatsApp"
         },
         "saved": "Defaults saved"
+      },
+      "session": {
+        "navLabel": "Session & Login",
+        "eyebrow": "Settings",
+        "title": "Session & Login",
+        "intro": "Applies to every user of this school, starting with the next session they open.",
+        "daysLabel": "Session length (days)",
+        "daysHint": "A user is asked to sign in again after this session ends. Between 1 and 365 days.",
+        "daysRangeError": "Session length must be between {min} and {max} days.",
+        "singleDeviceLabel": "Single-device login",
+        "singleDeviceHint": "Limit every user to one active device at a time.",
+        "singleDeviceExplain": "This change does not sign out anyone already signed in on another device right away. The next time any of them signs in anywhere, all of that user's other sessions end.",
+        "saved": "Session settings saved",
+        "save": "Save settings"
+      },
+      "branding": {
+        "navLabel": "School Branding",
+        "eyebrow": "Settings",
+        "title": "School Branding",
+        "identityTitle": "Identity",
+        "nameLabel": "School name",
+        "nameRequiredError": "School name is required.",
+        "shortNameLabel": "Short name",
+        "shortNamePlaceholder": "Shown in tight spaces like the tab bar",
+        "taglineLabel": "Tagline",
+        "taglinePlaceholder": "A short line under the school name",
+        "accentColorLabel": "Accent color",
+        "accentColorHint": "Used for primary buttons, links, and focus across the whole app.",
+        "accentColorError": "Accent color must be a 6-digit hex code, e.g. #1F3A5F.",
+        "saved": "Branding changes saved",
+        "save": "Save changes",
+        "logo": {
+          "title": "Logo",
+          "previewAlt": "School logo",
+          "none": "None yet",
+          "change": "Change logo",
+          "hint": "PNG, WebP, or SVG, up to 2 MB.",
+          "uploading": "Uploading... {percent}%",
+          "updated": "Logo updated"
+        },
+        "favicon": {
+          "title": "Favicon",
+          "previewAlt": "School favicon",
+          "none": "None yet",
+          "change": "Change favicon",
+          "hint": "PNG, WebP, or SVG, up to 512 KB.",
+          "uploading": "Uploading... {percent}%",
+          "updated": "Favicon updated"
+        }
       }
     },
     "forbidden": {
@@ -208,7 +313,12 @@
         "late_arrival_opened": "Late arrival recorded",
         "late_arrival_updated": "Late arrival updated"
       },
-      "seeAll": "See all"
+      "seeAll": "See all",
+      "searchPlaceholder": "Search notification title or body",
+      "kindAll": "All kinds",
+      "kindFilterLabel": "Notification kind",
+      "emptyFilteredTitle": "No notifications match",
+      "emptyFilteredBody": "Try a different search term or kind."
     },
     "announcements": {
       "eyebrow": "Communication",
@@ -783,7 +893,8 @@
           "archived": "User archived",
           "restored": "User restored",
           "impersonate": "Sign in as this user",
-          "impersonateBody": "You will act as {name} for up to 30 minutes. Everything done during that time is logged."
+          "impersonateBody": "You will act as {name} for up to 30 minutes. Everything done during that time is logged.",
+          "import": "Import users"
         },
         "form": {
           "createTitle": "New user",
@@ -803,7 +914,58 @@
           "created": "User created",
           "updated": "Changes saved",
           "cancel": "Cancel",
-          "save": "Save"
+          "save": "Save",
+          "primaryRole": "Primary role",
+          "primaryRolePlaceholder": "Choose a primary role",
+          "primaryRoleHint": "The primary role sets the user's base access and must be a system role.",
+          "teacherLeaveHint": "Reviewing leave requests and issuing leave letters do not come with the teacher role. Grant them through a duty assignment under School Data > Assignments.",
+          "additionalRoles": "Additional roles",
+          "additionalRolesHint": "Additional roles can only be custom roles (not system roles).",
+          "noCustomRoles": "No custom roles yet. Create one under Settings > Roles and Access."
+        },
+        "import": {
+          "eyebrow": "School Data",
+          "title": "Import users",
+          "description": "Download the template, fill it in outside the system, upload it back, then check the outcome before anything is actually created.",
+          "steps": {
+            "upload": "Upload",
+            "preview": "Preview",
+            "done": "Done"
+          },
+          "step1Title": "1. Download the template",
+          "step1Body": "The template includes an example row and a Referensi sheet listing the accepted codes for each column (gender, blood type, role, and so on).",
+          "downloadTemplate": "Download XLSX template",
+          "step2Title": "2. Upload the filled-in file",
+          "step2Body": "Up to 5000 rows in one file. Blank rows are skipped.",
+          "chooseFile": "Choose file",
+          "parsing": "Reading {file}...",
+          "parseError": {
+            "unreadable": "The file could not be read. Make sure it is XLSX and not corrupted.",
+            "no-sheet": "The file has no data sheet at all.",
+            "empty": "No data rows could be read from this file."
+          },
+          "step3Title": "3. Preview",
+          "rowCount": "{n} rows",
+          "invalidCount": "{n} invalid rows",
+          "blockedTitle": "Not ready to import",
+          "blockedBody": "The import runs as one transaction: as long as a single row is invalid, no user at all will be created. Fix the flagged rows, then upload the file again.",
+          "readyTitle": "Ready to import",
+          "readyBody": "All {n} rows are valid. They will all be created at once when you press Import now.",
+          "doneTitle": "Import complete",
+          "doneBody": "{n} users were created.",
+          "startOver": "Start over",
+          "commit": "Import now",
+          "importAnother": "Import another file",
+          "committed": "{n} users created",
+          "table": {
+            "row": "Row",
+            "name": "Name",
+            "kind": "Kind",
+            "username": "Username",
+            "status": "Status",
+            "valid": "Valid",
+            "invalid": "Invalid"
+          }
         }
       },
       "classes": {
@@ -985,7 +1147,8 @@
         "settings": "Settings",
         "reports": "Reports",
         "audit": "Audit"
-      }
+      },
+      "dutyOnlyHint": "Cannot be granted directly to the teacher role. Grant it through a duty assignment under School Data > Assignments."
     }
   }
 }

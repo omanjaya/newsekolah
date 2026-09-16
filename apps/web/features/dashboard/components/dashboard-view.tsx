@@ -14,7 +14,10 @@ import { useLateArrivalQueueQuery, useLeaveReviewQueueQuery } from "../../permit
 import { useClassesQuery, useLookup, useSubjectsQuery } from "../../reference/api";
 import { useDashboardData } from "../api";
 
-function SectionCard({
+import { AdminDashboardPanel } from "./admin-dashboard-panel";
+
+/** Shared card shell for a dashboard section; also used by AdminDashboardPanel. */
+export function SectionCard({
   title,
   action,
   children,
@@ -111,6 +114,8 @@ export function DashboardView(): ReactElement {
           {t("academicYearLabel")}: {me.active_academic_year?.label ?? t("noAcademicYear")}
         </span>
       </div>
+
+      <AdminDashboardPanel roles={me.roles} />
 
       <div className="grid gap-4 md:grid-cols-2">
         <SectionCard title={t("tasksTitle")}>

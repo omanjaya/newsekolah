@@ -65,6 +65,7 @@ export type MessageKey =
   | "common.table.goToPreviousPage"
   | "common.table.page"
   | "common.table.rowsSelected"
+  | "errors.ADDITIONAL_ROLE_MUST_BE_CUSTOM"
   | "errors.ATTACHMENT_INVALID_TYPE"
   | "errors.ATTACHMENT_NOT_FOUND"
   | "errors.ATTACHMENT_TOO_LARGE"
@@ -82,9 +83,12 @@ export type MessageKey =
   | "errors.FORBIDDEN"
   | "errors.GRADE_RANGE_OVERLAP"
   | "errors.IMPERSONATION_NOT_ALLOWED"
+  | "errors.IMPORT_FILE_INVALID"
+  | "errors.IMPORT_TOO_MANY_ROWS"
   | "errors.INCIDENT_ALREADY_CLOSED"
   | "errors.INCIDENT_FORBIDDEN"
   | "errors.INCIDENT_NOT_FOUND"
+  | "errors.LEAVE_PERMISSION_REQUIRES_DUTY"
   | "errors.LIBRARY_COPY_AVAILABLE_FOR_LOAN"
   | "errors.LIBRARY_COPY_BARCODE_EXISTS"
   | "errors.LIBRARY_COPY_NOT_AVAILABLE"
@@ -120,6 +124,7 @@ export type MessageKey =
   | "errors.PAYMENT_ALREADY_VOIDED"
   | "errors.PAYMENT_EXCEEDS_OUTSTANDING"
   | "errors.PAYMENT_NOT_FOUND"
+  | "errors.PRIMARY_ROLE_NOT_SYSTEM"
   | "errors.RATE_LIMITED"
   | "errors.REPORT_UNAVAILABLE"
   | "errors.SSO_ACCOUNT_NOT_FOUND"
@@ -304,6 +309,7 @@ export const MESSAGE_KEYS: readonly MessageKey[] = [
   "common.table.goToPreviousPage",
   "common.table.page",
   "common.table.rowsSelected",
+  "errors.ADDITIONAL_ROLE_MUST_BE_CUSTOM",
   "errors.ATTACHMENT_INVALID_TYPE",
   "errors.ATTACHMENT_NOT_FOUND",
   "errors.ATTACHMENT_TOO_LARGE",
@@ -321,9 +327,12 @@ export const MESSAGE_KEYS: readonly MessageKey[] = [
   "errors.FORBIDDEN",
   "errors.GRADE_RANGE_OVERLAP",
   "errors.IMPERSONATION_NOT_ALLOWED",
+  "errors.IMPORT_FILE_INVALID",
+  "errors.IMPORT_TOO_MANY_ROWS",
   "errors.INCIDENT_ALREADY_CLOSED",
   "errors.INCIDENT_FORBIDDEN",
   "errors.INCIDENT_NOT_FOUND",
+  "errors.LEAVE_PERMISSION_REQUIRES_DUTY",
   "errors.LIBRARY_COPY_AVAILABLE_FOR_LOAN",
   "errors.LIBRARY_COPY_BARCODE_EXISTS",
   "errors.LIBRARY_COPY_NOT_AVAILABLE",
@@ -359,6 +368,7 @@ export const MESSAGE_KEYS: readonly MessageKey[] = [
   "errors.PAYMENT_ALREADY_VOIDED",
   "errors.PAYMENT_EXCEEDS_OUTSTANDING",
   "errors.PAYMENT_NOT_FOUND",
+  "errors.PRIMARY_ROLE_NOT_SYSTEM",
   "errors.RATE_LIMITED",
   "errors.REPORT_UNAVAILABLE",
   "errors.SSO_ACCOUNT_NOT_FOUND",

@@ -7,6 +7,7 @@ import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { useSession } from "../../../lib/session/session-provider";
 import {
   type AdminUser,
   type ProfileKind,
@@ -17,6 +18,7 @@ import {
 } from "../api";
 
 const KINDS: ProfileKind[] = ["teacher", "staff", "student", "parent"];
+const SUPER_ADMIN_SLUG = "super_admin";
 
 export function UserForm({
   initial,
@@ -29,6 +31,7 @@ export function UserForm({
   const tKinds = useTranslations("app.school.users.kinds");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
+  const { me } = useSession();
   const roles = useRolesQuery();
   const create = useCreateUserMutation();
   const update = useUpdateUserMutation();
@@ -38,28 +41,44 @@ export function UserForm({
   const [email, setEmail] = useState(initial?.email ?? "");
   const [phone, setPhone] = useState(initial?.phone ?? "");
   const [kind, setKind] = useState<ProfileKind>(initial?.profile_kind ?? "teacher");
-  const [roleIds, setRoleIds] = useState<string[]>(initial?.roles.map((r) => r.id) ?? []);
-  const [primaryRole, setPrimaryRole] = useState(
-    initial?.roles.find((r) => r.is_primary)?.id ?? "",
+  const initialPrimary = initial?.roles.find((r) => r.is_primary);
+  const [primaryRoleId, setPrimaryRoleId] = useState(initialPrimary?.id ?? "");
+  const [additionalRoleIds, setAdditionalRoleIds] = useState<string[]>(
+    initial?.roles.filter((r) => !r.is_primary).map((r) => r.id) ?? [],
   );
   const [nis, setNis] = useState(initial?.profile?.nis ?? "");
   const [nip, setNip] = useState(initial?.profile?.nip ?? "");
   const [error, setError] = useState<string | null>(null);
   const pending = create.isPending || update.isPending;
 
+  // The API enforces exactly one primary role that must be a system role,
+  // and every additional role must be a tenant-defined custom role
+  // (identity/domain/user_admin.go's ValidateRoleGrants), so the form only
+  // ever offers choices that satisfy the rule instead of letting an admin
+  // build a combination the server will reject.
+  const allRoles = roles.data?.data ?? [];
+  const isSuperAdmin = me?.roles.some((r) => r.slug === SUPER_ADMIN_SLUG) ?? false;
+  const systemRoles = allRoles.filter(
+    (r) => r.is_system && (isSuperAdmin || r.slug !== SUPER_ADMIN_SLUG),
+  );
+  const customRoles = allRoles.filter((r) => !r.is_system);
+  const primaryRole = allRoles.find((r) => r.id === primaryRoleId);
+
   async function submit() {
     setError(null);
-    if (!name.trim() || roleIds.length === 0) {
+    if (!name.trim() || !primaryRoleId) {
       setError(t("requiredError"));
       return;
     }
-    const primary = roleIds.includes(primaryRole) ? primaryRole : roleIds[0];
     const body: UserWriteFields = {
       name: name.trim(),
       ...(email.trim() ? { email: email.trim() } : {}),
       ...(phone.trim() ? { phone: phone.trim() } : {}),
       profile_kind: kind,
-      roles: roleIds.map((role_id) => ({ role_id, is_primary: role_id === primary })),
+      roles: [
+        { role_id: primaryRoleId, is_primary: true },
+        ...additionalRoleIds.map((role_id) => ({ role_id, is_primary: false })),
+      ],
       profile: {
         ...(kind === "student" && nis.trim() ? { nis: nis.trim() } : {}),
         ...(kind === "teacher" && nip.trim() ? { nip: nip.trim() } : {}),
@@ -175,48 +194,57 @@ export function UserForm({
             />,
           )}
       </div>
-      <fieldset className="flex flex-col gap-2 text-[13px]">
-        <legend className="font-medium">{t("roles")}</legend>
-        <div className="grid gap-2 md:grid-cols-2">
-          {(roles.data?.data ?? []).map((role) => {
-            const checked = roleIds.includes(role.id);
-            return (
-              <div
-                key={role.id}
-                className="flex items-center justify-between gap-2 rounded-xs border border-border px-3 py-2"
-              >
-                <label className="flex items-center gap-2">
-                  <Checkbox
-                    checked={checked}
-                    onCheckedChange={() => {
-                      setRoleIds((prev) =>
-                        checked ? prev.filter((id) => id !== role.id) : [...prev, role.id],
-                      );
-                    }}
-                  />
-                  {role.name}
-                </label>
-                {checked && (
-                  <label className="flex items-center gap-1 text-[12px] text-fg-muted">
-                    <input
-                      type="radio"
-                      name="primary-role"
-                      checked={
-                        primaryRole === role.id ||
-                        (!roleIds.includes(primaryRole) && roleIds[0] === role.id)
-                      }
-                      onChange={() => {
-                        setPrimaryRole(role.id);
+
+      <div className="flex flex-col gap-3 border-t border-border pt-4 text-[13px]">
+        {field(
+          t("primaryRole"),
+          <Select
+            options={[
+              { value: "", label: t("primaryRolePlaceholder") },
+              ...systemRoles.map((r) => ({ value: r.id, label: r.name })),
+            ]}
+            value={primaryRoleId}
+            onValueChange={setPrimaryRoleId}
+          />,
+        )}
+        <p className="text-fg-muted">{t("primaryRoleHint")}</p>
+        {primaryRole?.slug === "teacher" && (
+          <p className="rounded-xs border border-border bg-bg px-3 py-2 text-fg-muted">
+            {t("teacherLeaveHint")}
+          </p>
+        )}
+
+        <fieldset className="flex flex-col gap-2">
+          <legend className="font-medium">{t("additionalRoles")}</legend>
+          <p className="text-fg-muted">{t("additionalRolesHint")}</p>
+          {customRoles.length === 0 ? (
+            <p className="text-fg-muted">{t("noCustomRoles")}</p>
+          ) : (
+            <div className="grid gap-2 md:grid-cols-2">
+              {customRoles.map((role) => {
+                const checked = additionalRoleIds.includes(role.id);
+                return (
+                  <label
+                    key={role.id}
+                    className="flex items-center gap-2 rounded-xs border border-border px-3 py-2"
+                  >
+                    <Checkbox
+                      checked={checked}
+                      onCheckedChange={() => {
+                        setAdditionalRoleIds((prev) =>
+                          checked ? prev.filter((id) => id !== role.id) : [...prev, role.id],
+                        );
                       }}
                     />
-                    {t("primary")}
+                    {role.name}
                   </label>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </fieldset>
+                );
+              })}
+            </div>
+          )}
+        </fieldset>
+      </div>
+
       {!initial && <p className="text-[13px] text-fg-muted">{t("passwordHint")}</p>}
       <div className="flex justify-end gap-2 border-t border-border pt-4">
         <Button type="button" variant="secondary" onClick={onDone} disabled={pending}>

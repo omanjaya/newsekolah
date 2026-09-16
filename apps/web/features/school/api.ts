@@ -20,6 +20,8 @@ export type PeriodTemplate = components["schemas"]["PeriodTemplate"];
 export type Period = components["schemas"]["Period"];
 export type DutyType = components["schemas"]["DutyType"];
 export type DutyAssignment = components["schemas"]["DutyAssignment"];
+export type UserImportRow = components["schemas"]["UserImportRow"];
+export type UserImportRowResult = components["schemas"]["UserImportRowResult"];
 
 /** Shared with duties-api.ts, which lives in its own file to keep this one under the line limit. */
 export function useInvalidate(prefix: readonly unknown[]) {
@@ -111,6 +113,28 @@ export function useResetPasswordMutation() {
 export function useRolesQuery() {
   const client = useApiClient();
   return useQuery({ queryKey: queryKeys.roles(), queryFn: () => client.GET("/v1/roles") });
+}
+
+// User import: template download lives in ./lib/user-import.ts (binary
+// response, so it goes around the generated client), preview and commit
+// are plain JSON POSTs the client handles directly.
+
+export function usePreviewImportMutation() {
+  const client = useApiClient();
+  return useMutation({
+    mutationFn: (rows: UserImportRow[]) =>
+      client.POST("/v1/users/import/preview", { body: { rows } }),
+  });
+}
+
+export function useCommitImportMutation() {
+  const client = useApiClient();
+  const invalidate = useInvalidate(["users"]);
+  return useMutation({
+    mutationFn: (rows: UserImportRow[]) =>
+      client.POST("/v1/users/import/commit", { body: { rows } }),
+    onSuccess: invalidate,
+  });
 }
 
 // Duty types, duty assignments and impersonation live in ./duties-api.ts

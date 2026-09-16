@@ -1,6 +1,6 @@
 "use client";
 
-import { queryKeys } from "@newsekolah/api-client";
+import { queryKeys, type components } from "@newsekolah/api-client";
 import {
   useSessions as useSessionsBase,
   useRevokeSession as useRevokeSessionBase,
@@ -8,6 +8,8 @@ import {
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { useApiClient } from "../../lib/api/client";
+
+export type UserProfileFields = components["schemas"]["UserProfileFields"];
 
 export function useSessionsQuery() {
   const client = useApiClient();
@@ -19,13 +21,23 @@ export function useRevokeSessionMutation() {
   return useRevokeSessionBase(client);
 }
 
-/** PUT /v1/me/profile: name, email, phone and locale. Returns the fresh `Me`, seeded into the cache. */
+export interface UpdateProfileInput {
+  /** Omit to keep the current username. */
+  username?: string;
+  name?: string;
+  email?: string;
+  phone?: string;
+  locale?: "id" | "en";
+  /** The student/teacher/staff detail record; only sent when the screen edits it. */
+  detail?: UserProfileFields;
+}
+
+/** PUT /v1/me/profile: username, name, email, phone, locale and the detail record. Returns the fresh `Me`, seeded into the cache. */
 export function useUpdateProfileMutation() {
   const client = useApiClient();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (body: { name?: string; email?: string; phone?: string; locale?: "id" | "en" }) =>
-      client.PUT("/v1/me/profile", { body }),
+    mutationFn: (body: UpdateProfileInput) => client.PUT("/v1/me/profile", { body }),
     onSuccess: (data) => {
       queryClient.setQueryData(queryKeys.me(), data);
     },
