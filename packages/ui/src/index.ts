@@ -89,6 +89,7 @@ export {
   type StepperStep,
   type StepperStepState,
 } from "./components/stepper.js";
+export { QrPanel, type QrPanelProps } from "./components/qr-panel.js";
 export {
   DataTable,
   DataTablePagination,

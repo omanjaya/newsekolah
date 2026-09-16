@@ -9,6 +9,8 @@
     "title": "Katalog",
     "searchPlaceholder": "Cari judul, penulis, atau ISBN",
     "addTitle": "Tambah judul",
+    "browseCopies": "Jelajahi eksemplar",
+    "exportCatalogue": "Ekspor katalog (XLSX)",
     "columns": {
       "title": "Judul",
       "author": "Penulis",
@@ -24,12 +26,26 @@
       "title": "Judul",
       "subtitle": "Subjudul",
       "author": "Penulis",
+      "additionalAuthors": "Penulis tambahan",
       "publisher": "Penerbit",
+      "publishPlace": "Kota terbit",
       "publishYear": "Tahun terbit",
       "isbn": "ISBN",
       "classification": "Klasifikasi",
+      "pages": "Jumlah halaman",
+      "subjects": "Subjek",
+      "language": "Bahasa",
+      "abstract": "Abstrak",
       "save": "Simpan",
       "saved": "Judul disimpan"
+    },
+    "isbnLookup": {
+      "hint": "Cari data bibliografi dari ISBN di atas.",
+      "search": "Cari ISBN",
+      "notFound": "Tidak ditemukan data untuk ISBN ini. Isi manual di bawah.",
+      "apply": "Isi otomatis",
+      "importCover": "Impor sampul",
+      "coverImported": "Sampul diimpor"
     }
   },
   "copies": {
@@ -51,9 +67,16 @@
       "available": "Tersedia",
       "on_loan": "Dipinjam",
       "reserved": "Dipesan",
-      "withdrawn": "Ditarik"
+      "damaged": "Rusak",
+      "lost": "Hilang",
+      "in_repair": "Diperbaiki",
+      "processing": "Diproses",
+      "donated": "Dihibahkan",
+      "reserve_stack": "Rak cadangan",
+      "unknown": "Tidak diketahui"
     },
     "printLabel": "Cetak label",
+    "readInPlace": "Baca di tempat",
     "form": {
       "barcode": "Barcode",
       "condition": "Kondisi",
@@ -111,6 +134,401 @@
     "printCard": "Cetak kartu anggota",
     "emptyTitle": "Belum ada riwayat peminjaman"
   },
+  "members": {
+    "navLabel": "Anggota perpustakaan",
+    "eyebrow": "Perpustakaan",
+    "title": "Anggota",
+    "register": "Daftarkan anggota",
+    "bulkRegister": "Daftar massal",
+    "registered": "Anggota terdaftar",
+    "searchPlaceholder": "Cari nama atau nomor anggota",
+    "unknownUser": "Pengguna tidak dikenali",
+    "viewDetail": "Lihat detail",
+    "noMatchTitle": "Tidak ada anggota yang cocok",
+    "noMatchBody": "Coba ubah filter atau kata kunci pencarian.",
+    "emptyTitle": "Belum ada anggota terdaftar",
+    "emptyBody": "Daftarkan pengguna sebagai anggota perpustakaan untuk mulai.",
+    "statusUpdated": "Status anggota diperbarui",
+    "columns": {
+      "name": "Nama",
+      "type": "Jenis",
+      "status": "Status",
+      "validUntil": "Berlaku sampai",
+      "lateReturns": "Keterlambatan",
+      "actions": "Aksi"
+    },
+    "filters": {
+      "status": "Status",
+      "statusAll": "Semua status",
+      "type": "Jenis anggota",
+      "typeAll": "Semua jenis",
+      "clear": "Bersihkan filter"
+    },
+    "status": {
+      "pending": "Menunggu",
+      "active": "Aktif",
+      "inactive": "Tidak aktif",
+      "suspended": "Ditangguhkan",
+      "cleared": "Bebas pustaka"
+    },
+    "roles": {
+      "student": "Siswa",
+      "teacher": "Guru",
+      "staff": "Staf",
+      "parent": "Orang tua"
+    },
+    "registerForm": {
+      "role": "Peran",
+      "user": "Pengguna",
+      "loadingUsers": "Memuat daftar pengguna...",
+      "userPlaceholder": "Pilih pengguna",
+      "noUsers": "Semua pengguna pada peran ini sudah terdaftar atau belum ada datanya.",
+      "memberType": "Jenis anggota",
+      "memberTypePlaceholder": "Pilih jenis anggota",
+      "memberNo": "Nomor anggota (opsional)",
+      "memberNoPlaceholder": "Dibuat otomatis bila dikosongkan",
+      "notes": "Catatan",
+      "cancel": "Batal",
+      "submit": "Daftarkan"
+    },
+    "bulkRegister": {
+      "title": "Daftar anggota massal",
+      "description": "Mendaftarkan setiap pengguna pada peran ini yang belum menjadi anggota.",
+      "role": "Peran",
+      "classOptional": "Kelas (opsional)",
+      "classAll": "Semua kelas",
+      "memberType": "Jenis anggota",
+      "memberTypePlaceholder": "Pilih jenis anggota",
+      "cancel": "Batal",
+      "submit": "Daftarkan",
+      "resultSummary": "{registered} anggota terdaftar, {failed} gagal",
+      "close": "Tutup"
+    }
+  },
+  "memberTypes": {
+    "navLabel": "Jenis anggota",
+    "eyebrow": "Perpustakaan",
+    "title": "Jenis anggota",
+    "addType": "Tambah jenis",
+    "editType": "Ubah jenis anggota",
+    "deleteTitle": "Hapus jenis anggota",
+    "deleteBody": "Jenis anggota \"{name}\" akan dihapus. Tindakan ini ditolak bila masih ada anggota memakainya.",
+    "deleted": "Jenis anggota dihapus",
+    "edit": "Ubah",
+    "delete": "Hapus",
+    "emptyTitle": "Belum ada jenis anggota",
+    "emptyBody": "Tambahkan jenis anggota untuk mengatur batas pinjam, denda, dan masa berlaku keanggotaan.",
+    "columns": {
+      "name": "Nama",
+      "loanLimit": "Batas pinjam",
+      "renewal": "Perpanjangan",
+      "fine": "Denda",
+      "defaultForRole": "Bawaan untuk peran",
+      "actions": "Aksi"
+    },
+    "loanLimitValue": "{items} eksemplar, {days} hari",
+    "renewalNone": "Tidak bisa diperpanjang",
+    "renewalValue": "{count}x, tambah {days} hari",
+    "fineNone": "Tanpa denda",
+    "fineValue": {
+      "constant": "Rp{amount} per hari",
+      "per_tenor": "Rp{amount} per {tenor} hari"
+    },
+    "form": {
+      "name": "Nama jenis anggota",
+      "maxLoanItems": "Batas eksemplar dipinjam",
+      "maxLoanDays": "Lama pinjam (hari)",
+      "renewalDays": "Tambahan hari saat perpanjangan",
+      "maxRenewals": "Batas perpanjangan",
+      "fineType": "Tipe denda",
+      "fineTypeOptions": {
+        "constant": "Tetap per hari",
+        "per_tenor": "Per periode"
+      },
+      "finePerTenor": "Nominal denda (Rp)",
+      "tenorDays": "Panjang periode denda (hari)",
+      "suspendDays": "Lama penangguhan (hari)",
+      "validityMonths": "Masa berlaku keanggotaan (bulan)",
+      "defaultForRole": "Jenis bawaan untuk peran",
+      "defaultForRoleNone": "Tidak ada",
+      "cancel": "Batal",
+      "save": "Simpan"
+    }
+  },
+  "memberDetail": {
+    "eyebrow": "Perpustakaan",
+    "notFoundTitle": "Anggota tidak ditemukan",
+    "notFoundBody": "Anggota ini mungkin sudah dihapus atau belum pernah didaftarkan.",
+    "memberNo": "Nomor anggota",
+    "memberType": "Jenis anggota",
+    "validUntil": "Berlaku sampai",
+    "statusLabel": "Status",
+    "status": {
+      "pending": "Menunggu",
+      "active": "Aktif",
+      "inactive": "Tidak aktif",
+      "suspended": "Ditangguhkan",
+      "cleared": "Bebas pustaka"
+    },
+    "clearance": "Bebas pustaka",
+    "grantClearance": "Berikan bebas pustaka",
+    "cleared": "Anggota diberikan bebas pustaka",
+    "printClearanceLetter": "Cetak surat bebas pustaka",
+    "clearanceBlockedByLoan": "Bebas pustaka belum bisa diberikan selama masih ada peminjaman aktif atau denda belum lunas."
+  },
+  "violations": {
+    "navLabel": "Pelanggaran perpustakaan",
+    "eyebrow": "Perpustakaan",
+    "title": "Pelanggaran dan denda",
+    "record": "Catat pelanggaran",
+    "settle": "Selesaikan",
+    "unknownMember": "Anggota tidak dikenali",
+    "noMatchTitle": "Tidak ada pelanggaran yang cocok",
+    "noMatchBody": "Coba ubah filter jenis atau status.",
+    "emptyTitle": "Belum ada pelanggaran tercatat",
+    "emptyBody": "Pelanggaran otomatis dari pengembalian terlambat, atau catat manual untuk kerusakan dan kasus lain.",
+    "amountValue": "Rp{amount}",
+    "suspendDaysValue": "{days} hari",
+    "columns": {
+      "member": "Anggota",
+      "kind": "Jenis",
+      "penalty": "Sanksi",
+      "createdAt": "Tanggal",
+      "status": "Status",
+      "actions": "Aksi"
+    },
+    "filters": {
+      "status": "Status",
+      "statusAll": "Semua status",
+      "kind": "Jenis",
+      "kindAll": "Semua jenis",
+      "clear": "Bersihkan filter"
+    },
+    "kinds": {
+      "late": "Terlambat",
+      "lost": "Hilang",
+      "damaged": "Rusak",
+      "other": "Lainnya"
+    },
+    "penalties": {
+      "fine": "Denda",
+      "suspend": "Penangguhan",
+      "warning": "Peringatan",
+      "replace_book": "Ganti buku"
+    },
+    "status": {
+      "unpaid": "Belum lunas",
+      "paid": "Lunas",
+      "waived": "Dibebaskan"
+    },
+    "form": {
+      "title": "Catat pelanggaran",
+      "member": "Anggota",
+      "loadingMembers": "Memuat daftar anggota...",
+      "memberPlaceholder": "Pilih anggota",
+      "kind": "Jenis",
+      "penalty": "Sanksi",
+      "amount": "Nominal denda (Rp)",
+      "suspendDays": "Lama penangguhan (hari)",
+      "notes": "Catatan",
+      "cancel": "Batal",
+      "submit": "Simpan"
+    },
+    "settle": {
+      "title": "Selesaikan pelanggaran",
+      "description": "Menyelesaikan sebagai lunas atau dibebaskan. Anggota yang sedang ditangguhkan akan aktif kembali begitu semua pelanggarannya selesai.",
+      "waive": "Bebaskan",
+      "markPaid": "Tandai lunas",
+      "settledPaid": "Pelanggaran ditandai lunas",
+      "settledWaived": "Pelanggaran dibebaskan"
+    }
+  },
+  "import": {
+    "navLabel": "Impor koleksi",
+    "eyebrow": "Perpustakaan",
+    "title": "Impor koleksi",
+    "steps": {
+      "upload": "Unggah",
+      "mapping": "Pemetaan kolom",
+      "preview": "Pratinjau",
+      "result": "Hasil"
+    },
+    "uploadDescription": "Unduh templat, isi datanya, lalu unggah kembali berkas yang sudah terisi.",
+    "downloadTemplate": "Unduh templat XLSX",
+    "uploadLabel": "Berkas XLSX terisi",
+    "selectedFile": "Berkas dipilih: {name}",
+    "emptyFile": "Berkas tidak berisi baris data. Periksa kembali templat yang diisi.",
+    "parseError": "Berkas tidak dapat dibaca. Pastikan formatnya XLSX dan sesuai templat.",
+    "committed": "Impor berhasil diterapkan",
+    "resultSummary": "{titles} judul baru, {copies} eksemplar ditambahkan.",
+    "importAnother": "Impor berkas lain",
+    "mapping": {
+      "description": "Setiap kolom di berkas yang diunggah dipetakan ke bidang data perpustakaan. Pemetaan diisi otomatis; ubah bila kolom pada berkas berbeda nama.",
+      "unmapped": "Tidak dipetakan",
+      "back": "Kembali",
+      "continue": "Lanjut ke pratinjau",
+      "titleRequired": "Kolom Judul wajib dipetakan sebelum melanjutkan."
+    },
+    "fields": {
+      "title": "Judul",
+      "main_author": "Penulis utama",
+      "publisher": "Penerbit",
+      "publish_place": "Kota terbit",
+      "publish_year": "Tahun terbit",
+      "isbn": "ISBN",
+      "ddc_number": "Nomor DDC",
+      "subjects": "Subjek",
+      "material_type": "Jenis bahan",
+      "category": "Kategori",
+      "access": "Akses",
+      "location": "Lokasi",
+      "source": "Sumber",
+      "acquired_on": "Tanggal perolehan",
+      "price": "Harga",
+      "no_induk": "Nomor induk",
+      "barcode": "Barcode",
+      "copies": "Jumlah eksemplar",
+      "call_number": "Nomor panggil"
+    },
+    "preview": {
+      "summary": {
+        "newTitles": "Judul baru",
+        "existingTitles": "Judul sudah ada",
+        "copies": "Eksemplar",
+        "errors": "Galat"
+      },
+      "partialWarning": "{errors} baris bermasalah akan dilewati. {importable} baris lain siap diimpor.",
+      "allErrorWarning": "Semua {errors} baris bermasalah. Perbaiki berkas dan unggah ulang.",
+      "columns": {
+        "row": "Baris",
+        "title": "Judul",
+        "copies": "Eksemplar",
+        "status": "Status",
+        "message": "Keterangan"
+      },
+      "status": {
+        "new_title": "Judul baru",
+        "existing_title": "Judul sudah ada",
+        "error": "Galat"
+      },
+      "back": "Kembali",
+      "commit": "Terapkan impor",
+      "commitPartial": "Terapkan {count} baris yang valid"
+    }
+  },
+  "copyLabels": {
+    "selectedCount": "{count} eksemplar dipilih",
+    "overLimit": "{count} eksemplar dipilih, maksimal {max} per cetakan",
+    "clearSelection": "Batalkan pilihan",
+    "printLabels": "Cetak label"
+  },
+  "copiesBrowser": {
+    "eyebrow": "Perpustakaan",
+    "title": "Eksemplar",
+    "searchPlaceholder": "Cari barcode, nomor induk, atau RFID",
+    "viewTitle": "Lihat judul",
+    "noMatchTitle": "Tidak ada eksemplar yang cocok",
+    "noMatchBody": "Coba ubah filter atau kata kunci pencarian.",
+    "emptyTitle": "Belum ada eksemplar",
+    "emptyBody": "Eksemplar akan muncul di sini setelah ditambahkan lewat katalog atau impor.",
+    "columns": {
+      "barcode": "Barcode",
+      "accessionNumber": "Nomor induk",
+      "callNumber": "Nomor panggil",
+      "category": "Kategori",
+      "location": "Lokasi",
+      "status": "Status",
+      "actions": "Aksi"
+    },
+    "filters": {
+      "status": "Status",
+      "statusAll": "Semua status",
+      "category": "Kategori",
+      "categoryAll": "Semua kategori",
+      "location": "Lokasi",
+      "locationAll": "Semua lokasi",
+      "clear": "Bersihkan filter"
+    },
+    "status": {
+      "available": "Tersedia",
+      "on_loan": "Dipinjam",
+      "reserved": "Dipesan",
+      "damaged": "Rusak",
+      "lost": "Hilang",
+      "in_repair": "Diperbaiki",
+      "processing": "Diproses",
+      "donated": "Dihibahkan",
+      "reserve_stack": "Rak cadangan",
+      "unknown": "Tidak diketahui"
+    }
+  },
+  "visits": {
+    "navLabel": "Kunjungan",
+    "eyebrow": "Perpustakaan",
+    "title": "Kunjungan",
+    "record": "Catat kunjungan",
+    "unknownMember": "Anggota tidak dikenali",
+    "fromLabel": "Dari tanggal",
+    "toLabel": "Sampai tanggal",
+    "groupSizeValue": "{count} orang",
+    "emptyTitle": "Belum ada kunjungan pada rentang ini",
+    "emptyBody": "Kunjungan tercatat lewat kios, pemindaian, atau dicatat manual di sini.",
+    "columns": {
+      "who": "Pengunjung",
+      "kind": "Jenis",
+      "purpose": "Keperluan",
+      "source": "Sumber",
+      "visitedAt": "Waktu"
+    },
+    "summary": {
+      "totalVisits": "Total kunjungan hari ini",
+      "uniqueMembers": "Anggota unik",
+      "totalPeople": "Total orang"
+    },
+    "kinds": {
+      "member": "Anggota",
+      "non_member": "Bukan anggota",
+      "group": "Rombongan"
+    },
+    "sources": {
+      "manual": "Manual",
+      "scan": "Pindai",
+      "kiosk": "Kios"
+    },
+    "form": {
+      "title": "Catat kunjungan",
+      "kind": "Jenis",
+      "member": "Anggota",
+      "loadingMembers": "Memuat daftar anggota...",
+      "memberPlaceholder": "Pilih anggota",
+      "visitorName": "Nama pengunjung",
+      "groupName": "Nama rombongan",
+      "groupSize": "Jumlah orang",
+      "purpose": "Keperluan",
+      "purposePlaceholder": "Opsional",
+      "cancel": "Batal",
+      "submit": "Simpan"
+    }
+  },
+  "visitKiosk": {
+    "navLabel": "Kios kunjungan",
+    "title": "Kios kunjungan perpustakaan",
+    "instructions": "Pindai kode ini dengan aplikasi sekolah untuk mencatat kunjungan.",
+    "expired": "Kode sudah kedaluwarsa",
+    "expiresIn": "Berlaku {seconds} detik lagi",
+    "renew": "Buat kode baru"
+  },
+  "readInPlace": {
+    "title": "Baca di tempat",
+    "member": "Anggota",
+    "memberPlaceholder": "Pilih anggota (opsional)",
+    "visitorName": "Nama pengunjung",
+    "start": "Catat",
+    "started": "Sesi baca di tempat dicatat",
+    "logHeading": "Riwayat baca di tempat",
+    "emptyLog": "Belum ada riwayat untuk eksemplar ini.",
+    "ongoing": "sedang berlangsung"
+  },
   "stocktake": {
     "eyebrow": "Perpustakaan",
     "title": "Opname",
@@ -152,10 +570,15 @@
     "title": "Laporan perpustakaan",
     "fromLabel": "Dari tanggal",
     "toLabel": "Sampai tanggal",
+    "exportXlsx": "Ekspor XLSX",
     "tabs": {
       "loans": "Peminjaman",
       "overdueMembers": "Anggota terlambat",
       "mostBorrowed": "Paling sering dipinjam"
+    },
+    "monthly": {
+      "monthLabel": "Laporan bulanan",
+      "download": "Unduh PDF bulanan"
     },
     "loans": {
       "title": "Peminjaman dalam rentang tanggal",

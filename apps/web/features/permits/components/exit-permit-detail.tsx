@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Alert, Button, Input, Select, Skeleton, useToast } from "@newsekolah/ui";
+import { Alert, Button, Input, QrPanel, Select, Skeleton, useToast } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -18,7 +18,6 @@ import {
   useScanExitPermitStageMutation,
 } from "../api";
 
-import { QrPanel } from "./qr-panel";
 import { ScanTokenInput } from "./scan-token-input";
 import { WorkflowStepper } from "./workflow-stepper";
 
@@ -116,6 +115,7 @@ export function CreateForm({ onDone }: { onDone: (id: string) => void }): ReactE
 
 export function ExitPermitDetail({ id }: { id: string }): ReactElement {
   const t = useTranslations("app.permits.exit");
+  const tQr = useTranslations("app.permits.qr");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const { data, isLoading } = useExitPermitQuery(id);
@@ -176,6 +176,9 @@ export function ExitPermitDetail({ id }: { id: string }): ReactElement {
               gate.mutate(id, { onError: fail });
             }}
             renewing={gate.isPending}
+            expiredLabel={tQr("expired")}
+            expiresInLabel={(seconds) => tQr("expiresIn", { seconds })}
+            renewLabel={tQr("renew")}
           />
         ) : (
           <Button

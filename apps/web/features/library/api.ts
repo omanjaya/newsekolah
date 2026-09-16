@@ -312,9 +312,9 @@ export function useMostBorrowedReportQuery(from: string, to: string) {
   });
 }
 
-// Printed labels and cards.
+// Printed documents and spreadsheet exports.
 //
-// The PDF is generated server-side (platform/documents), not in the
+// These files are generated server-side (platform/documents), not in the
 // browser; the web layer only downloads the finished file. A direct
 // `fetch` is used because the shared API client always parses the
 // response as JSON.
@@ -353,6 +353,35 @@ export function printMemberCard(userId: string): Promise<void> {
     `/v1/library/members/${encodeURIComponent(userId)}/card`,
     `kartu-anggota-${userId}.pdf`,
   );
+}
+
+export function downloadLoansReportXlsx(from: string, to: string): Promise<void> {
+  return downloadPDF(
+    `/v1/library/reports/loans.xlsx?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
+    `laporan-peminjaman-${from}-${to}.xlsx`,
+  );
+}
+
+export function downloadOverdueMembersReportXlsx(): Promise<void> {
+  return downloadPDF("/v1/library/reports/overdue-members.xlsx", "laporan-anggota-terlambat.xlsx");
+}
+
+export function downloadMostBorrowedReportXlsx(from: string, to: string): Promise<void> {
+  return downloadPDF(
+    `/v1/library/reports/most-borrowed.xlsx?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
+    `laporan-paling-sering-dipinjam-${from}-${to}.xlsx`,
+  );
+}
+
+export function downloadMonthlyLibraryReportPdf(month: string): Promise<void> {
+  return downloadPDF(
+    `/v1/library/reports/monthly?month=${encodeURIComponent(month)}`,
+    `laporan-bulanan-perpustakaan-${month}.pdf`,
+  );
+}
+
+export function downloadLibraryCatalogueExportXlsx(): Promise<void> {
+  return downloadPDF("/v1/library/catalogue/export.xlsx", "katalog-perpustakaan.xlsx");
 }
 
 // Public OPAC.

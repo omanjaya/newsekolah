@@ -12,6 +12,7 @@ import {
   PageHeader,
   Select,
   domainIcons,
+  selectionColumn,
   useToast,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -29,6 +30,10 @@ import {
   useLibraryCopiesQuery,
   useLibraryTitleQuery,
 } from "../api";
+import { useOrderedSelection } from "../use-ordered-selection";
+
+import { CopyLabelPrintBar } from "./copy-label-print-bar";
+import { ReadInPlaceDialog } from "./read-in-place-dialog";
 
 const CONDITIONS: LibraryCopyWrite["condition"][] = ["good", "fair", "damaged", "lost"];
 
@@ -37,10 +42,13 @@ export function TitleCopiesView({ titleId }: { titleId: string }): ReactElement 
   const title = useLibraryTitleQuery(titleId);
   const { data, isLoading } = useLibraryCopiesQuery(titleId);
   const [adding, setAdding] = useState(false);
+  const [readingInPlace, setReadingInPlace] = useState<string | null>(null);
+  const { selection, onSelectionChange, orderedIds, clear } = useOrderedSelection();
   const copies = data?.data ?? [];
 
   const columns = useMemo<ColumnDef<LibraryCopy>[]>(
     () => [
+      selectionColumn<LibraryCopy>(),
       { accessorKey: "barcode", header: t("columns.barcode"), enableSorting: false },
       {
         accessorKey: "condition",
@@ -63,15 +71,26 @@ export function TitleCopiesView({ titleId }: { titleId: string }): ReactElement 
         header: t("columns.actions"),
         enableSorting: false,
         cell: ({ row }) => (
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={() => {
-              void printCopyLabel(row.original.id);
-            }}
-          >
-            {t("printLabel")}
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => {
+                void printCopyLabel(row.original.id);
+              }}
+            >
+              {t("printLabel")}
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                setReadingInPlace(row.original.id);
+              }}
+            >
+              {t("readInPlace")}
+            </Button>
+          </div>
         ),
       },
     ],
@@ -93,6 +112,8 @@ export function TitleCopiesView({ titleId }: { titleId: string }): ReactElement 
         </Button>
       </div>
 
+      <CopyLabelPrintBar selectedIds={orderedIds} onClear={clear} />
+
       <DataTable
         data={copies}
         columns={columns}
@@ -104,6 +125,8 @@ export function TitleCopiesView({ titleId }: { titleId: string }): ReactElement 
         globalFilter=""
         onGlobalFilterChange={() => undefined}
         isLoading={isLoading}
+        rowSelection={selection}
+        onRowSelectionChange={onSelectionChange}
         getRowId={(item) => item.id}
         emptyState={
           <EmptyState
@@ -129,6 +152,13 @@ export function TitleCopiesView({ titleId }: { titleId: string }): ReactElement 
           />
         </DialogContent>
       </Dialog>
+
+      <ReadInPlaceDialog
+        copyId={readingInPlace}
+        onOpenChange={(open) => {
+          if (!open) setReadingInPlace(null);
+        }}
+      />
     </div>
   );
 }

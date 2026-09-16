@@ -9,6 +9,8 @@
     "title": "Catalogue",
     "searchPlaceholder": "Search title, author, or ISBN",
     "addTitle": "Add title",
+    "browseCopies": "Browse copies",
+    "exportCatalogue": "Export catalogue (XLSX)",
     "columns": {
       "title": "Title",
       "author": "Author",
@@ -24,12 +26,26 @@
       "title": "Title",
       "subtitle": "Subtitle",
       "author": "Author",
+      "additionalAuthors": "Additional authors",
       "publisher": "Publisher",
+      "publishPlace": "Publish place",
       "publishYear": "Publish year",
       "isbn": "ISBN",
       "classification": "Classification",
+      "pages": "Page count",
+      "subjects": "Subjects",
+      "language": "Language",
+      "abstract": "Abstract",
       "save": "Save",
       "saved": "Title saved"
+    },
+    "isbnLookup": {
+      "hint": "Look up bibliographic data from the ISBN above.",
+      "search": "Search ISBN",
+      "notFound": "No data found for this ISBN. Fill it in manually below.",
+      "apply": "Autofill",
+      "importCover": "Import cover",
+      "coverImported": "Cover imported"
     }
   },
   "copies": {
@@ -51,9 +67,16 @@
       "available": "Available",
       "on_loan": "On loan",
       "reserved": "Reserved",
-      "withdrawn": "Withdrawn"
+      "damaged": "Damaged",
+      "lost": "Lost",
+      "in_repair": "In repair",
+      "processing": "Processing",
+      "donated": "Donated",
+      "reserve_stack": "Reserve stack",
+      "unknown": "Unknown"
     },
     "printLabel": "Print label",
+    "readInPlace": "Read in place",
     "form": {
       "barcode": "Barcode",
       "condition": "Condition",
@@ -111,6 +134,401 @@
     "printCard": "Print member card",
     "emptyTitle": "No loan history yet"
   },
+  "members": {
+    "navLabel": "Library members",
+    "eyebrow": "Library",
+    "title": "Members",
+    "register": "Register member",
+    "bulkRegister": "Bulk register",
+    "registered": "Member registered",
+    "searchPlaceholder": "Search by name or member number",
+    "unknownUser": "Unknown user",
+    "viewDetail": "View detail",
+    "noMatchTitle": "No matching members",
+    "noMatchBody": "Try a different filter or search term.",
+    "emptyTitle": "No members registered yet",
+    "emptyBody": "Register a user as a library member to get started.",
+    "statusUpdated": "Member status updated",
+    "columns": {
+      "name": "Name",
+      "type": "Type",
+      "status": "Status",
+      "validUntil": "Valid until",
+      "lateReturns": "Late returns",
+      "actions": "Actions"
+    },
+    "filters": {
+      "status": "Status",
+      "statusAll": "All statuses",
+      "type": "Member type",
+      "typeAll": "All types",
+      "clear": "Clear filters"
+    },
+    "status": {
+      "pending": "Pending",
+      "active": "Active",
+      "inactive": "Inactive",
+      "suspended": "Suspended",
+      "cleared": "Cleared"
+    },
+    "roles": {
+      "student": "Student",
+      "teacher": "Teacher",
+      "staff": "Staff",
+      "parent": "Parent"
+    },
+    "registerForm": {
+      "role": "Role",
+      "user": "User",
+      "loadingUsers": "Loading users...",
+      "userPlaceholder": "Choose a user",
+      "noUsers": "Every user in this role is already a member, or none exist yet.",
+      "memberType": "Member type",
+      "memberTypePlaceholder": "Choose a member type",
+      "memberNo": "Member number (optional)",
+      "memberNoPlaceholder": "Generated automatically when left blank",
+      "notes": "Notes",
+      "cancel": "Cancel",
+      "submit": "Register"
+    },
+    "bulkRegister": {
+      "title": "Bulk register members",
+      "description": "Registers every user in this role who is not already a member.",
+      "role": "Role",
+      "classOptional": "Class (optional)",
+      "classAll": "All classes",
+      "memberType": "Member type",
+      "memberTypePlaceholder": "Choose a member type",
+      "cancel": "Cancel",
+      "submit": "Register",
+      "resultSummary": "{registered} registered, {failed} failed",
+      "close": "Close"
+    }
+  },
+  "memberTypes": {
+    "navLabel": "Member types",
+    "eyebrow": "Library",
+    "title": "Member types",
+    "addType": "Add type",
+    "editType": "Edit member type",
+    "deleteTitle": "Delete member type",
+    "deleteBody": "The member type \"{name}\" will be deleted. This is refused while any member still uses it.",
+    "deleted": "Member type deleted",
+    "edit": "Edit",
+    "delete": "Delete",
+    "emptyTitle": "No member types yet",
+    "emptyBody": "Add a member type to set loan limits, fines, and membership validity.",
+    "columns": {
+      "name": "Name",
+      "loanLimit": "Loan limit",
+      "renewal": "Renewal",
+      "fine": "Fine",
+      "defaultForRole": "Default for role",
+      "actions": "Actions"
+    },
+    "loanLimitValue": "{items} copies, {days} days",
+    "renewalNone": "Cannot be renewed",
+    "renewalValue": "{count}x, +{days} days",
+    "fineNone": "No fine",
+    "fineValue": {
+      "constant": "Rp{amount} per day",
+      "per_tenor": "Rp{amount} per {tenor} days"
+    },
+    "form": {
+      "name": "Member type name",
+      "maxLoanItems": "Loan item limit",
+      "maxLoanDays": "Loan length (days)",
+      "renewalDays": "Extra days per renewal",
+      "maxRenewals": "Renewal limit",
+      "fineType": "Fine type",
+      "fineTypeOptions": {
+        "constant": "Fixed per day",
+        "per_tenor": "Per period"
+      },
+      "finePerTenor": "Fine amount (Rp)",
+      "tenorDays": "Fine period length (days)",
+      "suspendDays": "Suspension length (days)",
+      "validityMonths": "Membership validity (months)",
+      "defaultForRole": "Default type for role",
+      "defaultForRoleNone": "None",
+      "cancel": "Cancel",
+      "save": "Save"
+    }
+  },
+  "memberDetail": {
+    "eyebrow": "Library",
+    "notFoundTitle": "Member not found",
+    "notFoundBody": "This member may have been removed or was never registered.",
+    "memberNo": "Member number",
+    "memberType": "Member type",
+    "validUntil": "Valid until",
+    "statusLabel": "Status",
+    "status": {
+      "pending": "Pending",
+      "active": "Active",
+      "inactive": "Inactive",
+      "suspended": "Suspended",
+      "cleared": "Cleared"
+    },
+    "clearance": "Clearance",
+    "grantClearance": "Grant clearance",
+    "cleared": "Member granted clearance",
+    "printClearanceLetter": "Print clearance letter",
+    "clearanceBlockedByLoan": "Clearance cannot be granted while any loan is active or a fine is unpaid."
+  },
+  "violations": {
+    "navLabel": "Library violations",
+    "eyebrow": "Library",
+    "title": "Violations and fines",
+    "record": "Record violation",
+    "settle": "Settle",
+    "unknownMember": "Unknown member",
+    "noMatchTitle": "No matching violations",
+    "noMatchBody": "Try a different type or status filter.",
+    "emptyTitle": "No violations recorded yet",
+    "emptyBody": "Violations are recorded automatically from late returns, or manually for damage and other cases.",
+    "amountValue": "Rp{amount}",
+    "suspendDaysValue": "{days} days",
+    "columns": {
+      "member": "Member",
+      "kind": "Type",
+      "penalty": "Penalty",
+      "createdAt": "Date",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "filters": {
+      "status": "Status",
+      "statusAll": "All statuses",
+      "kind": "Type",
+      "kindAll": "All types",
+      "clear": "Clear filters"
+    },
+    "kinds": {
+      "late": "Late",
+      "lost": "Lost",
+      "damaged": "Damaged",
+      "other": "Other"
+    },
+    "penalties": {
+      "fine": "Fine",
+      "suspend": "Suspension",
+      "warning": "Warning",
+      "replace_book": "Replace book"
+    },
+    "status": {
+      "unpaid": "Unpaid",
+      "paid": "Paid",
+      "waived": "Waived"
+    },
+    "form": {
+      "title": "Record violation",
+      "member": "Member",
+      "loadingMembers": "Loading members...",
+      "memberPlaceholder": "Choose a member",
+      "kind": "Type",
+      "penalty": "Penalty",
+      "amount": "Fine amount (Rp)",
+      "suspendDays": "Suspension length (days)",
+      "notes": "Notes",
+      "cancel": "Cancel",
+      "submit": "Save"
+    },
+    "settle": {
+      "title": "Settle violation",
+      "description": "Settle as paid or waived. A suspended member reactivates once every violation is clear.",
+      "waive": "Waive",
+      "markPaid": "Mark paid",
+      "settledPaid": "Violation marked paid",
+      "settledWaived": "Violation waived"
+    }
+  },
+  "import": {
+    "navLabel": "Import collection",
+    "eyebrow": "Library",
+    "title": "Import collection",
+    "steps": {
+      "upload": "Upload",
+      "mapping": "Column mapping",
+      "preview": "Preview",
+      "result": "Result"
+    },
+    "uploadDescription": "Download the template, fill it in, then upload the completed file.",
+    "downloadTemplate": "Download XLSX template",
+    "uploadLabel": "Completed XLSX file",
+    "selectedFile": "Selected file: {name}",
+    "emptyFile": "The file has no data rows. Check the filled template again.",
+    "parseError": "The file could not be read. Make sure it is an XLSX file matching the template.",
+    "committed": "Import applied",
+    "resultSummary": "{titles} new titles, {copies} copies added.",
+    "importAnother": "Import another file",
+    "mapping": {
+      "description": "Each column in the uploaded file maps to a library data field. The mapping is filled in automatically; adjust it if your file uses different column names.",
+      "unmapped": "Not mapped",
+      "back": "Back",
+      "continue": "Continue to preview",
+      "titleRequired": "The Title column must be mapped before continuing."
+    },
+    "fields": {
+      "title": "Title",
+      "main_author": "Main author",
+      "publisher": "Publisher",
+      "publish_place": "Publish place",
+      "publish_year": "Publish year",
+      "isbn": "ISBN",
+      "ddc_number": "DDC number",
+      "subjects": "Subjects",
+      "material_type": "Material type",
+      "category": "Category",
+      "access": "Access",
+      "location": "Location",
+      "source": "Source",
+      "acquired_on": "Acquired on",
+      "price": "Price",
+      "no_induk": "Accession number",
+      "barcode": "Barcode",
+      "copies": "Copy count",
+      "call_number": "Call number"
+    },
+    "preview": {
+      "summary": {
+        "newTitles": "New titles",
+        "existingTitles": "Existing titles",
+        "copies": "Copies",
+        "errors": "Errors"
+      },
+      "partialWarning": "{errors} problem rows will be skipped. {importable} other rows are ready to import.",
+      "allErrorWarning": "All {errors} rows have a problem. Fix the file and upload it again.",
+      "columns": {
+        "row": "Row",
+        "title": "Title",
+        "copies": "Copies",
+        "status": "Status",
+        "message": "Message"
+      },
+      "status": {
+        "new_title": "New title",
+        "existing_title": "Existing title",
+        "error": "Error"
+      },
+      "back": "Back",
+      "commit": "Apply import",
+      "commitPartial": "Apply {count} valid rows"
+    }
+  },
+  "copyLabels": {
+    "selectedCount": "{count} copies selected",
+    "overLimit": "{count} copies selected, {max} maximum per print run",
+    "clearSelection": "Clear selection",
+    "printLabels": "Print labels"
+  },
+  "copiesBrowser": {
+    "eyebrow": "Library",
+    "title": "Copies",
+    "searchPlaceholder": "Search barcode, accession number, or RFID",
+    "viewTitle": "View title",
+    "noMatchTitle": "No matching copies",
+    "noMatchBody": "Try a different filter or search term.",
+    "emptyTitle": "No copies yet",
+    "emptyBody": "Copies appear here once added through the catalogue or an import.",
+    "columns": {
+      "barcode": "Barcode",
+      "accessionNumber": "Accession number",
+      "callNumber": "Call number",
+      "category": "Category",
+      "location": "Location",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "filters": {
+      "status": "Status",
+      "statusAll": "All statuses",
+      "category": "Category",
+      "categoryAll": "All categories",
+      "location": "Location",
+      "locationAll": "All locations",
+      "clear": "Clear filters"
+    },
+    "status": {
+      "available": "Available",
+      "on_loan": "On loan",
+      "reserved": "Reserved",
+      "damaged": "Damaged",
+      "lost": "Lost",
+      "in_repair": "In repair",
+      "processing": "Processing",
+      "donated": "Donated",
+      "reserve_stack": "Reserve stack",
+      "unknown": "Unknown"
+    }
+  },
+  "visits": {
+    "navLabel": "Visits",
+    "eyebrow": "Library",
+    "title": "Visits",
+    "record": "Record visit",
+    "unknownMember": "Unknown member",
+    "fromLabel": "From date",
+    "toLabel": "To date",
+    "groupSizeValue": "{count} people",
+    "emptyTitle": "No visits in this range",
+    "emptyBody": "Visits are logged through the kiosk, a scan, or recorded manually here.",
+    "columns": {
+      "who": "Visitor",
+      "kind": "Type",
+      "purpose": "Purpose",
+      "source": "Source",
+      "visitedAt": "Time"
+    },
+    "summary": {
+      "totalVisits": "Total visits today",
+      "uniqueMembers": "Unique members",
+      "totalPeople": "Total people"
+    },
+    "kinds": {
+      "member": "Member",
+      "non_member": "Non-member",
+      "group": "Group"
+    },
+    "sources": {
+      "manual": "Manual",
+      "scan": "Scan",
+      "kiosk": "Kiosk"
+    },
+    "form": {
+      "title": "Record visit",
+      "kind": "Type",
+      "member": "Member",
+      "loadingMembers": "Loading members...",
+      "memberPlaceholder": "Choose a member",
+      "visitorName": "Visitor name",
+      "groupName": "Group name",
+      "groupSize": "Number of people",
+      "purpose": "Purpose",
+      "purposePlaceholder": "Optional",
+      "cancel": "Cancel",
+      "submit": "Save"
+    }
+  },
+  "visitKiosk": {
+    "navLabel": "Visit kiosk",
+    "title": "Library visit kiosk",
+    "instructions": "Scan this code with the school app to log a visit.",
+    "expired": "Code has expired",
+    "expiresIn": "Valid for {seconds} more seconds",
+    "renew": "Get a new code"
+  },
+  "readInPlace": {
+    "title": "Read in place",
+    "member": "Member",
+    "memberPlaceholder": "Choose a member (optional)",
+    "visitorName": "Visitor name",
+    "start": "Log",
+    "started": "Read-in-place session logged",
+    "logHeading": "Read-in-place history",
+    "emptyLog": "No history yet for this copy.",
+    "ongoing": "ongoing"
+  },
   "stocktake": {
     "eyebrow": "Library",
     "title": "Stocktake",
@@ -152,10 +570,15 @@
     "title": "Library reports",
     "fromLabel": "From date",
     "toLabel": "To date",
+    "exportXlsx": "Export XLSX",
     "tabs": {
       "loans": "Loans",
       "overdueMembers": "Overdue members",
       "mostBorrowed": "Most borrowed"
+    },
+    "monthly": {
+      "monthLabel": "Monthly report",
+      "download": "Download monthly PDF"
     },
     "loans": {
       "title": "Loans within the date range",
