@@ -129,4 +129,12 @@ export const libraryNavItems: NavItem[] = [
     permission: "manage_library_circulation",
     group: "nav.library.label",
   },
+  {
+    key: "library-me",
+    labelKey: "app.library.me.navLabel",
+    href: "/library/me",
+    icon: domainIcons.library,
+    permission: "view_own_library_loans",
+    group: "nav.library.label",
+  },
 ];

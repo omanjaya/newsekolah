@@ -971,5 +971,44 @@
     "reservationHoldDays": "Batas hari tahan reservasi",
     "save": "Simpan",
     "saved": "Kebijakan disimpan"
+  },
+  "me": {
+    "eyebrow": "Perpustakaan",
+    "title": "Pinjaman saya",
+    "navLabel": "Pinjaman saya",
+    "notMemberTitle": "Belum terdaftar sebagai anggota perpustakaan",
+    "notMemberBody": "Minta pustakawan mendaftarkan Anda untuk mulai meminjam dan memesan buku.",
+    "unpaidFines": "Denda belum dibayar",
+    "currency": "Rp{amount}",
+    "violationKind": {
+      "late": "Keterlambatan",
+      "lost": "Buku hilang",
+      "damaged": "Buku rusak",
+      "other": "Lainnya"
+    },
+    "activeLoans": "Sedang dipinjam",
+    "noActiveLoans": "Tidak ada buku yang sedang dipinjam.",
+    "history": "Riwayat peminjaman",
+    "noHistory": "Belum ada riwayat peminjaman.",
+    "reserve": {
+      "heading": "Reservasi",
+      "emptyBody": "Belum ada reservasi. Cari judul di bawah untuk memesan.",
+      "queuePosition": "Antrean ke-{position}",
+      "status": {
+        "waiting": "Menunggu",
+        "ready": "Siap diambil",
+        "fulfilled": "Selesai",
+        "cancelled": "Dibatalkan",
+        "expired": "Kedaluwarsa"
+      },
+      "cancel": "Batalkan",
+      "cancelled": "Reservasi dibatalkan",
+      "pickTitle": "Pesan judul baru",
+      "searchPlaceholder": "Cari judul atau penulis",
+      "selectedTitle": "Dipilih: {title}",
+      "submit": "Pesan",
+      "reserved": "Reservasi dibuat",
+      "bookingDisabled": "Reservasi mandiri sedang dinonaktifkan. Hubungi pustakawan untuk memesan judul."
+    }
   }
 }
