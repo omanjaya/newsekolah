@@ -74,12 +74,16 @@ func (s *Source) FetchUsers() ([]SionUser, error) {
 
 // FetchUserRoles reads every (user, Spatie role name) pair from the live
 // schema's model_has_roles/roles tables into one map, since a user can hold
-// several roles at once.
+// several roles at once. Joined to users so an orphaned role assignment (a
+// model_has_roles row whose model_id no longer exists in users, a
+// hard-deleted user whose role was never cleaned up) never appears here --
+// see CountOrphanedRoleAssignments for how those are reported instead.
 func (s *Source) FetchUserRoles() (map[int64][]string, error) {
 	rows, err := s.db.Query(
 		`select mhr.model_id, r.name
 		 from model_has_roles mhr
 		 join roles r on r.id = mhr.role_id
+		 join users u on u.id = mhr.model_id
 		 where mhr.model_type = ?`,
 		`App\Models\User`,
 	)
@@ -98,6 +102,26 @@ func (s *Source) FetchUserRoles() (map[int64][]string, error) {
 		out[userID] = append(out[userID], role)
 	}
 	return out, rows.Err()
+}
+
+// CountOrphanedRoleAssignments reports how many model_has_roles rows (for
+// model_type='App\Models\User') point at a user id that no longer exists in
+// users -- a hard-deleted user whose Spatie role assignment was never
+// cleaned up. Counted once here, independent of which role each orphaned
+// row holds, so the report's line for it reflects every such row rather
+// than only the ones a later step happens to iterate (duty assignment
+// derivation only looks at roles with a duty equivalent, which used to
+// make this undercount).
+func (s *Source) CountOrphanedRoleAssignments() (int, error) {
+	var n int
+	err := s.db.QueryRow(
+		`select count(*)
+		 from model_has_roles mhr
+		 left join users u on u.id = mhr.model_id
+		 where mhr.model_type = ? and u.id is null`,
+		`App\Models\User`,
+	).Scan(&n)
+	return n, err
 }
 
 // FetchManagementStaff reads the live schema's small management_staff table

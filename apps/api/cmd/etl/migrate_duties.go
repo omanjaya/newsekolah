@@ -67,16 +67,13 @@ func (st *Store) migrateDutyAssignments(
 				continue // role has no duty equivalent -- not a row this table tracks
 			}
 			stat.Read++
-			// The live database has orphaned model_has_roles rows whose
-			// model_id no longer exists in users (a hard-deleted user whose
-			// role assignment was never cleaned up -- confirmed present for
-			// some Picket rows). Report these explicitly rather than
-			// silently dropping them, since "user not migrated" would
-			// wrongly imply an identity-migration failure that never
-			// happened.
+			// userRoles only ever contains role assignments FetchUserRoles
+			// already joined against a real users row (see its doc
+			// comment), so this is a defensive check, not the orphan path
+			// -- orphaned model_has_roles rows are counted once, in
+			// aggregate, by recordDutyGaps instead.
 			user, ok := users[userID]
 			if !ok {
-				stat.RecordFailure(fmt.Sprintf("%d", userID), "user id has no corresponding row in the source users table (orphaned role assignment)")
 				continue
 			}
 			_ = st.upsertDutyAssignment(ctx, tenantID, academicYearID, dutyIDs[slug], user.targetUserID, nil, startsOn, stat, userID)
@@ -158,11 +155,14 @@ func (st *Store) upsertDutyAssignment(
 // would leave the Postgres connection idle waiting on MySQL, exactly what
 // reading the source fully into memory before opening the transaction (see
 // docs/13-etl-sion.md) avoids.
-func recordDutyGaps(classOfBKCount, bkOnDutyCount int, stat *TableStat) {
+func recordDutyGaps(classOfBKCount, bkOnDutyCount, orphanedRoleAssignments int, stat *TableStat) {
 	if classOfBKCount > 0 {
 		stat.RecordGap(fmt.Sprintf("class_of_bks: %d class-level BK assignment(s) have no equivalent -- counselor duty is school-scoped in the target schema", classOfBKCount))
 	}
 	if bkOnDutyCount > 0 {
 		stat.RecordGap(fmt.Sprintf("bk_on_dutis: %d BK duty-day record(s) have no equivalent column in duty_assignments", bkOnDutyCount))
+	}
+	if orphanedRoleAssignments > 0 {
+		stat.RecordGap(fmt.Sprintf("model_has_roles: %d row(s) assign a role to a user id that no longer exists in the source (orphaned role assignment); none migrated", orphanedRoleAssignments))
 	}
 }
