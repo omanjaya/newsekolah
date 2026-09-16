@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/omanjaya/newsekolah/apps/api/cmd/etl/mapping"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 )
 
@@ -52,7 +53,12 @@ func migrate(ctx context.Context, cfg Config, source *Source, pool *pgxpool.Pool
 	logger.Info("resolved schedule version for migrated year",
 		"id", scheduleVersion.ID, "name", scheduleVersion.Name, "status", scheduleVersion.Status)
 
-	data, err := fetchAll(source, sourceYearID, scheduleVersion.ID)
+	tenantLocation, err := loadTenantLocation(ctx, pool, tenantID)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := fetchAll(source, sourceYearID, scheduleVersion.ID, yearStartDate, yearEndDate)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +66,7 @@ func migrate(ctx context.Context, cfg Config, source *Source, pool *pgxpool.Pool
 	report := NewReport(clk, cfg.TenantSlug, fmt.Sprintf("%s %s", cfg.SourceYear, cfg.SourceSemester), cfg.DryRun)
 
 	err = runInTransaction(ctx, pool, tenantID, cfg.DryRun, func(st *Store) error {
-		return runMigrationSteps(ctx, st, tenantID, cfg, source, sourceYearID, semester, yearStartDate, yearEndDate, scheduleVersion, data, report)
+		return runMigrationSteps(ctx, st, tenantID, cfg, source, sourceYearID, semester, yearStartDate, yearEndDate, scheduleVersion, tenantLocation, data, report)
 	})
 	if err != nil {
 		return nil, fmt.Errorf("migration transaction: %w", err)
@@ -69,6 +75,23 @@ func migrate(ctx context.Context, cfg Config, source *Source, pool *pgxpool.Pool
 	report.Finish()
 	logger.Info("etl migration finished", "tenant", cfg.TenantSlug, "dry_run", cfg.DryRun)
 	return report, nil
+}
+
+// loadTenantLocation reads the target tenant's configured IANA timezone
+// (tenants.timezone, default 'Asia/Makassar') so mapping.LocalToUTC can
+// reinterpret a naive timestamp read from the source (see source.go's
+// parseTime=true&loc=UTC doc comment) as tenant wall-clock time instead of
+// leaving it mislabelled UTC.
+func loadTenantLocation(ctx context.Context, pool *pgxpool.Pool, tenantID uuid.UUID) (*time.Location, error) {
+	var tz string
+	if err := pool.QueryRow(ctx, `select timezone from tenants where id = $1`, tenantID).Scan(&tz); err != nil {
+		return nil, fmt.Errorf("load tenant timezone: %w", err)
+	}
+	loc, err := time.LoadLocation(tz)
+	if err != nil {
+		return nil, fmt.Errorf("tenant timezone %q: %w", tz, err)
+	}
+	return loc, nil
 }
 
 // resolveTenantID looks up the target tenant by slug directly (tenants has
@@ -124,22 +147,51 @@ func parseSourceSemester(semester string) (int, error) {
 // migration steps never touch the MySQL connection (keeping the target
 // transaction's lifetime short and making a dry run's cost predictable).
 type sourceData struct {
-	users               []SionUser
-	userRoles           map[int64][]string
-	managementStaff     map[int64]string
-	classes             []SionClass
-	subjects            []SionSubject
-	rooms               []SionRoom
-	enrollments         []SionEnrollment
-	teachingAssignments []SionTeachingAssignment
-	classAdministrators []SionClassAdministrator
-	classOfBKCount      int
-	bkOnDutyCount       int
-	periods             []SionPeriod
-	schedules           []SionSchedule
+	users                   []SionUser
+	userRoles               map[int64][]string
+	managementStaff         map[int64]string
+	orphanedRoleAssignments int
+	classes                 []SionClass
+	subjects                []SionSubject
+	rooms                   []SionRoom
+	enrollments             []SionEnrollment
+	teachingAssignments     []SionTeachingAssignment
+	classAdministrators     []SionClassAdministrator
+	classOfBKCount          int
+	bkOnDutyCount           int
+	periods                 []SionPeriod
+	schedules               []SionSchedule
+
+	attendanceSessions []SionAttendanceSession
+	attendanceEntries  map[int64][]SionAttendanceEntry
+
+	journals []SionJournal
+
+	violationTypes   []SionViolationType
+	violationRecords []SionViolationRecord
+	suspensionCount  int
+
+	exitPermits           []SionExitPermit
+	exitPermitsNotFinal   int
+	exitPermitsLateType   int
+	leaveRequests         []SionLeaveRequest
+	leaveRequestsNotFinal int
+
+	learningObjectives map[int64]SionLearningObjective
+	grades             []SionGrade
+	reportScores       []SionReportScore
+	previousGrades     []SionPreviousGrade
+	gradePublications  []SionGradePublication
+	starAwards         []SionStarAward
+
+	books           []SionBook
+	bookLoanCodes   map[int64][]string
+	bookLoans       []SionBookLoan
+	libraryVisits   []SionLibraryVisit
+	librarySettings []LibrarySetting
 }
 
-func fetchAll(source *Source, sourceYearID, scheduleVersionID int64) (sourceData, error) {
+func fetchAll(source *Source, sourceYearID, scheduleVersionID int64, yearStartDate, yearEndDate time.Time) (sourceData, error) {
 	var d sourceData
 	var err error
 	steps := []struct {
@@ -149,6 +201,7 @@ func fetchAll(source *Source, sourceYearID, scheduleVersionID int64) (sourceData
 		{"users", func() (e error) { d.users, e = source.FetchUsers(); return }},
 		{"user roles", func() (e error) { d.userRoles, e = source.FetchUserRoles(); return }},
 		{"management staff", func() (e error) { d.managementStaff, e = source.FetchManagementStaff(); return }},
+		{"orphaned role assignments count", func() (e error) { d.orphanedRoleAssignments, e = source.CountOrphanedRoleAssignments(); return }},
 		{"classes", func() (e error) { d.classes, e = source.FetchClasses(sourceYearID); return }},
 		{"subjects", func() (e error) { d.subjects, e = source.FetchSubjects(); return }},
 		{"rooms", func() (e error) { d.rooms, e = source.FetchRooms(); return }},
@@ -162,6 +215,45 @@ func fetchAll(source *Source, sourceYearID, scheduleVersionID int64) (sourceData
 		{"bk on duty count", func() (e error) { d.bkOnDutyCount, e = source.CountBKOnDutyRecords(); return }},
 		{"periods", func() (e error) { d.periods, e = source.FetchPeriods(); return }},
 		{"schedules", func() (e error) { d.schedules, e = source.FetchSchedules(scheduleVersionID); return }},
+
+		{"attendance sessions", func() (e error) { d.attendanceSessions, e = source.FetchAttendanceSessions(sourceYearID); return }},
+		{"attendance entries", func() (e error) { d.attendanceEntries, e = source.FetchAttendanceEntries(sourceYearID); return }},
+
+		{"journals", func() (e error) { d.journals, e = source.FetchJournals(scheduleVersionID); return }},
+
+		{"violation types", func() (e error) { d.violationTypes, e = source.FetchViolationTypes(); return }},
+		{"violation records", func() (e error) { d.violationRecords, e = source.FetchViolationRecords(sourceYearID); return }},
+		{"suspension count", func() (e error) { d.suspensionCount, e = source.CountSuspensions(sourceYearID); return }},
+
+		{"exit permits", func() (e error) {
+			d.exitPermits, e = source.FetchExitPermits(sourceYearID, yearStartDate, yearEndDate)
+			return
+		}},
+		{"exit permits not-final count", func() (e error) {
+			d.exitPermitsNotFinal, d.exitPermitsLateType, e = source.CountExitPermitsNotFinal(sourceYearID, yearStartDate, yearEndDate)
+			return
+		}},
+		{"leave requests", func() (e error) {
+			d.leaveRequests, e = source.FetchLeaveRequests(sourceYearID, yearStartDate, yearEndDate)
+			return
+		}},
+		{"leave requests not-final count", func() (e error) {
+			d.leaveRequestsNotFinal, e = source.CountLeaveRequestsNotFinal(yearStartDate, yearEndDate)
+			return
+		}},
+
+		{"learning objectives", func() (e error) { d.learningObjectives, e = source.FetchLearningObjectives(sourceYearID); return }},
+		{"grades", func() (e error) { d.grades, e = source.FetchGrades(sourceYearID); return }},
+		{"report scores", func() (e error) { d.reportScores, e = source.FetchReportScores(sourceYearID); return }},
+		{"previous grades", func() (e error) { d.previousGrades, e = source.FetchPreviousGrades(sourceYearID); return }},
+		{"grade publications", func() (e error) { d.gradePublications, e = source.FetchGradePublications(sourceYearID); return }},
+		{"classroom star awards", func() (e error) { d.starAwards, e = source.FetchClassroomStarAwards(sourceYearID); return }},
+
+		{"books", func() (e error) { d.books, e = source.FetchBooks(); return }},
+		{"book loan codes", func() (e error) { d.bookLoanCodes, e = source.FetchBookLoanCodesByBook(); return }},
+		{"book loans", func() (e error) { d.bookLoans, e = source.FetchBookLoans(); return }},
+		{"library visits", func() (e error) { d.libraryVisits, e = source.FetchLibraryVisits(); return }},
+		{"library settings", func() (e error) { d.librarySettings, e = source.FetchLibrarySettings(); return }},
 	}
 	for _, step := range steps {
 		if err = step.fn(); err != nil {
@@ -179,7 +271,7 @@ func fetchAll(source *Source, sourceYearID, scheduleVersionID int64) (sourceData
 func runMigrationSteps(
 	ctx context.Context, st *Store, tenantID uuid.UUID, cfg Config, source *Source,
 	sourceYearID int64, semester int, yearStartDate, yearEndDate time.Time, scheduleVersion SionScheduleVersion,
-	d sourceData, report *Report,
+	tenantLocation *time.Location, d sourceData, report *Report,
 ) error {
 	yearStat := report.Table("academic_years")
 	yearStat.Read++
@@ -252,7 +344,7 @@ func runMigrationSteps(
 	if err := st.migrateDutyAssignments(ctx, tenantID, academicYearID, academicYearStartsOn, d.classAdministrators, d.userRoles, d.managementStaff, users, classes, dutyIDs, dutyStat); err != nil {
 		return fmt.Errorf("migrate duty assignments: %w", err)
 	}
-	recordDutyGaps(d.classOfBKCount, d.bkOnDutyCount, dutyStat)
+	recordDutyGaps(d.classOfBKCount, d.bkOnDutyCount, d.orphanedRoleAssignments, dutyStat)
 
 	_, periods, err := st.migratePeriods(ctx, tenantID, cfg.SourceYear, d.periods, report.Table("periods"))
 	if err != nil {
@@ -260,9 +352,102 @@ func runMigrationSteps(
 	}
 
 	taIndex := IndexTeachingAssignmentsByID(d.teachingAssignments)
-	if _, err := st.migrateSchedules(ctx, tenantID, academicYearID, termID, d.schedules, taIndex, users, classes, subjects, periods, report.Table("schedules")); err != nil {
+	scheduleIDs, err := st.migrateSchedules(ctx, tenantID, academicYearID, termID, d.schedules, taIndex, users, classes, subjects, periods, report.Table("schedules"))
+	if err != nil {
 		return fmt.Errorf("migrate schedules: %w", err)
 	}
 
+	attendanceSessions, err := st.migrateAttendanceSessions(
+		ctx, tenantID, academicYearID, d.attendanceSessions, scheduleIDs, users, classes, subjects, periods, tenantLocation,
+		report.Table("attendance_sessions"),
+	)
+	if err != nil {
+		return fmt.Errorf("migrate attendance sessions: %w", err)
+	}
+	if err := st.migrateAttendanceEntries(ctx, tenantID, d.attendanceEntries, attendanceSessions, users, report.Table("attendance_entries")); err != nil {
+		return fmt.Errorf("migrate attendance entries: %w", err)
+	}
+
+	if err := st.migrateJournals(ctx, tenantID, academicYearID, d.journals, users, classes, subjects, attendanceSessions, report.Table("class_journals")); err != nil {
+		return fmt.Errorf("migrate journals: %w", err)
+	}
+
+	violationTypes, err := st.migrateViolationTypes(ctx, tenantID, d.violationTypes, report.Table("violation_types"))
+	if err != nil {
+		return fmt.Errorf("migrate violation types: %w", err)
+	}
+	if err := st.migrateViolationRecords(ctx, tenantID, academicYearID, d.violationRecords, users, violationTypes, report.Table("violation_records")); err != nil {
+		return fmt.Errorf("migrate violation records: %w", err)
+	}
+	recordSuspensionGap(d.suspensionCount, report.Table("suspensions"))
+
+	userNames := indexUserNames(d.users)
+
+	exitPermitStat := report.Table("exit_permits")
+	if err := st.migrateExitPermits(ctx, tenantID, academicYearID, d.exitPermits, users, userNames, classes, periods, tenantLocation, exitPermitStat); err != nil {
+		return fmt.Errorf("migrate exit permits: %w", err)
+	}
+	if d.exitPermitsNotFinal > 0 {
+		exitPermitStat.RecordGap(fmt.Sprintf(
+			"student_permits: %d row(s) not migrated -- still mid-flow (status approved/out), %d of those also excluded as permit_type 'late'",
+			d.exitPermitsNotFinal, d.exitPermitsLateType,
+		))
+	}
+
+	leaveRequestStat := report.Table("leave_requests")
+	if err := st.migrateLeaveRequests(ctx, tenantID, academicYearID, d.leaveRequests, users, userNames, classes, tenantLocation, leaveRequestStat); err != nil {
+		return fmt.Errorf("migrate leave requests: %w", err)
+	}
+	if d.leaveRequestsNotFinal > 0 {
+		leaveRequestStat.RecordGap(fmt.Sprintf("permits: %d row(s) not migrated -- still mid-flow (awaiting homeroom teacher's or counselor's decision)", d.leaveRequestsNotFinal))
+	}
+
+	componentStat := report.Table("assessment_components")
+	components, err := st.migrateAssessmentComponents(ctx, tenantID, academicYearID, termID, d.grades, d.learningObjectives, users, classes, subjects, componentStat)
+	if err != nil {
+		return fmt.Errorf("migrate assessment components: %w", err)
+	}
+	if err := st.migrateGrades(ctx, tenantID, d.grades, components, d.learningObjectives, users, report.Table("grades")); err != nil {
+		return fmt.Errorf("migrate grades: %w", err)
+	}
+
+	previousGrades := indexPreviousGrades(d.previousGrades)
+	if err := st.migrateReportScores(ctx, tenantID, academicYearID, termID, d.reportScores, previousGrades, users, classes, subjects, report.Table("report_scores")); err != nil {
+		return fmt.Errorf("migrate report scores: %w", err)
+	}
+	if err := st.migrateGradePublications(ctx, tenantID, academicYearID, termID, d.gradePublications, users, classes, subjects, report.Table("grade_publications")); err != nil {
+		return fmt.Errorf("migrate grade publications: %w", err)
+	}
+	if err := st.migrateStarAwards(ctx, tenantID, academicYearID, d.starAwards, users, classes, subjects, report.Table("star_events")); err != nil {
+		return fmt.Errorf("migrate star awards: %w", err)
+	}
+
+	libraryTitles, err := st.migrateLibraryTitles(ctx, tenantID, d.books, report.Table("library_titles"))
+	if err != nil {
+		return fmt.Errorf("migrate library titles: %w", err)
+	}
+	libraryCopies, err := st.migrateLibraryCopies(ctx, tenantID, d.books, libraryTitles, d.bookLoanCodes, report.Table("library_copies"))
+	if err != nil {
+		return fmt.Errorf("migrate library copies: %w", err)
+	}
+	if err := st.migrateBookLoans(ctx, tenantID, d.bookLoans, libraryTitles, libraryCopies, users, tenantLocation, report.Table("library_loans")); err != nil {
+		return fmt.Errorf("migrate book loans: %w", err)
+	}
+	if err := st.migrateLibraryVisits(ctx, tenantID, d.libraryVisits, users, tenantLocation, report.Table("library_visits")); err != nil {
+		return fmt.Errorf("migrate library visits: %w", err)
+	}
+	recordLibrarySettingsGap(d.librarySettings, report.Table("library_settings"))
+
 	return nil
+}
+
+// indexUserNames builds a source user id -> cleaned display name lookup,
+// for report snapshot columns (e.g. exit_permits.student_name_snapshot)
+// that need a name rather than a foreign key.
+func indexUserNames(users []SionUser) map[int64]string {
+	out := make(map[int64]string, len(users))
+	for _, u := range users {
+		out[u.ID] = mapping.CleanName(u.Name)
+	}
+	return out
 }
