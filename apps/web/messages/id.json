@@ -197,7 +197,39 @@
         "save": "Simpan pengaturan"
       },
       "branding": {
-        "navLabel": "Merek Sekolah"
+        "navLabel": "Merek Sekolah",
+        "eyebrow": "Pengaturan",
+        "title": "Merek Sekolah",
+        "identityTitle": "Identitas",
+        "nameLabel": "Nama sekolah",
+        "nameRequiredError": "Nama sekolah wajib diisi.",
+        "shortNameLabel": "Nama singkat",
+        "shortNamePlaceholder": "Muncul di ruang sempit seperti tab bar",
+        "taglineLabel": "Tagline",
+        "taglinePlaceholder": "Kalimat pendek di bawah nama sekolah",
+        "accentColorLabel": "Warna aksen",
+        "accentColorHint": "Dipakai untuk tombol utama, tautan, dan fokus di seluruh aplikasi.",
+        "accentColorError": "Warna aksen harus kode heksadesimal 6 digit, contoh #1F3A5F.",
+        "saved": "Perubahan merek tersimpan",
+        "save": "Simpan perubahan",
+        "logo": {
+          "title": "Logo",
+          "previewAlt": "Logo sekolah",
+          "none": "Belum ada",
+          "change": "Ganti logo",
+          "hint": "PNG, WebP, atau SVG, maksimal 2 MB.",
+          "uploading": "Mengunggah... {percent}%",
+          "updated": "Logo diperbarui"
+        },
+        "favicon": {
+          "title": "Favicon",
+          "previewAlt": "Favicon sekolah",
+          "none": "Belum ada",
+          "change": "Ganti favicon",
+          "hint": "PNG, WebP, atau SVG, maksimal 512 KB.",
+          "uploading": "Mengunggah... {percent}%",
+          "updated": "Favicon diperbarui"
+        }
       }
     },
     "forbidden": {

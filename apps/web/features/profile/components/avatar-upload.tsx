@@ -6,10 +6,10 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useRef, useState } from "react";
 
+import { uploadToPresignedUrl } from "../../../lib/api/presigned-upload";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSession } from "../../../lib/session/session-provider";
 import { useConfirmAvatarUploadMutation, useRequestAvatarUploadMutation } from "../api";
-import { uploadToPresignedUrl } from "../lib/avatar-upload";
 
 // Mirrors apps/api's allowedAvatarTypes and defaultAvatarMaxBytes
 // (profile_admin.go): checking here first saves a round trip for the

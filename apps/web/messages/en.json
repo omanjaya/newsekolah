@@ -197,7 +197,39 @@
         "save": "Save settings"
       },
       "branding": {
-        "navLabel": "School Branding"
+        "navLabel": "School Branding",
+        "eyebrow": "Settings",
+        "title": "School Branding",
+        "identityTitle": "Identity",
+        "nameLabel": "School name",
+        "nameRequiredError": "School name is required.",
+        "shortNameLabel": "Short name",
+        "shortNamePlaceholder": "Shown in tight spaces like the tab bar",
+        "taglineLabel": "Tagline",
+        "taglinePlaceholder": "A short line under the school name",
+        "accentColorLabel": "Accent color",
+        "accentColorHint": "Used for primary buttons, links, and focus across the whole app.",
+        "accentColorError": "Accent color must be a 6-digit hex code, e.g. #1F3A5F.",
+        "saved": "Branding changes saved",
+        "save": "Save changes",
+        "logo": {
+          "title": "Logo",
+          "previewAlt": "School logo",
+          "none": "None yet",
+          "change": "Change logo",
+          "hint": "PNG, WebP, or SVG, up to 2 MB.",
+          "uploading": "Uploading... {percent}%",
+          "updated": "Logo updated"
+        },
+        "favicon": {
+          "title": "Favicon",
+          "previewAlt": "School favicon",
+          "none": "None yet",
+          "change": "Change favicon",
+          "hint": "PNG, WebP, or SVG, up to 512 KB.",
+          "uploading": "Uploading... {percent}%",
+          "updated": "Favicon updated"
+        }
       }
     },
     "forbidden": {
