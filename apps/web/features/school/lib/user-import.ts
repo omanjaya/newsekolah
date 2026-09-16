@@ -1,5 +1,5 @@
 import { ApiError, type components } from "@newsekolah/api-client";
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 
 import { getAccessToken } from "../../../lib/api/access-token";
 import { API_URL } from "../../../lib/env";
@@ -98,12 +98,12 @@ export async function downloadUserImportTemplate(): Promise<void> {
 }
 
 /** One data cell as the plain string every UserImportRow field expects. */
-function cellToString(value: unknown): string {
-  if (value === undefined || value === null) return "";
+function cellToString(value: ExcelJS.CellValue): string {
+  if (value === null || value === undefined) return "";
   if (value instanceof Date) {
-    // cellDates:true turns any date-formatted cell into a JS Date already
-    // in local time as Excel displayed it; format as YYYY-MM-DD in UTC
-    // fields to avoid a day shifting across a timezone boundary.
+    // A date-formatted cell comes back as a JS Date already in local time
+    // as Excel displayed it; format as YYYY-MM-DD in UTC fields to avoid a
+    // day shifting across a timezone boundary.
     const y = value.getUTCFullYear();
     const m = String(value.getUTCMonth() + 1).padStart(2, "0");
     const d = String(value.getUTCDate()).padStart(2, "0");
@@ -111,9 +111,20 @@ function cellToString(value: unknown): string {
   }
   if (typeof value === "string") return value.trim();
   if (typeof value === "number" || typeof value === "boolean") return String(value);
-  // xlsx only ever produces string/number/boolean/Date cells for a sheet
-  // read without raw formula objects; anything else is not a cell value
-  // this template's columns can hold.
+  if (typeof value === "object") {
+    // A formula cell ({formula, result}) or a hyperlink ({text,
+    // hyperlink}): use the computed/display text rather than the formula
+    // source or the URL. Rich text ({richText: [...]}) is joined back into
+    // plain text; the template's own columns never need the formatting.
+    if ("result" in value) return cellToString(value.result);
+    if ("text" in value && typeof value.text === "string") return value.text.trim();
+    if ("richText" in value && Array.isArray(value.richText)) {
+      return value.richText
+        .map((part) => part.text)
+        .join("")
+        .trim();
+    }
+  }
   return "";
 }
 
@@ -136,46 +147,41 @@ export interface ParsedImportFile {
  * an admin left a stray note column in the sheet.
  */
 export async function parseUserImportFile(file: File): Promise<ParsedImportFile> {
-  let workbook: XLSX.WorkBook;
+  const workbook = new ExcelJS.Workbook();
   try {
     const buffer = await file.arrayBuffer();
-    workbook = XLSX.read(buffer, { type: "array", cellDates: true });
+    await workbook.xlsx.load(buffer);
   } catch {
     return { rows: [], fileError: "unreadable" };
   }
 
-  const sheetName = workbook.SheetNames.includes(IMPORT_DATA_SHEET)
-    ? IMPORT_DATA_SHEET
-    : workbook.SheetNames[0];
-  if (!sheetName) {
-    return { rows: [], fileError: "no-sheet" };
-  }
-  const sheet = workbook.Sheets[sheetName];
-  if (!sheet) {
-    return { rows: [], fileError: "no-sheet" };
-  }
-  const grid = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, defval: "" });
-  if (grid.length === 0) {
-    return { rows: [], fileError: "empty" };
+  const worksheet = workbook.getWorksheet(IMPORT_DATA_SHEET) ?? workbook.worksheets[0];
+  if (!worksheet || worksheet.rowCount < 2) {
+    return { rows: [], fileError: worksheet ? "empty" : "no-sheet" };
   }
 
-  const headers = (grid[0] ?? []).map((h) => cellToString(h));
+  const headers: string[] = [];
+  worksheet.getRow(1).eachCell({ includeEmpty: true }, (cell, colNumber) => {
+    headers[colNumber] = cellToString(cell.value);
+  });
   const knownFieldSet = new Set<string>(ROW_FIELDS);
-  const rows: UserImportRow[] = [];
 
-  for (let excelRowIndex = 1; excelRowIndex < grid.length; excelRowIndex++) {
-    const values = grid[excelRowIndex] ?? [];
+  const rows: UserImportRow[] = [];
+  worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+    if (rowNumber === 1) return;
+
     const cells: Record<string, string> = {};
-    headers.forEach((header, columnIndex) => {
-      if (knownFieldSet.has(header)) {
-        cells[header] = cellToString(values[columnIndex]);
+    row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+      const header = headers[colNumber];
+      if (header && knownFieldSet.has(header)) {
+        cells[header] = cellToString(cell.value);
       }
     });
     const isBlankRow = Object.values(cells).every((v) => v === "");
-    if (isBlankRow) continue;
+    if (isBlankRow) return;
 
-    const row: UserImportRow = {
-      row_number: excelRowIndex + 1, // 1-based Excel row, so an error message can point back at the sheet.
+    const importRow: UserImportRow = {
+      row_number: rowNumber, // The actual Excel row, so an error message can point back at the sheet.
       name: cells.name ?? "",
       profile_kind: (cells.profile_kind ?? "") as UserImportRow["profile_kind"],
       role_slug: cells.role_slug ?? "",
@@ -183,10 +189,10 @@ export async function parseUserImportFile(file: File): Promise<ParsedImportFile>
     for (const f of ROW_FIELDS) {
       if (f === "name" || f === "profile_kind" || f === "role_slug") continue;
       const value = cells[f];
-      if (value) row[f] = value;
+      if (value) importRow[f] = value;
     }
-    rows.push(row);
-  }
+    rows.push(importRow);
+  });
 
   if (rows.length === 0) {
     return { rows: [], fileError: "empty" };
