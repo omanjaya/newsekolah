@@ -16,6 +16,7 @@
     "api:gen": "pnpm --filter @newsekolah/api-client generate",
     "openapi:bundle": "node openapi/bundle.mjs",
     "openapi:check": "node openapi/bundle.mjs --check",
+    "api:coverage": "node scripts/api-coverage.mjs",
     "dev:docker": "docker compose -f infra/docker/docker-compose.dev.yml up --build",
     "dev:docker:down": "docker compose -f infra/docker/docker-compose.dev.yml down",
     "dev:docker:seed": "docker compose -f infra/docker/docker-compose.dev.yml run --rm seed",

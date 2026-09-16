@@ -6,17 +6,17 @@ Posisi terakhir: 16 September 2026.
 
 ## Ringkasan
 
-Logika backend sudah setara atau lebih baik dari SION di semua modul, dan sudah diverifikasi terhadap database Postgres sungguhan. Layar web untuk kemampuan baru itu juga sudah dibangun. Yang tersisa adalah satu fase uji menyeluruh di browser.
+Logika backend sudah setara atau lebih baik dari SION di semua modul, dan sudah diverifikasi terhadap database Postgres sungguhan. Layar web menyusul sebagian besar kemampuan itu dan sudah dibuka satu per satu di aplikasi yang berjalan. Yang tersisa: 46 operasi API masih belum punya layar, dan alur panjang belum dicoba sampai tuntas.
 
-| Bagian                                  | Status                               |
-| --------------------------------------- | ------------------------------------ |
-| Perbandingan fitur SION dan newsekolah  | Selesai, 72 fitur                    |
-| Perbaikan logika backend di semua modul | Selesai                              |
-| Review independen atas perbaikan        | Selesai, 27 temuan, semua diperbaiki |
-| Verifikasi dengan database sungguhan    | Selesai                              |
-| Layar presensi disambungkan ke API baru | Selesai                              |
-| Layar untuk fitur backend baru lainnya  | Selesai                              |
-| Uji menyeluruh di browser               | Belum, ini pekerjaan berikutnya      |
+| Bagian                                  | Status                                 |
+| --------------------------------------- | -------------------------------------- |
+| Perbandingan fitur SION dan newsekolah  | Selesai, 72 fitur                      |
+| Perbaikan logika backend di semua modul | Selesai                                |
+| Review independen atas perbaikan        | Selesai, 27 temuan, semua diperbaiki   |
+| Verifikasi dengan database sungguhan    | Selesai                                |
+| Layar presensi disambungkan ke API baru | Selesai                                |
+| Layar untuk fitur backend baru lainnya  | Sebagian, 46 operasi belum terjangkau  |
+| Uji menyeluruh di browser               | Sebagian, tiap layar baru sudah dibuka |
 
 ## Bagaimana pekerjaan ini berjalan
 
@@ -43,6 +43,7 @@ Dampak di kode, dihitung dari commit `cb4a908`:
 - `go test ./...` tanpa `-short` lulus, termasuk test integrasi berbasis testcontainers.
 - `pnpm --filter web typecheck` bersih dan `pnpm --filter web lint` tanpa error.
 - Layar presensi dilihat langsung dari aplikasi yang berjalan: tampilan guru pada hari sekolah dan tampilan admin yang tidak mengajar.
+- Seluruh layar baru dibuka satu per satu di aplikasi yang berjalan pada 16 September 2026. Semuanya tampil tanpa error, dan lima cacat yang ditemukan sudah diperbaiki: halaman impor koleksi gagal 500 karena dependensi belum terpasang di container, satu tombol menampilkan kunci terjemahan mentah, tiga label jenis kunjungan hilang, judul histogram masih menulis UTC, dan komponen kartu membungkus tombol di dalam tombol sehingga memicu galat hydration.
 
 ## Keputusan yang diambil
 
@@ -68,11 +69,23 @@ Keputusan ini sengaja. Jangan diubah balik tanpa membaca alasannya.
 
 Diurutkan dari yang paling berdampak bagi pengguna.
 
-### 1. Uji di browser
+### 1. Layar untuk endpoint yang belum terjangkau
 
-Ini pekerjaan berikutnya. Pemilik produk ingin semua layar selesai lebih dulu, dan syarat itu kini terpenuhi, jadi jalankan satu fase uji menyeluruh terhadap `pnpm dev:docker` dengan data demo.
+`pnpm api:coverage` membandingkan tiap operasi di OpenAPI dengan pemanggilnya di `apps/web`. Per 16 September 2026 ada 46 operasi tanpa layar, jadi kemampuannya ada di API tetapi tidak bisa dijangkau pengguna. Tiga puluh tujuh di antaranya milik perpustakaan.
 
-Belum satu pun dari layar baru berikut pernah diklik dengan peran yang tepat, karena gerbang pengerjaannya hanya typecheck dan lint:
+| Kelompok                | Yang belum ada layarnya                                                                                                                                                      |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Sirkulasi cepat pustaka | Typeahead anggota dan eksemplar, pinjam batch, kembali lewat barcode, daftar telat rinci, kirim pengingat, buku paket kelas                                                  |
+| Master data pustaka     | Jenis bahan, sumber perolehan, mitra, kelas DDC, opsi katalog, aturan pinjam berjangka                                                                                       |
+| Laporan pustaka         | Ringkasan akreditasi, kunjungan, anggota, buku induk, beserta ekspor XLSX, dan dashboard modul                                                                               |
+| Lainnya di pustaka      | Cek duplikat ISBN, cari eksemplar, ubah status massal, reservasi mandiri anggota                                                                                             |
+| Di luar pustaka         | Daftar sesi dan perangkat, template dan nomor surat peringatan, laporan presensi lingkup sendiri, pemilih guru pengganti, pemilih pegawai untuk tugas tambahan, sorotan OPAC |
+
+Satu operasi sengaja dibiarkan: `GET /v1/tenants/lookup` untuk mencari sekolah saat masuk, yang baru berguna pada mode multi-sekolah.
+
+### 2. Uji di browser
+
+Setiap layar baru sudah dibuka sekali dan hasilnya tercatat di bagian "Yang terverifikasi". Yang belum dicoba adalah alurnya sampai tuntas, dengan data dan peran yang tepat:
 
 - Perpustakaan: anggota, denda, import koleksi, label batch, kunjungan dan kiosk, lookup ISBN, ekspor.
 - Kesiswaan: kandidat surat peringatan, pencatatan pelanggaran banyak sekaligus, lampiran dan topik konseling, laporan PDF siswa.
@@ -84,7 +97,7 @@ Uji ini butuh akun dengan peran wali kelas, guru BK, pustakawan, dan admin. Data
 
 Satu hal yang paling perlu dibuktikan di browser: pembacaan berkas XLSX untuk import koleksi dan import user berjalan di sisi klien memakai `exceljs`, dan itu belum pernah dijalankan sungguhan.
 
-### 2. Pekerjaan yang ditunda
+### 3. Pekerjaan yang ditunda
 
 | Item                                                  | Keadaan sekarang                                                                                            |
 | ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
@@ -97,7 +110,7 @@ Satu hal yang paling perlu dibuktikan di browser: pembacaan berkas XLSX untuk im
 | Import user untuk memperbarui user yang sudah ada     | Baru mendukung pembuatan user baru                                                                          |
 | Validasi skema OpenAPI di middleware                  | Tidak ada. Batas panjang field harus ditegakkan manual per modul, dan baru sebagian modul yang melakukannya |
 
-### 3. Risiko terbuka
+### 4. Risiko terbuka
 
 - **Repo belum punya remote git.** Seluruh commit hanya ada di satu mesin, tanpa cadangan. Pasang remote dan push sebelum pekerjaan berikutnya.
 
@@ -111,6 +124,12 @@ docker run -d --name nsk-check -e POSTGRES_PASSWORD=pw -e POSTGRES_DB=newsekolah
 
 ```bash
 cd apps/api && DATABASE_URL='postgres://postgres:pw@localhost:55433/newsekolah?sslmode=disable' JWT_SIGNING_KEY="$(openssl rand -hex 32)" DOCUMENT_SIGNING_KEY="$(openssl rand -hex 32)" SEED_DEMO=true go run ./cmd/migrate up && go run ./cmd/seed
+```
+
+Mencari kemampuan API yang belum punya layar:
+
+```bash
+pnpm api:coverage
 ```
 
 Test penuh, termasuk test integrasi. Butuh Docker aktif, dan jangan pakai `-short`:
