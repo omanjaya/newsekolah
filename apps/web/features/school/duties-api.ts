@@ -67,6 +67,21 @@ export function useReplaceDutyPermissionsMutation() {
   });
 }
 
+/**
+ * GET /v1/staff-options: active teachers and staff, matched by `search`.
+ * Backs the duty-assignment form's assignee field instead of the whole
+ * directory (which also lists students and parents, filtered out
+ * client-side today).
+ */
+export function useStaffOptionsQuery(search: string) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: ["staff-options", search] as const,
+    queryFn: () =>
+      client.GET("/v1/staff-options", { params: { query: { search: search || undefined } } }),
+  });
+}
+
 export function useDutyAssignmentsQuery() {
   const client = useApiClient();
   const year = useActiveYear();

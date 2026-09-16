@@ -18,6 +18,8 @@ export {
 export { createDuplicateScanGuard, type DuplicateScanGuard } from "./hooks/duplicate-scan-guard.js";
 export { Textarea, type TextareaProps } from "./components/textarea.js";
 export { Select, type SelectOption, type SelectProps } from "./components/select.js";
+export { Combobox, type ComboboxOption, type ComboboxProps } from "./components/combobox.js";
+export { useDebouncedCallback } from "./components/data-table/use-debounced-callback.js";
 export { Checkbox, type CheckboxProps } from "./components/checkbox.js";
 export { Switch, type SwitchProps } from "./components/switch.js";
 export {

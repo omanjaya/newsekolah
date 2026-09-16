@@ -22,6 +22,7 @@ export type CounselingVisibility = components["schemas"]["CounselingVisibility"]
 export type CounselingWrite = components["schemas"]["CounselingWrite"];
 export type Counseling = components["schemas"]["Counseling"];
 export type CounselingAttachment = components["schemas"]["CounselingAttachment"];
+export type WarningLetterTemplatePolicy = components["schemas"]["WarningLetterTemplatePolicy"];
 
 /**
  * Query keys local to this feature (not added to the shared
@@ -32,6 +33,7 @@ const keys = {
   violationTypes: (includeInactive: boolean) =>
     ["discipline", "violation-types", includeInactive] as const,
   policy: () => ["discipline", "policy"] as const,
+  warningLetterTemplate: () => ["discipline", "warning-letter-template"] as const,
   violations: (params: { classId: string; from: string; to: string; includeVoided: boolean }) =>
     ["discipline", "violations", params] as const,
   studentDiscipline: (studentId: string) => ["discipline", "student", studentId] as const,
@@ -120,6 +122,27 @@ export function useUpdateDisciplinePolicyMutation() {
   return useMutation({
     mutationFn: (levels: SPLevel[]) => client.PUT("/v1/discipline/policy", { body: { levels } }),
     onSuccess: invalidate,
+  });
+}
+
+/** GET /v1/discipline/warning-letter-template: numbering pattern and letter wording. */
+export function useWarningLetterTemplateQuery() {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: keys.warningLetterTemplate(),
+    queryFn: () => client.GET("/v1/discipline/warning-letter-template"),
+  });
+}
+
+export function useUpdateWarningLetterTemplateMutation() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (policy: WarningLetterTemplatePolicy) =>
+      client.PUT("/v1/discipline/warning-letter-template", { body: policy }),
+    onSuccess: (result) => {
+      queryClient.setQueryData(keys.warningLetterTemplate(), result);
+    },
   });
 }
 

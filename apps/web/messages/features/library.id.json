@@ -139,7 +139,19 @@
     "eyebrow": "Perpustakaan",
     "title": "Anggota",
     "register": "Daftarkan anggota",
-    "bulkRegister": "Daftar massal",
+    "bulkRegister": {
+      "title": "Daftar anggota massal",
+      "description": "Mendaftarkan setiap pengguna pada peran ini yang belum menjadi anggota.",
+      "role": "Peran",
+      "classOptional": "Kelas (opsional)",
+      "classAll": "Semua kelas",
+      "memberType": "Jenis anggota",
+      "memberTypePlaceholder": "Pilih jenis anggota",
+      "cancel": "Batal",
+      "submit": "Daftarkan",
+      "resultSummary": "{registered} anggota terdaftar, {failed} gagal",
+      "close": "Tutup"
+    },
     "registered": "Anggota terdaftar",
     "searchPlaceholder": "Cari nama atau nomor anggota",
     "unknownUser": "Pengguna tidak dikenali",
@@ -190,19 +202,6 @@
       "notes": "Catatan",
       "cancel": "Batal",
       "submit": "Daftarkan"
-    },
-    "bulkRegister": {
-      "title": "Daftar anggota massal",
-      "description": "Mendaftarkan setiap pengguna pada peran ini yang belum menjadi anggota.",
-      "role": "Peran",
-      "classOptional": "Kelas (opsional)",
-      "classAll": "Semua kelas",
-      "memberType": "Jenis anggota",
-      "memberTypePlaceholder": "Pilih jenis anggota",
-      "cancel": "Batal",
-      "submit": "Daftarkan",
-      "resultSummary": "{registered} anggota terdaftar, {failed} gagal",
-      "close": "Tutup"
     }
   },
   "memberTypes": {
@@ -281,7 +280,14 @@
     "eyebrow": "Perpustakaan",
     "title": "Pelanggaran dan denda",
     "record": "Catat pelanggaran",
-    "settle": "Selesaikan",
+    "settle": {
+      "title": "Selesaikan pelanggaran",
+      "description": "Menyelesaikan sebagai lunas atau dibebaskan. Anggota yang sedang ditangguhkan akan aktif kembali begitu semua pelanggarannya selesai.",
+      "waive": "Bebaskan",
+      "markPaid": "Tandai lunas",
+      "settledPaid": "Pelanggaran ditandai lunas",
+      "settledWaived": "Pelanggaran dibebaskan"
+    },
     "unknownMember": "Anggota tidak dikenali",
     "noMatchTitle": "Tidak ada pelanggaran yang cocok",
     "noMatchBody": "Coba ubah filter jenis atau status.",
@@ -333,14 +339,6 @@
       "notes": "Catatan",
       "cancel": "Batal",
       "submit": "Simpan"
-    },
-    "settle": {
-      "title": "Selesaikan pelanggaran",
-      "description": "Menyelesaikan sebagai lunas atau dibebaskan. Anggota yang sedang ditangguhkan akan aktif kembali begitu semua pelanggarannya selesai.",
-      "waive": "Bebaskan",
-      "markPaid": "Tandai lunas",
-      "settledPaid": "Pelanggaran ditandai lunas",
-      "settledWaived": "Pelanggaran dibebaskan"
     }
   },
   "import": {
@@ -626,7 +624,11 @@
     "available": "Tersedia",
     "unavailable": "Sedang dipinjam semua",
     "emptyTitle": "Tidak ditemukan",
-    "emptyBody": "Coba kata kunci lain."
+    "emptyBody": "Coba kata kunci lain.",
+    "highlights": {
+      "newest": "Terbaru",
+      "mostBorrowed": "Paling banyak dipinjam"
+    }
   },
   "kiosk": {
     "navLabel": "Kios mandiri",

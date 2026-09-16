@@ -14,6 +14,7 @@ export type SaveEntriesRequest = components["schemas"]["SaveAttendanceEntriesReq
 export type CalendarDay = components["schemas"]["AttendanceCalendarDay"];
 export type RosterEntry = components["schemas"]["AttendanceRosterEntry"];
 export type DailyReport = components["schemas"]["AttendanceDailyReport"];
+export type OwnDailyReportSession = components["schemas"]["AttendanceDailyReportSession"];
 
 export interface TodaySessionsFilter {
   date: string;
@@ -144,6 +145,21 @@ export function useMonthlyAttendanceSummaryQuery(studentId: string, month: strin
         params: { query: { student_id: studentId, month } },
       }),
     enabled: enabled && studentId !== "" && month !== "",
+  });
+}
+
+/**
+ * GET /v1/attendance/reports/daily/mine: every session the caller
+ * submitted on `date`, as the schedule's own teacher or an accepted
+ * substitute, across every class taught that day. The scope a teacher
+ * without view_reports gets instead of the school-wide daily report.
+ */
+export function useOwnDailyAttendanceReportQuery(date: string, enabled = true) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: ["attendance", "reports", "daily", "mine", date] as const,
+    queryFn: () => client.GET("/v1/attendance/reports/daily/mine", { params: { query: { date } } }),
+    enabled: enabled && date !== "",
   });
 }
 

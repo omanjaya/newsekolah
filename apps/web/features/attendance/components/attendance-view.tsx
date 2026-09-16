@@ -203,6 +203,15 @@ function DaySessions(): ReactElement {
         </label>
       </div>
 
+      <div>
+        <Button asChild variant="secondary" size="sm">
+          <Link href="/attendance/reports">
+            <FileBarChart className="size-4" aria-hidden="true" />
+            {t("myReportLink")}
+          </Link>
+        </Button>
+      </div>
+
       {selectedTeacherId === "" ? (
         <EmptyState
           icon={<domainIcons.attendance aria-hidden="true" />}

@@ -3,8 +3,14 @@
   "eyebrow": "Attendance",
   "title": "Attendance Reports",
   "tabs": {
+    "mine": "My attendance",
     "daily": "Daily",
     "monthly": "Monthly"
+  },
+  "mine": {
+    "date": "Date",
+    "emptyTitle": "No sessions submitted on this date yet",
+    "emptyBody": "Sessions you have filled in attendance for on this date will appear here."
   },
   "daily": {
     "class": "Class",

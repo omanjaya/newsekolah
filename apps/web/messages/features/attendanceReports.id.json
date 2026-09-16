@@ -3,8 +3,14 @@
   "eyebrow": "Presensi",
   "title": "Laporan Presensi",
   "tabs": {
+    "mine": "Presensi saya",
     "daily": "Harian",
     "monthly": "Bulanan"
+  },
+  "mine": {
+    "date": "Tanggal",
+    "emptyTitle": "Belum ada sesi tersimpan pada tanggal ini",
+    "emptyBody": "Sesi yang sudah diisi presensinya pada tanggal ini akan muncul di sini."
   },
   "daily": {
     "class": "Kelas",

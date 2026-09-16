@@ -6,6 +6,7 @@ import { formatDate } from "@newsekolah/i18n";
 import {
   Badge,
   Button,
+  Combobox,
   Dialog,
   DialogContent,
   EmptyState,
@@ -17,6 +18,7 @@ import {
   TabsList,
   TabsTrigger,
   Textarea,
+  useDebouncedCallback,
   useToast,
 } from "@newsekolah/ui";
 import { Plus, Repeat } from "lucide-react";
@@ -39,6 +41,7 @@ import {
   type Substitution,
   useCancelSubstitutionMutation,
   useCreateSubstitutionMutation,
+  useEligibleSubstitutesQuery,
   useRespondSubstitutionMutation,
   useSubstitutionsQuery,
 } from "../api";
@@ -240,7 +243,6 @@ function RequestForm({ onDone }: { onDone: () => void }): ReactElement {
   const schedules = useSchedulesQuery({ academicYearId: year.id, teacherUserId: me?.id });
   const classes = useClassesQuery();
   const subjects = useSubjectsQuery();
-  const teachers = useTeachersQuery();
   const classMap = useLookup(classes.data?.data);
   const subjectMap = useLookup(subjects.data?.data);
   const create = useCreateSubstitutionMutation();
@@ -248,8 +250,13 @@ function RequestForm({ onDone }: { onDone: () => void }): ReactElement {
   const [scheduleId, setScheduleId] = useState("");
   const [date, setDate] = useState("");
   const [substituteId, setSubstituteId] = useState("");
+  const [substituteLabel, setSubstituteLabel] = useState("");
+  const [substituteSearch, setSubstituteSearch] = useState("");
   const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
+
+  const debounceSubstituteSearch = useDebouncedCallback(setSubstituteSearch, 300);
+  const eligibleSubstitutes = useEligibleSubstitutesQuery(year.id, substituteSearch);
 
   const scheduleOptions = useMemo(
     () =>
@@ -260,9 +267,18 @@ function RequestForm({ onDone }: { onDone: () => void }): ReactElement {
       })),
     [schedules.data, classMap, subjectMap, tDays],
   );
-  const teacherOptions = (teachers.data?.data ?? [])
-    .filter((u) => u.id !== me?.id)
-    .map((u) => ({ value: u.id, label: u.name }));
+  // Keeps the picked name showing in the trigger even after the search
+  // text moves on and the candidate falls out of the latest results.
+  const substituteOptions = useMemo(() => {
+    const base = (eligibleSubstitutes.data?.data ?? []).map((candidate) => ({
+      value: candidate.user_id,
+      label: candidate.name,
+    }));
+    if (substituteId && !base.some((option) => option.value === substituteId)) {
+      return [{ value: substituteId, label: substituteLabel }, ...base];
+    }
+    return base;
+  }, [eligibleSubstitutes.data, substituteId, substituteLabel]);
 
   async function submit() {
     setError(null);
@@ -318,11 +334,22 @@ function RequestForm({ onDone }: { onDone: () => void }): ReactElement {
       </label>
       <label className="flex flex-col gap-1 text-[13px]">
         <span className="font-medium">{t("substitute")}</span>
-        <Select
-          options={teacherOptions}
+        <Combobox
+          options={substituteOptions}
           value={substituteId}
-          onValueChange={setSubstituteId}
+          onValueChange={(value) => {
+            setSubstituteId(value);
+            setSubstituteLabel(
+              substituteOptions.find((option) => option.value === value)?.label ?? "",
+            );
+          }}
+          search={substituteSearch}
+          onSearchChange={debounceSubstituteSearch}
           placeholder={t("pick")}
+          searchPlaceholder={t("substituteSearchPlaceholder")}
+          emptyLabel={t("substituteEmpty")}
+          loading={eligibleSubstitutes.isLoading}
+          aria-label={t("substitute")}
         />
       </label>
       <label className="flex flex-col gap-1 text-[13px]">

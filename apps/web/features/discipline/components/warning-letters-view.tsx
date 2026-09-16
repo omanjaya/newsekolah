@@ -7,6 +7,7 @@ import { useState } from "react";
 
 import { AtRiskPanel } from "./at-risk-panel";
 import { IssuedLettersPanel } from "./issued-letters-panel";
+import { WarningLetterTemplateView } from "./warning-letter-template-view";
 
 export function WarningLettersView(): ReactElement {
   const t = useTranslations("app.discipline.warningLetters");
@@ -19,12 +20,16 @@ export function WarningLettersView(): ReactElement {
         <TabsList>
           <TabsTrigger value="issued">{t("tabs.issued")}</TabsTrigger>
           <TabsTrigger value="atRisk">{t("tabs.atRisk")}</TabsTrigger>
+          <TabsTrigger value="template">{t("tabs.template")}</TabsTrigger>
         </TabsList>
         <TabsContent value="issued" className="pt-4">
           <IssuedLettersPanel />
         </TabsContent>
         <TabsContent value="atRisk" className="pt-4">
           <AtRiskPanel />
+        </TabsContent>
+        <TabsContent value="template" className="pt-4">
+          <WarningLetterTemplateView />
         </TabsContent>
       </Tabs>
     </div>

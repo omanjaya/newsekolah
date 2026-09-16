@@ -394,3 +394,18 @@ export function useOpacTitlesQuery(search: string) {
       client.GET("/v1/opac/titles", { params: { query: { search: search || undefined } } }),
   });
 }
+
+export type OpacHighlights = components["schemas"]["LibraryOpacHighlights"];
+
+/**
+ * GET /v1/opac/highlights: newest and most-borrowed titles for the OPAC
+ * landing page, plus the library's own display name. Public (x-public:
+ * true, no security requirement), so it loads before any session exists.
+ */
+export function useOpacHighlightsQuery() {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: ["library", "opac", "highlights"] as const,
+    queryFn: () => client.GET("/v1/opac/highlights"),
+  });
+}
