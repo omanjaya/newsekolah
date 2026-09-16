@@ -195,7 +195,12 @@ func (st *Store) migrateUsers(
 			unmappedRoleCounts[un]++
 		}
 		if !ok {
-			stat.RecordGap(fmt.Sprintf("user %s: SION role(s) %v have no identity-role equivalent", username, roleNames))
+			// Keyed on the numeric source id, not username: on this school's
+			// data a "Customer" account's username is often a phone number,
+			// and the report must never carry personal data (see docs/13's
+			// data-handling rule) -- every other table's gap/failure key is
+			// already the numeric source id for the same reason.
+			stat.RecordGap(fmt.Sprintf("user %d: SION role(s) %v have no identity-role equivalent", u.ID, roleNames))
 		}
 
 		email := textOrNull(u.Email)
@@ -261,7 +266,7 @@ func (st *Store) migrateUsers(
 			return nil
 		})
 		if err != nil {
-			stat.RecordFailure(username, err.Error())
+			stat.RecordFailure(fmt.Sprintf("%d", u.ID), err.Error())
 			continue
 		}
 

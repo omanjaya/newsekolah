@@ -133,6 +133,8 @@ type sourceData struct {
 	enrollments         []SionEnrollment
 	teachingAssignments []SionTeachingAssignment
 	classAdministrators []SionClassAdministrator
+	classOfBKCount      int
+	bkOnDutyCount       int
 	periods             []SionPeriod
 	schedules           []SionSchedule
 }
@@ -156,6 +158,8 @@ func fetchAll(source *Source, sourceYearID, scheduleVersionID int64) (sourceData
 			return
 		}},
 		{"class administrators", func() (e error) { d.classAdministrators, e = source.FetchClassAdministrators(sourceYearID); return }},
+		{"class of bks count", func() (e error) { d.classOfBKCount, e = source.CountClassOfBKAssignments(sourceYearID); return }},
+		{"bk on duty count", func() (e error) { d.bkOnDutyCount, e = source.CountBKOnDutyRecords(); return }},
 		{"periods", func() (e error) { d.periods, e = source.FetchPeriods(); return }},
 		{"schedules", func() (e error) { d.schedules, e = source.FetchSchedules(scheduleVersionID); return }},
 	}
@@ -248,7 +252,7 @@ func runMigrationSteps(
 	if err := st.migrateDutyAssignments(ctx, tenantID, academicYearID, academicYearStartsOn, d.classAdministrators, d.userRoles, d.managementStaff, users, classes, dutyIDs, dutyStat); err != nil {
 		return fmt.Errorf("migrate duty assignments: %w", err)
 	}
-	recordDutyGaps(source, sourceYearID, dutyStat)
+	recordDutyGaps(d.classOfBKCount, d.bkOnDutyCount, dutyStat)
 
 	_, periods, err := st.migratePeriods(ctx, tenantID, cfg.SourceYear, d.periods, report.Table("periods"))
 	if err != nil {

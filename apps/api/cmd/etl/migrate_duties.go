@@ -152,11 +152,17 @@ func (st *Store) upsertDutyAssignment(
 // assignment -- the target's counselor duty type is school-scoped, so a
 // per-class detail has nowhere to attach) and bk_on_dutis (which weekday
 // each BK counselor is on duty -- duty_assignments has no such column).
-func recordDutyGaps(source *Source, yearID int64, stat *TableStat) {
-	if n, err := source.CountClassOfBKAssignments(yearID); err == nil && n > 0 {
-		stat.RecordGap(fmt.Sprintf("class_of_bks: %d class-level BK assignment(s) have no equivalent -- counselor duty is school-scoped in the target schema", n))
+// Both counts are read from MySQL up front by fetchAll, alongside every
+// other source table, rather than here -- run.go's migration steps run
+// inside the target transaction, and querying the source mid-transaction
+// would leave the Postgres connection idle waiting on MySQL, exactly what
+// reading the source fully into memory before opening the transaction (see
+// docs/13-etl-sion.md) avoids.
+func recordDutyGaps(classOfBKCount, bkOnDutyCount int, stat *TableStat) {
+	if classOfBKCount > 0 {
+		stat.RecordGap(fmt.Sprintf("class_of_bks: %d class-level BK assignment(s) have no equivalent -- counselor duty is school-scoped in the target schema", classOfBKCount))
 	}
-	if n, err := source.CountBKOnDutyRecords(); err == nil && n > 0 {
-		stat.RecordGap(fmt.Sprintf("bk_on_dutis: %d BK duty-day record(s) have no equivalent column in duty_assignments", n))
+	if bkOnDutyCount > 0 {
+		stat.RecordGap(fmt.Sprintf("bk_on_dutis: %d BK duty-day record(s) have no equivalent column in duty_assignments", bkOnDutyCount))
 	}
 }
