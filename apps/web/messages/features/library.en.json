@@ -4,6 +4,40 @@
     "desk": "Loan desk",
     "stocktake": "Stocktake"
   },
+  "dashboard": {
+    "eyebrow": "Library",
+    "title": "Library dashboard",
+    "navLabel": "Dashboard",
+    "currency": "Rp{amount}",
+    "stats": {
+      "titles": "Titles",
+      "copies": "Copies",
+      "available": "Available",
+      "on_loan": "On loan",
+      "overdue": "Overdue",
+      "members": "Members",
+      "active_members": "Active members",
+      "visits_today": "Visits today",
+      "loans_today": "Loans today",
+      "returns_today": "Returns today",
+      "unpaid_fines_total": "Unpaid fines"
+    },
+    "seriesTitle": "Loans and returns, last 30 days",
+    "series": {
+      "loans": "{count} loans",
+      "returns": "{count} returns",
+      "chartLabel": "30-day chart: {loans} loans, {returns} returns",
+      "dayTooltip": "{day}: {loans} loans, {returns} returns"
+    },
+    "latestLoans": "Latest loans",
+    "longestOverdue": "Longest overdue",
+    "popularTitles": "Most borrowed titles",
+    "noLatestLoans": "No loans recorded today yet.",
+    "noOverdue": "Nothing is overdue right now.",
+    "noPopularTitles": "Not enough loan history yet for a ranking.",
+    "openDesk": "Open the loan desk",
+    "loanCount": "borrowed {count} times"
+  },
   "catalogue": {
     "eyebrow": "Library",
     "title": "Catalogue",
@@ -796,7 +830,11 @@
     "tabs": {
       "loans": "Loans",
       "overdueMembers": "Overdue members",
-      "mostBorrowed": "Most borrowed"
+      "mostBorrowed": "Most borrowed",
+      "summary": "Accreditation summary",
+      "visits": "Visits",
+      "members": "Members",
+      "accessionRegister": "Accession register"
     },
     "monthly": {
       "monthLabel": "Monthly report",
@@ -826,6 +864,55 @@
       "columns": {
         "title": "Title",
         "loanCount": "Loans"
+      }
+    },
+    "summary": {
+      "emptyTitle": "Summary data is unavailable for this range",
+      "stats": {
+        "studentsTotal": "Active students",
+        "membersTotal": "Members",
+        "additionsInPeriod": "Collection additions",
+        "loansInPeriod": "Loans",
+        "activeBorrowers": "Active borrowers",
+        "overdueNow": "Overdue now",
+        "visitsInPeriod": "Visits",
+        "fiction": "Fiction",
+        "itemsPerStudent": "Copies per student",
+        "loansPerStudent": "Loans per student",
+        "visitsPerStudent": "Visits per student"
+      },
+      "fictionValue": "{count} of {total}",
+      "lastStocktake": "Last stocktake: {name} ({date})",
+      "byDdc": "By DDC class",
+      "byCategory": "By collection category",
+      "byMaterialType": "By material type"
+    },
+    "visits": {
+      "emptyTitle": "No visits in this range",
+      "total": "{count} visits",
+      "columns": {
+        "day": "Date",
+        "class": "Class",
+        "count": "Count"
+      }
+    },
+    "members": {
+      "emptyTitle": "No members yet",
+      "total": "Total members",
+      "active": "Active members",
+      "columns": {
+        "type": "Member type",
+        "class": "Class",
+        "count": "Count"
+      }
+    },
+    "accessionRegister": {
+      "emptyTitle": "No additions in this range",
+      "columns": {
+        "accessionNumber": "Accession no.",
+        "title": "Title",
+        "barcode": "Barcode",
+        "acquiredOn": "Acquired on"
       }
     }
   },

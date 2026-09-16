@@ -10,6 +10,14 @@ import type { NavItem } from "./navigation";
  */
 export const libraryNavItems: NavItem[] = [
   {
+    key: "library-dashboard",
+    labelKey: "app.library.dashboard.navLabel",
+    href: "/library",
+    icon: domainIcons.library,
+    permission: "view_library",
+    group: "nav.library.label",
+  },
+  {
     key: "library-catalogue",
     labelKey: "nav.library.items.catalog",
     href: "/library/catalogue",

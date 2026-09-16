@@ -4,6 +4,40 @@
     "desk": "Meja sirkulasi",
     "stocktake": "Opname"
   },
+  "dashboard": {
+    "eyebrow": "Perpustakaan",
+    "title": "Dasbor perpustakaan",
+    "navLabel": "Dasbor",
+    "currency": "Rp{amount}",
+    "stats": {
+      "titles": "Judul",
+      "copies": "Eksemplar",
+      "available": "Tersedia",
+      "on_loan": "Dipinjam",
+      "overdue": "Terlambat",
+      "members": "Anggota",
+      "active_members": "Anggota aktif",
+      "visits_today": "Kunjungan hari ini",
+      "loans_today": "Peminjaman hari ini",
+      "returns_today": "Pengembalian hari ini",
+      "unpaid_fines_total": "Denda belum dibayar"
+    },
+    "seriesTitle": "Peminjaman dan pengembalian, 30 hari terakhir",
+    "series": {
+      "loans": "{count} peminjaman",
+      "returns": "{count} pengembalian",
+      "chartLabel": "Grafik 30 hari: {loans} peminjaman, {returns} pengembalian",
+      "dayTooltip": "{day}: {loans} peminjaman, {returns} pengembalian"
+    },
+    "latestLoans": "Peminjaman terbaru",
+    "longestOverdue": "Paling lama terlambat",
+    "popularTitles": "Judul paling sering dipinjam",
+    "noLatestLoans": "Belum ada peminjaman hari ini.",
+    "noOverdue": "Tidak ada yang terlambat saat ini.",
+    "noPopularTitles": "Belum cukup data peminjaman untuk peringkat ini.",
+    "openDesk": "Buka meja sirkulasi",
+    "loanCount": "{count} kali dipinjam"
+  },
   "catalogue": {
     "eyebrow": "Perpustakaan",
     "title": "Katalog",
@@ -796,7 +830,11 @@
     "tabs": {
       "loans": "Peminjaman",
       "overdueMembers": "Anggota terlambat",
-      "mostBorrowed": "Paling sering dipinjam"
+      "mostBorrowed": "Paling sering dipinjam",
+      "summary": "Ringkasan akreditasi",
+      "visits": "Kunjungan",
+      "members": "Anggota",
+      "accessionRegister": "Buku induk"
     },
     "monthly": {
       "monthLabel": "Laporan bulanan",
@@ -826,6 +864,55 @@
       "columns": {
         "title": "Judul",
         "loanCount": "Jumlah peminjaman"
+      }
+    },
+    "summary": {
+      "emptyTitle": "Data ringkasan tidak tersedia untuk rentang ini",
+      "stats": {
+        "studentsTotal": "Siswa aktif",
+        "membersTotal": "Anggota",
+        "additionsInPeriod": "Penambahan koleksi",
+        "loansInPeriod": "Peminjaman",
+        "activeBorrowers": "Peminjam aktif",
+        "overdueNow": "Terlambat saat ini",
+        "visitsInPeriod": "Kunjungan",
+        "fiction": "Fiksi",
+        "itemsPerStudent": "Eksemplar per siswa",
+        "loansPerStudent": "Peminjaman per siswa",
+        "visitsPerStudent": "Kunjungan per siswa"
+      },
+      "fictionValue": "{count} dari {total}",
+      "lastStocktake": "Opname terakhir: {name} ({date})",
+      "byDdc": "Menurut kelas DDC",
+      "byCategory": "Menurut kategori koleksi",
+      "byMaterialType": "Menurut jenis bahan"
+    },
+    "visits": {
+      "emptyTitle": "Tidak ada kunjungan pada rentang ini",
+      "total": "{count} kunjungan",
+      "columns": {
+        "day": "Tanggal",
+        "class": "Kelas",
+        "count": "Jumlah"
+      }
+    },
+    "members": {
+      "emptyTitle": "Belum ada anggota",
+      "total": "Total anggota",
+      "active": "Anggota aktif",
+      "columns": {
+        "type": "Jenis anggota",
+        "class": "Kelas",
+        "count": "Jumlah"
+      }
+    },
+    "accessionRegister": {
+      "emptyTitle": "Tidak ada penambahan pada rentang ini",
+      "columns": {
+        "accessionNumber": "No. induk",
+        "title": "Judul",
+        "barcode": "Barcode",
+        "acquiredOn": "Tanggal masuk"
       }
     }
   },
