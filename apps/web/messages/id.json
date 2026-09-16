@@ -655,6 +655,8 @@
         "schedule": "Jadwal yang digantikan",
         "date": "Tanggal",
         "substitute": "Guru pengganti",
+        "substituteSearchPlaceholder": "Cari nama guru",
+        "substituteEmpty": "Tidak ada guru yang cocok atau memenuhi syarat.",
         "note": "Catatan",
         "pick": "Pilih",
         "requiredError": "Jadwal, tanggal, dan guru pengganti wajib diisi.",

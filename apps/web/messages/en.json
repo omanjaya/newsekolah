@@ -655,6 +655,8 @@
         "schedule": "Schedule to cover",
         "date": "Date",
         "substitute": "Substitute teacher",
+        "substituteSearchPlaceholder": "Search teacher name",
+        "substituteEmpty": "No eligible teacher matches.",
         "note": "Note",
         "pick": "Pick",
         "requiredError": "Schedule, date and substitute are required.",
