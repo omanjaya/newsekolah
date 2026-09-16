@@ -49,7 +49,12 @@ func (s *Service) autoRegisterMember(ctx context.Context, tenantID, userID uuid.
 }
 
 func (s *Service) createMemberWithGeneratedNo(ctx context.Context, tenantID, userID uuid.UUID, memberType domain.MemberType, policy domain.Policy, now time.Time) (domain.Member, error) {
-	count, err := s.repo.CountMembersByType(ctx, tenantID, memberType.ID)
+	// The member number is unique per tenant, not per member type, so the
+	// running number has to count every member the school has. Counting one
+	// type only meant the first member of a second type restarted at 1 and
+	// collided with a number already taken, and the retries below only
+	// covered that while the school was small.
+	count, err := s.repo.CountMembersTotal(ctx, tenantID)
 	if err != nil {
 		return domain.Member{}, err
 	}

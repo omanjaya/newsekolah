@@ -205,15 +205,9 @@ func ensureLibraryMemberTypes(ctx context.Context, svc *libraryservice.Service, 
 // ensureLibraryMembers registers the demo student and teacher as library
 // members under their role's member type, unless they already are one.
 func ensureLibraryMembers(ctx context.Context, svc *libraryservice.Service, tenantID uuid.UUID, users map[string]db.User, memberTypes map[string]librarydomain.MemberType) error {
-	// memberNo is given explicitly rather than left for RegisterMember to
-	// generate: the generated sequence is scoped per member type
-	// (CountMembersByType), but the rendered number itself is not, so the
-	// first member of each type would both come out "PS-2026-00001" and
-	// the second insert would fail the tenant-wide unique constraint on
-	// library_members.member_no.
-	registrations := []struct{ username, memberTypeName, memberNo string }{
-		{"siswa", "Siswa", "PS-2026-00001"},
-		{"guru", "Guru & Staf", "PS-2026-00002"},
+	registrations := []struct{ username, memberTypeName string }{
+		{"siswa", "Siswa"},
+		{"guru", "Guru & Staf"},
 	}
 	for _, r := range registrations {
 		user, ok := users[r.username]
@@ -232,7 +226,7 @@ func ensureLibraryMembers(ctx context.Context, svc *libraryservice.Service, tena
 			return fmt.Errorf("member type %q not seeded", r.memberTypeName)
 		}
 		if _, err := svc.RegisterMember(ctx, tenantID, libraryservice.RegisterMemberInput{
-			UserID: user.ID, MemberTypeID: memberType.ID, MemberNo: r.memberNo,
+			UserID: user.ID, MemberTypeID: memberType.ID,
 		}); err != nil {
 			return fmt.Errorf("register member %s: %w", r.username, err)
 		}
