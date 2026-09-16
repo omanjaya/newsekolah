@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Alert, Button, Input, useToast } from "@newsekolah/ui";
+import { Alert, Button, Input, QrPanel, useToast } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -15,13 +15,13 @@ import {
   useScanGateMutation,
 } from "../api";
 
-import { QrPanel } from "./qr-panel";
 import { ScanTokenInput } from "./scan-token-input";
 import { WorkflowStepper } from "./workflow-stepper";
 
 /** Teacher: mint an approve-stage QR for the permit code the student shows. */
 export function ApprovePanel(): ReactElement {
   const t = useTranslations("app.permits.exit.approve");
+  const tQr = useTranslations("app.permits.qr");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const issue = useIssueScanTokenMutation();
@@ -76,6 +76,9 @@ export function ApprovePanel(): ReactElement {
               if (issue.data.context_id) mint(issue.data.context_id);
             }}
             renewing={issue.isPending}
+            expiredLabel={tQr("expired")}
+            expiresInLabel={(seconds) => tQr("expiresIn", { seconds })}
+            renewLabel={tQr("renew")}
           />
           {detail.data && (
             <div className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-4 text-[13px]">

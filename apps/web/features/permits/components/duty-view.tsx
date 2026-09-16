@@ -1,15 +1,21 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { PageHeader, Tabs, TabsContent, TabsList, TabsTrigger, useToast } from "@newsekolah/ui";
+import {
+  PageHeader,
+  QrPanel,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+  useToast,
+} from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useEffect } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { type ScanPurpose, encodeScanPayload, useIssueScanTokenMutation } from "../api";
-
-import { QrPanel } from "./qr-panel";
 
 /**
  * The duty teacher's desk (docs/07-ui-ux.md section 4, "Guru piket"): one
@@ -40,6 +46,7 @@ export function DutyView(): ReactElement {
 
 function PurposePanel({ purpose }: { purpose: ScanPurpose }): ReactElement {
   const t = useTranslations("app.duty");
+  const tQr = useTranslations("app.permits.qr");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const issue = useIssueScanTokenMutation();
@@ -71,6 +78,9 @@ function PurposePanel({ purpose }: { purpose: ScanPurpose }): ReactElement {
           expiresAt={issue.data.expires_at}
           onRenew={renew}
           renewing={issue.isPending}
+          expiredLabel={tQr("expired")}
+          expiresInLabel={(seconds) => tQr("expiresIn", { seconds })}
+          renewLabel={tQr("renew")}
         />
       ) : (
         <div

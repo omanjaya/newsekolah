@@ -1,56 +1,41 @@
-"use client";
-
-import { Button } from "@newsekolah/ui";
-import { useTranslations } from "next-intl";
 import { QRCodeSVG } from "qrcode.react";
-import type { ReactElement } from "react";
 import { useEffect, useState } from "react";
 
-/**
- * A QR with the raw code underneath and a live countdown. Tokens are
- * single-use and short-lived, so the panel asks for a new one when the
- * current one expires.
- */
-export function QrPanel({
-  payload,
-  code,
-  expiresAt,
-  onRenew,
-  renewing,
-}: {
+import { Button } from "./button.js";
+
+export interface QrPanelProps {
+  /** Encoded into the QR itself; a scanner reads this. */
   payload: string;
+  /** Shown as plain text underneath, for a manual fallback entry. */
   code: string;
   expiresAt: string;
   onRenew: () => void;
   renewing: boolean;
-}): ReactElement {
-  return (
-    <Countdown
-      key={expiresAt}
-      payload={payload}
-      code={code}
-      expiresAt={expiresAt}
-      onRenew={onRenew}
-      renewing={renewing}
-    />
-  );
+  expiredLabel: string;
+  expiresInLabel: (secondsLeft: number) => string;
+  renewLabel: string;
 }
 
-/** Keyed on expiresAt by the parent so a renewed token restarts the clock. */
+/**
+ * A QR with the raw code underneath and a live countdown. Tokens are
+ * single-use and short-lived, so the panel asks for a new one when the
+ * current one expires (docs/05-shared-components.md `QrDisplay`).
+ */
+export function QrPanel(props: QrPanelProps) {
+  // Keyed on expiresAt so a renewed token restarts the countdown cleanly.
+  return <Countdown key={props.expiresAt} {...props} />;
+}
+
 function Countdown({
   payload,
   code,
   expiresAt,
   onRenew,
   renewing,
-}: {
-  payload: string;
-  code: string;
-  expiresAt: string;
-  onRenew: () => void;
-  renewing: boolean;
-}): ReactElement {
-  const t = useTranslations("app.permits.qr");
+  expiredLabel,
+  expiresInLabel,
+  renewLabel,
+}: QrPanelProps) {
   const [secondsLeft, setSecondsLeft] = useState(() => remaining(expiresAt));
 
   useEffect(() => {
@@ -71,7 +56,7 @@ function Countdown({
       </div>
       <code className="rounded-xs bg-bg px-2 py-1 text-[13px] tracking-wide">{code}</code>
       <p className="text-[13px] text-fg-muted" aria-live="polite">
-        {expired ? t("expired") : t("expiresIn", { seconds: secondsLeft })}
+        {expired ? expiredLabel : expiresInLabel(secondsLeft)}
       </p>
       <Button
         variant={expired ? "primary" : "secondary"}
@@ -79,7 +64,7 @@ function Countdown({
         onClick={onRenew}
         loading={renewing}
       >
-        {t("renew")}
+        {renewLabel}
       </Button>
     </div>
   );
