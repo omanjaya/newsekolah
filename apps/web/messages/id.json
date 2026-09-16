@@ -81,8 +81,7 @@
           "late_arrival": "Keterlambatan"
         },
         "onlineTitle": "Pengguna daring per peran",
-        "onlineUnavailableTitle": "Belum tersedia",
-        "onlineUnavailableBody": "Penghitung kehadiran daring belum tersambung ke layanan dashboard di server ini.",
+        "onlineEmpty": "Tidak ada yang sedang terhubung saat ini.",
         "loginHistogramTitle": "Login per jam (UTC), 7 hari terakhir",
         "histogramEmpty": "Belum ada login tercatat pada periode ini."
       }

@@ -207,12 +207,12 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		Grading:    wiring.AnalyticsGrading{Svc: gradingModule.Service},
 		// Admin dashboard (identity/permits satisfy IdentityReader/
 		// PermitsReader structurally/via a small adapter -- see
-		// wiring/analytics.go). Presence is left nil: platform/realtime's
-		// Presence tracker has no tenant or role dimension today (nothing
-		// calls Heartbeat yet), so there is nothing honest to report but
-		// the online-per-role panel's documented "else 0".
+		// wiring/analytics.go). Presence reads the same tracker every
+		// GET /ws/me connection heartbeats, keyed
+		// "<tenantID>:<role>:<userID>" by wsMeHandler.
 		Identity: identityModule.Service,
 		Permits:  wiring.AnalyticsPermits{Svc: permitsModule.Service},
+		Presence: wiring.AnalyticsPresence{Presence: presence},
 		Clock:    clock.Real{},
 	})
 

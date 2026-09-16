@@ -8299,7 +8299,7 @@ export interface components {
                 exit_permit: number;
                 late_arrival: number;
             };
-            /** @description Online socket count per role slug. Always empty until something calls platform/realtime.Presence.Heartbeat. */
+            /** @description Live socket count per role slug, from the heartbeat every open /ws/me connection sends. A role nobody is connected under is omitted rather than reported as zero. */
             online_by_role: {
                 [key: string]: number;
             };

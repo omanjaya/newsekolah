@@ -81,8 +81,7 @@
           "late_arrival": "Late arrivals"
         },
         "onlineTitle": "Online users by role",
-        "onlineUnavailableTitle": "Not available yet",
-        "onlineUnavailableBody": "The online presence counter is not connected to this server's dashboard service yet.",
+        "onlineEmpty": "Nobody is connected right now.",
         "loginHistogramTitle": "Logins per hour (UTC), last 7 days",
         "histogramEmpty": "No logins recorded in this period yet."
       }

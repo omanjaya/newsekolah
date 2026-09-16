@@ -1,7 +1,7 @@
 "use client";
 
 import type { components } from "@newsekolah/api-client";
-import { Alert, Badge, Skeleton } from "@newsekolah/ui";
+import { Badge, Skeleton } from "@newsekolah/ui";
 import { ClipboardList } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
@@ -29,17 +29,9 @@ const PENDING_LINKS = [
  * the endpoint itself 403s for everyone else regardless of who holds
  * view_dashboard.
  *
- * The "online per role" panel from the same response is intentionally
- * never rendered with real numbers: apps/api/cmd/api/wire.go wires
- * analytics.Dependencies.Presence to nil ("nothing to report but the
- * documented else 0"), even though /ws/me's wsMeHandler does call
- * platform/realtime.Presence.Heartbeat on every connection. The two
- * Presence instances are simply never the same one, so online_by_role is
- * guaranteed to read back empty regardless of how many people are
- * actually connected -- showing it as "0 online" for every role would be
- * a fabricated zero, not an honest one (antislop R-17). This is a backend
- * wiring gap, not a per-request state, so the fix belongs in wire.go, not
- * here.
+ * online_by_role counts live sockets, not sessions: it reflects who has a
+ * GET /ws/me connection open right now, so a role nobody is connected
+ * under is absent from the map rather than reported as zero.
  */
 export function AdminDashboardPanel({ roles }: { roles: Role[] }): ReactElement | null {
   const t = useTranslations("app.dashboard.admin");
@@ -47,6 +39,10 @@ export function AdminDashboardPanel({ roles }: { roles: Role[] }): ReactElement 
   const { data, isLoading, isError } = useAdminDashboardQuery(isAdmin);
 
   if (!isAdmin) return null;
+
+  const onlineRoles = Object.entries(data?.online_by_role ?? {})
+    .filter(([, count]) => count > 0)
+    .sort(([a], [b]) => a.localeCompare(b));
 
   return (
     <div className="grid gap-4 md:grid-cols-2">
@@ -98,7 +94,22 @@ export function AdminDashboardPanel({ roles }: { roles: Role[] }): ReactElement 
       </SectionCard>
 
       <SectionCard title={t("onlineTitle")}>
-        <Alert title={t("onlineUnavailableTitle")}>{t("onlineUnavailableBody")}</Alert>
+        {isLoading ? (
+          <Skeleton className="h-16 w-full" />
+        ) : isError ? (
+          <p className="text-[13px] text-fg-muted">{t("loadError")}</p>
+        ) : onlineRoles.length === 0 ? (
+          <p className="text-[13px] text-fg-muted">{t("onlineEmpty")}</p>
+        ) : (
+          <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {onlineRoles.map(([role, count]) => (
+              <div key={role} className="flex flex-col">
+                <dt className="text-[12px] text-fg-muted">{role}</dt>
+                <dd className="text-[20px] font-medium tabular-nums text-fg">{count}</dd>
+              </div>
+            ))}
+          </dl>
+        )}
       </SectionCard>
 
       <SectionCard title={t("loginHistogramTitle")}>
@@ -137,7 +148,7 @@ function LoginHistogram({
       {values.map((value, hour) => (
         <div
           key={hour}
-          title={`${String(hour).padStart(2, "0")}:00 UTC: ${value}`}
+          title={`${String(hour).padStart(2, "0")}:00: ${value}`}
           className="flex-1 rounded-t-xs bg-accent/70"
           style={{ height: `${Math.max((value / max) * 100, value > 0 ? 6 : 2)}%` }}
         />

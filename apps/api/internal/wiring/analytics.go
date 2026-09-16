@@ -2,6 +2,8 @@ package wiring
 
 import (
 	"context"
+	"strings"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -11,6 +13,7 @@ import (
 	gradingservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/grading/service"
 	permitsdomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/domain"
 	permitsservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/service"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/realtime"
 )
 
 // AnalyticsPermits adapts permits' PendingCount (which takes its own
@@ -105,4 +108,28 @@ func averageReportScore(subjects []gradingservice.MySubjectGrade) (float64, bool
 		return 0, false
 	}
 	return sum / float64(count), true
+}
+
+// AnalyticsPresence adapts platform/realtime's Presence tracker to
+// analytics' PresenceReader for the admin dashboard's online-per-role
+// panel. Every GET /ws/me connection heartbeats a key shaped
+// "<tenantID>:<role>:<userID>" (see cmd/api/ws.go's wsMeHandler), which is
+// the same convention attendance's monitor presence parses.
+type AnalyticsPresence struct{ Presence *realtime.Presence }
+
+func (p AnalyticsPresence) OnlineByRole(ctx context.Context, tenantID uuid.UUID) (map[string]int, error) {
+	prefix := tenantID.String() + ":"
+	counts := map[string]int{}
+	for _, key := range p.Presence.Snapshot(ctx, time.Now()) {
+		rest, ok := strings.CutPrefix(key, prefix)
+		if !ok {
+			continue
+		}
+		role, _, ok := strings.Cut(rest, ":")
+		if !ok || role == "" {
+			continue
+		}
+		counts[role]++
+	}
+	return counts, nil
 }
