@@ -126,7 +126,10 @@ function WarningLetterTemplateEditor({
             onChange={(e) => {
               setPattern(e.target.value);
             }}
-            invalid={!hasSeqPlaceholder(pattern)}
+            onBlur={() => {
+              setError(hasSeqPlaceholder(pattern) ? null : t("missingSeqError"));
+            }}
+            invalid={error === t("missingSeqError")}
           />
           <span className="text-fg-muted">{t("patternHint")}</span>
         </label>
