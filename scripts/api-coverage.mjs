@@ -39,18 +39,24 @@ function readSpecOperations() {
   return operations;
 }
 
-function readWebSources(dir, out = []) {
+// Callers live in apps/web and in the shared hooks under packages/api-client.
+// The generated schema is skipped on purpose: it names every path in the spec,
+// so counting it would mark every operation as reached.
+const CALLER_ROOTS = ["apps/web", "packages/api-client/src"];
+const SKIP_DIRS = new Set(["node_modules", ".next", "dist", "gen"]);
+
+function readSources(dir, out = []) {
   for (const entry of readdirSync(dir)) {
-    if (entry === "node_modules" || entry === ".next" || entry.startsWith(".")) continue;
+    if (SKIP_DIRS.has(entry) || entry.startsWith(".")) continue;
     const full = join(dir, entry);
-    if (statSync(full).isDirectory()) readWebSources(full, out);
+    if (statSync(full).isDirectory()) readSources(full, out);
     else if (/\.tsx?$/.test(entry)) out.push(readFileSync(full, "utf8"));
   }
   return out;
 }
 
 const operations = readSpecOperations();
-const web = readWebSources(join(root, "apps/web")).join("\n");
+const web = CALLER_ROOTS.flatMap((dir) => readSources(join(root, dir))).join("\n");
 
 const missing = operations.filter(({ path }) => {
   if (NOT_FOR_WEB.some((prefix) => path.startsWith(prefix))) return false;
