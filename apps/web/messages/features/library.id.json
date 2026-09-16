@@ -567,6 +567,15 @@
       "donated": "Dihibahkan",
       "reserve_stack": "Rak cadangan",
       "unknown": "Tidak diketahui"
+    },
+    "bulkStatus": {
+      "label": "Ubah status ke",
+      "statusPlaceholder": "Pilih status",
+      "apply": "Terapkan",
+      "confirmTitle": "Ubah status eksemplar",
+      "confirmBody": "{count} eksemplar akan diubah ke status \"{status}\".",
+      "applied": "{count} eksemplar diubah",
+      "appliedWithSkipped": "{count} eksemplar diubah, {skipped} dilewati karena sedang dipinjam"
     }
   },
   "visits": {

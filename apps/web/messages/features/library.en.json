@@ -567,6 +567,15 @@
       "donated": "Donated",
       "reserve_stack": "Reserve stack",
       "unknown": "Unknown"
+    },
+    "bulkStatus": {
+      "label": "Change status to",
+      "statusPlaceholder": "Pick a status",
+      "apply": "Apply",
+      "confirmTitle": "Change copy status",
+      "confirmBody": "{count} copies will change to \"{status}\".",
+      "applied": "{count} copies updated",
+      "appliedWithSkipped": "{count} copies updated, {skipped} skipped because they are on loan"
     }
   },
   "visits": {
