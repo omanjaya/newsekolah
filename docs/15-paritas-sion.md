@@ -4,6 +4,10 @@ Catatan kerja untuk menyamakan logika bisnis newsekolah dengan SION, aplikasi as
 
 Posisi terakhir: 16 September 2026.
 
+## Catatan tentang baseline perbandingan
+
+Perbandingan fitur di dokumen ini dan di [Lampiran D](analysis/parity-sion-before.md) memakai kode Go di `reference/sion-rebuild-go` sebagai baseline. Basis data sungguhan yang dipakai sekolah hari ini bukan aplikasi Go itu, melainkan aplikasi Laravel/PHP dari lini yang sama dengan skema yang berbeda di banyak tempat. [Lampiran E](analysis/parity-sion-laravel.md) membaca skema produksi itu langsung, tabel demi tabel, dan menemukan beberapa modul yang aktif dipakai sekolah (koperasi/POS, HBG, diagnostik siswa, izin berkala berkonsen) tanpa padanan sama sekali di newsekolah, serta beberapa modul yang sudah dibangun newsekolah tanpa bukti pemakaian di data produksi. Lampiran D tetap berlaku sebagai catatan asal-usul aturan bisnis; Lampiran E adalah sumber untuk pertanyaan "modul apa yang belum dibangun".
+
 ## Ringkasan
 
 Logika backend sudah setara atau lebih baik dari SION di semua modul, dan sudah diverifikasi terhadap database Postgres sungguhan. Setiap operasi API kini punya layar yang memanggilnya, dan tiap layar baru sudah dibuka di aplikasi yang berjalan. Yang tersisa adalah mencoba alur panjang sampai tuntas dengan data dan peran yang tepat.
