@@ -46,6 +46,7 @@ function TitleGroup({
   label: string;
   titles: { id: string; title: string; author: string; available_copies: number }[];
 }): ReactElement {
+  const t = useTranslations("app.library.opac");
   return (
     <section className="flex flex-col gap-2 rounded-sm border border-border bg-surface p-4">
       <h2 className="text-[14px] font-medium text-fg">{label}</h2>
@@ -57,8 +58,10 @@ function TitleGroup({
               <span className="truncate text-[13px] text-fg">{title.title}</span>
               <span className="truncate text-[12px] text-fg-muted">{title.author}</span>
             </div>
+            {/* Same wording as the search results below, so a bare count
+                never leaves the reader guessing what it counts. */}
             <Badge variant={title.available_copies > 0 ? "accent" : "neutral"}>
-              {title.available_copies}
+              {title.available_copies > 0 ? t("available") : t("unavailable")}
             </Badge>
           </li>
         ))}
