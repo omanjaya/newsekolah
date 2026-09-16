@@ -77,8 +77,8 @@ func TestMapDayOfWeek(t *testing.T) {
 		want   int16
 		wantOK bool
 	}{
-		{"monday", 1, true},
-		{"Sunday", 7, true},
+		{"senin", 1, true},
+		{"Minggu", 7, true},
 		{"funday", 0, false},
 	}
 	for _, tc := range cases {

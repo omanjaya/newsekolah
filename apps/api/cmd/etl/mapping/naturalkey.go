@@ -87,19 +87,21 @@ func ParseGradeFromClassName(className string) (code string, sequence int16, ok 
 
 // weekdaySequence is the ISO-ish convention the new scheduling module uses
 // (Monday=1..Sunday=7), matching school_days.day_of_week and
-// apps/api/internal/modules/scheduling/domain/schedule.go.
+// apps/api/internal/modules/scheduling/domain/schedule.go. Keys are
+// Indonesian (the live source schema's schedules.day enum is
+// 'Senin'..'Jumat', never English).
 var weekdaySequence = map[string]int16{
-	"monday":    1,
-	"tuesday":   2,
-	"wednesday": 3,
-	"thursday":  4,
-	"friday":    5,
-	"saturday":  6,
-	"sunday":    7,
+	"senin":  1,
+	"selasa": 2,
+	"rabu":   3,
+	"kamis":  4,
+	"jumat":  5,
+	"sabtu":  6,
+	"minggu": 7,
 }
 
-// MapDayOfWeek translates SION's lowercase English weekday name
-// (teaching_schedules.day_of_week) to the new schema's 1-7 integer.
+// MapDayOfWeek translates the live source schema's Indonesian weekday name
+// (schedules.day) to the new schema's 1-7 integer.
 func MapDayOfWeek(day string) (int16, bool) {
 	v, ok := weekdaySequence[strings.ToLower(strings.TrimSpace(day))]
 	return v, ok
