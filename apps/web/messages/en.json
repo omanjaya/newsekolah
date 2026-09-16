@@ -884,7 +884,8 @@
           "archived": "User archived",
           "restored": "User restored",
           "impersonate": "Sign in as this user",
-          "impersonateBody": "You will act as {name} for up to 30 minutes. Everything done during that time is logged."
+          "impersonateBody": "You will act as {name} for up to 30 minutes. Everything done during that time is logged.",
+          "import": "Import users"
         },
         "form": {
           "createTitle": "New user",
@@ -912,6 +913,50 @@
           "additionalRoles": "Additional roles",
           "additionalRolesHint": "Additional roles can only be custom roles (not system roles).",
           "noCustomRoles": "No custom roles yet. Create one under Settings > Roles and Access."
+        },
+        "import": {
+          "eyebrow": "School Data",
+          "title": "Import users",
+          "description": "Download the template, fill it in outside the system, upload it back, then check the outcome before anything is actually created.",
+          "steps": {
+            "upload": "Upload",
+            "preview": "Preview",
+            "done": "Done"
+          },
+          "step1Title": "1. Download the template",
+          "step1Body": "The template includes an example row and a Referensi sheet listing the accepted codes for each column (gender, blood type, role, and so on).",
+          "downloadTemplate": "Download XLSX template",
+          "step2Title": "2. Upload the filled-in file",
+          "step2Body": "Up to 5000 rows in one file. Blank rows are skipped.",
+          "chooseFile": "Choose file",
+          "parsing": "Reading {file}...",
+          "parseError": {
+            "unreadable": "The file could not be read. Make sure it is XLSX and not corrupted.",
+            "no-sheet": "The file has no data sheet at all.",
+            "empty": "No data rows could be read from this file."
+          },
+          "step3Title": "3. Preview",
+          "rowCount": "{n} rows",
+          "invalidCount": "{n} invalid rows",
+          "blockedTitle": "Not ready to import",
+          "blockedBody": "The import runs as one transaction: as long as a single row is invalid, no user at all will be created. Fix the flagged rows, then upload the file again.",
+          "readyTitle": "Ready to import",
+          "readyBody": "All {n} rows are valid. They will all be created at once when you press Import now.",
+          "doneTitle": "Import complete",
+          "doneBody": "{n} users were created.",
+          "startOver": "Start over",
+          "commit": "Import now",
+          "importAnother": "Import another file",
+          "committed": "{n} users created",
+          "table": {
+            "row": "Row",
+            "name": "Name",
+            "kind": "Kind",
+            "username": "Username",
+            "status": "Status",
+            "valid": "Valid",
+            "invalid": "Invalid"
+          }
         }
       },
       "classes": {

@@ -20,7 +20,8 @@ import {
   useToast,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
-import { MoreHorizontal, Plus } from "lucide-react";
+import { MoreHorizontal, Plus, Upload } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -226,15 +227,20 @@ export function UsersView(): ReactElement {
         title={t("title")}
         actions={
           canCreate && (
-            <Button
-              size="sm"
-              icon={<Plus />}
-              onClick={() => {
-                setEditing("new");
-              }}
-            >
-              {t("actions.create")}
-            </Button>
+            <div className="flex gap-2">
+              <Button asChild variant="secondary" size="sm" icon={<Upload />}>
+                <Link href="/school/users/import">{t("actions.import")}</Link>
+              </Button>
+              <Button
+                size="sm"
+                icon={<Plus />}
+                onClick={() => {
+                  setEditing("new");
+                }}
+              >
+                {t("actions.create")}
+              </Button>
+            </div>
           )
         }
       />

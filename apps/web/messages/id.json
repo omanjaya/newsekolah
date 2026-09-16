@@ -884,7 +884,8 @@
           "archived": "Pengguna diarsipkan",
           "restored": "Pengguna dipulihkan",
           "impersonate": "Masuk sebagai pengguna ini",
-          "impersonateBody": "Anda akan bertindak sebagai {name} selama maksimal 30 menit. Semua tindakan selama itu dicatat."
+          "impersonateBody": "Anda akan bertindak sebagai {name} selama maksimal 30 menit. Semua tindakan selama itu dicatat.",
+          "import": "Impor pengguna"
         },
         "form": {
           "createTitle": "Pengguna baru",
@@ -912,6 +913,50 @@
           "additionalRoles": "Peran tambahan",
           "additionalRolesHint": "Peran tambahan hanya bisa peran khusus (bukan peran sistem).",
           "noCustomRoles": "Belum ada peran khusus. Buat di Pengaturan > Peran dan Akses."
+        },
+        "import": {
+          "eyebrow": "Data Sekolah",
+          "title": "Impor pengguna",
+          "description": "Unduh templat, isi di luar sistem, unggah kembali, lalu periksa hasilnya sebelum benar-benar dibuat.",
+          "steps": {
+            "upload": "Unggah",
+            "preview": "Pratinjau",
+            "done": "Selesai"
+          },
+          "step1Title": "1. Unduh templat",
+          "step1Body": "Templat berisi contoh baris dan sheet Referensi berisi kode yang diterima untuk setiap kolom (jenis kelamin, golongan darah, peran, dan sejenisnya).",
+          "downloadTemplate": "Unduh templat XLSX",
+          "step2Title": "2. Unggah berkas yang sudah diisi",
+          "step2Body": "Maksimal 5000 baris dalam satu berkas. Baris kosong dilewati.",
+          "chooseFile": "Pilih berkas",
+          "parsing": "Membaca {file}...",
+          "parseError": {
+            "unreadable": "Berkas tidak bisa dibaca. Pastikan formatnya XLSX dan tidak rusak.",
+            "no-sheet": "Berkas tidak memiliki sheet data sama sekali.",
+            "empty": "Tidak ada baris data yang terbaca dari berkas ini."
+          },
+          "step3Title": "3. Pratinjau",
+          "rowCount": "{n} baris",
+          "invalidCount": "{n} baris tidak valid",
+          "blockedTitle": "Belum bisa diimpor",
+          "blockedBody": "Impor berjalan dalam satu transaksi: selama masih ada satu baris tidak valid, tidak ada satu pun pengguna yang akan dibuat. Perbaiki baris yang ditandai, lalu unggah ulang berkasnya.",
+          "readyTitle": "Siap diimpor",
+          "readyBody": "Semua {n} baris valid. Semua akan dibuat sekaligus saat Anda menekan Impor sekarang.",
+          "doneTitle": "Impor selesai",
+          "doneBody": "{n} pengguna berhasil dibuat.",
+          "startOver": "Mulai ulang",
+          "commit": "Impor sekarang",
+          "importAnother": "Impor berkas lain",
+          "committed": "{n} pengguna berhasil dibuat",
+          "table": {
+            "row": "Baris",
+            "name": "Nama",
+            "kind": "Jenis",
+            "username": "Nama pengguna",
+            "status": "Status",
+            "valid": "Valid",
+            "invalid": "Tidak valid"
+          }
         }
       },
       "classes": {
