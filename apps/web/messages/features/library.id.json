@@ -4,6 +4,40 @@
     "desk": "Meja sirkulasi",
     "stocktake": "Opname"
   },
+  "dashboard": {
+    "eyebrow": "Perpustakaan",
+    "title": "Dasbor perpustakaan",
+    "navLabel": "Dasbor",
+    "currency": "Rp{amount}",
+    "stats": {
+      "titles": "Judul",
+      "copies": "Eksemplar",
+      "available": "Tersedia",
+      "on_loan": "Dipinjam",
+      "overdue": "Terlambat",
+      "members": "Anggota",
+      "active_members": "Anggota aktif",
+      "visits_today": "Kunjungan hari ini",
+      "loans_today": "Peminjaman hari ini",
+      "returns_today": "Pengembalian hari ini",
+      "unpaid_fines_total": "Denda belum dibayar"
+    },
+    "seriesTitle": "Peminjaman dan pengembalian, 30 hari terakhir",
+    "series": {
+      "loans": "{count} peminjaman",
+      "returns": "{count} pengembalian",
+      "chartLabel": "Grafik 30 hari: {loans} peminjaman, {returns} pengembalian",
+      "dayTooltip": "{day}: {loans} peminjaman, {returns} pengembalian"
+    },
+    "latestLoans": "Peminjaman terbaru",
+    "longestOverdue": "Paling lama terlambat",
+    "popularTitles": "Judul paling sering dipinjam",
+    "noLatestLoans": "Belum ada peminjaman hari ini.",
+    "noOverdue": "Tidak ada yang terlambat saat ini.",
+    "noPopularTitles": "Belum cukup data peminjaman untuk peringkat ini.",
+    "openDesk": "Buka meja sirkulasi",
+    "loanCount": "{count} kali dipinjam"
+  },
   "catalogue": {
     "eyebrow": "Perpustakaan",
     "title": "Katalog",
@@ -36,6 +70,8 @@
       "subjects": "Subjek",
       "language": "Bahasa",
       "abstract": "Abstrak",
+      "materialType": "Jenis bahan",
+      "materialTypePlaceholder": "Pilih jenis bahan",
       "save": "Simpan",
       "saved": "Judul disimpan"
     },
@@ -46,6 +82,11 @@
       "apply": "Isi otomatis",
       "importCover": "Impor sampul",
       "coverImported": "Sampul diimpor"
+    },
+    "duplicateCheck": {
+      "title": "Kemungkinan judul ganda",
+      "body": "Judul dengan ISBN ini sudah ada di katalog: {title}.",
+      "view": "Lihat judul"
     }
   },
   "copies": {
@@ -81,6 +122,14 @@
       "barcode": "Barcode",
       "condition": "Kondisi",
       "notes": "Catatan",
+      "category": "Kategori koleksi",
+      "categoryPlaceholder": "Pilih kategori",
+      "location": "Lokasi rak",
+      "locationPlaceholder": "Pilih lokasi",
+      "source": "Sumber perolehan",
+      "sourcePlaceholder": "Pilih sumber",
+      "partner": "Mitra",
+      "partnerPlaceholder": "Pilih mitra",
       "save": "Simpan",
       "saved": "Eksemplar ditambahkan"
     },
@@ -90,29 +139,87 @@
   "desk": {
     "eyebrow": "Perpustakaan",
     "title": "Meja sirkulasi",
+    "lookup": {
+      "label": "Cari anggota atau eksemplar",
+      "placeholder": "Nama, NIS, nomor anggota, atau judul",
+      "noMatch": "Tidak ada yang cocok"
+    },
     "borrow": {
       "heading": "Pinjam",
-      "barcode": "Barcode eksemplar",
-      "memberId": "ID anggota",
-      "memberIdRequired": "Isi ID anggota sebelum memindai eksemplar",
-      "submit": "Pinjamkan",
-      "success": "Peminjaman berhasil dicatat"
+      "searchPlaceholder": "Cari nama, NIS, atau nomor anggota",
+      "changeMember": "Ganti anggota",
+      "noMemberSelected": "Pilih anggota terlebih dahulu",
+      "scanLabel": "Pindai barcode eksemplar",
+      "scanSubmit": "Tambahkan",
+      "codeNotFound": "Kode {code} tidak ditemukan",
+      "removeFromList": "Hapus {barcode} dari daftar",
+      "rejectedTitle": "Ditolak",
+      "submit": "Pinjamkan {count} eksemplar",
+      "success": "{count} peminjaman berhasil dicatat",
+      "someRejected": "{count} barcode ditolak, lihat daftar di bawah"
+    },
+    "return": {
+      "heading": "Kembalikan",
+      "scanLabel": "Pindai barcode untuk mengembalikan",
+      "scanSubmit": "Kembalikan",
+      "success": "{title} berhasil dikembalikan",
+      "fine": "Denda Rp{amount}"
     },
     "overdue": {
       "heading": "Terlambat",
       "columns": {
         "member": "Anggota",
+        "class": "Kelas",
+        "guardianPhone": "HP orang tua/wali",
         "dueOn": "Jatuh tempo",
         "actions": "Aksi"
       },
+      "renew": "Perpanjang",
+      "renewed": "Peminjaman diperpanjang",
+      "return": "Kembalikan",
+      "returned": "Pengembalian dicatat",
+      "markLost": "Tandai hilang",
+      "sendReminders": "Kirim pengingat",
+      "remindersSent": "Pengingat terkirim ke {count} anggota",
       "emptyTitle": "Tidak ada yang terlambat",
       "emptyBody": "Semua peminjaman aktif masih dalam batas waktu."
+    }
+  },
+  "classLoans": {
+    "eyebrow": "Perpustakaan",
+    "title": "Peminjaman buku pelajaran",
+    "navLabel": "Peminjaman kelas",
+    "changeTitle": "Ganti judul",
+    "titleSearchPlaceholder": "Cari judul buku pelajaran",
+    "tabs": {
+      "borrow": "Pinjam",
+      "returns": "Kembalikan"
     },
-    "return": "Kembalikan",
-    "renew": "Perpanjang",
-    "returned": "Pengembalian dicatat",
-    "renewed": "Peminjaman diperpanjang",
-    "markLost": "Tandai hilang"
+    "borrow": {
+      "heading": "Pinjamkan ke satu kelas",
+      "description": "Pilih kelas dan judul, tinjau pasangan siswa dan eksemplar, lalu konfirmasi sekaligus.",
+      "classLabel": "Kelas",
+      "classPlaceholder": "Pilih kelas",
+      "loadingClasses": "Memuat kelas...",
+      "titleLabel": "Judul",
+      "preview": "Tinjau pasangan",
+      "previewEmptyTitle": "Tidak ada pasangan yang bisa dibuat",
+      "previewEmptyBody": "Eksemplar judul ini tidak cukup untuk kelas yang dipilih, atau semua siswa sudah meminjamnya.",
+      "rejectedTitle": "Tidak bisa dipinjamkan",
+      "commit": "Pinjamkan {count} eksemplar",
+      "committed": "{count} peminjaman kelas berhasil dicatat"
+    },
+    "returns": {
+      "heading": "Kembalikan dari satu kelas",
+      "description": "Mengembalikan peminjaman aktif judul ini untuk seluruh siswa di kelas yang dipilih, misalnya di akhir tahun ajaran.",
+      "classLabel": "Kelas",
+      "classPlaceholder": "Pilih kelas",
+      "loadingClasses": "Memuat kelas...",
+      "titleLabel": "Judul",
+      "submit": "Kembalikan semua",
+      "success": "{count} pengembalian kelas berhasil dicatat",
+      "rejectedTitle": "Tidak bisa dikembalikan"
+    }
   },
   "memberHistory": {
     "title": "Riwayat peminjaman",
@@ -458,6 +565,15 @@
       "donated": "Dihibahkan",
       "reserve_stack": "Rak cadangan",
       "unknown": "Tidak diketahui"
+    },
+    "bulkStatus": {
+      "label": "Ubah status ke",
+      "statusPlaceholder": "Pilih status",
+      "apply": "Terapkan",
+      "confirmTitle": "Ubah status eksemplar",
+      "confirmBody": "{count} eksemplar akan diubah ke status \"{status}\".",
+      "applied": "{count} eksemplar diubah",
+      "appliedWithSkipped": "{count} eksemplar diubah, {skipped} dilewati karena sedang dipinjam"
     }
   },
   "visits": {
@@ -562,6 +678,155 @@
       "unexpected": "Tidak terduga"
     }
   },
+  "masterData": {
+    "eyebrow": "Perpustakaan",
+    "title": "Master data perpustakaan",
+    "navLabel": "Master data",
+    "tabs": {
+      "materialTypes": "Jenis bahan",
+      "acquisitionSources": "Sumber perolehan",
+      "partners": "Mitra",
+      "ddcClasses": "Kelas DDC"
+    },
+    "materialTypes": {
+      "add": "Tambah jenis bahan",
+      "editTitle": "Ubah jenis bahan",
+      "columns": {
+        "code": "Kode",
+        "name": "Nama",
+        "loanLimit": "Batas pinjam",
+        "status": "Status",
+        "actions": "Aksi"
+      },
+      "loanLimitValue": "{items} eksemplar, {days} hari",
+      "active": "Aktif",
+      "inactive": "Nonaktif",
+      "edit": "Ubah",
+      "delete": "Hapus",
+      "deleteTitle": "Hapus jenis bahan",
+      "deleteBody": "Jenis bahan \"{name}\" akan dihapus.",
+      "deleted": "Jenis bahan dihapus",
+      "stillInUse": "Jenis bahan ini masih dipakai oleh judul lain, sehingga tidak bisa dihapus.",
+      "emptyTitle": "Belum ada jenis bahan",
+      "emptyBody": "Tambahkan jenis bahan untuk mengatur batas pinjam per jenis, misalnya buku dan majalah.",
+      "form": {
+        "code": "Kode",
+        "name": "Nama",
+        "maxLoanItems": "Maks. eksemplar",
+        "maxLoanDays": "Maks. hari pinjam",
+        "maxRenewals": "Maks. perpanjangan",
+        "sortOrder": "Urutan",
+        "isActive": "Aktif",
+        "cancel": "Batal",
+        "save": "Simpan"
+      }
+    },
+    "acquisitionSources": {
+      "add": "Tambah sumber",
+      "editTitle": "Ubah sumber perolehan",
+      "columns": {
+        "code": "Kode",
+        "name": "Nama",
+        "status": "Status",
+        "actions": "Aksi"
+      },
+      "active": "Aktif",
+      "inactive": "Nonaktif",
+      "edit": "Ubah",
+      "delete": "Hapus",
+      "deleteTitle": "Hapus sumber perolehan",
+      "deleteBody": "Sumber perolehan \"{name}\" akan dihapus.",
+      "deleted": "Sumber perolehan dihapus",
+      "stillInUse": "Sumber ini masih dipakai oleh eksemplar lain, sehingga tidak bisa dihapus.",
+      "emptyTitle": "Belum ada sumber perolehan",
+      "emptyBody": "Tambahkan sumber seperti pembelian atau hibah untuk dicatat pada setiap eksemplar.",
+      "form": {
+        "code": "Kode",
+        "name": "Nama",
+        "sortOrder": "Urutan",
+        "isActive": "Aktif",
+        "cancel": "Batal",
+        "save": "Simpan"
+      }
+    },
+    "partners": {
+      "add": "Tambah mitra",
+      "editTitle": "Ubah mitra",
+      "columns": {
+        "code": "Kode",
+        "name": "Nama",
+        "contact": "Kontak",
+        "status": "Status",
+        "actions": "Aksi"
+      },
+      "active": "Aktif",
+      "inactive": "Nonaktif",
+      "edit": "Ubah",
+      "delete": "Hapus",
+      "deleteTitle": "Hapus mitra",
+      "deleteBody": "Mitra \"{name}\" akan dihapus.",
+      "deleted": "Mitra dihapus",
+      "stillInUse": "Mitra ini masih dipakai oleh eksemplar lain, sehingga tidak bisa dihapus.",
+      "emptyTitle": "Belum ada mitra",
+      "emptyBody": "Tambahkan donatur atau vendor yang menjadi sumber eksemplar.",
+      "form": {
+        "code": "Kode",
+        "name": "Nama",
+        "contactName": "Nama kontak",
+        "phone": "Telepon",
+        "address": "Alamat",
+        "sortOrder": "Urutan",
+        "isActive": "Aktif",
+        "cancel": "Batal",
+        "save": "Simpan"
+      }
+    },
+    "ddcClasses": {
+      "columns": {
+        "code": "Kode",
+        "name": "Nama"
+      },
+      "emptyTitle": "Data kelas DDC tidak tersedia",
+      "emptyBody": "Hubungi operator platform bila daftar ini seharusnya terisi."
+    }
+  },
+  "loanRules": {
+    "eyebrow": "Perpustakaan",
+    "title": "Aturan peminjaman",
+    "navLabel": "Aturan peminjaman",
+    "add": "Tambah aturan",
+    "everyMemberType": "Semua jenis anggota",
+    "columns": {
+      "memberType": "Jenis anggota",
+      "period": "Periode",
+      "allowLoans": "Peminjaman",
+      "limits": "Batas",
+      "actions": "Aksi"
+    },
+    "loansOpen": "Dibuka",
+    "loansClosed": "Ditutup",
+    "limitsValue": "{items} eksemplar, {days} hari",
+    "limitsDefault": "Ikuti jenis anggota",
+    "delete": "Hapus",
+    "deleteTitle": "Hapus aturan",
+    "deleteBody": "Aturan ini akan dihapus. Buat aturan baru bila perlu mengubahnya.",
+    "deleted": "Aturan dihapus",
+    "emptyTitle": "Belum ada aturan bertanggal",
+    "emptyBody": "Tambahkan aturan untuk mengubah batas pinjam sementara, atau menutup peminjaman pada periode tertentu, misalnya libur panjang.",
+    "form": {
+      "memberType": "Jenis anggota",
+      "memberTypeAll": "Berlaku untuk semua jenis anggota",
+      "startsOn": "Mulai",
+      "endsOn": "Berakhir",
+      "allowLoans": "Peminjaman dibuka pada periode ini",
+      "maxLoanItems": "Maks. eksemplar",
+      "maxLoanDays": "Maks. hari pinjam",
+      "keepDefault": "Ikuti jenis anggota",
+      "notes": "Catatan",
+      "cancel": "Batal",
+      "save": "Simpan"
+    }
+  },
   "reports": {
     "navLabel": "Laporan perpustakaan",
     "eyebrow": "Perpustakaan",
@@ -572,7 +837,11 @@
     "tabs": {
       "loans": "Peminjaman",
       "overdueMembers": "Anggota terlambat",
-      "mostBorrowed": "Paling sering dipinjam"
+      "mostBorrowed": "Paling sering dipinjam",
+      "summary": "Ringkasan akreditasi",
+      "visits": "Kunjungan",
+      "members": "Anggota",
+      "accessionRegister": "Buku induk"
     },
     "monthly": {
       "monthLabel": "Laporan bulanan",
@@ -602,6 +871,55 @@
       "columns": {
         "title": "Judul",
         "loanCount": "Jumlah peminjaman"
+      }
+    },
+    "summary": {
+      "emptyTitle": "Data ringkasan tidak tersedia untuk rentang ini",
+      "stats": {
+        "studentsTotal": "Siswa aktif",
+        "membersTotal": "Anggota",
+        "additionsInPeriod": "Penambahan koleksi",
+        "loansInPeriod": "Peminjaman",
+        "activeBorrowers": "Peminjam aktif",
+        "overdueNow": "Terlambat saat ini",
+        "visitsInPeriod": "Kunjungan",
+        "fiction": "Fiksi",
+        "itemsPerStudent": "Eksemplar per siswa",
+        "loansPerStudent": "Peminjaman per siswa",
+        "visitsPerStudent": "Kunjungan per siswa"
+      },
+      "fictionValue": "{count} dari {total}",
+      "lastStocktake": "Opname terakhir: {name} ({date})",
+      "byDdc": "Menurut kelas DDC",
+      "byCategory": "Menurut kategori koleksi",
+      "byMaterialType": "Menurut jenis bahan"
+    },
+    "visits": {
+      "emptyTitle": "Tidak ada kunjungan pada rentang ini",
+      "total": "{count} kunjungan",
+      "columns": {
+        "day": "Tanggal",
+        "class": "Kelas",
+        "count": "Jumlah"
+      }
+    },
+    "members": {
+      "emptyTitle": "Belum ada anggota",
+      "total": "Total anggota",
+      "active": "Anggota aktif",
+      "columns": {
+        "type": "Jenis anggota",
+        "class": "Kelas",
+        "count": "Jumlah"
+      }
+    },
+    "accessionRegister": {
+      "emptyTitle": "Tidak ada penambahan pada rentang ini",
+      "columns": {
+        "accessionNumber": "No. induk",
+        "title": "Judul",
+        "barcode": "Barcode",
+        "acquiredOn": "Tanggal masuk"
       }
     }
   },
@@ -664,5 +982,44 @@
     "reservationHoldDays": "Batas hari tahan reservasi",
     "save": "Simpan",
     "saved": "Kebijakan disimpan"
+  },
+  "me": {
+    "eyebrow": "Perpustakaan",
+    "title": "Pinjaman saya",
+    "navLabel": "Pinjaman saya",
+    "notMemberTitle": "Belum terdaftar sebagai anggota perpustakaan",
+    "notMemberBody": "Minta pustakawan mendaftarkan Anda untuk mulai meminjam dan memesan buku.",
+    "unpaidFines": "Denda belum dibayar",
+    "currency": "Rp{amount}",
+    "violationKind": {
+      "late": "Keterlambatan",
+      "lost": "Buku hilang",
+      "damaged": "Buku rusak",
+      "other": "Lainnya"
+    },
+    "activeLoans": "Sedang dipinjam",
+    "noActiveLoans": "Tidak ada buku yang sedang dipinjam.",
+    "history": "Riwayat peminjaman",
+    "noHistory": "Belum ada riwayat peminjaman.",
+    "reserve": {
+      "heading": "Reservasi",
+      "emptyBody": "Belum ada reservasi. Cari judul di bawah untuk memesan.",
+      "queuePosition": "Antrean ke-{position}",
+      "status": {
+        "waiting": "Menunggu",
+        "ready": "Siap diambil",
+        "fulfilled": "Selesai",
+        "cancelled": "Dibatalkan",
+        "expired": "Kedaluwarsa"
+      },
+      "cancel": "Batalkan",
+      "cancelled": "Reservasi dibatalkan",
+      "pickTitle": "Pesan judul baru",
+      "searchPlaceholder": "Cari judul atau penulis",
+      "selectedTitle": "Dipilih: {title}",
+      "submit": "Pesan",
+      "reserved": "Reservasi dibuat",
+      "bookingDisabled": "Reservasi mandiri sedang dinonaktifkan. Hubungi pustakawan untuk memesan judul."
+    }
   }
 }

@@ -71,6 +71,24 @@ export function useLibraryTitlesQuery(search: string) {
   });
 }
 
+/**
+ * Looks up an existing title by ISBN, to warn about a likely duplicate
+ * before a new one is created. Separate from the external ISBN lookup
+ * (isbn-lookup-api.ts), which fetches bibliographic data from outside
+ * sources rather than checking the local catalogue.
+ */
+export function useLibraryTitleByIsbnQuery(isbn: string) {
+  const client = useApiClient();
+  const trimmed = isbn.trim();
+  return useQuery({
+    queryKey: keys.title(`isbn:${trimmed}`),
+    queryFn: () =>
+      client.GET("/v1/library/titles/lookup", { params: { query: { isbn: trimmed } } }),
+    enabled: trimmed.length >= 8,
+    retry: false,
+  });
+}
+
 export function useLibraryTitleQuery(titleId: string) {
   const client = useApiClient();
   return useQuery({

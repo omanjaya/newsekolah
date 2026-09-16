@@ -30,6 +30,7 @@ import {
   useLibraryCopiesQuery,
   useLibraryTitleQuery,
 } from "../api";
+import { useLibraryCatalogueOptionsQuery } from "../master-data-api";
 import { useOrderedSelection } from "../use-ordered-selection";
 
 import { CopyLabelPrintBar } from "./copy-label-print-bar";
@@ -170,10 +171,15 @@ function CopyForm({ titleId, onDone }: { titleId: string; onDone: () => void }):
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const create = useCreateLibraryCopyMutation();
+  const options = useLibraryCatalogueOptionsQuery();
 
   const [barcode, setBarcode] = useState("");
   const [condition, setCondition] = useState<LibraryCopyWrite["condition"]>("good");
   const [notes, setNotes] = useState("");
+  const [categoryId, setCategoryId] = useState("");
+  const [locationId, setLocationId] = useState("");
+  const [sourceId, setSourceId] = useState("");
+  const [partnerId, setPartnerId] = useState("");
 
   return (
     <form
@@ -186,6 +192,10 @@ function CopyForm({ titleId, onDone }: { titleId: string; onDone: () => void }):
             barcode: barcode.trim(),
             condition,
             notes: notes.trim() || undefined,
+            category_id: categoryId || undefined,
+            location_id: locationId || undefined,
+            source_id: sourceId || undefined,
+            partner_id: partnerId || undefined,
             is_opac: true,
           },
           {
@@ -238,6 +248,54 @@ function CopyForm({ titleId, onDone }: { titleId: string; onDone: () => void }):
           maxLength={500}
         />
       </label>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <label className="flex flex-col gap-1 text-[13px]">
+          <span className="font-medium">{t("category")}</span>
+          <Select
+            options={(options.data?.collection_categories ?? []).map((c) => ({
+              value: c.id,
+              label: c.name,
+            }))}
+            value={categoryId}
+            onValueChange={setCategoryId}
+            placeholder={t("categoryPlaceholder")}
+            disabled={options.isLoading}
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-[13px]">
+          <span className="font-medium">{t("location")}</span>
+          <Select
+            options={(options.data?.locations ?? []).map((l) => ({ value: l.id, label: l.name }))}
+            value={locationId}
+            onValueChange={setLocationId}
+            placeholder={t("locationPlaceholder")}
+            disabled={options.isLoading}
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-[13px]">
+          <span className="font-medium">{t("source")}</span>
+          <Select
+            options={(options.data?.acquisition_sources ?? []).map((s) => ({
+              value: s.id,
+              label: s.name,
+            }))}
+            value={sourceId}
+            onValueChange={setSourceId}
+            placeholder={t("sourcePlaceholder")}
+            disabled={options.isLoading}
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-[13px]">
+          <span className="font-medium">{t("partner")}</span>
+          <Select
+            options={(options.data?.partners ?? []).map((p) => ({ value: p.id, label: p.name }))}
+            value={partnerId}
+            onValueChange={setPartnerId}
+            placeholder={t("partnerPlaceholder")}
+            disabled={options.isLoading}
+          />
+        </label>
+      </div>
       <Button type="submit" loading={create.isPending}>
         {t("save")}
       </Button>

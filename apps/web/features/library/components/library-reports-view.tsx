@@ -27,8 +27,28 @@ import {
   useMostBorrowedReportQuery,
   useOverdueMembersReportQuery,
 } from "../api";
+import {
+  downloadLibraryAccessionRegisterReportXlsx,
+  downloadLibraryMembersReportXlsx,
+  downloadLibrarySummaryReportXlsx,
+  downloadLibraryVisitsReportXlsx,
+} from "../reports-api";
 
-type ReportTab = "loans" | "overdueMembers" | "mostBorrowed";
+import { ReportAccessionRegisterTable } from "./report-accession-register-table";
+import { ReportMembersTable } from "./report-members-table";
+import { ReportSummaryTable } from "./report-summary-table";
+import { ReportVisitsTable } from "./report-visits-table";
+
+type ReportTab =
+  | "loans"
+  | "overdueMembers"
+  | "mostBorrowed"
+  | "summary"
+  | "visits"
+  | "members"
+  | "accessionRegister";
+
+const TABS_WITHOUT_DATE_RANGE: ReportTab[] = ["overdueMembers", "members"];
 
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
@@ -54,6 +74,10 @@ export function LibraryReportsView(): ReactElement {
     loans: () => downloadLoansReportXlsx(from, to),
     overdueMembers: downloadOverdueMembersReportXlsx,
     mostBorrowed: () => downloadMostBorrowedReportXlsx(from, to),
+    summary: () => downloadLibrarySummaryReportXlsx(from, to),
+    visits: () => downloadLibraryVisitsReportXlsx(from, to),
+    members: downloadLibraryMembersReportXlsx,
+    accessionRegister: () => downloadLibraryAccessionRegisterReportXlsx(from, to),
   }[tab];
 
   return (
@@ -70,11 +94,15 @@ export function LibraryReportsView(): ReactElement {
           <TabsTrigger value="loans">{t("tabs.loans")}</TabsTrigger>
           <TabsTrigger value="overdueMembers">{t("tabs.overdueMembers")}</TabsTrigger>
           <TabsTrigger value="mostBorrowed">{t("tabs.mostBorrowed")}</TabsTrigger>
+          <TabsTrigger value="summary">{t("tabs.summary")}</TabsTrigger>
+          <TabsTrigger value="visits">{t("tabs.visits")}</TabsTrigger>
+          <TabsTrigger value="members">{t("tabs.members")}</TabsTrigger>
+          <TabsTrigger value="accessionRegister">{t("tabs.accessionRegister")}</TabsTrigger>
         </TabsList>
       </Tabs>
 
       <div className="flex flex-wrap items-end justify-between gap-3">
-        {tab !== "overdueMembers" ? (
+        {!TABS_WITHOUT_DATE_RANGE.includes(tab) ? (
           <div className="flex flex-wrap items-end gap-3">
             <label className="flex flex-col gap-1 text-[13px]">
               <span className="font-medium text-fg">{t("fromLabel")}</span>
@@ -115,6 +143,10 @@ export function LibraryReportsView(): ReactElement {
       {tab === "loans" && <LoansReportTable from={from} to={to} />}
       {tab === "overdueMembers" && <OverdueMembersReportTable />}
       {tab === "mostBorrowed" && <MostBorrowedReportTable from={from} to={to} />}
+      {tab === "summary" && <ReportSummaryTable from={from} to={to} />}
+      {tab === "visits" && <ReportVisitsTable from={from} to={to} />}
+      {tab === "members" && <ReportMembersTable />}
+      {tab === "accessionRegister" && <ReportAccessionRegisterTable from={from} to={to} />}
 
       <div className="flex flex-wrap items-end gap-3 border-t border-border pt-6">
         <label className="flex flex-col gap-1 text-[13px]">

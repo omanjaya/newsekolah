@@ -4,6 +4,40 @@
     "desk": "Loan desk",
     "stocktake": "Stocktake"
   },
+  "dashboard": {
+    "eyebrow": "Library",
+    "title": "Library dashboard",
+    "navLabel": "Dashboard",
+    "currency": "Rp{amount}",
+    "stats": {
+      "titles": "Titles",
+      "copies": "Copies",
+      "available": "Available",
+      "on_loan": "On loan",
+      "overdue": "Overdue",
+      "members": "Members",
+      "active_members": "Active members",
+      "visits_today": "Visits today",
+      "loans_today": "Loans today",
+      "returns_today": "Returns today",
+      "unpaid_fines_total": "Unpaid fines"
+    },
+    "seriesTitle": "Loans and returns, last 30 days",
+    "series": {
+      "loans": "{count} loans",
+      "returns": "{count} returns",
+      "chartLabel": "30-day chart: {loans} loans, {returns} returns",
+      "dayTooltip": "{day}: {loans} loans, {returns} returns"
+    },
+    "latestLoans": "Latest loans",
+    "longestOverdue": "Longest overdue",
+    "popularTitles": "Most borrowed titles",
+    "noLatestLoans": "No loans recorded today yet.",
+    "noOverdue": "Nothing is overdue right now.",
+    "noPopularTitles": "Not enough loan history yet for a ranking.",
+    "openDesk": "Open the loan desk",
+    "loanCount": "borrowed {count} times"
+  },
   "catalogue": {
     "eyebrow": "Library",
     "title": "Catalogue",
@@ -36,6 +70,8 @@
       "subjects": "Subjects",
       "language": "Language",
       "abstract": "Abstract",
+      "materialType": "Material type",
+      "materialTypePlaceholder": "Pick a material type",
       "save": "Save",
       "saved": "Title saved"
     },
@@ -46,6 +82,11 @@
       "apply": "Autofill",
       "importCover": "Import cover",
       "coverImported": "Cover imported"
+    },
+    "duplicateCheck": {
+      "title": "Possible duplicate title",
+      "body": "A title with this ISBN already exists in the catalogue: {title}.",
+      "view": "View title"
     }
   },
   "copies": {
@@ -81,6 +122,14 @@
       "barcode": "Barcode",
       "condition": "Condition",
       "notes": "Notes",
+      "category": "Collection category",
+      "categoryPlaceholder": "Pick a category",
+      "location": "Shelf location",
+      "locationPlaceholder": "Pick a location",
+      "source": "Acquisition source",
+      "sourcePlaceholder": "Pick a source",
+      "partner": "Partner",
+      "partnerPlaceholder": "Pick a partner",
       "save": "Save",
       "saved": "Copy added"
     },
@@ -90,29 +139,87 @@
   "desk": {
     "eyebrow": "Library",
     "title": "Loan desk",
+    "lookup": {
+      "label": "Search a member or copy",
+      "placeholder": "Name, student ID, member number, or title",
+      "noMatch": "No match"
+    },
     "borrow": {
       "heading": "Borrow",
-      "barcode": "Copy barcode",
-      "memberId": "Member ID",
-      "memberIdRequired": "Enter the member ID before scanning a copy",
-      "submit": "Lend",
-      "success": "Loan recorded"
+      "searchPlaceholder": "Search by name, student ID, or member number",
+      "changeMember": "Change member",
+      "noMemberSelected": "Pick a member first",
+      "scanLabel": "Scan the copy's barcode",
+      "scanSubmit": "Add",
+      "codeNotFound": "Code {code} was not found",
+      "removeFromList": "Remove {barcode} from the list",
+      "rejectedTitle": "Rejected",
+      "submit": "Lend {count} copies",
+      "success": "{count} loans recorded",
+      "someRejected": "{count} barcodes rejected, see the list below"
+    },
+    "return": {
+      "heading": "Return",
+      "scanLabel": "Scan a barcode to return it",
+      "scanSubmit": "Return",
+      "success": "{title} returned",
+      "fine": "Fine Rp{amount}"
     },
     "overdue": {
       "heading": "Overdue",
       "columns": {
         "member": "Member",
+        "class": "Class",
+        "guardianPhone": "Guardian phone",
         "dueOn": "Due on",
         "actions": "Actions"
       },
+      "renew": "Renew",
+      "renewed": "Loan renewed",
+      "return": "Return",
+      "returned": "Return recorded",
+      "markLost": "Mark lost",
+      "sendReminders": "Send reminders",
+      "remindersSent": "Reminder sent to {count} members",
       "emptyTitle": "Nothing overdue",
       "emptyBody": "Every active loan is still within its due date."
+    }
+  },
+  "classLoans": {
+    "eyebrow": "Library",
+    "title": "Class textbook loans",
+    "navLabel": "Class loans",
+    "changeTitle": "Change title",
+    "titleSearchPlaceholder": "Search a textbook title",
+    "tabs": {
+      "borrow": "Borrow",
+      "returns": "Return"
     },
-    "return": "Return",
-    "renew": "Renew",
-    "returned": "Return recorded",
-    "renewed": "Loan renewed",
-    "markLost": "Mark lost"
+    "borrow": {
+      "heading": "Lend to one class",
+      "description": "Pick a class and a title, review the student/copy pairing, then commit it all at once.",
+      "classLabel": "Class",
+      "classPlaceholder": "Pick a class",
+      "loadingClasses": "Loading classes...",
+      "titleLabel": "Title",
+      "preview": "Preview pairing",
+      "previewEmptyTitle": "No pairs could be made",
+      "previewEmptyBody": "This title does not have enough copies for the class, or every student already has one on loan.",
+      "rejectedTitle": "Could not be lent",
+      "commit": "Lend {count} copies",
+      "committed": "{count} class loans recorded"
+    },
+    "returns": {
+      "heading": "Return from one class",
+      "description": "Returns this title's active loan for every student in the class, for example at the end of the school year.",
+      "classLabel": "Class",
+      "classPlaceholder": "Pick a class",
+      "loadingClasses": "Loading classes...",
+      "titleLabel": "Title",
+      "submit": "Return all",
+      "success": "{count} class returns recorded",
+      "rejectedTitle": "Could not be returned"
+    }
   },
   "memberHistory": {
     "title": "Loan history",
@@ -458,6 +565,15 @@
       "donated": "Donated",
       "reserve_stack": "Reserve stack",
       "unknown": "Unknown"
+    },
+    "bulkStatus": {
+      "label": "Change status to",
+      "statusPlaceholder": "Pick a status",
+      "apply": "Apply",
+      "confirmTitle": "Change copy status",
+      "confirmBody": "{count} copies will change to \"{status}\".",
+      "applied": "{count} copies updated",
+      "appliedWithSkipped": "{count} copies updated, {skipped} skipped because they are on loan"
     }
   },
   "visits": {
@@ -562,6 +678,155 @@
       "unexpected": "Unexpected"
     }
   },
+  "masterData": {
+    "eyebrow": "Library",
+    "title": "Library master data",
+    "navLabel": "Master data",
+    "tabs": {
+      "materialTypes": "Material types",
+      "acquisitionSources": "Acquisition sources",
+      "partners": "Partners",
+      "ddcClasses": "DDC classes"
+    },
+    "materialTypes": {
+      "add": "Add material type",
+      "editTitle": "Edit material type",
+      "columns": {
+        "code": "Code",
+        "name": "Name",
+        "loanLimit": "Loan limit",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "loanLimitValue": "{items} copies, {days} days",
+      "active": "Active",
+      "inactive": "Inactive",
+      "edit": "Edit",
+      "delete": "Delete",
+      "deleteTitle": "Delete material type",
+      "deleteBody": "Material type \"{name}\" will be deleted.",
+      "deleted": "Material type deleted",
+      "stillInUse": "This material type is still used by another title, so it cannot be deleted.",
+      "emptyTitle": "No material types yet",
+      "emptyBody": "Add a material type to set loan limits per kind of item, such as books and magazines.",
+      "form": {
+        "code": "Code",
+        "name": "Name",
+        "maxLoanItems": "Max copies",
+        "maxLoanDays": "Max loan days",
+        "maxRenewals": "Max renewals",
+        "sortOrder": "Sort order",
+        "isActive": "Active",
+        "cancel": "Cancel",
+        "save": "Save"
+      }
+    },
+    "acquisitionSources": {
+      "add": "Add source",
+      "editTitle": "Edit acquisition source",
+      "columns": {
+        "code": "Code",
+        "name": "Name",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "active": "Active",
+      "inactive": "Inactive",
+      "edit": "Edit",
+      "delete": "Delete",
+      "deleteTitle": "Delete acquisition source",
+      "deleteBody": "Acquisition source \"{name}\" will be deleted.",
+      "deleted": "Acquisition source deleted",
+      "stillInUse": "This source is still used by another copy, so it cannot be deleted.",
+      "emptyTitle": "No acquisition sources yet",
+      "emptyBody": "Add sources such as purchase or donation to record on each copy.",
+      "form": {
+        "code": "Code",
+        "name": "Name",
+        "sortOrder": "Sort order",
+        "isActive": "Active",
+        "cancel": "Cancel",
+        "save": "Save"
+      }
+    },
+    "partners": {
+      "add": "Add partner",
+      "editTitle": "Edit partner",
+      "columns": {
+        "code": "Code",
+        "name": "Name",
+        "contact": "Contact",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "active": "Active",
+      "inactive": "Inactive",
+      "edit": "Edit",
+      "delete": "Delete",
+      "deleteTitle": "Delete partner",
+      "deleteBody": "Partner \"{name}\" will be deleted.",
+      "deleted": "Partner deleted",
+      "stillInUse": "This partner is still used by another copy, so it cannot be deleted.",
+      "emptyTitle": "No partners yet",
+      "emptyBody": "Add the donors or vendors that copies come from.",
+      "form": {
+        "code": "Code",
+        "name": "Name",
+        "contactName": "Contact name",
+        "phone": "Phone",
+        "address": "Address",
+        "sortOrder": "Sort order",
+        "isActive": "Active",
+        "cancel": "Cancel",
+        "save": "Save"
+      }
+    },
+    "ddcClasses": {
+      "columns": {
+        "code": "Code",
+        "name": "Name"
+      },
+      "emptyTitle": "DDC class data is unavailable",
+      "emptyBody": "Contact the platform operator if this list should be populated."
+    }
+  },
+  "loanRules": {
+    "eyebrow": "Library",
+    "title": "Loan rules",
+    "navLabel": "Loan rules",
+    "add": "Add rule",
+    "everyMemberType": "Every member type",
+    "columns": {
+      "memberType": "Member type",
+      "period": "Period",
+      "allowLoans": "Lending",
+      "limits": "Limits",
+      "actions": "Actions"
+    },
+    "loansOpen": "Open",
+    "loansClosed": "Closed",
+    "limitsValue": "{items} copies, {days} days",
+    "limitsDefault": "Follows member type",
+    "delete": "Delete",
+    "deleteTitle": "Delete rule",
+    "deleteBody": "This rule will be deleted. Add a new one if you need to change it.",
+    "deleted": "Rule deleted",
+    "emptyTitle": "No dated rules yet",
+    "emptyBody": "Add a rule to change loan limits temporarily, or close lending for a period such as a long holiday.",
+    "form": {
+      "memberType": "Member type",
+      "memberTypeAll": "Applies to every member type",
+      "startsOn": "Starts on",
+      "endsOn": "Ends on",
+      "allowLoans": "Lending is open during this period",
+      "maxLoanItems": "Max copies",
+      "maxLoanDays": "Max loan days",
+      "keepDefault": "Follows member type",
+      "notes": "Notes",
+      "cancel": "Cancel",
+      "save": "Save"
+    }
+  },
   "reports": {
     "navLabel": "Library reports",
     "eyebrow": "Library",
@@ -572,7 +837,11 @@
     "tabs": {
       "loans": "Loans",
       "overdueMembers": "Overdue members",
-      "mostBorrowed": "Most borrowed"
+      "mostBorrowed": "Most borrowed",
+      "summary": "Accreditation summary",
+      "visits": "Visits",
+      "members": "Members",
+      "accessionRegister": "Accession register"
     },
     "monthly": {
       "monthLabel": "Monthly report",
@@ -602,6 +871,55 @@
       "columns": {
         "title": "Title",
         "loanCount": "Loans"
+      }
+    },
+    "summary": {
+      "emptyTitle": "Summary data is unavailable for this range",
+      "stats": {
+        "studentsTotal": "Active students",
+        "membersTotal": "Members",
+        "additionsInPeriod": "Collection additions",
+        "loansInPeriod": "Loans",
+        "activeBorrowers": "Active borrowers",
+        "overdueNow": "Overdue now",
+        "visitsInPeriod": "Visits",
+        "fiction": "Fiction",
+        "itemsPerStudent": "Copies per student",
+        "loansPerStudent": "Loans per student",
+        "visitsPerStudent": "Visits per student"
+      },
+      "fictionValue": "{count} of {total}",
+      "lastStocktake": "Last stocktake: {name} ({date})",
+      "byDdc": "By DDC class",
+      "byCategory": "By collection category",
+      "byMaterialType": "By material type"
+    },
+    "visits": {
+      "emptyTitle": "No visits in this range",
+      "total": "{count} visits",
+      "columns": {
+        "day": "Date",
+        "class": "Class",
+        "count": "Count"
+      }
+    },
+    "members": {
+      "emptyTitle": "No members yet",
+      "total": "Total members",
+      "active": "Active members",
+      "columns": {
+        "type": "Member type",
+        "class": "Class",
+        "count": "Count"
+      }
+    },
+    "accessionRegister": {
+      "emptyTitle": "No additions in this range",
+      "columns": {
+        "accessionNumber": "Accession no.",
+        "title": "Title",
+        "barcode": "Barcode",
+        "acquiredOn": "Acquired on"
       }
     }
   },
@@ -664,5 +982,44 @@
     "reservationHoldDays": "Reservation hold days",
     "save": "Save",
     "saved": "Policy saved"
+  },
+  "me": {
+    "eyebrow": "Library",
+    "title": "My loans",
+    "navLabel": "My loans",
+    "notMemberTitle": "Not registered as a library member yet",
+    "notMemberBody": "Ask a librarian to register you before you can borrow or reserve books.",
+    "unpaidFines": "Unpaid fines",
+    "currency": "Rp{amount}",
+    "violationKind": {
+      "late": "Late return",
+      "lost": "Lost book",
+      "damaged": "Damaged book",
+      "other": "Other"
+    },
+    "activeLoans": "Currently borrowed",
+    "noActiveLoans": "No books on loan right now.",
+    "history": "Loan history",
+    "noHistory": "No loan history yet.",
+    "reserve": {
+      "heading": "Reservations",
+      "emptyBody": "No reservations yet. Search a title below to reserve one.",
+      "queuePosition": "Queue position {position}",
+      "status": {
+        "waiting": "Waiting",
+        "ready": "Ready for pickup",
+        "fulfilled": "Fulfilled",
+        "cancelled": "Cancelled",
+        "expired": "Expired"
+      },
+      "cancel": "Cancel",
+      "cancelled": "Reservation cancelled",
+      "pickTitle": "Reserve a new title",
+      "searchPlaceholder": "Search title or author",
+      "selectedTitle": "Selected: {title}",
+      "submit": "Reserve",
+      "reserved": "Reservation created",
+      "bookingDisabled": "Self-service reservations are turned off right now. Ask a librarian to reserve a title."
+    }
   }
 }

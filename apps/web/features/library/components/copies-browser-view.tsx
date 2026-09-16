@@ -15,6 +15,7 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { useCan } from "../../../lib/session/session-provider";
 import { useLookup } from "../../reference/api";
 import type { LibraryCopy } from "../api";
 import {
@@ -25,6 +26,7 @@ import {
 } from "../copies-api";
 import { useOrderedSelection } from "../use-ordered-selection";
 
+import { CopyBulkStatusBar } from "./copy-bulk-status-bar";
 import { CopyLabelPrintBar } from "./copy-label-print-bar";
 
 const STATUSES: LibraryCopyStatus[] = [
@@ -43,6 +45,7 @@ const STATUSES: LibraryCopyStatus[] = [
 /** Browses every copy in the catalogue, for selecting a batch to label (see title-copies-view for one title's own list). */
 export function CopiesBrowserView(): ReactElement {
   const t = useTranslations("app.library.copiesBrowser");
+  const canManage = useCan("manage_library_catalog");
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<LibraryCopyStatus | "">("");
   const [categoryId, setCategoryId] = useState("");
@@ -169,6 +172,7 @@ export function CopiesBrowserView(): ReactElement {
       </div>
 
       <CopyLabelPrintBar selectedIds={orderedIds} onClear={clear} />
+      {canManage && <CopyBulkStatusBar selectedIds={orderedIds} onDone={clear} />}
 
       <DataTable
         data={items}

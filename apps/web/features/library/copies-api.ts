@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError, type components } from "@newsekolah/api-client";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { getAccessToken } from "../../lib/api/access-token";
 import { useApiClient } from "../../lib/api/client";
@@ -9,6 +9,25 @@ import { API_URL } from "../../lib/env";
 
 export type LibraryCopyStatus = components["schemas"]["LibraryCopyStatus"];
 export type LibraryMasterEntry = components["schemas"]["LibraryMasterEntry"];
+export type LibraryCopy = components["schemas"]["LibraryCopy"];
+
+/**
+ * Sets one manual status on several copies at once; a copy currently on
+ * loan is silently skipped by the API rather than rejected, so the caller
+ * compares `copy_ids.length` against the returned `data.length` to report
+ * how many were skipped.
+ */
+export function useBulkSetLibraryCopyStatusMutation() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { copy_ids: string[]; status: LibraryCopyStatus; note?: string }) =>
+      client.POST("/v1/library/copies/bulk-status", { body }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["library"] });
+    },
+  });
+}
 
 export function useLibraryCopiesFilteredQuery(params: {
   titleId?: string;
