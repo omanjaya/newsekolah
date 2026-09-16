@@ -7,6 +7,7 @@
   "tabGradebook": "Grades",
   "tabSettings": "Settings",
   "tabErapor": "e-Rapor",
+  "tabTpMapping": "TP mapping",
   "kind": {
     "formative": "Formative",
     "summative": "Summative",
@@ -66,14 +67,16 @@
     "title": "Stars for {name}",
     "currentBalance": "Current balance: {count} stars",
     "action": "Action",
-    "give": "Give a star",
-    "take": "Take a star",
+    "give": "Give",
+    "take": "Take",
+    "amount": "Amount",
+    "amountHint": "1 to 999 stars",
     "note": "Note",
-    "notePlaceholder": "A short reason (optional)",
+    "notePlaceholder": "A short reason (optional, up to 255 characters)",
     "cancel": "Cancel",
     "save": "Save",
-    "added": "Star added.",
-    "subtracted": "Star subtracted."
+    "added": "{count, plural, one {# star added} other {# stars added}}",
+    "subtracted": "{count, plural, one {# star taken} other {# stars taken}}"
   },
   "manualScoreDialog": {
     "title": "Report score for {name}",
@@ -95,21 +98,24 @@
     "scaleSave": "Save scale",
     "scaleSaved": "Grading scale saved.",
     "rangesTitle": "Report score increase ranges",
-    "rangesHint": "Sets how much a report score may increase for a given raw-score range.",
-    "rangesEmptyTitle": "No ranges yet",
-    "rangesEmptyBody": "Add a range to cap the report score increase for a band of raw scores.",
-    "rangeRow": "{min}-{max}: +{increase} ({subject})",
-    "rangeDelete": "Delete",
+    "rangesHint": "Sets how much a report score may increase for a given raw-score range. Saving replaces every range of the chosen subject and scope at once.",
+    "rangesEmptyBody": "No ranges yet for this subject and scope. Add one below.",
+    "rangeSubject": "Subject",
+    "rangeSubjectPlaceholder": "Choose a subject",
+    "rangePickSubjectFirst": "Choose a subject to see and edit its ranges.",
+    "rangeScope": "Scope",
+    "rangeSchoolWide": "Whole school",
+    "rangeYourOwn": "Your own",
+    "rangeYourOwnHint": "Ranges apply to your own classes for this subject.",
     "rangeMin": "From score",
     "rangeMax": "To score",
     "rangeIncrease": "Increase",
-    "rangeSubject": "Subject",
-    "rangeAllSubjects": "All subjects",
-    "rangeAdd": "Add range",
-    "rangeSaved": "Range saved.",
-    "rangeDeleteTitle": "Delete range",
-    "rangeDeleteBody": "This range will be deleted and will no longer affect report score calculations.",
-    "rangeDeleted": "Range deleted."
+    "rangeAddRow": "Add a range",
+    "rangeRemoveRow": "Remove this range",
+    "rangesSave": "Save ranges",
+    "rangesSaved": "Ranges saved.",
+    "rangeOverlapTitle": "These ranges overlap",
+    "rangeOverlapBody": "Adjust the ranges so no score falls inside two of them, then save again."
   },
   "myGrades": {
     "loadError": "Grades failed to load.",
@@ -121,7 +127,10 @@
     "unknownSubject": "Subject",
     "noComponents": "No graded components for this subject yet.",
     "belowKktp": "Below minimum mastery",
-    "average": "Average {score}"
+    "average": "Average {score}",
+    "starsBreakdown": "Stars by subject and teacher",
+    "starsBreakdownEmpty": "No stars yet.",
+    "starsBreakdownRow": "{count} from {teacher}"
   },
   "erapor": {
     "pickTerm": "Select term",
@@ -146,6 +155,29 @@
       "no_published_score": "Score not published"
     },
     "download": "Download e-Rapor file",
-    "downloadError": "Could not download the e-Rapor file."
+    "downloadError": "Could not download the e-Rapor file.",
+    "legacyTitle": "Legacy layout",
+    "legacyHint": "The old per-subject sheet (No / NIS / Nama / Nilai Rapor / one column per mapped TP code / Validasi), for import tooling that still expects this shape.",
+    "legacySubject": "Subject",
+    "legacyDownload": "Download legacy sheet"
+  },
+  "tpMapping": {
+    "pickTerm": "Select term",
+    "noComponents": "No formative components (or the tenant's configured TP kind) for this class, subject and term yet.",
+    "columns": {
+      "component": "Component",
+      "exportCode": "Export code",
+      "rRange": "R range",
+      "tRange": "T range",
+      "rMin": "R minimum",
+      "rMax": "R maximum",
+      "tMin": "T minimum",
+      "tMax": "T maximum",
+      "actions": "Actions"
+    },
+    "save": "Save",
+    "saved": "Mapping saved.",
+    "remove": "Remove",
+    "deleted": "Mapping removed."
   }
 }

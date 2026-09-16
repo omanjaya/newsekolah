@@ -11,8 +11,9 @@ import { useClassesQuery, useSubjectsQuery } from "../../reference/api";
 import { EraporExport } from "./erapor-export";
 import { GradebookSheet } from "./gradebook-sheet";
 import { GradingSettings } from "./grading-settings";
+import { TPMappingEditor } from "./tp-mapping-editor";
 
-type Tab = "gradebook" | "settings" | "erapor";
+type Tab = "gradebook" | "settings" | "erapor" | "tp";
 
 /**
  * The teacher's gradebook screen: pick a class and subject, then work in
@@ -65,17 +66,26 @@ export function GradingView(): ReactElement {
           >
             <TabsList>
               <TabsTrigger value="gradebook">{t("tabGradebook")}</TabsTrigger>
+              {canManageGrades && <TabsTrigger value="tp">{t("tabTpMapping")}</TabsTrigger>}
               {canManageGrades && <TabsTrigger value="erapor">{t("tabErapor")}</TabsTrigger>}
-              {canManageSettings && <TabsTrigger value="settings">{t("tabSettings")}</TabsTrigger>}
+              {(canManageSettings || canManageGrades) && (
+                <TabsTrigger value="settings">{t("tabSettings")}</TabsTrigger>
+              )}
             </TabsList>
           </Tabs>
         )}
       </div>
 
-      {tab === "settings" && canManageSettings ? (
-        <GradingSettings />
+      {tab === "settings" && (canManageSettings || canManageGrades) ? (
+        <GradingSettings canManageSettings={canManageSettings} />
       ) : tab === "erapor" && canManageGrades ? (
         <EraporExport />
+      ) : tab === "tp" && canManageGrades && effectiveClassId && effectiveSubjectId ? (
+        <TPMappingEditor
+          key={`tp-${effectiveClassId}-${effectiveSubjectId}`}
+          classId={effectiveClassId}
+          subjectId={effectiveSubjectId}
+        />
       ) : effectiveClassId && effectiveSubjectId ? (
         <GradebookSheet
           key={`${effectiveClassId}-${effectiveSubjectId}`}

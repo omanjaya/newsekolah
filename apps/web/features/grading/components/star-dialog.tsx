@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Dialog, DialogContent, Textarea, cn, useToast } from "@newsekolah/ui";
+import { Button, Dialog, DialogContent, Input, Textarea, cn, useToast } from "@newsekolah/ui";
 import { Minus, Plus, Star } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -38,19 +38,28 @@ export function StarDialog({
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const giveStar = useGiveStarMutation();
-  const [delta, setDelta] = useState<1 | -1>(1);
+  const [direction, setDirection] = useState<1 | -1>(1);
+  const [amount, setAmount] = useState("1");
   const [note, setNote] = useState("");
 
+  const parsedAmount = Number(amount);
+  const validAmount = Number.isInteger(parsedAmount) && parsedAmount >= 1 && parsedAmount <= 999;
+
   async function submit() {
+    if (!validAmount) return;
     try {
       await giveStar.mutateAsync({
         student_user_id: studentId,
         class_id: classId,
         ...(subjectId ? { subject_id: subjectId } : {}),
-        delta,
+        delta: direction * parsedAmount,
         ...(note.trim() ? { note: note.trim() } : {}),
       });
-      toast.success(delta > 0 ? t("added") : t("subtracted"));
+      toast.success(
+        direction > 0
+          ? t("added", { count: parsedAmount })
+          : t("subtracted", { count: parsedAmount }),
+      );
       onOpenChange(false);
     } catch (error) {
       toast.error(
@@ -77,13 +86,13 @@ export function StarDialog({
             <button
               type="button"
               role="radio"
-              aria-checked={delta === 1}
+              aria-checked={direction === 1}
               onClick={() => {
-                setDelta(1);
+                setDirection(1);
               }}
               className={cn(
                 "flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xs border border-border px-3 py-2 text-[13px] font-medium md:min-h-0",
-                delta === 1 ? "border-accent bg-accent/10 text-accent" : "text-fg hover:bg-bg",
+                direction === 1 ? "border-accent bg-accent/10 text-accent" : "text-fg hover:bg-bg",
               )}
             >
               <Plus className="size-4" aria-hidden="true" />
@@ -92,13 +101,13 @@ export function StarDialog({
             <button
               type="button"
               role="radio"
-              aria-checked={delta === -1}
+              aria-checked={direction === -1}
               onClick={() => {
-                setDelta(-1);
+                setDirection(-1);
               }}
               className={cn(
                 "flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xs border border-border px-3 py-2 text-[13px] font-medium md:min-h-0",
-                delta === -1
+                direction === -1
                   ? "border-status-absent bg-status-absent/10 text-status-absent"
                   : "text-fg hover:bg-bg",
               )}
@@ -108,11 +117,26 @@ export function StarDialog({
             </button>
           </div>
           <label className="flex flex-col gap-1 text-[13px]">
+            <span className="font-medium">{t("amount")}</span>
+            <Input
+              type="number"
+              min={1}
+              max={999}
+              value={amount}
+              onChange={(e) => {
+                setAmount(e.target.value);
+              }}
+              className="w-24"
+            />
+            <span className="text-[12px] text-fg-muted">{t("amountHint")}</span>
+          </label>
+          <label className="flex flex-col gap-1 text-[13px]">
             <span className="font-medium">{t("note")}</span>
             <Textarea
               rows={2}
               value={note}
               placeholder={t("notePlaceholder")}
+              maxLength={255}
               onChange={(e) => {
                 setNote(e.target.value);
               }}
@@ -128,7 +152,7 @@ export function StarDialog({
             >
               {t("cancel")}
             </Button>
-            <Button type="submit" loading={giveStar.isPending}>
+            <Button type="submit" loading={giveStar.isPending} disabled={!validAmount}>
               {t("save")}
             </Button>
           </div>

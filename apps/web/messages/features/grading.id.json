@@ -7,6 +7,7 @@
   "tabGradebook": "Nilai",
   "tabSettings": "Pengaturan",
   "tabErapor": "e-Rapor",
+  "tabTpMapping": "Pemetaan TP",
   "kind": {
     "formative": "Formatif",
     "summative": "Sumatif",
@@ -66,14 +67,16 @@
     "title": "Bintang untuk {name}",
     "currentBalance": "Saldo saat ini: {count} bintang",
     "action": "Tindakan",
-    "give": "Beri bintang",
-    "take": "Ambil bintang",
+    "give": "Beri",
+    "take": "Ambil",
+    "amount": "Jumlah",
+    "amountHint": "1 sampai 999 bintang",
     "note": "Catatan",
-    "notePlaceholder": "Alasan singkat (opsional)",
+    "notePlaceholder": "Alasan singkat (opsional, maksimal 255 karakter)",
     "cancel": "Batal",
     "save": "Simpan",
-    "added": "Bintang ditambahkan.",
-    "subtracted": "Bintang dikurangi."
+    "added": "{count, plural, other {# bintang ditambahkan}}",
+    "subtracted": "{count, plural, other {# bintang diambil}}"
   },
   "manualScoreDialog": {
     "title": "Nilai rapor {name}",
@@ -95,21 +98,24 @@
     "scaleSave": "Simpan skala",
     "scaleSaved": "Skala penilaian tersimpan.",
     "rangesTitle": "Rentang kenaikan nilai rapor",
-    "rangesHint": "Menentukan seberapa besar nilai rapor boleh dinaikkan berdasarkan rentang nilai mentah.",
-    "rangesEmptyTitle": "Belum ada rentang",
-    "rangesEmptyBody": "Tambah rentang untuk membatasi kenaikan nilai rapor per rentang nilai mentah.",
-    "rangeRow": "{min}-{max}: naik {increase} ({subject})",
-    "rangeDelete": "Hapus",
+    "rangesHint": "Menentukan seberapa besar nilai rapor boleh dinaikkan berdasarkan rentang nilai mentah. Menyimpan mengganti seluruh rentang mapel dan cakupan yang dipilih sekaligus.",
+    "rangesEmptyBody": "Belum ada rentang untuk mapel dan cakupan ini. Tambahkan di bawah.",
+    "rangeSubject": "Mapel",
+    "rangeSubjectPlaceholder": "Pilih mapel",
+    "rangePickSubjectFirst": "Pilih mapel untuk melihat dan mengubah rentangnya.",
+    "rangeScope": "Cakupan",
+    "rangeSchoolWide": "Seluruh sekolah",
+    "rangeYourOwn": "Milik Anda",
+    "rangeYourOwnHint": "Rentang berlaku untuk kelas Anda sendiri pada mapel ini.",
     "rangeMin": "Nilai dari",
     "rangeMax": "Nilai sampai",
     "rangeIncrease": "Kenaikan",
-    "rangeSubject": "Mapel",
-    "rangeAllSubjects": "Semua mapel",
-    "rangeAdd": "Tambah rentang",
-    "rangeSaved": "Rentang tersimpan.",
-    "rangeDeleteTitle": "Hapus rentang",
-    "rangeDeleteBody": "Rentang ini akan dihapus dan tidak lagi memengaruhi perhitungan nilai rapor.",
-    "rangeDeleted": "Rentang dihapus."
+    "rangeAddRow": "Tambah rentang",
+    "rangeRemoveRow": "Hapus rentang ini",
+    "rangesSave": "Simpan rentang",
+    "rangesSaved": "Rentang tersimpan.",
+    "rangeOverlapTitle": "Rentang ini saling tumpang tindih",
+    "rangeOverlapBody": "Atur ulang rentang agar tidak ada nilai yang masuk ke dua rentang, lalu simpan lagi."
   },
   "myGrades": {
     "loadError": "Nilai gagal dimuat.",
@@ -121,7 +127,10 @@
     "unknownSubject": "Mapel",
     "noComponents": "Belum ada komponen nilai untuk mapel ini.",
     "belowKktp": "Di bawah KKTP",
-    "average": "Rata-rata {score}"
+    "average": "Rata-rata {score}",
+    "starsBreakdown": "Bintang per mapel dan guru",
+    "starsBreakdownEmpty": "Belum ada bintang.",
+    "starsBreakdownRow": "{count} dari {teacher}"
   },
   "erapor": {
     "pickTerm": "Pilih semester",
@@ -146,6 +155,29 @@
       "no_published_score": "Nilai belum diterbitkan"
     },
     "download": "Unduh berkas e-Rapor",
-    "downloadError": "Gagal mengunduh berkas e-Rapor."
+    "downloadError": "Gagal mengunduh berkas e-Rapor.",
+    "legacyTitle": "Format lama",
+    "legacyHint": "Lembar per mapel format lama (No / NIS / Nama / Nilai Rapor / satu kolom per kode TP yang dipetakan / Validasi), untuk alat impor yang masih memakai format ini.",
+    "legacySubject": "Mapel",
+    "legacyDownload": "Unduh lembar format lama"
+  },
+  "tpMapping": {
+    "pickTerm": "Pilih semester",
+    "noComponents": "Belum ada komponen formatif (atau jenis TP yang dikonfigurasi sekolah) untuk kelas, mapel, dan semester ini.",
+    "columns": {
+      "component": "Komponen",
+      "exportCode": "Kode ekspor",
+      "rRange": "Rentang R",
+      "tRange": "Rentang T",
+      "rMin": "R minimum",
+      "rMax": "R maksimum",
+      "tMin": "T minimum",
+      "tMax": "T maksimum",
+      "actions": "Aksi"
+    },
+    "save": "Simpan",
+    "saved": "Pemetaan tersimpan.",
+    "remove": "Hapus",
+    "deleted": "Pemetaan dihapus."
   }
 }

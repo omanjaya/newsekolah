@@ -8,10 +8,11 @@ import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { useClassesQuery } from "../../reference/api";
+import { useClassesQuery, useSubjectsQuery } from "../../reference/api";
 import {
   type EraporFormat,
   downloadEraporExport,
+  downloadEraporExportLegacy,
   useEraporPreviewQuery,
   useTermsQuery,
 } from "../api";
@@ -30,17 +31,21 @@ export function EraporExport(): ReactElement {
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const classes = useClassesQuery();
+  const subjects = useSubjectsQuery();
   const terms = useTermsQuery();
 
   const [classId, setClassId] = useState("");
   const [termId, setTermId] = useState("");
   const [format, setFormat] = useState<EraporFormat>("xlsx");
   const [downloading, setDownloading] = useState(false);
+  const [legacySubjectId, setLegacySubjectId] = useState("");
+  const [legacyDownloading, setLegacyDownloading] = useState(false);
 
   const effectiveClassId = classId || (classes.data?.data[0]?.id ?? "");
   const preview = useEraporPreviewQuery(effectiveClassId, termId || undefined);
 
   const classOptions = (classes.data?.data ?? []).map((c) => ({ value: c.id, label: c.name }));
+  const subjectOptions = (subjects.data?.data ?? []).map((s) => ({ value: s.id, label: s.name }));
   const termOptions = [
     { value: "", label: t("allTerms") },
     ...(terms.data?.data ?? []).map((term) => ({ value: term.id, label: term.name })),
@@ -61,6 +66,20 @@ export function EraporExport(): ReactElement {
       );
     } finally {
       setDownloading(false);
+    }
+  }
+
+  async function downloadLegacy() {
+    if (!effectiveClassId || !legacySubjectId) return;
+    setLegacyDownloading(true);
+    try {
+      await downloadEraporExportLegacy(effectiveClassId, legacySubjectId, termId || undefined);
+    } catch (error) {
+      toast.error(
+        error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
+      );
+    } finally {
+      setLegacyDownloading(false);
     }
   }
 
@@ -177,6 +196,31 @@ export function EraporExport(): ReactElement {
           </section>
         </>
       )}
+
+      <section className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-4">
+        <h3 className="text-[14px] font-medium text-fg">{t("legacyTitle")}</h3>
+        <p className="text-[13px] text-fg-muted">{t("legacyHint")}</p>
+        <div className="flex flex-wrap items-end gap-3">
+          <label className="flex flex-col gap-1 text-[13px]">
+            <span className="font-medium">{t("legacySubject")}</span>
+            <Select
+              options={subjectOptions}
+              value={legacySubjectId}
+              onValueChange={setLegacySubjectId}
+              className="w-56"
+            />
+          </label>
+          <Button
+            variant="secondary"
+            icon={<Download />}
+            loading={legacyDownloading}
+            disabled={!effectiveClassId || !legacySubjectId}
+            onClick={() => void downloadLegacy()}
+          >
+            {t("legacyDownload")}
+          </Button>
+        </div>
+      </section>
     </div>
   );
 }
