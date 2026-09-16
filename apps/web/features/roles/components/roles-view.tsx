@@ -29,6 +29,14 @@ import {
   useRolesQuery,
 } from "../api";
 
+/**
+ * identity/domain/errors.go's ErrLeavePermissionDirect: these two codes
+ * cannot be granted to the teacher system role directly, only through a
+ * duty assignment, so the matrix disables them there instead of letting an
+ * admin check a box the server will reject on save.
+ */
+const DUTY_ONLY_PERMISSIONS = new Set(["review_leave_requests", "issue_leave_letters"]);
+
 /** Roles on the left, the permission matrix of the selected role on the right. */
 export function RolesView(): ReactElement {
   const t = useTranslations("app.roles");
@@ -175,28 +183,34 @@ function RoleMatrix({ role, canManage }: { role: AdminRole; canManage: boolean }
               <legend className="px-1 text-[13px] font-medium text-fg">
                 {t.has(`groups.${group.name}`) ? t(`groups.${group.name}`) : group.name}
               </legend>
-              {group.permissions.map((p) => (
-                <div key={p.code} className="flex items-start gap-2 text-[13px]">
-                  <Checkbox
-                    id={`perm-${p.code}`}
-                    aria-label={p.code}
-                    checked={granted.has(p.code)}
-                    disabled={!editable}
-                    onCheckedChange={(v) => {
-                      setGranted((prev) => {
-                        const next = new Set(prev);
-                        if (v === true) next.add(p.code);
-                        else next.delete(p.code);
-                        return next;
-                      });
-                    }}
-                  />
-                  <span className="flex flex-col">
-                    <label htmlFor={`perm-${p.code}`}>{p.code}</label>
-                    <span className="text-[12px] text-fg-muted">{p.description}</span>
-                  </span>
-                </div>
-              ))}
+              {group.permissions.map((p) => {
+                const dutyOnly = role.slug === "teacher" && DUTY_ONLY_PERMISSIONS.has(p.code);
+                return (
+                  <div key={p.code} className="flex items-start gap-2 text-[13px]">
+                    <Checkbox
+                      id={`perm-${p.code}`}
+                      aria-label={p.code}
+                      checked={granted.has(p.code)}
+                      disabled={!editable || dutyOnly}
+                      onCheckedChange={(v) => {
+                        setGranted((prev) => {
+                          const next = new Set(prev);
+                          if (v === true) next.add(p.code);
+                          else next.delete(p.code);
+                          return next;
+                        });
+                      }}
+                    />
+                    <span className="flex flex-col">
+                      <label htmlFor={`perm-${p.code}`}>{p.code}</label>
+                      <span className="text-[12px] text-fg-muted">{p.description}</span>
+                      {dutyOnly && (
+                        <span className="text-[12px] text-fg-muted">{t("dutyOnlyHint")}</span>
+                      )}
+                    </span>
+                  </div>
+                );
+              })}
             </fieldset>
           ))}
         </div>

@@ -904,7 +904,14 @@
           "created": "User created",
           "updated": "Changes saved",
           "cancel": "Cancel",
-          "save": "Save"
+          "save": "Save",
+          "primaryRole": "Primary role",
+          "primaryRolePlaceholder": "Choose a primary role",
+          "primaryRoleHint": "The primary role sets the user's base access and must be a system role.",
+          "teacherLeaveHint": "Reviewing leave requests and issuing leave letters do not come with the teacher role. Grant them through a duty assignment under School Data > Assignments.",
+          "additionalRoles": "Additional roles",
+          "additionalRolesHint": "Additional roles can only be custom roles (not system roles).",
+          "noCustomRoles": "No custom roles yet. Create one under Settings > Roles and Access."
         }
       },
       "classes": {
@@ -1086,7 +1093,8 @@
         "settings": "Settings",
         "reports": "Reports",
         "audit": "Audit"
-      }
+      },
+      "dutyOnlyHint": "Cannot be granted directly to the teacher role. Grant it through a duty assignment under School Data > Assignments."
     }
   }
 }

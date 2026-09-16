@@ -904,7 +904,14 @@
           "created": "Pengguna dibuat",
           "updated": "Perubahan tersimpan",
           "cancel": "Batal",
-          "save": "Simpan"
+          "save": "Simpan",
+          "primaryRole": "Peran utama",
+          "primaryRolePlaceholder": "Pilih peran utama",
+          "primaryRoleHint": "Peran utama menentukan hak akses dasar pengguna dan harus salah satu peran sistem.",
+          "teacherLeaveHint": "Meninjau izin dan menerbitkan surat izin tidak ikut peran guru. Berikan lewat penugasan tugas di Data Sekolah > Penugasan.",
+          "additionalRoles": "Peran tambahan",
+          "additionalRolesHint": "Peran tambahan hanya bisa peran khusus (bukan peran sistem).",
+          "noCustomRoles": "Belum ada peran khusus. Buat di Pengaturan > Peran dan Akses."
         }
       },
       "classes": {
@@ -1086,7 +1093,8 @@
         "settings": "Pengaturan",
         "reports": "Laporan",
         "audit": "Audit"
-      }
+      },
+      "dutyOnlyHint": "Tidak bisa diberikan langsung ke peran guru. Berikan lewat penugasan tugas di Data Sekolah > Penugasan."
     }
   }
 }
