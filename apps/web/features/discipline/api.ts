@@ -14,10 +14,14 @@ export type ViolationRecordResult = components["schemas"]["ViolationRecordResult
 export type PointTotal = components["schemas"]["PointTotal"];
 export type WarningLetter = components["schemas"]["WarningLetter"];
 export type StudentDiscipline = components["schemas"]["StudentDiscipline"];
+export type SPCrossing = components["schemas"]["SPCrossing"];
+export type SPCandidate = components["schemas"]["SPCandidate"];
 export type CounselingKind = components["schemas"]["CounselingKind"];
+export type CounselingTopic = components["schemas"]["CounselingTopic"];
 export type CounselingVisibility = components["schemas"]["CounselingVisibility"];
 export type CounselingWrite = components["schemas"]["CounselingWrite"];
 export type Counseling = components["schemas"]["Counseling"];
+export type CounselingAttachment = components["schemas"]["CounselingAttachment"];
 
 /**
  * Query keys local to this feature (not added to the shared
@@ -34,8 +38,17 @@ const keys = {
   myDiscipline: () => ["discipline", "me"] as const,
   pointTotals: (classId: string) => ["discipline", "point-totals", classId] as const,
   warningLetters: (classId: string) => ["discipline", "warning-letters", classId] as const,
+  spCandidates: (params: {
+    classId: string;
+    level: string;
+    search: string;
+    limit: number;
+    offset: number;
+  }) => ["discipline", "sp-candidates", params] as const,
   myCounselings: () => ["discipline", "counselings", "mine"] as const,
   counseling: (id: string) => ["discipline", "counselings", "detail", id] as const,
+  counselingAttachments: (id: string) => ["discipline", "counselings", "attachments", id] as const,
+  bkTeamCounselings: (topic: string) => ["discipline", "counselings", "bk-team", topic] as const,
 };
 
 function useInvalidateDiscipline() {
@@ -144,7 +157,7 @@ export function useRecordViolationMutation() {
   return useMutation({
     mutationFn: (body: {
       student_user_id: string;
-      violation_type_id: string;
+      violation_type_ids: string[];
       occurred_on: string;
       notes?: string;
     }) => client.POST("/v1/discipline/violations", { body }),
@@ -175,6 +188,17 @@ export function useStudentDisciplineQuery(studentId: string, enabled = true) {
   });
 }
 
+/** Short-lived URL for the individual student's discipline PDF report. */
+export function useStudentDisciplineReportMutation() {
+  const client = useApiClient();
+  return useMutation({
+    mutationFn: (studentId: string) =>
+      client.GET("/v1/discipline/students/{studentId}/report", {
+        params: { path: { studentId } },
+      }),
+  });
+}
+
 /** The signed-in student's own points, records, and warning letters. */
 export function useMyDisciplineQuery() {
   const client = useApiClient();
@@ -197,6 +221,38 @@ export function usePointTotalsQuery(classId?: string) {
   });
 }
 
+export interface SPCandidateFilters {
+  classId: string;
+  level: string;
+  search: string;
+  limit: number;
+  offset: number;
+}
+
+/**
+ * The counselor's warning-letter issuing screen: students whose points
+ * reached at least the first level, with the levels already issued so the
+ * UI can offer only the next due one (the API refuses skipping levels).
+ */
+export function useSPCandidatesQuery(filters: SPCandidateFilters) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: keys.spCandidates(filters),
+    queryFn: () =>
+      client.GET("/v1/discipline/sp-candidates", {
+        params: {
+          query: {
+            class_id: filters.classId || undefined,
+            level: filters.level ? Number(filters.level) : undefined,
+            search: filters.search || undefined,
+            limit: filters.limit,
+            offset: filters.offset,
+          },
+        },
+      }),
+  });
+}
+
 export function useWarningLettersQuery(classId?: string) {
   const client = useApiClient();
   return useQuery({
@@ -214,29 +270,6 @@ export function useIssueWarningLetterMutation() {
   return useMutation({
     mutationFn: (body: { student_user_id: string; level: number }) =>
       client.POST("/v1/discipline/warning-letters", { body }),
-    onSuccess: invalidate,
-  });
-}
-
-/**
- * Reads the student's due levels and issues the lowest one still pending,
- * since `PointTotal` (the at-risk panel's row shape) does not carry the
- * ladder levels itself.
- */
-export function useIssueNextDueWarningMutation() {
-  const client = useApiClient();
-  const invalidate = useInvalidateDiscipline();
-  return useMutation({
-    mutationFn: async (studentId: string) => {
-      const detail = await client.GET("/v1/discipline/students/{studentId}", {
-        params: { path: { studentId } },
-      });
-      const due = detail.due_levels[0];
-      if (!due) throw new Error("no warning-letter level due for this student");
-      return client.POST("/v1/discipline/warning-letters", {
-        body: { student_user_id: studentId, level: due.level },
-      });
-    },
     onSuccess: invalidate,
   });
 }
@@ -304,5 +337,84 @@ export function useDeleteCounselingMutation() {
         params: { path: { counselingId: id } },
       }),
     onSuccess: invalidate,
+  });
+}
+
+/** Notes any author shared with the whole BK team, optionally filtered by topic. */
+export function useBKTeamCounselingsQuery(topic: CounselingTopic | "") {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: keys.bkTeamCounselings(topic),
+    queryFn: () =>
+      client.GET("/v1/discipline/counselings/bk-team", {
+        params: { query: { topic: topic || undefined, limit: 100 } },
+      }),
+  });
+}
+
+/** Short-lived URL for a counseling note's printable A4 report. */
+export function useCounselingReportMutation() {
+  const client = useApiClient();
+  return useMutation({
+    mutationFn: (counselingId: string) =>
+      client.GET("/v1/discipline/counselings/{counselingId}/report", {
+        params: { path: { counselingId } },
+      }),
+  });
+}
+
+// Counseling attachments.
+
+export function useCounselingAttachmentsQuery(counselingId: string, enabled = true) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: keys.counselingAttachments(counselingId),
+    queryFn: () =>
+      client.GET("/v1/discipline/counselings/{counselingId}/attachments", {
+        params: { path: { counselingId } },
+      }),
+    enabled: enabled && counselingId !== "",
+  });
+}
+
+export const COUNSELING_ATTACHMENT_MAX_BYTES = 10 * 1024 * 1024;
+export const COUNSELING_ATTACHMENT_TYPES = ["image/jpeg", "image/png"];
+
+/** Uploads straight to object storage through a presigned URL, then confirms it. */
+export function useUploadCounselingAttachmentMutation() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ counselingId, file }: { counselingId: string; file: File }) => {
+      const grant = await client.POST(
+        "/v1/discipline/counselings/{counselingId}/attachments/upload-url",
+        { params: { path: { counselingId } } },
+      );
+      const put = await fetch(grant.upload_url, {
+        method: "PUT",
+        body: file,
+        headers: { "Content-Type": file.type || "application/octet-stream" },
+      });
+      if (!put.ok) throw new Error(`upload failed: ${put.status}`);
+      return client.POST("/v1/discipline/counselings/{counselingId}/attachments/confirm", {
+        params: { path: { counselingId } },
+        body: { object_key: grant.object_key },
+      });
+    },
+    onSuccess: (_result, variables) => {
+      void queryClient.invalidateQueries({
+        queryKey: keys.counselingAttachments(variables.counselingId),
+      });
+    },
+  });
+}
+
+export function useCounselingAttachmentUrlMutation() {
+  const client = useApiClient();
+  return useMutation({
+    mutationFn: ({ counselingId, attachmentId }: { counselingId: string; attachmentId: string }) =>
+      client.GET("/v1/discipline/counselings/{counselingId}/attachments/{attachmentId}/url", {
+        params: { path: { counselingId, attachmentId } },
+      }),
   });
 }

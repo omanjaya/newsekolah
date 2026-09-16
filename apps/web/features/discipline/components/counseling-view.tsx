@@ -11,6 +11,10 @@ import {
   DialogContent,
   EmptyState,
   PageHeader,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
   domainIcons,
   useToast,
 } from "@newsekolah/ui";
@@ -25,6 +29,7 @@ import { useCan } from "../../../lib/session/session-provider";
 import { useDirectoryQuery, useLookup } from "../../reference/api";
 import { type Counseling, useDeleteCounselingMutation, useMyCounselingsQuery } from "../api";
 
+import { CounselingBKTeamPanel } from "./counseling-bk-team-panel";
 import { CounselingDetailDialog } from "./counseling-detail-dialog";
 import { CounselingForm } from "./counseling-form";
 
@@ -43,6 +48,7 @@ export function CounselingView(): ReactElement {
   const [editing, setEditing] = useState<Counseling | "new" | null>(null);
   const [viewingId, setViewingId] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Counseling | null>(null);
+  const [tab, setTab] = useState("mine");
 
   const items = data?.data ?? [];
 
@@ -92,29 +98,44 @@ export function CounselingView(): ReactElement {
         }
       />
 
-      <DataTable
-        data={items}
-        columns={columns}
-        rowCount={items.length}
-        pagination={{ pageIndex: 0, pageSize: 50 }}
-        onPaginationChange={() => undefined}
-        sorting={[]}
-        onSortingChange={() => undefined}
-        globalFilter=""
-        onGlobalFilterChange={() => undefined}
-        isLoading={isLoading}
-        getRowId={(item) => item.id}
-        onRowActivate={(item) => {
-          setViewingId(item.id);
-        }}
-        emptyState={
-          <EmptyState
-            icon={<domainIcons.users aria-hidden="true" />}
-            title={t("emptyTitle")}
-            description={t("emptyBody")}
+      <Tabs value={tab} onValueChange={setTab}>
+        <TabsList>
+          <TabsTrigger value="mine">{t("tabs.mine")}</TabsTrigger>
+          <TabsTrigger value="bkTeam">{t("tabs.bkTeam")}</TabsTrigger>
+        </TabsList>
+        <TabsContent value="mine" className="pt-4">
+          <DataTable
+            data={items}
+            columns={columns}
+            rowCount={items.length}
+            pagination={{ pageIndex: 0, pageSize: 50 }}
+            onPaginationChange={() => undefined}
+            sorting={[]}
+            onSortingChange={() => undefined}
+            globalFilter=""
+            onGlobalFilterChange={() => undefined}
+            isLoading={isLoading}
+            getRowId={(item) => item.id}
+            onRowActivate={(item) => {
+              setViewingId(item.id);
+            }}
+            emptyState={
+              <EmptyState
+                icon={<domainIcons.users aria-hidden="true" />}
+                title={t("emptyTitle")}
+                description={t("emptyBody")}
+              />
+            }
           />
-        }
-      />
+        </TabsContent>
+        <TabsContent value="bkTeam" className="pt-4">
+          <CounselingBKTeamPanel
+            onOpen={(id) => {
+              setViewingId(id);
+            }}
+          />
+        </TabsContent>
+      </Tabs>
 
       <Dialog
         open={editing !== null}

@@ -32,23 +32,25 @@
     "emptyTitle": "No violation records yet",
     "emptyBody": "This year's violation records will appear here.",
     "unknownStudent": "Unknown student",
-    "dueLevelTitle": "Warning-letter threshold reached",
-    "dueLevelBody": "{student} reached {level} at the {points}-point threshold.",
+    "saveSummaryTitle": "{student} now has {points} points",
+    "dueLevelBody": "This reaches {level} at the {points}-point threshold.",
+    "dueLevelMore": "Also due once issued in order: {levels}.",
     "issueNow": "Issue letter now",
     "dismiss": "Not now",
     "form": {
       "title": "Record violation",
       "student": "Student",
       "studentPlaceholder": "Choose a student",
-      "type": "Violation type",
-      "typePlaceholder": "Choose a violation type",
-      "typePoints": "{name} ({points} points)",
+      "type": "Violation types (choose 1 to 50)",
+      "selectedTotal": "Selected total: {points} points",
+      "noTypes": "No active violation types. Add them in the catalog first.",
+      "maxTypesReached": "50 violation types selected, the most allowed per record.",
       "date": "Date it happened",
       "notes": "Notes",
       "notesPlaceholder": "Short description of what happened (optional)",
       "cancel": "Cancel",
       "submit": "Save",
-      "recorded": "Violation recorded"
+      "recorded": "{count, plural, one {Violation recorded} other {# violations recorded}}"
     },
     "voidDialog": {
       "title": "Void violation record",
@@ -132,38 +134,66 @@
     "emptyBody": "Letters issued this year will appear here.",
     "unknownStudent": "Unknown student",
     "atRisk": {
+      "filters": {
+        "class": "Class",
+        "classAll": "All classes",
+        "level": "Level",
+        "levelAll": "All levels"
+      },
+      "searchPlaceholder": "Search by name, NIS or class",
       "columns": {
         "student": "Student",
         "points": "Total points",
-        "lastOccurred": "Last violation",
+        "due": "Due",
+        "issued": "Issued",
         "actions": "Actions"
       },
-      "issue": "Issue",
-      "issued": "Warning letter issued",
+      "issue": "Issue {level}",
+      "issued": "{level} issued",
       "emptyTitle": "No students nearing the threshold",
-      "emptyBody": "Students above the lowest warning-letter threshold will appear here.",
+      "emptyBody": "Students who reached the first warning-letter level will appear here.",
       "noPolicyTitle": "Warning-letter policy not set up",
-      "noPolicyBody": "Set up the policy on the Violations page before issuing letters.",
-      "unknownStudent": "Unknown student"
+      "noPolicyBody": "Set up the policy on the Violations page before issuing letters."
     }
   },
   "counseling": {
     "eyebrow": "Discipline",
     "title": "Counseling",
     "add": "Log counseling",
+    "tabs": {
+      "mine": "My notes",
+      "bkTeam": "BK team"
+    },
     "columns": {
       "title": "Title",
       "student": "Student",
       "date": "Date",
       "kind": "Kind",
+      "topic": "Topic",
       "visibility": "Visibility"
     },
     "emptyTitle": "No counseling notes yet",
     "emptyBody": "Your counseling notes will appear here. Click a row to open its content.",
     "unknownStudent": "Unknown student",
+    "bkTeam": {
+      "topicFilter": "Topic",
+      "topicAll": "Every topic",
+      "emptyTitle": "No notes shared with the BK team",
+      "emptyBody": "Notes any counselor marks visible to the whole BK team appear here. You need to be a duty counselor to see them."
+    },
+    "attachments": {
+      "title": "Attachments",
+      "add": "Add attachment",
+      "empty": "No attachments yet",
+      "download": "Download",
+      "uploaded": "Attachment uploaded",
+      "invalidType": "Only JPEG or PNG images are accepted",
+      "tooLarge": "The file exceeds the 10 MB limit"
+    },
     "detail": {
       "edit": "Edit",
       "delete": "Delete",
+      "print": "Print report",
       "followUp": "Follow-up plan"
     },
     "deleteTitle": "Delete counseling note",
@@ -183,6 +213,19 @@
         "parent": "Parent",
         "referral": "Referral"
       },
+      "topic": "Topic",
+      "topicOptions": {
+        "career": "Career",
+        "problem": "Problem",
+        "personal": "Personal",
+        "learning": "Learning",
+        "social": "Social",
+        "other": "Other"
+      },
+      "careerGoals": "Career goals",
+      "careerGoalsPlaceholder": "What the student is aiming for",
+      "problemDescription": "Problem description",
+      "problemDescriptionPlaceholder": "What the problem is",
       "title": "Title",
       "titlePlaceholder": "Short summary of the topic",
       "content": "Note content",
@@ -215,5 +258,23 @@
     "letters": "Warning letters",
     "records": "Record history",
     "recordsEmpty": "No violations recorded"
+  },
+  "studentDetail": {
+    "eyebrow": "Discipline",
+    "unknownStudent": "Unknown student",
+    "loadError": "Could not load this student's discipline record.",
+    "printReport": "Print report",
+    "recap": "Points recap",
+    "totalPoints": "Total points: {points}",
+    "thresholdPoints": "{points} points",
+    "crossedOn": "Reached on {date}",
+    "notCrossed": "Not reached",
+    "issue": "Issue {level}",
+    "issued": "{level} issued",
+    "letters": "Warning letters",
+    "lettersEmpty": "No warning letters issued yet",
+    "records": "Violation records",
+    "recordsEmptyTitle": "No violation records",
+    "recordsEmptyBody": "This student has no violations on file this year."
   }
 }

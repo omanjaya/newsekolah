@@ -32,23 +32,25 @@
     "emptyTitle": "Belum ada catatan pelanggaran",
     "emptyBody": "Catatan pelanggaran tahun ini akan muncul di sini.",
     "unknownStudent": "Siswa tidak diketahui",
-    "dueLevelTitle": "Ambang surat peringatan tercapai",
-    "dueLevelBody": "{student} mencapai {level} dengan ambang {points} poin.",
+    "saveSummaryTitle": "{student} sekarang memiliki {points} poin",
+    "dueLevelBody": "Ini mencapai {level} pada ambang {points} poin.",
+    "dueLevelMore": "Juga sudah jatuh tempo bila diterbitkan sesuai urutan: {levels}.",
     "issueNow": "Terbitkan surat sekarang",
     "dismiss": "Nanti saja",
     "form": {
       "title": "Catat pelanggaran",
       "student": "Siswa",
       "studentPlaceholder": "Pilih siswa",
-      "type": "Jenis pelanggaran",
-      "typePlaceholder": "Pilih jenis pelanggaran",
-      "typePoints": "{name} ({points} poin)",
+      "type": "Jenis pelanggaran (pilih 1 sampai 50)",
+      "selectedTotal": "Total terpilih: {points} poin",
+      "noTypes": "Belum ada jenis pelanggaran aktif. Tambahkan di katalog terlebih dahulu.",
+      "maxTypesReached": "50 jenis pelanggaran terpilih, batas maksimum per catatan.",
       "date": "Tanggal kejadian",
       "notes": "Catatan",
       "notesPlaceholder": "Uraian singkat kejadian (opsional)",
       "cancel": "Batal",
       "submit": "Simpan",
-      "recorded": "Pelanggaran tercatat"
+      "recorded": "{count, plural, other {# pelanggaran tercatat}}"
     },
     "voidDialog": {
       "title": "Batalkan catatan pelanggaran",
@@ -132,38 +134,66 @@
     "emptyBody": "Surat yang diterbitkan tahun ini akan muncul di sini.",
     "unknownStudent": "Siswa tidak diketahui",
     "atRisk": {
+      "filters": {
+        "class": "Kelas",
+        "classAll": "Semua kelas",
+        "level": "Tingkat",
+        "levelAll": "Semua tingkat"
+      },
+      "searchPlaceholder": "Cari nama, NIS, atau kelas",
       "columns": {
         "student": "Siswa",
         "points": "Total poin",
-        "lastOccurred": "Pelanggaran terakhir",
+        "due": "Jatuh tempo",
+        "issued": "Terbit",
         "actions": "Aksi"
       },
-      "issue": "Terbitkan",
-      "issued": "Surat peringatan diterbitkan",
+      "issue": "Terbitkan {level}",
+      "issued": "{level} diterbitkan",
       "emptyTitle": "Tidak ada siswa mendekati ambang",
-      "emptyBody": "Siswa dengan poin di atas ambang SP terendah akan muncul di sini.",
+      "emptyBody": "Siswa yang mencapai tingkat SP pertama akan muncul di sini.",
       "noPolicyTitle": "Kebijakan SP belum diatur",
-      "noPolicyBody": "Atur kebijakan SP di halaman Pelanggaran sebelum menerbitkan surat.",
-      "unknownStudent": "Siswa tidak diketahui"
+      "noPolicyBody": "Atur kebijakan SP di halaman Pelanggaran sebelum menerbitkan surat."
     }
   },
   "counseling": {
     "eyebrow": "Kesiswaan",
     "title": "Konseling",
     "add": "Catat konseling",
+    "tabs": {
+      "mine": "Catatan saya",
+      "bkTeam": "Tim BK"
+    },
     "columns": {
       "title": "Judul",
       "student": "Siswa",
       "date": "Tanggal",
       "kind": "Jenis",
+      "topic": "Topik",
       "visibility": "Visibilitas"
     },
     "emptyTitle": "Belum ada catatan konseling",
     "emptyBody": "Catatan konseling Anda akan muncul di sini. Klik baris untuk membuka isinya.",
     "unknownStudent": "Siswa tidak diketahui",
+    "bkTeam": {
+      "topicFilter": "Topik",
+      "topicAll": "Semua topik",
+      "emptyTitle": "Belum ada catatan yang dibagikan ke tim BK",
+      "emptyBody": "Catatan yang ditandai konselor sebagai terlihat oleh seluruh tim BK muncul di sini. Anda perlu menjadi konselor piket untuk melihatnya."
+    },
+    "attachments": {
+      "title": "Lampiran",
+      "add": "Tambah lampiran",
+      "empty": "Belum ada lampiran",
+      "download": "Unduh",
+      "uploaded": "Lampiran terunggah",
+      "invalidType": "Hanya gambar JPEG atau PNG yang diterima",
+      "tooLarge": "Berkas melebihi batas 10 MB"
+    },
     "detail": {
       "edit": "Ubah",
       "delete": "Hapus",
+      "print": "Cetak laporan",
       "followUp": "Rencana tindak lanjut"
     },
     "deleteTitle": "Hapus catatan konseling",
@@ -183,6 +213,19 @@
         "parent": "Orang tua",
         "referral": "Rujukan"
       },
+      "topic": "Topik",
+      "topicOptions": {
+        "career": "Karier",
+        "problem": "Masalah",
+        "personal": "Pribadi",
+        "learning": "Belajar",
+        "social": "Sosial",
+        "other": "Lainnya"
+      },
+      "careerGoals": "Tujuan karier",
+      "careerGoalsPlaceholder": "Yang dituju siswa",
+      "problemDescription": "Uraian masalah",
+      "problemDescriptionPlaceholder": "Apa masalahnya",
       "title": "Judul",
       "titlePlaceholder": "Ringkasan singkat topik",
       "content": "Isi catatan",
@@ -215,5 +258,23 @@
     "letters": "Surat peringatan",
     "records": "Riwayat catatan",
     "recordsEmpty": "Belum ada catatan pelanggaran"
+  },
+  "studentDetail": {
+    "eyebrow": "Kesiswaan",
+    "unknownStudent": "Siswa tidak diketahui",
+    "loadError": "Data kedisiplinan siswa ini gagal dimuat.",
+    "printReport": "Cetak laporan",
+    "recap": "Rekap poin",
+    "totalPoints": "Total poin: {points}",
+    "thresholdPoints": "{points} poin",
+    "crossedOn": "Tercapai pada {date}",
+    "notCrossed": "Belum tercapai",
+    "issue": "Terbitkan {level}",
+    "issued": "{level} diterbitkan",
+    "letters": "Surat peringatan",
+    "lettersEmpty": "Belum ada surat peringatan yang diterbitkan",
+    "records": "Catatan pelanggaran",
+    "recordsEmptyTitle": "Tidak ada catatan pelanggaran",
+    "recordsEmptyBody": "Siswa ini tidak memiliki pelanggaran tahun ini."
   }
 }

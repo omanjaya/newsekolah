@@ -11,12 +11,14 @@ import { useDirectoryQuery } from "../../reference/api";
 import {
   type Counseling,
   type CounselingKind,
+  type CounselingTopic,
   type CounselingVisibility,
   useCreateCounselingMutation,
   useUpdateCounselingMutation,
 } from "../api";
 
 const KINDS: CounselingKind[] = ["individual", "group", "parent", "referral"];
+const TOPICS: CounselingTopic[] = ["career", "problem", "personal", "learning", "social", "other"];
 const VISIBILITIES: CounselingVisibility[] = ["counselor", "bk_team", "leadership"];
 
 function toLocalInput(iso?: string): string {
@@ -45,9 +47,12 @@ export function CounselingForm({
     toLocalInput(initial?.session_at ?? new Date().toISOString()),
   );
   const [kind, setKind] = useState<CounselingKind>(initial?.kind ?? "individual");
+  const [topic, setTopic] = useState<CounselingTopic>(initial?.topic ?? "problem");
   const [title, setTitle] = useState(initial?.title ?? "");
   const [content, setContent] = useState(initial?.content ?? "");
   const [followUpPlan, setFollowUpPlan] = useState(initial?.follow_up_plan ?? "");
+  const [careerGoals, setCareerGoals] = useState(initial?.career_goals ?? "");
+  const [problemDescription, setProblemDescription] = useState(initial?.problem_description ?? "");
   const [visibility, setVisibility] = useState<CounselingVisibility>(
     initial?.visibility ?? "counselor",
   );
@@ -65,9 +70,13 @@ export function CounselingForm({
           student_user_id: studentId,
           session_at: new Date(sessionAt).toISOString(),
           kind,
+          topic,
           title: title.trim(),
           content: content.trim(),
           follow_up_plan: followUpPlan.trim() || undefined,
+          career_goals: topic === "career" ? careerGoals.trim() || undefined : undefined,
+          problem_description:
+            topic === "problem" ? problemDescription.trim() || undefined : undefined,
           visibility,
         };
         const onSuccess = () => {
@@ -117,6 +126,47 @@ export function CounselingForm({
           }}
         />
       </label>
+      <label className="flex flex-col gap-1 text-[13px]">
+        <span className="font-medium">{t("topic")}</span>
+        <Select
+          options={TOPICS.map((topicOption) => ({
+            value: topicOption,
+            label: t(`topicOptions.${topicOption}`),
+          }))}
+          value={topic}
+          onValueChange={(v) => {
+            setTopic(v as CounselingTopic);
+          }}
+        />
+      </label>
+      {topic === "career" && (
+        <label className="flex flex-col gap-1 text-[13px]">
+          <span className="font-medium">{t("careerGoals")}</span>
+          <Textarea
+            rows={2}
+            value={careerGoals}
+            onChange={(e) => {
+              setCareerGoals(e.target.value);
+            }}
+            placeholder={t("careerGoalsPlaceholder")}
+            maxLength={5000}
+          />
+        </label>
+      )}
+      {topic === "problem" && (
+        <label className="flex flex-col gap-1 text-[13px]">
+          <span className="font-medium">{t("problemDescription")}</span>
+          <Textarea
+            rows={2}
+            value={problemDescription}
+            onChange={(e) => {
+              setProblemDescription(e.target.value);
+            }}
+            placeholder={t("problemDescriptionPlaceholder")}
+            maxLength={5000}
+          />
+        </label>
+      )}
       <label className="flex flex-col gap-1 text-[13px]">
         <span className="font-medium">{t("title")}</span>
         <Input
