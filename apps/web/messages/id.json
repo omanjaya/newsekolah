@@ -208,7 +208,12 @@
         "late_arrival_opened": "Keterlambatan tercatat",
         "late_arrival_updated": "Keterlambatan diperbarui"
       },
-      "seeAll": "Lihat semua"
+      "seeAll": "Lihat semua",
+      "searchPlaceholder": "Cari judul atau isi notifikasi",
+      "kindAll": "Semua jenis",
+      "kindFilterLabel": "Jenis notifikasi",
+      "emptyFilteredTitle": "Tidak ada notifikasi yang cocok",
+      "emptyFilteredBody": "Coba ubah kata pencarian atau pilih jenis lain."
     },
     "announcements": {
       "eyebrow": "Komunikasi",

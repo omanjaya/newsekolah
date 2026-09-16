@@ -208,7 +208,12 @@
         "late_arrival_opened": "Late arrival recorded",
         "late_arrival_updated": "Late arrival updated"
       },
-      "seeAll": "See all"
+      "seeAll": "See all",
+      "searchPlaceholder": "Search notification title or body",
+      "kindAll": "All kinds",
+      "kindFilterLabel": "Notification kind",
+      "emptyFilteredTitle": "No notifications match",
+      "emptyFilteredBody": "Try a different search term or kind."
     },
     "announcements": {
       "eyebrow": "Communication",
