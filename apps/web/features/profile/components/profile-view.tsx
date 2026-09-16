@@ -9,6 +9,7 @@ import { ChangePasswordForm } from "../../auth/components/change-password-form";
 
 import { AccountSecurity } from "./account-security";
 import { AvatarUpload } from "./avatar-upload";
+import { EditDetailForm } from "./edit-detail-form";
 import { EditProfileForm } from "./edit-profile-form";
 import { SessionsTable } from "./sessions-table";
 
@@ -19,6 +20,9 @@ export function ProfileView(): ReactElement | null {
   const tAudit = useTranslations("app.audit");
 
   if (!me) return null;
+
+  const hasDetail =
+    me.profile_kind === "student" || me.profile_kind === "teacher" || me.profile_kind === "staff";
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
@@ -62,6 +66,13 @@ export function ProfileView(): ReactElement | null {
           <h2 className="text-[16px] font-medium text-fg">{t("edit.title")}</h2>
           <EditProfileForm />
         </section>
+
+        {hasDetail && (
+          <section className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-4 lg:col-span-2">
+            <h2 className="text-[16px] font-medium text-fg">{t("detail.title")}</h2>
+            <EditDetailForm />
+          </section>
+        )}
 
         <section className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-4">
           <h2 className="text-[16px] font-medium text-fg">{tAudit("accountSecurity.title")}</h2>
