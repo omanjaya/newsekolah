@@ -9,6 +9,7 @@
     "title": "Katalog",
     "searchPlaceholder": "Cari judul, penulis, atau ISBN",
     "addTitle": "Tambah judul",
+    "browseCopies": "Jelajahi eksemplar",
     "columns": {
       "title": "Judul",
       "author": "Penulis",
@@ -51,7 +52,13 @@
       "available": "Tersedia",
       "on_loan": "Dipinjam",
       "reserved": "Dipesan",
-      "withdrawn": "Ditarik"
+      "damaged": "Rusak",
+      "lost": "Hilang",
+      "in_repair": "Diperbaiki",
+      "processing": "Diproses",
+      "donated": "Dihibahkan",
+      "reserve_stack": "Rak cadangan",
+      "unknown": "Tidak diketahui"
     },
     "printLabel": "Cetak label",
     "form": {
@@ -391,6 +398,52 @@
       "back": "Kembali",
       "commit": "Terapkan impor",
       "commitPartial": "Terapkan {count} baris yang valid"
+    }
+  },
+  "copyLabels": {
+    "selectedCount": "{count} eksemplar dipilih",
+    "overLimit": "{count} eksemplar dipilih, maksimal {max} per cetakan",
+    "clearSelection": "Batalkan pilihan",
+    "printLabels": "Cetak label"
+  },
+  "copiesBrowser": {
+    "eyebrow": "Perpustakaan",
+    "title": "Eksemplar",
+    "searchPlaceholder": "Cari barcode, nomor induk, atau RFID",
+    "viewTitle": "Lihat judul",
+    "noMatchTitle": "Tidak ada eksemplar yang cocok",
+    "noMatchBody": "Coba ubah filter atau kata kunci pencarian.",
+    "emptyTitle": "Belum ada eksemplar",
+    "emptyBody": "Eksemplar akan muncul di sini setelah ditambahkan lewat katalog atau impor.",
+    "columns": {
+      "barcode": "Barcode",
+      "accessionNumber": "Nomor induk",
+      "callNumber": "Nomor panggil",
+      "category": "Kategori",
+      "location": "Lokasi",
+      "status": "Status",
+      "actions": "Aksi"
+    },
+    "filters": {
+      "status": "Status",
+      "statusAll": "Semua status",
+      "category": "Kategori",
+      "categoryAll": "Semua kategori",
+      "location": "Lokasi",
+      "locationAll": "Semua lokasi",
+      "clear": "Bersihkan filter"
+    },
+    "status": {
+      "available": "Tersedia",
+      "on_loan": "Dipinjam",
+      "reserved": "Dipesan",
+      "damaged": "Rusak",
+      "lost": "Hilang",
+      "in_repair": "Diperbaiki",
+      "processing": "Diproses",
+      "donated": "Dihibahkan",
+      "reserve_stack": "Rak cadangan",
+      "unknown": "Tidak diketahui"
     }
   },
   "stocktake": {

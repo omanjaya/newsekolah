@@ -9,6 +9,7 @@
     "title": "Catalogue",
     "searchPlaceholder": "Search title, author, or ISBN",
     "addTitle": "Add title",
+    "browseCopies": "Browse copies",
     "columns": {
       "title": "Title",
       "author": "Author",
@@ -51,7 +52,13 @@
       "available": "Available",
       "on_loan": "On loan",
       "reserved": "Reserved",
-      "withdrawn": "Withdrawn"
+      "damaged": "Damaged",
+      "lost": "Lost",
+      "in_repair": "In repair",
+      "processing": "Processing",
+      "donated": "Donated",
+      "reserve_stack": "Reserve stack",
+      "unknown": "Unknown"
     },
     "printLabel": "Print label",
     "form": {
@@ -391,6 +398,52 @@
       "back": "Back",
       "commit": "Apply import",
       "commitPartial": "Apply {count} valid rows"
+    }
+  },
+  "copyLabels": {
+    "selectedCount": "{count} copies selected",
+    "overLimit": "{count} copies selected, {max} maximum per print run",
+    "clearSelection": "Clear selection",
+    "printLabels": "Print labels"
+  },
+  "copiesBrowser": {
+    "eyebrow": "Library",
+    "title": "Copies",
+    "searchPlaceholder": "Search barcode, accession number, or RFID",
+    "viewTitle": "View title",
+    "noMatchTitle": "No matching copies",
+    "noMatchBody": "Try a different filter or search term.",
+    "emptyTitle": "No copies yet",
+    "emptyBody": "Copies appear here once added through the catalogue or an import.",
+    "columns": {
+      "barcode": "Barcode",
+      "accessionNumber": "Accession number",
+      "callNumber": "Call number",
+      "category": "Category",
+      "location": "Location",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "filters": {
+      "status": "Status",
+      "statusAll": "All statuses",
+      "category": "Category",
+      "categoryAll": "All categories",
+      "location": "Location",
+      "locationAll": "All locations",
+      "clear": "Clear filters"
+    },
+    "status": {
+      "available": "Available",
+      "on_loan": "On loan",
+      "reserved": "Reserved",
+      "damaged": "Damaged",
+      "lost": "Lost",
+      "in_repair": "In repair",
+      "processing": "Processing",
+      "donated": "Donated",
+      "reserve_stack": "Reserve stack",
+      "unknown": "Unknown"
     }
   },
   "stocktake": {

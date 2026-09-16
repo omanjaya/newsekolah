@@ -12,6 +12,7 @@ import {
   PageHeader,
   Select,
   domainIcons,
+  selectionColumn,
   useToast,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -29,6 +30,9 @@ import {
   useLibraryCopiesQuery,
   useLibraryTitleQuery,
 } from "../api";
+import { useOrderedSelection } from "../use-ordered-selection";
+
+import { CopyLabelPrintBar } from "./copy-label-print-bar";
 
 const CONDITIONS: LibraryCopyWrite["condition"][] = ["good", "fair", "damaged", "lost"];
 
@@ -37,10 +41,12 @@ export function TitleCopiesView({ titleId }: { titleId: string }): ReactElement 
   const title = useLibraryTitleQuery(titleId);
   const { data, isLoading } = useLibraryCopiesQuery(titleId);
   const [adding, setAdding] = useState(false);
+  const { selection, onSelectionChange, orderedIds, clear } = useOrderedSelection();
   const copies = data?.data ?? [];
 
   const columns = useMemo<ColumnDef<LibraryCopy>[]>(
     () => [
+      selectionColumn<LibraryCopy>(),
       { accessorKey: "barcode", header: t("columns.barcode"), enableSorting: false },
       {
         accessorKey: "condition",
@@ -93,6 +99,8 @@ export function TitleCopiesView({ titleId }: { titleId: string }): ReactElement 
         </Button>
       </div>
 
+      <CopyLabelPrintBar selectedIds={orderedIds} onClear={clear} />
+
       <DataTable
         data={copies}
         columns={columns}
@@ -104,6 +112,8 @@ export function TitleCopiesView({ titleId }: { titleId: string }): ReactElement 
         globalFilter=""
         onGlobalFilterChange={() => undefined}
         isLoading={isLoading}
+        rowSelection={selection}
+        onRowSelectionChange={onSelectionChange}
         getRowId={(item) => item.id}
         emptyState={
           <EmptyState
