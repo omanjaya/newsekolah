@@ -61,16 +61,24 @@ func (st *Store) migrateDutyAssignments(
 	sort.Slice(roleUserIDs, func(i, j int) bool { return roleUserIDs[i] < roleUserIDs[j] })
 
 	for _, userID := range roleUserIDs {
-		user, ok := users[userID]
-		if !ok {
-			continue // identity failures already recorded in the users table
-		}
 		for _, roleName := range userRoles[userID] {
 			slug, ok := mapping.DutyForSpatieRole(roleName)
 			if !ok {
-				continue
+				continue // role has no duty equivalent -- not a row this table tracks
 			}
 			stat.Read++
+			// The live database has orphaned model_has_roles rows whose
+			// model_id no longer exists in users (a hard-deleted user whose
+			// role assignment was never cleaned up -- confirmed present for
+			// some Picket rows). Report these explicitly rather than
+			// silently dropping them, since "user not migrated" would
+			// wrongly imply an identity-migration failure that never
+			// happened.
+			user, ok := users[userID]
+			if !ok {
+				stat.RecordFailure(fmt.Sprintf("%d", userID), "user id has no corresponding row in the source users table (orphaned role assignment)")
+				continue
+			}
 			_ = st.upsertDutyAssignment(ctx, tenantID, academicYearID, dutyIDs[slug], user.targetUserID, nil, startsOn, stat, userID)
 		}
 	}
@@ -82,11 +90,12 @@ func (st *Store) migrateDutyAssignments(
 	sort.Slice(managementUserIDs, func(i, j int) bool { return managementUserIDs[i] < managementUserIDs[j] })
 
 	for _, userID := range managementUserIDs {
+		stat.Read++
 		user, ok := users[userID]
 		if !ok {
+			stat.RecordFailure(fmt.Sprintf("%d", userID), "user id has no corresponding row in the source users table (orphaned management_staff row)")
 			continue
 		}
-		stat.Read++
 		_ = st.upsertDutyAssignment(ctx, tenantID, academicYearID, dutyIDs[mapping.DutyLeadership], user.targetUserID, nil, startsOn, stat, userID)
 	}
 

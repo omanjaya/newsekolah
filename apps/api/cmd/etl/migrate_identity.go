@@ -198,41 +198,71 @@ func (st *Store) migrateUsers(
 			stat.RecordGap(fmt.Sprintf("user %s: SION role(s) %v have no identity-role equivalent", username, roleNames))
 		}
 
-		placeholderHash, err := auth.HashPassword(uuid.NewString())
-		if err != nil {
-			return nil, fmt.Errorf("generate placeholder hash for %s: %w", username, err)
-		}
-
 		email := textOrNull(u.Email)
 		phone := nullText(u.ContactNumber)
+		var managementPosition pgtype.Text
+		if position, has := managementStaff[u.ID]; has {
+			managementPosition = textOrNull(position)
+		}
 
-		existing, err := q.GetUserByUsername(ctx, db.GetUserByUsernameParams{TenantID: tenantID, Username: username})
+		// Every write below (user row, role assignment, profile rows) runs
+		// inside one savepoint: with 2500+ real, messy source rows a single
+		// user can violate a constraint the natural-key lookup does not
+		// catch (e.g. two users sharing one recorded phone number, which
+		// collides with users' unique (tenant_id, phone)). Without this,
+		// that one bad row would abort the transaction and silently fail
+		// every user and table processed after it, per store.go's
+		// withRowSavepoint doc.
 		var targetUser db.User
 		created := false
-		switch {
-		case notFound(err):
-			targetUser, err = q.CreateUser(ctx, db.CreateUserParams{
-				TenantID: tenantID, Username: username, Email: email, Phone: phone,
-				Name: mapping.CleanName(u.Name), PasswordHash: placeholderHash, Status: mapStatus(u.Status),
-				MustChangePassword: true, Locale: "id",
-			})
+		err := st.withRowSavepoint(ctx, func() error {
+			placeholderHash, err := auth.HashPassword(uuid.NewString())
 			if err != nil {
-				stat.RecordFailure(username, fmt.Sprintf("create user: %v", err))
-				continue
+				return fmt.Errorf("generate placeholder hash: %w", err)
 			}
-			created = true
-		case err != nil:
-			stat.RecordFailure(username, fmt.Sprintf("lookup user: %v", err))
+
+			existing, err := q.GetUserByUsername(ctx, db.GetUserByUsernameParams{TenantID: tenantID, Username: username})
+			switch {
+			case notFound(err):
+				targetUser, err = q.CreateUser(ctx, db.CreateUserParams{
+					TenantID: tenantID, Username: username, Email: email, Phone: phone,
+					Name: mapping.CleanName(u.Name), PasswordHash: placeholderHash, Status: mapStatus(u.Status),
+					MustChangePassword: true, Locale: "id",
+				})
+				if err != nil {
+					return fmt.Errorf("create user: %w", err)
+				}
+				created = true
+			case err != nil:
+				return fmt.Errorf("lookup user: %w", err)
+			default:
+				targetUser = existing
+				if err := q.UpdateUserBasic(ctx, db.UpdateUserBasicParams{
+					TenantID: tenantID, ID: targetUser.ID, Name: mapping.CleanName(u.Name),
+					Email: email, Phone: phone, Locale: targetUser.Locale,
+				}); err != nil {
+					return fmt.Errorf("update user: %w", err)
+				}
+			}
+
+			if roleSlug != "" {
+				if roleID, ok := roleIDs[roleSlug]; ok {
+					if err := q.AssignUserRole(ctx, db.AssignUserRoleParams{
+						UserID: targetUser.ID, RoleID: roleID, TenantID: tenantID, IsPrimary: true,
+					}); err != nil {
+						return fmt.Errorf("assign role: %w", err)
+					}
+				}
+			}
+
+			if err := st.upsertProfile(ctx, tenantID, targetUser.ID, roleSlug, managementPosition, u); err != nil {
+				return fmt.Errorf("upsert profile: %w", err)
+			}
+			return nil
+		})
+		if err != nil {
+			stat.RecordFailure(username, err.Error())
 			continue
-		default:
-			targetUser = existing
-			if err := q.UpdateUserBasic(ctx, db.UpdateUserBasicParams{
-				TenantID: tenantID, ID: targetUser.ID, Name: mapping.CleanName(u.Name),
-				Email: email, Phone: phone, Locale: targetUser.Locale,
-			}); err != nil {
-				stat.RecordFailure(username, fmt.Sprintf("update user: %v", err))
-				continue
-			}
 		}
 
 		if created {
@@ -240,25 +270,6 @@ func (st *Store) migrateUsers(
 		} else {
 			stat.Updated++
 		}
-
-		if roleSlug != "" {
-			if roleID, ok := roleIDs[roleSlug]; ok {
-				if err := q.AssignUserRole(ctx, db.AssignUserRoleParams{
-					UserID: targetUser.ID, RoleID: roleID, TenantID: tenantID, IsPrimary: true,
-				}); err != nil {
-					stat.RecordFailure(username, fmt.Sprintf("assign role: %v", err))
-				}
-			}
-		}
-
-		var managementPosition pgtype.Text
-		if position, has := managementStaff[u.ID]; has {
-			managementPosition = textOrNull(position)
-		}
-		if err := st.upsertProfile(ctx, tenantID, targetUser.ID, roleSlug, managementPosition, u); err != nil {
-			stat.RecordFailure(username, fmt.Sprintf("upsert profile: %v", err))
-		}
-
 		result[u.ID] = userMigrationResult{targetUserID: targetUser.ID, roleSlug: roleSlug}
 	}
 

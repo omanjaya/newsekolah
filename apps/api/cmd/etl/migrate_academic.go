@@ -54,21 +54,30 @@ func (st *Store) migrateGradeLevelsAndClasses(
 			}
 		}
 
-		classID, created, err := st.selectID(ctx,
+		classID, found, err := st.selectID(ctx,
 			`select id from classes where academic_year_id = $1 and name = $2`, academicYearID, c.Name)
 		if err != nil {
 			classStat.RecordFailure(fmt.Sprintf("%d", c.ID), fmt.Sprintf("lookup class: %v", err))
 			continue
 		}
-		if !created {
-			created2, err := q.CreateClass(ctx, db.CreateClassParams{
-				TenantID: tenantID, AcademicYearID: academicYearID, GradeLevelID: gradeLevelID, Name: c.Name,
+		if !found {
+			// Wrapped in a savepoint (like every other row-level write in
+			// this file) so a single malformed class name does not abort
+			// the whole migration transaction for every class after it.
+			err := st.withRowSavepoint(ctx, func() error {
+				created, err := q.CreateClass(ctx, db.CreateClassParams{
+					TenantID: tenantID, AcademicYearID: academicYearID, GradeLevelID: gradeLevelID, Name: c.Name,
+				})
+				if err != nil {
+					return err
+				}
+				classID = created.ID
+				return nil
 			})
 			if err != nil {
 				classStat.RecordFailure(fmt.Sprintf("%d", c.ID), fmt.Sprintf("create class: %v", err))
 				continue
 			}
-			classID = created2.ID
 			classStat.Created++
 		} else {
 			classStat.Skipped++
@@ -87,13 +96,21 @@ func (st *Store) ensureGradeLevel(ctx context.Context, q *db.Queries, tenantID u
 	if found {
 		return id, false, nil
 	}
-	level, err := q.CreateGradeLevel(ctx, db.CreateGradeLevelParams{
-		TenantID: tenantID, Code: code, Name: "Kelas " + code, Sequence: sequence,
+	var levelID uuid.UUID
+	err = st.withRowSavepoint(ctx, func() error {
+		level, err := q.CreateGradeLevel(ctx, db.CreateGradeLevelParams{
+			TenantID: tenantID, Code: code, Name: "Kelas " + code, Sequence: sequence,
+		})
+		if err != nil {
+			return err
+		}
+		levelID = level.ID
+		return nil
 	})
 	if err != nil {
 		return uuid.Nil, false, err
 	}
-	return level.ID, true, nil
+	return levelID, true, nil
 }
 
 // migrateSubjects keys on (tenant, code), where code is derived from the
