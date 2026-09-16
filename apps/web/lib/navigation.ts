@@ -297,6 +297,22 @@ export const navigation: NavItem[] = [
     group: GROUP.library,
   },
   {
+    key: "library-visits",
+    labelKey: "app.library.visits.navLabel",
+    href: "/library/visits",
+    icon: domainIcons.library,
+    permission: "manage_library_circulation",
+    group: GROUP.library,
+  },
+  {
+    key: "library-visit-kiosk",
+    labelKey: "app.library.visitKiosk.navLabel",
+    href: "/library/visit-kiosk",
+    icon: domainIcons.library,
+    permission: "manage_library_circulation",
+    group: GROUP.library,
+  },
+  {
     key: "leave-requests",
     labelKey: "nav.permits.items.plannedLeave",
     tabLabelKey: "nav.compact.permits",

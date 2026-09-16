@@ -61,6 +61,7 @@
       "unknown": "Unknown"
     },
     "printLabel": "Print label",
+    "readInPlace": "Read in place",
     "form": {
       "barcode": "Barcode",
       "condition": "Condition",
@@ -445,6 +446,73 @@
       "reserve_stack": "Reserve stack",
       "unknown": "Unknown"
     }
+  },
+  "visits": {
+    "navLabel": "Visits",
+    "eyebrow": "Library",
+    "title": "Visits",
+    "record": "Record visit",
+    "unknownMember": "Unknown member",
+    "fromLabel": "From date",
+    "toLabel": "To date",
+    "groupSizeValue": "{count} people",
+    "emptyTitle": "No visits in this range",
+    "emptyBody": "Visits are logged through the kiosk, a scan, or recorded manually here.",
+    "columns": {
+      "who": "Visitor",
+      "kind": "Type",
+      "purpose": "Purpose",
+      "source": "Source",
+      "visitedAt": "Time"
+    },
+    "summary": {
+      "totalVisits": "Total visits today",
+      "uniqueMembers": "Unique members",
+      "totalPeople": "Total people"
+    },
+    "kinds": {
+      "member": "Member",
+      "non_member": "Non-member",
+      "group": "Group"
+    },
+    "sources": {
+      "manual": "Manual",
+      "scan": "Scan",
+      "kiosk": "Kiosk"
+    },
+    "form": {
+      "title": "Record visit",
+      "kind": "Type",
+      "member": "Member",
+      "loadingMembers": "Loading members...",
+      "memberPlaceholder": "Choose a member",
+      "visitorName": "Visitor name",
+      "groupName": "Group name",
+      "groupSize": "Number of people",
+      "purpose": "Purpose",
+      "purposePlaceholder": "Optional",
+      "cancel": "Cancel",
+      "submit": "Save"
+    }
+  },
+  "visitKiosk": {
+    "navLabel": "Visit kiosk",
+    "title": "Library visit kiosk",
+    "instructions": "Scan this code with the school app to log a visit.",
+    "expired": "Code has expired",
+    "expiresIn": "Valid for {seconds} more seconds",
+    "renew": "Get a new code"
+  },
+  "readInPlace": {
+    "title": "Read in place",
+    "member": "Member",
+    "memberPlaceholder": "Choose a member (optional)",
+    "visitorName": "Visitor name",
+    "start": "Log",
+    "started": "Read-in-place session logged",
+    "logHeading": "Read-in-place history",
+    "emptyLog": "No history yet for this copy.",
+    "ongoing": "ongoing"
   },
   "stocktake": {
     "eyebrow": "Library",

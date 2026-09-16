@@ -61,6 +61,7 @@
       "unknown": "Tidak diketahui"
     },
     "printLabel": "Cetak label",
+    "readInPlace": "Baca di tempat",
     "form": {
       "barcode": "Barcode",
       "condition": "Kondisi",
@@ -445,6 +446,73 @@
       "reserve_stack": "Rak cadangan",
       "unknown": "Tidak diketahui"
     }
+  },
+  "visits": {
+    "navLabel": "Kunjungan",
+    "eyebrow": "Perpustakaan",
+    "title": "Kunjungan",
+    "record": "Catat kunjungan",
+    "unknownMember": "Anggota tidak dikenali",
+    "fromLabel": "Dari tanggal",
+    "toLabel": "Sampai tanggal",
+    "groupSizeValue": "{count} orang",
+    "emptyTitle": "Belum ada kunjungan pada rentang ini",
+    "emptyBody": "Kunjungan tercatat lewat kios, pemindaian, atau dicatat manual di sini.",
+    "columns": {
+      "who": "Pengunjung",
+      "kind": "Jenis",
+      "purpose": "Keperluan",
+      "source": "Sumber",
+      "visitedAt": "Waktu"
+    },
+    "summary": {
+      "totalVisits": "Total kunjungan hari ini",
+      "uniqueMembers": "Anggota unik",
+      "totalPeople": "Total orang"
+    },
+    "kinds": {
+      "member": "Anggota",
+      "non_member": "Bukan anggota",
+      "group": "Rombongan"
+    },
+    "sources": {
+      "manual": "Manual",
+      "scan": "Pindai",
+      "kiosk": "Kios"
+    },
+    "form": {
+      "title": "Catat kunjungan",
+      "kind": "Jenis",
+      "member": "Anggota",
+      "loadingMembers": "Memuat daftar anggota...",
+      "memberPlaceholder": "Pilih anggota",
+      "visitorName": "Nama pengunjung",
+      "groupName": "Nama rombongan",
+      "groupSize": "Jumlah orang",
+      "purpose": "Keperluan",
+      "purposePlaceholder": "Opsional",
+      "cancel": "Batal",
+      "submit": "Simpan"
+    }
+  },
+  "visitKiosk": {
+    "navLabel": "Kios kunjungan",
+    "title": "Kios kunjungan perpustakaan",
+    "instructions": "Pindai kode ini dengan aplikasi sekolah untuk mencatat kunjungan.",
+    "expired": "Kode sudah kedaluwarsa",
+    "expiresIn": "Berlaku {seconds} detik lagi",
+    "renew": "Buat kode baru"
+  },
+  "readInPlace": {
+    "title": "Baca di tempat",
+    "member": "Anggota",
+    "memberPlaceholder": "Pilih anggota (opsional)",
+    "visitorName": "Nama pengunjung",
+    "start": "Catat",
+    "started": "Sesi baca di tempat dicatat",
+    "logHeading": "Riwayat baca di tempat",
+    "emptyLog": "Belum ada riwayat untuk eksemplar ini.",
+    "ongoing": "sedang berlangsung"
   },
   "stocktake": {
     "eyebrow": "Perpustakaan",
