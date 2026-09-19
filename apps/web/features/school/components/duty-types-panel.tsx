@@ -42,10 +42,12 @@ export function DutyTypesPanel({ canManage }: { canManage: boolean }): ReactElem
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-[240px_1fr]">
+    // md:h-full: fills the tab panel's height; the type list and the
+    // detail panel each scroll internally instead of the whole page.
+    <div className="grid gap-4 md:h-full md:min-h-0 md:grid-cols-[240px_1fr]">
       <nav
         aria-label={t("types.title")}
-        className="flex flex-row gap-1 overflow-x-auto md:flex-col"
+        className="flex flex-row gap-1 overflow-x-auto md:min-h-0 md:flex-col md:overflow-y-auto"
       >
         {list.map((d) => (
           <button
@@ -127,7 +129,7 @@ function DutyTypeDetail({ duty, canManage }: { duty: DutyType; canManage: boolea
   }
 
   return (
-    <section className="flex flex-col gap-6 rounded-sm border border-border bg-surface p-4">
+    <section className="flex flex-col gap-6 rounded-sm border border-border bg-surface p-4 md:min-h-0 md:overflow-y-auto">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <h2 className="text-[18px] font-medium text-fg">{duty.name}</h2>
         {canManage && (

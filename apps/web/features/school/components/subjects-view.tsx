@@ -111,7 +111,8 @@ export function SubjectsView(): ReactElement {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    // md:h-full: fills the tab panel's height so only the table rows scroll.
+    <div className="flex flex-col gap-4 md:h-full md:min-h-0">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-[18px] font-medium text-fg">{t("title")}</h2>
         {
@@ -139,6 +140,7 @@ export function SubjectsView(): ReactElement {
         onGlobalFilterChange={setFilter}
         isLoading={isLoading}
         getRowId={(s) => s.id}
+        fillHeight
         emptyState={
           <EmptyState
             icon={<domainIcons.grades aria-hidden="true" />}

@@ -70,6 +70,13 @@ export interface DataTableProps<TData> {
   onRowActivate?: (row: TData) => void;
   toolbarLabels?: Partial<DataTableToolbarLabels>;
   paginationLabels?: Partial<DataTablePaginationLabels>;
+  /**
+   * Desktop-only viewport-fit mode: the table fills its flex parent's height
+   * and scrolls its rows internally under a sticky header, so the page around
+   * it never scrolls. The parent chain must pass height down (`min-h-0`
+   * flex). Mobile keeps the card list and normal document scroll.
+   */
+  fillHeight?: boolean;
 }
 
 const DEFAULT_PAGINATION: PaginationState = { pageIndex: 0, pageSize: 50 };
@@ -106,6 +113,7 @@ export function DataTable<TData>({
   onRowActivate,
   toolbarLabels,
   paginationLabels,
+  fillHeight,
 }: DataTableProps<TData>) {
   const rememberedState = useDataTableState(
     mode === "local" ? (stateKey ?? storageKey) : undefined,
@@ -273,7 +281,7 @@ export function DataTable<TData>({
   }
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className={cn("flex flex-col gap-3", fillHeight && "md:h-full md:min-h-0")}>
       <DataTableToolbar
         key={searchResetKey}
         table={table}
@@ -308,9 +316,20 @@ export function DataTable<TData>({
           }}
         />
       </div>
-      <div className="hidden overflow-x-auto rounded-sm border border-border md:block">
+      <div
+        className={cn(
+          "hidden overflow-x-auto rounded-sm border border-border md:block",
+          fillHeight && "md:min-h-0 md:flex-1 md:overflow-y-auto",
+        )}
+      >
         <table className="w-full border-collapse text-[13px] tabular-nums">
-          <thead>
+          {/*
+            With collapsed borders a sticky header's border-b does not stick,
+            so the separator rides along as a shadow on the header itself.
+          */}
+          <thead
+            className={cn(fillHeight && "sticky top-0 z-10 shadow-[0_1px_0_0_var(--color-border)]")}
+          >
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id} className="border-b border-border bg-bg">
                 {headerGroup.headers.map((header) => (

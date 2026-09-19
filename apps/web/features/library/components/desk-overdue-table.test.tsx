@@ -94,7 +94,7 @@ describe("DeskOverdueTable", () => {
 
     const user = userEvent.setup();
     render(<DeskOverdueTable />);
-    await user.type(screen.getByRole("textbox"), "BC-002");
+    await user.type(screen.getByRole("searchbox"), "BC-002");
 
     await waitFor(() => {
       expect(screen.queryByText("Matematika")).not.toBeInTheDocument();

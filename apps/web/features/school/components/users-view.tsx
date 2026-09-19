@@ -2,6 +2,7 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import {
+  Avatar,
   Badge,
   Button,
   ConfirmDialog,
@@ -93,12 +94,15 @@ export function UsersView(): ReactElement {
         header: t("columns.name"),
         enableSorting: false,
         cell: ({ row }) => (
-          <div className="flex flex-col">
-            <span className="text-fg">{row.original.name}</span>
-            <span className="text-[12px] text-fg-muted">
-              {row.original.username}
-              {row.original.email ? ` · ${row.original.email}` : ""}
-            </span>
+          <div className="flex min-w-0 items-center gap-2">
+            <Avatar size="sm" name={row.original.name} />
+            <div className="flex min-w-0 flex-col">
+              <span className="truncate text-fg">{row.original.name}</span>
+              <span className="truncate text-[12px] text-fg-muted">
+                {row.original.username}
+                {row.original.email ? ` · ${row.original.email}` : ""}
+              </span>
+            </div>
           </div>
         ),
       },
@@ -225,7 +229,11 @@ export function UsersView(): ReactElement {
   const items = data?.data ?? [];
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
+    // Viewport-fit on desktop (100dvh minus the h-14 shell header): the page
+    // itself never scrolls; the table scrolls its rows internally while the
+    // filter row and pagination stay put. See classes-view.tsx for the
+    // reference pattern.
+    <div className="flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
       <PageHeader
         eyebrow={t("eyebrow")}
         title={t("title")}
@@ -273,37 +281,40 @@ export function UsersView(): ReactElement {
           {t("includeArchived")}
         </Button>
       </div>
-      <DataTable
-        stateKey="features/school/components/users-view:1"
-        mode="cursor"
-        data={items}
-        columns={columns}
-        rowCount={items.length}
-        pagination={{ pageIndex: 0, pageSize: 50 }}
-        onPaginationChange={() => undefined}
-        sorting={[]}
-        onSortingChange={() => undefined}
-        globalFilter={search}
-        onGlobalFilterChange={(v) => {
-          setSearch(v);
-          setCursors([""]);
-        }}
-        isLoading={isLoading}
-        getRowId={(u) => u.id}
-        emptyState={
-          <UsersTableEmptyState
-            isError={isError}
-            emptyTitle={t("emptyTitle")}
-            emptyBody={t("emptyBody")}
-            loadErrorTitle={t("loadErrorTitle")}
-            loadErrorBody={t("loadErrorBody")}
-            retryLabel={t("retry")}
-            onRetry={() => {
-              void refetch();
-            }}
-          />
-        }
-      />
+      <div className="flex flex-col md:min-h-0 md:flex-1">
+        <DataTable
+          stateKey="features/school/components/users-view:1"
+          mode="cursor"
+          data={items}
+          columns={columns}
+          rowCount={items.length}
+          pagination={{ pageIndex: 0, pageSize: 50 }}
+          onPaginationChange={() => undefined}
+          sorting={[]}
+          onSortingChange={() => undefined}
+          globalFilter={search}
+          onGlobalFilterChange={(v) => {
+            setSearch(v);
+            setCursors([""]);
+          }}
+          isLoading={isLoading}
+          getRowId={(u) => u.id}
+          fillHeight
+          emptyState={
+            <UsersTableEmptyState
+              isError={isError}
+              emptyTitle={t("emptyTitle")}
+              emptyBody={t("emptyBody")}
+              loadErrorTitle={t("loadErrorTitle")}
+              loadErrorBody={t("loadErrorBody")}
+              retryLabel={t("retry")}
+              onRetry={() => {
+                void refetch();
+              }}
+            />
+          }
+        />
+      </div>
       <UsersCursorPagination
         hasPrevious={cursors.length > 1}
         hasNext={Boolean(data?.next_cursor)}

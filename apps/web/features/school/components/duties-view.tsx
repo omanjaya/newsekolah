@@ -51,7 +51,9 @@ export function DutiesView(): ReactElement {
   const rows = (assignments.data?.data ?? []).filter((a) => a.is_active);
 
   return (
-    <div className="flex flex-col gap-4">
+    // md:h-full: fills the tab panel's height; the assignments list below
+    // the fixed heading and action row scrolls internally.
+    <div className="flex flex-col gap-4 md:h-full md:min-h-0">
       <h2 className="text-[18px] font-medium text-fg">{t("tabs.assignments")}</h2>
       <div className="flex justify-end">
         <Button
@@ -64,60 +66,62 @@ export function DutiesView(): ReactElement {
           {t("assign")}
         </Button>
       </div>
-      {assignments.isLoading ? (
-        <Skeleton className="h-64 w-full" />
-      ) : rows.length === 0 ? (
-        <EmptyState
-          icon={<ShieldCheck aria-hidden="true" />}
-          title={t("emptyTitle")}
-          description={t("emptyBody")}
-        />
-      ) : (
-        <ul className="divide-y divide-border rounded-sm border border-border bg-surface">
-          {rows.map((a) => (
-            <li
-              key={a.id}
-              className="flex flex-col gap-2 px-4 py-3 md:flex-row md:items-center md:justify-between"
-            >
-              <div className="flex flex-col gap-0.5">
-                <span className="text-[14px] text-fg">
-                  {peopleMap.get(a.user_id)?.name ?? a.user_id}
-                </span>
-                <span className="flex flex-wrap items-center gap-2 text-[13px] text-fg-muted">
-                  <Badge variant="accent">{a.duty_name}</Badge>
-                  {a.scope_class_id && <span>{classMap.get(a.scope_class_id)?.name ?? "-"}</span>}
-                  <span>
-                    {t("since", {
-                      date: formatDate(a.starts_on, { locale, timeZone: me?.tenant.timezone }),
-                    })}
-                  </span>
-                </span>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                loading={end.isPending && end.variables === a.id}
-                onClick={() => {
-                  end.mutate(a.id, {
-                    onSuccess: () => {
-                      toast.success(t("ended"));
-                    },
-                    onError: (error) => {
-                      toast.error(
-                        error instanceof ApiError
-                          ? apiErrorMessage(error.code)
-                          : apiErrorMessage("UNKNOWN"),
-                      );
-                    },
-                  });
-                }}
+      <div className="md:min-h-0 md:flex-1 md:overflow-y-auto">
+        {assignments.isLoading ? (
+          <Skeleton className="h-64 w-full" />
+        ) : rows.length === 0 ? (
+          <EmptyState
+            icon={<ShieldCheck aria-hidden="true" />}
+            title={t("emptyTitle")}
+            description={t("emptyBody")}
+          />
+        ) : (
+          <ul className="divide-y divide-border rounded-sm border border-border bg-surface">
+            {rows.map((a) => (
+              <li
+                key={a.id}
+                className="flex flex-col gap-2 px-4 py-3 md:flex-row md:items-center md:justify-between"
               >
-                {t("end")}
-              </Button>
-            </li>
-          ))}
-        </ul>
-      )}
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[14px] text-fg">
+                    {peopleMap.get(a.user_id)?.name ?? a.user_id}
+                  </span>
+                  <span className="flex flex-wrap items-center gap-2 text-[13px] text-fg-muted">
+                    <Badge variant="accent">{a.duty_name}</Badge>
+                    {a.scope_class_id && <span>{classMap.get(a.scope_class_id)?.name ?? "-"}</span>}
+                    <span>
+                      {t("since", {
+                        date: formatDate(a.starts_on, { locale, timeZone: me?.tenant.timezone }),
+                      })}
+                    </span>
+                  </span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  loading={end.isPending && end.variables === a.id}
+                  onClick={() => {
+                    end.mutate(a.id, {
+                      onSuccess: () => {
+                        toast.success(t("ended"));
+                      },
+                      onError: (error) => {
+                        toast.error(
+                          error instanceof ApiError
+                            ? apiErrorMessage(error.code)
+                            : apiErrorMessage("UNKNOWN"),
+                        );
+                      },
+                    });
+                  }}
+                >
+                  {t("end")}
+                </Button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
       <Dialog open={adding} onOpenChange={setAdding}>
         <DialogContent title={t("assign")}>
           {adding && (

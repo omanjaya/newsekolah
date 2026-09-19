@@ -1,5 +1,5 @@
 import type { Table } from "@tanstack/react-table";
-import { Columns3, Rows3, Search } from "lucide-react";
+import { Columns3, Rows3 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 
 import { cn } from "../../utils/cn.js";
@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "../dropdown-menu.js";
 import { IconButton } from "../icon-button.js";
-import { Input } from "../input.js";
+import { SearchInput } from "../search-input.js";
 import { useUiLabels } from "../ui-labels.js";
 
 export interface DataTableToolbarLabels {
@@ -89,22 +89,16 @@ export function DataTableToolbar<TData>({
   return (
     <div className="flex flex-wrap items-center justify-between gap-2">
       {showSearch && (
-        <div className="relative w-full max-w-sm">
-          <Search
-            className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-fg-muted"
-            aria-hidden="true"
-          />
-          <Input
-            value={localSearch}
-            onChange={(event) => {
-              setLocalSearch(event.target.value);
-              onSearchChange(event.target.value);
-            }}
-            placeholder={labels.searchPlaceholder}
-            className="pl-9"
-            aria-label={labels.searchPlaceholder}
-          />
-        </div>
+        <SearchInput
+          value={localSearch}
+          onChange={(event) => {
+            setLocalSearch(event.target.value);
+            onSearchChange(event.target.value);
+          }}
+          placeholder={labels.searchPlaceholder}
+          aria-label={labels.searchPlaceholder}
+          className="w-full max-w-sm"
+        />
       )}
       <div className="flex items-center gap-1">
         <IconButton

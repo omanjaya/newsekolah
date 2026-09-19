@@ -201,7 +201,9 @@ export function TeachingAssignmentsView(): ReactElement {
   const assignments = useTeachingAssignmentsForTeacherQuery(effectiveYearId, teacherId);
 
   return (
-    <div className="flex flex-col gap-4">
+    // md:h-full: fills the tab panel's height; the whole column scrolls
+    // since the form and result list together are usually short.
+    <div className="flex flex-col gap-4 md:h-full md:min-h-0 md:overflow-y-auto">
       <h2 className="text-[18px] font-medium text-fg">{t("title")}</h2>
       <p className="text-[13px] text-fg-muted">{t("description")}</p>
 

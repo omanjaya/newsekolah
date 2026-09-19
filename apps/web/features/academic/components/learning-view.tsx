@@ -25,7 +25,9 @@ export function LearningView(): ReactElement {
   const active = sections.find((section) => section.value === requested)?.value ?? "subjects";
 
   return (
-    <div className="flex min-w-0 flex-col gap-4 p-4 md:p-6">
+    // Viewport-fit on desktop (100dvh minus the h-14 shell header): the page
+    // itself never scrolls; the active tab's panel scrolls internally.
+    <div className="flex min-w-0 flex-col gap-4 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
       <PageHeader eyebrow={tNav("masterData")} title={t("title")} />
       <p className="text-[13px] text-fg-muted">{t("description")}</p>
       <Tabs
@@ -33,6 +35,7 @@ export function LearningView(): ReactElement {
         onValueChange={(value) => {
           router.push(`/school/learning?tab=${value}`, { scroll: false });
         }}
+        className="flex flex-col md:min-h-0 md:flex-1"
       >
         <TabsList aria-label={t("title")} className="flex-wrap">
           {sections.map(({ value, label }) => (
@@ -42,7 +45,7 @@ export function LearningView(): ReactElement {
           ))}
         </TabsList>
         {sections.map(({ value, View }) => (
-          <TabsContent key={value} value={value}>
+          <TabsContent key={value} value={value} className="md:min-h-0 md:flex-1">
             <View />
           </TabsContent>
         ))}

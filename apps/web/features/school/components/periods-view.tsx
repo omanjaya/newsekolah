@@ -64,7 +64,9 @@ export function PeriodsView(): ReactElement {
   };
 
   return (
-    <div className="flex min-w-0 flex-col gap-4">
+    // md:h-full: fills the tab panel's height; the periods/week grid below
+    // the fixed template row scrolls internally.
+    <div className="flex min-w-0 flex-col gap-4 md:h-full md:min-h-0">
       <h2 className="text-[18px] font-medium text-fg">{t("title")}</h2>
       <div className="flex flex-wrap items-end gap-3">
         <label className="flex flex-col gap-1 text-[13px]">
@@ -114,7 +116,7 @@ export function PeriodsView(): ReactElement {
       {templates.isLoading ? (
         <Skeleton className="h-64 w-full" />
       ) : selected ? (
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="grid gap-6 md:min-h-0 md:flex-1 md:overflow-y-auto xl:grid-cols-[minmax(0,1fr)_360px]">
           <PeriodTable templateId={selected.id} />
           <WeekPanel templateId={selected.id} />
         </div>
