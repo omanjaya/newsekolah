@@ -1,7 +1,7 @@
 {
-  "navLabel": "Laporan Presensi",
-  "eyebrow": "Presensi",
-  "title": "Laporan Presensi",
+  "navLabel": "Laporan presensi",
+  "eyebrow": "Akademik",
+  "title": "Laporan presensi",
   "tabs": {
     "mine": "Presensi saya",
     "daily": "Harian",

@@ -1,7 +1,7 @@
 {
-  "navLabel": "Live Monitor",
-  "eyebrow": "Attendance",
-  "title": "Attendance Monitor",
+  "navLabel": "Live monitor",
+  "eyebrow": "Academics",
+  "title": "Attendance monitor",
   "tokenLabel": "Display token",
   "tokenPlaceholder": "Enter the school's monitor token",
   "tokenHint": "Asked once per device. Get this token from the school admin (the monitor.display_token setting).",

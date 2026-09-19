@@ -1,7 +1,7 @@
 {
-  "navLabel": "Attendance Reports",
-  "eyebrow": "Attendance",
-  "title": "Attendance Reports",
+  "navLabel": "Attendance reports",
+  "eyebrow": "Academics",
+  "title": "Attendance reports",
   "tabs": {
     "mine": "My attendance",
     "daily": "Daily",

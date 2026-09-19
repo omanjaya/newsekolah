@@ -88,7 +88,11 @@ export function CalendarView(): ReactElement {
   }
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
+    // Viewport-fit on desktop (100dvh minus the h-14 shell header): the header
+    // row and weekday row stay fixed, the month grid takes the remaining
+    // height and divides it across its week rows. Mobile keeps the normal
+    // agenda list and document scroll.
+    <div className="flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
       <PageHeader
         eyebrow={t("eyebrow")}
         title={t("title")}
@@ -135,48 +139,56 @@ export function CalendarView(): ReactElement {
       ) : (
         <>
           {/* Desktop and tablet: full month grid. Seven columns need real width to stay legible,
-              so this stays hidden below md and the agenda list below takes over. */}
-          <div className="hidden grid-cols-7 gap-px overflow-hidden rounded-xs border border-border bg-border text-[13px] md:grid">
-            {(t.raw("weekdays") as string[]).map((label) => (
-              <div
-                key={label}
-                className="bg-surface px-2 py-1 text-center font-medium text-fg-muted"
-              >
-                {label}
-              </div>
-            ))}
-            {days.map(({ date, inMonth }) => {
-              const iso = toISODate(date);
-              const dayEvents = eventsForDay(events, iso);
-              return (
+              so this stays hidden below md and the agenda list below takes over. The weekday
+              row is fixed height; the week rows below it share the remaining viewport height
+              equally so the whole month is always visible without the page scrolling. */}
+          <div className="hidden overflow-hidden rounded-xs border border-border md:flex md:min-h-0 md:flex-1 md:flex-col">
+            <div className="grid grid-cols-7 gap-px border-b border-border bg-border text-[13px]">
+              {(t.raw("weekdays") as string[]).map((label) => (
                 <div
-                  key={iso}
-                  className={`flex min-h-24 flex-col gap-1 bg-surface p-1.5 ${inMonth ? "" : "opacity-40"}`}
+                  key={label}
+                  className="bg-surface px-2 py-1 text-center font-medium text-fg-muted"
                 >
-                  <span className="text-[12px] text-fg-muted">{date.getDate()}</span>
-                  {dayEvents.map((e) => (
-                    <button
-                      key={e.id}
-                      type="button"
-                      disabled={!canManage}
-                      onClick={() => {
-                        setEditing(e);
-                        setDefaultDate(iso);
-                        setFormOpen(true);
-                      }}
-                      className="text-left"
-                    >
-                      <Badge
-                        variant={NON_TEACHING_KINDS.includes(e.kind) ? "accent" : "neutral"}
-                        className="w-full truncate"
-                      >
-                        {e.name}
-                      </Badge>
-                    </button>
-                  ))}
+                  {label}
                 </div>
-              );
-            })}
+              ))}
+            </div>
+            <div className="grid min-h-0 flex-1 grid-cols-7 grid-rows-6 gap-px overflow-hidden bg-border text-[13px]">
+              {days.map(({ date, inMonth }) => {
+                const iso = toISODate(date);
+                const dayEvents = eventsForDay(events, iso);
+                return (
+                  <div
+                    key={iso}
+                    className={`flex min-h-24 flex-col gap-1 bg-surface p-1.5 md:h-full md:min-h-0 ${inMonth ? "" : "opacity-40"}`}
+                  >
+                    <span className="shrink-0 text-[12px] text-fg-muted">{date.getDate()}</span>
+                    <div className="flex flex-col gap-1 overflow-hidden md:min-h-0 md:flex-1 md:overflow-y-auto">
+                      {dayEvents.map((e) => (
+                        <button
+                          key={e.id}
+                          type="button"
+                          disabled={!canManage}
+                          onClick={() => {
+                            setEditing(e);
+                            setDefaultDate(iso);
+                            setFormOpen(true);
+                          }}
+                          className="shrink-0 text-left"
+                        >
+                          <Badge
+                            variant={NON_TEACHING_KINDS.includes(e.kind) ? "accent" : "neutral"}
+                            className="w-full truncate"
+                          >
+                            {e.name}
+                          </Badge>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
           {/* Mobile: agenda list of days that have events. A day's worth of chips reflows into

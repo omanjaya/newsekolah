@@ -138,7 +138,11 @@ export function JournalView(): ReactElement {
   );
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
+    // Viewport-fit on desktop (100dvh minus the h-14 shell header): the page
+    // itself never scrolls; the table scrolls its rows internally while the
+    // filter/export row stays put. See users-view.tsx for the reference
+    // pattern.
+    <div className="flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
       <PageHeader
         eyebrow={t("eyebrow")}
         title={t("title")}
@@ -194,27 +198,30 @@ export function JournalView(): ReactElement {
         </div>
       </div>
 
-      <DataTable
-        stateKey="features/journal/components/journal-view:1"
-        mode="server"
-        data={items}
-        columns={columns}
-        rowCount={list.data?.total ?? 0}
-        pagination={pagination}
-        onPaginationChange={setPagination}
-        sorting={[]}
-        onSortingChange={() => undefined}
-        globalFilter=""
-        isLoading={list.isLoading}
-        getRowId={(item) => item.id}
-        emptyState={
-          <EmptyState
-            icon={<NotebookPen aria-hidden="true" />}
-            title={t("emptyTitle")}
-            description={t("emptyBody")}
-          />
-        }
-      />
+      <div className="flex flex-col md:min-h-0 md:flex-1">
+        <DataTable
+          stateKey="features/journal/components/journal-view:1"
+          mode="server"
+          data={items}
+          columns={columns}
+          rowCount={list.data?.total ?? 0}
+          pagination={pagination}
+          onPaginationChange={setPagination}
+          sorting={[]}
+          onSortingChange={() => undefined}
+          globalFilter=""
+          isLoading={list.isLoading}
+          getRowId={(item) => item.id}
+          fillHeight
+          emptyState={
+            <EmptyState
+              icon={<NotebookPen aria-hidden="true" />}
+              title={t("emptyTitle")}
+              description={t("emptyBody")}
+            />
+          }
+        />
+      </div>
 
       <Dialog
         open={editing !== null}

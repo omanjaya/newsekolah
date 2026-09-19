@@ -1,7 +1,7 @@
 {
-  "navLabel": "Monitor Langsung",
-  "eyebrow": "Presensi",
-  "title": "Monitor Presensi",
+  "navLabel": "Monitor langsung",
+  "eyebrow": "Akademik",
+  "title": "Monitor presensi",
   "tokenLabel": "Token tampilan",
   "tokenPlaceholder": "Masukkan token monitor sekolah",
   "tokenHint": "Diminta sekali per perangkat. Minta token ini dari admin sekolah (pengaturan monitor.display_token).",

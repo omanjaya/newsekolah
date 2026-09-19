@@ -15,6 +15,7 @@ import {
   useToast,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
+import { GraduationCap } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
@@ -179,7 +180,10 @@ export function PromotionView(): ReactElement {
   );
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
+    // Viewport-fit on desktop (100dvh minus the h-14 shell header): the form,
+    // banners, and summary badges stay fixed; once a plan loads, the table
+    // takes the remaining height and scrolls its rows internally.
+    <div className="flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
       <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
       <p className="text-[13px] text-fg-muted">{t("description")}</p>
 
@@ -217,28 +221,32 @@ export function PromotionView(): ReactElement {
 
       {preview.isPending ? (
         <Skeleton className="h-64 w-full" aria-busy="true" />
-      ) : plan?.length === 0 ? (
+      ) : plan === undefined ? (
+        <EmptyState
+          icon={<GraduationCap aria-hidden="true" />}
+          title={t("idleTitle")}
+          description={t("idleBody")}
+        />
+      ) : plan.length === 0 ? (
         <EmptyState
           icon={<domainIcons.users aria-hidden="true" />}
           title={t("emptyTitle")}
           description={t("emptyBody")}
         />
       ) : (
-        plan && (
-          <>
-            <div className="flex flex-wrap gap-2 text-[13px]">
-              {ACTIONS.map((action) => (
-                <Badge key={action} variant="neutral">
-                  {t(`action.${action}`)}: {summary.counts[action]}
-                </Badge>
-              ))}
-              {summary.unresolvedCount > 0 && (
-                <Badge variant="accent">
-                  {t("unresolvedCount", { n: summary.unresolvedCount })}
-                </Badge>
-              )}
-            </div>
+        <div className="flex flex-col gap-3 md:min-h-0 md:flex-1">
+          <div className="flex flex-wrap gap-2 text-[13px]">
+            {ACTIONS.map((action) => (
+              <Badge key={action} variant="neutral">
+                {t(`action.${action}`)}: {summary.counts[action]}
+              </Badge>
+            ))}
+            {summary.unresolvedCount > 0 && (
+              <Badge variant="accent">{t("unresolvedCount", { n: summary.unresolvedCount })}</Badge>
+            )}
+          </div>
 
+          <div className="md:min-h-0 md:flex-1">
             <DataTable
               stateKey="features/promotion/components/promotion-view:1"
               mode="local"
@@ -251,6 +259,7 @@ export function PromotionView(): ReactElement {
               onSortingChange={() => undefined}
               globalFilter=""
               getRowId={(r) => r.student_user_id}
+              fillHeight
               emptyState={
                 <EmptyState
                   icon={<domainIcons.users aria-hidden="true" />}
@@ -259,33 +268,33 @@ export function PromotionView(): ReactElement {
                 />
               }
             />
+          </div>
 
-            <div className="flex flex-wrap items-end gap-3 border-t border-border pt-4">
-              <label className="flex flex-col gap-1 text-[13px]">
-                <span className="font-medium">{t("effectiveOn")}</span>
-                <Input
-                  type="date"
-                  value={effectiveOn}
-                  onChange={(e) => {
-                    setEffectiveOn(e.target.value);
-                  }}
-                  className="w-44"
-                />
-              </label>
-              <Button
-                onClick={() => {
-                  setConfirming(true);
+          <div className="flex flex-wrap items-end gap-3 border-t border-border pt-4">
+            <label className="flex flex-col gap-1 text-[13px]">
+              <span className="font-medium">{t("effectiveOn")}</span>
+              <Input
+                type="date"
+                value={effectiveOn}
+                onChange={(e) => {
+                  setEffectiveOn(e.target.value);
                 }}
-                disabled={summary.unresolvedCount > 0}
-              >
-                {t("commit")}
-              </Button>
-              {summary.unresolvedCount > 0 && (
-                <p className="text-[13px] text-status-absent">{t("resolveBeforeCommit")}</p>
-              )}
-            </div>
-          </>
-        )
+                className="w-44"
+              />
+            </label>
+            <Button
+              onClick={() => {
+                setConfirming(true);
+              }}
+              disabled={summary.unresolvedCount > 0}
+            >
+              {t("commit")}
+            </Button>
+            {summary.unresolvedCount > 0 && (
+              <p className="text-[13px] text-status-absent">{t("resolveBeforeCommit")}</p>
+            )}
+          </div>
+        </div>
       )}
 
       <ConfirmDialog

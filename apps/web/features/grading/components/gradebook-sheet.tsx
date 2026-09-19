@@ -6,7 +6,7 @@ import {
   Button,
   ConfirmDialog,
   EmptyState,
-  Input,
+  SearchInput,
   Skeleton,
   Switch,
   domainIcons,
@@ -100,7 +100,7 @@ export function GradebookSheet({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-3">
-        <Input
+        <SearchInput
           value={search}
           onChange={(e) => {
             setSearch(e.target.value);
