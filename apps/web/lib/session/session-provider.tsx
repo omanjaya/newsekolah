@@ -2,7 +2,7 @@
 
 import type { components } from "@newsekolah/api-client";
 import { useMe } from "@newsekolah/api-client/react";
-import { createContext, useContext } from "react";
+import { createContext, useContext, useMemo } from "react";
 import type { ReactElement, ReactNode } from "react";
 
 import { useApiClient } from "../api/client";
@@ -37,12 +37,18 @@ export function SessionProvider({ children }: { children: ReactNode }): ReactEle
   const { data, isLoading } = useMe(client);
 
   const status: SessionStatus = isLoading ? "loading" : data ? "authenticated" : "anonymous";
+  const isReady = !isLoading;
 
-  return (
-    <SessionContext.Provider value={{ status, me: data, isReady: !isLoading }}>
-      {children}
-    </SessionContext.Provider>
+  // `refetchOnWindowFocus` (default true) refires `/v1/me` on every window
+  // focus; an inline object literal here would give `useCan()` callers a new
+  // value each time even when `data` is unchanged, cascading re-renders
+  // app-wide (docs/16-audit-performa-web.md item 3).
+  const value = useMemo<SessionContextValue>(
+    () => ({ status, me: data, isReady }),
+    [status, data, isReady],
   );
+
+  return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }
 
 export function useSession(): SessionContextValue {

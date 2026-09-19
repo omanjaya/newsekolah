@@ -94,6 +94,29 @@ describe("useRememberedViewState", () => {
     expect(screen.getByRole("button")).toHaveTextContent("");
   });
 
+  it("clears state when the `identity` prop changes, without remounting children", () => {
+    const { rerender } = render(
+      <ViewStateProvider identity="first-account">
+        <SearchProbe />
+      </ViewStateProvider>,
+    );
+    const buttonBeforeChange = screen.getByRole("button");
+
+    fireEvent.click(buttonBeforeChange);
+    expect(buttonBeforeChange).toHaveTextContent("biology");
+
+    rerender(
+      <ViewStateProvider identity="second-account">
+        <SearchProbe />
+      </ViewStateProvider>,
+    );
+
+    // A remount would give testing-library a brand new DOM node; getting the
+    // same node back proves the tree stayed mounted while the store cleared.
+    expect(screen.getByRole("button")).toBe(buttonBeforeChange);
+    expect(screen.getByRole("button")).toHaveTextContent("");
+  });
+
   it("keeps an object fallback stable across rerenders", () => {
     const { result, rerender } = renderHook(
       () => useRememberedViewState("filters", { status: "active" }),

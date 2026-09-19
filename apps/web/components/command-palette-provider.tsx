@@ -3,7 +3,7 @@
 import { CommandPalette, type CommandPaletteGroup } from "@newsekolah/ui";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { ReactElement, ReactNode } from "react";
 
 import { groupNavigation } from "../lib/group-navigation";
@@ -63,14 +63,16 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }): R
     }));
   }, [me?.permissions, me?.profile_kind, router, tNav]);
 
+  const open = useCallback(() => {
+    setIsOpen(true);
+  }, []);
+  // Same rationale as SessionProvider/TenantProvider: keep the value's
+  // identity stable so consumers of `useCommandPalette()` don't re-render on
+  // every render of this provider (docs/16-audit-performa-web.md item 3).
+  const value = useMemo<CommandPaletteContextValue>(() => ({ open }), [open]);
+
   return (
-    <CommandPaletteContext.Provider
-      value={{
-        open: () => {
-          setIsOpen(true);
-        },
-      }}
-    >
+    <CommandPaletteContext.Provider value={value}>
       {children}
       <CommandPalette
         open={isOpen}

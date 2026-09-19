@@ -1,7 +1,15 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { createContext, useContext, useMemo, useState, useSyncExternalStore } from "react";
+import {
+  createContext,
+  useContext,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import type { Dispatch, ReactElement, ReactNode, SetStateAction } from "react";
 
 const MAX_ROUTE_KEYS = 100;
@@ -46,13 +54,52 @@ export class ViewStateStore {
   get size(): number {
     return this.values.size;
   }
+
+  /**
+   * Drops every remembered value and notifies current subscribers, so
+   * mounted `useRememberedViewState` callers fall back to their initial
+   * value on their next read. Used to isolate the store per identity
+   * (tenant/user/school year) without remounting the component tree that
+   * reads it (docs/16-audit-performa-web.md item 2).
+   */
+  reset(): void {
+    this.values.clear();
+    for (const listeners of this.listeners.values()) {
+      for (const listener of listeners) listener();
+    }
+  }
 }
 
 const ViewStateContext = createContext<ViewStateStore | null>(null);
 
-/** In-memory, account-scoped view preferences. It never writes filters or roster data to browser storage. */
-export function ViewStateProvider({ children }: { children: ReactNode }): ReactElement {
+/**
+ * In-memory, account-scoped view preferences. It never writes filters or
+ * roster data to browser storage.
+ *
+ * `identity` (tenant/user/school year, joined by the caller) scopes the
+ * store without remounting `children`: passing a new value clears the
+ * store's contents in place instead of the caller keying this component to
+ * force a fresh instance, which used to unmount and remount the entire app
+ * tree underneath it on every boot-time identity resolution
+ * (docs/16-audit-performa-web.md item 2). Omit it to keep a single store
+ * for the provider's whole lifetime (e.g. in tests).
+ */
+export function ViewStateProvider({
+  children,
+  identity,
+}: {
+  children: ReactNode;
+  identity?: string;
+}): ReactElement {
   const store = useMemo(() => new ViewStateStore(), []);
+  const identityRef = useRef(identity);
+
+  useLayoutEffect(() => {
+    if (identityRef.current === identity) return;
+    identityRef.current = identity;
+    store.reset();
+  }, [identity, store]);
+
   return <ViewStateContext.Provider value={store}>{children}</ViewStateContext.Provider>;
 }
 
