@@ -12,23 +12,23 @@ Ukuran: 46 route, 20 komponen, 10 file lib, 31.459 baris di `app/` (11.157 di an
 
 ### 1.1 Auth dan publik
 
-| Route | Tujuan | Peran | UI | API |
-|---|---|---|---|---|
-| `login` (265) | Login + "biometrik" WebAuthn | anon | Kartu berbranding, remember-me, ConfirmDialog opt-in biometrik | `/api/settings/branding`, `/api/auth/login`, `/api/auth/me` |
-| `leave-letter-verify` (128) | Verifikasi surat izin via QR, publik | anon | Form id+token, auto-run dari query | `/api/leave-letters/verify` |
-| `monitoring` (348) | Layar dinding progres pengisian presensi per kelas | kiosk, tanpa auth | Jam, progress ring, kartu kelas, WS reconnect, mode `?demo=36` data palsu | `/api/monitoring`, WS `/api/realtime/monitoring` |
-| `offline` (47) | Fallback service worker | semua | Redirect otomatis saat online | - |
+| Route                       | Tujuan                                             | Peran             | UI                                                                        | API                                                         |
+| --------------------------- | -------------------------------------------------- | ----------------- | ------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| `login` (265)               | Login + "biometrik" WebAuthn                       | anon              | Kartu berbranding, remember-me, ConfirmDialog opt-in biometrik            | `/api/settings/branding`, `/api/auth/login`, `/api/auth/me` |
+| `leave-letter-verify` (128) | Verifikasi surat izin via QR, publik               | anon              | Form id+token, auto-run dari query                                        | `/api/leave-letters/verify`                                 |
+| `monitoring` (348)          | Layar dinding progres pengisian presensi per kelas | kiosk, tanpa auth | Jam, progress ring, kartu kelas, WS reconnect, mode `?demo=36` data palsu | `/api/monitoring`, WS `/api/realtime/monitoring`            |
+| `offline` (47)              | Fallback service worker                            | semua             | Redirect otomatis saat online                                             | -                                                           |
 
 ### 1.2 Shell inti
 
-| Route | Baris | Tujuan | Peran | UI penting | Endpoint |
-|---|---|---|---|---|---|
-| `dashboard` | 661 | Beranda adaptif peran | semua | Salam per jam, cuaca eksternal (open-meteo, bigdatacloud), grid aplikasi guru/siswa, metrik admin + presence WS, rail jadwal | `/api/dashboard`, `/api/admin-dashboard`, WS presence |
-| `profile` | 646 | Profil sendiri + detail per peran | semua | Cropper avatar, form kondisional per peran | `/api/profile`, `/api/profile/avatar`, `/api/users/:id/details` |
-| `notifications` | 228 | Kotak masuk | `view_notifications` | DataTable, modal detail | `/api/notifications`, `/read`, `/read-all` |
-| `settings` | 576 | White-label + kebijakan | admin | 5 tab general/modules/letter/schedule/security, cropper logo/favicon/kop | `/api/settings/general` |
-| `roles` | 474 | CRUD role + matriks permission | admin | Checkbox permission bergrup | `/api/roles`, `/api/roles/:role/permissions` |
-| `users` | 999 | CRUD pengguna, import, impersonasi | admin | DataTable server-side, fieldset per peran, reset password, arsip/pulihkan, UserImportModal | `/api/users/*`, `/api/user-import/*` |
+| Route           | Baris | Tujuan                             | Peran                | UI penting                                                                                                                   | Endpoint                                                        |
+| --------------- | ----- | ---------------------------------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| `dashboard`     | 661   | Beranda adaptif peran              | semua                | Salam per jam, cuaca eksternal (open-meteo, bigdatacloud), grid aplikasi guru/siswa, metrik admin + presence WS, rail jadwal | `/api/dashboard`, `/api/admin-dashboard`, WS presence           |
+| `profile`       | 646   | Profil sendiri + detail per peran  | semua                | Cropper avatar, form kondisional per peran                                                                                   | `/api/profile`, `/api/profile/avatar`, `/api/users/:id/details` |
+| `notifications` | 228   | Kotak masuk                        | `view_notifications` | DataTable, modal detail                                                                                                      | `/api/notifications`, `/read`, `/read-all`                      |
+| `settings`      | 576   | White-label + kebijakan            | admin                | 5 tab general/modules/letter/schedule/security, cropper logo/favicon/kop                                                     | `/api/settings/general`                                         |
+| `roles`         | 474   | CRUD role + matriks permission     | admin                | Checkbox permission bergrup                                                                                                  | `/api/roles`, `/api/roles/:role/permissions`                    |
+| `users`         | 999   | CRUD pengguna, import, impersonasi | admin                | DataTable server-side, fieldset per peran, reset password, arsip/pulihkan, UserImportModal                                   | `/api/users/*`, `/api/user-import/*`                            |
 
 ### 1.3 Master data (admin; semua memakai AdminRouteGuard + DataTable + ConfirmDialog + modal buatan sendiri)
 
@@ -36,19 +36,19 @@ Ukuran: 46 route, 20 komponen, 10 file lib, 31.459 baris di `app/` (11.157 di an
 
 ### 1.4 Operasional akademik
 
-| Route | Baris | Tujuan / alur |
-|---|---|---|
-| `attendance` | 722 | Dua mode: siswa melihat `StudentAttendanceCalendar`; guru membuka sesi per jadwal, menandai H/I/S/A/D, mencatat pelanggaran inline, menulis jurnal saat submit. Admin diarahkan keluar. WS teacher |
-| `attendance-report` | 369 | Rekap harian guru/admin + detail per mapel, ekspor XLSX di klien. CSS 1.290 baris diimpor global |
-| `schedules` | 700 | Grid jadwal periode x kelas. Siswa: kolom kelasnya; guru: "Jadwal Saya" dengan tambah mandiri dibatasi deadline; admin: grid penuh + hapus semua |
-| `teacher-subject-assignments` | 409 | Guru-mapel-kelas bulk sync; glyph "✓" literal |
-| `teacher-duty-assignments` | 605 | Penugasan tugas tambahan dengan scope sekolah/kelas; combobox downshift |
-| `student-classes` | 762 | Penempatan siswa ke kelas; import XLSX preview lalu commit |
-| `class-journals` | 132 (padat) | CRUD jurnal mengajar + unduh XLSX |
-| `teacher-substitutions` | 331 | Permintaan dan respons guru pengganti; realtime |
-| `homeroom-class` | 75 (padat) | Daftar kelas binaan wali: tile status sebagai filter, pencarian debounce, pagination sendiri |
-| `grades` | 176 (satu baris 4.553 karakter) | Komponen penilaian, entri nilai, pemetaan TP, rentang rapor, publikasi, bintang kelas, XLSX |
-| `my-grades` (45) / `my-stars` (21) | Tampilan siswa read-only |
+| Route                              | Baris                           | Tujuan / alur                                                                                                                                                                                      |
+| ---------------------------------- | ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `attendance`                       | 722                             | Dua mode: siswa melihat `StudentAttendanceCalendar`; guru membuka sesi per jadwal, menandai H/I/S/A/D, mencatat pelanggaran inline, menulis jurnal saat submit. Admin diarahkan keluar. WS teacher |
+| `attendance-report`                | 369                             | Rekap harian guru/admin + detail per mapel, ekspor XLSX di klien. CSS 1.290 baris diimpor global                                                                                                   |
+| `schedules`                        | 700                             | Grid jadwal periode x kelas. Siswa: kolom kelasnya; guru: "Jadwal Saya" dengan tambah mandiri dibatasi deadline; admin: grid penuh + hapus semua                                                   |
+| `teacher-subject-assignments`      | 409                             | Guru-mapel-kelas bulk sync; glyph "✓" literal                                                                                                                                                      |
+| `teacher-duty-assignments`         | 605                             | Penugasan tugas tambahan dengan scope sekolah/kelas; combobox downshift                                                                                                                            |
+| `student-classes`                  | 762                             | Penempatan siswa ke kelas; import XLSX preview lalu commit                                                                                                                                         |
+| `class-journals`                   | 132 (padat)                     | CRUD jurnal mengajar + unduh XLSX                                                                                                                                                                  |
+| `teacher-substitutions`            | 331                             | Permintaan dan respons guru pengganti; realtime                                                                                                                                                    |
+| `homeroom-class`                   | 75 (padat)                      | Daftar kelas binaan wali: tile status sebagai filter, pencarian debounce, pagination sendiri                                                                                                       |
+| `grades`                           | 176 (satu baris 4.553 karakter) | Komponen penilaian, entri nilai, pemetaan TP, rentang rapor, publikasi, bintang kelas, XLSX                                                                                                        |
+| `my-grades` (45) / `my-stars` (21) | Tampilan siswa read-only        |
 
 ### 1.5 Disiplin dan konseling
 
@@ -70,18 +70,18 @@ Ukuran: 46 route, 20 komponen, 10 file lib, 31.459 baris di `app/` (11.157 di an
 
 ## 2. Komponen bersama (20 file, 3.309 baris)
 
-| File | Baris | Tujuan | Dipakai |
-|---|---|---|---|
-| `AppSidebar.tsx` | 359 | Navigasi desktop 4 grup, state grup di localStorage, heartbeat presence 25 detik, gate modul penilaian, peluncur QR guru | 39 halaman |
-| `AppHeader.tsx` | 337 | Topbar: reload, tema, dropdown notifikasi (poll 30 detik + WS), push on/off, install PWA, menu profil, logout | 39 halaman |
-| `AppMobileNav.tsx` | 383 | Tab bawah per peran + sheet "Lainnya" bergrup dan bisa dicari; deteksi keyboard via visualViewport | 39 halaman |
-| `DataTable.tsx` | 149 | Tabel generik: cari, ukuran halaman, pagination, kosong/loading, mode server-side; filter klien `JSON.stringify(row).includes()` | 20 halaman |
-| `ConfirmDialog.tsx` | 64 | Modal konfirmasi, `role="alertdialog"` | 21 halaman |
-| `AppBrand`, `AppFavicon`, `BootLoader`, `PageLoader`, `SessionExpiredModal`, `ImpersonationBanner`, `PWAProvider`, `AdminRouteGuard` | 30-60 | Branding, favicon dinamis, overlay transisi route, loader, sesi kedaluwarsa, banner impersonasi, SW, redirect admin sisi klien | layout / 16 halaman |
-| `StudentAttendanceCalendar.tsx` | 316 + CSS 806 | Kalender bulanan, swipe, sheet detail hari via portal, focus trap | attendance |
-| `TeacherQRModal.tsx` | 246 | Lihat 1.6 | sidebar, mobile nav |
-| `UserImportModal.tsx` | 179 | XLSX baca, validasi, preview, commit | users |
-| `StudentScanModal.tsx` | 60 | Pemilih jenis izin | mobile nav |
+| File                                                                                                                                 | Baris         | Tujuan                                                                                                                           | Dipakai             |
+| ------------------------------------------------------------------------------------------------------------------------------------ | ------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
+| `AppSidebar.tsx`                                                                                                                     | 359           | Navigasi desktop 4 grup, state grup di localStorage, heartbeat presence 25 detik, gate modul penilaian, peluncur QR guru         | 39 halaman          |
+| `AppHeader.tsx`                                                                                                                      | 337           | Topbar: reload, tema, dropdown notifikasi (poll 30 detik + WS), push on/off, install PWA, menu profil, logout                    | 39 halaman          |
+| `AppMobileNav.tsx`                                                                                                                   | 383           | Tab bawah per peran + sheet "Lainnya" bergrup dan bisa dicari; deteksi keyboard via visualViewport                               | 39 halaman          |
+| `DataTable.tsx`                                                                                                                      | 149           | Tabel generik: cari, ukuran halaman, pagination, kosong/loading, mode server-side; filter klien `JSON.stringify(row).includes()` | 20 halaman          |
+| `ConfirmDialog.tsx`                                                                                                                  | 64            | Modal konfirmasi, `role="alertdialog"`                                                                                           | 21 halaman          |
+| `AppBrand`, `AppFavicon`, `BootLoader`, `PageLoader`, `SessionExpiredModal`, `ImpersonationBanner`, `PWAProvider`, `AdminRouteGuard` | 30-60         | Branding, favicon dinamis, overlay transisi route, loader, sesi kedaluwarsa, banner impersonasi, SW, redirect admin sisi klien   | layout / 16 halaman |
+| `StudentAttendanceCalendar.tsx`                                                                                                      | 316 + CSS 806 | Kalender bulanan, swipe, sheet detail hari via portal, focus trap                                                                | attendance          |
+| `TeacherQRModal.tsx`                                                                                                                 | 246           | Lihat 1.6                                                                                                                        | sidebar, mobile nav |
+| `UserImportModal.tsx`                                                                                                                | 179           | XLSX baca, validasi, preview, commit                                                                                             | users               |
+| `StudentScanModal.tsx`                                                                                                               | 60            | Pemilih jenis izin                                                                                                               | mobile nav          |
 
 ### Pelanggaran aturan reuse
 
@@ -97,6 +97,7 @@ Ukuran: 46 route, 20 komponen, 10 file lib, 31.459 baris di `app/` (11.157 di an
 ## 3. `lib/`
 
 ### `lib/api.ts` (3.530 baris)
+
 - Base URL kosong di dev; `next.config.ts` me-rewrite `/api/*` dan `/uploads/*` ke backend.
 - Satu `request<T>` privat: JSON, `ApiError(message, status)`. Tanpa timeout, retry, abort.
 - Token tidak dipegang klien: setiap dari 150 fungsi menerima `token` sebagai argumen pertama; pemanggil membaca `localStorage.sion_token` sendiri (106 kemunculan di 44 file).
@@ -107,6 +108,7 @@ Ukuran: 46 route, 20 komponen, 10 file lib, 31.459 baris di `app/` (11.157 di an
 - Sekitar 135 path endpoint berbeda.
 
 ### File lib lain
+
 - `access.ts` (140): label peran, union 41 item menu, `canAccessMenuItem` dengan 28 cabang if yang mencampur role dan permission; dipakai untuk gate menu dan route sekaligus.
 - `session-cache.ts`, `branding-cache.ts`: cermin localStorage.
 - `impersonation.ts`: token asli di sessionStorage.
@@ -115,6 +117,7 @@ Ukuran: 46 route, 20 komponen, 10 file lib, 31.459 baris di `app/` (11.157 di an
 - `format.ts`: `Intl` terkunci `id-ID`.
 
 ### i18n
+
 Tidak ada. Seluruh teks UI hardcoded Bahasa Indonesia; label hari, bulan, status, peran tersebar di 12+ file.
 
 ## 4. State dan pengambilan data
@@ -140,20 +143,20 @@ Tidak ada. Seluruh teks UI hardcoded Bahasa Indonesia; label hari, bulan, status
 
 ## 6. Hal spesifik sekolah yang hardcoded
 
-| Item | Lokasi | Dampak white-label |
-|---|---|---|
-| `app_subtitle: "Pecalang"` | `lib/api.ts:812` | Tagline default semua tenant |
-| Literal "SION" | layout, manifest, sw.js, PageLoader, monitoring, offline, login, ImpersonationBanner | Nama di metadata, judul push, manifest tidak ikut branding |
-| "Sistem Informasi Operasional Sekolah" | layout, manifest, offline, monitoring | sama |
-| Ikon `public/icons/*` statis | manifest, sw.js | Ikon per tenant butuh rebuild |
-| Nama guru demo nyata dan kelas X A..XII F | `monitoring/page.tsx:43-45` | Nama orang nyata di kode produksi |
-| Konvensi X/XI/XII, NIS, NISN, NIP, NUPTK | UserImportModal, homeroom-class | Terikat struktur SMA Indonesia |
-| Label penilaian KKTP, TP, Sumatif, Praktik, bintang | grades, my-grades | Spesifik Kurikulum Merdeka |
-| SP 1/2/3, Wakil Kepala Sekolah, Guru BK, Guru Piket, Pecalang | late-arrivals, permission-settings, teacher-duty-assignments, settings | Peran terpatri di copy dan alur 3 tahap |
-| Template surat default berbahasa Indonesia, aksen `#0f766e` | `lib/api.ts:715-802` | Dapat dikonfigurasi server, default lokal |
-| Fallback avatar `i.pravatar.cc` | AppHeader, profile, CSP | Membocorkan username ke pihak ketiga |
-| Cuaca open-meteo + bigdatacloud | dashboard | Diblokir CSP sendiri |
-| `Intl("id-ID")` | format.ts, dashboard, monitoring | Tidak dapat diubah |
+| Item                                                          | Lokasi                                                                               | Dampak white-label                                         |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ---------------------------------------------------------- |
+| `app_subtitle: "Pecalang"`                                    | `lib/api.ts:812`                                                                     | Tagline default semua tenant                               |
+| Literal "SION"                                                | layout, manifest, sw.js, PageLoader, monitoring, offline, login, ImpersonationBanner | Nama di metadata, judul push, manifest tidak ikut branding |
+| "Sistem Informasi Operasional Sekolah"                        | layout, manifest, offline, monitoring                                                | sama                                                       |
+| Ikon `public/icons/*` statis                                  | manifest, sw.js                                                                      | Ikon per tenant butuh rebuild                              |
+| Nama guru demo nyata dan kelas X A..XII F                     | `monitoring/page.tsx:43-45`                                                          | Nama orang nyata di kode produksi                          |
+| Konvensi X/XI/XII, NIS, NISN, NIP, NUPTK                      | UserImportModal, homeroom-class                                                      | Terikat struktur SMA Indonesia                             |
+| Label penilaian KKTP, TP, Sumatif, Praktik, bintang           | grades, my-grades                                                                    | Spesifik Kurikulum Merdeka                                 |
+| SP 1/2/3, Wakil Kepala Sekolah, Guru BK, Guru Piket, Pecalang | late-arrivals, permission-settings, teacher-duty-assignments, settings               | Peran terpatri di copy dan alur 3 tahap                    |
+| Template surat default berbahasa Indonesia, aksen `#0f766e`   | `lib/api.ts:715-802`                                                                 | Dapat dikonfigurasi server, default lokal                  |
+| Fallback avatar `i.pravatar.cc`                               | AppHeader, profile, CSP                                                              | Membocorkan username ke pihak ketiga                       |
+| Cuaca open-meteo + bigdatacloud                               | dashboard                                                                            | Diblokir CSP sendiri                                       |
+| `Intl("id-ID")`                                               | format.ts, dashboard, monitoring                                                     | Tidak dapat diubah                                         |
 
 Sudah siap white-label lewat `/api/settings/general` dan `/branding`: nama app, subtitle, logo, favicon, template surat izin dan SP, kebijakan sesi/presensi/jadwal, modul penilaian on/off.
 

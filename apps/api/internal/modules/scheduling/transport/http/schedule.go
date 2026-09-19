@@ -323,7 +323,11 @@ func (h *SchedulingHandler) UpdateSchedule(ctx context.Context, request api.Upda
 	if err != nil {
 		return nil, err
 	}
-	updated, err := h.service.UpdateSchedule(ctx, tenantID, request.ScheduleId, in, actor)
+	ids := []uuid.UUID{request.ScheduleId}
+	if request.Params.ScheduleIds != nil {
+		ids = *request.Params.ScheduleIds
+	}
+	updated, err := h.service.UpdateScheduleBlock(ctx, tenantID, request.ScheduleId, ids, in, actor)
 	if err != nil {
 		return nil, mapScheduleError(err)
 	}
@@ -341,7 +345,11 @@ func (h *SchedulingHandler) DeleteSchedule(ctx context.Context, request api.Dele
 		return nil, err
 	}
 
-	if err := h.service.DeleteSchedule(ctx, tenantID, request.ScheduleId, actor); err != nil {
+	ids := []uuid.UUID{request.ScheduleId}
+	if request.Params.ScheduleIds != nil {
+		ids = *request.Params.ScheduleIds
+	}
+	if err := h.service.DeleteScheduleBlock(ctx, tenantID, request.ScheduleId, ids, actor); err != nil {
 		return nil, mapScheduleError(err)
 	}
 	return api.DeleteSchedule204Response{}, nil

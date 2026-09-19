@@ -166,6 +166,8 @@ export function TenantsView(): ReactElement {
       </div>
 
       <DataTable
+        stateKey="features/platform/components/tenants-view:1"
+        mode="local"
         data={items}
         columns={columns}
         rowCount={items.length}
@@ -174,7 +176,6 @@ export function TenantsView(): ReactElement {
         sorting={[]}
         onSortingChange={() => undefined}
         globalFilter=""
-        onGlobalFilterChange={() => undefined}
         isLoading={isLoading}
         getRowId={(item) => item.id}
         onRowActivate={(item) => {

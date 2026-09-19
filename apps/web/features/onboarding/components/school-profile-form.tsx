@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
+import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import {
   type SchoolProfileWrite,
@@ -40,7 +41,9 @@ export function SchoolProfileSection(): ReactElement {
         <h2 className="text-[16px] font-medium text-fg">{t("title")}</h2>
         <p className="text-[13px] text-fg-muted">{t("body")}</p>
       </div>
-      {branding.isLoading || !branding.data ? (
+      {branding.isError && !branding.data ? (
+        <QueryError retry={() => branding.refetch()} />
+      ) : branding.isLoading || !branding.data ? (
         <Skeleton className="h-48 w-full" />
       ) : (
         <SchoolProfileForm key={branding.dataUpdatedAt} initial={branding.data} />

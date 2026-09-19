@@ -56,3 +56,14 @@ export function useMoveStudentMutation(classId: string) {
     },
   });
 }
+
+/** Soft-deletes an empty class; the server rejects dependent enrollments/assignments. */
+export function useDeleteClassMutation() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (classId: string) =>
+      client.DELETE("/v1/academic/classes/{classId}", { params: { path: { classId } } }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["academic"] }),
+  });
+}

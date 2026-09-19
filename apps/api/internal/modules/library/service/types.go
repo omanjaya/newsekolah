@@ -61,6 +61,10 @@ type ClassRosterEntry struct {
 // OverdueLoanDetail is one overdue loan plus the class and guardian phone
 // the old app's overdue report showed (library_circulation_v2.go:634-678).
 type OverdueLoanDetail struct {
+	MemberName    string
+	MemberNo      string
+	Title         string
+	Barcode       string
 	Loan          domain.Loan
 	ClassName     string
 	GuardianPhone string

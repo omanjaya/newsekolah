@@ -2,20 +2,13 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import {
-  Alert,
   Badge,
   Button,
-  Checkbox,
   Input,
   PageHeader,
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
   Skeleton,
   Switch,
   Textarea,
-  domainIcons,
-  cn,
   useToast,
 } from "@newsekolah/ui";
 import { Lock } from "lucide-react";
@@ -24,10 +17,15 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { useViolationTypesQuery, type ViolationType } from "../../discipline/api";
+import { useUnsavedChangesProtection } from "../../../lib/navigation/use-unsaved-changes-protection";
+import { useViolationTypesQuery } from "../../discipline/api";
 import { useClassesQuery, useLookup, useSubjectsQuery } from "../../reference/api";
 import { type SessionDetail, useSaveEntriesMutation, useSessionQuery } from "../api";
+
+import { AttendanceStatusRadioGroup } from "./attendance-status-radio-group";
+import { ViolationPicker } from "./violation-picker";
 
 /**
  * The teacher's roster grid (docs/07-ui-ux.md section 4): every student
@@ -49,10 +47,9 @@ export function SessionView({
    */
   openedInCorrection?: boolean;
 }): ReactElement {
-  const t = useTranslations("app.attendance.session");
-  const { data, isLoading, error } = useSessionQuery(sessionId);
+  const { data, isLoading, error, isRefetchError, refetch } = useSessionQuery(sessionId);
 
-  if (isLoading || !data) {
+  if (isLoading) {
     return (
       <div className="flex flex-col gap-4 p-6" aria-busy="true">
         <Skeleton className="h-8 w-64" />
@@ -60,9 +57,10 @@ export function SessionView({
       </div>
     );
   }
-  if (error) {
-    return <Alert variant="warning" title={t("loadError")} className="m-6" />;
+  if (error && !isRefetchError) {
+    return <QueryError retry={refetch} className="m-6" />;
   }
+  if (!data) return <QueryError retry={refetch} className="m-6" />;
   return (
     <SessionEditor
       key={data.submitted_at ?? "open"}
@@ -80,6 +78,7 @@ function SessionEditor({
   openedInCorrection: boolean;
 }): ReactElement {
   const t = useTranslations("app.attendance.session");
+  const tEditor = useTranslations("app.attendanceEditor");
   const router = useRouter();
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
@@ -106,12 +105,28 @@ function SessionEditor({
   const [reflection, setReflection] = useState(session.journal_reflection ?? "");
   const [reason, setReason] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
+  const [savedSuccessfully, setSavedSuccessfully] = useState(false);
   // Violation types per student, additive to the roster and not
   // round-tripped from the session payload: the API records what a save
   // sends and does not report back what was attached before, so there is
   // nothing to prefill here.
   const [violations, setViolations] = useState<Record<string, string[]>>({});
   const violationTypes = useViolationTypesQuery();
+
+  const initialValues = useMemo(
+    () => ({
+      statuses: Object.fromEntries(
+        session.roster.map((item) => [item.student_user_id, item.current_status ?? defaultCode]),
+      ),
+      notes: Object.fromEntries(
+        session.roster.map((item) => [item.student_user_id, item.notes ?? ""]),
+      ),
+      topic: session.journal_topic ?? "",
+      activities: session.journal_activities ?? "",
+      reflection: session.journal_reflection ?? "",
+    }),
+    [defaultCode, session],
+  );
 
   const isCorrection = Boolean(session.submitted_at) || openedInCorrection;
   const presentCodes = useMemo(
@@ -133,6 +148,24 @@ function SessionEditor({
     }
     return out;
   }, [session.roster, statuses, defaultCode]);
+
+  const pendingChanges = useMemo(() => {
+    let count = 0;
+    for (const [studentId, value] of Object.entries(statuses)) {
+      if (value !== initialValues.statuses[studentId]) count += 1;
+    }
+    for (const [studentId, value] of Object.entries(notes)) {
+      if (value !== initialValues.notes[studentId]) count += 1;
+    }
+    count += Object.values(violations).filter((value) => value.length > 0).length;
+    if (topic !== initialValues.topic) count += 1;
+    if (activities !== initialValues.activities) count += 1;
+    if (reflection !== initialValues.reflection) count += 1;
+    if (reason !== "") count += 1;
+    return count;
+  }, [activities, initialValues, notes, reason, reflection, statuses, topic, violations]);
+  const isDirty = pendingChanges > 0;
+  useUnsavedChangesProtection(isDirty && !savedSuccessfully, tEditor("discardChanges"));
 
   function toggleViolation(studentId: string, violationTypeId: string) {
     setViolations((prev) => {
@@ -174,6 +207,7 @@ function SessionEditor({
             }
           : {}),
       });
+      setSavedSuccessfully(true);
       toast.success(t("saved"));
       router.push("/attendance");
     } catch (error) {
@@ -187,7 +221,7 @@ function SessionEditor({
   const subjectName = subjectMap.get(session.subject_id)?.name ?? "";
 
   return (
-    <div className="flex flex-col gap-6 p-4 pb-28 md:p-6">
+    <div className="flex flex-col gap-6 p-4 pb-28 md:p-6 md:pb-28">
       <PageHeader
         eyebrow={t("eyebrow", { meeting: session.meeting_number })}
         title={`${className} ${subjectName}`.trim() || t("title")}
@@ -243,34 +277,15 @@ function SessionEditor({
                 </div>
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <div
-                  role="radiogroup"
-                  aria-label={item.name}
-                  className="flex rounded-xs border border-border"
-                >
-                  {session.statuses.map((s) => {
-                    const selected = current === s.code;
-                    return (
-                      <button
-                        key={s.code}
-                        type="button"
-                        role="radio"
-                        aria-checked={selected}
-                        aria-label={s.label}
-                        disabled={item.blocked}
-                        onClick={() => {
-                          setStatuses((prev) => ({ ...prev, [item.student_user_id]: s.code }));
-                        }}
-                        className={cn(
-                          "min-h-11 min-w-11 px-2 py-2 text-[13px] font-medium first:rounded-l-xs last:rounded-r-xs disabled:opacity-50",
-                          selected ? "bg-accent text-accent-fg" : "text-fg hover:bg-bg",
-                        )}
-                      >
-                        {s.code}
-                      </button>
-                    );
-                  })}
-                </div>
+                <AttendanceStatusRadioGroup
+                  statuses={session.statuses}
+                  value={current}
+                  label={item.name}
+                  disabled={Boolean(item.blocked) || save.isPending}
+                  onChange={(statusCode) => {
+                    setStatuses((prev) => ({ ...prev, [item.student_user_id]: statusCode }));
+                  }}
+                />
                 {!presentCodes.has(current) && !item.blocked && (
                   <Input
                     value={notes[item.student_user_id] ?? ""}
@@ -280,6 +295,7 @@ function SessionEditor({
                     placeholder={t("notePlaceholder")}
                     aria-label={t("noteFor", { name: item.name })}
                     className="w-40"
+                    disabled={save.isPending}
                   />
                 )}
                 {!item.blocked && (
@@ -288,6 +304,7 @@ function SessionEditor({
                     selected={violations[item.student_user_id] ?? []}
                     types={violationTypes.data?.data ?? []}
                     loading={violationTypes.isLoading}
+                    disabled={save.isPending}
                     onToggle={(violationTypeId) => {
                       toggleViolation(item.student_user_id, violationTypeId);
                     }}
@@ -316,6 +333,7 @@ function SessionEditor({
             onChange={(e) => {
               setTopic(e.target.value);
             }}
+            disabled={save.isPending}
           />
         </label>
         <label className="flex flex-col gap-1 text-[13px]">
@@ -326,6 +344,7 @@ function SessionEditor({
             onChange={(e) => {
               setActivities(e.target.value);
             }}
+            disabled={save.isPending}
           />
         </label>
         <label className="flex flex-col gap-1 text-[13px]">
@@ -336,11 +355,12 @@ function SessionEditor({
             onChange={(e) => {
               setReflection(e.target.value);
             }}
+            disabled={save.isPending}
           />
         </label>
       </section>
 
-      <div className="fixed inset-x-0 bottom-16 z-(--z-sticky) border-t border-border bg-surface px-4 py-3 md:bottom-0 md:left-64">
+      <div className="fixed inset-x-0 bottom-[var(--shell-mobile-tab-offset)] z-(--z-sticky) border-t border-border bg-surface px-4 py-3 md:bottom-0 md:left-[var(--shell-sidebar-width)]">
         <div className="mx-auto flex max-w-5xl flex-col gap-2 md:flex-row md:items-center md:justify-between">
           {isCorrection ? (
             <Input
@@ -353,7 +373,9 @@ function SessionEditor({
               className="md:w-96"
             />
           ) : (
-            <span className="text-[13px] text-fg-muted">{t("saveHint")}</span>
+            <span className="text-[13px] text-fg-muted">
+              {isDirty ? tEditor("unsavedChanges", { count: pendingChanges }) : t("saveHint")}
+            </span>
           )}
           <div className="flex items-center gap-3">
             {formError && (
@@ -368,70 +390,5 @@ function SessionEditor({
         </div>
       </div>
     </div>
-  );
-}
-
-/**
- * A student's violation types for this session, folded into a popover so
- * it never sits on the row's main tap path: attendance marking is one tap
- * per student, and this is an occasional second step, not part of it.
- */
-function ViolationPicker({
-  studentName,
-  selected,
-  types,
-  loading,
-  onToggle,
-}: {
-  studentName: string;
-  selected: string[];
-  types: ViolationType[];
-  loading: boolean;
-  onToggle: (violationTypeId: string) => void;
-}): ReactElement {
-  const t = useTranslations("app.attendance.session.violations");
-  return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          aria-label={t("button", { name: studentName })}
-          className={cn(
-            "flex h-11 min-w-11 items-center gap-1 rounded-xs border border-border px-2 md:h-8",
-            selected.length > 0 ? "border-status-absent text-status-absent" : "text-fg-muted",
-          )}
-        >
-          <domainIcons.violation className="size-4" aria-hidden="true" />
-          {selected.length > 0 && (
-            <span className="text-[12px] font-medium">{selected.length}</span>
-          )}
-        </button>
-      </PopoverTrigger>
-      <PopoverContent align="end">
-        <p className="mb-2 text-[13px] font-medium text-fg">{t("title")}</p>
-        {loading ? (
-          <Skeleton className="h-16 w-full" />
-        ) : types.length === 0 ? (
-          <p className="text-[13px] text-fg-muted">{t("empty")}</p>
-        ) : (
-          <ul className="flex max-h-64 flex-col gap-2 overflow-y-auto">
-            {types.map((violationType) => (
-              <li key={violationType.id}>
-                <label className="flex items-center gap-2 text-[13px] text-fg">
-                  <Checkbox
-                    checked={selected.includes(violationType.id)}
-                    onCheckedChange={() => {
-                      onToggle(violationType.id);
-                    }}
-                  />
-                  <span className="flex-1">{violationType.name}</span>
-                  <span className="text-fg-muted">{violationType.points}</span>
-                </label>
-              </li>
-            ))}
-          </ul>
-        )}
-      </PopoverContent>
-    </Popover>
   );
 }

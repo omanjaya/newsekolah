@@ -1,6 +1,6 @@
 "use client";
 
-import { Badge, Stepper } from "@newsekolah/ui";
+import { Badge, Stepper, type StepperStepState } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
@@ -18,26 +18,43 @@ const STATUS_VARIANT: Record<WorkflowInstance["status"], "neutral" | "accent"> =
 /** Stage progress plus a status badge; used by every workflow detail. */
 export function WorkflowStepper({ instance }: { instance: WorkflowInstance }): ReactElement {
   const t = useTranslations("app.permits.workflow");
-  const done = instance.status !== "in_progress";
-  const currentIndex = done ? instance.stages.length : instance.current_stage_index;
+  const terminal =
+    instance.status !== "in_progress" &&
+    instance.status !== "approved" &&
+    instance.status !== "completed";
+  const currentIndex = Math.min(
+    Math.max(instance.current_stage_index, 0),
+    instance.stages.length - 1,
+  );
+  const steps = instance.stages.map((stage, index) => {
+    let state: StepperStepState;
+    if (instance.status === "approved" || instance.status === "completed") {
+      state = "complete";
+    } else if (index < currentIndex) {
+      state = "complete";
+    } else if (index === currentIndex) {
+      state = terminal ? "stopped" : "current";
+    } else {
+      state = "upcoming";
+    }
+    return {
+      id: stage.key,
+      label: stage.label,
+      description: t(`verification.${stage.verification}`),
+      state,
+    };
+  });
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-2">
         <Badge variant={STATUS_VARIANT[instance.status]}>{t(`status.${instance.status}`)}</Badge>
-        {instance.current_stage && !done && (
+        {instance.current_stage && instance.status === "in_progress" && (
           <span className="text-[13px] text-fg-muted">
             {t("waitingFor", { stage: instance.current_stage.label })}
           </span>
         )}
       </div>
-      <Stepper
-        steps={instance.stages.map((stage) => ({
-          id: stage.key,
-          label: stage.label,
-          description: t(`verification.${stage.verification}`),
-        }))}
-        currentIndex={currentIndex}
-      />
+      <Stepper steps={steps} currentIndex={currentIndex} />
     </div>
   );
 }

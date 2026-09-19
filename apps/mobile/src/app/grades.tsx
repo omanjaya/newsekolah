@@ -23,7 +23,11 @@ export default function GradesRoute(): React.JSX.Element {
           <Skeleton height={120} />
         </View>
       ) : rows.length === 0 ? (
-        <EmptyState icon={GraduationCap} title={t("grades.empty")} description={t("grades.empty_description")} />
+        <EmptyState
+          icon={GraduationCap}
+          title={t("grades.empty")}
+          description={t("grades.empty_description")}
+        />
       ) : (
         <ScrollView contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 48 }}>
           <View className="flex-row items-center justify-between rounded-input border border-line bg-surface px-4 py-3 dark:border-line-dark dark:bg-surface-dark">
@@ -33,7 +37,9 @@ export default function GradesRoute(): React.JSX.Element {
             </View>
             <View className="flex-row items-center gap-1.5">
               <Star size={18} strokeWidth={1.75} color="#1F3A5F" />
-              <Text className="text-md font-medium text-ink dark:text-ink-dark">{data?.stars ?? 0}</Text>
+              <Text className="text-md font-medium text-ink dark:text-ink-dark">
+                {data?.stars ?? 0}
+              </Text>
             </View>
           </View>
 
@@ -46,7 +52,9 @@ export default function GradesRoute(): React.JSX.Element {
                 {subjectMap.get(subject.subject_id) ?? "-"}
               </Text>
               {subject.components.length === 0 ? (
-                <Text className="text-sm text-ink/60 dark:text-ink-dark/60">{t("grades.no_components")}</Text>
+                <Text className="text-sm text-ink/60 dark:text-ink-dark/60">
+                  {t("grades.no_components")}
+                </Text>
               ) : (
                 <View className="gap-1">
                   {subject.components.map((c) => (
@@ -60,12 +68,20 @@ export default function GradesRoute(): React.JSX.Element {
                 </View>
               )}
               <View className="flex-row items-center justify-between border-t border-line pt-2 dark:border-line-dark">
-                <Text className="text-sm text-ink/60 dark:text-ink-dark/60">{t("grades.average")}</Text>
-                <Text className="text-sm text-ink dark:text-ink-dark">{subject.average ?? "-"}</Text>
+                <Text className="text-sm text-ink/60 dark:text-ink-dark/60">
+                  {t("grades.average")}
+                </Text>
+                <Text className="text-sm text-ink dark:text-ink-dark">
+                  {subject.average ?? "-"}
+                </Text>
               </View>
               <View className="flex-row items-center justify-between">
-                <Text className="text-sm text-ink/60 dark:text-ink-dark/60">{t("grades.report_score")}</Text>
-                <Text className="text-base font-medium text-ink dark:text-ink-dark">{subject.report_score ?? "-"}</Text>
+                <Text className="text-sm text-ink/60 dark:text-ink-dark/60">
+                  {t("grades.report_score")}
+                </Text>
+                <Text className="text-base font-medium text-ink dark:text-ink-dark">
+                  {subject.report_score ?? "-"}
+                </Text>
               </View>
             </View>
           ))}

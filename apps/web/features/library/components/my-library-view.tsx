@@ -6,6 +6,7 @@ import { EmptyState, PageHeader, Skeleton, domainIcons } from "@newsekolah/ui";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
+import { QueryError } from "../../../components/query-error";
 import type { LibraryLoan } from "../api";
 import { useMyLibraryProfileQuery } from "../me-api";
 
@@ -29,7 +30,9 @@ function LoanRow({ loan, showDueOn }: { loan: LibraryLoan; showDueOn: boolean })
 /** A member's own loans, history, reservations, and fines, with a self-service reserve form. */
 export function MyLibraryView(): ReactElement {
   const t = useTranslations("app.library.me");
-  const { data, isLoading } = useMyLibraryProfileQuery();
+  const { data, isLoading, isError, refetch } = useMyLibraryProfileQuery();
+
+  if (isError && !data) return <QueryError retry={() => refetch()} className="m-4" />;
 
   if (isLoading || !data) {
     return (

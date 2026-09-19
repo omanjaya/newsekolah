@@ -1,4 +1,4 @@
-import { Check } from "lucide-react";
+import { Check, X } from "lucide-react";
 
 import { cn } from "../utils/cn.js";
 
@@ -6,9 +6,10 @@ export interface StepperStep {
   id: string;
   label: string;
   description?: string;
+  state?: StepperStepState;
 }
 
-export type StepperStepState = "complete" | "current" | "upcoming";
+export type StepperStepState = "complete" | "current" | "stopped" | "upcoming";
 
 export interface StepperProps {
   steps: StepperStep[];
@@ -27,6 +28,7 @@ function stateOf(index: number, currentIndex: number): StepperStepState {
 const CIRCLE_CLASS: Record<StepperStepState, string> = {
   complete: "border-accent bg-accent text-accent-fg",
   current: "border-accent text-accent",
+  stopped: "border-status-absent text-status-absent",
   upcoming: "border-border text-fg-muted",
 };
 
@@ -46,7 +48,7 @@ export function Stepper({
       )}
     >
       {steps.map((step, index) => {
-        const state = stateOf(index, currentIndex);
+        const state = step.state ?? stateOf(index, currentIndex);
         const isLast = index === steps.length - 1;
         return (
           <li
@@ -73,6 +75,8 @@ export function Stepper({
               >
                 {state === "complete" ? (
                   <Check className="size-3.5" aria-hidden="true" />
+                ) : state === "stopped" ? (
+                  <X className="size-3.5" aria-hidden="true" />
                 ) : (
                   index + 1
                 )}

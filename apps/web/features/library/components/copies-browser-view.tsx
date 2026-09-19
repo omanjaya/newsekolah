@@ -13,9 +13,10 @@ import type { ColumnDef } from "@tanstack/react-table";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 
 import { useCan } from "../../../lib/session/session-provider";
+import { useRememberedViewState } from "../../../lib/view-state/view-state-provider";
 import { useLookup } from "../../reference/api";
 import type { LibraryCopy } from "../api";
 import {
@@ -46,10 +47,10 @@ const STATUSES: LibraryCopyStatus[] = [
 export function CopiesBrowserView(): ReactElement {
   const t = useTranslations("app.library.copiesBrowser");
   const canManage = useCan("manage_library_catalog");
-  const [search, setSearch] = useState("");
-  const [status, setStatus] = useState<LibraryCopyStatus | "">("");
-  const [categoryId, setCategoryId] = useState("");
-  const [locationId, setLocationId] = useState("");
+  const [search, setSearch] = useRememberedViewState("copies-search", "");
+  const [status, setStatus] = useRememberedViewState<LibraryCopyStatus | "">("copies-status", "");
+  const [categoryId, setCategoryId] = useRememberedViewState("copies-category", "");
+  const [locationId, setLocationId] = useRememberedViewState("copies-location", "");
   const { selection, onSelectionChange, orderedIds, clear } = useOrderedSelection();
 
   const { data, isLoading } = useLibraryCopiesFilteredQuery({
@@ -175,6 +176,7 @@ export function CopiesBrowserView(): ReactElement {
       {canManage && <CopyBulkStatusBar selectedIds={orderedIds} onDone={clear} />}
 
       <DataTable
+        stateKey="features/library/components/copies-browser-view:1"
         data={items}
         columns={columns}
         rowCount={items.length}

@@ -21,6 +21,7 @@ import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
 import { useActiveYear } from "../../../lib/hooks/use-active-year";
+import { useDateFilter } from "../../../lib/hooks/use-date-filter";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan, useSession } from "../../../lib/session/session-provider";
 import {
@@ -78,7 +79,7 @@ function DaySessions(): ReactElement {
   const canViewMonitor = useCan("view_monitor_presence");
 
   const today = todayInZone(me?.tenant.timezone);
-  const [date, setDate] = useState(today);
+  const [date, setDate] = useDateFilter("date", today);
   // A teacher defaults to their own day. An administrator who does not
   // teach starts with nobody picked: calling "own today" for someone with
   // no schedule would just be another dead end, so they see a prompt

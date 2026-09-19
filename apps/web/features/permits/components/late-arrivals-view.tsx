@@ -25,6 +25,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
+import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan, useSession } from "../../../lib/session/session-provider";
 import { useDirectoryQuery, useLookup } from "../../reference/api";
@@ -53,7 +54,11 @@ export function LateArrivalsView(): ReactElement {
   // that only some of them hold.
   const canReview = me?.profile_kind === "teacher" || me?.profile_kind === "staff";
   const isStudent = useCan("submit_leave_requests");
-  const [tab, setTab] = useState(canReview ? "queue" : "mine");
+  const [tab, setTab] = useUrlState<string>(
+    "tab",
+    canReview ? ["queue", "mine"] : ["mine"],
+    canReview ? "queue" : "mine",
+  );
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">

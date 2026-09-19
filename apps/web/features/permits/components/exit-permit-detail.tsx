@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
+import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { usePeriodsQuery } from "../../reference/api";
 import {
@@ -118,12 +119,13 @@ export function ExitPermitDetail({ id }: { id: string }): ReactElement {
   const tQr = useTranslations("app.permits.qr");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
-  const { data, isLoading } = useExitPermitQuery(id);
+  const { data, isLoading, error, refetch } = useExitPermitQuery(id);
   const scan = useScanExitPermitStageMutation();
   const cancel = useCancelExitPermitMutation();
   const gate = useIssueGateTokenMutation();
 
-  if (isLoading || !data) return <Skeleton className="h-64 w-full" aria-busy="true" />;
+  if (isLoading) return <Skeleton className="h-64 w-full" aria-busy="true" />;
+  if (error || !data) return <QueryError retry={refetch} />;
   const inst = data.instance;
   const fail = (error: unknown) => {
     toast.error(

@@ -10,7 +10,6 @@ import {
   EmptyState,
   IconButton,
   Input,
-  PageHeader,
   useToast,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -21,6 +20,7 @@ import { useMemo, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
+import { useRememberedViewState } from "../../../lib/view-state/view-state-provider";
 import {
   type Track,
   useCreateTrackMutation,
@@ -44,7 +44,7 @@ export function TracksView(): ReactElement {
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
   const [pendingDelete, setPendingDelete] = useState<Track | null>(null);
-  const [filter, setFilter] = useState("");
+  const [filter, setFilter] = useRememberedViewState("tracks-filter", "");
 
   const rows = useMemo(() => {
     const all = data?.data ?? [];
@@ -112,26 +112,24 @@ export function TracksView(): ReactElement {
   );
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
-      <PageHeader
-        eyebrow={t("eyebrow")}
-        title={t("title")}
-        actions={
-          canManage && (
-            <Button
-              size="sm"
-              icon={<Plus />}
-              onClick={() => {
-                open("new");
-              }}
-            >
-              {t("add")}
-            </Button>
-          )
-        }
-      />
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-[18px] font-medium text-fg">{t("title")}</h2>
+        {canManage && (
+          <Button
+            size="sm"
+            icon={<Plus />}
+            onClick={() => {
+              open("new");
+            }}
+          >
+            {t("add")}
+          </Button>
+        )}
+      </div>
       <p className="text-[13px] text-fg-muted">{t("description")}</p>
       <DataTable
+        stateKey="features/academic/components/tracks-view:1"
         data={rows}
         columns={columns}
         rowCount={rows.length}

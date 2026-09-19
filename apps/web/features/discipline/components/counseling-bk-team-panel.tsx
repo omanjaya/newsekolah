@@ -78,6 +78,8 @@ export function CounselingBKTeamPanel({ onOpen }: { onOpen: (id: string) => void
         />
       </label>
       <DataTable
+        stateKey="features/discipline/components/counseling-bk-team-panel:1"
+        mode="local"
         data={items}
         columns={columns}
         rowCount={items.length}
@@ -86,7 +88,6 @@ export function CounselingBKTeamPanel({ onOpen }: { onOpen: (id: string) => void
         sorting={[]}
         onSortingChange={() => undefined}
         globalFilter=""
-        onGlobalFilterChange={() => undefined}
         isLoading={isLoading}
         getRowId={(item) => item.id}
         onRowActivate={(item) => {

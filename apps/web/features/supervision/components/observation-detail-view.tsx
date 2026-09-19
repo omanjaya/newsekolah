@@ -8,6 +8,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
+import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import {
@@ -36,6 +37,11 @@ export function ObservationDetailView({ observationId }: { observationId: string
   const [teacherResponse, setTeacherResponse] = useState("");
   const [agreedFollowUp, setAgreedFollowUp] = useState("");
   const [editingResponse, setEditingResponse] = useState(false);
+
+  if (observation.isError && !observation.data)
+    return <QueryError retry={() => observation.refetch()} className="m-4" />;
+  if (cycle.isError && !cycle.data)
+    return <QueryError retry={() => cycle.refetch()} className="m-4" />;
 
   if (observation.isLoading || !observation.data || cycle.isLoading || !cycle.data) {
     return (

@@ -1,0 +1,4 @@
+{
+  "unsavedChanges": "{count, plural, one {# unsaved change} other {# unsaved changes}}",
+  "discardChanges": "Your unsaved attendance changes will be lost. Continue?"
+}

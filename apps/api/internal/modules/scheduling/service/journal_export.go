@@ -5,8 +5,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/xuri/excelize/v2"
-
-	"github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling/domain"
 )
 
 // journalExportRowLimit caps a single export: large enough for any one
@@ -20,19 +18,10 @@ const journalExportRowLimit = 5000
 // (docs/analysis/backend-inventory.md section 1.12) with the names a
 // school office actually needs to read the file.
 func (s *Service) ExportJournalsXLSX(ctx context.Context, tenantID, academicYearID uuid.UUID, filter JournalFilter) ([]byte, error) {
-	filter.Limit, filter.Offset = journalExportRowLimit, 0
-
-	var journals []domain.Journal
-	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		var err error
-		journals, err = s.repo.ListJournalsFiltered(ctx, tenantID, academicYearID, filter)
-		return err
-	})
+	rows, err := s.journalExportRows(ctx, tenantID, academicYearID, filter)
 	if err != nil {
 		return nil, err
 	}
-
-	names := journalNameResolver{ctx: ctx, tenantID: tenantID, repo: s.repo, classes: map[uuid.UUID]string{}, subjects: map[uuid.UUID]string{}, users: map[uuid.UUID]string{}}
 
 	f := excelize.NewFile()
 	defer func() { _ = f.Close() }()
@@ -48,12 +37,8 @@ func (s *Service) ExportJournalsXLSX(ctx context.Context, tenantID, academicYear
 		_ = f.SetCellValue(sheet, cell, h)
 	}
 
-	for i, j := range journals {
+	for i, values := range rows {
 		row := i + 2
-		values := []any{
-			j.LessonDate.Format("2006-01-02"), names.class(j.ClassID), names.subject(j.SubjectID),
-			names.user(j.TeacherUserID), names.user(j.WrittenByUserID), j.Topic, j.Activities, j.Reflection,
-		}
 		for col, v := range values {
 			cell, _ := excelize.CoordinatesToCellName(col+1, row)
 			_ = f.SetCellValue(sheet, cell, v)
@@ -65,6 +50,25 @@ func (s *Service) ExportJournalsXLSX(ctx context.Context, tenantID, academicYear
 		return nil, err
 	}
 	return buf.Bytes(), nil
+}
+
+// journalExportRows resolves names inside the tenant transaction so RLS also
+// applies to class, subject and user lookups rather than returning raw IDs.
+func (s *Service) journalExportRows(ctx context.Context, tenantID, academicYearID uuid.UUID, filter JournalFilter) ([][]string, error) {
+	filter.Limit, filter.Offset = journalExportRowLimit, 0
+	var rows [][]string
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		journals, err := s.repo.ListJournalsFiltered(ctx, tenantID, academicYearID, filter)
+		if err != nil {
+			return err
+		}
+		names := journalNameResolver{ctx: ctx, tenantID: tenantID, repo: s.repo, classes: map[uuid.UUID]string{}, subjects: map[uuid.UUID]string{}, users: map[uuid.UUID]string{}}
+		for _, j := range journals {
+			rows = append(rows, []string{j.LessonDate.Format("2006-01-02"), names.class(j.ClassID), names.subject(j.SubjectID), names.user(j.TeacherUserID), names.user(j.WrittenByUserID), j.Topic, j.Activities, j.Reflection})
+		}
+		return nil
+	})
+	return rows, err
 }
 
 // journalNameResolver memoizes class/subject/user name lookups across one

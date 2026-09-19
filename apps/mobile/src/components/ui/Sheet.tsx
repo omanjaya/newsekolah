@@ -6,12 +6,19 @@ interface SheetProps extends PropsWithChildren {
   visible: boolean;
   onClose: () => void;
   title?: string;
+  closeLabel?: string;
 }
 
 /** Bottom sheet, not a centered dialog, per DESIGN.md. Closes on backdrop tap
  * and Android back button (Modal's onRequestClose); respects
  * prefers-reduced-motion by skipping the slide transition. */
-export function Sheet({ visible, onClose, title, children }: SheetProps): React.JSX.Element {
+export function Sheet({
+  visible,
+  onClose,
+  title,
+  closeLabel = "Tutup",
+  children,
+}: SheetProps): React.JSX.Element {
   const insets = useSafeAreaInsets();
   const [reduceMotion, setReduceMotion] = useState(false);
 
@@ -33,11 +40,13 @@ export function Sheet({ visible, onClose, title, children }: SheetProps): React.
     >
       <Pressable
         className="flex-1 justify-end bg-black/40"
-        accessibilityLabel="Tutup"
+        accessibilityRole="button"
+        accessibilityLabel={closeLabel}
         onPress={onClose}
       >
         <Pressable
           onPress={(event) => event.stopPropagation()}
+          accessibilityViewIsModal
           className="rounded-t-dialog bg-surface dark:bg-surface-dark"
           style={{ paddingBottom: insets.bottom + 16 }}
         >

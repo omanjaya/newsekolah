@@ -11,14 +11,19 @@ import {
   domainIcons,
   useToast,
 } from "@newsekolah/ui";
-import { Plus, Trash2 } from "lucide-react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useDirectoryQuery, useLookup } from "../../reference/api";
-import { type FeeType, useDeleteDiscountMutation, useFeeTypeDiscountsQuery } from "../api";
+import {
+  type Discount,
+  type FeeType,
+  useDeleteDiscountMutation,
+  useFeeTypeDiscountsQuery,
+} from "../api";
 
 import { DiscountForm } from "./discount-form";
 
@@ -33,6 +38,7 @@ export function FeeTypeDiscountsDialog({
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const [adding, setAdding] = useState(false);
+  const [editing, setEditing] = useState<Discount | null>(null);
   const students = useDirectoryQuery("student");
   const studentMap = useLookup(students.data?.data);
   const { data, isLoading } = useFeeTypeDiscountsQuery(feeType?.id ?? "", feeType !== null);
@@ -52,11 +58,12 @@ export function FeeTypeDiscountsDialog({
       open={feeType !== null}
       onOpenChange={(open) => {
         setAdding(false);
+        setEditing(null);
         onOpenChange(open);
       }}
     >
       <DialogContent title={feeType ? t("title", { name: feeType.name }) : ""}>
-        {feeType && !adding && (
+        {feeType && !adding && !editing && (
           <div className="flex flex-col gap-4">
             <div className="flex justify-end">
               <Button
@@ -93,6 +100,13 @@ export function FeeTypeDiscountsDialog({
                         {describe(discount.kind, discount.percentage_bp, discount.amount_minor)}
                       </Badge>
                       <IconButton
+                        icon={<Pencil />}
+                        aria-label={t("edit")}
+                        onClick={() => {
+                          setEditing(discount);
+                        }}
+                      />
+                      <IconButton
                         icon={<Trash2 />}
                         aria-label={t("remove")}
                         onClick={() => {
@@ -114,11 +128,14 @@ export function FeeTypeDiscountsDialog({
             )}
           </div>
         )}
-        {feeType && adding && (
+        {feeType && (adding || editing) && (
           <DiscountForm
+            key={editing?.id ?? "new"}
+            initial={editing ?? undefined}
             feeTypeId={feeType.id}
             onDone={() => {
               setAdding(false);
+              setEditing(null);
             }}
           />
         )}

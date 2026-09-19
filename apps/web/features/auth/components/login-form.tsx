@@ -15,16 +15,17 @@ import {
   FormMessage,
   Input,
 } from "@newsekolah/ui";
+import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { translateFormMessage } from "../../../lib/i18n/translate-message";
-import { isPasskeySupported } from "../../../lib/webauthn";
+import { usePasskeySupported } from "../../../lib/webauthn";
 import { useGoogleSSOAvailabilityQuery, useLoginMutation } from "../api";
 
 import { GoogleSignInButton } from "./google-sign-in-button";
@@ -45,12 +46,19 @@ export function LoginForm(): ReactElement {
   const loginMutation = useLoginMutation();
   const apiErrorMessage = useApiErrorMessage();
   const googleSSO = useGoogleSSOAvailabilityQuery();
+  const passkeySupported = usePasskeySupported();
 
   // Set once the API rejects a login attempt with MFA_REQUIRED, so the same
   // username and password can be resubmitted with an added `otp` field
   // (docs/08-security.md section 2: TOTP as a second factor at sign-in).
   const [otpRequired, setOtpRequired] = useState(false);
   const [otp, setOtp] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const otpRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (otpRequired) otpRef.current?.focus();
+  }, [otpRequired]);
 
   const form = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
@@ -107,14 +115,27 @@ export function LoginForm(): ReactElement {
         render={({ field }) => (
           <FormItem>
             <FormLabel>{t("passwordLabel")}</FormLabel>
-            <FormControl>
-              <Input
-                type="password"
-                autoComplete="current-password"
-                placeholder={tLogin("passwordPlaceholder")}
-                {...field}
-              />
-            </FormControl>
+            <div className="relative">
+              <FormControl>
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="current-password"
+                  placeholder={tLogin("passwordPlaceholder")}
+                  className="pr-11"
+                  {...field}
+                />
+              </FormControl>
+              <button
+                type="button"
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-fg-muted"
+                aria-label={showPassword ? tLogin("hidePassword") : tLogin("showPassword")}
+                onClick={() => {
+                  setShowPassword((visible) => !visible);
+                }}
+              >
+                {showPassword ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}
+              </button>
+            </div>
             <FormMessage />
           </FormItem>
         )}
@@ -127,6 +148,7 @@ export function LoginForm(): ReactElement {
           <p className="text-[13px] text-fg-muted">{tSecurity("login.otpBody")}</p>
           <Input
             id="login-otp"
+            ref={otpRef}
             autoComplete="one-time-code"
             inputMode="numeric"
             value={otp}
@@ -153,7 +175,7 @@ export function LoginForm(): ReactElement {
         </Link>
       )}
 
-      {!otpRequired && (googleSSO.data?.enabled === true || isPasskeySupported()) && (
+      {!otpRequired && (googleSSO.data?.enabled === true || passkeySupported) && (
         <div className="flex flex-col items-center gap-3">
           <div className="flex w-full items-center gap-3 text-[13px] text-fg-muted">
             <span className="h-px flex-1 bg-border" aria-hidden="true" />

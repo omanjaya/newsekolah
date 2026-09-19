@@ -214,6 +214,7 @@
     }
   },
   "errors": {
+    "SCHEDULE_HAS_HISTORY": "Jadwal ini sudah memiliki riwayat presensi atau guru pengganti. Perubahan jadwal dan penghapusan diblokir agar riwayat tetap tersimpan.",
     "AUTH_INVALID_CREDENTIALS": "Nama pengguna atau kata sandi salah",
     "AUTH_TOKEN_EXPIRED": "Sesi berakhir, silakan masuk kembali",
     "TENANT_NOT_FOUND": "Sekolah tidak ditemukan",
@@ -309,6 +310,7 @@
     "ADDITIONAL_ROLE_MUST_BE_CUSTOM": "Peran tambahan harus peran khusus, bukan peran sistem",
     "LEAVE_PERMISSION_REQUIRES_DUTY": "Meninjau izin dan menerbitkan surat izin tidak bisa diberikan langsung ke peran guru, izin ini datang dari penugasan tugas",
     "IMPORT_TOO_MANY_ROWS": "Berkas impor melebihi batas 5000 baris",
-    "IMPORT_FILE_INVALID": "Berkas impor tidak terbaca atau tidak sesuai format templat"
+    "IMPORT_FILE_INVALID": "Berkas impor tidak terbaca atau tidak sesuai format templat",
+    "ANALYTICS_NOT_HOMEROOM_TEACHER": "Daftar ini tersedia untuk wali kelas, guru BK, atau pimpinan sekolah yang memiliki penugasan aktif."
   }
 }

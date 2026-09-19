@@ -1,5 +1,13 @@
-import { ActivityIndicator, Pressable, Text, type GestureResponderEvent } from "react-native";
+import {
+  ActivityIndicator,
+  Pressable,
+  Text,
+  useColorScheme,
+  type GestureResponderEvent,
+} from "react-native";
 import { cn } from "@/lib/cn";
+import { useAuth } from "@/lib/auth/AuthProvider";
+import { getAccentColors } from "@/theme/accent";
 
 export type ButtonVariant = "primary" | "secondary" | "ghost" | "destructive";
 
@@ -21,7 +29,7 @@ const VARIANT_CLASSES: Record<ButtonVariant, string> = {
 };
 
 const VARIANT_TEXT_CLASSES: Record<ButtonVariant, string> = {
-  primary: "text-white",
+  primary: "text-accent-fg",
   secondary: "text-ink dark:text-ink-dark",
   ghost: "text-accent",
   destructive: "text-white",
@@ -37,7 +45,10 @@ export function Button({
   fullWidth = false,
   testID,
 }: ButtonProps): React.JSX.Element {
+  const { me } = useAuth();
+  const colorScheme = useColorScheme() === "dark" ? "dark" : "light";
   const isDisabled = disabled || loading;
+  const accentForeground = getAccentColors(me?.tenant.accent_color, colorScheme).foreground;
 
   return (
     <Pressable
@@ -55,7 +66,13 @@ export function Button({
     >
       {loading ? (
         <ActivityIndicator
-          color={variant === "primary" || variant === "destructive" ? "#FFFFFF" : "#1F3A5F"}
+          color={
+            variant === "primary"
+              ? accentForeground
+              : variant === "destructive"
+                ? "#FFFFFF"
+                : "#1F3A5F"
+          }
         />
       ) : (
         <Text className={cn("text-base font-medium", VARIANT_TEXT_CLASSES[variant])}>{label}</Text>

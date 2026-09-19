@@ -9,6 +9,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useRef, useState } from "react";
 
+import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan, useSession } from "../../../lib/session/session-provider";
 import {
@@ -137,7 +138,7 @@ export function LeaveRequestDetail({ id }: { id: string }): ReactElement {
   const canReview = useCan("review_leave_requests");
   const canIssue = useCan("issue_leave_letters");
   const canApproveAsGuardian = useCan("approve_child_leave_requests");
-  const { data, isLoading } = useLeaveRequestQuery(id);
+  const { data, isLoading, error, refetch } = useLeaveRequestQuery(id);
   const review = useReviewLeaveRequestMutation();
   const guardianReview = useReviewLeaveRequestAsGuardianMutation();
   const issue = useIssueLeaveLetterMutation();
@@ -148,7 +149,8 @@ export function LeaveRequestDetail({ id }: { id: string }): ReactElement {
   const [guardianNote, setGuardianNote] = useState("");
   const [guardianError, setGuardianError] = useState<string | null>(null);
 
-  if (isLoading || !data) return <Skeleton className="h-64 w-full" aria-busy="true" />;
+  if (isLoading) return <Skeleton className="h-64 w-full" aria-busy="true" />;
+  if (error || !data) return <QueryError retry={refetch} />;
   const inst = data.instance;
   const isOwner = inst.subject_user_id === me?.id;
   const fail = (error: unknown) => {

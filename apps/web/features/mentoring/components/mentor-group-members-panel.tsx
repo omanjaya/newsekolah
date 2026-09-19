@@ -125,6 +125,9 @@ export function MentorGroupMembersPanel({ groupId }: { groupId: string }): React
       {canManage && atCapacity && <p className="text-[13px] text-fg-muted">{t("atCapacity")}</p>}
 
       <DataTable
+        stateKey="features/mentoring/components/mentor-group-members-panel:1"
+        mode="local"
+        searchable={false}
         data={members}
         columns={columns}
         rowCount={members.length}
@@ -133,7 +136,6 @@ export function MentorGroupMembersPanel({ groupId }: { groupId: string }): React
         sorting={[]}
         onSortingChange={() => undefined}
         globalFilter=""
-        onGlobalFilterChange={() => undefined}
         isLoading={isLoading}
         getRowId={(item) => item.id}
         emptyState={

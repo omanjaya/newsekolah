@@ -4,6 +4,8 @@ export { domainIcons, type DomainIconName } from "./icons.js";
 export { Button, type ButtonProps } from "./components/button.js";
 export { IconButton, type IconButtonProps } from "./components/icon-button.js";
 export { Input, type InputProps } from "./components/input.js";
+export { UiLabelsProvider, useUiLabels, type UiLabels } from "./components/ui-labels.js";
+
 export {
   BarcodeScannerField,
   type BarcodeScannerFieldProps,
@@ -58,6 +60,7 @@ export { Badge, type BadgeProps } from "./components/badge.js";
 export { StatusBadge, type StatusBadgeProps, type StatusName } from "./components/status-badge.js";
 export { Avatar, type AvatarProps } from "./components/avatar.js";
 export { Skeleton } from "./components/skeleton.js";
+export { Stat, StatGrid, type StatProps, type StatGridProps } from "./components/stat.js";
 export { EmptyState, type EmptyStateProps } from "./components/empty-state.js";
 export {
   PageHeader,
@@ -96,6 +99,8 @@ export {
   DataTable,
   DataTablePagination,
   DataTableToolbar,
+  DataTableStateProvider,
   selectionColumn,
+  type DataTableLocalState,
   type DataTableProps,
 } from "./components/data-table/index.js";

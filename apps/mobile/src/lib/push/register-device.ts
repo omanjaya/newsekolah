@@ -18,7 +18,8 @@ export async function registerPushDevice(): Promise<void> {
     body: {
       platform: Platform.OS,
       token_or_endpoint: token,
-      device_name: Device.deviceName ?? `${Device.manufacturer ?? ""} ${Device.modelName ?? ""}`.trim(),
+      device_name:
+        Device.deviceName ?? `${Device.manufacturer ?? ""} ${Device.modelName ?? ""}`.trim(),
     },
   });
 }

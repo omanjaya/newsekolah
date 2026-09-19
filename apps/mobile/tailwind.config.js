@@ -40,6 +40,7 @@ module.exports = {
         // Accent is read from a CSS variable so tenant branding can override it at
         // runtime (see src/theme/accent.ts) without a rebuild.
         accent: "rgb(var(--color-accent) / <alpha-value>)",
+        "accent-fg": "var(--color-accent-fg)",
         status: statusColors(light),
       },
       borderRadius: {

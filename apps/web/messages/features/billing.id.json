@@ -80,8 +80,10 @@
       "reason": "Alasan",
       "reasonPlaceholder": "mis. Potongan anak kedua, beasiswa prestasi",
       "cancel": "Batal",
-      "submit": "Simpan"
-    }
+      "submit": "Simpan",
+      "active": "Diskon aktif"
+    },
+    "edit": "Edit diskon"
   },
   "generation": {
     "period": "Periode",

@@ -1019,8 +1019,12 @@ components:
 
     LibraryOverdueLoanDetail:
       type: object
-      required: [loan, class_name, guardian_phone]
+      required: [loan, class_name, guardian_phone, member_name, member_no, title, barcode]
       properties:
+        member_name: { type: string }
+        member_no: { type: string }
+        title: { type: string }
+        barcode: { type: string }
         loan: { $ref: "#/components/schemas/LibraryLoan" }
         class_name: { type: string }
         guardian_phone: { type: string }

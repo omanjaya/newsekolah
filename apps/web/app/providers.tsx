@@ -5,6 +5,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef } from "react";
 import type { ReactElement, ReactNode } from "react";
 
+import { DataTableStateScope } from "../components/data-table-state-scope";
+import { UiLocaleProvider } from "../components/ui-locale-provider";
 import { ApiClientProvider } from "../lib/api/client";
 import { QueryProvider } from "../lib/query/query-provider";
 import { SessionProvider } from "../lib/session/session-provider";
@@ -39,7 +41,9 @@ export function AppProviders({
         <TenantProvider>
           <SessionProvider>
             <ThemeProvider>
-              {children}
+              <UiLocaleProvider>
+                <DataTableStateScope>{children}</DataTableStateScope>
+              </UiLocaleProvider>
               <Toaster />
             </ThemeProvider>
           </SessionProvider>

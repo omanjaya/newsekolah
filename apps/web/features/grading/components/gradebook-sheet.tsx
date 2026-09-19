@@ -35,6 +35,7 @@ export interface GradebookSheetProps {
   classId: string;
   subjectId: string;
   canManage: boolean;
+  onPendingChangesChange?: (count: number) => void;
 }
 
 /**
@@ -47,6 +48,7 @@ export function GradebookSheet({
   classId,
   subjectId,
   canManage,
+  onPendingChangesChange,
 }: GradebookSheetProps): ReactElement {
   const t = useTranslations("app.grading.sheet");
   const toast = useToast();
@@ -153,6 +155,7 @@ export function GradebookSheet({
           onEditComponent={setComponentDialog}
           onManualOverride={setManualTarget}
           onGiveStar={setStarTarget}
+          onPendingChangesChange={onPendingChangesChange}
         />
       )}
 

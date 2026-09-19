@@ -6,7 +6,9 @@ import { useTranslations } from "next-intl";
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { ReactElement, ReactNode } from "react";
 
-import { navigation } from "../lib/navigation";
+import { groupNavigation } from "../lib/group-navigation";
+import { navigation, filterNavigation } from "../lib/navigation";
+import { confirmUnsavedChangesBeforeNavigation } from "../lib/navigation/use-unsaved-changes-protection";
 import { useSession } from "../lib/session/session-provider";
 
 interface CommandPaletteContextValue {
@@ -41,19 +43,25 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }): R
   }, []);
 
   const groups: CommandPaletteGroup[] = useMemo(() => {
-    const items = navigation
-      .filter((item) => !item.permission || (me?.permissions.includes(item.permission) ?? false))
-      .map((item) => ({
+    const items = filterNavigation(
+      navigation,
+      (permission) => me?.permissions.includes(permission) ?? false,
+      me?.profile_kind,
+    );
+    return groupNavigation(items).map((group) => ({
+      heading: tNav(group.labelKey),
+      items: group.items.map((item) => ({
         id: item.key,
         label: tNav(item.labelKey),
         icon: <item.icon aria-hidden="true" />,
         onSelect: () => {
+          if (!confirmUnsavedChangesBeforeNavigation()) return;
           setIsOpen(false);
           router.push(item.href);
         },
-      }));
-    return [{ heading: t("trigger"), items }];
-  }, [me?.permissions, router, t, tNav]);
+      })),
+    }));
+  }, [me?.permissions, me?.profile_kind, router, tNav]);
 
   return (
     <CommandPaletteContext.Provider
@@ -69,6 +77,8 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }): R
         onOpenChange={setIsOpen}
         groups={groups}
         placeholder={t("placeholder")}
+        label={t("trigger")}
+        emptyLabel={t("empty")}
       />
     </CommandPaletteContext.Provider>
   );

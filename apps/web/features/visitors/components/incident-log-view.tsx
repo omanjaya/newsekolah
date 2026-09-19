@@ -153,6 +153,8 @@ export function IncidentLogView(): ReactElement {
       </label>
 
       <DataTable
+        stateKey="features/visitors/components/incident-log-view:1"
+        mode="local"
         data={items}
         columns={columns}
         rowCount={items.length}
@@ -161,7 +163,6 @@ export function IncidentLogView(): ReactElement {
         sorting={[]}
         onSortingChange={() => undefined}
         globalFilter=""
-        onGlobalFilterChange={() => undefined}
         isLoading={isLoading}
         getRowId={(item) => item.id}
         onRowActivate={(item) => {

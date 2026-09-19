@@ -8,7 +8,9 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { useDateFilter } from "../../../lib/hooks/use-date-filter";
 import { useSession } from "../../../lib/session/session-provider";
+import { useRememberedViewState } from "../../../lib/view-state/view-state-provider";
 import { todayInZone, useHomeroomAttendanceQuery } from "../../attendance/api";
 
 type Entry = components["schemas"]["AttendanceHomeroomEntry"];
@@ -34,9 +36,9 @@ export function HomeroomView(): ReactElement {
   const t = useTranslations("app.homeroom");
   const { me } = useSession();
   const homeroom = me?.duties?.find((d) => d.slug === "homeroom");
-  const [date, setDate] = useState(todayInZone(me?.tenant.timezone));
-  const [search, setSearch] = useState("");
-  const [statusCode, setStatusCode] = useState("");
+  const [date, setDate] = useDateFilter("date", todayInZone(me?.tenant.timezone));
+  const [search, setSearch] = useRememberedViewState("homeroom-search", "");
+  const [statusCode, setStatusCode] = useRememberedViewState("homeroom-status", "");
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: PAGE_SIZE,
@@ -209,6 +211,7 @@ export function HomeroomView(): ReactElement {
         ))}
       </dl>
       <DataTable
+        stateKey="features/homeroom/components/homeroom-view:1"
         data={rows}
         columns={columns}
         rowCount={data?.total ?? 0}

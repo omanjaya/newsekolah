@@ -20,6 +20,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
+import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useCan, useSession } from "../../../lib/session/session-provider";
 import {
   type LeaveRequestSummary,
@@ -50,7 +51,11 @@ export function LeaveRequestsView(): ReactElement {
   ].filter((entry): entry is { value: string; label: string; content: ReactElement } =>
     Boolean(entry),
   );
-  const [tab, setTab] = useState(tabs[0]?.value ?? "mine");
+  const [tab, setTab] = useUrlState<string>(
+    "tab",
+    tabs.map((item) => item.value),
+    tabs[0]?.value ?? "mine",
+  );
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">

@@ -116,6 +116,8 @@ export function TitleCopiesView({ titleId }: { titleId: string }): ReactElement 
       <CopyLabelPrintBar selectedIds={orderedIds} onClear={clear} />
 
       <DataTable
+        stateKey="features/library/components/title-copies-view:1"
+        mode="local"
         data={copies}
         columns={columns}
         rowCount={copies.length}
@@ -124,7 +126,6 @@ export function TitleCopiesView({ titleId }: { titleId: string }): ReactElement 
         sorting={[]}
         onSortingChange={() => undefined}
         globalFilter=""
-        onGlobalFilterChange={() => undefined}
         isLoading={isLoading}
         rowSelection={selection}
         onRowSelectionChange={onSelectionChange}

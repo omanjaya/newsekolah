@@ -88,6 +88,8 @@ export function StocktakeView(): ReactElement {
       </div>
 
       <DataTable
+        stateKey="features/library/components/stocktake-view:1"
+        mode="local"
         data={sessions}
         columns={columns}
         rowCount={sessions.length}
@@ -96,7 +98,6 @@ export function StocktakeView(): ReactElement {
         sorting={[]}
         onSortingChange={() => undefined}
         globalFilter=""
-        onGlobalFilterChange={() => undefined}
         isLoading={isLoading}
         getRowId={(item) => item.id}
         emptyState={

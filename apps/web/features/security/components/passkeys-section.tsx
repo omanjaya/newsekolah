@@ -18,7 +18,7 @@ import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { isPasskeySupported } from "../../../lib/webauthn";
+import { usePasskeySupported } from "../../../lib/webauthn";
 import {
   useDeletePasskeyMutation,
   useRegisterPasskeyMutation,
@@ -48,8 +48,9 @@ export function PasskeysSection(): ReactElement | null {
   const [renaming, setRenaming] = useState<Passkey | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [deleting, setDeleting] = useState<Passkey | null>(null);
+  const passkeySupported = usePasskeySupported();
 
-  if (!isPasskeySupported()) {
+  if (!passkeySupported) {
     return null;
   }
 

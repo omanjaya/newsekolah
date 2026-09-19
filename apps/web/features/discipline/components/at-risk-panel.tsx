@@ -18,6 +18,7 @@ import { useMemo, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
+import { useRememberedViewState } from "../../../lib/view-state/view-state-provider";
 import { useClassesQuery } from "../../reference/api";
 import {
   type SPCandidate,
@@ -50,9 +51,9 @@ export function AtRiskPanel(): ReactElement {
   const apiErrorMessage = useApiErrorMessage();
   const canIssue = useCan("issue_warning_letters");
 
-  const [classId, setClassId] = useState("");
-  const [level, setLevel] = useState("");
-  const [search, setSearch] = useState("");
+  const [classId, setClassId] = useRememberedViewState("at-risk-class", "");
+  const [level, setLevel] = useRememberedViewState("at-risk-level", "");
+  const [search, setSearch] = useRememberedViewState("at-risk-search", "");
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: PAGE_SIZE,
@@ -221,6 +222,7 @@ export function AtRiskPanel(): ReactElement {
       </div>
 
       <DataTable
+        stateKey="features/discipline/components/at-risk-panel:1"
         data={rows}
         columns={columns}
         rowCount={rowCount}

@@ -1,6 +1,6 @@
 import "@/global.css";
 import { useMemo } from "react";
-import { View } from "react-native";
+import { useColorScheme, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { Stack } from "expo-router";
@@ -20,6 +20,7 @@ const queryClient = new QueryClient({
 
 function AccentRoot({ children }: { children: React.ReactNode }): React.JSX.Element {
   const { me } = useAuth();
+  const colorScheme = useColorScheme() === "dark" ? "dark" : "light";
   // Attendance taken offline queues locally (see lib/offline/queue.ts) and
   // needs a foreground/interval flush loop to leave the queue -- this is
   // the one place that loop is mounted so it runs exactly once per app
@@ -30,7 +31,10 @@ function AccentRoot({ children }: { children: React.ReactNode }): React.JSX.Elem
   const [fontsLoaded] = useFonts(
     Platform.OS === "android" ? { Inter_400Regular, Inter_500Medium } : {},
   );
-  const style = useMemo(() => accentVars(me?.tenant.accent_color), [me?.tenant.accent_color]);
+  const style = useMemo(
+    () => accentVars(me?.tenant.accent_color, colorScheme),
+    [me?.tenant.accent_color, colorScheme],
+  );
 
   if (Platform.OS === "android" && !fontsLoaded) {
     return <View className="flex-1 bg-bg dark:bg-bg-dark" />;

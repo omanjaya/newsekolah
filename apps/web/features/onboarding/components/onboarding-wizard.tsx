@@ -211,6 +211,8 @@ export function OnboardingWizard(): ReactElement {
             })}
           </p>
           <DataTable
+            stateKey="features/onboarding/components/onboarding-wizard:1"
+            mode="local"
             data={report.data}
             columns={columns}
             rowCount={report.data.length}
@@ -219,7 +221,6 @@ export function OnboardingWizard(): ReactElement {
             sorting={[]}
             onSortingChange={() => undefined}
             globalFilter=""
-            onGlobalFilterChange={() => undefined}
             getRowId={(row) => String(row.row_number)}
             emptyState={
               <EmptyState icon={<FileUp aria-hidden="true" />} title={t("reviewEmpty")} />

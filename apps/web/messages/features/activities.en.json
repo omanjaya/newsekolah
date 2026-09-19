@@ -35,7 +35,7 @@
     },
     "form": {
       "createTitle": "Add extracurricular",
-      "editTitle": "Edit extracurricular",
+      "editTitle": "Edit clubs",
       "name": "Name",
       "description": "Description",
       "capacity": "Member capacity",
@@ -45,7 +45,21 @@
       "meetingStart": "Start time",
       "meetingEnd": "End time",
       "cancel": "Cancel",
-      "submit": "Save"
+      "submit": "Save",
+      "active": "Active club"
+    },
+    "delete": "Delete",
+    "deleteTitle": "Delete clubs?",
+    "deleteBody": "The club is archived and removed from this list. Membership and attendance records are retained. Use inactive status if you need to access it again.",
+    "deleted": "Record deleted",
+    "policy": {
+      "title": "Membership policy",
+      "description": "Maximum clubs per student. Use 0 for no limit. Applies to future enrolments. Memberships in inactive clubs still count; memberships in deleted clubs do not.",
+      "limit": "Maximum clubs",
+      "saved": "Policy saved",
+      "loadError": "Unable to load policy.",
+      "cancel": "Cancel",
+      "save": "Save"
     }
   },
   "clubDetail": {
@@ -55,7 +69,7 @@
       "meetings": "Meetings"
     },
     "members": {
-      "studentId": "Student ID",
+      "studentId": "Student",
       "studentIdPlaceholder": "Paste the student's ID",
       "joinedOn": "Joined on",
       "join": "Enroll",
@@ -75,7 +89,7 @@
       "scheduled": "Meeting scheduled",
       "empty": "No meetings scheduled yet.",
       "roster": {
-        "studentId": "Student ID",
+        "studentId": "Student",
         "status": "Attendance status",
         "save": "Save",
         "recorded": "Attendance saved",
@@ -98,7 +112,8 @@
     "columns": {
       "name": "Activity",
       "dates": "Dates",
-      "location": "Location"
+      "location": "Location",
+      "actions": "Actions"
     },
     "form": {
       "title": "Add activity",
@@ -108,7 +123,31 @@
       "startDate": "Start date",
       "endDate": "End date",
       "cancel": "Cancel",
-      "submit": "Save"
+      "submit": "Save",
+      "editTitle": "Edit events"
+    },
+    "edit": "Edit",
+    "delete": "Delete",
+    "deleteTitle": "Delete events?",
+    "deleteBody": "This record will be removed. Continue?",
+    "deleted": "Record deleted",
+    "participants": {
+      "title": "Participants",
+      "scope": "Participant scope",
+      "student": "Student",
+      "class": "Class",
+      "grade_level": "Grade level",
+      "choose": "Choose participant",
+      "add": "Add participant",
+      "added": "Participant added",
+      "empty": "No participants yet.",
+      "remove": "Remove",
+      "removeTitle": "Remove participant?",
+      "removeBody": "This participant will be removed from the activity.",
+      "removed": "Participant removed",
+      "unknown": "Name unavailable",
+      "loading": "Loading participants…",
+      "loadError": "Unable to load participants."
     }
   },
   "achievements": {
@@ -123,7 +162,8 @@
       "competition": "Competition",
       "level": "Level",
       "placement": "Placement",
-      "date": "Date"
+      "date": "Date",
+      "actions": "Actions"
     },
     "levels": {
       "school": "School",
@@ -135,14 +175,27 @@
     },
     "form": {
       "title": "Record achievement",
-      "studentId": "Student ID",
+      "studentId": "Student",
       "competitionName": "Competition name",
       "level": "Level",
       "placement": "Placement",
       "achievedOn": "Date",
       "notes": "Notes",
       "cancel": "Cancel",
-      "submit": "Save"
-    }
+      "submit": "Save",
+      "editTitle": "Edit achievements"
+    },
+    "edit": "Edit",
+    "delete": "Delete",
+    "deleteTitle": "Delete achievements?",
+    "deleteBody": "This record will be removed. Continue?",
+    "deleted": "Record deleted"
+  },
+  "students": {
+    "choose": "Choose student",
+    "search": "Search name or username",
+    "empty": "No students found",
+    "unknown": "Student name unavailable",
+    "loading": "Loading students…"
   }
 }

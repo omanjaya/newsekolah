@@ -295,7 +295,7 @@ func (q *Queries) GetReportSchedule(ctx context.Context, arg GetReportSchedulePa
 }
 
 const getScheduleByID = `-- name: GetScheduleByID :one
-select id, tenant_id, academic_year_id, term_id, class_id, subject_id, teacher_user_id, room_id, day_of_week, start_period_id, end_period_id, start_seq, end_seq, period_range, source, notes, created_by, updated_by, created_at, updated_at from schedules where tenant_id = $1 and id = $2
+select id, tenant_id, academic_year_id, term_id, class_id, subject_id, teacher_user_id, room_id, day_of_week, start_period_id, end_period_id, start_seq, end_seq, period_range, source, notes, created_by, updated_by, created_at, updated_at from schedules where tenant_id = $1 and id = $2 for update
 `
 
 type GetScheduleByIDParams struct {

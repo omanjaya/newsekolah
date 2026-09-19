@@ -1,15 +1,7 @@
-import { domainIcons } from "@newsekolah/ui";
-import {
-  BookMarked,
-  CalendarPlus,
-  CalendarRange,
-  Compass,
-  DoorOpen,
-  FileSpreadsheet,
-  UsersRound,
-} from "lucide-react";
+import { Building2, CalendarPlus, CalendarRange, FileSpreadsheet } from "lucide-react";
 
 import type { NavItem } from "./navigation";
+import { NAV_GROUP } from "./navigation-groups";
 
 /**
  * Academic master-data screens, split out of `navigation.ts` so that file
@@ -23,47 +15,15 @@ export const academicNavItems: NavItem[] = [
     href: "/academic/years",
     icon: CalendarRange,
     permission: "view_academic_data",
-    group: "nav.schoolData.label",
+    group: NAV_GROUP.masterData,
   },
   {
-    key: "academic-grade-levels",
-    labelKey: "nav.schoolData.items.gradeLevels",
-    href: "/academic/grade-levels",
-    icon: domainIcons.grades,
+    key: "school-structure",
+    labelKey: "app.academic.structure.title",
+    href: "/school/structure",
+    icon: Building2,
     permission: "manage_master_data",
-    group: "nav.schoolData.label",
-  },
-  {
-    key: "academic-tracks",
-    labelKey: "nav.schoolData.items.tracks",
-    href: "/academic/tracks",
-    icon: Compass,
-    permission: "manage_master_data",
-    group: "nav.schoolData.label",
-  },
-  {
-    key: "academic-rooms",
-    labelKey: "nav.schoolData.items.rooms",
-    href: "/academic/rooms",
-    icon: DoorOpen,
-    permission: "manage_master_data",
-    group: "nav.schoolData.label",
-  },
-  {
-    key: "academic-subject-offerings",
-    labelKey: "nav.schoolData.items.subjectOfferings",
-    href: "/academic/subject-offerings",
-    icon: BookMarked,
-    permission: "manage_master_data",
-    group: "nav.schoolData.label",
-  },
-  {
-    key: "academic-teaching-assignments",
-    labelKey: "nav.schoolData.items.teachingAssignments",
-    href: "/academic/teaching-assignments",
-    icon: UsersRound,
-    permission: "manage_master_data",
-    group: "nav.schoolData.label",
+    group: NAV_GROUP.masterData,
   },
   {
     key: "academic-enrollment-import",
@@ -71,7 +31,7 @@ export const academicNavItems: NavItem[] = [
     href: "/academic/enrollment-import",
     icon: FileSpreadsheet,
     permission: "manage_enrollments",
-    group: "nav.schoolData.label",
+    group: NAV_GROUP.masterData,
   },
   {
     key: "academic-new-year-setup",
@@ -79,6 +39,6 @@ export const academicNavItems: NavItem[] = [
     href: "/academic/new-year-setup",
     icon: CalendarPlus,
     permission: "manage_master_data",
-    group: "nav.schoolData.label",
+    group: NAV_GROUP.academic,
   },
 ];

@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo } from "react";
 
+import { QueryError } from "../../../components/query-error";
 import { useLookup, useTeachersQuery } from "../../reference/api";
 import { useScheduledObservationsQuery, useSupervisionCycleQuery } from "../api";
 
@@ -59,6 +60,9 @@ export function SupervisionCycleReportView({ cycleId }: { cycleId: string }): Re
     [t, teacherMap],
   );
 
+  if (cycle.isError && !cycle.data)
+    return <QueryError retry={() => cycle.refetch()} className="m-4" />;
+
   if (cycle.isLoading || !cycle.data) {
     return (
       <div className="flex flex-col gap-4 p-4 md:p-6" aria-busy="true">
@@ -73,6 +77,9 @@ export function SupervisionCycleReportView({ cycleId }: { cycleId: string }): Re
       <PageHeader eyebrow={t("eyebrow")} title={t("title", { cycle: cycle.data.name })} />
 
       <DataTable
+        stateKey="features/supervision/components/supervision-cycle-report-view:1"
+        mode="local"
+        searchable={false}
         data={rows}
         columns={columns}
         rowCount={rows.length}
@@ -81,7 +88,6 @@ export function SupervisionCycleReportView({ cycleId }: { cycleId: string }): Re
         sorting={[]}
         onSortingChange={() => undefined}
         globalFilter=""
-        onGlobalFilterChange={() => undefined}
         isLoading={scheduled.isLoading}
         getRowId={(item) => item.teacherUserId}
         onRowActivate={(item) => {

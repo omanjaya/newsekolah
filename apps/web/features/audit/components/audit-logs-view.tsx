@@ -11,6 +11,7 @@ import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
 import { useSession } from "../../../lib/session/session-provider";
+import { useRememberedViewState } from "../../../lib/view-state/view-state-provider";
 import { useDirectoryQuery, useLookup } from "../../reference/api";
 import { type AuditLogEntry, useAuditLogsQuery } from "../api";
 
@@ -24,10 +25,10 @@ export function AuditLogsView(): ReactElement {
   const { me } = useSession();
   const timeZone = me?.tenant.timezone;
 
-  const [actorUserId, setActorUserId] = useState("");
-  const [entityType, setEntityType] = useState("");
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
+  const [actorUserId, setActorUserId] = useRememberedViewState("audit-actor", "");
+  const [entityType, setEntityType] = useRememberedViewState("audit-entity", "");
+  const [from, setFrom] = useRememberedViewState("audit-from", "");
+  const [to, setTo] = useRememberedViewState("audit-to", "");
   const [cursors, setCursors] = useState<string[]>([""]);
   const cursor = cursors[cursors.length - 1] ?? "";
   const [selected, setSelected] = useState<AuditLogEntry | null>(null);
@@ -194,6 +195,8 @@ export function AuditLogsView(): ReactElement {
       </div>
 
       <DataTable
+        stateKey="features/audit/components/audit-logs-view:1"
+        mode="cursor"
         data={items}
         columns={columns}
         rowCount={items.length}
@@ -202,7 +205,6 @@ export function AuditLogsView(): ReactElement {
         sorting={[]}
         onSortingChange={() => undefined}
         globalFilter=""
-        onGlobalFilterChange={() => undefined}
         isLoading={isLoading}
         getRowId={(entry) => entry.id}
         onRowActivate={setSelected}

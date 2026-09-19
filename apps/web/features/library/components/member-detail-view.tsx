@@ -7,6 +7,8 @@ import {
   Badge,
   Button,
   DataTable,
+  Dialog,
+  DialogContent,
   EmptyState,
   PageHeader,
   Skeleton,
@@ -35,6 +37,7 @@ import {
 } from "../members-api";
 
 import { MarkLostDialog } from "./mark-lost-dialog";
+import { MemberProfileForm } from "./member-profile-form";
 import { MemberStatusMenu } from "./member-status-menu";
 
 export function MemberDetailView({ userId }: { userId: string }): ReactElement {
@@ -54,6 +57,7 @@ export function MemberDetailView({ userId }: { userId: string }): ReactElement {
   const reservations = useMemberReservationsQuery(userId);
   const clearMember = useClearLibraryMemberMutation();
 
+  const [editing, setEditing] = useState(false);
   const [markingLost, setMarkingLost] = useState<string | null>(null);
   const [clearanceError, setClearanceError] = useState("");
 
@@ -138,14 +142,26 @@ export function MemberDetailView({ userId }: { userId: string }): ReactElement {
         eyebrow={t("eyebrow")}
         title={userName ?? data.member_no}
         actions={
-          <Button
-            variant="secondary"
-            onClick={() => {
-              void printMemberCard(userId);
-            }}
-          >
-            {tHistory("printCard")}
-          </Button>
+          <div className="flex gap-2">
+            {canManage && (
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setEditing(true);
+                }}
+              >
+                {t("edit")}
+              </Button>
+            )}
+            <Button
+              variant="secondary"
+              onClick={() => {
+                void printMemberCard(userId);
+              }}
+            >
+              {tHistory("printCard")}
+            </Button>
+          </div>
         }
       />
 
@@ -226,6 +242,8 @@ export function MemberDetailView({ userId }: { userId: string }): ReactElement {
       <div className="flex flex-col gap-3">
         <h2 className="text-[16px] font-medium text-fg">{tHistory("title")}</h2>
         <DataTable
+          stateKey="features/library/components/member-detail-view:1"
+          mode="local"
           data={items}
           columns={columns}
           rowCount={items.length}
@@ -234,7 +252,6 @@ export function MemberDetailView({ userId }: { userId: string }): ReactElement {
           sorting={[]}
           onSortingChange={() => undefined}
           globalFilter=""
-          onGlobalFilterChange={() => undefined}
           isLoading={loans.isLoading}
           getRowId={(item) => item.id}
           emptyState={
@@ -259,6 +276,19 @@ export function MemberDetailView({ userId }: { userId: string }): ReactElement {
           </ul>
         </div>
       )}
+
+      <Dialog open={editing} onOpenChange={setEditing}>
+        <DialogContent title={t("edit")}>
+          {editing && (
+            <MemberProfileForm
+              member={data}
+              onDone={() => {
+                setEditing(false);
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
 
       <MarkLostDialog
         loanId={markingLost}

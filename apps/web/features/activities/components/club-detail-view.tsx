@@ -16,6 +16,7 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
+import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import {
@@ -30,14 +31,20 @@ import {
   useRecordAttendanceMutation,
 } from "../api";
 
+import { StudentName, StudentPicker } from "./student-picker";
+
 const STATUS_OPTIONS: AttendanceStatus[] = ["H", "I", "S", "A"];
 
 export function ClubDetailView({ clubId }: { clubId: string }): ReactElement {
   const t = useTranslations("app.activities.clubDetail");
   const { data: club } = useExtracurricularQuery(clubId);
-  const [tab, setTab] = useState("members");
   const canManage = useCan("manage_extracurriculars");
   const canRecordAttendance = useCan("record_extracurricular_attendance");
+  const [tab, setTab] = useUrlState<string>(
+    "tab",
+    ["members", ...(canRecordAttendance ? ["meetings"] : [])],
+    "members",
+  );
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
@@ -102,14 +109,7 @@ function MembersPanel({ clubId, canManage }: { clubId: string; canManage: boolea
         >
           <label className="flex flex-col gap-1 text-[13px]">
             <span className="font-medium">{t("studentId")}</span>
-            <Input
-              value={studentId}
-              onChange={(e) => {
-                setStudentId(e.target.value);
-              }}
-              required
-              placeholder={t("studentIdPlaceholder")}
-            />
+            <StudentPicker value={studentId} onChange={setStudentId} />
           </label>
           <label className="flex flex-col gap-1 text-[13px]">
             <span className="font-medium">{t("joinedOn")}</span>
@@ -122,7 +122,7 @@ function MembersPanel({ clubId, canManage }: { clubId: string; canManage: boolea
               required
             />
           </label>
-          <Button type="submit" loading={join.isPending}>
+          <Button type="submit" disabled={!studentId} loading={join.isPending}>
             {t("join")}
           </Button>
         </form>
@@ -146,7 +146,7 @@ function MembersPanel({ clubId, canManage }: { clubId: string; canManage: boolea
         {members.map((m) => (
           <li key={m.id} className="flex items-center justify-between gap-2 p-3 text-[13px]">
             <div className="flex min-w-0 flex-col">
-              <span className="truncate font-medium">{m.student_user_id}</span>
+              <span className="truncate font-medium">{<StudentName id={m.student_user_id} />}</span>
               <span className="text-muted-foreground">
                 {m.joined_on}
                 {m.left_on ? ` - ${m.left_on}` : ""}
@@ -291,13 +291,7 @@ function AttendanceRoster({ meetingId }: { meetingId: string }): ReactElement {
       >
         <label className="flex flex-col gap-1 text-[13px]">
           <span className="font-medium">{t("studentId")}</span>
-          <Input
-            value={studentId}
-            onChange={(e) => {
-              setStudentId(e.target.value);
-            }}
-            required
-          />
+          <StudentPicker value={studentId} onChange={setStudentId} />
         </label>
         <label className="flex flex-col gap-1 text-[13px]">
           <span className="font-medium">{t("status")}</span>
@@ -315,7 +309,7 @@ function AttendanceRoster({ meetingId }: { meetingId: string }): ReactElement {
             ))}
           </select>
         </label>
-        <Button type="submit" loading={record.isPending}>
+        <Button type="submit" disabled={!studentId} loading={record.isPending}>
           {t("save")}
         </Button>
       </form>
@@ -323,7 +317,7 @@ function AttendanceRoster({ meetingId }: { meetingId: string }): ReactElement {
       <ul className="flex flex-col divide-y divide-border">
         {(data?.entries ?? []).map((entry) => (
           <li key={entry.id} className="flex items-center justify-between py-2 text-[13px]">
-            <span>{entry.student_user_id}</span>
+            <span>{<StudentName id={entry.student_user_id} />}</span>
             <Badge>{t(`statuses.${entry.status_code}`)}</Badge>
           </li>
         ))}

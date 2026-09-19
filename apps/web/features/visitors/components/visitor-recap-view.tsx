@@ -13,8 +13,10 @@ import {
 import { Download } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useState } from "react";
 
+import { QueryError } from "../../../components/query-error";
+import { useDateFilter } from "../../../lib/hooks/use-date-filter";
+import { useUrlState } from "../../../lib/hooks/use-url-state";
 import {
   type VisitorRecap,
   useDailyRecapQuery,
@@ -69,8 +71,8 @@ function RecapFigures({ recap }: { recap: VisitorRecap }): ReactElement {
 
 function DailyRecapTab(): ReactElement {
   const t = useTranslations("app.visitors.recap");
-  const [date, setDate] = useState(todayIso());
-  const { data, isLoading } = useDailyRecapQuery(date);
+  const [date, setDate] = useDateFilter("date", todayIso());
+  const { data, isLoading, isError, refetch } = useDailyRecapQuery(date);
   const exportDaily = useExportDailyRecapMutation();
 
   return (
@@ -97,15 +99,20 @@ function DailyRecapTab(): ReactElement {
           {t("export")}
         </Button>
       </div>
-      {isLoading || !data ? <Skeleton className="h-40 w-full" /> : <RecapFigures recap={data} />}
+      {isError && <QueryError retry={() => refetch()} />}
+      {isError && !data ? null : isLoading || !data ? (
+        <Skeleton className="h-40 w-full" />
+      ) : (
+        <RecapFigures recap={data} />
+      )}
     </div>
   );
 }
 
 function MonthlyRecapTab(): ReactElement {
   const t = useTranslations("app.visitors.recap");
-  const [month, setMonth] = useState(thisMonthIso());
-  const { data, isLoading } = useMonthlyRecapQuery(month);
+  const [month, setMonth] = useDateFilter("month", thisMonthIso(), true);
+  const { data, isLoading, isError, refetch } = useMonthlyRecapQuery(month);
   const exportMonthly = useExportMonthlyRecapMutation();
 
   return (
@@ -132,7 +139,12 @@ function MonthlyRecapTab(): ReactElement {
           {t("export")}
         </Button>
       </div>
-      {isLoading || !data ? <Skeleton className="h-40 w-full" /> : <RecapFigures recap={data} />}
+      {isError && <QueryError retry={() => refetch()} />}
+      {isError && !data ? null : isLoading || !data ? (
+        <Skeleton className="h-40 w-full" />
+      ) : (
+        <RecapFigures recap={data} />
+      )}
     </div>
   );
 }
@@ -140,7 +152,7 @@ function MonthlyRecapTab(): ReactElement {
 /** The security office's daily/monthly recap, exportable as a workbook. */
 export function VisitorRecapView(): ReactElement {
   const t = useTranslations("app.visitors.recap");
-  const [tab, setTab] = useState("daily");
+  const [tab, setTab] = useUrlState<string>("tab", ["daily", "monthly"], "daily");
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">

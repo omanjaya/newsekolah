@@ -120,6 +120,8 @@ export function MaterialTypesTab(): ReactElement {
       </div>
 
       <DataTable
+        stateKey="features/library/components/material-types-tab:1"
+        mode="local"
         data={items}
         columns={columns}
         rowCount={items.length}
@@ -128,7 +130,6 @@ export function MaterialTypesTab(): ReactElement {
         sorting={[]}
         onSortingChange={() => undefined}
         globalFilter=""
-        onGlobalFilterChange={() => undefined}
         isLoading={isLoading}
         getRowId={(item) => item.id}
         emptyState={

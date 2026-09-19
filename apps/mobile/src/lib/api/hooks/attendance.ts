@@ -6,7 +6,7 @@ import type { SaveEntriesRequest } from "./types";
 
 export function useTodaySessions(enabled: boolean) {
   return useQuery({
-    queryKey: queryKeys.attendanceToday(),
+    queryKey: queryKeys.attendanceToday("today"),
     queryFn: () => getApiClient().GET("/v1/attendance/me/today"),
     enabled,
     refetchInterval: 60_000,
@@ -45,7 +45,7 @@ export function useSaveEntries(sessionId: string) {
       }),
     onSuccess: (detail) => {
       queryClient.setQueryData(queryKeys.attendanceSession(sessionId), detail);
-      void queryClient.invalidateQueries({ queryKey: queryKeys.attendanceToday() });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.attendanceToday("today") });
     },
   });
 }
@@ -64,7 +64,7 @@ export function useMyCalendar(month: string) {
  * server-side from the caller's identity. */
 export function useHomeroomAttendance(date: string) {
   return useQuery({
-    queryKey: queryKeys.attendanceHomeroom(date),
+    queryKey: queryKeys.attendanceHomeroom(date, {}),
     queryFn: () => getApiClient().GET("/v1/attendance/homeroom", { params: { query: { date } } }),
     enabled: date !== "",
   });

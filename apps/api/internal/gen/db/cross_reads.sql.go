@@ -606,8 +606,14 @@ func (q *Queries) ListLoansDueForReminder(ctx context.Context, arg ListLoansDueF
 }
 
 const listOverdueLoansDetailed = `-- name: ListOverdueLoansDetailed :many
-select l.id, l.tenant_id, l.copy_id, l.title_id, l.member_user_id, l.checked_out_by, l.borrowed_at, l.due_on, l.returned_at, l.checked_in_by, l.renewal_count, l.status, l.fine_amount, l.fine_paid_at, l.active_copy_id, l.created_at, l.updated_at, l.channel, coalesce(c.name, '') as class_name, coalesce(sp.guardian_phone, '') as guardian_phone
+select l.id, l.tenant_id, l.copy_id, l.title_id, l.member_user_id, l.checked_out_by, l.borrowed_at, l.due_on, l.returned_at, l.checked_in_by, l.renewal_count, l.status, l.fine_amount, l.fine_paid_at, l.active_copy_id, l.created_at, l.updated_at, l.channel, coalesce(c.name, '') as class_name, coalesce(sp.guardian_phone, '') as guardian_phone,
+  coalesce(u.name, '') as member_name, coalesce(lm.member_no, '') as member_no,
+  coalesce(t.title, '') as title, coalesce(cp.barcode, '') as barcode
 from library_loans l
+left join users u on u.id = l.member_user_id and u.tenant_id = l.tenant_id
+left join library_members lm on lm.user_id = l.member_user_id and lm.tenant_id = l.tenant_id
+left join library_copies cp on cp.id = l.copy_id and cp.tenant_id = l.tenant_id
+left join library_titles t on t.id = l.title_id and t.tenant_id = l.tenant_id
 left join lateral (
   select e.class_id from enrollments e
   where e.tenant_id = l.tenant_id and e.student_user_id = l.member_user_id and e.status = 'active'
@@ -645,6 +651,10 @@ type ListOverdueLoansDetailedRow struct {
 	Channel       string             `json:"channel"`
 	ClassName     string             `json:"class_name"`
 	GuardianPhone string             `json:"guardian_phone"`
+	MemberName    string             `json:"member_name"`
+	MemberNo      string             `json:"member_no"`
+	Title         string             `json:"title"`
+	Barcode       string             `json:"barcode"`
 }
 
 // The overdue report the old app showed with class and guardian phone
@@ -680,6 +690,10 @@ func (q *Queries) ListOverdueLoansDetailed(ctx context.Context, arg ListOverdueL
 			&i.Channel,
 			&i.ClassName,
 			&i.GuardianPhone,
+			&i.MemberName,
+			&i.MemberNo,
+			&i.Title,
+			&i.Barcode,
 		); err != nil {
 			return nil, err
 		}

@@ -177,6 +177,9 @@ export function VisitsView(): ReactElement {
       </div>
 
       <DataTable
+        stateKey="features/library/components/visits-view:1"
+        mode="local"
+        searchable={false}
         data={items}
         columns={columns}
         rowCount={items.length}
@@ -185,7 +188,6 @@ export function VisitsView(): ReactElement {
         sorting={[]}
         onSortingChange={() => undefined}
         globalFilter=""
-        onGlobalFilterChange={() => undefined}
         isLoading={isLoading}
         getRowId={(item) => item.id}
         emptyState={

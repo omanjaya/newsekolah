@@ -73,7 +73,8 @@
       "materialType": "Material type",
       "materialTypePlaceholder": "Pick a material type",
       "save": "Save",
-      "saved": "Title saved"
+      "saved": "Title saved",
+      "cancel": "Cancel"
     },
     "isbnLookup": {
       "hint": "Look up bibliographic data from the ISBN above.",
@@ -87,7 +88,8 @@
       "title": "Possible duplicate title",
       "body": "A title with this ISBN already exists in the catalogue: {title}.",
       "view": "View title"
-    }
+    },
+    "editTitle": "Edit title"
   },
   "copies": {
     "title": "Copies",
@@ -172,7 +174,8 @@
         "class": "Class",
         "guardianPhone": "Guardian phone",
         "dueOn": "Due on",
-        "actions": "Actions"
+        "actions": "Actions",
+        "title": "Book and copy"
       },
       "renew": "Renew",
       "renewed": "Loan renewed",
@@ -182,7 +185,10 @@
       "sendReminders": "Send reminders",
       "remindersSent": "Reminder sent to {count} members",
       "emptyTitle": "Nothing overdue",
-      "emptyBody": "Every active loan is still within its due date."
+      "emptyBody": "Every active loan is still within its due date.",
+      "unknownMember": "Member identity unavailable",
+      "unknownTitle": "Title unavailable",
+      "loadError": "Overdue loans could not be loaded. Try again."
     }
   },
   "classLoans": {
@@ -380,7 +386,8 @@
     "grantClearance": "Grant clearance",
     "cleared": "Member granted clearance",
     "printClearanceLetter": "Print clearance letter",
-    "clearanceBlockedByLoan": "Clearance cannot be granted while any loan is active or a fine is unpaid."
+    "clearanceBlockedByLoan": "Clearance cannot be granted while any loan is active or a fine is unpaid.",
+    "edit": "Edit membership"
   },
   "violations": {
     "navLabel": "Library violations",
@@ -973,15 +980,36 @@
     }
   },
   "policy": {
-    "title": "Circulation policy",
-    "loanDays": "Loan length (days)",
-    "maxActiveLoans": "Active loan limit",
-    "maxRenewals": "Renewal limit",
-    "renewalDays": "Extra days on renewal",
-    "finePerDay": "Fine per day (Rp)",
-    "reservationHoldDays": "Reservation hold days",
-    "save": "Save",
-    "saved": "Policy saved"
+    "title": "General policy",
+    "description": "Configure library defaults. Member-type limits and dated rules are managed separately.",
+    "loading": "Loading policy…",
+    "loadError": "Unable to load policy.",
+    "retry": "Try again",
+    "saved": "Library policy saved.",
+    "cancel": "Cancel",
+    "save": "Save changes",
+    "name": "Library name",
+    "npp": "Library registration number (NPP)",
+    "accession_format": "Accession number format",
+    "member_no_format": "Member number format",
+    "barcode_source": "Barcode source",
+    "barcodeAccession": "Accession number",
+    "barcodeItem": "Copy ID",
+    "loan_days": "Loan duration (days)",
+    "max_active_loans": "Maximum active loans",
+    "max_renewals": "Maximum renewals",
+    "renewal_days": "Renewal duration (days)",
+    "fine_per_day": "Fine per day",
+    "reservation_hold_days": "Reservation hold (days)",
+    "booking_max": "Maximum reservations",
+    "due_reminder_days": "Reminder before due date (days)",
+    "saturday_closed": "Closed on Saturday",
+    "sunday_closed": "Closed on Sunday",
+    "booking_enabled": "Enable reservations",
+    "fine_currency_enabled": "Enable monetary fines",
+    "block_loans_with_unpaid_fines": "Block loans with unpaid fines",
+    "auto_register_members": "Automatically register members",
+    "numberingHint": "Numbering patterns: YYYY for the full year, YY for two-digit year, and 99999 for a five-digit sequence."
   },
   "me": {
     "eyebrow": "Library",
@@ -1021,5 +1049,14 @@
       "reserved": "Reservation created",
       "bookingDisabled": "Self-service reservations are turned off right now. Ask a librarian to reserve a title."
     }
+  },
+  "memberProfile": {
+    "memberType": "Member type",
+    "validUntil": "Valid until",
+    "validUntilHint": "Leave empty for no expiration date.",
+    "notes": "Notes",
+    "cancel": "Cancel",
+    "save": "Save changes",
+    "saved": "Membership updated."
   }
 }

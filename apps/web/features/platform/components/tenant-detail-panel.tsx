@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
+import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import {
   type PlatformModule,
@@ -34,7 +35,7 @@ export function TenantDetailPanel({ tenantId }: { tenantId: string }): ReactElem
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
 
-  const { data, isLoading } = useTenantDetailQuery(tenantId);
+  const { data, isLoading, isError, refetch } = useTenantDetailQuery(tenantId);
   const detail = data;
   const flags = useTenantFlagsQuery(tenantId);
   const updateDomain = useUpdateTenantDomainMutation();
@@ -51,6 +52,8 @@ export function TenantDetailPanel({ tenantId }: { tenantId: string }): ReactElem
       error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
     );
   };
+
+  if (isError && !detail) return <QueryError retry={refetch} />;
 
   if (isLoading || !detail) {
     return (
@@ -109,7 +112,9 @@ export function TenantDetailPanel({ tenantId }: { tenantId: string }): ReactElem
 
       <section className="flex flex-col gap-2">
         <h3 className="text-[13px] font-medium">{td("flagsTitle")}</h3>
-        {flags.isLoading ? (
+        {flags.isError && !flags.data ? (
+          <QueryError retry={flags.refetch} />
+        ) : flags.isLoading ? (
           <Skeleton className="h-40 w-full" />
         ) : (
           <ul className="flex flex-col divide-y divide-border rounded-sm border border-border">

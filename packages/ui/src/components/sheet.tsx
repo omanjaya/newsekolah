@@ -4,6 +4,8 @@ import { forwardRef, type ComponentPropsWithoutRef } from "react";
 
 import { cn } from "../utils/cn.js";
 
+import { useUiLabels } from "./ui-labels.js";
+
 export const Sheet = DialogPrimitive.Root;
 export const SheetTrigger = DialogPrimitive.Trigger;
 export const SheetClose = DialogPrimitive.Close;
@@ -13,13 +15,17 @@ export interface SheetContentProps extends ComponentPropsWithoutRef<
 > {
   title: string;
   description?: string;
+  /** Localized label for the close control. Defaults to Indonesian for shared callers. */
+  closeLabel?: string;
 }
 
 /** Bottom sheet, the mobile counterpart to `Dialog` (see docs/05-shared-components.md section 2). */
 export const SheetContent = forwardRef<HTMLDivElement, SheetContentProps>(function SheetContent(
-  { className, title, description, children, ...props },
+  { className, title, description, closeLabel, children, ...props },
   ref,
 ) {
+  const labels = useUiLabels();
+  const resolvedCloseLabel = closeLabel ?? labels.sheetClose;
   return (
     <DialogPrimitive.Portal>
       <DialogPrimitive.Overlay
@@ -31,15 +37,15 @@ export const SheetContent = forwardRef<HTMLDivElement, SheetContentProps>(functi
       <DialogPrimitive.Content
         ref={ref}
         className={cn(
-          "fixed inset-x-0 bottom-0 z-(--z-modal) max-h-[85vh] overflow-y-auto",
-          "rounded-t-sm border-t border-border bg-surface p-6 shadow-(--shadow-float)",
+          "fixed inset-x-0 bottom-0 z-(--z-modal) flex max-h-[85dvh] flex-col overflow-hidden",
+          "rounded-t-sm border-t border-border bg-surface shadow-(--shadow-float)",
           "data-[state=open]:animate-sheet-in data-[state=closed]:animate-sheet-out",
           className,
         )}
         {...props}
       >
-        <div className="mx-auto mb-4 h-1 w-10 rounded-xs bg-border" aria-hidden="true" />
-        <div className="mb-4 flex items-start justify-between gap-4">
+        <div className="mx-auto mt-3 h-1 w-10 shrink-0 rounded-xs bg-border" aria-hidden="true" />
+        <div className="flex shrink-0 items-start justify-between gap-4 px-4 py-4 md:px-6">
           <div className="flex flex-col gap-1">
             <DialogPrimitive.Title className="text-[16px] font-medium text-fg">
               {title}
@@ -51,13 +57,15 @@ export const SheetContent = forwardRef<HTMLDivElement, SheetContentProps>(functi
             )}
           </div>
           <DialogPrimitive.Close
-            aria-label="Tutup"
-            className="rounded-xs p-1 text-fg-muted hover:bg-bg"
+            aria-label={resolvedCloseLabel}
+            className="flex min-h-11 min-w-11 items-center justify-center rounded-xs text-fg-muted hover:bg-bg"
           >
             <X className="size-4" aria-hidden="true" />
           </DialogPrimitive.Close>
         </div>
-        {children}
+        <div className="min-h-0 overflow-y-auto overscroll-contain px-4 pb-4 md:px-6 md:pb-6">
+          {children}
+        </div>
       </DialogPrimitive.Content>
     </DialogPrimitive.Portal>
   );

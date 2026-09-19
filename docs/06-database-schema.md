@@ -4,18 +4,18 @@ PostgreSQL 16. Skema ini menggantikan 81 tabel MySQL lama (inventaris di [Lampir
 
 ## 1. Konvensi
 
-| Hal | Aturan |
-|---|---|
-| PK | `id uuid primary key default uuidv7()` (fungsi disediakan migrasi 000) |
-| Tenant | `tenant_id uuid not null references tenants(id)`; index komposit `(tenant_id, ...)` di depan; policy RLS `tenant_isolation` di setiap tabel bertenant |
-| Tahun ajaran | `academic_year_id uuid not null` di tabel operasional; FK ke `academic_years` `ON DELETE RESTRICT` |
-| Waktu | `created_at timestamptz not null default now()`, `updated_at timestamptz not null default now()` (trigger `set_updated_at` satu-satunya trigger), `created_by uuid null references users(id) on delete set null`, `updated_by` sama |
-| Soft delete | `deleted_at timestamptz null` hanya pada: users, classes, subjects, rooms, violation_types, duty_types, library_bibliographies, library_items, announcements, document_templates. Tabel lain memakai status atau arsip |
-| Status | `status text not null check (status in (...))` |
-| Nama | tabel jamak snake_case; FK `<singular>_id`; index `ix_<tabel>_<kolom>`; unique `ux_`; check `ck_`; FK constraint `fk_<tabel>_<ref>` |
-| Uang | `bigint` dalam satuan terkecil (rupiah) |
-| JSON | `jsonb` dengan validasi di aplikasi; hanya untuk snapshot dan konfigurasi bertipe |
-| Teks | `text` dengan `CHECK (length(...) <= n)` bila perlu batas |
+| Hal          | Aturan                                                                                                                                                                                                                              |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PK           | `id uuid primary key default uuidv7()` (fungsi disediakan migrasi 000)                                                                                                                                                              |
+| Tenant       | `tenant_id uuid not null references tenants(id)`; index komposit `(tenant_id, ...)` di depan; policy RLS `tenant_isolation` di setiap tabel bertenant                                                                               |
+| Tahun ajaran | `academic_year_id uuid not null` di tabel operasional; FK ke `academic_years` `ON DELETE RESTRICT`                                                                                                                                  |
+| Waktu        | `created_at timestamptz not null default now()`, `updated_at timestamptz not null default now()` (trigger `set_updated_at` satu-satunya trigger), `created_by uuid null references users(id) on delete set null`, `updated_by` sama |
+| Soft delete  | `deleted_at timestamptz null` hanya pada: users, classes, subjects, rooms, violation_types, duty_types, library_bibliographies, library_items, announcements, document_templates. Tabel lain memakai status atau arsip              |
+| Status       | `status text not null check (status in (...))`                                                                                                                                                                                      |
+| Nama         | tabel jamak snake_case; FK `<singular>_id`; index `ix_<tabel>_<kolom>`; unique `ux_`; check `ck_`; FK constraint `fk_<tabel>_<ref>`                                                                                                 |
+| Uang         | `bigint` dalam satuan terkecil (rupiah)                                                                                                                                                                                             |
+| JSON         | `jsonb` dengan validasi di aplikasi; hanya untuk snapshot dan konfigurasi bertipe                                                                                                                                                   |
+| Teks         | `text` dengan `CHECK (length(...) <= n)` bila perlu batas                                                                                                                                                                           |
 
 Contoh RLS:
 
@@ -314,23 +314,23 @@ erDiagram
 
 ## 16. Pemetaan dari skema lama
 
-| Lama | Baru |
-|---|---|
-| `app_settings` | `tenant_settings` + `tenant_policies` + `document_templates` |
-| `roles` natural key | `roles` per tenant dengan `slug` |
-| `teacher_additional_duties.grants_*`, `employee_additional_duties` | `duty_types` + `duty_permissions` + `duty_assignments` |
-| `academic_year_users` | dihapus; keanggotaan diturunkan dari enrollment/teaching/duty per tahun, user tetap milik tenant |
-| `student_class_assignments` | `enrollments` dengan riwayat (satu aktif per tahun, pindah = baris baru) |
-| `periods` + `period_day_overrides` | `period_templates` + `periods` + `period_day_assignments` |
-| `teaching_schedules` | `schedules` dengan exclusion constraint |
-| `attendance_*` | sama + `attendance_corrections` + `attendance_daily_summary` |
-| `student_exit_permits`, `student_late_arrivals`, `student_leave_requests` + events | `workflow_instances` + `workflow_events` + tabel detail |
-| `teacher_qr_tokens`, gate token kolom, `library_scan_tokens` | `scan_tokens` |
-| `violations`, `student_has_violations`, `violation_sp_settings`, `violation_warning_letters` | `violation_types`, `violation_records`, policy `discipline_levels`, `warning_letters` |
-| `counselings` | `counselings` terenkripsi dengan FK |
-| grading 8 tabel | 8 tabel dengan FK lengkap dan `term_id` |
-| `notifications` + `notification_outbox` + trigger | `notifications` + River |
-| `push_subscriptions` | `push_devices` |
-| `user_sessions` | `sessions` dengan family dan revoke reason |
-| `user_impersonation_*` | `sessions(kind='impersonation')` + `impersonation_actions` + `audit_logs` |
-| uploads filesystem | `assets` + S3 |
+| Lama                                                                                         | Baru                                                                                             |
+| -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `app_settings`                                                                               | `tenant_settings` + `tenant_policies` + `document_templates`                                     |
+| `roles` natural key                                                                          | `roles` per tenant dengan `slug`                                                                 |
+| `teacher_additional_duties.grants_*`, `employee_additional_duties`                           | `duty_types` + `duty_permissions` + `duty_assignments`                                           |
+| `academic_year_users`                                                                        | dihapus; keanggotaan diturunkan dari enrollment/teaching/duty per tahun, user tetap milik tenant |
+| `student_class_assignments`                                                                  | `enrollments` dengan riwayat (satu aktif per tahun, pindah = baris baru)                         |
+| `periods` + `period_day_overrides`                                                           | `period_templates` + `periods` + `period_day_assignments`                                        |
+| `teaching_schedules`                                                                         | `schedules` dengan exclusion constraint                                                          |
+| `attendance_*`                                                                               | sama + `attendance_corrections` + `attendance_daily_summary`                                     |
+| `student_exit_permits`, `student_late_arrivals`, `student_leave_requests` + events           | `workflow_instances` + `workflow_events` + tabel detail                                          |
+| `teacher_qr_tokens`, gate token kolom, `library_scan_tokens`                                 | `scan_tokens`                                                                                    |
+| `violations`, `student_has_violations`, `violation_sp_settings`, `violation_warning_letters` | `violation_types`, `violation_records`, policy `discipline_levels`, `warning_letters`            |
+| `counselings`                                                                                | `counselings` terenkripsi dengan FK                                                              |
+| grading 8 tabel                                                                              | 8 tabel dengan FK lengkap dan `term_id`                                                          |
+| `notifications` + `notification_outbox` + trigger                                            | `notifications` + River                                                                          |
+| `push_subscriptions`                                                                         | `push_devices`                                                                                   |
+| `user_sessions`                                                                              | `sessions` dengan family dan revoke reason                                                       |
+| `user_impersonation_*`                                                                       | `sessions(kind='impersonation')` + `impersonation_actions` + `audit_logs`                        |
+| uploads filesystem                                                                           | `assets` + S3                                                                                    |

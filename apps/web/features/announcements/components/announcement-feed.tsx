@@ -8,6 +8,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
+import { QueryError } from "../../../components/query-error";
 import { useSession } from "../../../lib/session/session-provider";
 import { useMarkAnnouncementReadMutation, useMyAnnouncementsQuery } from "../api";
 
@@ -16,11 +17,17 @@ import { useMarkAnnouncementReadMutation, useMyAnnouncementsQuery } from "../api
  * that first expansion records the read receipt. Body HTML is sanitised
  * server-side (bluemonday UGC policy) before it is stored.
  */
-export function AnnouncementFeed({ limit }: { limit?: number }): ReactElement {
+export function AnnouncementFeed({
+  limit,
+  compact = false,
+}: {
+  limit?: number;
+  compact?: boolean;
+}): ReactElement {
   const t = useTranslations("app.announcements");
   const locale = useLocale() as Locale;
   const { me } = useSession();
-  const { data, isLoading } = useMyAnnouncementsQuery();
+  const { data, isLoading, isError, refetch } = useMyAnnouncementsQuery();
   const markRead = useMarkAnnouncementReadMutation();
   const [open, setOpen] = useState<string | null>(null);
   const items = (data?.data ?? []).slice(0, limit);
@@ -33,6 +40,7 @@ export function AnnouncementFeed({ limit }: { limit?: number }): ReactElement {
       </div>
     );
   }
+  if (isError) return <QueryError retry={refetch} />;
   if (items.length === 0) {
     return (
       <EmptyState
@@ -44,15 +52,15 @@ export function AnnouncementFeed({ limit }: { limit?: number }): ReactElement {
   }
 
   return (
-    <ul className="flex flex-col gap-2">
+    <ul className={cn("flex flex-col", compact ? "divide-y divide-border" : "gap-2")}>
       {items.map((item) => {
         const expanded = open === item.id;
         return (
           <li
             key={item.id}
             className={cn(
-              "rounded-sm border border-border bg-surface",
-              !item.is_read && "border-l-2 border-l-accent",
+              compact ? "bg-surface" : "rounded-sm border border-border bg-surface",
+              !compact && !item.is_read && "border-l-2 border-l-accent",
             )}
           >
             <button
@@ -62,7 +70,10 @@ export function AnnouncementFeed({ limit }: { limit?: number }): ReactElement {
                 setOpen(expanded ? null : item.id);
                 if (!item.is_read) markRead.mutate(item.id);
               }}
-              className="flex w-full flex-col items-start gap-1 px-4 py-3 text-left"
+              className={cn(
+                "flex w-full flex-col items-start gap-1 py-3 text-left",
+                compact ? "px-1 hover:bg-bg" : "px-4",
+              )}
             >
               <span className="flex w-full items-center gap-2">
                 {item.is_pinned && (

@@ -1,11 +1,19 @@
 {
   "app": {
+    "navigation": {
+      "students": "Student Affairs",
+      "staff": "Staff",
+      "administration": "Administration",
+      "masterData": "Master Data",
+      "users": "School users"
+    },
     "shell": {
       "appearance": "Appearance",
       "commandPalette": {
         "trigger": "Search pages or actions",
         "placeholder": "Type to search",
-        "hint": "Open with Ctrl K or Cmd K"
+        "hint": "Open with Ctrl K or Cmd K",
+        "empty": "No matching results"
       },
       "notifications": {
         "label": "Notifications",
@@ -28,11 +36,30 @@
         "body": "Reload to use the latest version of the app",
         "action": "Reload"
       },
-      "skipToContent": "Skip to main content"
+      "skipToContent": "Skip to main content",
+      "sidebar": {
+        "label": "Main navigation",
+        "collapse": "Collapse menu",
+        "expand": "Expand menu"
+      },
+      "mobileMenu": {
+        "title": "Menu",
+        "general": "General",
+        "favorites": "Favorites",
+        "recent": "Recently visited",
+        "favorite": "Favorite: {name}"
+      },
+      "table": {
+        "selectedRows": "{count} rows selected",
+        "selectAllRows": "Select all rows",
+        "selectRow": "Select row"
+      }
     },
     "login": {
       "usernamePlaceholder": "Username",
       "passwordPlaceholder": "Password",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
       "rateLimitRetry": "Too many attempts, try again in {seconds, number} seconds",
       "genericError": "Sign in failed, check your username and password and try again"
     },
@@ -48,25 +75,36 @@
       "noAcademicYear": "No active academic year yet",
       "tasksTitle": "Needs your action",
       "tasksClear": "Nothing is waiting on you right now.",
-      "tasks": {
-        "attendance": "{count, plural, one {# attendance session not filled} other {# attendance sessions not filled}}",
-        "late": "{count, plural, one {# late arrival awaiting review} other {# late arrivals awaiting review}}",
-        "leave": "{count, plural, one {# leave request waiting} other {# leave requests waiting}}",
-        "notifications": "{count, plural, one {# unread notification} other {# unread notifications}}"
+      "tiles": {
+        "attendance": {
+          "label": "Attendance not submitted",
+          "hint": "of {total} sessions today"
+        },
+        "late": {
+          "label": "Late arrivals",
+          "hint": "awaiting your review"
+        },
+        "leave": {
+          "label": "Leave requests",
+          "hint": "awaiting your review"
+        },
+        "notifications": {
+          "label": "Notifications",
+          "hint": "unread"
+        }
       },
       "todayTitle": "Today's sessions",
+      "todayProgress": "{submitted} of {total} sessions submitted",
       "todayEmpty": "No teaching sessions today.",
       "openAttendance": "Open attendance",
       "submitted": "Saved",
       "pending": "Not filled",
-      "notificationsTitle": "Notifications",
-      "openNotifications": "View all",
-      "unread": "{count, plural, =0 {All notifications read} one {# unread notification} other {# unread notifications}}",
       "announcementsTitle": "Latest announcements",
       "openAnnouncements": "View all",
       "footerHint": "This page updates automatically from the attendance, permits and communication modules.",
       "admin": {
-        "activeUsersTitle": "Active users",
+        "activeUsersTitle": "School members",
+        "activeUsersNote": "Active accounts by profile kind",
         "kinds": {
           "teacher": "Teachers",
           "staff": "Staff",
@@ -74,17 +112,37 @@
           "parent": "Parents"
         },
         "loadError": "The summary could not load. Try reloading the page.",
-        "pendingTitle": "In progress",
+        "pendingTitle": "School queues",
+        "pendingNote": "Waiting to be handled, by anyone authorised",
         "pendingLabels": {
           "leave_request": "Planned leave",
           "exit_permit": "Exit permits",
           "late_arrival": "Late arrivals"
         },
-        "onlineTitle": "Online users by role",
+        "onlineTitle": "Online now",
         "onlineEmpty": "Nobody is connected right now.",
-        "loginHistogramTitle": "Logins per hour, last 7 days",
-        "histogramEmpty": "No logins recorded in this period yet."
-      }
+        "roleNames": {
+          "super_admin": "Super Admin",
+          "admin": "School Admin",
+          "teacher": "Teacher",
+          "staff": "Staff",
+          "student": "Student",
+          "parent": "Parent",
+          "librarian": "Librarian"
+        },
+        "loginHistogramTitle": "Sign-in activity",
+        "loginHistogramNote": "Summed per hour over the last seven days",
+        "loginPeak": "Busiest at {hour} with {count} sign-ins",
+        "loginChartLabel": "Bar chart of sign-ins per hour. {total} sign-ins in total, busiest at {hour} with {count}.",
+        "loginBarLabel": "{hour}: {count} sign-ins",
+        "histogramEmpty": "No sign-ins recorded in this period yet.",
+        "activeAccountLabel": "active accounts",
+        "queueType": "Request type",
+        "queueCount": "Pending",
+        "openQueue": "Open queue"
+      },
+      "overviewNote": "Today’s school operations and updates.",
+      "tasksNote": "Queues assigned to you"
     },
     "profile": {
       "title": "Profile",
@@ -881,6 +939,9 @@
         "includeArchived": "Show archived",
         "emptyTitle": "No users yet",
         "emptyBody": "Add teachers, staff and students one by one or through import.",
+        "loadErrorTitle": "The user list could not be loaded",
+        "loadErrorBody": "Check your connection, then try again.",
+        "retry": "Try again",
         "pagePrev": "Previous",
         "pageNext": "Next",
         "resetTitle": "Password reset link",
@@ -1012,7 +1073,12 @@
           "saved": "Class saved",
           "cancel": "Cancel",
           "save": "Save"
-        }
+        },
+        "searchClasses": "Search classes",
+        "allGrades": "All grade levels",
+        "deleteClass": "Delete class",
+        "deleteClassBody": "Delete class {name}? Classes with students or teaching assignments cannot be deleted. Historical data is retained.",
+        "classDeleted": "Class deleted."
       },
       "subjects": {
         "eyebrow": "School Data",
@@ -1042,7 +1108,7 @@
         "noTemplate": "No template yet",
         "newTemplate": "New template",
         "newTemplatePlaceholder": "For example: Regular, Friday",
-        "addTemplate": "Add",
+        "addTemplate": "Add template",
         "templateCreated": "Template created",
         "emptyTitle": "No period template yet",
         "emptyBody": "Create a template, fill in its periods, then attach it to school days.",

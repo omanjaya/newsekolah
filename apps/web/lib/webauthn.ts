@@ -1,3 +1,7 @@
+"use client";
+
+import { useSyncExternalStore } from "react";
+
 /**
  * Thin wrapper around the browser's WebAuthn Level 3 JSON conversion
  * methods (`PublicKeyCredential.parseCreationOptionsFromJSON` /
@@ -25,6 +29,27 @@ function staticJSON(): PublicKeyCredentialStaticJSON {
 /** True when this browser can attempt a WebAuthn ceremony at all. */
 export function isPasskeySupported(): boolean {
   return typeof window !== "undefined" && "PublicKeyCredential" in window;
+}
+
+/** Support never changes while the page is open, so there is nothing to subscribe to. */
+function noop(): void {
+  return;
+}
+
+function subscribeToNothing(): () => void {
+  return noop;
+}
+
+/**
+ * isPasskeySupported() for use during render. The server cannot know
+ * whether the browser speaks WebAuthn, so reading the predicate directly
+ * makes the first client render disagree with the server HTML and React
+ * throws the tree away with a hydration mismatch. The server snapshot pins
+ * both sides to false for that first render; the real answer lands on the
+ * commit right after, which is why passkey affordances appear a frame late.
+ */
+export function usePasskeySupported(): boolean {
+  return useSyncExternalStore(subscribeToNothing, isPasskeySupported, () => false);
 }
 
 /**

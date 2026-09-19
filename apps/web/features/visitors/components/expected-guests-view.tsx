@@ -19,6 +19,7 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { useDateFilter } from "../../../lib/hooks/use-date-filter";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import { useDirectoryQuery, useLookup } from "../../reference/api";
@@ -38,7 +39,7 @@ export function ExpectedGuestsView(): ReactElement {
   const apiErrorMessage = useApiErrorMessage();
   const canManage = useCan("manage_visitors");
 
-  const [date, setDate] = useState(today());
+  const [date, setDate] = useDateFilter("date", today());
   const [creating, setCreating] = useState(false);
   const [checkingIn, setCheckingIn] = useState<ExpectedGuest | null>(null);
 
@@ -141,6 +142,8 @@ export function ExpectedGuestsView(): ReactElement {
       </div>
 
       <DataTable
+        stateKey="features/visitors/components/expected-guests-view:1"
+        mode="local"
         data={items}
         columns={columns}
         rowCount={items.length}
@@ -149,7 +152,6 @@ export function ExpectedGuestsView(): ReactElement {
         sorting={[]}
         onSortingChange={() => undefined}
         globalFilter=""
-        onGlobalFilterChange={() => undefined}
         isLoading={isLoading}
         getRowId={(item) => item.id}
         emptyState={

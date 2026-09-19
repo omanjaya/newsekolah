@@ -3,7 +3,8 @@
 import { PageHeader, Tabs, TabsList, TabsTrigger } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useState } from "react";
+
+import { useUrlState } from "../../../lib/hooks/use-url-state";
 
 import { AcquisitionSourcesTab } from "./acquisition-sources-tab";
 import { DdcClassesTab } from "./ddc-classes-tab";
@@ -15,7 +16,11 @@ type Tab = "materialTypes" | "acquisitionSources" | "partners" | "ddcClasses";
 /** Cataloguing master data: material types, acquisition sources, partners, and the DDC class list. */
 export function MasterDataView(): ReactElement {
   const t = useTranslations("app.library.masterData");
-  const [tab, setTab] = useState<Tab>("materialTypes");
+  const [tab, setTab] = useUrlState<Tab>(
+    "tab",
+    ["materialTypes", "acquisitionSources", "partners", "ddcClasses"],
+    "materialTypes",
+  );
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">

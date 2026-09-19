@@ -242,6 +242,8 @@ export function AnnouncementsManage(): ReactElement {
       </div>
 
       <DataTable
+        stateKey="features/announcements/components/announcements-manage:1"
+        mode="cursor"
         data={items}
         columns={columns}
         rowCount={items.length}
@@ -250,7 +252,6 @@ export function AnnouncementsManage(): ReactElement {
         sorting={[]}
         onSortingChange={() => undefined}
         globalFilter=""
-        onGlobalFilterChange={() => undefined}
         isLoading={isLoading}
         getRowId={(a) => a.id}
         emptyState={

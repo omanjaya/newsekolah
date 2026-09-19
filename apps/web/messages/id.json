@@ -1,11 +1,19 @@
 {
   "app": {
+    "navigation": {
+      "students": "Kesiswaan",
+      "staff": "Kepegawaian",
+      "administration": "Administrasi",
+      "masterData": "Master Data",
+      "users": "Pengguna sekolah"
+    },
     "shell": {
       "appearance": "Tampilan",
       "commandPalette": {
         "trigger": "Cari halaman atau aksi",
         "placeholder": "Ketik untuk mencari",
-        "hint": "Buka dengan Ctrl K atau Cmd K"
+        "hint": "Buka dengan Ctrl K atau Cmd K",
+        "empty": "Tidak ada hasil yang cocok"
       },
       "notifications": {
         "label": "Notifikasi",
@@ -28,11 +36,30 @@
         "body": "Muat ulang untuk memakai versi terbaru aplikasi",
         "action": "Muat ulang"
       },
-      "skipToContent": "Lompat ke konten utama"
+      "skipToContent": "Lompat ke konten utama",
+      "sidebar": {
+        "label": "Navigasi utama",
+        "collapse": "Ciutkan menu",
+        "expand": "Lebarkan menu"
+      },
+      "mobileMenu": {
+        "title": "Menu",
+        "general": "Umum",
+        "favorites": "Favorit",
+        "recent": "Terakhir dibuka",
+        "favorite": "Favorit: {name}"
+      },
+      "table": {
+        "selectedRows": "{count} baris dipilih",
+        "selectAllRows": "Pilih semua baris",
+        "selectRow": "Pilih baris"
+      }
     },
     "login": {
       "usernamePlaceholder": "Nama pengguna",
       "passwordPlaceholder": "Kata sandi",
+      "showPassword": "Tampilkan kata sandi",
+      "hidePassword": "Sembunyikan kata sandi",
       "rateLimitRetry": "Terlalu banyak percobaan, coba lagi dalam {seconds, number} detik",
       "genericError": "Masuk gagal, periksa nama pengguna dan kata sandi lalu coba lagi"
     },
@@ -48,25 +75,36 @@
       "noAcademicYear": "Belum ada tahun ajaran aktif",
       "tasksTitle": "Perlu tindakan",
       "tasksClear": "Tidak ada yang menunggu Anda saat ini.",
-      "tasks": {
-        "attendance": "{count, plural, one {# sesi presensi belum diisi} other {# sesi presensi belum diisi}}",
-        "late": "{count, plural, one {# keterlambatan menunggu peninjauan} other {# keterlambatan menunggu peninjauan}}",
-        "leave": "{count, plural, one {# pengajuan izin menunggu} other {# pengajuan izin menunggu}}",
-        "notifications": "{count, plural, one {# notifikasi belum dibaca} other {# notifikasi belum dibaca}}"
+      "tiles": {
+        "attendance": {
+          "label": "Presensi belum dikirim",
+          "hint": "dari {total} sesi hari ini"
+        },
+        "late": {
+          "label": "Keterlambatan",
+          "hint": "menunggu tinjauan Anda"
+        },
+        "leave": {
+          "label": "Pengajuan izin",
+          "hint": "menunggu tinjauan Anda"
+        },
+        "notifications": {
+          "label": "Notifikasi",
+          "hint": "belum dibaca"
+        }
       },
       "todayTitle": "Sesi hari ini",
+      "todayProgress": "{submitted} dari {total} sesi sudah dikirim",
       "todayEmpty": "Tidak ada sesi mengajar hari ini.",
       "openAttendance": "Buka presensi",
       "submitted": "Tersimpan",
       "pending": "Belum diisi",
-      "notificationsTitle": "Notifikasi",
-      "openNotifications": "Lihat semua",
-      "unread": "{count, plural, =0 {Semua notifikasi sudah dibaca} one {# notifikasi belum dibaca} other {# notifikasi belum dibaca}}",
       "announcementsTitle": "Pengumuman terbaru",
       "openAnnouncements": "Lihat semua",
       "footerHint": "Data di halaman ini diperbarui otomatis dari modul presensi, perizinan, dan komunikasi.",
       "admin": {
-        "activeUsersTitle": "Pengguna aktif",
+        "activeUsersTitle": "Warga sekolah",
+        "activeUsersNote": "Akun aktif menurut jenis profil",
         "kinds": {
           "teacher": "Guru",
           "staff": "Pegawai",
@@ -74,17 +112,37 @@
           "parent": "Orang tua"
         },
         "loadError": "Ringkasan tidak bisa dimuat. Coba muat ulang halaman.",
-        "pendingTitle": "Sedang berjalan",
+        "pendingTitle": "Antrean sekolah",
+        "pendingNote": "Menunggu diproses, oleh siapa pun yang berwenang",
         "pendingLabels": {
           "leave_request": "Izin terencana",
           "exit_permit": "Izin keluar",
           "late_arrival": "Keterlambatan"
         },
-        "onlineTitle": "Pengguna daring per peran",
+        "onlineTitle": "Sedang daring",
         "onlineEmpty": "Tidak ada yang sedang terhubung saat ini.",
-        "loginHistogramTitle": "Login per jam, 7 hari terakhir",
-        "histogramEmpty": "Belum ada login tercatat pada periode ini."
-      }
+        "roleNames": {
+          "super_admin": "Super Admin",
+          "admin": "Admin Sekolah",
+          "teacher": "Guru",
+          "staff": "Pegawai",
+          "student": "Siswa",
+          "parent": "Orang Tua",
+          "librarian": "Pustakawan"
+        },
+        "loginHistogramTitle": "Aktivitas login",
+        "loginHistogramNote": "Dijumlahkan per jam dari tujuh hari terakhir",
+        "loginPeak": "Paling ramai pukul {hour} dengan {count} login",
+        "loginChartLabel": "Grafik batang login per jam. Total {total} login, paling ramai pukul {hour} dengan {count} login.",
+        "loginBarLabel": "Pukul {hour}: {count} login",
+        "histogramEmpty": "Belum ada login tercatat pada periode ini.",
+        "activeAccountLabel": "akun aktif",
+        "queueType": "Jenis pengajuan",
+        "queueCount": "Menunggu",
+        "openQueue": "Buka antrean"
+      },
+      "overviewNote": "Ringkasan operasional dan informasi sekolah hari ini.",
+      "tasksNote": "Antrean yang membutuhkan tindakan Anda"
     },
     "profile": {
       "title": "Profil",
@@ -881,6 +939,9 @@
         "includeArchived": "Tampilkan yang diarsipkan",
         "emptyTitle": "Belum ada pengguna",
         "emptyBody": "Tambah guru, pegawai, dan siswa satu per satu atau lewat impor.",
+        "loadErrorTitle": "Daftar pengguna tidak bisa dimuat",
+        "loadErrorBody": "Periksa koneksi Anda, lalu coba lagi.",
+        "retry": "Coba lagi",
         "pagePrev": "Sebelumnya",
         "pageNext": "Berikutnya",
         "resetTitle": "Tautan atur ulang kata sandi",
@@ -1012,7 +1073,12 @@
           "saved": "Kelas tersimpan",
           "cancel": "Batal",
           "save": "Simpan"
-        }
+        },
+        "searchClasses": "Cari kelas",
+        "allGrades": "Semua tingkat",
+        "deleteClass": "Hapus kelas",
+        "deleteClassBody": "Hapus kelas {name}? Kelas yang masih memiliki siswa atau penugasan mengajar tidak dapat dihapus. Riwayat data tetap disimpan.",
+        "classDeleted": "Kelas berhasil dihapus."
       },
       "subjects": {
         "eyebrow": "Data Sekolah",
@@ -1042,7 +1108,7 @@
         "noTemplate": "Belum ada template",
         "newTemplate": "Template baru",
         "newTemplatePlaceholder": "Contoh: Reguler, Jumat",
-        "addTemplate": "Tambah",
+        "addTemplate": "Tambah template",
         "templateCreated": "Template dibuat",
         "emptyTitle": "Belum ada template jam",
         "emptyBody": "Buat template, isi jam pelajarannya, lalu pasang ke hari sekolah.",

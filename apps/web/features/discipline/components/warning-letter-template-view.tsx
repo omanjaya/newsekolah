@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import {
@@ -25,6 +26,9 @@ const MAX_SEQ_PAD = 10;
 export function WarningLetterTemplateView(): ReactElement {
   const t = useTranslations("app.discipline.warningLetters.template");
   const policy = useWarningLetterTemplateQuery();
+
+  if (policy.isError && !policy.data)
+    return <QueryError retry={() => policy.refetch()} className="m-4" />;
 
   if (policy.isLoading || !policy.data) {
     return <Skeleton className="h-64 w-full" aria-busy="true" />;

@@ -10,7 +10,6 @@ import {
   EmptyState,
   IconButton,
   Input,
-  PageHeader,
   Select,
   useToast,
 } from "@newsekolah/ui";
@@ -158,25 +157,22 @@ export function SubjectOfferingsView(): ReactElement {
   );
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
-      <PageHeader
-        eyebrow={t("eyebrow")}
-        title={t("title")}
-        actions={
-          canManage && (
-            <Button
-              size="sm"
-              icon={<Plus />}
-              disabled={!effectiveYearId}
-              onClick={() => {
-                open("new");
-              }}
-            >
-              {t("add")}
-            </Button>
-          )
-        }
-      />
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-[18px] font-medium text-fg">{t("title")}</h2>
+        {canManage && (
+          <Button
+            size="sm"
+            icon={<Plus />}
+            disabled={!effectiveYearId}
+            onClick={() => {
+              open("new");
+            }}
+          >
+            {t("add")}
+          </Button>
+        )}
+      </div>
       <label className="flex w-fit flex-col gap-1 text-[13px]">
         <span className="font-medium">{t("year")}</span>
         <Select
@@ -187,6 +183,8 @@ export function SubjectOfferingsView(): ReactElement {
         />
       </label>
       <DataTable
+        stateKey="features/academic/components/subject-offerings-view:1"
+        mode="local"
         data={rows}
         columns={columns}
         rowCount={rows.length}
@@ -195,7 +193,6 @@ export function SubjectOfferingsView(): ReactElement {
         sorting={[]}
         onSortingChange={() => undefined}
         globalFilter=""
-        onGlobalFilterChange={() => undefined}
         isLoading={offerings.isLoading}
         getRowId={(o) => o.id}
         emptyState={

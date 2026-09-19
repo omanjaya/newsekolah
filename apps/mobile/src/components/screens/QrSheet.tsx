@@ -37,7 +37,12 @@ export function QrSheet(): React.JSX.Element {
     <View className="gap-3 pb-4">
       <View className="flex-row gap-2">
         {PURPOSES.map((p) => (
-          <Button key={p.purpose} label={p.label} variant={purpose === p.purpose ? "primary" : "secondary"} onPress={() => setPurpose(p.purpose)} />
+          <Button
+            key={p.purpose}
+            label={p.label}
+            variant={purpose === p.purpose ? "primary" : "secondary"}
+            onPress={() => setPurpose(p.purpose)}
+          />
         ))}
       </View>
       {purpose === "approve_stage" ? (
@@ -46,21 +51,42 @@ export function QrSheet(): React.JSX.Element {
             value={permitCode}
             onChangeText={setPermitCode}
             placeholder={t("qr.permit_code")}
+            accessibilityLabel={t("qr.permit_code")}
             autoCapitalize="none"
             autoCorrect={false}
             className="rounded-input border border-line bg-surface px-3 py-2 text-base text-ink dark:border-line-dark dark:bg-surface-dark dark:text-ink-dark"
           />
-          <Button label={t("qr.show")} onPress={() => mint("approve_stage")} loading={issue.isPending} disabled={!permitCode.trim()} />
+          <Button
+            label={t("qr.show")}
+            onPress={() => mint("approve_stage")}
+            loading={issue.isPending}
+            disabled={!permitCode.trim()}
+          />
         </View>
       ) : null}
       {issue.data ? (
-        <TokenQr token={issue.data} purpose={purpose} onRenew={() => mint(purpose)} renewing={issue.isPending} />
+        <TokenQr
+          token={issue.data}
+          purpose={purpose}
+          onRenew={() => mint(purpose)}
+          renewing={issue.isPending}
+        />
       ) : null}
     </View>
   );
 }
 
-export function TokenQr({ token, purpose, onRenew, renewing }: { token: IssuedScanToken; purpose: string; onRenew: () => void; renewing: boolean }): React.JSX.Element {
+export function TokenQr({
+  token,
+  purpose,
+  onRenew,
+  renewing,
+}: {
+  token: IssuedScanToken;
+  purpose: string;
+  onRenew: () => void;
+  renewing: boolean;
+}): React.JSX.Element {
   const [secondsLeft, setSecondsLeft] = useState(() => remaining(token.expires_at));
   useEffect(() => {
     setSecondsLeft(remaining(token.expires_at));
@@ -74,11 +100,18 @@ export function TokenQr({ token, purpose, onRenew, renewing }: { token: IssuedSc
       <View style={{ opacity: expired ? 0.25 : 1 }}>
         <QRCode value={payload} size={220} />
       </View>
-      <Text className="text-sm text-ink" selectable>{token.token}</Text>
+      <Text className="text-sm text-ink" selectable>
+        {token.token}
+      </Text>
       <Text className="text-sm text-ink/60">
         {expired ? t("qr.expired") : t("qr.expires_in").replace("{seconds}", String(secondsLeft))}
       </Text>
-      <Button label={t("qr.renew")} variant={expired ? "primary" : "secondary"} onPress={onRenew} loading={renewing} />
+      <Button
+        label={t("qr.renew")}
+        variant={expired ? "primary" : "secondary"}
+        onPress={onRenew}
+        loading={renewing}
+      />
     </View>
   );
 }

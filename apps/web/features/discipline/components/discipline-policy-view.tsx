@@ -3,6 +3,7 @@
 import { Skeleton } from "@newsekolah/ui";
 import type { ReactElement } from "react";
 
+import { QueryError } from "../../../components/query-error";
 import { useDisciplinePolicyQuery } from "../api";
 
 import { DisciplinePolicyEditor } from "./discipline-policy-editor";
@@ -14,6 +15,9 @@ import { DisciplinePolicyEditor } from "./discipline-policy-editor";
  */
 export function DisciplinePolicyView(): ReactElement {
   const policy = useDisciplinePolicyQuery();
+
+  if (policy.isError && !policy.data)
+    return <QueryError retry={() => policy.refetch()} className="m-4" />;
 
   if (policy.isLoading || !policy.data) {
     return <Skeleton className="h-40 w-full" aria-busy="true" />;

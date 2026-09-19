@@ -13,7 +13,8 @@
     },
     "unknownStudent": "Unknown student",
     "emptyTitle": "No students need attention",
-    "emptyBody": "No student in this class has reached the watch or at-risk threshold yet."
+    "emptyBody": "No student in this class has reached the watch or at-risk threshold yet.",
+    "policy": "Configure policy"
   },
   "level": {
     "none": "None",
@@ -50,6 +51,31 @@
       "grade_drop_watch": "Report-score average dropped from {previous_average} to {current_average}",
       "grade_drop_at_risk": "Report-score average dropped from {previous_average} to {current_average}",
       "unknown": "Unknown signal"
+    }
+  },
+  "policy": {
+    "title": "Early-warning policy",
+    "description": "Set signal thresholds and weights. At-risk thresholds must exceed watch thresholds. Changes apply on the next calculation.",
+    "thresholdError": "At-risk thresholds must exceed watch thresholds.",
+    "saved": "Policy saved.",
+    "save": "Save",
+    "cancel": "Cancel",
+    "fields": {
+      "window_days": "School-day window",
+      "attendance_watch_rate": "Absence ratio: watch (0–1)",
+      "attendance_at_risk_rate": "Absence ratio: at risk (0–1)",
+      "discipline_watch_points": "Discipline points: watch",
+      "discipline_at_risk_points": "Discipline points: at risk",
+      "warning_letter_watch_count": "Warning letters: watch",
+      "warning_letter_at_risk_count": "Warning letters: at risk",
+      "grade_drop_watch_points": "Grade drop: watch",
+      "grade_drop_at_risk_points": "Grade drop: at risk",
+      "attendance_weight": "Attendance weight",
+      "discipline_weight": "Discipline weight",
+      "warning_weight": "Warning letter weight",
+      "grade_weight": "Grade weight",
+      "watch_score": "Total score: watch",
+      "at_risk_score": "Total score: at risk"
     }
   }
 }

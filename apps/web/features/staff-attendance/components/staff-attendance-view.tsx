@@ -3,8 +3,9 @@
 import { PageHeader, Tabs, TabsContent, TabsList, TabsTrigger } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useState } from "react";
 
+import { useDateFilter } from "../../../lib/hooks/use-date-filter";
+import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useSession } from "../../../lib/session/session-provider";
 import { todayInZone, useStaffAttendanceRosterQuery } from "../api";
 
@@ -16,8 +17,12 @@ import { TodayBoardView } from "./today-board-view";
 export function StaffAttendanceView(): ReactElement {
   const t = useTranslations("app.staffAttendance");
   const { me } = useSession();
-  const [tab, setTab] = useState("today");
-  const [date, setDate] = useState(todayInZone(me?.tenant.timezone));
+  const [tab, setTab] = useUrlState<string>(
+    "tab",
+    ["today", "schedule", "recap", "import"],
+    "today",
+  );
+  const [date, setDate] = useDateFilter("date", todayInZone(me?.tenant.timezone));
 
   const roster = useStaffAttendanceRosterQuery();
   const employees = roster.data?.data ?? [];

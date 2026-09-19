@@ -7,6 +7,8 @@ import type { ReactElement, ReactNode } from "react";
 
 import { useApiClient } from "../api/client";
 
+import { darkVariantOf, foregroundFor, lightVariantOf, parseHex } from "./accent";
+
 export type TenantBranding = components["schemas"]["TenantBranding"];
 
 export const PRODUCT_NAME_FALLBACK = "SION";
@@ -22,9 +24,13 @@ const TenantContext = createContext<TenantContextValue | null>(null);
 
 /**
  * Fetches `/v1/tenant/branding` (public, no auth needed) once per session
- * and keeps `--color-accent` in sync with the tenant's own accent color, per
- * DESIGN.md ("Satu warna aksen per sekolah ... disuntik runtime"). Runs
- * regardless of auth state so the login screen is already branded.
+ * and keeps the tenant's accent in sync, per DESIGN.md ("Satu warna aksen
+ * per sekolah ... disuntik runtime"). Runs regardless of auth state so the
+ * login screen is already branded.
+ *
+ * Theme-specific accents keep links readable against their surfaces; their
+ * paired foregrounds keep filled buttons readable against the accent. The
+ * runtime values feed globals.css so switching themes stays CSS-driven.
  */
 export function TenantProvider({ children }: { children: ReactNode }): ReactElement {
   const client = useApiClient();
@@ -32,9 +38,25 @@ export function TenantProvider({ children }: { children: ReactNode }): ReactElem
   const branding = data;
 
   useEffect(() => {
-    if (branding?.accent_color) {
-      document.documentElement.style.setProperty("--color-accent", branding.accent_color);
-    }
+    const supplied = branding?.accent_color ?? "#1F3A5F";
+    const accent = parseHex(supplied) ? supplied : "#1F3A5F";
+    const light = lightVariantOf(accent);
+    const dark = darkVariantOf(accent);
+    const root = document.documentElement;
+    root.style.setProperty("--tenant-accent", light);
+    root.style.setProperty("--tenant-accent-dark", dark);
+    root.style.setProperty("--tenant-accent-fg", foregroundFor(light));
+    root.style.setProperty("--tenant-accent-dark-fg", foregroundFor(dark));
+    return () => {
+      for (const name of [
+        "--tenant-accent",
+        "--tenant-accent-dark",
+        "--tenant-accent-fg",
+        "--tenant-accent-dark-fg",
+      ]) {
+        root.style.removeProperty(name);
+      }
+    };
   }, [branding?.accent_color]);
 
   useEffect(() => {

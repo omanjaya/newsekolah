@@ -269,6 +269,8 @@ export function ViolationsLedgerView(): ReactElement {
       </div>
 
       <DataTable
+        stateKey="features/discipline/components/violations-ledger-view:1"
+        mode="local"
         data={items}
         columns={columns}
         rowCount={items.length}
@@ -277,7 +279,6 @@ export function ViolationsLedgerView(): ReactElement {
         sorting={[]}
         onSortingChange={() => undefined}
         globalFilter=""
-        onGlobalFilterChange={() => undefined}
         isLoading={isLoading}
         getRowId={(item) => item.id}
         onRowActivate={(item) => {

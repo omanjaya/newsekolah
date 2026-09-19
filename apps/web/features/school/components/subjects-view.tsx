@@ -10,7 +10,6 @@ import {
   EmptyState,
   IconButton,
   Input,
-  PageHeader,
   domainIcons,
   useToast,
 } from "@newsekolah/ui";
@@ -112,11 +111,10 @@ export function SubjectsView(): ReactElement {
   }
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
-      <PageHeader
-        eyebrow={t("eyebrow")}
-        title={t("title")}
-        actions={
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-[18px] font-medium text-fg">{t("title")}</h2>
+        {
           <Button
             size="sm"
             icon={<Plus />}
@@ -127,8 +125,9 @@ export function SubjectsView(): ReactElement {
             {t("add")}
           </Button>
         }
-      />
+      </div>
       <DataTable
+        stateKey="features/school/components/subjects-view:1"
         data={items}
         columns={columns}
         rowCount={items.length}

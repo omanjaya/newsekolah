@@ -93,6 +93,8 @@ export function ArrearsReportView(): ReactElement {
       <div className="flex flex-col gap-2">
         <h3 className="text-[14px] font-medium text-fg">{t("byClass")}</h3>
         <DataTable
+          stateKey="features/billing/components/arrears-report-view:1"
+          mode="local"
           data={byClass}
           columns={classColumns}
           rowCount={byClass.length}
@@ -101,7 +103,6 @@ export function ArrearsReportView(): ReactElement {
           sorting={[]}
           onSortingChange={() => undefined}
           globalFilter=""
-          onGlobalFilterChange={() => undefined}
           isLoading={false}
           getRowId={(item) => item.class_id ?? "none"}
         />
@@ -109,6 +110,8 @@ export function ArrearsReportView(): ReactElement {
       <div className="flex flex-col gap-2">
         <h3 className="text-[14px] font-medium text-fg">{t("byStudent")}</h3>
         <DataTable
+          stateKey="features/billing/components/arrears-report-view:2"
+          mode="local"
           data={byStudent}
           columns={studentColumns}
           rowCount={byStudent.length}
@@ -117,7 +120,6 @@ export function ArrearsReportView(): ReactElement {
           sorting={[]}
           onSortingChange={() => undefined}
           globalFilter=""
-          onGlobalFilterChange={() => undefined}
           isLoading={false}
           getRowId={(item) => item.student_user_id}
         />

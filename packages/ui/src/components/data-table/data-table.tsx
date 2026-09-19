@@ -1,6 +1,9 @@
 import {
   flexRender,
   getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
   useReactTable,
   type ColumnDef,
   type OnChangeFn,
@@ -9,28 +12,51 @@ import {
   type SortingState,
 } from "@tanstack/react-table";
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
-import { useCallback, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type ReactNode,
+} from "react";
 
 import { cn } from "../../utils/cn.js";
-import { Checkbox } from "../checkbox.js";
 import { Skeleton } from "../skeleton.js";
 
 import { DataTableCards } from "./data-table-cards.js";
+import { DataTableSearchEmptyState } from "./data-table-empty-state.js";
 import { DataTablePagination, type DataTablePaginationLabels } from "./data-table-pagination.js";
-import { DataTableToolbar, type DataTableToolbarLabels } from "./data-table-toolbar.js";
+import { useDataTableState } from "./data-table-state.js";
+import {
+  DEFAULT_TOOLBAR_LABELS,
+  DataTableToolbar,
+  getDataTableColumnLabel,
+  type DataTableToolbarLabels,
+} from "./data-table-toolbar.js";
 import { useDebouncedCallback } from "./use-debounced-callback.js";
 import { usePersistedColumnVisibility } from "./use-persisted-column-visibility.js";
 
+export { selectionColumn } from "./data-table-selection.js";
+
 export interface DataTableProps<TData> {
+  /**
+   * `local` applies search, sorting, and paging to the supplied rows.
+   * `server` delegates those operations to the caller. `cursor` is server
+   * data with navigation supplied outside the table, so it has no page UI.
+   */
+  mode?: "local" | "server" | "cursor";
   data: TData[];
   columns: ColumnDef<TData>[];
-  rowCount: number;
-  pagination: PaginationState;
-  onPaginationChange: OnChangeFn<PaginationState>;
-  sorting: SortingState;
-  onSortingChange: OnChangeFn<SortingState>;
-  globalFilter: string;
-  onGlobalFilterChange: (value: string) => void;
+  rowCount?: number;
+  pagination?: PaginationState;
+  onPaginationChange?: OnChangeFn<PaginationState>;
+  sorting?: SortingState;
+  onSortingChange?: OnChangeFn<SortingState>;
+  globalFilter?: string;
+  onGlobalFilterChange?: (value: string) => void;
+  /** Set false when the visible columns have no searchable data accessor. */
+  searchable?: boolean;
   isLoading?: boolean;
   emptyState?: ReactNode;
   rowSelection?: RowSelectionState;
@@ -39,20 +65,25 @@ export interface DataTableProps<TData> {
   density?: "normal" | "compact";
   onDensityChange?: (density: "normal" | "compact") => void;
   storageKey?: string;
+  /** Opt-in in-memory state key. Defaults to `storageKey` when provided. */
+  stateKey?: string;
   getRowId?: (row: TData) => string;
   onRowActivate?: (row: TData) => void;
   toolbarLabels?: Partial<DataTableToolbarLabels>;
   paginationLabels?: Partial<DataTablePaginationLabels>;
 }
 
+const DEFAULT_PAGINATION: PaginationState = { pageIndex: 0, pageSize: 50 };
+
 const ROW_HEIGHT = { normal: "h-10", compact: "h-8" } as const;
 
 /**
- * Server-side DataTable (TanStack Table): the caller owns sorting, paging,
- * filtering, and selection state and fetches accordingly. See
- * docs/05-shared-components.md section 3.
+ * A TanStack table for local rows, offset-paginated server rows, and cursor
+ * responses. Server mode delegates data operations to the caller; cursor
+ * navigation remains outside the table. See docs/05-shared-components.md.
  */
 export function DataTable<TData>({
+  mode = "server",
   data,
   columns,
   rowCount,
@@ -62,6 +93,7 @@ export function DataTable<TData>({
   onSortingChange,
   globalFilter,
   onGlobalFilterChange,
+  searchable,
   isLoading,
   emptyState,
   rowSelection,
@@ -70,64 +102,155 @@ export function DataTable<TData>({
   density: densityProp,
   onDensityChange,
   storageKey,
+  stateKey,
   getRowId,
   onRowActivate,
   toolbarLabels,
   paginationLabels,
 }: DataTableProps<TData>) {
+  const rememberedState = useDataTableState(
+    mode === "local" ? (stateKey ?? storageKey) : undefined,
+  );
+  const [internalPagination, setInternalPagination] = useState<PaginationState>(
+    () => rememberedState.initialState?.pagination ?? DEFAULT_PAGINATION,
+  );
+  const [internalSorting, setInternalSorting] = useState<SortingState>(
+    () => rememberedState.initialState?.sorting ?? [],
+  );
+  const [internalGlobalFilter, setInternalGlobalFilter] = useState(
+    () => rememberedState.initialState?.globalFilter ?? "",
+  );
+  const [searchResetKey, setSearchResetKey] = useState(0);
   const [internalDensity, setInternalDensity] = useState<"normal" | "compact">("normal");
   const density = densityProp ?? internalDensity;
   const setDensity = onDensityChange ?? setInternalDensity;
   const [columnVisibility, setColumnVisibility] = usePersistedColumnVisibility(storageKey);
   const [focusedRowIndex, setFocusedRowIndex] = useState(0);
-  const bodyRef = useRef<HTMLTableSectionElement>(null);
+  const rowRefs = useRef(new Map<string, HTMLTableRowElement>());
+  const columnLabelsRef = useRef<Record<string, ReactNode>>({});
 
-  const debouncedFilterChange = useDebouncedCallback(onGlobalFilterChange, 300);
+  const tablePagination =
+    mode === "local" ? internalPagination : (pagination ?? DEFAULT_PAGINATION);
+  const tableSorting = mode === "local" ? internalSorting : (sorting ?? []);
+  const tableGlobalFilter = mode === "local" ? internalGlobalFilter : (globalFilter ?? "");
+  const setPagination = mode === "local" ? setInternalPagination : onPaginationChange;
+  const setSorting = mode === "local" ? setInternalSorting : onSortingChange;
+  const hasSearch = searchable ?? (mode === "local" || onGlobalFilterChange !== undefined);
+  useEffect(() => {
+    if (mode !== "local") return;
+    rememberedState.remember({
+      pagination: internalPagination,
+      sorting: internalSorting,
+      globalFilter: internalGlobalFilter,
+    });
+  }, [internalGlobalFilter, internalPagination, internalSorting, mode, rememberedState]);
+  const applyFilterChange = useCallback(
+    (value: string) => {
+      if (mode === "local") setInternalGlobalFilter(value);
+      if (mode !== "local") {
+        onGlobalFilterChange?.(value);
+        onPaginationChange?.((current) => ({ ...current, pageIndex: 0 }));
+      }
+      if (mode === "local") {
+        setPagination?.((current) => ({ ...current, pageIndex: 0 }));
+      }
+    },
+    [mode, onGlobalFilterChange, onPaginationChange, setPagination],
+  );
+  const debouncedFilterChange = useDebouncedCallback(applyFilterChange, 300);
+
+  const clearLocalSearch = useCallback(() => {
+    debouncedFilterChange("");
+    applyFilterChange("");
+    setSearchResetKey((key) => key + 1);
+  }, [applyFilterChange, debouncedFilterChange]);
 
   const table = useReactTable({
     data,
     columns,
     rowCount,
     state: {
-      pagination,
-      sorting,
-      globalFilter,
+      pagination: tablePagination,
+      sorting: tableSorting,
+      globalFilter: tableGlobalFilter,
       rowSelection: rowSelection ?? {},
       columnVisibility,
     },
-    manualPagination: true,
-    manualSorting: true,
-    manualFiltering: true,
+    manualPagination: mode !== "local",
+    manualSorting: mode !== "local",
+    manualFiltering: mode !== "local",
+    autoResetPageIndex: false,
     enableRowSelection: !!onRowSelectionChange,
-    onPaginationChange,
-    onSortingChange,
+    onPaginationChange: setPagination,
+    onSortingChange: setSorting,
     onRowSelectionChange,
     onColumnVisibilityChange: setColumnVisibility,
     getRowId,
     getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
   });
 
   const rows = table.getRowModel().rows;
+  const filteredRowCount = table.getFilteredRowModel().rows.length;
+  const lastLocalPageIndex = Math.max(
+    0,
+    Math.ceil(filteredRowCount / tablePagination.pageSize) - 1,
+  );
+  const clampLocalPage = useCallback((pageIndex: number) => {
+    setInternalPagination((current) =>
+      current.pageIndex > pageIndex ? { ...current, pageIndex } : current,
+    );
+  }, []);
+  useEffect(() => {
+    if (mode === "local" && !isLoading) clampLocalPage(lastLocalPageIndex);
+  }, [clampLocalPage, isLoading, lastLocalPageIndex, mode]);
+  const hasNoLocalSearchResults =
+    mode === "local" &&
+    tableGlobalFilter.trim() !== "" &&
+    data.length > 0 &&
+    filteredRowCount === 0;
+  const toolbarCopy = { ...DEFAULT_TOOLBAR_LABELS, ...toolbarLabels };
+  const localSearchEmptyState = (
+    <DataTableSearchEmptyState
+      title={toolbarCopy.noSearchResultsTitle}
+      description={toolbarCopy.noSearchResultsDescription}
+      clearLabel={toolbarCopy.clearSearch}
+      onClear={clearLocalSearch}
+    />
+  );
+
+  const focusRow = useCallback(
+    (index: number) => {
+      const row = rows[index];
+      if (!row) return;
+      setFocusedRowIndex(index);
+      rowRefs.current.get(row.id)?.focus();
+    },
+    [rows],
+  );
 
   const handleKeyDown = useCallback(
     (event: KeyboardEvent<HTMLTableSectionElement>) => {
+      if (!(event.target instanceof HTMLTableRowElement)) return;
       if (rows.length === 0) return;
       if (event.key === "j") {
         event.preventDefault();
-        setFocusedRowIndex((index) => Math.min(index + 1, rows.length - 1));
+        focusRow(Math.min(focusedRowIndex + 1, rows.length - 1));
       } else if (event.key === "k") {
         event.preventDefault();
-        setFocusedRowIndex((index) => Math.max(index - 1, 0));
+        focusRow(Math.max(focusedRowIndex - 1, 0));
       } else if (event.key === "Enter") {
         const row = rows[focusedRowIndex];
         if (row) onRowActivate?.(row.original);
       }
     },
-    [rows, focusedRowIndex, onRowActivate],
+    [focusRow, focusedRowIndex, onRowActivate, rows],
   );
 
-  const selectedCount = Object.keys(rowSelection ?? {}).length;
-  const skeletonRowCount = Math.min(pagination.pageSize, 8);
+  const selectedCount = Object.values(rowSelection ?? {}).filter(Boolean).length;
+  const skeletonRowCount = Math.min(tablePagination.pageSize, 8);
 
   // Rendered once from the header groups, because a header cell needs a
   // header context and a body cell cannot supply one.
@@ -141,17 +264,28 @@ export function DataTable<TData>({
       );
     }
   }
+  for (const [id, label] of Object.entries(cardHeaders)) {
+    columnLabelsRef.current[id] = label;
+  }
+  for (const column of table.getAllFlatColumns()) {
+    if (columnLabelsRef.current[column.id] !== undefined) continue;
+    const label = getDataTableColumnLabel(column.columnDef.meta, column.columnDef.header);
+    if (label !== undefined) columnLabelsRef.current[column.id] = label;
+  }
 
   return (
     <div className="flex flex-col gap-3">
       <DataTableToolbar
+        key={searchResetKey}
         table={table}
-        searchValue={globalFilter}
+        showSearch={hasSearch}
+        searchValue={tableGlobalFilter}
         onSearchChange={debouncedFilterChange}
         density={density}
         onDensityChange={setDensity}
         bulkActions={bulkActions}
         selectedCount={selectedCount}
+        columnLabels={columnLabelsRef.current}
         labels={toolbarLabels}
       />
       {/*
@@ -165,8 +299,14 @@ export function DataTable<TData>({
           headers={cardHeaders}
           isLoading={isLoading}
           skeletonRowCount={skeletonRowCount}
-          emptyState={emptyState}
+          emptyState={hasNoLocalSearchResults ? localSearchEmptyState : emptyState}
           onRowActivate={onRowActivate}
+          selectionEnabled={!!onRowSelectionChange}
+          allRowsSelected={table.getIsAllRowsSelected()}
+          someRowsSelected={table.getIsSomeRowsSelected()}
+          onToggleAllRowsSelected={() => {
+            table.toggleAllRowsSelected();
+          }}
         />
       </div>
       <div className="hidden overflow-x-auto rounded-sm border border-border md:block">
@@ -199,12 +339,8 @@ export function DataTable<TData>({
               </tr>
             ))}
           </thead>
-          {/*
-            eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex, jsx-a11y/no-noninteractive-element-interactions --
-            intentional: `tbody` is the keyboard-navigable surface for the table's own j/k/Enter
-            row navigation (docs/05-shared-components.md), the same pattern as a custom grid widget.
-          */}
-          <tbody ref={bodyRef} tabIndex={0} onKeyDown={handleKeyDown} className="outline-none">
+          {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- rows use roving focus for j/k/Enter activation. */}
+          <tbody onKeyDown={handleKeyDown}>
             {isLoading ? (
               Array.from({ length: skeletonRowCount }).map((_, index) => (
                 <tr key={index} className={cn("border-b border-border", ROW_HEIGHT[density])}>
@@ -218,18 +354,27 @@ export function DataTable<TData>({
             ) : rows.length === 0 ? (
               <tr>
                 <td colSpan={columns.length} className="p-0">
-                  {emptyState}
+                  {hasNoLocalSearchResults ? localSearchEmptyState : emptyState}
                 </td>
               </tr>
             ) : (
               rows.map((row, rowIndex) => (
                 <tr
                   key={row.id}
+                  ref={(element) => {
+                    if (element) rowRefs.current.set(row.id, element);
+                    else rowRefs.current.delete(row.id);
+                  }}
                   data-state={row.getIsSelected() ? "selected" : undefined}
+                  data-focused={rowIndex === focusedRowIndex ? "true" : undefined}
+                  tabIndex={onRowActivate ? (rowIndex === focusedRowIndex ? 0 : -1) : undefined}
+                  onFocus={() => {
+                    setFocusedRowIndex(rowIndex);
+                  }}
                   className={cn(
                     "border-b border-border last:border-b-0",
                     ROW_HEIGHT[density],
-                    rowIndex === focusedRowIndex && "bg-bg",
+                    "data-[focused=true]:bg-bg",
                     "data-[state=selected]:bg-accent/10",
                   )}
                 >
@@ -244,8 +389,16 @@ export function DataTable<TData>({
           </tbody>
         </table>
       </div>
-      {!isLoading && rows.length > 0 && (
-        <DataTablePagination table={table} rowCount={rowCount} labels={paginationLabels} />
+      {mode !== "cursor" && !isLoading && rows.length > 0 && (
+        <DataTablePagination
+          table={table}
+          pageCount={
+            mode === "local"
+              ? Math.ceil(table.getFilteredRowModel().rows.length / tablePagination.pageSize)
+              : undefined
+          }
+          labels={paginationLabels}
+        />
       )}
     </div>
   );
@@ -255,32 +408,4 @@ function SortIcon({ direction }: { direction: false | "asc" | "desc" }) {
   if (direction === "asc") return <ArrowUp className="size-3.5" aria-hidden="true" />;
   if (direction === "desc") return <ArrowDown className="size-3.5" aria-hidden="true" />;
   return <ArrowUpDown className="size-3.5 opacity-40" aria-hidden="true" />;
-}
-
-/** Selection column helper: `columns: [selectionColumn(), ...yourColumns]`. */
-export function selectionColumn<TData>(): ColumnDef<TData> {
-  return {
-    id: "select",
-    size: 40,
-    header: ({ table }) => (
-      <Checkbox
-        checked={table.getIsAllRowsSelected() || (table.getIsSomeRowsSelected() && "indeterminate")}
-        onCheckedChange={(value) => {
-          table.toggleAllRowsSelected(!!value);
-        }}
-        aria-label="Pilih semua baris"
-      />
-    ),
-    cell: ({ row }) => (
-      <Checkbox
-        checked={row.getIsSelected()}
-        onCheckedChange={(value) => {
-          row.toggleSelected(!!value);
-        }}
-        aria-label="Pilih baris"
-      />
-    ),
-    enableSorting: false,
-    enableHiding: false,
-  };
 }

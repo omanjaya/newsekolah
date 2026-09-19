@@ -10,7 +10,7 @@ export interface KioskFeedback {
  * A single large status line, readable at arm's length, that replaces a
  * toast for this screen: the kiosk has no one nearby to notice a small
  * corner notification, so the result of every scan takes over the main
- * area instead. Color is never the only signal (DESIGN.md, antislop-human)
+ * area instead. Color is never the only signal (DESIGN.md)
  * -- the icon and the text both say which outcome happened.
  */
 export function KioskFeedbackBanner({ feedback }: { feedback: KioskFeedback }): ReactElement {

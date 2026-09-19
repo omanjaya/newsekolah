@@ -1,0 +1,44 @@
+{
+  "tasks": {
+    "attendance": {
+      "title": "Presensi hari ini",
+      "description": "Catat kehadiran untuk sesi mengajar Anda.",
+      "action": "Buka presensi"
+    },
+    "circulation": {
+      "title": "Meja sirkulasi",
+      "description": "Layani peminjaman dan pengembalian buku.",
+      "action": "Buka meja sirkulasi"
+    },
+    "duty": {
+      "title": "Tugas hari ini",
+      "description": "Buka pemindai untuk tugas yang ditugaskan kepada Anda.",
+      "action": "Buka pemindai"
+    },
+    "children": {
+      "title": "Anak saya",
+      "description": "Lihat presensi, nilai, dan informasi anak Anda.",
+      "action": "Buka data anak"
+    },
+    "grades": {
+      "title": "Nilai saya",
+      "description": "Lihat nilai yang sudah diterbitkan guru.",
+      "action": "Buka nilai"
+    },
+    "schoolData": {
+      "title": "Data sekolah",
+      "description": "Kelola kelas dan siswa untuk kegiatan hari ini.",
+      "action": "Buka data sekolah"
+    }
+  },
+  "parentSummary": {
+    "title": "Status anak hari ini",
+    "open": "Buka data anak",
+    "emptyTitle": "Belum ada anak yang tertaut",
+    "emptyBody": "Hubungi tata usaha untuk menautkan akun Anda ke data siswa.",
+    "today": "Status {status} · {submitted} dari {expected} sesi tercatat",
+    "noAttendanceToday": "Belum ada presensi tercatat hari ini.",
+    "loadError": "Status presensi tidak bisa dimuat.",
+    "retry": "Coba lagi"
+  }
+}

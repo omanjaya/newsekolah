@@ -80,8 +80,10 @@
       "reason": "Reason",
       "reasonPlaceholder": "e.g. Sibling discount, merit scholarship",
       "cancel": "Cancel",
-      "submit": "Save"
-    }
+      "submit": "Save",
+      "active": "Discount active"
+    },
+    "edit": "Edit discount"
   },
   "generation": {
     "period": "Period",

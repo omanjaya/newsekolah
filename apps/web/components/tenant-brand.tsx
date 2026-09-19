@@ -11,7 +11,14 @@ import { useTenant } from "../lib/tenant/tenant-provider";
  * initials mark, matching the manifest icon fallback in
  * app/branding-icon/route.ts, so the two never disagree.
  */
-export function TenantBrand({ size = "md" }: { size?: "sm" | "md" }): ReactElement {
+export function TenantBrand({
+  size = "md",
+  mark = false,
+}: {
+  size?: "sm" | "md";
+  /** Logo only, for the collapsed sidebar rail where there is no room for the name. */
+  mark?: boolean;
+}): ReactElement {
   const { branding, displayName } = useTenant();
   const dimension = size === "sm" ? "size-6" : "size-8";
 
@@ -38,7 +45,7 @@ export function TenantBrand({ size = "md" }: { size?: "sm" | "md" }): ReactEleme
           {initialsFor(displayName)}
         </span>
       )}
-      <span className="truncate text-[14px] font-medium text-fg">{displayName}</span>
+      {!mark && <span className="truncate text-[14px] font-medium text-fg">{displayName}</span>}
     </div>
   );
 }

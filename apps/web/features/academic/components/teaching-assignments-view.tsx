@@ -6,7 +6,6 @@ import {
   ConfirmDialog,
   EmptyState,
   IconButton,
-  PageHeader,
   Select,
   Skeleton,
   useToast,
@@ -202,8 +201,8 @@ export function TeachingAssignmentsView(): ReactElement {
   const assignments = useTeachingAssignmentsForTeacherQuery(effectiveYearId, teacherId);
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
-      <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
+    <div className="flex flex-col gap-4">
+      <h2 className="text-[18px] font-medium text-fg">{t("title")}</h2>
       <p className="text-[13px] text-fg-muted">{t("description")}</p>
 
       <div className="flex flex-wrap items-end gap-3">

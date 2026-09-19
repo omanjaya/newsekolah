@@ -124,6 +124,7 @@ func (r *Repository) ListOverdueLoansDetailed(ctx context.Context, tenantID uuid
 				FinePaidAt: row.FinePaidAt, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt, Channel: row.Channel,
 			}),
 			ClassName: row.ClassName, GuardianPhone: row.GuardianPhone,
+			MemberName: row.MemberName, MemberNo: row.MemberNo, Title: row.Title, Barcode: row.Barcode,
 		}
 	}
 	return out, nil

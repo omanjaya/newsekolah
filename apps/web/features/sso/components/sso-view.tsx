@@ -16,6 +16,7 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
+import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import {
   useGoogleSSOConfigQuery,
@@ -48,6 +49,9 @@ export function SsoView(): ReactElement {
 
   const [form, setForm] = useState<FormState | null>(null);
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
+
+  if (config.isError && !config.data)
+    return <QueryError retry={() => config.refetch()} className="m-4" />;
 
   if (config.isLoading || !config.data) {
     return (

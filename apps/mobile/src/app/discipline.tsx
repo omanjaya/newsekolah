@@ -20,17 +20,27 @@ export default function DisciplineRoute(): React.JSX.Element {
           <Skeleton height={100} />
         </View>
       ) : records.length === 0 && letters.length === 0 ? (
-        <EmptyState icon={ShieldCheck} title={t("discipline.empty")} description={t("discipline.empty_description")} />
+        <EmptyState
+          icon={ShieldCheck}
+          title={t("discipline.empty")}
+          description={t("discipline.empty_description")}
+        />
       ) : (
         <ScrollView contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 48 }}>
           <View className="flex-row items-center justify-between rounded-input border border-line bg-surface px-4 py-3 dark:border-line-dark dark:bg-surface-dark">
-            <Text className="text-base text-ink dark:text-ink-dark">{t("discipline.total_points")}</Text>
-            <Text className="text-lg font-medium text-ink dark:text-ink-dark">{data.total_points}</Text>
+            <Text className="text-base text-ink dark:text-ink-dark">
+              {t("discipline.total_points")}
+            </Text>
+            <Text className="text-lg font-medium text-ink dark:text-ink-dark">
+              {data.total_points}
+            </Text>
           </View>
 
           {letters.length > 0 ? (
             <View className="gap-2">
-              <Text className="text-md font-medium text-ink dark:text-ink-dark">{t("discipline.letters")}</Text>
+              <Text className="text-md font-medium text-ink dark:text-ink-dark">
+                {t("discipline.letters")}
+              </Text>
               {letters.map((letter) => (
                 <View
                   key={letter.id}
@@ -38,7 +48,9 @@ export default function DisciplineRoute(): React.JSX.Element {
                 >
                   <FileText size={20} strokeWidth={1.75} color="#1F3A5F" />
                   <View className="flex-1">
-                    <Text className="text-base text-ink dark:text-ink-dark">{letter.letter_number}</Text>
+                    <Text className="text-base text-ink dark:text-ink-dark">
+                      {letter.letter_number}
+                    </Text>
                     <Text className="text-sm text-ink/60 dark:text-ink-dark/60">
                       {letter.level_label} · {letter.issued_at.slice(0, 10)}
                     </Text>
@@ -49,9 +61,13 @@ export default function DisciplineRoute(): React.JSX.Element {
           ) : null}
 
           <View className="gap-2">
-            <Text className="text-md font-medium text-ink dark:text-ink-dark">{t("discipline.records")}</Text>
+            <Text className="text-md font-medium text-ink dark:text-ink-dark">
+              {t("discipline.records")}
+            </Text>
             {records.length === 0 ? (
-              <Text className="text-sm text-ink/60 dark:text-ink-dark/60">{t("discipline.records_empty")}</Text>
+              <Text className="text-sm text-ink/60 dark:text-ink-dark/60">
+                {t("discipline.records_empty")}
+              </Text>
             ) : (
               records.map((record) => (
                 <View
@@ -59,8 +75,12 @@ export default function DisciplineRoute(): React.JSX.Element {
                   className="flex-row items-center justify-between rounded-input border border-line bg-surface p-3 dark:border-line-dark dark:bg-surface-dark"
                 >
                   <View className="flex-1">
-                    <Text className="text-base text-ink dark:text-ink-dark">{record.type_name}</Text>
-                    <Text className="text-sm text-ink/60 dark:text-ink-dark/60">{record.occurred_on}</Text>
+                    <Text className="text-base text-ink dark:text-ink-dark">
+                      {record.type_name}
+                    </Text>
+                    <Text className="text-sm text-ink/60 dark:text-ink-dark/60">
+                      {record.occurred_on}
+                    </Text>
                   </View>
                   <Text className="text-base text-ink dark:text-ink-dark">{record.points}</Text>
                 </View>

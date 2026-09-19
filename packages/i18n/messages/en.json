@@ -214,6 +214,7 @@
     }
   },
   "errors": {
+    "SCHEDULE_HAS_HISTORY": "This schedule has attendance or substitution history. Schedule changes and deletion are blocked to preserve the records.",
     "AUTH_INVALID_CREDENTIALS": "Incorrect username or password",
     "AUTH_TOKEN_EXPIRED": "Your session expired, please sign in again",
     "TENANT_NOT_FOUND": "School not found",
@@ -309,6 +310,7 @@
     "ADDITIONAL_ROLE_MUST_BE_CUSTOM": "Additional roles must be custom roles, not system roles",
     "LEAVE_PERMISSION_REQUIRES_DUTY": "Reviewing leave requests and issuing leave letters cannot be granted directly to the teacher role, that access comes from a duty assignment",
     "IMPORT_TOO_MANY_ROWS": "The import file exceeds the 5000 row limit",
-    "IMPORT_FILE_INVALID": "The import file is unreadable or does not match the template"
+    "IMPORT_FILE_INVALID": "The import file is unreadable or does not match the template",
+    "ANALYTICS_NOT_HOMEROOM_TEACHER": "This list is available to homeroom teachers, counselors, or school leaders with an active assignment."
   }
 }

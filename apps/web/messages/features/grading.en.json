@@ -44,7 +44,9 @@
     "starsFor": "Set stars for {name}",
     "noComponents": "No assessment components for this subject yet.",
     "noMatch": "No student matches your search.",
-    "scoresSaved": "Column scores saved."
+    "scoresSaved": "Column scores saved.",
+    "unsavedChanges": "{count, plural, one {# unsaved change} other {# unsaved changes}}",
+    "discardChanges": "Your unsaved score changes will be lost. Continue?"
   },
   "componentDialog": {
     "editTitle": "Edit component",

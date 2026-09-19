@@ -124,6 +124,8 @@ export function ViolationCatalogView(): ReactElement {
       </div>
 
       <DataTable
+        stateKey="features/discipline/components/violation-catalog-view:1"
+        mode="local"
         data={items}
         columns={columns}
         rowCount={items.length}
@@ -132,7 +134,6 @@ export function ViolationCatalogView(): ReactElement {
         sorting={[]}
         onSortingChange={() => undefined}
         globalFilter=""
-        onGlobalFilterChange={() => undefined}
         isLoading={isLoading}
         getRowId={(item) => item.id}
         emptyState={

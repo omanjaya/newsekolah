@@ -3,7 +3,8 @@
 import { PageHeader, Tabs, TabsContent, TabsList, TabsTrigger } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useState } from "react";
+
+import { useUrlState } from "../../../lib/hooks/use-url-state";
 
 import { AtRiskPanel } from "./at-risk-panel";
 import { IssuedLettersPanel } from "./issued-letters-panel";
@@ -11,7 +12,7 @@ import { WarningLetterTemplateView } from "./warning-letter-template-view";
 
 export function WarningLettersView(): ReactElement {
   const t = useTranslations("app.discipline.warningLetters");
-  const [tab, setTab] = useState("issued");
+  const [tab, setTab] = useUrlState<string>("tab", ["issued", "atRisk", "template"], "issued");
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">

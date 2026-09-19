@@ -20,6 +20,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
+import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useCan, useSession } from "../../../lib/session/session-provider";
 import { type WorkflowInstance, useMyExitPermitsQuery } from "../api";
 
@@ -46,7 +47,11 @@ export function ExitPermitsView(): ReactElement {
     ...(canApprove ? [{ value: "approve", label: t("tabApprove") }] : []),
     ...(canGate ? [{ value: "gate", label: t("tabGate") }] : []),
   ];
-  const [tab, setTab] = useState(tabs[0]?.value ?? "mine");
+  const [tab, setTab] = useUrlState<string>(
+    "tab",
+    tabs.map((item) => item.value),
+    tabs[0]?.value ?? "mine",
+  );
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">

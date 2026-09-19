@@ -20,6 +20,7 @@ import { useMemo, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
+import { useRememberedViewState } from "../../../lib/view-state/view-state-provider";
 import {
   type AcademicYear,
   useAcademicYearsQuery,
@@ -42,7 +43,10 @@ export function YearsView(): ReactElement {
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const canManage = useCan("manage_master_data");
-  const [includeArchived, setIncludeArchived] = useState(false);
+  const [includeArchived, setIncludeArchived] = useRememberedViewState(
+    "years-include-archived",
+    false,
+  );
   const { data, isLoading } = useAcademicYearsQuery({ includeArchived });
   const create = useCreateAcademicYearMutation();
   const update = useUpdateAcademicYearMutation();
@@ -164,6 +168,8 @@ export function YearsView(): ReactElement {
       </label>
 
       <DataTable
+        stateKey="features/academic/components/years-view:1"
+        mode="local"
         data={rows}
         columns={columns}
         rowCount={rows.length}
@@ -172,7 +178,6 @@ export function YearsView(): ReactElement {
         sorting={[]}
         onSortingChange={() => undefined}
         globalFilter=""
-        onGlobalFilterChange={() => undefined}
         isLoading={isLoading}
         getRowId={(y) => y.id}
         emptyState={

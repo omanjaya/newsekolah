@@ -11,13 +11,8 @@ import {
   DialogContent,
   EmptyState,
   Input,
-  PageHeader,
   Select,
   Skeleton,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
   useDebouncedCallback,
   useToast,
 } from "@newsekolah/ui";
@@ -28,7 +23,7 @@ import { useMemo, useState } from "react";
 
 import { useActiveYear } from "../../../lib/hooks/use-active-year";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { useCan, useSession } from "../../../lib/session/session-provider";
+import { useSession } from "../../../lib/session/session-provider";
 import { useClassesQuery, useDirectoryQuery, useLookup } from "../../reference/api";
 import {
   useCreateDutyAssignmentMutation,
@@ -38,20 +33,13 @@ import {
   useStaffOptionsQuery,
 } from "../duties-api";
 
-import { DutyTypesPanel } from "./duty-types-panel";
-
-/**
- * Who holds which duty this year (homeroom per class, counselors, picket,
- * security) on one tab, and the duty types themselves -- their name, scope
- * and the permissions they grant while active -- on the other.
- */
+/** Active additional duties and the form for assigning staff. */
 export function DutiesView(): ReactElement {
   const t = useTranslations("app.school.duties");
   const locale = useLocale() as Locale;
   const { me } = useSession();
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
-  const canManageTypes = useCan("manage_permissions");
   const types = useDutyTypesQuery();
   const assignments = useDutyAssignmentsQuery();
   const people = useDirectoryQuery();
@@ -63,86 +51,73 @@ export function DutiesView(): ReactElement {
   const rows = (assignments.data?.data ?? []).filter((a) => a.is_active);
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
-      <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
-      <Tabs defaultValue="assignments">
-        <TabsList>
-          <TabsTrigger value="assignments">{t("tabs.assignments")}</TabsTrigger>
-          <TabsTrigger value="types">{t("types.title")}</TabsTrigger>
-        </TabsList>
-        <TabsContent value="assignments" className="flex flex-col gap-4">
-          <div className="flex justify-end">
-            <Button
-              size="sm"
-              icon={<Plus />}
-              onClick={() => {
-                setAdding(true);
-              }}
+    <div className="flex flex-col gap-4">
+      <h2 className="text-[18px] font-medium text-fg">{t("tabs.assignments")}</h2>
+      <div className="flex justify-end">
+        <Button
+          size="sm"
+          icon={<Plus />}
+          onClick={() => {
+            setAdding(true);
+          }}
+        >
+          {t("assign")}
+        </Button>
+      </div>
+      {assignments.isLoading ? (
+        <Skeleton className="h-64 w-full" />
+      ) : rows.length === 0 ? (
+        <EmptyState
+          icon={<ShieldCheck aria-hidden="true" />}
+          title={t("emptyTitle")}
+          description={t("emptyBody")}
+        />
+      ) : (
+        <ul className="divide-y divide-border rounded-sm border border-border bg-surface">
+          {rows.map((a) => (
+            <li
+              key={a.id}
+              className="flex flex-col gap-2 px-4 py-3 md:flex-row md:items-center md:justify-between"
             >
-              {t("assign")}
-            </Button>
-          </div>
-          {assignments.isLoading ? (
-            <Skeleton className="h-64 w-full" />
-          ) : rows.length === 0 ? (
-            <EmptyState
-              icon={<ShieldCheck aria-hidden="true" />}
-              title={t("emptyTitle")}
-              description={t("emptyBody")}
-            />
-          ) : (
-            <ul className="divide-y divide-border rounded-sm border border-border bg-surface">
-              {rows.map((a) => (
-                <li
-                  key={a.id}
-                  className="flex flex-col gap-2 px-4 py-3 md:flex-row md:items-center md:justify-between"
-                >
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-[14px] text-fg">
-                      {peopleMap.get(a.user_id)?.name ?? a.user_id}
-                    </span>
-                    <span className="flex flex-wrap items-center gap-2 text-[13px] text-fg-muted">
-                      <Badge variant="accent">{a.duty_name}</Badge>
-                      {a.scope_class_id && (
-                        <span>{classMap.get(a.scope_class_id)?.name ?? "-"}</span>
-                      )}
-                      <span>
-                        {t("since", {
-                          date: formatDate(a.starts_on, { locale, timeZone: me?.tenant.timezone }),
-                        })}
-                      </span>
-                    </span>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    loading={end.isPending && end.variables === a.id}
-                    onClick={() => {
-                      end.mutate(a.id, {
-                        onSuccess: () => {
-                          toast.success(t("ended"));
-                        },
-                        onError: (error) => {
-                          toast.error(
-                            error instanceof ApiError
-                              ? apiErrorMessage(error.code)
-                              : apiErrorMessage("UNKNOWN"),
-                          );
-                        },
-                      });
-                    }}
-                  >
-                    {t("end")}
-                  </Button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </TabsContent>
-        <TabsContent value="types">
-          <DutyTypesPanel canManage={canManageTypes} />
-        </TabsContent>
-      </Tabs>
+              <div className="flex flex-col gap-0.5">
+                <span className="text-[14px] text-fg">
+                  {peopleMap.get(a.user_id)?.name ?? a.user_id}
+                </span>
+                <span className="flex flex-wrap items-center gap-2 text-[13px] text-fg-muted">
+                  <Badge variant="accent">{a.duty_name}</Badge>
+                  {a.scope_class_id && <span>{classMap.get(a.scope_class_id)?.name ?? "-"}</span>}
+                  <span>
+                    {t("since", {
+                      date: formatDate(a.starts_on, { locale, timeZone: me?.tenant.timezone }),
+                    })}
+                  </span>
+                </span>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                loading={end.isPending && end.variables === a.id}
+                onClick={() => {
+                  end.mutate(a.id, {
+                    onSuccess: () => {
+                      toast.success(t("ended"));
+                    },
+                    onError: (error) => {
+                      toast.error(
+                        error instanceof ApiError
+                          ? apiErrorMessage(error.code)
+                          : apiErrorMessage("UNKNOWN"),
+                      );
+                    },
+                  });
+                }}
+              >
+                {t("end")}
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
       <Dialog open={adding} onOpenChange={setAdding}>
         <DialogContent title={t("assign")}>
           {adding && (

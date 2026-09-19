@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
+import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import {
   useDisableMfaMutation,
@@ -71,6 +72,9 @@ export function SecurityView(): ReactElement {
     setActiveDialog(null);
     setRevealedCodes(result.recovery_codes);
   }
+
+  if (status.isError && !status.data)
+    return <QueryError retry={() => status.refetch()} className="m-4" />;
 
   if (status.isLoading || !status.data) {
     return (

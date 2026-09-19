@@ -130,6 +130,8 @@ export function WebhookDeliveriesPanel({
       </div>
 
       <DataTable
+        stateKey="features/integrations/components/webhook-deliveries-panel:1"
+        mode="cursor"
         data={items}
         columns={columns}
         rowCount={items.length}
@@ -138,7 +140,6 @@ export function WebhookDeliveriesPanel({
         sorting={[]}
         onSortingChange={() => undefined}
         globalFilter=""
-        onGlobalFilterChange={() => undefined}
         isLoading={isLoading}
         getRowId={(delivery) => delivery.id}
         emptyState={

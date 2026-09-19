@@ -5,9 +5,10 @@ import { Button, IconButton, Input, cn, useToast } from "@newsekolah/ui";
 import { Pencil, Star } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { useUnsavedChangesProtection } from "../../../lib/navigation/use-unsaved-changes-protection";
 import {
   type AssessmentComponent,
   type Gradebook,
@@ -25,6 +26,7 @@ export interface GradebookTableProps {
   onManualOverride: (student: GradebookStudent) => void;
   starBalances: Map<string, number>;
   onGiveStar: (student: GradebookStudent) => void;
+  onPendingChangesChange?: (count: number) => void;
 }
 
 /**
@@ -41,6 +43,7 @@ export function GradebookTable({
   onManualOverride,
   starBalances,
   onGiveStar,
+  onPendingChangesChange,
 }: GradebookTableProps): ReactElement {
   const t = useTranslations("app.grading.table");
   const toast = useToast();
@@ -49,6 +52,15 @@ export function GradebookTable({
   const [edits, setEdits] = useState<Edits>({});
   const [savingComponentId, setSavingComponentId] = useState<string | null>(null);
   const inputRefs = useRef(new Map<string, HTMLInputElement>());
+  const pendingChanges = useMemo(
+    () => Object.values(edits).reduce((count, column) => count + Object.keys(column).length, 0),
+    [edits],
+  );
+  useUnsavedChangesProtection(pendingChanges > 0, t("discardChanges"));
+  useEffect(() => {
+    onPendingChangesChange?.(pendingChanges);
+    return () => onPendingChangesChange?.(0);
+  }, [onPendingChangesChange, pendingChanges]);
 
   const components = useMemo(
     () => [...sheet.components].sort((a, b) => a.sequence - b.sequence),
@@ -88,9 +100,16 @@ export function GradebookTable({
     setSavingComponentId(componentId);
     try {
       await saveScores.mutateAsync({ componentId, entries });
+      const savedStudentIds = new Set(entries.map((entry) => entry.student_user_id));
       setEdits((prev) => {
-        const next = { ...prev };
-        next[componentId] = {};
+        const latestColumn = prev[componentId] ?? {};
+        const nextColumn = Object.fromEntries(
+          Object.entries(latestColumn).filter(
+            ([studentId, value]) =>
+              !savedStudentIds.has(studentId) || value !== columnEdits[studentId],
+          ),
+        );
+        const next = { ...prev, [componentId]: nextColumn };
         return next;
       });
       toast.success(t("scoresSaved"));
@@ -109,6 +128,11 @@ export function GradebookTable({
 
   return (
     <>
+      {pendingChanges > 0 && (
+        <p className="text-[13px] text-fg-muted" aria-live="polite">
+          {t("unsavedChanges", { count: pendingChanges })}
+        </p>
+      )}
       {/* Desktop and tablet: full matrix, components as columns. Below md it hands off to the
           per-student card list, since a phone has no room for this many columns even with scroll. */}
       <div className="hidden overflow-x-auto rounded-sm border border-border bg-surface md:block">
@@ -345,7 +369,7 @@ export function GradebookTable({
           <p className="p-6 text-center text-[13px] text-fg-muted">{t("noMatch")}</p>
         )}
         {canManage && components.some((c) => Object.keys(edits[c.id] ?? {}).length > 0) && (
-          <div className="sticky bottom-0 z-10 flex flex-wrap gap-2 border-t border-border bg-surface p-3">
+          <div className="sticky bottom-[var(--shell-mobile-tab-offset)] z-10 flex flex-wrap gap-2 border-t border-border bg-surface p-3 md:bottom-0">
             {components
               .filter((c) => Object.keys(edits[c.id] ?? {}).length > 0)
               .map((c) => (

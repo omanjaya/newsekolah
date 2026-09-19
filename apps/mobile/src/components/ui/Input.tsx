@@ -1,4 +1,4 @@
-import { forwardRef, useState } from "react";
+import { forwardRef } from "react";
 import { Text, TextInput, View, type TextInputProps } from "react-native";
 import { cn } from "@/lib/cn";
 
@@ -8,20 +8,20 @@ interface InputProps extends Omit<TextInputProps, "className"> {
 }
 
 export const Input = forwardRef<TextInput, InputProps>(function Input(
-  { label, error, onBlur, ...textInputProps },
+  { label, error, onBlur, accessibilityLabel, accessibilityHint, ...textInputProps },
   ref,
 ) {
-  const [touched, setTouched] = useState(false);
-  const showError = touched && error;
+  const showError = Boolean(error);
 
   return (
     <View className="gap-1.5">
       <Text className="text-sm font-medium text-ink dark:text-ink-dark">{label}</Text>
       <TextInput
         ref={ref}
+        accessibilityLabel={accessibilityLabel ?? label}
+        accessibilityHint={error ?? accessibilityHint}
         placeholderTextColor="#8A8A8A"
         onBlur={(event) => {
-          setTouched(true);
           onBlur?.(event);
         }}
         className={cn(
@@ -31,7 +31,11 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
         )}
         {...textInputProps}
       />
-      {showError ? <Text className="text-xs text-status-absent">{error}</Text> : null}
+      {showError ? (
+        <Text accessibilityRole="alert" className="text-xs text-status-absent">
+          {error}
+        </Text>
+      ) : null}
     </View>
   );
 });

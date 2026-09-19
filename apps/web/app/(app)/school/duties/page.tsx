@@ -1,7 +1,5 @@
-import type { ReactElement } from "react";
+import { redirect } from "next/navigation";
 
-import { DutiesView } from "../../../../features/school/components/duties-view";
-
-export default function Page(): ReactElement {
-  return <DutiesView />;
+export default function Page(): never {
+  redirect("/school/assignments?tab=duties");
 }

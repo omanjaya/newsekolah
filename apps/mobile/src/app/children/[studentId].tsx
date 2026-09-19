@@ -5,7 +5,12 @@ import { CalendarCheck, FileText, GraduationCap, ShieldCheck, Star } from "lucid
 import { ScreenHeader } from "@/components/ui/ScreenHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { useChildAttendance, useChildDiscipline, useChildGrades, useSubjects } from "@/lib/api/hooks";
+import {
+  useChildAttendance,
+  useChildDiscipline,
+  useChildGrades,
+  useSubjects,
+} from "@/lib/api/hooks";
 import { t } from "@/i18n/t";
 
 function currentMonth(): string {
@@ -13,7 +18,13 @@ function currentMonth(): string {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }): React.JSX.Element {
+function Section({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}): React.JSX.Element {
   return (
     <View className="gap-2">
       <Text className="text-md font-medium text-ink dark:text-ink-dark">{title}</Text>
@@ -77,14 +88,22 @@ export default function ChildDetailRoute(): React.JSX.Element {
           {grades.isLoading ? (
             <Skeleton height={100} />
           ) : gradeRows.length === 0 ? (
-            <EmptyState icon={GraduationCap} title={t("grades.empty")} description={t("grades.empty_description")} />
+            <EmptyState
+              icon={GraduationCap}
+              title={t("grades.empty")}
+              description={t("grades.empty_description")}
+            />
           ) : (
             <View className="gap-2">
               <View className="flex-row items-center justify-between rounded-input border border-line bg-surface px-4 py-3 dark:border-line-dark dark:bg-surface-dark">
-                <Text className="text-sm text-ink/60 dark:text-ink-dark/60">{grades.data?.term_name}</Text>
+                <Text className="text-sm text-ink/60 dark:text-ink-dark/60">
+                  {grades.data?.term_name}
+                </Text>
                 <View className="flex-row items-center gap-1.5">
                   <Star size={16} strokeWidth={1.75} color="#1F3A5F" />
-                  <Text className="text-base font-medium text-ink dark:text-ink-dark">{grades.data?.stars ?? 0}</Text>
+                  <Text className="text-base font-medium text-ink dark:text-ink-dark">
+                    {grades.data?.stars ?? 0}
+                  </Text>
                 </View>
               </View>
               {gradeRows.map((subject) => (
@@ -121,7 +140,9 @@ export default function ChildDetailRoute(): React.JSX.Element {
           ) : (
             <View className="gap-3">
               <View className="flex-row items-center justify-between rounded-input border border-line bg-surface px-4 py-3 dark:border-line-dark dark:bg-surface-dark">
-                <Text className="text-base text-ink dark:text-ink-dark">{t("discipline.total_points")}</Text>
+                <Text className="text-base text-ink dark:text-ink-dark">
+                  {t("discipline.total_points")}
+                </Text>
                 <Text className="text-lg font-medium text-ink dark:text-ink-dark">
                   {discipline.data?.total_points ?? 0}
                 </Text>
@@ -129,7 +150,9 @@ export default function ChildDetailRoute(): React.JSX.Element {
 
               {letters.length > 0 ? (
                 <View className="gap-2">
-                  <Text className="text-sm font-medium text-ink dark:text-ink-dark">{t("discipline.letters")}</Text>
+                  <Text className="text-sm font-medium text-ink dark:text-ink-dark">
+                    {t("discipline.letters")}
+                  </Text>
                   {letters.map((letter, index) => (
                     <View
                       key={`${letter.number}-${index}`}
@@ -137,7 +160,9 @@ export default function ChildDetailRoute(): React.JSX.Element {
                     >
                       <FileText size={20} strokeWidth={1.75} color="#1F3A5F" />
                       <View className="flex-1">
-                        <Text className="text-base text-ink dark:text-ink-dark">{letter.number}</Text>
+                        <Text className="text-base text-ink dark:text-ink-dark">
+                          {letter.number}
+                        </Text>
                         <Text className="text-sm text-ink/60 dark:text-ink-dark/60">
                           {letter.level_label} · {letter.issued_at.slice(0, 10)}
                         </Text>
@@ -148,9 +173,13 @@ export default function ChildDetailRoute(): React.JSX.Element {
               ) : null}
 
               <View className="gap-2">
-                <Text className="text-sm font-medium text-ink dark:text-ink-dark">{t("discipline.records")}</Text>
+                <Text className="text-sm font-medium text-ink dark:text-ink-dark">
+                  {t("discipline.records")}
+                </Text>
                 {records.length === 0 ? (
-                  <Text className="text-sm text-ink/60 dark:text-ink-dark/60">{t("discipline.records_empty")}</Text>
+                  <Text className="text-sm text-ink/60 dark:text-ink-dark/60">
+                    {t("discipline.records_empty")}
+                  </Text>
                 ) : (
                   records.map((record, index) => (
                     <View
@@ -158,8 +187,12 @@ export default function ChildDetailRoute(): React.JSX.Element {
                       className="flex-row items-center justify-between rounded-input border border-line bg-surface p-3 dark:border-line-dark dark:bg-surface-dark"
                     >
                       <View className="flex-1">
-                        <Text className="text-base text-ink dark:text-ink-dark">{record.type_name}</Text>
-                        <Text className="text-sm text-ink/60 dark:text-ink-dark/60">{record.occurred_on}</Text>
+                        <Text className="text-base text-ink dark:text-ink-dark">
+                          {record.type_name}
+                        </Text>
+                        <Text className="text-sm text-ink/60 dark:text-ink-dark/60">
+                          {record.occurred_on}
+                        </Text>
                       </View>
                       <Text className="text-base text-ink dark:text-ink-dark">{record.points}</Text>
                     </View>

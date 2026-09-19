@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"sort"
 	"strings"
 	"time"
 
@@ -93,6 +94,9 @@ func (s *Service) UpdateSchedule(ctx context.Context, tenantID, id uuid.UUID, in
 			return err
 		}
 		candidate.ID = id
+		if existing.AcademicYearID != in.AcademicYearID {
+			return domain.ErrInvalidScheduleBlock
+		}
 
 		if !actor.CanManage {
 			if err := s.enforceTeacherWindow(ctx, tenantID, existing, s.now()); err != nil {
@@ -138,7 +142,7 @@ func (s *Service) DeleteSchedule(ctx context.Context, tenantID, id uuid.UUID, ac
 				return err
 			}
 		}
-		return s.repo.DeleteSchedule(ctx, tenantID, id)
+		return mapConstraintError(s.repo.DeleteSchedule(ctx, tenantID, id))
 	})
 }
 
@@ -149,7 +153,7 @@ func (s *Service) DeleteSchedule(ctx context.Context, tenantID, id uuid.UUID, ac
 // UpdateSchedule enforce.
 func (s *Service) ClearAcademicYear(ctx context.Context, tenantID, academicYearID uuid.UUID) error {
 	return s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		return s.repo.DeleteSchedulesByAcademicYear(ctx, tenantID, academicYearID)
+		return mapConstraintError(s.repo.DeleteSchedulesByAcademicYear(ctx, tenantID, academicYearID))
 	})
 }
 
@@ -448,6 +452,12 @@ const pgExclusionViolation = "23P01"
 
 func mapConstraintError(err error) error {
 	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) && pgErr.Code == "23503" &&
+		(pgErr.ConstraintName == "attendance_sessions_schedule_id_fkey" ||
+			pgErr.ConstraintName == "substitution_requests_schedule_id_fkey" ||
+			pgErr.ConstraintName == "schedule_history_guard") {
+		return domain.ErrScheduleHasHistory
+	}
 	if errors.As(err, &pgErr) && pgErr.Code == pgExclusionViolation {
 		if strings.Contains(pgErr.ConstraintName, "teacher_user_id") {
 			return domain.ErrConflictTeacher
@@ -462,3 +472,67 @@ func mapConstraintError(err error) error {
 
 // now is the single injection point for the clock; tests may override it.
 func (s *Service) now() time.Time { return s.clock.Now() }
+
+// UpdateScheduleBlock collapses a displayed contiguous block to one span while
+// retaining its primary ID. Validation, sibling removal and update share a transaction.
+func (s *Service) UpdateScheduleBlock(ctx context.Context, tenantID, id uuid.UUID, ids []uuid.UUID, in ScheduleInput, actor Actor) (domain.Schedule, error) {
+	var updated domain.Schedule
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		if err := s.lockScheduleBlock(ctx, tenantID, id, ids); err != nil {
+			return err
+		}
+		for _, sibling := range ids {
+			if sibling == id {
+				continue
+			}
+			if err := s.DeleteSchedule(ctx, tenantID, sibling, actor); err != nil {
+				return err
+			}
+		}
+		var err error
+		updated, err = s.UpdateSchedule(ctx, tenantID, id, in, actor)
+		return err
+	})
+	return updated, err
+}
+
+func (s *Service) DeleteScheduleBlock(ctx context.Context, tenantID, id uuid.UUID, ids []uuid.UUID, actor Actor) error {
+	return s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		if err := s.lockScheduleBlock(ctx, tenantID, id, ids); err != nil {
+			return err
+		}
+		for _, rowID := range ids {
+			if err := s.DeleteSchedule(ctx, tenantID, rowID, actor); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
+// Lock in stable order before changing anything. FOR UPDATE also serializes
+// concurrent attendance/substitution inserts that take a foreign-key row lock.
+func (s *Service) lockScheduleBlock(ctx context.Context, tenantID, primary uuid.UUID, ids []uuid.UUID) error {
+	if len(ids) == 0 || len(ids) > 100 {
+		return domain.ErrInvalidScheduleBlock
+	}
+	ordered := append([]uuid.UUID(nil), ids...)
+	sort.Slice(ordered, func(i, j int) bool { return ordered[i].String() < ordered[j].String() })
+	rows := make([]domain.Schedule, 0, len(ordered))
+	found := false
+	for i, id := range ordered {
+		if i > 0 && id == ordered[i-1] {
+			return domain.ErrInvalidScheduleBlock
+		}
+		found = found || id == primary
+		row, err := s.repo.GetScheduleByID(ctx, tenantID, id)
+		if err != nil {
+			return domain.ErrScheduleNotFound
+		}
+		rows = append(rows, row)
+	}
+	if !found || len(domain.MergeContiguous(rows)) != 1 {
+		return domain.ErrInvalidScheduleBlock
+	}
+	return nil
+}

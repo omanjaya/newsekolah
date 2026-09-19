@@ -7,7 +7,12 @@ paths:
       summary: One linked child's attendance month
       parameters:
         - { name: studentId, in: path, required: true, schema: { type: string, format: uuid } }
-        - { name: month, in: query, required: true, schema: { type: string, pattern: "^[0-9]{4}-[0-9]{2}$" } }
+        - {
+            name: month,
+            in: query,
+            required: true,
+            schema: { type: string, pattern: "^[0-9]{4}-[0-9]{2}$" },
+          }
       responses:
         "200":
           description: Days and totals

@@ -3,7 +3,9 @@ import { flexRender } from "@tanstack/react-table";
 import type { ReactNode } from "react";
 
 import { cn } from "../../utils/cn.js";
+import { Checkbox } from "../checkbox.js";
 import { Skeleton } from "../skeleton.js";
+import { useUiLabels } from "../ui-labels.js";
 
 export interface DataTableCardsProps<TData> {
   rows: Row<TData>[];
@@ -17,6 +19,10 @@ export interface DataTableCardsProps<TData> {
   skeletonRowCount: number;
   emptyState?: ReactNode;
   onRowActivate?: (row: TData) => void;
+  selectionEnabled?: boolean;
+  allRowsSelected?: boolean;
+  someRowsSelected?: boolean;
+  onToggleAllRowsSelected?: () => void;
 }
 
 /**
@@ -35,7 +41,12 @@ export function DataTableCards<TData>({
   skeletonRowCount,
   emptyState,
   onRowActivate,
+  selectionEnabled,
+  allRowsSelected,
+  someRowsSelected,
+  onToggleAllRowsSelected,
 }: DataTableCardsProps<TData>) {
+  const uiLabels = useUiLabels();
   if (isLoading) {
     return (
       <div className="flex flex-col gap-2" aria-busy="true">
@@ -51,69 +62,97 @@ export function DataTableCards<TData>({
   }
 
   return (
-    <ul className="flex flex-col gap-2">
-      {rows.map((row) => {
-        const cells = row.getVisibleCells().filter((cell) => cell.column.id !== "select");
-        const [title, ...rest] = cells;
-        const activate = onRowActivate
-          ? () => {
-              onRowActivate(row.original);
-            }
-          : undefined;
+    <div className="flex flex-col gap-2">
+      {selectionEnabled && onToggleAllRowsSelected && (
+        <div className="flex min-h-11 items-center gap-2 text-[13px] font-medium text-fg">
+          <Checkbox
+            checked={allRowsSelected === true ? true : someRowsSelected ? "indeterminate" : false}
+            onCheckedChange={() => {
+              onToggleAllRowsSelected();
+            }}
+            aria-label={uiLabels.tableSelectAllRows}
+          />
+          {uiLabels.tableSelectAllRows}
+        </div>
+      )}
+      <ul className="flex flex-col gap-2">
+        {rows.map((row) => {
+          const cells = row.getVisibleCells().filter((cell) => cell.column.id !== "select");
+          const [title, ...rest] = cells;
+          const activate = onRowActivate
+            ? () => {
+                onRowActivate(row.original);
+              }
+            : undefined;
 
-        const titleId = `${row.id}-card-title`;
-        const body = (
-          <>
-            {title && (
-              <div id={titleId} className="text-[14px] font-medium text-fg">
-                {flexRender(title.column.columnDef.cell, title.getContext())}
-              </div>
-            )}
-            <dl className="flex flex-col gap-1">
-              {rest.map((cell) => (
-                <div key={cell.id} className="flex items-baseline justify-between gap-3">
-                  <dt className="shrink-0 text-[12px] text-fg-muted">{headers[cell.column.id]}</dt>
-                  {/*
+          const titleId = `${row.id}-card-title`;
+          const body = (
+            <>
+              {title && (
+                <div id={titleId} className="text-[14px] font-medium text-fg">
+                  {flexRender(title.column.columnDef.cell, title.getContext())}
+                </div>
+              )}
+              <dl className="flex flex-col gap-1">
+                {rest.map((cell) => (
+                  <div key={cell.id} className="flex items-baseline justify-between gap-3">
+                    <dt className="shrink-0 text-[12px] text-fg-muted">
+                      {headers[cell.column.id]}
+                    </dt>
+                    {/*
                     A link or button sitting in a cell is a real tap target
                     on a phone, so give it a thumb-sized height here rather
                     than leaving it as tall as its text.
                   */}
-                  <dd className="min-w-0 text-right text-[13px] text-fg [&_a]:relative [&_a]:z-10 [&_a]:inline-flex [&_a]:min-h-11 [&_a]:items-center [&_button]:relative [&_button]:z-10 [&_button]:inline-flex [&_button]:min-h-11 [&_button]:items-center">
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </dd>
-                </div>
-              ))}
-            </dl>
-          </>
-        );
+                    <dd className="min-w-0 text-right text-[13px] text-fg [&_a]:relative [&_a]:z-10 [&_a]:inline-flex [&_a]:min-h-11 [&_a]:items-center [&_button]:relative [&_button]:z-10 [&_button]:inline-flex [&_button]:min-h-11 [&_button]:items-center">
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </>
+          );
 
-        return (
-          <li
-            key={row.id}
-            data-state={row.getIsSelected() ? "selected" : undefined}
-            className={cn(
-              "relative rounded-sm border border-border bg-surface",
-              "data-[state=selected]:border-accent",
-            )}
-          >
-            <div className="flex flex-col gap-2 p-3">{body}</div>
-            {/*
+          return (
+            <li
+              key={row.id}
+              data-state={row.getIsSelected() ? "selected" : undefined}
+              className={cn(
+                "relative rounded-sm border border-border bg-surface",
+                "data-[state=selected]:border-accent",
+              )}
+            >
+              <div className="flex flex-col gap-2 p-3">
+                {selectionEnabled && row.getCanSelect() && (
+                  <Checkbox
+                    checked={row.getIsSelected()}
+                    onCheckedChange={(value) => {
+                      row.toggleSelected(!!value);
+                    }}
+                    aria-label={uiLabels.tableSelectRow}
+                    className="relative z-10"
+                  />
+                )}
+                {body}
+              </div>
+              {/*
               The whole card opens the row, but a cell may hold its own
               button or link, and one button cannot sit inside another. So
               the row's tap target is an overlay covering the card, and the
               cells lift their own controls above it with z-10.
             */}
-            {activate && (
-              <button
-                type="button"
-                onClick={activate}
-                aria-labelledby={title ? titleId : undefined}
-                className="absolute inset-0 rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-              />
-            )}
-          </li>
-        );
-      })}
-    </ul>
+              {activate && (
+                <button
+                  type="button"
+                  onClick={activate}
+                  aria-labelledby={title ? titleId : undefined}
+                  className="absolute inset-0 rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                />
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
 }

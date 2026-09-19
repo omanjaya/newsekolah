@@ -4,12 +4,12 @@
 
 **Expo (React Native) untuk iOS dan Android**, dalam monorepo yang sama dengan web. Aplikasi SwiftUI `nouschool` yang sudah ada menjadi referensi UX (alur login, scanner, linimasa) dan sumber DTO untuk memverifikasi kontrak API, bukan basis kode yang dilanjutkan.
 
-| Opsi | Kelebihan | Kekurangan | Keputusan |
-|---|---|---|---|
-| Expo / React Native | Satu codebase iOS + Android, berbagi tipe, schema, dan hook dengan web; OTA update; ekosistem kamera/push matang | Performa kamera sedikit di bawah VisionKit; butuh disiplin agar tidak "web di dalam app" | Dipilih |
-| Native SwiftUI + Kotlin Compose | Kualitas platform terbaik, VisionKit, widget | Dua codebase tambahan, tim kecil, tiga kali kerja tiap fitur | Ditolak untuk saat ini |
-| Flutter | Satu codebase, performa baik | Bahasa berbeda (Dart), tidak bisa berbagi kode dengan web TypeScript | Ditolak |
-| Capacitor membungkus PWA | Paling cepat | Ditolak review App Store bila hanya web; pengalaman scanner dan offline lemah | Ditolak |
+| Opsi                            | Kelebihan                                                                                                        | Kekurangan                                                                               | Keputusan              |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ---------------------- |
+| Expo / React Native             | Satu codebase iOS + Android, berbagi tipe, schema, dan hook dengan web; OTA update; ekosistem kamera/push matang | Performa kamera sedikit di bawah VisionKit; butuh disiplin agar tidak "web di dalam app" | Dipilih                |
+| Native SwiftUI + Kotlin Compose | Kualitas platform terbaik, VisionKit, widget                                                                     | Dua codebase tambahan, tim kecil, tiga kali kerja tiap fitur                             | Ditolak untuk saat ini |
+| Flutter                         | Satu codebase, performa baik                                                                                     | Bahasa berbeda (Dart), tidak bisa berbagi kode dengan web TypeScript                     | Ditolak                |
+| Capacitor membungkus PWA        | Paling cepat                                                                                                     | Ditolak review App Store bila hanya web; pengalaman scanner dan offline lemah            | Ditolak                |
 
 Jika suatu hari dibutuhkan fitur khusus (mis. Live Activity status izin keluar), Expo mendukung modul native lewat Expo Modules (Swift/Kotlin) tanpa meninggalkan RN.
 
@@ -50,14 +50,14 @@ apps/mobile/
 
 ## 4. Fitur v1 mobile per peran
 
-| Peran | Fitur |
-|---|---|
-| Siswa | Beranda hari ini, kalender presensi + detail sesi, scan QR masuk kelas / terlambat / tahap izin keluar, ajukan izin terencana dengan foto, QR gerbang, nilai dan bintang, perpustakaan saya, notifikasi, profil dan sesi aktif |
-| Guru | Jadwal hari ini dan pekan ini, presensi cepat (grid H/S/I/D/A dengan gesture), tampilkan QR kelas, jurnal kelas, permintaan pengganti, kelas binaan (wali), notifikasi |
-| Guru piket / BK / Kepala | Antrean persetujuan izin keluar, terlambat, izin terencana; SP; konseling (ringkasan) |
-| Keamanan | Scan gerbang, riwayat hari ini |
-| Pustakawan | Sirkulasi berbasis scan, opname beruntun, kunjungan |
-| Orang tua (v1.1) | Presensi anak, izin, pengumuman, nilai bila diaktifkan sekolah |
+| Peran                    | Fitur                                                                                                                                                                                                                          |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Siswa                    | Beranda hari ini, kalender presensi + detail sesi, scan QR masuk kelas / terlambat / tahap izin keluar, ajukan izin terencana dengan foto, QR gerbang, nilai dan bintang, perpustakaan saya, notifikasi, profil dan sesi aktif |
+| Guru                     | Jadwal hari ini dan pekan ini, presensi cepat (grid H/S/I/D/A dengan gesture), tampilkan QR kelas, jurnal kelas, permintaan pengganti, kelas binaan (wali), notifikasi                                                         |
+| Guru piket / BK / Kepala | Antrean persetujuan izin keluar, terlambat, izin terencana; SP; konseling (ringkasan)                                                                                                                                          |
+| Keamanan                 | Scan gerbang, riwayat hari ini                                                                                                                                                                                                 |
+| Pustakawan               | Sirkulasi berbasis scan, opname beruntun, kunjungan                                                                                                                                                                            |
+| Orang tua (v1.1)         | Presensi anak, izin, pengumuman, nilai bila diaktifkan sekolah                                                                                                                                                                 |
 
 ## 5. Rilis
 

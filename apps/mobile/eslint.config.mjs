@@ -90,13 +90,7 @@ export default tseslint.config(
   // Plain Node CommonJS config/setup scripts: no type-aware linting, no
   // React rules, just enough to keep them honest (still no emoji).
   {
-    files: [
-      "*.config.js",
-      "*.config.mjs",
-      "babel.config.js",
-      "metro.config.js",
-      "jest.setup.js",
-    ],
+    files: ["*.config.js", "*.config.mjs", "babel.config.js", "metro.config.js", "jest.setup.js"],
     languageOptions: {
       globals: {
         module: "writable",

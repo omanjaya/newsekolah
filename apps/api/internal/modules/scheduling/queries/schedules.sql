@@ -8,7 +8,7 @@ insert into schedules (
 returning *;
 
 -- name: GetScheduleByID :one
-select * from schedules where tenant_id = $1 and id = $2;
+select * from schedules where tenant_id = $1 and id = $2 for update;
 
 -- name: UpdateSchedule :one
 update schedules set

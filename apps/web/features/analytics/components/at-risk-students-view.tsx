@@ -3,18 +3,20 @@
 import { ApiError } from "@newsekolah/api-client";
 import type { Locale } from "@newsekolah/i18n";
 import { formatDateTime } from "@newsekolah/i18n";
-import { Alert, DataTable, EmptyState, PageHeader, Skeleton } from "@newsekolah/ui";
+import { Alert, Button, DataTable, EmptyState, PageHeader, Skeleton } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { ShieldAlert } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { useCan } from "../../../lib/session/session-provider";
 import { useClassesQuery, useDirectoryQuery, useLookup } from "../../reference/api";
 import { type StudentRisk, useAtRiskStudentsQuery } from "../api";
 
+import { PolicyDialog } from "./policy-dialog";
 import { RiskLevelBadge } from "./risk-level-badge";
 
 /**
@@ -25,6 +27,8 @@ import { RiskLevelBadge } from "./risk-level-badge";
  */
 export function AtRiskStudentsView(): ReactElement {
   const t = useTranslations("app.analytics.list");
+  const canManage = useCan("manage_early_warning_rules");
+  const [policyOpen, setPolicyOpen] = useState(false);
   const locale = useLocale() as Locale;
   const router = useRouter();
   const apiErrorMessage = useApiErrorMessage();
@@ -90,7 +94,23 @@ export function AtRiskStudentsView(): ReactElement {
       error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN");
     return (
       <div className="p-4 md:p-6">
-        <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
+        <PageHeader
+          eyebrow={t("eyebrow")}
+          title={t("title")}
+          actions={
+            canManage && (
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setPolicyOpen(true);
+                }}
+              >
+                {t("policy")}
+              </Button>
+            )
+          }
+        />
+        {canManage && policyOpen && <PolicyDialog open={policyOpen} onOpenChange={setPolicyOpen} />}
         <Alert variant="warning" title={message} className="mt-4" />
       </div>
     );
@@ -98,9 +118,27 @@ export function AtRiskStudentsView(): ReactElement {
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
-      <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
+      <PageHeader
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+        actions={
+          canManage && (
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setPolicyOpen(true);
+              }}
+            >
+              {t("policy")}
+            </Button>
+          )
+        }
+      />
+      {canManage && policyOpen && <PolicyDialog open={policyOpen} onOpenChange={setPolicyOpen} />}
       <p className="text-[13px] text-fg-muted">{t("description")}</p>
       <DataTable
+        stateKey="features/analytics/components/at-risk-students-view:1"
+        mode="local"
         data={rows}
         columns={columns}
         rowCount={rows.length}
@@ -109,7 +147,6 @@ export function AtRiskStudentsView(): ReactElement {
         sorting={[]}
         onSortingChange={() => undefined}
         globalFilter=""
-        onGlobalFilterChange={() => undefined}
         getRowId={(item) => item.student_user_id}
         onRowActivate={(item) => {
           router.push(`/analytics/${item.student_user_id}`);

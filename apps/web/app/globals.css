@@ -24,3 +24,46 @@ body {
   top: var(--space-2);
   left: var(--space-2);
 }
+
+/*
+ * Tenant accent, resolved per theme.
+ *
+ * TenantProvider writes `--tenant-accent` (a readable light-theme variant) and `--tenant-accent-dark` (derived by
+ * lib/tenant/accent.ts to clear 4.5:1 on the dark surface). These rules
+ * choose between them, mirroring the selectors the token package uses for
+ * every other themed value.
+ *
+ * The doubled `:root:root` is deliberate. The token package sets
+ * `--color-accent` from `:root:not([data-theme="light"])`, which outranks
+ * the obvious `html:not(...)`, and import order alone is too fragile to
+ * rely on once Next.js splits the CSS into chunks. Repeating the pseudo
+ * class raises specificity enough to win outright, in both themes.
+ *
+ * Defaults live on the variables themselves, so a tenant without branding
+ * (or any paint before branding arrives) still renders DESIGN.md's colours.
+ */
+:root {
+  --tenant-accent: #1f3a5f;
+  --tenant-accent-dark: #62758f;
+  --tenant-accent-fg: #ffffff;
+  --tenant-accent-dark-fg: #ffffff;
+  --shell-sidebar-width: 15rem;
+  --shell-mobile-tab-offset: calc(4rem + env(safe-area-inset-bottom));
+}
+
+:root:root {
+  --color-accent: var(--tenant-accent);
+  --color-accent-fg: var(--tenant-accent-fg);
+}
+
+:root:root[data-theme="dark"] {
+  --color-accent: var(--tenant-accent-dark);
+  --color-accent-fg: var(--tenant-accent-dark-fg);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:root:not([data-theme="light"]) {
+    --color-accent: var(--tenant-accent-dark);
+    --color-accent-fg: var(--tenant-accent-dark-fg);
+  }
+}

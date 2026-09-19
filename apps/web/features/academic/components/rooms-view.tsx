@@ -10,7 +10,6 @@ import {
   EmptyState,
   IconButton,
   Input,
-  PageHeader,
   useToast,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -21,6 +20,7 @@ import { useMemo, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
+import { useRememberedViewState } from "../../../lib/view-state/view-state-provider";
 import {
   type Room,
   useCreateRoomMutation,
@@ -34,7 +34,7 @@ export function RoomsView(): ReactElement {
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const canManage = useCan("manage_master_data");
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useRememberedViewState("rooms-search", "");
   const { data, isLoading } = useRoomsQuery(search);
   const create = useCreateRoomMutation();
   const update = useUpdateRoomMutation();
@@ -117,25 +117,23 @@ export function RoomsView(): ReactElement {
   );
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
-      <PageHeader
-        eyebrow={t("eyebrow")}
-        title={t("title")}
-        actions={
-          canManage && (
-            <Button
-              size="sm"
-              icon={<Plus />}
-              onClick={() => {
-                open("new");
-              }}
-            >
-              {t("add")}
-            </Button>
-          )
-        }
-      />
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-[18px] font-medium text-fg">{t("title")}</h2>
+        {canManage && (
+          <Button
+            size="sm"
+            icon={<Plus />}
+            onClick={() => {
+              open("new");
+            }}
+          >
+            {t("add")}
+          </Button>
+        )}
+      </div>
       <DataTable
+        stateKey="features/academic/components/rooms-view:1"
         data={rows}
         columns={columns}
         rowCount={rows.length}

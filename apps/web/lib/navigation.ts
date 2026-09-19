@@ -19,9 +19,12 @@ import {
 } from "lucide-react";
 
 import { academicNavItems } from "./navigation-academic";
+import { NAV_GROUP as GROUP } from "./navigation-groups";
 import { libraryNavItems } from "./navigation-library";
 import { moduleNavItems } from "./navigation-modules";
 import { settingsNavItems } from "./navigation-settings";
+
+export { navGroupIcons } from "./navigation-groups";
 
 /** Profile kinds a nav item can be restricted to, mirroring `Me["profile_kind"]`. */
 export type NavProfileKind = "student" | "teacher" | "staff" | "parent";
@@ -60,38 +63,15 @@ export interface NavItem {
    * by the sidebar. Omitted items render flat above the groups.
    */
   group?: string;
+  sidebarPlacement?: "main" | "footer" | "hidden";
+  accountMenu?: boolean;
 }
-
-const GROUP = {
-  academic: "nav.academic.label",
-  discipline: "nav.discipline.label",
-  library: "nav.library.label",
-  activities: "app.activities.navGroupLabel",
-  visitors: "nav.visitors.label",
-  permits: "nav.permits.label",
-  /**
-   * Not a shared `nav.*` key: billing is this branch's only feature so
-   * far to need a new sidebar group, and packages/i18n/messages is a
-   * shared, generated file other modules touch concurrently, so this
-   * group's label lives in the feature's own catalog instead
-   * (registered under "app.billing", reachable by the sidebar's
-   * unnamespaced `t(group)` the same as every other group key).
-   */
-  finance: "app.billing.navGroup",
-  communication: "nav.communication.label",
-  schoolData: "nav.schoolData.label",
-  settings: "nav.settings.label",
-  platform: "nav.platform.label",
-  mentoring: "app.mentoring.navGroupLabel",
-  supervision: "app.supervision.navGroupLabel",
-} as const;
 
 /**
  * Single source of truth for the sidebar, the mobile tab bar, and the
  * command palette (docs/03-layered-architecture.md section 3, docs/07-ui-ux.md
- * section 2). Only lists items that resolve to a real page (antislop R-24:
- * every item needs a real destination); groups follow the docs/07
- * information architecture and appear once their first page ships.
+ * section 2). Every item resolves to a real page; groups follow the
+ * documented information architecture.
  */
 export const navigation: NavItem[] = [
   { key: "dashboard", labelKey: "nav.home", href: "/dashboard", icon: Home, showInTabBar: true },
@@ -143,7 +123,7 @@ export const navigation: NavItem[] = [
     href: "/staff-attendance",
     icon: Fingerprint,
     permission: "view_staff_attendance",
-    group: GROUP.academic,
+    group: GROUP.staff,
   },
   {
     key: "journal",
@@ -191,7 +171,7 @@ export const navigation: NavItem[] = [
     href: "/discipline/violations",
     icon: domainIcons.violation,
     permission: "view_discipline",
-    group: GROUP.discipline,
+    group: GROUP.students,
   },
   {
     key: "my-discipline",
@@ -199,7 +179,7 @@ export const navigation: NavItem[] = [
     href: "/my-discipline",
     icon: domainIcons.violation,
     profileKinds: ["student"],
-    group: GROUP.discipline,
+    group: GROUP.students,
   },
   {
     key: "warning-letters",
@@ -207,7 +187,7 @@ export const navigation: NavItem[] = [
     href: "/discipline/warning-letters",
     icon: domainIcons.violation,
     permission: "view_discipline",
-    group: GROUP.discipline,
+    group: GROUP.students,
   },
   {
     key: "counseling",
@@ -215,7 +195,7 @@ export const navigation: NavItem[] = [
     href: "/discipline/counseling",
     icon: domainIcons.violation,
     permission: "manage_counseling",
-    group: GROUP.discipline,
+    group: GROUP.students,
   },
   {
     key: "analytics",
@@ -223,7 +203,7 @@ export const navigation: NavItem[] = [
     href: "/analytics",
     icon: ShieldAlert,
     permission: "view_early_warning",
-    group: GROUP.discipline,
+    group: GROUP.students,
   },
   {
     key: "leave-requests",
@@ -231,7 +211,7 @@ export const navigation: NavItem[] = [
     tabLabelKey: "nav.compact.permits",
     href: "/leave-requests",
     icon: ClipboardList,
-    group: GROUP.permits,
+    group: GROUP.students,
     showInTabBar: true,
   },
   {
@@ -239,14 +219,14 @@ export const navigation: NavItem[] = [
     labelKey: "nav.permits.items.exitPermit",
     href: "/exit-permits",
     icon: domainIcons.exitPermit,
-    group: GROUP.permits,
+    group: GROUP.students,
   },
   {
     key: "late-arrivals",
     labelKey: "nav.permits.items.late",
     href: "/late-arrivals",
     icon: domainIcons.late,
-    group: GROUP.permits,
+    group: GROUP.students,
   },
   {
     key: "duty",
@@ -254,7 +234,7 @@ export const navigation: NavItem[] = [
     href: "/duty",
     icon: domainIcons.qr,
     permission: "issue_scan_tokens",
-    group: GROUP.permits,
+    group: GROUP.students,
   },
 
   {
@@ -262,14 +242,13 @@ export const navigation: NavItem[] = [
     labelKey: "nav.communication.items.announcements",
     href: "/announcements",
     icon: domainIcons.announcement,
-    group: GROUP.communication,
   },
   {
     key: "notifications",
     labelKey: "nav.communication.items.notifications",
     href: "/notifications",
     icon: Bell,
-    group: GROUP.communication,
+    sidebarPlacement: "hidden",
   },
 
   {
@@ -278,39 +257,31 @@ export const navigation: NavItem[] = [
     href: "/school/classes",
     icon: domainIcons.users,
     permission: "view_academic_data",
-    group: GROUP.schoolData,
+    group: GROUP.masterData,
   },
   {
     key: "school-users",
-    labelKey: "nav.schoolData.items.teachersAndStaff",
+    labelKey: "app.navigation.users",
     href: "/school/users",
     icon: UserRound,
     permission: "view_users",
-    group: GROUP.schoolData,
+    group: GROUP.masterData,
   },
   {
-    key: "school-subjects",
-    labelKey: "nav.schoolData.items.subjects",
-    href: "/school/subjects",
+    key: "school-learning",
+    labelKey: "app.academic.learning.title",
+    href: "/school/learning",
     icon: domainIcons.grades,
     permission: "manage_master_data",
-    group: GROUP.schoolData,
+    group: GROUP.masterData,
   },
   {
-    key: "school-periods",
-    labelKey: "nav.schoolData.items.periods",
-    href: "/school/periods",
-    icon: domainIcons.schedule,
-    permission: "manage_master_data",
-    group: GROUP.schoolData,
-  },
-  {
-    key: "school-duties",
-    labelKey: "nav.schoolData.items.assignments",
-    href: "/school/duties",
+    key: "school-assignments",
+    labelKey: "app.academic.assignments.title",
+    href: "/school/assignments",
     icon: ShieldCheck,
     permission: "manage_master_data",
-    group: GROUP.schoolData,
+    group: GROUP.masterData,
   },
   {
     key: "school-calendar",
@@ -318,7 +289,7 @@ export const navigation: NavItem[] = [
     href: "/school/calendar",
     icon: CalendarDays,
     permission: "view_academic_data",
-    group: GROUP.schoolData,
+    group: GROUP.academic,
   },
   {
     key: "school-promotion",
@@ -326,7 +297,7 @@ export const navigation: NavItem[] = [
     href: "/school/promotion",
     icon: GraduationCap,
     permission: "manage_enrollments",
-    group: GROUP.schoolData,
+    group: GROUP.academic,
   },
 
   ...academicNavItems,

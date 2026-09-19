@@ -63,14 +63,15 @@ modules/permits/
 
 Aturan ketergantungan (ditegakkan `go vet` + linter `depguard`):
 
-| Lapisan | Boleh import | Tidak boleh import |
-|---|---|---|
-| domain | stdlib, `platform/clock` | pgx, chi, gen/*, modul lain |
-| service | domain, interface repository sendiri, `platform/events`, `platform/jobs`, `platform/authz` | chi, gen/api, repository modul lain secara langsung |
-| repository | domain, gen/db, `platform/database` | chi, service |
-| transport | service, gen/api, `platform/httpx` | gen/db, repository |
+| Lapisan    | Boleh import                                                                               | Tidak boleh import                                  |
+| ---------- | ------------------------------------------------------------------------------------------ | --------------------------------------------------- |
+| domain     | stdlib, `platform/clock`                                                                   | pgx, chi, gen/*, modul lain                         |
+| service    | domain, interface repository sendiri, `platform/events`, `platform/jobs`, `platform/authz` | chi, gen/api, repository modul lain secara langsung |
+| repository | domain, gen/db, `platform/database`                                                        | chi, service                                        |
+| transport  | service, gen/api, `platform/httpx`                                                         | gen/db, repository                                  |
 
 Komunikasi antar modul hanya lewat dua cara:
+
 1. **Interface yang diekspor modul** (mis. `academic.ClassReader`), disuntik saat wiring. Contoh: modul permits membutuhkan wali kelas dari modul academic.
 2. **Domain event** (mis. `permits.LeaveRequestIssued`) yang ditangani modul lain (attendance menyinkronkan status izin). Handler event berjalan dalam transaksi yang sama bila di-subscribe in-process, atau lewat River job bila boleh asinkron.
 
@@ -115,6 +116,7 @@ apps/web/
 ```
 
 Aturan:
+
 - Halaman di `app/` tipis: memuat data awal (server component bila publik), merender komponen fitur.
 - Semua tabel operasional memakai `DataTable` dari `packages/ui` dalam mode server-side.
 - Tidak ada `fetch` langsung di komponen; selalu lewat hook di `features/*/api.ts`.

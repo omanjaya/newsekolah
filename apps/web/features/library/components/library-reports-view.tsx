@@ -16,8 +16,9 @@ import {
 import { Download } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useState } from "react";
 
+import { useDateFilter } from "../../../lib/hooks/use-date-filter";
+import { useUrlState } from "../../../lib/hooks/use-url-state";
 import {
   downloadLoansReportXlsx,
   downloadMonthlyLibraryReportPdf,
@@ -65,10 +66,22 @@ function monthIso(): string {
 
 export function LibraryReportsView(): ReactElement {
   const t = useTranslations("app.library.reports");
-  const [tab, setTab] = useState<ReportTab>("loans");
-  const [from, setFrom] = useState(firstOfMonthIso());
-  const [to, setTo] = useState(todayIso());
-  const [month, setMonth] = useState(monthIso());
+  const [tab, setTab] = useUrlState<ReportTab>(
+    "tab",
+    [
+      "loans",
+      "overdueMembers",
+      "mostBorrowed",
+      "summary",
+      "visits",
+      "members",
+      "accessionRegister",
+    ],
+    "loans",
+  );
+  const [from, setFrom] = useDateFilter("from", firstOfMonthIso());
+  const [to, setTo] = useDateFilter("to", todayIso());
+  const [month, setMonth] = useDateFilter("month", monthIso(), true);
 
   const exportXlsx = {
     loans: () => downloadLoansReportXlsx(from, to),

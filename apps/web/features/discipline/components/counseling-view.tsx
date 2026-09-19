@@ -24,6 +24,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import { useDirectoryQuery, useLookup } from "../../reference/api";
@@ -48,7 +49,7 @@ export function CounselingView(): ReactElement {
   const [editing, setEditing] = useState<Counseling | "new" | null>(null);
   const [viewingId, setViewingId] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Counseling | null>(null);
-  const [tab, setTab] = useState("mine");
+  const [tab, setTab] = useUrlState<string>("tab", ["mine", "bkTeam"], "mine");
 
   const items = data?.data ?? [];
 
@@ -105,6 +106,8 @@ export function CounselingView(): ReactElement {
         </TabsList>
         <TabsContent value="mine" className="pt-4">
           <DataTable
+            stateKey="features/discipline/components/counseling-view:1"
+            mode="local"
             data={items}
             columns={columns}
             rowCount={items.length}
@@ -113,7 +116,6 @@ export function CounselingView(): ReactElement {
             sorting={[]}
             onSortingChange={() => undefined}
             globalFilter=""
-            onGlobalFilterChange={() => undefined}
             isLoading={isLoading}
             getRowId={(item) => item.id}
             onRowActivate={(item) => {

@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
+import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useCan } from "../../../lib/session/session-provider";
 import { useClassesQuery, useSubjectsQuery } from "../../reference/api";
 
@@ -27,14 +28,37 @@ export function GradingView(): ReactElement {
 
   const classes = useClassesQuery();
   const subjects = useSubjectsQuery();
-  const [classId, setClassId] = useState("");
-  const [subjectId, setSubjectId] = useState("");
-  const [tab, setTab] = useState<Tab>("gradebook");
+  const [classId, setClassId] = useUrlState<string>(
+    "class",
+    ["", ...(classes.data?.data ?? []).map((item) => item.id)],
+    "",
+  );
+  const [subjectId, setSubjectId] = useUrlState<string>(
+    "subject",
+    ["", ...(subjects.data?.data ?? []).map((item) => item.id)],
+    "",
+  );
+  const [tab, setTab] = useUrlState<Tab>(
+    "tab",
+    [
+      "gradebook",
+      ...(canManageGrades ? (["tp", "erapor"] as const) : []),
+      ...(canManageSettings || canManageGrades ? (["settings"] as const) : []),
+    ],
+    "gradebook",
+  );
+  const [pendingChanges, setPendingChanges] = useState(0);
 
   const classOptions = (classes.data?.data ?? []).map((c) => ({ value: c.id, label: c.name }));
   const subjectOptions = (subjects.data?.data ?? []).map((s) => ({ value: s.id, label: s.name }));
   const effectiveClassId = classId || (classes.data?.data[0]?.id ?? "");
   const effectiveSubjectId = subjectId || (subjects.data?.data[0]?.id ?? "");
+
+  function changeScope(change: () => void) {
+    if (pendingChanges > 0 && !window.confirm(t("table.discardChanges"))) return;
+    setPendingChanges(0);
+    change();
+  }
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
@@ -44,7 +68,11 @@ export function GradingView(): ReactElement {
         <Select
           options={classOptions}
           value={effectiveClassId}
-          onValueChange={setClassId}
+          onValueChange={(value) => {
+            changeScope(() => {
+              setClassId(value);
+            });
+          }}
           placeholder={t("pickClass")}
           aria-label={t("pickClass")}
           className="w-56"
@@ -52,7 +80,11 @@ export function GradingView(): ReactElement {
         <Select
           options={subjectOptions}
           value={effectiveSubjectId}
-          onValueChange={setSubjectId}
+          onValueChange={(value) => {
+            changeScope(() => {
+              setSubjectId(value);
+            });
+          }}
           placeholder={t("pickSubject")}
           aria-label={t("pickSubject")}
           className="w-56"
@@ -61,7 +93,9 @@ export function GradingView(): ReactElement {
           <Tabs
             value={tab}
             onValueChange={(value) => {
-              setTab(value as Tab);
+              changeScope(() => {
+                setTab(value as Tab);
+              });
             }}
           >
             <TabsList>
@@ -92,6 +126,7 @@ export function GradingView(): ReactElement {
           classId={effectiveClassId}
           subjectId={effectiveSubjectId}
           canManage={canManageGrades}
+          onPendingChangesChange={setPendingChanges}
         />
       ) : (
         <p className="text-[13px] text-fg-muted">{t("pickBoth")}</p>

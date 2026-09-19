@@ -5,13 +5,19 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
+import { useUrlState } from "../../../lib/hooks/use-url-state";
+
 import { APIKeysPanel } from "./api-keys-panel";
 import { WebhookDeliveriesPanel } from "./webhook-deliveries-panel";
 import { WebhookEndpointsPanel } from "./webhook-endpoints-panel";
 
 export function IntegrationsView(): ReactElement {
   const t = useTranslations("app.integrations");
-  const [tab, setTab] = useState("apiKeys");
+  const [tab, setTab] = useUrlState<string>(
+    "tab",
+    ["apiKeys", "webhooks", "deliveries"],
+    "apiKeys",
+  );
   const [deliveryEndpointId, setDeliveryEndpointId] = useState("");
 
   return (

@@ -197,6 +197,8 @@ export function SchedulesView(): ReactElement {
       </div>
 
       <DataTable
+        stateKey="features/reports/components/schedules-view:1"
+        mode="local"
         data={items}
         columns={columns}
         rowCount={items.length}
@@ -205,7 +207,6 @@ export function SchedulesView(): ReactElement {
         sorting={[]}
         onSortingChange={() => undefined}
         globalFilter=""
-        onGlobalFilterChange={() => undefined}
         isLoading={isLoading}
         getRowId={(item) => item.id}
         emptyState={

@@ -3,8 +3,8 @@
 import { PageHeader, Tabs, TabsContent, TabsList, TabsTrigger } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useState } from "react";
 
+import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useCan } from "../../../lib/session/session-provider";
 
 import { ArrearsReportView } from "./arrears-report-view";
@@ -15,7 +15,11 @@ import { PaymentDeskView } from "./payment-desk-view";
 export function BillingView(): ReactElement {
   const t = useTranslations("app.billing");
   const canGenerate = useCan("generate_bills");
-  const [tab, setTab] = useState("desk");
+  const [tab, setTab] = useUrlState<string>(
+    "tab",
+    ["desk", "feeTypes", "arrears", ...(canGenerate ? ["generate"] : [])],
+    "desk",
+  );
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">

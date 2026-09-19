@@ -1,0 +1,44 @@
+{
+  "tasks": {
+    "attendance": {
+      "title": "Today's attendance",
+      "description": "Record attendance for your teaching sessions.",
+      "action": "Open attendance"
+    },
+    "circulation": {
+      "title": "Circulation desk",
+      "description": "Handle book loans and returns.",
+      "action": "Open circulation desk"
+    },
+    "duty": {
+      "title": "Today's duty",
+      "description": "Open the scanner for duties assigned to you.",
+      "action": "Open scanner"
+    },
+    "children": {
+      "title": "My children",
+      "description": "View your children's attendance, grades, and information.",
+      "action": "Open children"
+    },
+    "grades": {
+      "title": "My grades",
+      "description": "View grades your teacher has published.",
+      "action": "Open grades"
+    },
+    "schoolData": {
+      "title": "School data",
+      "description": "Manage classes and students for today's work.",
+      "action": "Open school data"
+    }
+  },
+  "parentSummary": {
+    "title": "Your child's status today",
+    "open": "Open children",
+    "emptyTitle": "No child linked yet",
+    "emptyBody": "Contact the school office to link your account to a student.",
+    "today": "Status {status} · {submitted} of {expected} sessions recorded",
+    "noAttendanceToday": "No attendance has been recorded today.",
+    "loadError": "The attendance status could not be loaded.",
+    "retry": "Try again"
+  }
+}

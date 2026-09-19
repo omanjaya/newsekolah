@@ -12,11 +12,9 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  EmptyState,
   IconButton,
   PageHeader,
   Select,
-  domainIcons,
   useToast,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -29,6 +27,7 @@ import { useMemo, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan, useSession } from "../../../lib/session/session-provider";
+import { useRememberedViewState } from "../../../lib/view-state/view-state-provider";
 import {
   type AdminUser,
   type ProfileKind,
@@ -41,6 +40,8 @@ import { useImpersonateUserMutation } from "../duties-api";
 import { GuardiansDialog } from "./guardians-dialog";
 import { ManageChildrenDialog } from "./manage-children-dialog";
 import { UserForm } from "./user-form";
+import { UsersCursorPagination } from "./users-cursor-pagination";
+import { UsersTableEmptyState } from "./users-table-empty-state";
 
 const KINDS: ProfileKind[] = ["teacher", "staff", "student", "parent"];
 
@@ -58,12 +59,15 @@ export function UsersView(): ReactElement {
   const impersonate = useImpersonateUserMutation();
   const [impersonating, setImpersonating] = useState<AdminUser | null>(null);
 
-  const [search, setSearch] = useState("");
-  const [kind, setKind] = useState<ProfileKind | "">("");
-  const [includeArchived, setIncludeArchived] = useState(false);
+  const [search, setSearch] = useRememberedViewState("users-search", "");
+  const [kind, setKind] = useRememberedViewState<ProfileKind | "">("users-kind", "");
+  const [includeArchived, setIncludeArchived] = useRememberedViewState(
+    "users-include-archived",
+    false,
+  );
   const [cursors, setCursors] = useState<string[]>([""]);
   const cursor = cursors[cursors.length - 1] ?? "";
-  const { data, isLoading } = useUsersQuery({
+  const { data, isError, isLoading, refetch } = useUsersQuery({
     q: search || undefined,
     profile_kind: kind || undefined,
     include_archived: includeArchived,
@@ -270,6 +274,8 @@ export function UsersView(): ReactElement {
         </Button>
       </div>
       <DataTable
+        stateKey="features/school/components/users-view:1"
+        mode="cursor"
         data={items}
         columns={columns}
         rowCount={items.length}
@@ -285,36 +291,32 @@ export function UsersView(): ReactElement {
         isLoading={isLoading}
         getRowId={(u) => u.id}
         emptyState={
-          <EmptyState
-            icon={<domainIcons.users aria-hidden="true" />}
-            title={t("emptyTitle")}
-            description={t("emptyBody")}
+          <UsersTableEmptyState
+            isError={isError}
+            emptyTitle={t("emptyTitle")}
+            emptyBody={t("emptyBody")}
+            loadErrorTitle={t("loadErrorTitle")}
+            loadErrorBody={t("loadErrorBody")}
+            retryLabel={t("retry")}
+            onRetry={() => {
+              void refetch();
+            }}
           />
         }
       />
-      <div className="flex justify-end gap-2">
-        <Button
-          variant="secondary"
-          size="sm"
-          disabled={cursors.length <= 1}
-          onClick={() => {
-            setCursors((p) => p.slice(0, -1));
-          }}
-        >
-          {t("pagePrev")}
-        </Button>
-        <Button
-          variant="secondary"
-          size="sm"
-          disabled={!data?.next_cursor}
-          onClick={() => {
-            const next = data?.next_cursor;
-            if (next) setCursors((p) => [...p, next]);
-          }}
-        >
-          {t("pageNext")}
-        </Button>
-      </div>
+      <UsersCursorPagination
+        hasPrevious={cursors.length > 1}
+        hasNext={Boolean(data?.next_cursor)}
+        previousLabel={t("pagePrev")}
+        nextLabel={t("pageNext")}
+        onPrevious={() => {
+          setCursors((previous) => previous.slice(0, -1));
+        }}
+        onNext={() => {
+          const next = data?.next_cursor;
+          if (next) setCursors((previous) => [...previous, next]);
+        }}
+      />
 
       <Dialog
         open={editing !== null}

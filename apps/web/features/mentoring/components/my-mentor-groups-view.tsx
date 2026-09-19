@@ -26,6 +26,8 @@ export function MyMentorGroupsView(): ReactElement {
     <div className="flex flex-col gap-6 p-4 md:p-6">
       <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
       <DataTable
+        stateKey="features/mentoring/components/my-mentor-groups-view:1"
+        mode="local"
         data={items}
         columns={columns}
         rowCount={items.length}
@@ -34,7 +36,6 @@ export function MyMentorGroupsView(): ReactElement {
         sorting={[]}
         onSortingChange={() => undefined}
         globalFilter=""
-        onGlobalFilterChange={() => undefined}
         isLoading={isLoading}
         getRowId={(item) => item.id}
         onRowActivate={(item) => {

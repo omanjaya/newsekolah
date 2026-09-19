@@ -3,7 +3,8 @@
 import { PageHeader, Tabs, TabsList, TabsTrigger } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useState } from "react";
+
+import { useUrlState } from "../../../lib/hooks/use-url-state";
 
 import { ClassLoanBorrowPanel } from "./class-loan-borrow-panel";
 import { ClassLoanReturnPanel } from "./class-loan-return-panel";
@@ -16,7 +17,7 @@ type Tab = "borrow" | "returns";
  */
 export function ClassLoansView(): ReactElement {
   const t = useTranslations("app.library.classLoans");
-  const [tab, setTab] = useState<Tab>("borrow");
+  const [tab, setTab] = useUrlState<Tab>("tab", ["borrow", "returns"], "borrow");
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">

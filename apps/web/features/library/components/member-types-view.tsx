@@ -142,6 +142,8 @@ export function MemberTypesView(): ReactElement {
       />
 
       <DataTable
+        stateKey="features/library/components/member-types-view:1"
+        mode="local"
         data={items}
         columns={columns}
         rowCount={items.length}
@@ -150,7 +152,6 @@ export function MemberTypesView(): ReactElement {
         sorting={[]}
         onSortingChange={() => undefined}
         globalFilter=""
-        onGlobalFilterChange={() => undefined}
         isLoading={isLoading}
         getRowId={(item) => item.id}
         emptyState={

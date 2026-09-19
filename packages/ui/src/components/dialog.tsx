@@ -4,6 +4,8 @@ import { forwardRef, type ComponentPropsWithoutRef, type ReactNode } from "react
 
 import { cn } from "../utils/cn.js";
 
+import { useUiLabels } from "./ui-labels.js";
+
 export const Dialog = DialogPrimitive.Root;
 export const DialogTrigger = DialogPrimitive.Trigger;
 export const DialogClose = DialogPrimitive.Close;
@@ -31,13 +33,17 @@ export interface DialogContentProps extends ComponentPropsWithoutRef<
   description?: string;
   /** Set when the title/description are rendered elsewhere and only needed for a11y. */
   hideHeader?: boolean;
+  /** Localized label for the close control. Defaults to Indonesian for shared callers. */
+  closeLabel?: string;
   footer?: ReactNode;
 }
 
 export const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(function DialogContent(
-  { className, title, description, hideHeader, footer, children, ...props },
+  { className, title, description, hideHeader, closeLabel, footer, children, ...props },
   ref,
 ) {
+  const labels = useUiLabels();
+  const resolvedCloseLabel = closeLabel ?? labels.dialogClose;
   return (
     <DialogPrimitive.Portal>
       <DialogOverlay />
@@ -52,8 +58,8 @@ export const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(func
           // off the top and bottom with no way to reach either end, since
           // the dialog is centred rather than anchored. Cap it and let its
           // own body scroll.
-          "max-h-[calc(100dvh-2rem)] overflow-y-auto",
-          "rounded-sm border border-border bg-surface p-6 shadow-(--shadow-float)",
+          "flex max-h-[calc(100dvh-2rem)] flex-col overflow-hidden",
+          "rounded-sm border border-border bg-surface shadow-(--shadow-float)",
           "data-[state=open]:animate-dialog-in data-[state=closed]:animate-dialog-out",
           className,
         )}
@@ -62,7 +68,7 @@ export const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(func
         {hideHeader ? (
           <DialogPrimitive.Title className="sr-only">{title}</DialogPrimitive.Title>
         ) : (
-          <div className="mb-4 flex items-start justify-between gap-4">
+          <div className="flex shrink-0 items-start justify-between gap-4 px-4 py-4 md:px-6">
             <div className="flex flex-col gap-1">
               <DialogPrimitive.Title className="text-[16px] font-medium text-fg">
                 {title}
@@ -74,15 +80,21 @@ export const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(func
               )}
             </div>
             <DialogPrimitive.Close
-              aria-label="Tutup dialog"
-              className="rounded-xs p-1 text-fg-muted hover:bg-bg"
+              aria-label={resolvedCloseLabel}
+              className="flex min-h-11 min-w-11 items-center justify-center rounded-xs text-fg-muted hover:bg-bg"
             >
               <X className="size-4" aria-hidden="true" />
             </DialogPrimitive.Close>
           </div>
         )}
-        {children}
-        {footer && <div className="mt-6 flex justify-end gap-2">{footer}</div>}
+        <div className="min-h-0 overflow-y-auto overscroll-contain px-4 pb-4 md:px-6 md:pb-6">
+          {children}
+        </div>
+        {footer && (
+          <div className="flex shrink-0 justify-end gap-2 border-t border-border px-4 py-4 md:px-6">
+            {footer}
+          </div>
+        )}
       </DialogPrimitive.Content>
     </DialogPrimitive.Portal>
   );

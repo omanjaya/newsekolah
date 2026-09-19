@@ -1,9 +1,10 @@
 "use client";
 
-import { PageHeader, Skeleton } from "@newsekolah/ui";
+import { PageHeader, Skeleton, Stat, StatGrid } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
+import { QueryError } from "../../../components/query-error";
 import { useLibraryDashboardQuery } from "../dashboard-api";
 
 import { DashboardActivityLists } from "./dashboard-activity-lists";
@@ -26,27 +27,30 @@ const STAT_KEYS = [
 /** The library module's landing page: today's counts, recent activity, and a 30-day trend. */
 export function LibraryDashboardView(): ReactElement {
   const t = useTranslations("app.library.dashboard");
-  const { data, isLoading } = useLibraryDashboardQuery();
+  const { data, isLoading, isError, refetch } = useLibraryDashboardQuery();
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
       <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
 
-      {isLoading || !data ? (
+      {isError && !data ? (
+        <QueryError retry={refetch} />
+      ) : isLoading || !data ? (
         <Skeleton className="h-32 w-full" aria-busy="true" />
       ) : (
-        <dl className="grid grid-cols-2 gap-4 rounded-sm border border-border bg-surface p-4 sm:grid-cols-4 lg:grid-cols-6">
+        <StatGrid className="rounded-sm border border-border bg-surface p-4 lg:grid-cols-6">
           {STAT_KEYS.map((key) => (
-            <div key={key} className="flex flex-col">
-              <dt className="text-[12px] text-fg-muted">{t(`stats.${key}`)}</dt>
-              <dd className="text-[20px] font-medium tabular-nums text-fg">
-                {key === "unpaid_fines_total"
+            <Stat
+              key={key}
+              label={t(`stats.${key}`)}
+              value={
+                key === "unpaid_fines_total"
                   ? t("currency", { amount: data.summary[key] })
-                  : data.summary[key]}
-              </dd>
-            </div>
+                  : data.summary[key]
+              }
+            />
           ))}
-        </dl>
+        </StatGrid>
       )}
 
       {!isLoading && data && (

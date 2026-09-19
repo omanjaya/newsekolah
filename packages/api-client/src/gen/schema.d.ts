@@ -9954,6 +9954,10 @@ export interface components {
             new_due_on: string;
         };
         LibraryOverdueLoanDetail: {
+            member_name: string;
+            member_no: string;
+            title: string;
+            barcode: string;
             loan: components["schemas"]["LibraryLoan"];
             class_name: string;
             guardian_phone: string;
@@ -11666,7 +11670,7 @@ export interface components {
                 "application/json": components["schemas"]["Error"];
             };
         };
-        /** @description The class or the teacher already has an overlapping schedule */
+        /** @description Schedule overlaps another lesson, the year is archived, or recorded attendance/substitution history prevents mutation */
         ScheduleConflict: {
             headers: {
                 [name: string]: unknown;
@@ -25478,6 +25482,7 @@ export interface operations {
                 content?: never;
             };
             400: components["responses"]["BadRequest"];
+            409: components["responses"]["ScheduleConflict"];
         };
     };
     listTeacherOptions: {
@@ -25533,7 +25538,10 @@ export interface operations {
     };
     updateSchedule: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description All rows of a merged block, including scheduleId. The operation is atomic. */
+                schedule_ids?: string[];
+            };
             header?: never;
             path: {
                 scheduleId: string;
@@ -25563,7 +25571,10 @@ export interface operations {
     };
     deleteSchedule: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description All rows of a merged block, including scheduleId. The operation is atomic. */
+                schedule_ids?: string[];
+            };
             header?: never;
             path: {
                 scheduleId: string;
@@ -25579,8 +25590,10 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["BadRequest"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["ScheduleConflict"];
         };
     };
     listSubstitutions: {

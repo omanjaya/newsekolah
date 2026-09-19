@@ -1,4 +1,5 @@
 export { DataTable, selectionColumn, type DataTableProps } from "./data-table.js";
+export { DataTableStateProvider, type DataTableLocalState } from "./data-table-state.js";
 export {
   DataTableToolbar,
   DEFAULT_TOOLBAR_LABELS,

@@ -58,14 +58,19 @@ export function AnnouncementsList({ limit }: { limit?: number }): React.JSX.Elem
             <View className="flex-row items-center gap-2">
               {item.is_pinned ? <Pin size={14} color="#1F3A5F" /> : null}
               <Text
-                className={cn("flex-1 text-base text-ink dark:text-ink-dark", !item.is_read && "font-medium")}
+                className={cn(
+                  "flex-1 text-base text-ink dark:text-ink-dark",
+                  !item.is_read && "font-medium",
+                )}
                 numberOfLines={expanded ? undefined : 1}
               >
                 {item.title}
               </Text>
             </View>
             {expanded ? (
-              <Text className="mt-2 text-sm text-ink/80 dark:text-ink-dark/80">{toText(item.body_html)}</Text>
+              <Text className="mt-2 text-sm text-ink/80 dark:text-ink-dark/80">
+                {toText(item.body_html)}
+              </Text>
             ) : null}
           </Pressable>
         );

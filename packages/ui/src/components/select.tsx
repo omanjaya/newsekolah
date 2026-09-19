@@ -21,18 +21,34 @@ export interface SelectProps {
   name?: string;
   id?: string;
   "aria-describedby"?: string;
+  "aria-label"?: string;
+  "aria-labelledby"?: string;
   className?: string;
 }
 
 /** A single-select dropdown. For multi-select or async search, use CommandPalette instead. */
 export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select(
-  { options, placeholder = "Pilih", invalid, className, ...props },
+  {
+    options,
+    placeholder = "Pilih",
+    invalid,
+    className,
+    id,
+    "aria-label": ariaLabel,
+    "aria-labelledby": ariaLabelledBy,
+    "aria-describedby": ariaDescribedBy,
+    ...props
+  },
   ref,
 ) {
   return (
     <SelectPrimitive.Root {...props}>
       <SelectPrimitive.Trigger
         ref={ref}
+        id={id}
+        aria-label={ariaLabel}
+        aria-labelledby={ariaLabelledBy}
+        aria-describedby={ariaDescribedBy}
         aria-invalid={invalid ?? undefined}
         className={cn(
           // Matches Input and Button: thumb-sized on a phone, compact once

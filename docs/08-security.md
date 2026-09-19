@@ -8,20 +8,20 @@ Aktor: siswa (paling banyak, paling kreatif), guru, staf, orang tua, operator se
 
 ## 2. Autentikasi
 
-| Kontrol | Ketentuan |
-|---|---|
-| Password | Argon2id (m=64MB, t=3, p=2), minimal 8 karakter, cek terhadap daftar bocor (k-anonymity HIBP) opsional |
-| Sesi | Access token JWT 15 menit (ES256, `kid` untuk rotasi kunci) + refresh token acak 256-bit, disimpan hash SHA-256 di tabel `sessions` dengan `device_id`, `user_agent`, `ip`, `last_seen_at` |
-| Rotasi refresh | Setiap refresh menerbitkan token baru dan mencabut yang lama; penggunaan ulang token lama mencabut seluruh keluarga sesi (deteksi pencurian) |
-| Penyimpanan web | Cookie `httpOnly; Secure; SameSite=Lax; Path=/api/v1/auth` untuk refresh, access token di memori saja. Tidak ada token di `localStorage` |
-| Penyimpanan mobile | `expo-secure-store` (Keychain / Keystore); biometrik hanya membuka SecureStore, bukan skema "token biometrik" terpisah |
-| Logout dan ganti password | Mencabut sesi di server; perubahan password mencabut semua sesi kecuali yang sedang dipakai |
-| Rate limit | Login 5 percobaan / 15 menit per akun dan 20 / 15 menit per IP (Redis); respons waktu konstan untuk username tidak ditemukan |
-| Reset password | Token sekali pakai 30 menit lewat email/WhatsApp OTP; tidak pernah mengembalikan password plaintext; admin reset menghasilkan tautan set-password, bukan password |
-| 2FA | TOTP wajib untuk role operator platform dan admin sekolah; opsional guru |
-| SSO | OIDC Google Workspace for Education per tenant (opsional), pemetaan email ke user yang sudah ada, tidak auto-provision |
-| Impersonasi | Hanya admin dengan permission khusus, sesi impersonasi terpisah 30 menit dengan `actor_user_id`, tercatat di audit log, ditandai di UI, dapat dihentikan dan pencabutannya efektif seketika |
-| Perangkat | Daftar sesi aktif di halaman profil, pengguna bisa mencabut sesi lain |
+| Kontrol                   | Ketentuan                                                                                                                                                                                   |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Password                  | Argon2id (m=64MB, t=3, p=2), minimal 8 karakter, cek terhadap daftar bocor (k-anonymity HIBP) opsional                                                                                      |
+| Sesi                      | Access token JWT 15 menit (ES256, `kid` untuk rotasi kunci) + refresh token acak 256-bit, disimpan hash SHA-256 di tabel `sessions` dengan `device_id`, `user_agent`, `ip`, `last_seen_at`  |
+| Rotasi refresh            | Setiap refresh menerbitkan token baru dan mencabut yang lama; penggunaan ulang token lama mencabut seluruh keluarga sesi (deteksi pencurian)                                                |
+| Penyimpanan web           | Cookie `httpOnly; Secure; SameSite=Lax; Path=/api/v1/auth` untuk refresh, access token di memori saja. Tidak ada token di `localStorage`                                                    |
+| Penyimpanan mobile        | `expo-secure-store` (Keychain / Keystore); biometrik hanya membuka SecureStore, bukan skema "token biometrik" terpisah                                                                      |
+| Logout dan ganti password | Mencabut sesi di server; perubahan password mencabut semua sesi kecuali yang sedang dipakai                                                                                                 |
+| Rate limit                | Login 5 percobaan / 15 menit per akun dan 20 / 15 menit per IP (Redis); respons waktu konstan untuk username tidak ditemukan                                                                |
+| Reset password            | Token sekali pakai 30 menit lewat email/WhatsApp OTP; tidak pernah mengembalikan password plaintext; admin reset menghasilkan tautan set-password, bukan password                           |
+| 2FA                       | TOTP wajib untuk role operator platform dan admin sekolah; opsional guru                                                                                                                    |
+| SSO                       | OIDC Google Workspace for Education per tenant (opsional), pemetaan email ke user yang sudah ada, tidak auto-provision                                                                      |
+| Impersonasi               | Hanya admin dengan permission khusus, sesi impersonasi terpisah 30 menit dengan `actor_user_id`, tercatat di audit log, ditandai di UI, dapat dihentikan dan pencabutannya efektif seketika |
+| Perangkat                 | Daftar sesi aktif di halaman profil, pengguna bisa mencabut sesi lain                                                                                                                       |
 
 ## 3. Otorisasi
 

@@ -1,4 +1,25 @@
 {
+  "assignments": {
+    "title": "Assignments",
+    "description": "Manage teaching assignments and additional staff duties.",
+    "teaching": "Teaching",
+    "duties": "Additional Duties",
+    "types": "Duty Types"
+  },
+  "learning": {
+    "title": "Learning",
+    "description": "Manage subjects, academic-year offerings, and lesson periods.",
+    "subjects": "Subjects",
+    "offerings": "Yearly Offerings",
+    "periods": "Lesson Periods"
+  },
+  "structure": {
+    "title": "School Structure",
+    "description": "Manage grade levels, tracks, and school rooms.",
+    "gradeLevels": "Grade Levels",
+    "tracks": "Tracks",
+    "rooms": "Rooms"
+  },
   "years": {
     "eyebrow": "School Data",
     "title": "Academic years",

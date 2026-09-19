@@ -18,14 +18,21 @@ export type JournalExportFormat = "xlsx" | "docx";
  * apps/mobile's `useJournals` so both clients invalidate the same cache
  * entry after a write.
  */
-export function useJournalsQuery(classId?: string) {
+export function useJournalsQuery(classId?: string, pageIndex = 0, pageSize = 50) {
   const client = useApiClient();
   const year = useActiveYear();
   return useQuery({
-    queryKey: queryKeys.journals(year.id, classId),
+    queryKey: [...queryKeys.journals(year.id, classId), pageIndex, pageSize],
     queryFn: () =>
       client.GET("/v1/journals", {
-        params: { query: { academic_year_id: year.id, ...(classId ? { class_id: classId } : {}) } },
+        params: {
+          query: {
+            academic_year_id: year.id,
+            limit: pageSize,
+            offset: pageIndex * pageSize,
+            ...(classId ? { class_id: classId } : {}),
+          },
+        },
       }),
     enabled: year.id !== "",
   });

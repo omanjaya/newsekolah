@@ -259,45 +259,45 @@ erDiagram
 
 ### 3.1 Semua enum status
 
-| Tabel.kolom | Nilai |
-|---|---|
-| `users.status` | active, inactive |
-| `academic_years.semester` | ganjil, genap |
-| `student_class_assignments.status` | active, moved, graduated, inactive |
-| `attendance_entries.status` | H, S, I, D, A |
-| `teacher_substitution_requests.status` | pending, accepted, rejected, cancelled |
-| `student_leave_requests.category` | religious_ceremony, sick, dispensation, other |
-| `student_leave_requests.status` | pending_homeroom, pending_bk, issued, rejected |
-| `student_exit_permits.status` | pending_duty_teacher, pending_class_teacher, pending_bk, pending_leadership, issued, exited |
-| `student_late_arrivals.status` | pending_duty_teacher, pending_leadership, pending_class_teacher, completed |
-| `student_late_arrivals.required_action` | none, call_parent, send_home |
-| `violation_warning_letters.sp_level` | SP 1, SP 2, SP 3 |
-| `assessment_components.assessment_type` | tp, sumatif, praktik, lainnya |
-| `announcements.audience_type` | global, selected |
-| `push_subscriptions.platform` | web, ios, android |
-| `user_sessions.kind` | login, impersonation |
-| `library_items.access` | dapat_dipinjam, baca_di_tempat, referensi |
-| `library_items.status` | tersedia, dipinjam, dipesan, rusak, hilang, dalam_perbaikan, diolah, dihibahkan, tandon, tidak_diketahui |
-| `library_members.status` | belum_aktif, aktif, tidak_aktif, suspend, bebas_pustaka |
-| `library_loan_items.status` | dipinjam, dikembalikan, hilang |
-| `library_bookings.status` | menunggu, siap_diambil, dipenuhi, dibatalkan, kedaluwarsa |
+| Tabel.kolom                                  | Nilai                                                                                                       |
+| -------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `users.status`                               | active, inactive                                                                                            |
+| `academic_years.semester`                    | ganjil, genap                                                                                               |
+| `student_class_assignments.status`           | active, moved, graduated, inactive                                                                          |
+| `attendance_entries.status`                  | H, S, I, D, A                                                                                               |
+| `teacher_substitution_requests.status`       | pending, accepted, rejected, cancelled                                                                      |
+| `student_leave_requests.category`            | religious_ceremony, sick, dispensation, other                                                               |
+| `student_leave_requests.status`              | pending_homeroom, pending_bk, issued, rejected                                                              |
+| `student_exit_permits.status`                | pending_duty_teacher, pending_class_teacher, pending_bk, pending_leadership, issued, exited                 |
+| `student_late_arrivals.status`               | pending_duty_teacher, pending_leadership, pending_class_teacher, completed                                  |
+| `student_late_arrivals.required_action`      | none, call_parent, send_home                                                                                |
+| `violation_warning_letters.sp_level`         | SP 1, SP 2, SP 3                                                                                            |
+| `assessment_components.assessment_type`      | tp, sumatif, praktik, lainnya                                                                               |
+| `announcements.audience_type`                | global, selected                                                                                            |
+| `push_subscriptions.platform`                | web, ios, android                                                                                           |
+| `user_sessions.kind`                         | login, impersonation                                                                                        |
+| `library_items.access`                       | dapat_dipinjam, baca_di_tempat, referensi                                                                   |
+| `library_items.status`                       | tersedia, dipinjam, dipesan, rusak, hilang, dalam_perbaikan, diolah, dihibahkan, tandon, tidak_diketahui    |
+| `library_members.status`                     | belum_aktif, aktif, tidak_aktif, suspend, bebas_pustaka                                                     |
+| `library_loan_items.status`                  | dipinjam, dikembalikan, hilang                                                                              |
+| `library_bookings.status`                    | menunggu, siap_diambil, dipenuhi, dibatalkan, kedaluwarsa                                                   |
 | `library_violations.kind / penalty / status` | terlambat, rusak, hilang, lainnya / denda, ganti_buku, suspend, peringatan / belum_lunas, lunas, dibebaskan |
-| `library_scan_tokens.purpose` | kunjungan, pinjam_mandiri, opname |
+| `library_scan_tokens.purpose`                | kunjungan, pinjam_mandiri, opname                                                                           |
 
 Campuran bahasa bersifat sistemik: kode presensi inisial Indonesia, status workflow English, status perpustakaan Indonesia.
 
 ### 3.2 State machine
 
-| Workflow | Tabel | Kolom transisi | Log event |
-|---|---|---|---|
-| Izin terencana | student_leave_requests | status, homeroom_*, issued_* | student_leave_events (from/to) |
-| Izin keluar | student_exit_permits | status, 4 kolom penyetuju, gate_token_*, issued_at, exited_at | student_exit_permit_events (stage) |
-| Terlambat | student_late_arrivals | status, late_count, required_action, homeroom_reported, completed_at | tidak ada |
-| Guru pengganti | teacher_substitution_requests | status, responded_at | tidak ada |
-| Submit presensi | attendance_sessions.submitted_at | NULL = draf | tidak ada |
-| Publikasi nilai | grade_publications.is_published | | tidak ada |
-| Pinjaman | library_loan_items.status, returned_at, late_days, renewal_count | library_item_events, library_loan_renewals |
-| Denda | library_violations.status, settled_at | tidak ada |
+| Workflow        | Tabel                                                            | Kolom transisi                                                       | Log event                          |
+| --------------- | ---------------------------------------------------------------- | -------------------------------------------------------------------- | ---------------------------------- |
+| Izin terencana  | student_leave_requests                                           | status, homeroom__, issued__                                         | student_leave_events (from/to)     |
+| Izin keluar     | student_exit_permits                                             | status, 4 kolom penyetuju, gate_token_*, issued_at, exited_at        | student_exit_permit_events (stage) |
+| Terlambat       | student_late_arrivals                                            | status, late_count, required_action, homeroom_reported, completed_at | tidak ada                          |
+| Guru pengganti  | teacher_substitution_requests                                    | status, responded_at                                                 | tidak ada                          |
+| Submit presensi | attendance_sessions.submitted_at                                 | NULL = draf                                                          | tidak ada                          |
+| Publikasi nilai | grade_publications.is_published                                  |                                                                      | tidak ada                          |
+| Pinjaman        | library_loan_items.status, returned_at, late_days, renewal_count | library_item_events, library_loan_renewals                           |
+| Denda           | library_violations.status, settled_at                            | tidak ada                                                            |
 
 ### 3.3 Soft delete dan audit
 
@@ -324,6 +324,7 @@ Tidak ada seed periode maupun katalog pelanggaran. Tugas `Security` per tahun aj
 ## 4. Masalah skema
 
 ### 4.1 Penghalang multi-tenant
+
 1. Tidak ada `tenant_id`/`school_id` di manapun (nol hit di migrasi dan Go).
 2. `app_settings` singleton global.
 3. `users.username` dan `email` unik global.
@@ -335,33 +336,43 @@ Tidak ada seed periode maupun katalog pelanggaran. Tugas `Security` per tahun aj
 9. Trigger memaksa `--skip-log-bin`: tanpa replikasi/PITR.
 
 ### 4.2 FK yang hilang
+
 `counselings` (semua), `previous_report_scores`, `manual_report_scores`, `classroom_star_events`, `report_grade_ranges` (semua), `report_tp_mappings` (kecuali komponen), `student_exit_permits` (4 penyetuju), `student_late_arrivals` (3 aktor), `user_login_events.role_id`, `teacher_duty_assignments.scope_id` (polimorfik), `library_member_types.default_for_role`.
 
 ### 4.3 Index hilang atau salah
+
 `student_grades.student_user_id`; `student_details.nis/nisn`; `users.name`; `teaching_schedules` tanpa unique anti bentrok; `uniq_late_arrival_student_day` memuat timestamp; `uniq_teacher_substitution_pending` memuat status; `counselings` runtime tanpa index.
 
 ### 4.4 Penamaan tidak konsisten
+
 Tiga prefix unique (`unique_`, `uniq_`, `uq_`); `_user_id` vs `created_by` vs `sender_user_id`; tiga bentuk tabel event; `student_has_violations` gaya pivot Laravel; `violations` vs `library_violations`; `library_members` PK `user_id`.
 
 ### 4.5 Nullable dan tipe
+
 `counselings` VARCHAR(255) untuk id; `updated_at` tanpa ON UPDATE; `academic_years` timestamps nullable; tabel detail tanpa timestamps; `push_subscriptions.expires_at` default now; `subjects` string berkoma; `sp_level` string tampilan; `student_has_violations.notes` mutable tanpa updated_at.
 
 ### 4.6 Blob JSON
+
 `snapshot_json`, `subfields_json`, dua template surat di `app_settings`: semua TEXT, bukan JSON native.
 
 ### 4.7 Migrasi
+
 Tanpa down: 002_user_details, 003, 004, 024, 025. Nomor 022 hilang; 002 dan 037 ganda. Runner hanya membaca `*.up.sql`; tidak ada perintah down; tanpa advisory lock.
 
 ### 4.8 DDL di luar migrasi
+
 `initCounselingTable()` di setiap boot API, plus konversi charset dan rename file bukti.
 
 ### 4.9 Zona waktu
+
 Campuran `TIMESTAMP` dan `DATETIME` dalam satu tabel; DSN menambahkan offset UTC tetap yang dihitung saat proses start; `APP_TIMEZONE` global default `Asia/Makassar`; tidak ada `school.timezone`; ID dari nanodetik.
 
 ### 4.10 Charset
+
 Konsisten `utf8mb4_unicode_ci`; FULLTEXT dengan token minimum 3 karakter (fallback LIKE di kontrak API).
 
 ### 4.11 Radius cascade
+
 Menghapus satu `academic_years` menghapus seluruh riwayat operasional sekolah; route master data hanya `withAuth` sehingga siswa bisa memicunya. `created_by` cascade ke users.
 
 ## 5. Ringkasan PRD dan kesenjangan
@@ -370,31 +381,31 @@ Sumber: `PRD-rebuild-go-nextjs.json` v1.0.0 (2026-07-25). Tujuan: rebuild monoli
 
 15 persona PRD vs 6 role terimplementasi: Super Admin, Administrator, Teacher, Student, Pustakawan (role); BK, Picket, Class Administrator, Security, Manajemen (kemampuan tugas); Kiosk parsial; Keuangan, Koperasi, Customer, Supervisor tidak ada. Role `pegawai` tidak ada di PRD.
 
-| PRD modul | Status |
-|---|---|
-| dashboard | parsial |
-| user_role_management | ada |
-| master_data | tanpa tags, behavior_score, tanggal tahun ajaran |
-| schedule | tanpa modul pindah kelas massal |
-| attendance | tanpa `attendance_change_requests` (token 6 digit + verifikasi staf) |
-| student_permit_qr | ada (nama status berbeda dari PRD) |
-| legacy_permit | ada sebagai leave_requests; tanpa kirim WA/Telegram |
-| violations_and_bk | tanpa behavior_score, laporan WA harian, import master |
-| campus_visit_security | tidak ada |
-| announcements | sangat direduksi (tanpa HTML, jadwal, ticker) |
-| chat_consultation | tidak ada |
-| guru_wali (mentoring) | hanya kelas binaan |
-| diagnostic (VARK, risiko psikologis, minat) | tidak ada |
-| supervision | tidak ada (hanya permission dan kolom vestigial) |
-| assessment_grading | ada (flag) |
-| lms_pmt | tidak ada |
-| library | ada di rebuild, melebihi PRD |
-| contribution | tidak ada |
-| cooperative_pos (15 entitas) | tidak ada |
-| snpmb | tidak ada |
-| calendar_events | tidak ada |
-| monitor | ada, semula tanpa auth |
-| settings_backup_integrations | tanpa backup S3, restore, webhook WA/Telegram, mode perbaikan |
+| PRD modul                                   | Status                                                               |
+| ------------------------------------------- | -------------------------------------------------------------------- |
+| dashboard                                   | parsial                                                              |
+| user_role_management                        | ada                                                                  |
+| master_data                                 | tanpa tags, behavior_score, tanggal tahun ajaran                     |
+| schedule                                    | tanpa modul pindah kelas massal                                      |
+| attendance                                  | tanpa `attendance_change_requests` (token 6 digit + verifikasi staf) |
+| student_permit_qr                           | ada (nama status berbeda dari PRD)                                   |
+| legacy_permit                               | ada sebagai leave_requests; tanpa kirim WA/Telegram                  |
+| violations_and_bk                           | tanpa behavior_score, laporan WA harian, import master               |
+| campus_visit_security                       | tidak ada                                                            |
+| announcements                               | sangat direduksi (tanpa HTML, jadwal, ticker)                        |
+| chat_consultation                           | tidak ada                                                            |
+| guru_wali (mentoring)                       | hanya kelas binaan                                                   |
+| diagnostic (VARK, risiko psikologis, minat) | tidak ada                                                            |
+| supervision                                 | tidak ada (hanya permission dan kolom vestigial)                     |
+| assessment_grading                          | ada (flag)                                                           |
+| lms_pmt                                     | tidak ada                                                            |
+| library                                     | ada di rebuild, melebihi PRD                                         |
+| contribution                                | tidak ada                                                            |
+| cooperative_pos (15 entitas)                | tidak ada                                                            |
+| snpmb                                       | tidak ada                                                            |
+| calendar_events                             | tidak ada                                                            |
+| monitor                                     | ada, semula tanpa auth                                               |
+| settings_backup_integrations                | tanpa backup S3, restore, webhook WA/Telegram, mode perbaikan        |
 
 Juga belum: WebAuthn server-side (5 endpoint), login token sekali pakai, `model_has_permissions`, tautan Telegram, normalisasi telepon 62. Delapan scheduled job PRD: nol yang diimplementasikan sebagai cron.
 

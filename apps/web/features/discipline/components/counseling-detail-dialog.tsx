@@ -8,6 +8,7 @@ import { Printer } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
+import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSession } from "../../../lib/session/session-provider";
 import { useDirectoryQuery, useLookup } from "../../reference/api";
@@ -88,7 +89,9 @@ export function CounselingDetailDialog({
           )
         }
       >
-        {detail.isLoading || !note ? (
+        {detail.isError && !detail.data ? (
+          <QueryError retry={() => detail.refetch()} />
+        ) : detail.isLoading || !note ? (
           <Skeleton className="h-40 w-full" aria-busy="true" />
         ) : (
           <div className="flex flex-col gap-3 text-[13px]">

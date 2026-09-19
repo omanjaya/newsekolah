@@ -44,7 +44,9 @@
     "starsFor": "Atur bintang {name}",
     "noComponents": "Belum ada komponen penilaian untuk mapel ini.",
     "noMatch": "Tidak ada siswa yang cocok dengan pencarian.",
-    "scoresSaved": "Nilai kolom tersimpan."
+    "scoresSaved": "Nilai kolom tersimpan.",
+    "unsavedChanges": "{count, plural, other {# perubahan belum tersimpan}}",
+    "discardChanges": "Perubahan nilai yang belum tersimpan akan hilang. Lanjutkan?"
   },
   "componentDialog": {
     "editTitle": "Ubah komponen",

@@ -29,7 +29,8 @@ where tenant_id = $1 and extracurricular_id = $2 and status = 'active';
 -- name: CountActiveClubsForStudent :one
 select count(*)::int from extracurricular_memberships em
 join extracurriculars e on e.id = em.extracurricular_id
-where em.tenant_id = $1 and e.academic_year_id = $2 and em.student_user_id = $3 and em.status = 'active';
+where em.tenant_id = $1 and e.academic_year_id = $2 and em.student_user_id = $3 and em.status = 'active'
+  and e.deleted_at is null;
 
 -- name: CreateMembership :one
 insert into extracurricular_memberships (tenant_id, extracurricular_id, student_user_id, joined_on, status)

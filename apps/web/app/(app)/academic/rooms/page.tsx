@@ -1,7 +1,5 @@
-import type { ReactElement } from "react";
+import { redirect } from "next/navigation";
 
-import { RoomsView } from "../../../../features/academic/components/rooms-view";
-
-export default function Page(): ReactElement {
-  return <RoomsView />;
+export default function Page(): never {
+  redirect("/school/structure?tab=rooms");
 }

@@ -189,6 +189,9 @@ export function ViolationsView(): ReactElement {
       </div>
 
       <DataTable
+        stateKey="features/library/components/violations-view:1"
+        mode="local"
+        searchable={false}
         data={items}
         columns={columns}
         rowCount={items.length}
@@ -197,7 +200,6 @@ export function ViolationsView(): ReactElement {
         sorting={[]}
         onSortingChange={() => undefined}
         globalFilter=""
-        onGlobalFilterChange={() => undefined}
         isLoading={isLoading}
         getRowId={(item) => item.id}
         emptyState={

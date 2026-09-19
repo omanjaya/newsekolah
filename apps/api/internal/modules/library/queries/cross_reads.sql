@@ -63,8 +63,14 @@ limit 1;
 -- The overdue report the old app showed with class and guardian phone
 -- (library_circulation_v2.go:634-678), dropped from the rebuild's first
 -- pass overdue endpoint.
-select l.*, coalesce(c.name, '') as class_name, coalesce(sp.guardian_phone, '') as guardian_phone
+select l.*, coalesce(c.name, '') as class_name, coalesce(sp.guardian_phone, '') as guardian_phone,
+  coalesce(u.name, '') as member_name, coalesce(lm.member_no, '') as member_no,
+  coalesce(t.title, '') as title, coalesce(cp.barcode, '') as barcode
 from library_loans l
+left join users u on u.id = l.member_user_id and u.tenant_id = l.tenant_id
+left join library_members lm on lm.user_id = l.member_user_id and lm.tenant_id = l.tenant_id
+left join library_copies cp on cp.id = l.copy_id and cp.tenant_id = l.tenant_id
+left join library_titles t on t.id = l.title_id and t.tenant_id = l.tenant_id
 left join lateral (
   select e.class_id from enrollments e
   where e.tenant_id = l.tenant_id and e.student_user_id = l.member_user_id and e.status = 'active'

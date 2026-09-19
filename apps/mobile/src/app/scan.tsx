@@ -152,6 +152,7 @@ export default function ScanRoute(): React.JSX.Element {
           value={manual}
           onChangeText={setManual}
           placeholder={t("scan.manual_placeholder")}
+          accessibilityLabel={t("scan.manual_entry")}
           autoCapitalize="none"
           autoCorrect={false}
           className="rounded-input border border-line bg-surface px-3 py-2 text-base text-ink dark:border-line-dark dark:bg-surface-dark dark:text-ink-dark"

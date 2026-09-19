@@ -13,7 +13,8 @@
     },
     "unknownStudent": "Siswa tidak dikenal",
     "emptyTitle": "Tidak ada siswa yang perlu diperhatikan",
-    "emptyBody": "Belum ada siswa di kelas ini yang mencapai ambang siaga atau berisiko."
+    "emptyBody": "Belum ada siswa di kelas ini yang mencapai ambang siaga atau berisiko.",
+    "policy": "Atur kebijakan"
   },
   "level": {
     "none": "Aman",
@@ -50,6 +51,31 @@
       "grade_drop_watch": "Rata-rata nilai rapor turun dari {previous_average} ke {current_average}",
       "grade_drop_at_risk": "Rata-rata nilai rapor turun dari {previous_average} ke {current_average}",
       "unknown": "Sinyal tidak dikenal"
+    }
+  },
+  "policy": {
+    "title": "Kebijakan peringatan dini",
+    "description": "Atur ambang dan bobot sinyal. Ambang berisiko harus lebih besar dari ambang siaga. Perubahan digunakan pada perhitungan berikutnya.",
+    "thresholdError": "Ambang berisiko harus lebih besar dari ambang siaga.",
+    "saved": "Kebijakan tersimpan.",
+    "save": "Simpan",
+    "cancel": "Batal",
+    "fields": {
+      "window_days": "Rentang hari sekolah",
+      "attendance_watch_rate": "Rasio absen: siaga (0–1)",
+      "attendance_at_risk_rate": "Rasio absen: berisiko (0–1)",
+      "discipline_watch_points": "Poin pelanggaran: siaga",
+      "discipline_at_risk_points": "Poin pelanggaran: berisiko",
+      "warning_letter_watch_count": "Jumlah SP: siaga",
+      "warning_letter_at_risk_count": "Jumlah SP: berisiko",
+      "grade_drop_watch_points": "Penurunan nilai: siaga",
+      "grade_drop_at_risk_points": "Penurunan nilai: berisiko",
+      "attendance_weight": "Bobot kehadiran",
+      "discipline_weight": "Bobot pelanggaran",
+      "warning_weight": "Bobot surat peringatan",
+      "grade_weight": "Bobot nilai",
+      "watch_score": "Skor total: siaga",
+      "at_risk_score": "Skor total: berisiko"
     }
   }
 }

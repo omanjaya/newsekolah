@@ -52,4 +52,14 @@ describe("Dialog", () => {
     await userEvent.click(screen.getByRole("button", { name: "Tutup" }));
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
   });
+
+  it("uses a 44px close target with the caller's localized label", () => {
+    render(
+      <Dialog open>
+        <DialogContent title="Title" closeLabel="Close modal" />
+      </Dialog>,
+    );
+
+    expect(screen.getByRole("button", { name: "Close modal" })).toHaveClass("min-h-11", "min-w-11");
+  });
 });

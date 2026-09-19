@@ -102,6 +102,7 @@ paths:
                 academic_year_id: { type: string, format: uuid }
       responses:
         "204": { description: Cleared }
+        "409": { $ref: "#/components/responses/ScheduleConflict" }
         "400": { $ref: "#/components/responses/BadRequest" }
   /v1/schedules/teacher-options:
     get:
@@ -155,6 +156,17 @@ paths:
       operationId: updateSchedule
       x-permission: authenticated
       summary: Update a schedule (admin, or the owning teacher within the edit deadline)
+      parameters:
+        - name: schedule_ids
+          in: query
+          description: All rows of a merged block, including scheduleId. The operation is atomic.
+          style: form
+          explode: false
+          schema:
+            type: array
+            minItems: 1
+            maxItems: 100
+            items: { type: string, format: uuid }
       requestBody:
         required: true
         content:
@@ -175,8 +187,21 @@ paths:
       operationId: deleteSchedule
       x-permission: authenticated
       summary: Delete a schedule (admin, or the owning teacher within the edit deadline)
+      parameters:
+        - name: schedule_ids
+          in: query
+          description: All rows of a merged block, including scheduleId. The operation is atomic.
+          style: form
+          explode: false
+          schema:
+            type: array
+            minItems: 1
+            maxItems: 100
+            items: { type: string, format: uuid }
       responses:
         "204": { description: Deleted }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "409": { $ref: "#/components/responses/ScheduleConflict" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
   /v1/substitutions:
@@ -446,7 +471,7 @@ paths:
 components:
   responses:
     ScheduleConflict:
-      description: The class or the teacher already has an overlapping schedule
+      description: Schedule overlaps another lesson, the year is archived, or recorded attendance/substitution history prevents mutation
       content:
         application/json:
           schema: { $ref: "#/components/schemas/Error" }

@@ -59,12 +59,20 @@ export function AppShell({ children }: { children: ReactNode }): ReactElement {
           </div>
           <ImpersonationBanner />
           <OfflineIndicator />
-          <main id="main-content" className="flex-1 pb-20 md:pb-0">
+          <main
+            id="main-content"
+            className="flex-1 pb-[calc(var(--shell-mobile-tab-offset)+1rem)] md:pb-0"
+          >
             {allowed ? children : <ForbiddenPage />}
           </main>
         </div>
       </div>
-      <MobileTabBar items={items} className="md:hidden" />
+      <MobileTabBar
+        items={items}
+        profile={me?.profile_kind}
+        scope={me ? `${me.tenant.tenant_id}:${me.id}` : undefined}
+        className="md:hidden"
+      />
       <UpdateAvailable />
     </CommandPaletteProvider>
   );

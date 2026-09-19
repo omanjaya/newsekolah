@@ -45,7 +45,21 @@
       "meetingStart": "Jam mulai",
       "meetingEnd": "Jam selesai",
       "cancel": "Batal",
-      "submit": "Simpan"
+      "submit": "Simpan",
+      "active": "Ekstrakurikuler aktif"
+    },
+    "delete": "Hapus",
+    "deleteTitle": "Hapus ekstrakurikuler?",
+    "deleteBody": "Ekstrakurikuler diarsipkan dan tidak bisa dibuka dari daftar. Riwayat keanggotaan dan presensi tetap tersimpan. Gunakan status tidak aktif jika masih perlu dibuka kembali.",
+    "deleted": "Ekstrakurikuler dihapus",
+    "policy": {
+      "title": "Kebijakan keanggotaan",
+      "description": "Batas jumlah ekstrakurikuler per siswa. Isi 0 untuk tanpa batas. Berlaku saat pendaftaran anggota berikutnya. Keanggotaan di ekstrakurikuler tidak aktif tetap dihitung; keanggotaan di ekstrakurikuler yang dihapus tidak dihitung.",
+      "limit": "Maksimum ekstrakurikuler",
+      "saved": "Kebijakan tersimpan",
+      "loadError": "Kebijakan gagal dimuat.",
+      "cancel": "Batal",
+      "save": "Simpan"
     }
   },
   "clubDetail": {
@@ -55,7 +69,7 @@
       "meetings": "Pertemuan"
     },
     "members": {
-      "studentId": "ID siswa",
+      "studentId": "Siswa",
       "studentIdPlaceholder": "Tempel ID siswa",
       "joinedOn": "Tanggal bergabung",
       "join": "Daftarkan",
@@ -75,7 +89,7 @@
       "scheduled": "Pertemuan dijadwalkan",
       "empty": "Belum ada pertemuan yang dijadwalkan.",
       "roster": {
-        "studentId": "ID siswa",
+        "studentId": "Siswa",
         "status": "Status kehadiran",
         "save": "Simpan",
         "recorded": "Kehadiran tersimpan",
@@ -98,7 +112,8 @@
     "columns": {
       "name": "Nama kegiatan",
       "dates": "Tanggal",
-      "location": "Lokasi"
+      "location": "Lokasi",
+      "actions": "Aksi"
     },
     "form": {
       "title": "Tambah kegiatan",
@@ -108,7 +123,31 @@
       "startDate": "Tanggal mulai",
       "endDate": "Tanggal selesai",
       "cancel": "Batal",
-      "submit": "Simpan"
+      "submit": "Simpan",
+      "editTitle": "Ubah kegiatan"
+    },
+    "edit": "Ubah",
+    "delete": "Hapus",
+    "deleteTitle": "Hapus kegiatan?",
+    "deleteBody": "Data ini akan dihapus dari daftar. Lanjutkan?",
+    "deleted": "Kegiatan dihapus",
+    "participants": {
+      "title": "Peserta",
+      "scope": "Cakupan peserta",
+      "student": "Siswa",
+      "class": "Kelas",
+      "grade_level": "Tingkat kelas",
+      "choose": "Pilih peserta",
+      "add": "Tambahkan peserta",
+      "added": "Peserta ditambahkan",
+      "empty": "Belum ada peserta.",
+      "remove": "Keluarkan",
+      "removeTitle": "Keluarkan peserta?",
+      "removeBody": "Peserta ini akan dikeluarkan dari kegiatan.",
+      "removed": "Peserta dikeluarkan",
+      "unknown": "Nama tidak tersedia",
+      "loading": "Memuat peserta…",
+      "loadError": "Peserta gagal dimuat."
     }
   },
   "achievements": {
@@ -123,7 +162,8 @@
       "competition": "Lomba",
       "level": "Tingkat",
       "placement": "Capaian",
-      "date": "Tanggal"
+      "date": "Tanggal",
+      "actions": "Aksi"
     },
     "levels": {
       "school": "Sekolah",
@@ -135,14 +175,27 @@
     },
     "form": {
       "title": "Catat prestasi",
-      "studentId": "ID siswa",
+      "studentId": "Siswa",
       "competitionName": "Nama lomba",
       "level": "Tingkat",
       "placement": "Capaian",
       "achievedOn": "Tanggal",
       "notes": "Catatan",
       "cancel": "Batal",
-      "submit": "Simpan"
-    }
+      "submit": "Simpan",
+      "editTitle": "Ubah prestasi"
+    },
+    "edit": "Ubah",
+    "delete": "Hapus",
+    "deleteTitle": "Hapus prestasi?",
+    "deleteBody": "Data ini akan dihapus dari daftar. Lanjutkan?",
+    "deleted": "Prestasi dihapus"
+  },
+  "students": {
+    "choose": "Pilih siswa",
+    "search": "Cari nama atau username",
+    "empty": "Siswa tidak ditemukan",
+    "unknown": "Nama siswa tidak tersedia",
+    "loading": "Memuat siswa…"
   }
 }

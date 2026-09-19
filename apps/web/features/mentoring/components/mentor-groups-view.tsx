@@ -28,6 +28,7 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import { useLookup, useTeachersQuery } from "../../reference/api";
@@ -48,7 +49,7 @@ export function MentorGroupsView(): ReactElement {
   const teacherMap = useLookup(teachers.data?.data);
   const remove = useDeleteMentorGroupMutation();
 
-  const [tab, setTab] = useState("groups");
+  const [tab, setTab] = useUrlState<string>("tab", ["groups", "limit"], "groups");
   const [editing, setEditing] = useState<MentorGroup | "new" | null>(null);
   const [pendingDelete, setPendingDelete] = useState<MentorGroup | null>(null);
 
@@ -135,6 +136,8 @@ export function MentorGroupsView(): ReactElement {
         </TabsList>
         <TabsContent value="groups" className="pt-4">
           <DataTable
+            stateKey="features/mentoring/components/mentor-groups-view:1"
+            mode="local"
             data={items}
             columns={columns}
             rowCount={items.length}
@@ -143,7 +146,6 @@ export function MentorGroupsView(): ReactElement {
             sorting={[]}
             onSortingChange={() => undefined}
             globalFilter=""
-            onGlobalFilterChange={() => undefined}
             isLoading={isLoading}
             getRowId={(item) => item.id}
             onRowActivate={(item) => {

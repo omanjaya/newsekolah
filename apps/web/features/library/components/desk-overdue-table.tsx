@@ -3,7 +3,7 @@
 import { ApiError } from "@newsekolah/api-client";
 import { formatDate } from "@newsekolah/i18n";
 import type { Locale } from "@newsekolah/i18n";
-import { Button, DataTable, EmptyState, domainIcons, useToast } from "@newsekolah/ui";
+import { Alert, Button, DataTable, EmptyState, domainIcons, useToast } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { BellRing } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
@@ -11,7 +11,6 @@ import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { useDirectoryQuery, useLookup } from "../../reference/api";
 import { useRenewLoanMutation, useReturnLoanMutation } from "../api";
 import {
   type LibraryOverdueLoanDetail,
@@ -28,9 +27,8 @@ export function DeskOverdueTable(): ReactElement {
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
 
-  const { data, isLoading } = useOverdueLoansDetailedQuery();
-  const directory = useDirectoryQuery();
-  const memberMap = useLookup(directory.data?.data);
+  const { data, isLoading, isError, refetch } = useOverdueLoansDetailedQuery();
+  const tCommon = useTranslations("common.actions");
   const returnLoan = useReturnLoanMutation();
   const renew = useRenewLoanMutation();
   const sendReminders = useSendLibraryDueRemindersMutation();
@@ -44,19 +42,40 @@ export function DeskOverdueTable(): ReactElement {
         id: "member",
         header: t("columns.member"),
         enableSorting: false,
-        cell: ({ row }) =>
-          memberMap.get(row.original.loan.member_user_id)?.name ?? row.original.loan.member_user_id,
+        accessorFn: (item) => `${item.member_name} ${item.member_no}`,
+        cell: ({ row }) => (
+          <div className="flex min-w-0 flex-col">
+            <span>{row.original.member_name || t("unknownMember")}</span>
+            {row.original.member_no && (
+              <span className="text-[12px] text-fg-muted">{row.original.member_no}</span>
+            )}
+          </div>
+        ),
+      },
+      {
+        id: "title",
+        header: t("columns.title"),
+        accessorFn: (item) => `${item.title} ${item.barcode}`,
+        enableSorting: false,
+        cell: ({ row }) => (
+          <div className="flex min-w-0 flex-col">
+            <span>{row.original.title || t("unknownTitle")}</span>
+            <span className="text-[12px] text-fg-muted">{row.original.barcode}</span>
+          </div>
+        ),
       },
       { accessorKey: "class_name", header: t("columns.class"), enableSorting: false },
       {
         id: "guardianPhone",
         header: t("columns.guardianPhone"),
+        accessorFn: (item) => item.guardian_phone,
         enableSorting: false,
         cell: ({ row }) => row.original.guardian_phone || "-",
       },
       {
         id: "dueOn",
         header: t("columns.dueOn"),
+        accessorFn: (item) => item.loan.due_on,
         enableSorting: false,
         cell: ({ row }) => formatDate(row.original.loan.due_on, { locale }),
       },
@@ -67,7 +86,7 @@ export function DeskOverdueTable(): ReactElement {
         cell: ({ row }) => {
           const loan = row.original.loan;
           return (
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button
                 size="sm"
                 variant="secondary"
@@ -119,7 +138,7 @@ export function DeskOverdueTable(): ReactElement {
         },
       },
     ],
-    [t, locale, memberMap, renew, returnLoan, toast, apiErrorMessage],
+    [t, locale, renew, returnLoan, toast, apiErrorMessage],
   );
 
   return (
@@ -150,26 +169,29 @@ export function DeskOverdueTable(): ReactElement {
           {t("sendReminders")}
         </Button>
       </div>
-      <DataTable
-        data={items}
-        columns={columns}
-        rowCount={items.length}
-        pagination={{ pageIndex: 0, pageSize: 50 }}
-        onPaginationChange={() => undefined}
-        sorting={[]}
-        onSortingChange={() => undefined}
-        globalFilter=""
-        onGlobalFilterChange={() => undefined}
-        isLoading={isLoading}
-        getRowId={(item) => item.loan.id}
-        emptyState={
-          <EmptyState
-            icon={<domainIcons.library aria-hidden="true" />}
-            title={t("emptyTitle")}
-            description={t("emptyBody")}
-          />
-        }
-      />
+      {isError ? (
+        <Alert variant="warning" title={t("loadError")}>
+          <Button variant="secondary" onClick={() => void refetch()}>
+            {tCommon("retry")}
+          </Button>
+        </Alert>
+      ) : (
+        <DataTable
+          stateKey="features/library/components/desk-overdue-table:1"
+          mode="local"
+          data={items}
+          columns={columns}
+          isLoading={isLoading}
+          getRowId={(item) => item.loan.id}
+          emptyState={
+            <EmptyState
+              icon={<domainIcons.library aria-hidden="true" />}
+              title={t("emptyTitle")}
+              description={t("emptyBody")}
+            />
+          }
+        />
+      )}
 
       <MarkLostDialog
         loanId={markingLost}

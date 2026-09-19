@@ -1,7 +1,5 @@
-import type { ReactElement } from "react";
+import { redirect } from "next/navigation";
 
-import { SubjectOfferingsView } from "../../../../features/academic/components/subject-offerings-view";
-
-export default function Page(): ReactElement {
-  return <SubjectOfferingsView />;
+export default function Page(): never {
+  redirect("/school/learning?tab=offerings");
 }

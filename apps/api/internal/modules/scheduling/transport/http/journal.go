@@ -3,7 +3,6 @@ package http
 import (
 	"bytes"
 	"context"
-	"net/http"
 	"time"
 
 	"github.com/google/uuid"
@@ -120,16 +119,8 @@ func (h *SchedulingHandler) DeleteJournal(ctx context.Context, request api.Delet
 	return api.DeleteJournal204Response{}, nil
 }
 
-// ExportJournals renders XLSX with resolved class/subject/teacher names
-// (service.ExportJournalsXLSX). DOCX with a letterhead stays unimplemented:
-// platform/documents' renderer only ever produces PDF from HTML, never
-// DOCX (see its TestHTMLPDFRendererRejectsDocxEngine), so there is nothing
-// to route a docx request to yet.
+// ExportJournals renders scoped journal entries as XLSX or DOCX.
 func (h *SchedulingHandler) ExportJournals(ctx context.Context, request api.ExportJournalsRequestObject) (api.ExportJournalsResponseObject, error) {
-	if request.Params.Format == api.ExportJournalsParamsFormatDocx {
-		return nil, httpx.NewError(http.StatusNotImplemented, "NOT_IMPLEMENTED")
-	}
-
 	tenantID := tenantIDFromContext(ctx)
 	userID, _ := httpx.UserIDFromContext(ctx)
 	params := request.Params
@@ -144,6 +135,16 @@ func (h *SchedulingHandler) ExportJournals(ctx context.Context, request api.Expo
 	f, err := h.journalFilterFrom(ctx, tenantID, userID, params.ClassId, dateFrom, dateTo, params.Search)
 	if err != nil {
 		return nil, err
+	}
+
+	if params.Format == api.ExportJournalsParamsFormatDocx {
+		content, err := h.service.ExportJournalsDOCX(ctx, tenantID, params.AcademicYearId, f)
+		if err != nil {
+			return nil, mapJournalError(err)
+		}
+		return api.ExportJournals200ApplicationvndOpenxmlformatsOfficedocumentWordprocessingmlDocumentResponse{
+			Body: bytes.NewReader(content), ContentLength: int64(len(content)),
+		}, nil
 	}
 
 	xlsx, err := h.service.ExportJournalsXLSX(ctx, tenantID, params.AcademicYearId, f)

@@ -130,6 +130,8 @@ export function WebhookEndpointsPanel({
       </div>
 
       <DataTable
+        stateKey="features/integrations/components/webhook-endpoints-panel:1"
+        mode="local"
         data={items}
         columns={columns}
         rowCount={items.length}
@@ -138,7 +140,6 @@ export function WebhookEndpointsPanel({
         sorting={[]}
         onSortingChange={() => undefined}
         globalFilter=""
-        onGlobalFilterChange={() => undefined}
         isLoading={isLoading}
         getRowId={(endpoint) => endpoint.id}
         emptyState={

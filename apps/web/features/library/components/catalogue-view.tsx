@@ -1,18 +1,13 @@
 "use client";
 
-import { ApiError } from "@newsekolah/api-client";
 import {
   Button,
   DataTable,
   Dialog,
   DialogContent,
   EmptyState,
-  Input,
   PageHeader,
-  Select,
-  Textarea,
   domainIcons,
-  useToast,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Plus } from "lucide-react";
@@ -21,25 +16,22 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
-import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
+import { useRememberedViewState } from "../../../lib/view-state/view-state-provider";
 import {
   type LibraryTitle,
   downloadLibraryCatalogueExportXlsx,
-  useCreateLibraryTitleMutation,
   useLibraryTitlesQuery,
 } from "../api";
-import type { LibraryExternalBibliography } from "../isbn-lookup-api";
-import { useLibraryCatalogueOptionsQuery } from "../master-data-api";
 
-import { DuplicateTitleWarning } from "./duplicate-title-warning";
-import { IsbnLookupPanel } from "./isbn-lookup-panel";
+import { TitleForm } from "./title-form";
 
 export function CatalogueView(): ReactElement {
   const t = useTranslations("app.library.catalogue");
   const canManage = useCan("manage_library_catalog");
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useRememberedViewState("catalogue-search", "");
   const [adding, setAdding] = useState(false);
+  const [editing, setEditing] = useState<LibraryTitle | null>(null);
   const { data, isLoading } = useLibraryTitlesQuery(search);
   const titles = data?.data ?? [];
 
@@ -68,16 +60,29 @@ export function CatalogueView(): ReactElement {
         header: t("columns.actions"),
         enableSorting: false,
         cell: ({ row }) => (
-          <Link
-            href={`/library/catalogue/${row.original.id}`}
-            className="text-[13px] font-medium text-accent hover:underline"
-          >
-            {t("viewCopies")}
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link
+              href={`/library/catalogue/${row.original.id}`}
+              className="text-[13px] font-medium text-accent hover:underline"
+            >
+              {t("viewCopies")}
+            </Link>
+            {canManage && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  setEditing(row.original);
+                }}
+              >
+                {t("editTitle")}
+              </Button>
+            )}
+          </div>
         ),
       },
     ],
-    [t],
+    [t, canManage],
   );
 
   return (
@@ -98,18 +103,21 @@ export function CatalogueView(): ReactElement {
             {t("exportCatalogue")}
           </Button>
         )}
-        <Button
-          size="sm"
-          icon={<Plus />}
-          onClick={() => {
-            setAdding(true);
-          }}
-        >
-          {t("addTitle")}
-        </Button>
+        {canManage && (
+          <Button
+            size="sm"
+            icon={<Plus />}
+            onClick={() => {
+              setAdding(true);
+            }}
+          >
+            {t("addTitle")}
+          </Button>
+        )}
       </div>
 
       <DataTable
+        stateKey="features/library/components/catalogue-view:1"
         data={titles}
         columns={columns}
         rowCount={titles.length}
@@ -132,253 +140,27 @@ export function CatalogueView(): ReactElement {
       />
 
       <Dialog
-        open={adding}
+        open={adding || editing !== null}
         onOpenChange={(open) => {
-          setAdding(open);
+          if (!open) {
+            setAdding(false);
+            setEditing(null);
+          }
         }}
       >
-        <DialogContent title={t("addTitle")}>
-          <TitleForm
-            onDone={() => {
-              setAdding(false);
-            }}
-          />
+        <DialogContent title={editing ? t("editTitle") : t("addTitle")}>
+          {(adding || editing) && (
+            <TitleForm
+              key={editing?.id ?? "new"}
+              initial={editing ?? undefined}
+              onDone={() => {
+                setAdding(false);
+                setEditing(null);
+              }}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>
-  );
-}
-
-function TitleForm({ onDone }: { onDone: () => void }): ReactElement {
-  const t = useTranslations("app.library.catalogue.form");
-  const tCatalogue = useTranslations("app.library.catalogue");
-  const toast = useToast();
-  const apiErrorMessage = useApiErrorMessage();
-  const create = useCreateLibraryTitleMutation();
-  const options = useLibraryCatalogueOptionsQuery();
-
-  const [title, setTitle] = useState("");
-  const [subtitle, setSubtitle] = useState("");
-  const [author, setAuthor] = useState("");
-  const [additionalAuthors, setAdditionalAuthors] = useState("");
-  const [publisher, setPublisher] = useState("");
-  const [publishPlace, setPublishPlace] = useState("");
-  const [publishYear, setPublishYear] = useState("");
-  const [isbn, setIsbn] = useState("");
-  const [classification, setClassification] = useState("");
-  const [pages, setPages] = useState("");
-  const [subjects, setSubjects] = useState("");
-  const [language, setLanguage] = useState("");
-  const [abstract, setAbstract] = useState("");
-  const [coverAssetId, setCoverAssetId] = useState("");
-  const [materialTypeId, setMaterialTypeId] = useState("");
-
-  function applyLookup(bibliography: LibraryExternalBibliography) {
-    setTitle(bibliography.title);
-    if (bibliography.subtitle) setSubtitle(bibliography.subtitle);
-    if (bibliography.main_author) setAuthor(bibliography.main_author);
-    if (bibliography.additional_authors) setAdditionalAuthors(bibliography.additional_authors);
-    if (bibliography.publisher) setPublisher(bibliography.publisher);
-    if (bibliography.publish_place) setPublishPlace(bibliography.publish_place);
-    if (bibliography.publish_year) setPublishYear(String(bibliography.publish_year));
-    if (bibliography.pages) setPages(bibliography.pages);
-    if (bibliography.subjects) setSubjects(bibliography.subjects);
-    if (bibliography.language) setLanguage(bibliography.language);
-    if (bibliography.abstract) setAbstract(bibliography.abstract);
-  }
-
-  return (
-    <form
-      className="flex flex-col gap-4"
-      onSubmit={(e) => {
-        e.preventDefault();
-        create.mutate(
-          {
-            title: title.trim(),
-            subtitle: subtitle.trim() || undefined,
-            author: author.trim() || undefined,
-            additional_authors: additionalAuthors.trim() || undefined,
-            publisher: publisher.trim() || undefined,
-            publish_place: publishPlace.trim() || undefined,
-            publish_year: publishYear ? Number(publishYear) : undefined,
-            isbn: isbn.trim() || undefined,
-            classification: classification.trim() || undefined,
-            pages: pages.trim() || undefined,
-            subjects: subjects.trim() || undefined,
-            language: language.trim() || undefined,
-            abstract: abstract.trim() || undefined,
-            cover_asset_id: coverAssetId || undefined,
-            material_type_id: materialTypeId || undefined,
-            is_opac: true,
-          },
-          {
-            onSuccess: () => {
-              toast.success(tCatalogue("form.saved"));
-              onDone();
-            },
-            onError: (error) => {
-              toast.error(
-                error instanceof ApiError
-                  ? apiErrorMessage(error.code)
-                  : apiErrorMessage("UNKNOWN"),
-              );
-            },
-          },
-        );
-      }}
-    >
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("title")}</span>
-        <Input
-          value={title}
-          onChange={(e) => {
-            setTitle(e.target.value);
-          }}
-          required
-          maxLength={300}
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("subtitle")}</span>
-        <Input
-          value={subtitle}
-          onChange={(e) => {
-            setSubtitle(e.target.value);
-          }}
-          maxLength={300}
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("author")}</span>
-        <Input
-          value={author}
-          onChange={(e) => {
-            setAuthor(e.target.value);
-          }}
-          maxLength={200}
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("publisher")}</span>
-        <Input
-          value={publisher}
-          onChange={(e) => {
-            setPublisher(e.target.value);
-          }}
-          maxLength={200}
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("publishYear")}</span>
-        <Input
-          type="number"
-          value={publishYear}
-          onChange={(e) => {
-            setPublishYear(e.target.value);
-          }}
-          min={1000}
-          max={3000}
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("isbn")}</span>
-        <Input
-          value={isbn}
-          onChange={(e) => {
-            setIsbn(e.target.value);
-          }}
-          maxLength={32}
-        />
-      </label>
-      <DuplicateTitleWarning isbn={isbn} />
-      <IsbnLookupPanel isbn={isbn} onApply={applyLookup} onCoverImported={setCoverAssetId} />
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("classification")}</span>
-        <Input
-          value={classification}
-          onChange={(e) => {
-            setClassification(e.target.value);
-          }}
-          maxLength={60}
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("materialType")}</span>
-        <Select
-          options={(options.data?.material_types ?? []).map((mt) => ({
-            value: mt.id,
-            label: mt.name,
-          }))}
-          value={materialTypeId}
-          onValueChange={setMaterialTypeId}
-          placeholder={t("materialTypePlaceholder")}
-          disabled={options.isLoading}
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("additionalAuthors")}</span>
-        <Input
-          value={additionalAuthors}
-          onChange={(e) => {
-            setAdditionalAuthors(e.target.value);
-          }}
-          maxLength={500}
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("publishPlace")}</span>
-        <Input
-          value={publishPlace}
-          onChange={(e) => {
-            setPublishPlace(e.target.value);
-          }}
-          maxLength={120}
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("pages")}</span>
-        <Input
-          value={pages}
-          onChange={(e) => {
-            setPages(e.target.value);
-          }}
-          maxLength={60}
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("subjects")}</span>
-        <Input
-          value={subjects}
-          onChange={(e) => {
-            setSubjects(e.target.value);
-          }}
-          maxLength={500}
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("language")}</span>
-        <Input
-          value={language}
-          onChange={(e) => {
-            setLanguage(e.target.value);
-          }}
-          maxLength={10}
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("abstract")}</span>
-        <Textarea
-          value={abstract}
-          onChange={(e) => {
-            setAbstract(e.target.value);
-          }}
-          rows={3}
-          maxLength={2000}
-        />
-      </label>
-      <Button type="submit" loading={create.isPending}>
-        {t("save")}
-      </Button>
-    </form>
   );
 }

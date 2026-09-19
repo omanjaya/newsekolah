@@ -80,35 +80,36 @@ export function useCreateScheduleMutation() {
   });
 }
 
-/**
- * Replaces one block. A block spans one or more periods and the server
- * keeps a row per period, so moving it means rewriting every row: the old
- * ones go, the new span is created. Doing it in that order rather than
- * the reverse avoids tripping the overlap constraint against itself.
- */
+/** Replaces every row of a merged block in one server transaction. */
 export function useReplaceScheduleBlockMutation() {
   const client = useApiClient();
   const invalidate = useInvalidateSchedules();
   return useMutation({
-    mutationFn: async ({ scheduleIds, body }: { scheduleIds: string[]; body: ScheduleWrite }) => {
-      for (const scheduleId of scheduleIds) {
-        await client.DELETE("/v1/schedules/{scheduleId}", { params: { path: { scheduleId } } });
-      }
-      return client.POST("/v1/schedules", { body });
+    mutationFn: ({ scheduleIds, body }: { scheduleIds: string[]; body: ScheduleWrite }) => {
+      const scheduleId = scheduleIds[0];
+      if (!scheduleId) throw new Error("A schedule block must contain at least one row");
+      return client.PUT("/v1/schedules/{scheduleId}", {
+        params: { path: { scheduleId }, query: { schedule_ids: scheduleIds } },
+        querySerializer: { array: { style: "form", explode: false } },
+        body,
+      });
     },
     onSuccess: invalidate,
   });
 }
 
-/** Deletes every schedule row of a block (a block is one class-subject span). */
+/** Deletes a merged block atomically; the server protects recorded history. */
 export function useDeleteScheduleBlockMutation() {
   const client = useApiClient();
   const invalidate = useInvalidateSchedules();
   return useMutation({
-    mutationFn: async (scheduleIds: string[]) => {
-      for (const scheduleId of scheduleIds) {
-        await client.DELETE("/v1/schedules/{scheduleId}", { params: { path: { scheduleId } } });
-      }
+    mutationFn: (scheduleIds: string[]) => {
+      const scheduleId = scheduleIds[0];
+      if (!scheduleId) throw new Error("A schedule block must contain at least one row");
+      return client.DELETE("/v1/schedules/{scheduleId}", {
+        params: { path: { scheduleId }, query: { schedule_ids: scheduleIds } },
+        querySerializer: { array: { style: "form", explode: false } },
+      });
     },
     onSuccess: invalidate,
   });

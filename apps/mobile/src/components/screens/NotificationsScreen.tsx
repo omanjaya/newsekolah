@@ -5,7 +5,11 @@ import { ScreenHeader } from "@/components/ui/ScreenHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Button } from "@/components/ui/Button";
-import { useMarkAllNotificationsRead, useMarkNotificationRead, useNotifications } from "@/lib/api/hooks";
+import {
+  useMarkAllNotificationsRead,
+  useMarkNotificationRead,
+  useNotifications,
+} from "@/lib/api/hooks";
 import { t } from "@/i18n/t";
 import { cn } from "@/lib/cn";
 
@@ -32,8 +36,16 @@ export function NotificationsScreen(): React.JSX.Element {
         }
       />
       <View className="flex-row gap-2 px-4 py-2">
-        <Button label={t("notifications.title")} variant={unreadOnly ? "secondary" : "primary"} onPress={() => setUnreadOnly(false)} />
-        <Button label={t("notifications.unread_only")} variant={unreadOnly ? "primary" : "secondary"} onPress={() => setUnreadOnly(true)} />
+        <Button
+          label={t("notifications.title")}
+          variant={unreadOnly ? "secondary" : "primary"}
+          onPress={() => setUnreadOnly(false)}
+        />
+        <Button
+          label={t("notifications.unread_only")}
+          variant={unreadOnly ? "primary" : "secondary"}
+          onPress={() => setUnreadOnly(true)}
+        />
       </View>
       {isLoading ? (
         <View className="gap-2 px-4">
@@ -61,9 +73,18 @@ export function NotificationsScreen(): React.JSX.Element {
                   unread && "bg-accent/5",
                 )}
               >
-                <View className={cn("mt-2 h-2 w-2 rounded-full", unread ? "bg-accent" : "bg-transparent")} />
+                <View
+                  className={cn(
+                    "mt-2 h-2 w-2 rounded-full",
+                    unread ? "bg-accent" : "bg-transparent",
+                  )}
+                />
                 <View className="flex-1">
-                  <Text className={cn("text-base text-ink dark:text-ink-dark", unread && "font-medium")}>{item.title}</Text>
+                  <Text
+                    className={cn("text-base text-ink dark:text-ink-dark", unread && "font-medium")}
+                  >
+                    {item.title}
+                  </Text>
                   <Text className="text-sm text-ink/70 dark:text-ink-dark/70">{item.body}</Text>
                 </View>
               </Pressable>

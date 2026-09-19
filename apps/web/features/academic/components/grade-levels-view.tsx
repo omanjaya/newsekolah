@@ -10,7 +10,6 @@ import {
   EmptyState,
   IconButton,
   Input,
-  PageHeader,
   Select,
   useToast,
 } from "@newsekolah/ui";
@@ -122,37 +121,36 @@ export function GradeLevelsView(): ReactElement {
   );
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
-      <PageHeader
-        eyebrow={t("eyebrow")}
-        title={t("title")}
-        actions={
-          canManage && (
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant="secondary"
-                icon={<Wand2 />}
-                onClick={() => {
-                  setTemplateOpen(true);
-                }}
-              >
-                {t("applyTemplate")}
-              </Button>
-              <Button
-                size="sm"
-                icon={<Plus />}
-                onClick={() => {
-                  open("new");
-                }}
-              >
-                {t("add")}
-              </Button>
-            </div>
-          )
-        }
-      />
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-[18px] font-medium text-fg">{t("title")}</h2>
+        {canManage && (
+          <div className="flex flex-wrap gap-2">
+            <Button
+              size="sm"
+              variant="secondary"
+              icon={<Wand2 />}
+              onClick={() => {
+                setTemplateOpen(true);
+              }}
+            >
+              {t("applyTemplate")}
+            </Button>
+            <Button
+              size="sm"
+              icon={<Plus />}
+              onClick={() => {
+                open("new");
+              }}
+            >
+              {t("add")}
+            </Button>
+          </div>
+        )}
+      </div>
       <DataTable
+        stateKey="features/academic/components/grade-levels-view:1"
+        mode="local"
         data={rows}
         columns={columns}
         rowCount={rows.length}
@@ -161,7 +159,6 @@ export function GradeLevelsView(): ReactElement {
         sorting={[]}
         onSortingChange={() => undefined}
         globalFilter=""
-        onGlobalFilterChange={() => undefined}
         isLoading={isLoading}
         getRowId={(g) => g.id}
         emptyState={

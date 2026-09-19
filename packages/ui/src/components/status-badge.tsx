@@ -23,7 +23,7 @@ export interface StatusBadgeProps extends Omit<ComponentPropsWithoutRef<"span">,
 /**
  * Maps a status code to its token color. Always renders a text label next
  * to the dot, never color alone, per DESIGN.md ("selalu disertai label teks
- * atau ikon") and antislop-human's color-only-feedback rule.
+ * atau ikon") for accessible status feedback.
  */
 export function StatusBadge({ status, label, className, ...props }: StatusBadgeProps) {
   return (

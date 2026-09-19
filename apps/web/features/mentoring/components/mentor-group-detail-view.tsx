@@ -3,8 +3,9 @@
 import { PageHeader, Skeleton, Tabs, TabsContent, TabsList, TabsTrigger } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useState } from "react";
 
+import { QueryError } from "../../../components/query-error";
+import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useCan } from "../../../lib/session/session-provider";
 import { useLookup, useTeachersQuery } from "../../reference/api";
 import { useMentorGroupMembersQuery, useMentorGroupQuery } from "../api";
@@ -15,12 +16,19 @@ import { MentorMeetingNotesPanel } from "./mentor-meeting-notes-panel";
 export function MentorGroupDetailView({ groupId }: { groupId: string }): ReactElement {
   const t = useTranslations("app.mentoring.groupDetail");
   const canSeeNotes = useCan("manage_mentoring");
-  const [tab, setTab] = useState("members");
+  const [tab, setTab] = useUrlState<string>(
+    "tab",
+    ["members", ...(canSeeNotes ? ["notes"] : [])],
+    "members",
+  );
 
   const group = useMentorGroupQuery(groupId);
   const members = useMentorGroupMembersQuery(groupId);
   const teachers = useTeachersQuery();
   const teacherMap = useLookup(teachers.data?.data);
+
+  if (group.isError && !group.data)
+    return <QueryError retry={() => group.refetch()} className="m-4" />;
 
   if (group.isLoading || !group.data) {
     return (

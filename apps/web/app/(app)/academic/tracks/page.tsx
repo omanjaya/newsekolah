@@ -1,7 +1,5 @@
-import type { ReactElement } from "react";
+import { redirect } from "next/navigation";
 
-import { TracksView } from "../../../../features/academic/components/tracks-view";
-
-export default function Page(): ReactElement {
-  return <TracksView />;
+export default function Page(): never {
+  redirect("/school/structure?tab=tracks");
 }

@@ -3,14 +3,16 @@ package domain
 import "errors"
 
 var (
-	ErrScheduleNotFound   = errors.New("schedule not found")
-	ErrInvalidPeriodRange = errors.New("end period must not be before the start period")
-	ErrDayNotSchoolDay    = errors.New("day of week is not an active school day")
-	ErrTeacherNotAssigned = errors.New("teacher has no active teaching assignment for this class and subject")
-	ErrPeriodNotFound     = errors.New("period not found in the school's period template")
-	ErrPeriodIsBreak      = errors.New("a break period cannot be scheduled as a lesson")
-	ErrPeriodTemplateDay  = errors.New("period does not belong to the template assigned to this day of week")
-	ErrYearArchived       = errors.New("academic year is archived")
+	ErrScheduleHasHistory   = errors.New("schedule has attendance or substitution history")
+	ErrInvalidScheduleBlock = errors.New("schedule IDs must describe one contiguous block")
+	ErrScheduleNotFound     = errors.New("schedule not found")
+	ErrInvalidPeriodRange   = errors.New("end period must not be before the start period")
+	ErrDayNotSchoolDay      = errors.New("day of week is not an active school day")
+	ErrTeacherNotAssigned   = errors.New("teacher has no active teaching assignment for this class and subject")
+	ErrPeriodNotFound       = errors.New("period not found in the school's period template")
+	ErrPeriodIsBreak        = errors.New("a break period cannot be scheduled as a lesson")
+	ErrPeriodTemplateDay    = errors.New("period does not belong to the template assigned to this day of week")
+	ErrYearArchived         = errors.New("academic year is archived")
 
 	// ErrConflictClass and ErrConflictTeacher map to HTTP 409
 	// SCHEDULE_CONFLICT_CLASS / SCHEDULE_CONFLICT_TEACHER in transport,

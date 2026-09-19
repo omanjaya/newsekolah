@@ -149,6 +149,8 @@ export function GenerationView(): ReactElement {
             )}
           </div>
           <DataTable
+            stateKey="features/billing/components/generation-view:1"
+            mode="local"
             data={rows}
             columns={columns}
             rowCount={rows.length}
@@ -157,7 +159,6 @@ export function GenerationView(): ReactElement {
             sorting={[]}
             onSortingChange={() => undefined}
             globalFilter=""
-            onGlobalFilterChange={() => undefined}
             isLoading={false}
             getRowId={(item) => `${item.fee_type_id}-${item.student_user_id}-${item.period}`}
             emptyState={

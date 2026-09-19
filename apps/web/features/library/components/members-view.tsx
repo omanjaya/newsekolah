@@ -21,6 +21,7 @@ import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
 import { useCan } from "../../../lib/session/session-provider";
+import { useRememberedViewState } from "../../../lib/view-state/view-state-provider";
 import { useDirectoryQuery, useLookup } from "../../reference/api";
 import {
   type LibraryMember,
@@ -40,9 +41,12 @@ export function MembersView(): ReactElement {
   const toast = useToast();
   const canManage = useCan("manage_library_members");
 
-  const [status, setStatus] = useState<LibraryMemberStatus | "">("");
-  const [memberTypeId, setMemberTypeId] = useState("");
-  const [search, setSearch] = useState("");
+  const [status, setStatus] = useRememberedViewState<LibraryMemberStatus | "">(
+    "members-status",
+    "",
+  );
+  const [memberTypeId, setMemberTypeId] = useRememberedViewState("members-type", "");
+  const [search, setSearch] = useRememberedViewState("members-search", "");
   const [registering, setRegistering] = useState(false);
   const [bulkRegistering, setBulkRegistering] = useState(false);
 
@@ -190,6 +194,7 @@ export function MembersView(): ReactElement {
       </div>
 
       <DataTable
+        stateKey="features/library/components/members-view:1"
         data={items}
         columns={columns}
         rowCount={items.length}

@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
+import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { type AuthSettings, useAuthSettingsQuery, useUpdateAuthSettingsMutation } from "../api";
 
@@ -24,7 +25,9 @@ const MAX_DAYS = 365;
  */
 export function SessionSettingsView(): ReactElement {
   const t = useTranslations("app.settings.session");
-  const { data, isLoading } = useAuthSettingsQuery();
+  const { data, isLoading, isError, refetch } = useAuthSettingsQuery();
+
+  if (isError && !data) return <QueryError retry={() => refetch()} className="m-4" />;
 
   if (isLoading || !data) {
     return (

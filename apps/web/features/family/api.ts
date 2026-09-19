@@ -28,11 +28,12 @@ const keys = {
   billing: (studentId: string) => ["family", "child", studentId, "billing"] as const,
 };
 
-export function useMyChildrenQuery() {
+export function useMyChildrenQuery(enabled = true) {
   const client = useApiClient();
   return useQuery({
     queryKey: keys.myChildren(),
     queryFn: () => client.GET("/v1/me/children"),
+    enabled,
   });
 }
 

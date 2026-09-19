@@ -150,6 +150,8 @@ export function FeeTypesView(): ReactElement {
       </div>
 
       <DataTable
+        stateKey="features/billing/components/fee-types-view:1"
+        mode="local"
         data={items}
         columns={columns}
         rowCount={items.length}
@@ -158,7 +160,6 @@ export function FeeTypesView(): ReactElement {
         sorting={[]}
         onSortingChange={() => undefined}
         globalFilter=""
-        onGlobalFilterChange={() => undefined}
         isLoading={isLoading}
         getRowId={(item) => item.id}
         emptyState={

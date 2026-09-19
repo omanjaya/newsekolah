@@ -109,6 +109,10 @@ func mapScheduleError(err error) error {
 		errors.Is(err, domain.ErrTeacherNotAssigned), errors.Is(err, domain.ErrPeriodNotFound),
 		errors.Is(err, domain.ErrPeriodIsBreak), errors.Is(err, domain.ErrPeriodTemplateDay):
 		return httpx.ErrValidation
+	case errors.Is(err, domain.ErrScheduleHasHistory):
+		return httpx.WrapError(409, "SCHEDULE_HAS_HISTORY", err)
+	case errors.Is(err, domain.ErrInvalidScheduleBlock):
+		return httpx.ErrValidation
 	case errors.Is(err, domain.ErrYearArchived):
 		return httpx.WrapError(409, "SCHEDULE_YEAR_ARCHIVED", err)
 	default:

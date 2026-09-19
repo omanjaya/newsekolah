@@ -36,6 +36,8 @@ import {
 } from "../loan-rules-api";
 import { useLibraryMemberTypesQuery } from "../members-api";
 
+import { LibraryPolicyDialog } from "./library-policy-dialog";
+
 /** Dated loan rules per member type: shorten or extend limits, or close lending, for a period. */
 export function LoanRulesView(): ReactElement {
   const t = useTranslations("app.library.loanRules");
@@ -126,20 +128,26 @@ export function LoanRulesView(): ReactElement {
         title={t("title")}
         actions={
           canManage && (
-            <Button
-              size="sm"
-              icon={<Plus />}
-              onClick={() => {
-                setCreating(true);
-              }}
-            >
-              {t("add")}
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <LibraryPolicyDialog />
+              <Button
+                size="sm"
+                icon={<Plus />}
+                onClick={() => {
+                  setCreating(true);
+                }}
+              >
+                {t("add")}
+              </Button>
+            </div>
           )
         }
       />
 
       <DataTable
+        stateKey="features/library/components/loan-rules-view:1"
+        mode="local"
+        searchable={false}
         data={items}
         columns={columns}
         rowCount={items.length}
@@ -148,7 +156,6 @@ export function LoanRulesView(): ReactElement {
         sorting={[]}
         onSortingChange={() => undefined}
         globalFilter=""
-        onGlobalFilterChange={() => undefined}
         isLoading={isLoading}
         getRowId={(item) => item.id}
         emptyState={

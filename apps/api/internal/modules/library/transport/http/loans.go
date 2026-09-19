@@ -133,7 +133,7 @@ func (h *LibraryHandler) ListOverdueLibraryLoansDetailed(ctx context.Context, _ 
 	}
 	data := make([]api.LibraryOverdueLoanDetail, len(details))
 	for i, d := range details {
-		data[i] = api.LibraryOverdueLoanDetail{Loan: toAPILoan(d.Loan), ClassName: d.ClassName, GuardianPhone: d.GuardianPhone}
+		data[i] = api.LibraryOverdueLoanDetail{Loan: toAPILoan(d.Loan), ClassName: d.ClassName, GuardianPhone: d.GuardianPhone, MemberName: d.MemberName, MemberNo: d.MemberNo, Title: d.Title, Barcode: d.Barcode}
 	}
 	return api.ListOverdueLibraryLoansDetailed200JSONResponse{Data: data}, nil
 }

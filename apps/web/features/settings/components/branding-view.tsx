@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
+import { QueryError } from "../../../components/query-error";
 import { useApiClient } from "../../../lib/api/client";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { type BrandingWrite, type TenantBranding, useUpdateBrandingMutation } from "../api";
@@ -24,7 +25,9 @@ const ACCENT_PATTERN = /^#[0-9A-Fa-f]{6}$/;
 export function BrandingView(): ReactElement {
   const t = useTranslations("app.settings.branding");
   const client = useApiClient();
-  const { data, isLoading } = useTenantBranding(client);
+  const { data, isLoading, isError, refetch } = useTenantBranding(client);
+
+  if (isError && !data) return <QueryError retry={() => refetch()} className="m-4" />;
 
   if (isLoading || !data) {
     return (

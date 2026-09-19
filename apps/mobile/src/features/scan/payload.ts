@@ -5,12 +5,7 @@
  * for codes typed by hand.
  */
 export type ScanKind =
-  | "classroom_entry"
-  | "late_arrival"
-  | "approve"
-  | "gate"
-  | "approve_stage"
-  | "gate_exit";
+  "classroom_entry" | "late_arrival" | "approve" | "gate" | "approve_stage" | "gate_exit";
 
 export interface ScanPayload {
   kind?: string;

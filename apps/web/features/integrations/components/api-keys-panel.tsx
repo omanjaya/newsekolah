@@ -116,6 +116,8 @@ export function APIKeysPanel(): ReactElement {
       </div>
 
       <DataTable
+        stateKey="features/integrations/components/api-keys-panel:1"
+        mode="local"
         data={items}
         columns={columns}
         rowCount={items.length}
@@ -124,7 +126,6 @@ export function APIKeysPanel(): ReactElement {
         sorting={[]}
         onSortingChange={() => undefined}
         globalFilter=""
-        onGlobalFilterChange={() => undefined}
         isLoading={isLoading}
         getRowId={(key) => key.id}
         emptyState={

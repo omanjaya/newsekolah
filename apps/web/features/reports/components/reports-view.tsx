@@ -15,6 +15,7 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
+import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useCan } from "../../../lib/session/session-provider";
 import { useReportsQuery } from "../api";
 
@@ -52,7 +53,7 @@ export function ReportsView(): ReactElement {
 
 function ReportsTabs(): ReactElement {
   const t = useTranslations("app.reports");
-  const [tab, setTab] = useState("exports");
+  const [tab, setTab] = useUrlState<string>("tab", ["exports", "schedules"], "exports");
 
   return (
     <Tabs value={tab} onValueChange={setTab}>

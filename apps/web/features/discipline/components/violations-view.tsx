@@ -3,8 +3,8 @@
 import { PageHeader, Tabs, TabsContent, TabsList, TabsTrigger } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useState } from "react";
 
+import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useCan } from "../../../lib/session/session-provider";
 
 import { DisciplinePolicyView } from "./discipline-policy-view";
@@ -15,7 +15,11 @@ export function ViolationsView(): ReactElement {
   const t = useTranslations("app.discipline.violations");
   const canManageCatalog = useCan("manage_discipline_catalog");
   const canManagePolicy = useCan("manage_settings");
-  const [tab, setTab] = useState("ledger");
+  const [tab, setTab] = useUrlState<string>(
+    "tab",
+    ["ledger", ...(canManageCatalog ? ["catalog"] : []), ...(canManagePolicy ? ["policy"] : [])],
+    "ledger",
+  );
 
   const showTabs = canManageCatalog || canManagePolicy;
 

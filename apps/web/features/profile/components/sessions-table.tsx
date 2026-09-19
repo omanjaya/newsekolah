@@ -104,6 +104,7 @@ export function SessionsTable(): ReactElement {
   return (
     <>
       <DataTable
+        stateKey="features/profile/components/sessions-table:1"
         data={filtered}
         columns={columns}
         rowCount={filtered.length}

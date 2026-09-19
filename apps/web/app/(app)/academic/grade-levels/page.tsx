@@ -1,7 +1,5 @@
-import type { ReactElement } from "react";
+import { redirect } from "next/navigation";
 
-import { GradeLevelsView } from "../../../../features/academic/components/grade-levels-view";
-
-export default function Page(): ReactElement {
-  return <GradeLevelsView />;
+export default function Page(): never {
+  redirect("/school/structure?tab=grade-levels");
 }

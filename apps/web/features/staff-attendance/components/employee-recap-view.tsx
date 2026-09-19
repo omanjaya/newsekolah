@@ -16,6 +16,7 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { useDateFilter } from "../../../lib/hooks/use-date-filter";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import {
   type AttendanceRecord,
@@ -48,9 +49,9 @@ export function EmployeeRecapView({ employees }: { employees: Employee[] }): Rea
 
   const [employeeId, setEmployeeId] = useState("");
   const today = todayInZone();
-  const [from, setFrom] = useState(today.slice(0, 8) + "01");
-  const [to, setTo] = useState(today);
-  const [month, setMonth] = useState(today.slice(0, 7));
+  const [from, setFrom] = useDateFilter("from", today.slice(0, 8) + "01");
+  const [to, setTo] = useDateFilter("to", today);
+  const [month, setMonth] = useDateFilter("month", today.slice(0, 7), true);
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
 
@@ -141,6 +142,8 @@ export function EmployeeRecapView({ employees }: { employees: Employee[] }): Rea
               </label>
             </div>
             <DataTable
+              stateKey="features/staff-attendance/components/employee-recap-view:1"
+              mode="local"
               data={historyRows}
               columns={columns}
               rowCount={historyRows.length}
@@ -149,7 +152,6 @@ export function EmployeeRecapView({ employees }: { employees: Employee[] }): Rea
               sorting={[]}
               onSortingChange={() => undefined}
               globalFilter=""
-              onGlobalFilterChange={() => undefined}
               isLoading={history.isLoading}
               getRowId={(r) => r.date}
               emptyState={
@@ -207,6 +209,8 @@ export function EmployeeRecapView({ employees }: { employees: Employee[] }): Rea
                   ))}
                 </dl>
                 <DataTable
+                  stateKey="features/staff-attendance/components/employee-recap-view:2"
+                  mode="local"
                   data={recapData.days}
                   columns={columns}
                   rowCount={recapData.days.length}
@@ -215,7 +219,6 @@ export function EmployeeRecapView({ employees }: { employees: Employee[] }): Rea
                   sorting={[]}
                   onSortingChange={() => undefined}
                   globalFilter=""
-                  onGlobalFilterChange={() => undefined}
                   isLoading={recap.isLoading}
                   getRowId={(r) => r.date}
                   emptyState={

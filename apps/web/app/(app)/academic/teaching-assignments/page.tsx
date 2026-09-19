@@ -1,7 +1,5 @@
-import type { ReactElement } from "react";
+import { redirect } from "next/navigation";
 
-import { TeachingAssignmentsView } from "../../../../features/academic/components/teaching-assignments-view";
-
-export default function Page(): ReactElement {
-  return <TeachingAssignmentsView />;
+export default function Page(): never {
+  redirect("/school/assignments?tab=teaching");
 }

@@ -22,14 +22,11 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { useDateFilter } from "../../../lib/hooks/use-date-filter";
+import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan, useSession } from "../../../lib/session/session-provider";
-import {
-  useClassEnrollmentsQuery,
-  useClassesQuery,
-  useDirectoryQuery,
-  type ClassRef,
-} from "../../reference/api";
+import { useClassEnrollmentsQuery, useClassesQuery, useDirectoryQuery } from "../../reference/api";
 import {
   downloadDailyAttendanceReport,
   todayInZone,
@@ -41,18 +38,7 @@ import {
 } from "../api";
 
 import { AttendanceDailySessions } from "./attendance-daily-sessions";
-
-const STATUS_TOKEN: Record<
-  string,
-  "present" | "sick" | "excused" | "dispensation" | "absent" | "late"
-> = {
-  H: "present",
-  S: "sick",
-  I: "excused",
-  D: "dispensation",
-  A: "absent",
-  INCOMPLETE: "late",
-};
+import { STATUS_TOKEN, classOptions } from "./attendance-report-options";
 
 /**
  * The dedicated attendance report screen: renders the daily and monthly
@@ -62,7 +48,11 @@ const STATUS_TOKEN: Record<
 export function AttendanceReportsView(): ReactElement {
   const t = useTranslations("app.attendanceReports");
   const canViewReports = useCan("view_reports");
-  const [tab, setTab] = useState(canViewReports ? "daily" : "mine");
+  const [tab, setTab] = useUrlState<string>(
+    "tab",
+    canViewReports ? ["mine", "daily", "monthly"] : ["mine"],
+    canViewReports ? "daily" : "mine",
+  );
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
@@ -101,7 +91,7 @@ function MineReportTab(): ReactElement {
   const t = useTranslations("app.attendanceReports.mine");
   const { me } = useSession();
 
-  const [date, setDate] = useState(todayInZone(me?.tenant.timezone));
+  const [date, setDate] = useDateFilter("date", todayInZone(me?.tenant.timezone));
   const report = useOwnDailyAttendanceReportQuery(date);
   const sessions = report.data?.data ?? [];
 
@@ -135,17 +125,13 @@ function MineReportTab(): ReactElement {
   );
 }
 
-function classOptions(classes: ClassRef[] | undefined) {
-  return (classes ?? []).map((item) => ({ value: item.id, label: item.name }));
-}
-
 function DailyReportTab(): ReactElement {
   const t = useTranslations("app.attendanceReports.daily");
   const apiErrorMessage = useApiErrorMessage();
   const { me } = useSession();
 
   const [classId, setClassId] = useState("");
-  const [date, setDate] = useState(todayInZone(me?.tenant.timezone));
+  const [date, setDate] = useDateFilter("date", todayInZone(me?.tenant.timezone));
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
 
@@ -273,6 +259,8 @@ function DailyReportTab(): ReactElement {
             </dl>
           )}
           <DataTable
+            stateKey="features/attendance/components/attendance-reports-view:1"
+            mode="local"
             data={rows}
             columns={columns}
             rowCount={rows.length}
@@ -281,7 +269,6 @@ function DailyReportTab(): ReactElement {
             sorting={[]}
             onSortingChange={() => undefined}
             globalFilter=""
-            onGlobalFilterChange={() => undefined}
             isLoading={report.isLoading}
             getRowId={(r) => r.student_user_id}
             emptyState={
@@ -301,7 +288,11 @@ function MonthlyReportTab(): ReactElement {
 
   const [classId, setClassId] = useState("");
   const [studentId, setStudentId] = useState("");
-  const [month, setMonth] = useState(todayInZone(me?.tenant.timezone).slice(0, 7));
+  const [month, setMonth] = useDateFilter(
+    "month",
+    todayInZone(me?.tenant.timezone).slice(0, 7),
+    true,
+  );
 
   const classes = useClassesQuery();
   const enrollments = useClassEnrollmentsQuery(classId, classId !== "");
@@ -415,6 +406,8 @@ function MonthlyReportTab(): ReactElement {
             </dl>
           )}
           <DataTable
+            stateKey="features/attendance/components/attendance-reports-view:2"
+            mode="local"
             data={rows}
             columns={columns}
             rowCount={rows.length}
@@ -423,7 +416,6 @@ function MonthlyReportTab(): ReactElement {
             sorting={[]}
             onSortingChange={() => undefined}
             globalFilter=""
-            onGlobalFilterChange={() => undefined}
             isLoading={report.isLoading}
             getRowId={(r) => r.date}
             emptyState={

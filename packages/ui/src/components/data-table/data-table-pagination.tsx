@@ -17,19 +17,18 @@ export const DEFAULT_PAGINATION_LABELS: DataTablePaginationLabels = {
 
 export interface DataTablePaginationProps<TData> {
   table: Table<TData>;
-  rowCount: number;
+  pageCount?: number;
   labels?: Partial<DataTablePaginationLabels>;
 }
 
 export function DataTablePagination<TData>({
   table,
-  rowCount,
+  pageCount: pageCountOverride,
   labels: labelsOverride,
 }: DataTablePaginationProps<TData>) {
   const labels = { ...DEFAULT_PAGINATION_LABELS, ...labelsOverride };
   const pageIndex = table.getState().pagination.pageIndex;
-  const pageSize = table.getState().pagination.pageSize;
-  const pageCount = Math.max(1, Math.ceil(rowCount / pageSize));
+  const pageCount = Math.max(1, pageCountOverride ?? table.getPageCount());
 
   return (
     <div className="flex items-center justify-between gap-4 pt-2">

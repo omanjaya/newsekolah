@@ -2,8 +2,7 @@
 // text/background pairs, 3:1 for status colors used as non-text indicators
 // against a surface. Run via `pnpm test` (see package.json) and standalone
 // via `pnpm contrast-check`. See docs/09-tech-stack.md and DESIGN.md for the
-// source palette and .claude/skills/antislop-human for the formula this
-// mirrors.
+// source palette; wcag-contrast.js implements the contrast formula.
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";

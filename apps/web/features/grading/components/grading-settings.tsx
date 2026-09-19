@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
+import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useGradingScaleQuery, useUpdateGradingScaleMutation } from "../api";
 
@@ -34,7 +35,7 @@ function ScaleForm(): ReactElement {
   const t = useTranslations("app.grading.settings");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
-  const { data, isLoading } = useGradingScaleQuery();
+  const { data, isLoading, isError, refetch } = useGradingScaleQuery();
   const update = useUpdateGradingScaleMutation();
   const [form, setForm] = useState<{
     min: string;
@@ -45,6 +46,8 @@ function ScaleForm(): ReactElement {
   } | null>(null);
 
   const active = form ?? (data ? toFormState(data) : null);
+
+  if (isError && !data) return <QueryError retry={() => refetch()} />;
 
   if (isLoading || !active) {
     return <Skeleton className="h-48 w-full max-w-md" aria-busy="true" />;
@@ -71,6 +74,7 @@ function ScaleForm(): ReactElement {
 
   return (
     <section className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-4">
+      {isError && <QueryError retry={() => refetch()} />}
       <h2 className="text-[16px] font-medium text-fg">{t("scaleTitle")}</h2>
       <form
         className="grid max-w-md grid-cols-1 gap-4 sm:grid-cols-2"

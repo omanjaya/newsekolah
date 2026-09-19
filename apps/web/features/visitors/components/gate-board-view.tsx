@@ -81,7 +81,7 @@ function BoardCard({ entry }: { entry: BoardEntry }): ReactElement {
 /**
  * The screen a guard actually works from, standing at the gate desk: big
  * cards with one large action each, a 30s auto-refresh, and a single
- * button to start a new sign-in. Antislop-layoutmobile: targets stay at
+ * button to start a new sign-in. Touch targets stay at
  * least 44px tall even at desk-tablet width.
  */
 export function GateBoardView(): ReactElement {

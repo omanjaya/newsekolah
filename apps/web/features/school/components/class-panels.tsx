@@ -1,7 +1,7 @@
 "use client";
-
 import { ApiError } from "@newsekolah/api-client";
 import {
+  Alert,
   Button,
   Checkbox,
   Dialog,
@@ -36,7 +36,6 @@ import {
   useTeachingAssignmentsQuery,
   useUnassignedStudentsQuery,
 } from "../api";
-
 export function EnrollmentPanel({
   classId,
   canManage,
@@ -45,6 +44,8 @@ export function EnrollmentPanel({
   canManage: boolean;
 }): ReactElement {
   const t = useTranslations("app.school.classes");
+  const tApp = useTranslations("app");
+  const tCommon = useTranslations("common.states");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const enrollments = useEnrollmentsQuery(classId);
@@ -52,24 +53,29 @@ export function EnrollmentPanel({
   const studentMap = useLookup(students.data?.data);
   const [adding, setAdding] = useState(false);
   const [search, setSearch] = useState("");
+  const [rosterSearch, setRosterSearch] = useState("");
   const unassigned = useUnassignedStudentsQuery(search, adding);
   const assign = useBulkAssignMutation(classId);
   const [picked, setPicked] = useState<string[]>([]);
   const rows = (enrollments.data?.data ?? []).filter((e) => e.status === "active");
-
   const classes = useClassesQuery();
   const moveTargets = (classes.data?.data ?? []).filter((c) => c.id !== classId);
   const moveStudent = useMoveStudentMutation(classId);
   const [moving, setMoving] = useState<Enrollment | null>(null);
   const [toClassId, setToClassId] = useState("");
   const [effectiveOn, setEffectiveOn] = useState(() => new Date().toISOString().slice(0, 10));
-
-  const fail = (error: unknown) => {
+  const filteredRows = useMemo(() => {
+    const query = rosterSearch.trim().toLocaleLowerCase();
+    if (!query) return rows;
+    return rows.filter((e) => {
+      const name = e.student_name ?? studentMap.get(e.student_user_id)?.name ?? e.student_user_id;
+      return name.toLocaleLowerCase().includes(query);
+    });
+  }, [rosterSearch, rows, studentMap]);
+  const fail = (error: unknown) =>
     toast.error(
       error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
     );
-  };
-
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
@@ -87,16 +93,39 @@ export function EnrollmentPanel({
           </Button>
         )}
       </div>
+      {!enrollments.isLoading && !enrollments.isError && rows.length > 0 && (
+        <Input
+          value={rosterSearch}
+          onChange={(e) => {
+            setRosterSearch(e.target.value);
+          }}
+          placeholder={t("searchStudent")}
+          aria-label={t("searchStudent")}
+        />
+      )}
       {enrollments.isLoading ? (
         <Skeleton className="h-32 w-full" />
+      ) : enrollments.isError ? (
+        <Alert variant="warning" title={tApp("error.body")}>
+          <Button variant="secondary" onClick={() => void enrollments.refetch()}>
+            {tApp("offlinePage.retry")}
+          </Button>
+        </Alert>
       ) : rows.length === 0 ? (
         <p className="text-[13px] text-fg-muted">{t("noStudents")}</p>
+      ) : filteredRows.length === 0 ? (
+        <p role="status" className="text-[13px] text-fg-muted">
+          {tCommon("noResults")}
+        </p>
       ) : (
-        <ol className="grid gap-1 text-[14px] md:grid-cols-2">
-          {rows.map((e, i) => (
-            <li key={e.id} className="flex items-center gap-2 rounded-xs px-2 py-1">
+        <ol className="grid min-w-0 gap-1 text-[14px] md:grid-cols-2">
+          {filteredRows.map((e, i) => (
+            <li key={e.id} className="flex min-w-0 items-center gap-2 rounded-xs px-2 py-1">
               <span className="w-6 shrink-0 text-right text-fg-muted">{i + 1}</span>
-              <span className="min-w-0 flex-1 truncate">
+              <span
+                className="min-w-0 flex-1 break-words md:truncate"
+                title={e.student_name ?? studentMap.get(e.student_user_id)?.name}
+              >
                 {e.student_name ?? studentMap.get(e.student_user_id)?.name ?? e.student_user_id}
               </span>
               {canManage && (
@@ -257,7 +286,6 @@ export function EnrollmentPanel({
     </div>
   );
 }
-
 export function TeachingPanel({
   classId,
   canManage,
@@ -282,12 +310,10 @@ export function TeachingPanel({
     () => (assignments.data?.data ?? []).filter((a) => a.is_active),
     [assignments.data],
   );
-  const fail = (error: unknown) => {
+  const fail = (error: unknown) =>
     toast.error(
       error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
     );
-  };
-
   return (
     <div className="flex flex-col gap-3">
       {assignments.isLoading ? (

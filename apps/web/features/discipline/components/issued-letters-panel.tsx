@@ -107,6 +107,8 @@ export function IssuedLettersPanel(): ReactElement {
         aria-label={t("filters.class")}
       />
       <DataTable
+        stateKey="features/discipline/components/issued-letters-panel:1"
+        mode="local"
         data={items}
         columns={columns}
         rowCount={items.length}
@@ -115,7 +117,6 @@ export function IssuedLettersPanel(): ReactElement {
         sorting={[]}
         onSortingChange={() => undefined}
         globalFilter=""
-        onGlobalFilterChange={() => undefined}
         isLoading={isLoading}
         getRowId={(item) => item.id}
         onRowActivate={(item) => {

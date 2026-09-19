@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 
 import type { NavItem } from "./navigation";
+import { NAV_GROUP } from "./navigation-groups";
 
 /**
  * Settings, reporting and platform entries, split out of `navigation.ts`
@@ -27,7 +28,8 @@ export const settingsNavItems: NavItem[] = [
     href: "/settings/roles",
     icon: ShieldCheck,
     permission: "view_roles",
-    group: "nav.settings.label",
+    group: NAV_GROUP.settings,
+    sidebarPlacement: "footer",
   },
   {
     key: "reports",
@@ -35,7 +37,6 @@ export const settingsNavItems: NavItem[] = [
     href: "/reports",
     icon: FileSpreadsheet,
     permission: "view_reports",
-    group: "nav.settings.label",
   },
   {
     key: "setup",
@@ -43,14 +44,17 @@ export const settingsNavItems: NavItem[] = [
     href: "/setup",
     icon: ListChecks,
     permission: "manage_settings",
-    group: "nav.settings.label",
+    group: NAV_GROUP.settings,
+    sidebarPlacement: "footer",
   },
   {
     key: "settings-security",
     labelKey: "app.security.navLabel",
     href: "/settings/security",
     icon: ShieldCheck,
-    group: "nav.settings.label",
+    group: NAV_GROUP.settings,
+    sidebarPlacement: "hidden",
+    accountMenu: true,
   },
   {
     key: "settings-session",
@@ -58,7 +62,8 @@ export const settingsNavItems: NavItem[] = [
     href: "/settings/session",
     icon: KeyRound,
     permission: "manage_settings",
-    group: "nav.settings.label",
+    group: NAV_GROUP.settings,
+    sidebarPlacement: "footer",
   },
   {
     key: "settings-branding",
@@ -66,7 +71,8 @@ export const settingsNavItems: NavItem[] = [
     href: "/settings/branding",
     icon: Palette,
     permission: "manage_settings",
-    group: "nav.settings.label",
+    group: NAV_GROUP.settings,
+    sidebarPlacement: "footer",
   },
   {
     key: "settings-sso",
@@ -74,7 +80,8 @@ export const settingsNavItems: NavItem[] = [
     href: "/settings/sso",
     icon: ShieldCheck,
     permission: "manage_settings",
-    group: "nav.settings.label",
+    group: NAV_GROUP.settings,
+    sidebarPlacement: "footer",
   },
   {
     key: "settings-audit",
@@ -82,7 +89,8 @@ export const settingsNavItems: NavItem[] = [
     href: "/settings/audit-logs",
     icon: ShieldCheck,
     permission: "view_audit_logs",
-    group: "nav.settings.label",
+    group: NAV_GROUP.settings,
+    sidebarPlacement: "footer",
   },
   {
     key: "settings-integrations",
@@ -90,14 +98,17 @@ export const settingsNavItems: NavItem[] = [
     href: "/settings/integrations",
     icon: Plug,
     permission: "view_integrations",
-    group: "nav.settings.label",
+    group: NAV_GROUP.settings,
+    sidebarPlacement: "footer",
   },
   {
     key: "settings-notifications",
     labelKey: "app.settings.notifications.navLabel",
     href: "/settings/notifications",
     icon: Bell,
-    group: "nav.settings.label",
+    group: NAV_GROUP.settings,
+    sidebarPlacement: "hidden",
+    accountMenu: true,
   },
   {
     key: "settings-notification-defaults",
@@ -105,7 +116,8 @@ export const settingsNavItems: NavItem[] = [
     href: "/settings/notification-defaults",
     icon: Bell,
     permission: "manage_notification_settings",
-    group: "nav.settings.label",
+    group: NAV_GROUP.settings,
+    sidebarPlacement: "footer",
   },
   {
     key: "settings-document-templates",
@@ -113,7 +125,8 @@ export const settingsNavItems: NavItem[] = [
     href: "/settings/document-templates",
     icon: domainIcons.document,
     permission: "manage_settings",
-    group: "nav.settings.label",
+    group: NAV_GROUP.settings,
+    sidebarPlacement: "footer",
   },
   {
     key: "settings-workflows",
@@ -121,7 +134,8 @@ export const settingsNavItems: NavItem[] = [
     href: "/settings/workflows",
     icon: domainIcons.workflow,
     permission: "manage_workflows",
-    group: "nav.settings.label",
+    group: NAV_GROUP.settings,
+    sidebarPlacement: "footer",
   },
   {
     key: "settings-whatsapp",
@@ -129,14 +143,17 @@ export const settingsNavItems: NavItem[] = [
     href: "/settings/whatsapp",
     icon: MessageCircle,
     permission: "manage_whatsapp",
-    group: "nav.settings.label",
+    group: NAV_GROUP.settings,
+    sidebarPlacement: "footer",
   },
   {
     key: "settings-appearance",
     labelKey: "app.shell.appearance",
     href: "/settings/appearance",
     icon: Settings,
-    group: "nav.settings.label",
+    group: NAV_GROUP.settings,
+    sidebarPlacement: "hidden",
+    accountMenu: true,
   },
   {
     key: "profile",
@@ -144,7 +161,9 @@ export const settingsNavItems: NavItem[] = [
     href: "/profile",
     icon: UserRound,
     showInTabBar: true,
-    group: "nav.settings.label",
+    group: NAV_GROUP.settings,
+    sidebarPlacement: "hidden",
+    accountMenu: true,
   },
 
   {
@@ -153,6 +172,7 @@ export const settingsNavItems: NavItem[] = [
     href: "/platform",
     icon: Building2,
     permission: "platform_superadmin",
-    group: "nav.platform.label",
+    group: NAV_GROUP.platform,
+    sidebarPlacement: "footer",
   },
 ];

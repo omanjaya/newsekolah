@@ -9,7 +9,6 @@ import {
   EmptyState,
   IconButton,
   Input,
-  PageHeader,
   Select,
   Skeleton,
   domainIcons,
@@ -46,6 +45,7 @@ export function PeriodsView(): ReactElement {
   const templates = usePeriodTemplatesQuery();
   const [templateId, setTemplateId] = useState("");
   const [newTemplate, setNewTemplate] = useState("");
+  const [templateOpen, setTemplateOpen] = useState(false);
   const createTemplate = useCreatePeriodTemplateMutation();
   const updateTemplate = useUpdatePeriodTemplateMutation();
   const deleteTemplate = useDeletePeriodTemplateMutation();
@@ -64,8 +64,8 @@ export function PeriodsView(): ReactElement {
   };
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
-      <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
+    <div className="flex min-w-0 flex-col gap-4">
+      <h2 className="text-[18px] font-medium text-fg">{t("title")}</h2>
       <div className="flex flex-wrap items-end gap-3">
         <label className="flex flex-col gap-1 text-[13px]">
           <span className="font-medium">{t("template")}</span>
@@ -99,43 +99,22 @@ export function PeriodsView(): ReactElement {
             />
           </div>
         )}
-        <form
-          className="flex items-end gap-2"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (!newTemplate.trim()) return;
-            createTemplate.mutate(
-              { name: newTemplate.trim(), is_default: list.length === 0 },
-              {
-                onSuccess: () => {
-                  setNewTemplate("");
-                  toast.success(t("templateCreated"));
-                },
-                onError: fail,
-              },
-            );
+        <Button
+          size="sm"
+          variant="secondary"
+          icon={<Plus />}
+          onClick={() => {
+            setNewTemplate("");
+            setTemplateOpen(true);
           }}
         >
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium">{t("newTemplate")}</span>
-            <Input
-              value={newTemplate}
-              onChange={(e) => {
-                setNewTemplate(e.target.value);
-              }}
-              placeholder={t("newTemplatePlaceholder")}
-              className="w-56"
-            />
-          </label>
-          <Button type="submit" size="sm" variant="secondary" loading={createTemplate.isPending}>
-            {t("addTemplate")}
-          </Button>
-        </form>
+          {t("addTemplate")}
+        </Button>
       </div>
       {templates.isLoading ? (
         <Skeleton className="h-64 w-full" />
       ) : selected ? (
-        <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
           <PeriodTable templateId={selected.id} />
           <WeekPanel templateId={selected.id} />
         </div>
@@ -146,6 +125,55 @@ export function PeriodsView(): ReactElement {
           description={t("emptyBody")}
         />
       )}
+
+      <Dialog open={templateOpen} onOpenChange={setTemplateOpen}>
+        <DialogContent title={t("newTemplate")}>
+          <form
+            className="flex flex-col gap-4"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!newTemplate.trim()) return;
+              createTemplate.mutate(
+                { name: newTemplate.trim(), is_default: list.length === 0 },
+                {
+                  onSuccess: () => {
+                    setNewTemplate("");
+                    setTemplateOpen(false);
+                    toast.success(t("templateCreated"));
+                  },
+                  onError: fail,
+                },
+              );
+            }}
+          >
+            <label className="flex flex-col gap-1 text-[13px]">
+              <span className="font-medium">{t("newTemplate")}</span>
+              <Input
+                value={newTemplate}
+                onChange={(e) => {
+                  setNewTemplate(e.target.value);
+                }}
+                placeholder={t("newTemplatePlaceholder")}
+                required
+              />
+            </label>
+            <div className="flex justify-end gap-2 border-t border-border pt-4">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => {
+                  setTemplateOpen(false);
+                }}
+              >
+                {t("cancel")}
+              </Button>
+              <Button type="submit" loading={createTemplate.isPending}>
+                {t("addTemplate")}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <Dialog
         open={renaming !== null}

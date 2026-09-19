@@ -117,6 +117,8 @@ export function PartnersTab(): ReactElement {
       </div>
 
       <DataTable
+        stateKey="features/library/components/partners-tab:1"
+        mode="local"
         data={items}
         columns={columns}
         rowCount={items.length}
@@ -125,7 +127,6 @@ export function PartnersTab(): ReactElement {
         sorting={[]}
         onSortingChange={() => undefined}
         globalFilter=""
-        onGlobalFilterChange={() => undefined}
         isLoading={isLoading}
         getRowId={(item) => item.id}
         emptyState={

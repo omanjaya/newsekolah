@@ -5,7 +5,7 @@ import { getApiClient } from "@/lib/api/client";
 
 export function useNotifications(unreadOnly = false) {
   return useQuery({
-    queryKey: queryKeys.notifications(unreadOnly),
+    queryKey: queryKeys.notifications({ unreadOnly }),
     queryFn: () =>
       getApiClient().GET("/v1/notifications", {
         params: { query: { unread_only: unreadOnly, limit: 50 } },

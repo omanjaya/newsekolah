@@ -105,6 +105,7 @@ Satu hal yang paling perlu dibuktikan di browser: pembacaan berkas XLSX untuk im
 ### 3. Risiko terbuka
 
 - **Repo belum punya remote git.** Seluruh commit hanya ada di satu mesin, tanpa cadangan. Pasang remote dan push sebelum pekerjaan berikutnya.
+- ~~**Aksen tenant tidak mengikuti mode gelap.**~~ Sudah diperbaiki. `TenantProvider` kini menulis dua variabel, `--tenant-accent` dan `--tenant-accent-dark`; yang kedua diturunkan oleh `apps/web/lib/tenant/accent.ts` dengan menaikkan lightness sampai menembus 4,5:1 di atas permukaan gelap `#1C1C1C`, sambil menahan saturasi agar tidak menyala. `app/globals.css` memilih salah satunya per tema. Aksen bawaan `#1F3A5F` naik dari 1,48:1 menjadi 4,68:1 (turunannya `#6288BC`). Uji ada di `accent.test.ts`; kaskadenya diverifikasi di browser untuk tiga jalur: sistem terang, sistem gelap, dan `data-theme="dark"` eksplisit.
 
 ## Cara memeriksa ulang
 

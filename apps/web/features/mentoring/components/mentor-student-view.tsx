@@ -4,6 +4,7 @@ import { Badge, PageHeader, Skeleton } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
+import { QueryError } from "../../../components/query-error";
 import { useLookup, useSubjectsQuery } from "../../reference/api";
 import { useMentorStudentSnapshotQuery } from "../api";
 
@@ -26,6 +27,9 @@ export function MentorStudentView({
   const snapshot = useMentorStudentSnapshotQuery(studentId);
   const subjects = useSubjectsQuery();
   const subjectMap = useLookup(subjects.data?.data);
+
+  if (snapshot.isError && !snapshot.data)
+    return <QueryError retry={() => snapshot.refetch()} className="m-4" />;
 
   if (snapshot.isLoading || !snapshot.data) {
     return (

@@ -1,7 +1,5 @@
-import type { ReactElement } from "react";
+import { redirect } from "next/navigation";
 
-import { PeriodsView } from "../../../../features/school/components/periods-view";
-
-export default function Page(): ReactElement {
-  return <PeriodsView />;
+export default function Page(): never {
+  redirect("/school/learning?tab=periods");
 }

@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
+import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import {
   NOTIFICATION_CHANNELS,
@@ -154,7 +155,9 @@ export function NotificationSettingsView(): ReactElement {
 
       <section className="flex flex-col gap-4 rounded-sm border border-border bg-surface p-4">
         <h2 className="text-[16px] font-medium text-fg">{t("timingTitle")}</h2>
-        {settings.isLoading || !settings.data ? (
+        {settings.isError && !settings.data ? (
+          <QueryError retry={() => settings.refetch()} />
+        ) : settings.isLoading || !settings.data ? (
           <Skeleton className="h-32 w-full" />
         ) : (
           <TimingForm

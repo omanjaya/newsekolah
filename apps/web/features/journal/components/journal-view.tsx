@@ -17,7 +17,7 @@ import {
   Select,
   useToast,
 } from "@newsekolah/ui";
-import type { ColumnDef } from "@tanstack/react-table";
+import type { ColumnDef, PaginationState } from "@tanstack/react-table";
 import { Download, MoreHorizontal, NotebookPen, Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -38,8 +38,8 @@ import { JournalForm } from "./journal-form";
 
 /**
  * A teacher's own class journals on the web, mirroring apps/mobile's
- * journal screen: the same class/subject/day log, independent of the
- * per-session journal fields already saved from the attendance editor.
+ * journal screen: the same class/subject/day log saved by the
+ * attendance editor.
  */
 export function JournalView(): ReactElement {
   const t = useTranslations("app.journal");
@@ -49,6 +49,7 @@ export function JournalView(): ReactElement {
   const canViewAll = useCan("view_journals_all");
 
   const [classId, setClassId] = useState("");
+  const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 50 });
   const [editing, setEditing] = useState<Journal | "new" | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Journal | null>(null);
   const [downloading, setDownloading] = useState<"xlsx" | "docx" | null>(null);
@@ -58,7 +59,11 @@ export function JournalView(): ReactElement {
   const classMap = useLookup(classes.data?.data);
   const subjectMap = useLookup(subjects.data?.data);
 
-  const list = useJournalsQuery(canViewAll && classId ? classId : undefined);
+  const list = useJournalsQuery(
+    canViewAll && classId ? classId : undefined,
+    pagination.pageIndex,
+    pagination.pageSize,
+  );
   const remove = useDeleteJournalMutation();
 
   const items = useMemo(
@@ -156,7 +161,10 @@ export function JournalView(): ReactElement {
             <Select
               options={(classes.data?.data ?? []).map((c) => ({ value: c.id, label: c.name }))}
               value={classId}
-              onValueChange={setClassId}
+              onValueChange={(value) => {
+                setClassId(value);
+                setPagination((current) => ({ ...current, pageIndex: 0 }));
+              }}
               placeholder={t("filterClassAll")}
               disabled={classes.isLoading}
               aria-label={t("filterClass")}
@@ -187,15 +195,16 @@ export function JournalView(): ReactElement {
       </div>
 
       <DataTable
+        stateKey="features/journal/components/journal-view:1"
+        mode="server"
         data={items}
         columns={columns}
-        rowCount={items.length}
-        pagination={{ pageIndex: 0, pageSize: 50 }}
-        onPaginationChange={() => undefined}
+        rowCount={list.data?.total ?? 0}
+        pagination={pagination}
+        onPaginationChange={setPagination}
         sorting={[]}
         onSortingChange={() => undefined}
         globalFilter=""
-        onGlobalFilterChange={() => undefined}
         isLoading={list.isLoading}
         getRowId={(item) => item.id}
         emptyState={
@@ -219,6 +228,7 @@ export function JournalView(): ReactElement {
               initial={editing === "new" ? undefined : editing}
               onDone={() => {
                 setEditing(null);
+                setPagination((current) => ({ ...current, pageIndex: 0 }));
               }}
             />
           )}
@@ -239,6 +249,9 @@ export function JournalView(): ReactElement {
           if (!pendingDelete) return;
           try {
             await remove.mutateAsync(pendingDelete.id);
+            if (items.length === 1 && pagination.pageIndex > 0) {
+              setPagination((current) => ({ ...current, pageIndex: current.pageIndex - 1 }));
+            }
             toast.success(t("deleted"));
           } catch (error) {
             toast.error(

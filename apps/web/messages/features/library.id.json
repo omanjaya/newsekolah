@@ -73,7 +73,8 @@
       "materialType": "Jenis bahan",
       "materialTypePlaceholder": "Pilih jenis bahan",
       "save": "Simpan",
-      "saved": "Judul disimpan"
+      "saved": "Judul disimpan",
+      "cancel": "Batal"
     },
     "isbnLookup": {
       "hint": "Cari data bibliografi dari ISBN di atas.",
@@ -87,7 +88,8 @@
       "title": "Kemungkinan judul ganda",
       "body": "Judul dengan ISBN ini sudah ada di katalog: {title}.",
       "view": "Lihat judul"
-    }
+    },
+    "editTitle": "Edit judul"
   },
   "copies": {
     "title": "Eksemplar",
@@ -172,7 +174,8 @@
         "class": "Kelas",
         "guardianPhone": "HP orang tua/wali",
         "dueOn": "Jatuh tempo",
-        "actions": "Aksi"
+        "actions": "Aksi",
+        "title": "Buku dan eksemplar"
       },
       "renew": "Perpanjang",
       "renewed": "Peminjaman diperpanjang",
@@ -182,7 +185,10 @@
       "sendReminders": "Kirim pengingat",
       "remindersSent": "Pengingat terkirim ke {count} anggota",
       "emptyTitle": "Tidak ada yang terlambat",
-      "emptyBody": "Semua peminjaman aktif masih dalam batas waktu."
+      "emptyBody": "Semua peminjaman aktif masih dalam batas waktu.",
+      "unknownMember": "Identitas anggota belum tersedia",
+      "unknownTitle": "Judul belum tersedia",
+      "loadError": "Daftar keterlambatan belum bisa dimuat. Coba lagi."
     }
   },
   "classLoans": {
@@ -380,7 +386,8 @@
     "grantClearance": "Berikan bebas pustaka",
     "cleared": "Anggota diberikan bebas pustaka",
     "printClearanceLetter": "Cetak surat bebas pustaka",
-    "clearanceBlockedByLoan": "Bebas pustaka belum bisa diberikan selama masih ada peminjaman aktif atau denda belum lunas."
+    "clearanceBlockedByLoan": "Bebas pustaka belum bisa diberikan selama masih ada peminjaman aktif atau denda belum lunas.",
+    "edit": "Edit keanggotaan"
   },
   "violations": {
     "navLabel": "Pelanggaran perpustakaan",
@@ -973,15 +980,36 @@
     }
   },
   "policy": {
-    "title": "Kebijakan peminjaman",
-    "loanDays": "Lama pinjam (hari)",
-    "maxActiveLoans": "Batas pinjaman aktif",
-    "maxRenewals": "Batas perpanjangan",
-    "renewalDays": "Tambahan hari saat perpanjangan",
-    "finePerDay": "Denda per hari (Rp)",
-    "reservationHoldDays": "Batas hari tahan reservasi",
-    "save": "Simpan",
-    "saved": "Kebijakan disimpan"
+    "title": "Kebijakan umum",
+    "description": "Atur ketentuan dasar perpustakaan. Batas per jenis anggota dan aturan periode tetap dikelola terpisah.",
+    "loading": "Memuat kebijakan…",
+    "loadError": "Kebijakan gagal dimuat.",
+    "retry": "Coba lagi",
+    "saved": "Kebijakan perpustakaan disimpan.",
+    "cancel": "Batal",
+    "save": "Simpan perubahan",
+    "name": "Nama perpustakaan",
+    "npp": "Nomor Pokok Perpustakaan (NPP)",
+    "accession_format": "Format nomor induk buku",
+    "member_no_format": "Format nomor anggota",
+    "barcode_source": "Sumber barcode",
+    "barcodeAccession": "Nomor induk buku",
+    "barcodeItem": "ID eksemplar",
+    "loan_days": "Lama pinjam (hari)",
+    "max_active_loans": "Maksimum pinjaman aktif",
+    "max_renewals": "Maksimum perpanjangan",
+    "renewal_days": "Lama perpanjangan (hari)",
+    "fine_per_day": "Denda per hari",
+    "reservation_hold_days": "Masa simpan reservasi (hari)",
+    "booking_max": "Maksimum reservasi",
+    "due_reminder_days": "Pengingat sebelum jatuh tempo (hari)",
+    "saturday_closed": "Tutup pada Sabtu",
+    "sunday_closed": "Tutup pada Minggu",
+    "booking_enabled": "Aktifkan reservasi",
+    "fine_currency_enabled": "Aktifkan denda uang",
+    "block_loans_with_unpaid_fines": "Blokir peminjaman jika denda belum dibayar",
+    "auto_register_members": "Daftarkan anggota secara otomatis",
+    "numberingHint": "Pola penomoran: YYYY untuk tahun lengkap, YY untuk dua digit tahun, dan 99999 untuk urutan lima digit."
   },
   "me": {
     "eyebrow": "Perpustakaan",
@@ -1021,5 +1049,14 @@
       "reserved": "Reservasi dibuat",
       "bookingDisabled": "Reservasi mandiri sedang dinonaktifkan. Hubungi pustakawan untuk memesan judul."
     }
+  },
+  "memberProfile": {
+    "memberType": "Jenis anggota",
+    "validUntil": "Berlaku sampai",
+    "validUntilHint": "Kosongkan jika tidak memiliki batas masa berlaku.",
+    "notes": "Catatan",
+    "cancel": "Batal",
+    "save": "Simpan perubahan",
+    "saved": "Keanggotaan diperbarui."
   }
 }

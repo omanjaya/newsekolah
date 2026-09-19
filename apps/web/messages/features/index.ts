@@ -13,6 +13,8 @@ import activitiesEn from "./activities.en.json";
 import activitiesId from "./activities.id.json";
 import analyticsEn from "./analytics.en.json";
 import analyticsId from "./analytics.id.json";
+import attendanceEditorEn from "./attendanceEditor.en.json";
+import attendanceEditorId from "./attendanceEditor.id.json";
 import attendanceReportsEn from "./attendanceReports.en.json";
 import attendanceReportsId from "./attendanceReports.id.json";
 import auditEn from "./audit.en.json";
@@ -21,6 +23,8 @@ import billingEn from "./billing.en.json";
 import billingId from "./billing.id.json";
 import calendarEn from "./calendar.en.json";
 import calendarId from "./calendar.id.json";
+import dashboardPersonaEn from "./dashboardPersona.en.json";
+import dashboardPersonaId from "./dashboardPersona.id.json";
 import disciplineEn from "./discipline.en.json";
 import disciplineId from "./discipline.id.json";
 import documentsEn from "./documents.en.json";
@@ -67,11 +71,21 @@ registerFeatureMessages({
   id: attendanceReportsId,
   en: attendanceReportsEn,
 });
+registerFeatureMessages({
+  namespace: "attendanceEditor",
+  id: attendanceEditorId,
+  en: attendanceEditorEn,
+});
 registerFeatureMessages({ namespace: "academic", id: academicId, en: academicEn });
 registerFeatureMessages({ namespace: "activities", id: activitiesId, en: activitiesEn });
 registerFeatureMessages({ namespace: "analytics", id: analyticsId, en: analyticsEn });
 registerFeatureMessages({ namespace: "account", id: accountId, en: accountEn });
 registerFeatureMessages({ namespace: "calendar", id: calendarId, en: calendarEn });
+registerFeatureMessages({
+  namespace: "dashboardPersona",
+  id: dashboardPersonaId,
+  en: dashboardPersonaEn,
+});
 registerFeatureMessages({ namespace: "billing", id: billingId, en: billingEn });
 registerFeatureMessages({ namespace: "discipline", id: disciplineId, en: disciplineEn });
 registerFeatureMessages({ namespace: "family", id: familyId, en: familyEn });

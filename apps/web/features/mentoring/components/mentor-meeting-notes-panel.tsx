@@ -102,6 +102,8 @@ export function MentorMeetingNotesPanel({
       )}
 
       <DataTable
+        stateKey="features/mentoring/components/mentor-meeting-notes-panel:1"
+        mode="local"
         data={items}
         columns={columns}
         rowCount={items.length}
@@ -110,7 +112,6 @@ export function MentorMeetingNotesPanel({
         sorting={[]}
         onSortingChange={() => undefined}
         globalFilter=""
-        onGlobalFilterChange={() => undefined}
         isLoading={isLoading}
         getRowId={(item) => item.id}
         onRowActivate={(item) => {

@@ -185,6 +185,8 @@ export function TodayBoardView({
       </div>
       <p className="text-[13px] text-fg-muted">{t("today.subtitle")}</p>
       <DataTable
+        stateKey="features/staff-attendance/components/today-board-view:1"
+        mode="local"
         data={rows}
         columns={columns}
         rowCount={rows.length}
@@ -193,7 +195,6 @@ export function TodayBoardView({
         sorting={[]}
         onSortingChange={() => undefined}
         globalFilter=""
-        onGlobalFilterChange={() => undefined}
         isLoading={board.isLoading}
         getRowId={(r) => r.employee_user_id}
         emptyState={

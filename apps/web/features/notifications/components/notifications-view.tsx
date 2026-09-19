@@ -19,9 +19,9 @@ import { Bell, CheckCheck } from "lucide-react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useState } from "react";
 
 import { useSession } from "../../../lib/session/session-provider";
+import { useRememberedViewState } from "../../../lib/view-state/view-state-provider";
 import {
   NOTIFICATION_KINDS,
   type NotificationKind,
@@ -37,9 +37,12 @@ export function NotificationsView(): ReactElement {
   const tKinds = useTranslations("app.notifications.kinds");
   const locale = useLocale() as Locale;
   const { me } = useSession();
-  const [filter, setFilter] = useState<"all" | "unread">("all");
-  const [search, setSearch] = useState("");
-  const [kind, setKind] = useState<NotificationKind | "">("");
+  const [filter, setFilter] = useRememberedViewState<"all" | "unread">(
+    "notifications-filter",
+    "all",
+  );
+  const [search, setSearch] = useRememberedViewState("notifications-search", "");
+  const [kind, setKind] = useRememberedViewState<NotificationKind | "">("notifications-kind", "");
   const { data, isLoading } = useNotificationsQuery({
     unreadOnly: filter === "unread",
     q: search.trim() || undefined,

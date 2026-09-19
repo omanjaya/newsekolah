@@ -19,6 +19,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { QueryError } from "../../../components/query-error";
 import { useCan } from "../../../lib/session/session-provider";
 import { useLookup, useTeachersQuery } from "../../reference/api";
 import {
@@ -82,6 +83,9 @@ export function SupervisionCycleDetailView({ cycleId }: { cycleId: string }): Re
     [t, locale, teacherMap, canManage, cycle.data],
   );
 
+  if (cycle.isError && !cycle.data)
+    return <QueryError retry={() => cycle.refetch()} className="m-4" />;
+
   if (cycle.isLoading || !cycle.data) {
     return (
       <div className="flex flex-col gap-4 p-4 md:p-6" aria-busy="true">
@@ -123,6 +127,9 @@ export function SupervisionCycleDetailView({ cycleId }: { cycleId: string }): Re
       />
 
       <DataTable
+        stateKey="features/supervision/components/supervision-cycle-detail-view:1"
+        mode="local"
+        searchable={false}
         data={items}
         columns={columns}
         rowCount={items.length}
@@ -131,7 +138,6 @@ export function SupervisionCycleDetailView({ cycleId }: { cycleId: string }): Re
         sorting={[]}
         onSortingChange={() => undefined}
         globalFilter=""
-        onGlobalFilterChange={() => undefined}
         isLoading={scheduled.isLoading}
         getRowId={(item) => item.id}
         emptyState={

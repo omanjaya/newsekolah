@@ -15,14 +15,14 @@ Tidak ada logging, request-id, recovery, timeout, atau batas body. `withAuth` me
 
 ### 1.2 Auth dan sesi (`main.go`, `impersonation.go`)
 
-| Method | Path | Guard |
-|---|---|---|
-| GET | `/health` | publik |
-| POST | `/api/auth/login` | publik |
-| GET | `/api/auth/me` | withAuth |
-| POST | `/api/auth/logout` | withAuth |
-| POST | `/api/auth/impersonation/stop` | withAuth |
-| POST | `/api/users/{id}/impersonate` | withAuth + cek admin di handler |
+| Method | Path                           | Guard                           |
+| ------ | ------------------------------ | ------------------------------- |
+| GET    | `/health`                      | publik                          |
+| POST   | `/api/auth/login`              | publik                          |
+| GET    | `/api/auth/me`                 | withAuth                        |
+| POST   | `/api/auth/logout`             | withAuth                        |
+| POST   | `/api/auth/impersonation/stop` | withAuth                        |
+| POST   | `/api/users/{id}/impersonate`  | withAuth + cek admin di handler |
 
 Aturan login: username lowercase + trim; bcrypt; hanya user `active`; setting `auth.session_days` (1-365, default 1) dan `auth.single_device`; bila single device: `active_session_id` acak dan semua push subscription user dihapus; TTL token = session_days x 24 jam; catat `user_login_events`; respons `{token, user}` di body, bukan cookie; tanpa refresh token.
 
@@ -42,33 +42,33 @@ Permission turunan tugas (dihitung tiap request): guru kehilangan `review_leave_
 
 `GET /api/settings/branding` dan `GET /api/settings/modules` publik; `GET/PUT /api/settings/general` (manage_settings).
 
-| Key | Default | Validasi |
-|---|---|---|
-| app.name | "SION" | wajib, <= 150 |
-| app.subtitle | "Pecalang" | <= 150 |
-| app.logo / app.favicon / leave.letter_header | "" | data URI WebP <= 2 MB / 512 KB / 700 KB |
-| leave.letter_template | JSON default | <= 20 KB, field <= 1200 |
-| violation.warning_letter_template | JSON default | <= 32 KB, field <= 2400 |
-| school.active_until_day | friday | friday/saturday/sunday |
-| auth.session_days | 1 | 1-365 |
-| auth.single_device | false | bool |
-| schedule.teacher_edit_deadline | "" | RFC3339 UTC |
-| attendance.correction_days | 3 | 0-365 |
-| modules.grading_enabled | false | bool |
+| Key                                          | Default      | Validasi                                |
+| -------------------------------------------- | ------------ | --------------------------------------- |
+| app.name                                     | "SION"       | wajib, <= 150                           |
+| app.subtitle                                 | "Pecalang"   | <= 150                                  |
+| app.logo / app.favicon / leave.letter_header | ""           | data URI WebP <= 2 MB / 512 KB / 700 KB |
+| leave.letter_template                        | JSON default | <= 20 KB, field <= 1200                 |
+| violation.warning_letter_template            | JSON default | <= 32 KB, field <= 2400                 |
+| school.active_until_day                      | friday       | friday/saturday/sunday                  |
+| auth.session_days                            | 1            | 1-365                                   |
+| auth.single_device                           | false        | bool                                    |
+| schedule.teacher_edit_deadline               | ""           | RFC3339 UTC                             |
+| attendance.correction_days                   | 3            | 0-365                                   |
+| modules.grading_enabled                      | false        | bool                                    |
 
 Upload branding: tolak `blob:`; validasi magic `RIFF....WEBP`; nama `<prefix>-<unixnano>-<token>.webp`; semua dalam satu transaksi upsert.
 
 ### 1.5 Users, profil, import
 
-| Method | Path | Permission |
-|---|---|---|
-| GET/POST | `/api/users` | view_users / create_users |
-| PUT/DELETE | `/api/users/{id}` | edit_users / delete_users (arsip -> inactive) |
-| POST | `/api/users/{id}/restore` | delete_users |
-| GET | `/api/users/{id}/details` | view_users atau diri sendiri |
-| POST | `/api/users/{id}/reset-password` | edit_users |
-| PUT | `/api/profile`; POST `/api/profile/avatar` | diri sendiri |
-| POST | `/api/user-import/preview`, `/commit`; GET `/template` | create_users |
+| Method     | Path                                                   | Permission                                    |
+| ---------- | ------------------------------------------------------ | --------------------------------------------- |
+| GET/POST   | `/api/users`                                           | view_users / create_users                     |
+| PUT/DELETE | `/api/users/{id}`                                      | edit_users / delete_users (arsip -> inactive) |
+| POST       | `/api/users/{id}/restore`                              | delete_users                                  |
+| GET        | `/api/users/{id}/details`                              | view_users atau diri sendiri                  |
+| POST       | `/api/users/{id}/reset-password`                       | edit_users                                    |
+| PUT        | `/api/profile`; POST `/api/profile/avatar`             | diri sendiri                                  |
+| POST       | `/api/user-import/preview`, `/commit`; GET `/template` | create_users                                  |
 
 Aturan: semua operasi user di-scope tahun ajaran aktif via `academic_year_users` (user di luar tahun aktif = 404). ID `user-<timestamp nanodetik>` (rawan tabrakan). Reset password menghasilkan 12 karakter dan mengembalikannya plaintext. Generator acak memakai modulo bias. Tidak bisa mengarsipkan diri sendiri. Detail: `user_details` + salah satu student/teacher/employee dengan DELETE tiga tabel lalu INSERT; admin dan pegawai sama-sama ke `employee_details`. Avatar: multipart <= 10 MB, file <= 2 MB, konversi lewat binary `cwebp`, nama deterministik `avatar_<userID>.webp` publik.
 
@@ -78,15 +78,15 @@ Import: preview dan commit menerima JSON rows (XLSX diparse di frontend), maksim
 
 Semua entitas di-scope `academic_year_id` dan menyertakan `active_academic_year` di respons.
 
-| Path | Guard lama | Catatan |
-|---|---|---|
-| `/api/academic-years[/{id}]`, `/activate`, `/active` | hanya withAuth | activate: nonaktifkan semua, aktifkan satu, `INSERT IGNORE academic_year_users` semua user; delete cascade seluruh data |
-| `/api/subjects`, `/rooms`, `/classes`, `/violations` | hanya withAuth | nama <= 150 unik per tahun; poin >= 0 |
-| `/api/periods`, `/period-day-overrides` | hanya withAuth | sort_order >= 1 unik, start < end; override unik per (tahun, hari, periode) |
-| `/api/teacher-additional-duties`, `/teacher-duty-assignments` | manage_master_data | |
-| `/api/teacher-options` | guru / manage_master_data / manage_schedules | |
-| `/api/teacher-subject-assignments` (+ `/bulk`, delete) | hanya withAuth | sync kelas maksimal 100; id komposit `teacher:subject` |
-| `/api/employee-duties`, `/employee-duty-assignments` | manage_master_data | |
+| Path                                                          | Guard lama                                   | Catatan                                                                                                                 |
+| ------------------------------------------------------------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `/api/academic-years[/{id}]`, `/activate`, `/active`          | hanya withAuth                               | activate: nonaktifkan semua, aktifkan satu, `INSERT IGNORE academic_year_users` semua user; delete cascade seluruh data |
+| `/api/subjects`, `/rooms`, `/classes`, `/violations`          | hanya withAuth                               | nama <= 150 unik per tahun; poin >= 0                                                                                   |
+| `/api/periods`, `/period-day-overrides`                       | hanya withAuth                               | sort_order >= 1 unik, start < end; override unik per (tahun, hari, periode)                                             |
+| `/api/teacher-additional-duties`, `/teacher-duty-assignments` | manage_master_data                           |                                                                                                                         |
+| `/api/teacher-options`                                        | guru / manage_master_data / manage_schedules |                                                                                                                         |
+| `/api/teacher-subject-assignments` (+ `/bulk`, delete)        | hanya withAuth                               | sync kelas maksimal 100; id komposit `teacher:subject`                                                                  |
+| `/api/employee-duties`, `/employee-duty-assignments`          | manage_master_data                           |                                                                                                                         |
 
 Flag tugas guru: `grants_all_attendance_reports` (laporan semua + koreksi global), `grants_leave_homeroom_review` (wali kelas, butuh scope class), `grants_leave_issuance` (BK), `grants_exit_bk_approval`, `grants_exit_leadership_approval`, `grants_late_arrival_duty` (tidak dipakai), `grants_late_arrival_leadership`. Scope penugasan: global, class, student, custom. Normalisasi hari menerima English dan Indonesia. Mode override periode: normal, friday_short, advanced, custom.
 
@@ -170,7 +170,7 @@ Komponen: code uppercase <= 30, tipe tp/sumatif/praktik/lainnya, kktp 0-100, wei
 
 ### 1.22 Realtime, presence, monitoring
 
-`GET /api/realtime/teacher` dan `/presence` (JWT via subprotocol `sion-auth.<token>`), `/api/realtime/monitoring` dan `GET /api/monitoring` tanpa auth. Origin check: `APP_ORIGINS` exact match atau loopback/host sama. Hub per user dengan Redis pub-sub `sion:realtime:user-events` (dedup via source). Ping 30 detik, read deadline 75 detik, limit 4096 byte. Presence TTL 90 detik, in-memory + Redis ZSET/HASH, snapshot total per role. Monitoring: periode berjalan, ringkasan H/I/S/A/D hari ini, kartu per jadwal berjalan dan kelas tanpa jadwal. Event: notification_created, classroom_entry_scanned, late_arrival_*, exit_permit_scanned, teacher_substitution_*, presence_*, monitoring_*.
+`GET /api/realtime/teacher` dan `/presence` (JWT via subprotocol `sion-auth.<token>`), `/api/realtime/monitoring` dan `GET /api/monitoring` tanpa auth. Origin check: `APP_ORIGINS` exact match atau loopback/host sama. Hub per user dengan Redis pub-sub `sion:realtime:user-events` (dedup via source). Ping 30 detik, read deadline 75 detik, limit 4096 byte. Presence TTL 90 detik, in-memory + Redis ZSET/HASH, snapshot total per role. Monitoring: periode berjalan, ringkasan H/I/S/A/D hari ini, kartu per jadwal berjalan dan kelas tanpa jadwal. Event: notification_created, classroom_entry_scanned, late_arrival__, exit_permit_scanned, teacher_substitution__, presence__, monitoring__.
 
 ### 1.23 Dashboard
 

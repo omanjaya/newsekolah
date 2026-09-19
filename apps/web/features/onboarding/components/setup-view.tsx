@@ -4,6 +4,7 @@ import { PageHeader, Skeleton } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
+import { QueryError } from "../../../components/query-error";
 import { useSetupChecklistQuery } from "../api";
 
 import { ChecklistSection } from "./checklist-section";
@@ -25,7 +26,9 @@ export function SetupView(): ReactElement {
     <div className="flex flex-col gap-6 p-4 md:p-6">
       <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
 
-      {checklist.isLoading || !data ? (
+      {checklist.isError && !data ? (
+        <QueryError retry={() => checklist.refetch()} />
+      ) : checklist.isLoading || !data ? (
         <Skeleton className="h-16 w-full" aria-busy="true" />
       ) : (
         <ProgressSummary
@@ -38,9 +41,9 @@ export function SetupView(): ReactElement {
 
       <SchoolProfileSection />
 
-      {!checklist.isLoading && !data?.ready_to_operate && <OnboardingWizard />}
+      {data && !data.ready_to_operate && <OnboardingWizard />}
 
-      <ChecklistSection checklist={data} isLoading={checklist.isLoading} />
+      {!checklist.isError && <ChecklistSection checklist={data} isLoading={checklist.isLoading} />}
     </div>
   );
 }

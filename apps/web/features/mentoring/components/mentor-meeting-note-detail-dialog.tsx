@@ -6,6 +6,7 @@ import { Button, Dialog, DialogContent, Skeleton } from "@newsekolah/ui";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
+import { QueryError } from "../../../components/query-error";
 import { useSession } from "../../../lib/session/session-provider";
 import { useMentorMeetingNoteQuery } from "../api";
 
@@ -61,7 +62,9 @@ export function MentorMeetingNoteDetailDialog({
           )
         }
       >
-        {detail.isLoading || !note ? (
+        {detail.isError && !detail.data ? (
+          <QueryError retry={() => detail.refetch()} />
+        ) : detail.isLoading || !note ? (
           <Skeleton className="h-40 w-full" aria-busy="true" />
         ) : (
           <div className="flex flex-col gap-3 text-[13px]">

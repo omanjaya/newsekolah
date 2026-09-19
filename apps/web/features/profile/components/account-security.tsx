@@ -6,6 +6,7 @@ import { Skeleton } from "@newsekolah/ui";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
+import { QueryError } from "../../../components/query-error";
 import { useSession } from "../../../lib/session/session-provider";
 import { useSessionsQuery } from "../api";
 
@@ -19,7 +20,9 @@ export function AccountSecurity(): ReactElement {
   const t = useTranslations("app.audit");
   const locale = useLocale() as Locale;
   const { me } = useSession();
-  const { data, isLoading } = useSessionsQuery();
+  const { data, isLoading, isError, refetch } = useSessionsQuery();
+
+  if (isError && !data) return <QueryError retry={() => refetch()} className="m-4" />;
 
   if (isLoading || !data) {
     return <Skeleton className="h-24 w-full" />;

@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
   IconButton,
 } from "@newsekolah/ui";
-import { LogOut, Search, UserRound } from "lucide-react";
+import { LogOut, Search } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -18,6 +18,7 @@ import { useSyncExternalStore } from "react";
 
 import { useLogoutMutation } from "../features/auth/api";
 import { NotificationBell } from "../features/notifications/components/notification-bell";
+import { filterNavigation, navigation } from "../lib/navigation";
 import { useSession } from "../lib/session/session-provider";
 
 import { useCommandPalette } from "./command-palette-provider";
@@ -47,6 +48,12 @@ function useShortcutHint(): string | null {
 export function Header(): ReactElement {
   const { me } = useSession();
   const t = useTranslations("app.shell");
+  const tNav = useTranslations();
+  const accountItems = filterNavigation(
+    navigation,
+    (permission) => me?.permissions.includes(permission) ?? false,
+    me?.profile_kind,
+  ).filter((item) => item.accountMenu);
   const tPalette = useTranslations("app.shell.commandPalette");
   const commandPalette = useCommandPalette();
   const shortcutHint = useShortcutHint();
@@ -108,12 +115,14 @@ export function Header(): ReactElement {
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem asChild>
-              <Link href="/profile" className="flex items-center gap-2">
-                <UserRound className="size-4" aria-hidden="true" />
-                {t("profileMenu.profile")}
-              </Link>
-            </DropdownMenuItem>
+            {accountItems.map((item) => (
+              <DropdownMenuItem key={item.key} asChild>
+                <Link href={item.href} className="flex items-center gap-2">
+                  <item.icon className="size-4" aria-hidden="true" />
+                  {tNav(item.labelKey)}
+                </Link>
+              </DropdownMenuItem>
+            ))}
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onSelect={() => void handleLogout()}

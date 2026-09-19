@@ -10,6 +10,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
+import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { downloadTeacherSupervisionReport, useTeacherSupervisionReportQuery } from "../api";
 
@@ -35,8 +36,13 @@ export function TeacherSupervisionReportView({
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
 
-  const { data, isLoading } = useTeacherSupervisionReportQuery(cycleId, teacherId);
+  const { data, isLoading, isError, refetch } = useTeacherSupervisionReportQuery(
+    cycleId,
+    teacherId,
+  );
   const [downloading, setDownloading] = useState(false);
+
+  if (isError && !data) return <QueryError retry={() => refetch()} className="m-4" />;
 
   if (isLoading || !data) {
     return (

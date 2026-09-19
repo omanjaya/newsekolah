@@ -57,7 +57,7 @@ Modul PRD yang belum dibangun, diurutkan menurut permintaan yang paling mungkin:
 - Test: unit domain, integrasi API dengan Postgres nyata (testcontainers), matriks otorisasi, isolasi tenant, E2E Playwright untuk alur utama, Maestro untuk mobile.
 - Dokumentasi: OpenAPI terbarui, changelog, panduan pengguna singkat per fitur.
 - Keamanan: `security-review` pada PR sensitif, tidak ada operasi tanpa `x-permission`, header lolos.
-- Desain: Delivery Gate antislop untuk halaman baru, cek kontras, tidak ada emoji.
+- Desain: review desain untuk halaman baru, cek kontras, tidak ada emoji.
 
 ## Risiko dan mitigasi
 

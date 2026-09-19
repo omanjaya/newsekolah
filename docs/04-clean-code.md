@@ -9,7 +9,7 @@ Aturan yang ditegakkan alat (linter, CI) diberi tanda [CI]. Aturan lain ditegakk
 3. File maksimal 400 baris; fungsi maksimal 60 baris; kompleksitas siklomatik maksimal 15. [CI: `gocyclo`, `eslint max-lines`]
 4. Satu commit satu maksud, format Conventional Commits berbahasa Inggris (`feat(permits): add gate token expiry`). [CI: commitlint]
 5. Tidak ada `TODO` tanpa nomor issue. [CI]
-6. Komentar menjelaskan alasan, bukan mengulang kode (lihat skill `antislop-code`).
+6. Komentar menjelaskan alasan, bukan mengulang kode.
 
 ## 2. Go
 
