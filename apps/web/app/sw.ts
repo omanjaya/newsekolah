@@ -1,5 +1,5 @@
 import { defaultCache } from "@serwist/next/worker";
-import type { PrecacheEntry, SerwistGlobalConfig } from "serwist";
+import type { PrecacheEntry, RuntimeCaching, SerwistGlobalConfig } from "serwist";
 import { NetworkFirst, Serwist } from "serwist";
 
 declare global {
@@ -9,6 +9,44 @@ declare global {
 }
 
 declare const self: ServiceWorkerGlobalScope;
+
+/**
+ * `defaultCache`'s static-asset rules (JS/CSS, images, fonts, precache
+ * fallbacks, etc.) are worth keeping, but three kinds of rule are not:
+ *  - `apis`: NetworkFirst on every same-origin GET /api/*, which caches
+ *    authenticated attendance/grade responses for 24h and can keep serving
+ *    them after logout on a shared kiosk device. TanStack Query already
+ *    owns API data freshness; the service worker must not cache API GETs.
+ *  - `next-data`: the same staleness risk for the pages-router
+ *    `/_next/data/*.json` path, which this app-router-only app never hits.
+ *  - `google-fonts-webfonts` / `google-fonts-stylesheets`: this app loads
+ *    no Google Fonts (CSP's `font-src` forbids them), so these can never
+ *    match; they're dead entries, not a risk, but there is no reason to
+ *    keep them either.
+ *
+ * Filtering the imported array by `cacheName` (rather than hand-copying the
+ * rules to keep) means a serwist upgrade that changes or adds a static-asset
+ * rule keeps working here without this file needing to track it.
+ */
+const EXCLUDED_CACHE_NAMES = new Set<string>([
+  "apis",
+  "next-data",
+  "google-fonts-webfonts",
+  "google-fonts-stylesheets",
+]);
+
+function isExcludedRuntimeCaching(handler: RuntimeCaching["handler"]): boolean {
+  return (
+    typeof handler === "object" &&
+    "cacheName" in handler &&
+    typeof handler.cacheName === "string" &&
+    EXCLUDED_CACHE_NAMES.has(handler.cacheName)
+  );
+}
+
+const filteredDefaultCache = defaultCache.filter(
+  (entry) => !isExcludedRuntimeCaching(entry.handler),
+);
 
 const serwist = new Serwist({
   precacheEntries: self.__SW_MANIFEST,
@@ -25,7 +63,7 @@ const serwist = new Serwist({
       matcher: ({ request }: { request: Request }) => request.mode === "navigate",
       handler: new NetworkFirst({ cacheName: "pages", networkTimeoutSeconds: 10 }),
     },
-    ...defaultCache,
+    ...filteredDefaultCache,
   ],
   fallbacks: {
     entries: [

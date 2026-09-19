@@ -19,8 +19,8 @@ import {
   type ImportRowPayload,
   buildImportPayload,
   guessImportMapping,
-  parseImportFile,
-} from "../import-lib";
+} from "../import-fields";
+import { parseImportFile } from "../import-lib";
 
 import { ImportMappingStep } from "./import-mapping-step";
 import { ImportPreviewTable } from "./import-preview-table";

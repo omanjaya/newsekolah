@@ -4,7 +4,7 @@ import { Button, Select } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
-import { IMPORT_FIELDS, type ImportField } from "../import-lib";
+import { IMPORT_FIELDS, type ImportField } from "../import-fields";
 
 const UNMAPPED = "__unmapped__";
 
