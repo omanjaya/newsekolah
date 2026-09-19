@@ -62,14 +62,26 @@ export function GoogleSignInButton({
   const [width, setWidth] = useState(320);
 
   useEffect(() => {
+    // Coalesce resize events through rAF (one measurement per frame) and
+    // skip the setState when the computed width has not actually changed,
+    // so dragging the window does not re-render this on every event.
+    let frame: number | null = null;
     function measure() {
+      frame = null;
       const available = containerRef.current?.parentElement?.getBoundingClientRect().width;
-      if (available) setWidth(Math.min(320, Math.max(200, Math.floor(available))));
+      if (!available) return;
+      const next = Math.min(320, Math.max(200, Math.floor(available)));
+      setWidth((prev) => (prev === next ? prev : next));
     }
-    measure();
-    window.addEventListener("resize", measure);
+    function scheduleMeasure() {
+      if (frame !== null) return;
+      frame = requestAnimationFrame(measure);
+    }
+    scheduleMeasure();
+    window.addEventListener("resize", scheduleMeasure);
     return () => {
-      window.removeEventListener("resize", measure);
+      if (frame !== null) cancelAnimationFrame(frame);
+      window.removeEventListener("resize", scheduleMeasure);
     };
   }, []);
 

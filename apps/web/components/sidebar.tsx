@@ -143,23 +143,38 @@ export function Sidebar({
   useEffect(() => {
     const el = navRef.current;
     if (!el) return;
+    // The ResizeObserver fires on every child during the grid-rows animation
+    // (each frame changes the group's measured height), and the scroll
+    // listener can fire just as often. Coalescing every trigger into a
+    // single rAF-scheduled read caps the work at one measurement per frame
+    // instead of a layout read per event.
+    let frame: number | null = null;
     function measure() {
+      frame = null;
       if (!el) return;
-      setOverflow({
-        above: el.scrollTop > SCROLL_EPSILON,
-        below: el.scrollTop + el.clientHeight < el.scrollHeight - SCROLL_EPSILON,
-      });
+      const above = el.scrollTop > SCROLL_EPSILON;
+      const below = el.scrollTop + el.clientHeight < el.scrollHeight - SCROLL_EPSILON;
+      // Skip the setState entirely when neither boolean moved, so a storm of
+      // observer callbacks with no visible change never triggers a re-render.
+      setOverflow((prev) =>
+        prev.above === above && prev.below === below ? prev : { above, below },
+      );
     }
-    measure();
-    el.addEventListener("scroll", measure, { passive: true });
+    function scheduleMeasure() {
+      if (frame !== null) return;
+      frame = requestAnimationFrame(measure);
+    }
+    scheduleMeasure();
+    el.addEventListener("scroll", scheduleMeasure, { passive: true });
     // Opening a group or switching to the rail changes the scroll height
     // without a scroll event, and the transition means the final height
     // arrives a few frames late.
-    const observer = new ResizeObserver(measure);
+    const observer = new ResizeObserver(scheduleMeasure);
     observer.observe(el);
     for (const child of el.children) observer.observe(child);
     return () => {
-      el.removeEventListener("scroll", measure);
+      if (frame !== null) cancelAnimationFrame(frame);
+      el.removeEventListener("scroll", scheduleMeasure);
       observer.disconnect();
     };
   }, [rail, storedGroups, items]);
@@ -191,6 +206,12 @@ export function Sidebar({
         style={{ width: rail ? WIDTH_RAIL : WIDTH_EXPANDED }}
         className={cn(
           "sticky top-0 h-dvh shrink-0 flex-col self-start overflow-hidden border-r border-border bg-surface",
+          // The width transition below reflows layout on every frame; contain
+          // it to this subtree so the toggle does not re-layout the rest of
+          // the page. Both flyout (GroupFlyout) and tooltip content render
+          // through a Radix Portal to document.body, outside this subtree,
+          // so containment here cannot clip them.
+          "[contain:layout_paint]",
           animate &&
             "transition-[width] duration-[calc(var(--duration-base)*1.2)] ease-[var(--ease-standard)]",
           className,
@@ -261,7 +282,7 @@ export function Sidebar({
                           open ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
                         )}
                       >
-                        <div className="overflow-hidden">
+                        <div className="overflow-hidden [contain:layout_paint]">
                           {/*
                             The guide rule is what makes these rows read as the
                             group's children rather than its siblings.
