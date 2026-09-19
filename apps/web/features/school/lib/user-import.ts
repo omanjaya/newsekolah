@@ -1,5 +1,8 @@
 import { ApiError, type components } from "@newsekolah/api-client";
-import ExcelJS from "exceljs";
+// exceljs is a 900 kB+ dependency; only the type is imported at module scope,
+// and the class itself is loaded lazily in parseUserImportFile below so it
+// never lands in the initial chunk for this screen.
+import type ExcelJS from "exceljs";
 
 import { getAccessToken } from "../../../lib/api/access-token";
 import { API_URL } from "../../../lib/env";
@@ -147,7 +150,8 @@ export interface ParsedImportFile {
  * an admin left a stray note column in the sheet.
  */
 export async function parseUserImportFile(file: File): Promise<ParsedImportFile> {
-  const workbook = new ExcelJS.Workbook();
+  const { default: ExcelJSRuntime } = await import("exceljs");
+  const workbook = new ExcelJSRuntime.Workbook();
   try {
     const buffer = await file.arrayBuffer();
     await workbook.xlsx.load(buffer);
