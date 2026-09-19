@@ -40,6 +40,7 @@ import {
   useSchedulesQuery,
 } from "../api";
 import { conflictMessage } from "../conflict-message";
+import { useMediaQuery } from "../use-media-query";
 
 import { CopyBanner } from "./copy-banner";
 import { ScheduleDayGrid } from "./schedule-day-grid";
@@ -122,27 +123,28 @@ export function ScheduleView(): ReactElement {
 
   const lessonPeriods = useMemo(() => periods.data?.data ?? [], [periods.data]);
 
+  // Mounted grids used to receive a `.find()` closure re-built every
+  // render, scanning every block for every cell. Both lookups instead key
+  // one entry per period a block spans, so a cell gets its block in O(1)
+  // and the Map itself keeps a stable identity across renders that do not
+  // touch the schedule data.
   /** The day view keys by class instead of by weekday. */
-  const blocksByClass = useMemo(() => {
-    const map = new Map<string, ScheduleBlock[]>();
+  const classSeqBlocks = useMemo(() => {
+    const map = new Map<string, ScheduleBlock>();
     for (const block of schedules.data?.data ?? []) {
-      const list = map.get(block.class_id) ?? [];
-      list.push(block);
-      map.set(block.class_id, list);
+      for (let seq = block.start_seq; seq <= block.end_seq; seq += 1) {
+        map.set(`${block.class_id}:${seq}`, block);
+      }
     }
     return map;
   }, [schedules.data]);
 
-  function blockInClass(classId2: string, seq: number): ScheduleBlock | undefined {
-    return blocksByClass.get(classId2)?.find((b) => b.start_seq <= seq && seq <= b.end_seq);
-  }
-
-  const blocksByDay = useMemo(() => {
-    const map = new Map<number, ScheduleBlock[]>();
+  const daySeqBlocks = useMemo(() => {
+    const map = new Map<string, ScheduleBlock>();
     for (const block of schedules.data?.data ?? []) {
-      const list = map.get(block.day_of_week) ?? [];
-      list.push(block);
-      map.set(block.day_of_week, list);
+      for (let seq = block.start_seq; seq <= block.end_seq; seq += 1) {
+        map.set(`${block.day_of_week}:${seq}`, block);
+      }
     }
     return map;
   }, [schedules.data]);
@@ -198,14 +200,33 @@ export function ScheduleView(): ReactElement {
     return err instanceof ApiError ? apiErrorMessage(err.code) : apiErrorMessage("UNKNOWN");
   }
 
-  function blockAt(day: number, seq: number): ScheduleBlock | undefined {
-    return blocksByDay.get(day)?.find((b) => b.start_seq <= seq && seq <= b.end_seq);
-  }
+  // Below md the day view and the class/teacher views each mount one of a
+  // mobile list and a desktop grid instead of mounting both and hiding
+  // one with CSS, so day mode no longer keeps three full grids in the DOM
+  // at once.
+  const isDesktop = useMediaQuery("(min-width: 768px)");
 
   const mobileDay = mobileDayOverride ?? activeDays[0] ?? 1;
   const loading = periods.isLoading || schedules.isLoading || classes.isLoading;
   const classOptions = (classes.data?.data ?? []).map((c) => ({ value: c.id, label: c.name }));
   const teacherOptions = (teachers.data?.data ?? []).map((u) => ({ value: u.id, label: u.name }));
+
+  function handleDayAdd(cls: string, startSeq: number) {
+    setClassId(cls);
+    setCreating({ day: dayFilter, startSeq });
+  }
+
+  function handleDayPaste(cls: string, startSeq: number) {
+    void pasteInto(dayFilter, startSeq, cls);
+  }
+
+  function handleWeekAdd(day: number, startSeq: number) {
+    setCreating({ day, startSeq });
+  }
+
+  function handleWeekPaste(day: number, startSeq: number) {
+    void pasteInto(day, startSeq);
+  }
 
   async function confirmDelete() {
     if (!pendingDelete) return;
@@ -314,111 +335,89 @@ export function ScheduleView(): ReactElement {
           title={t("noPeriodsTitle")}
           description={t("noPeriodsBody")}
         />
-      ) : (
-        <>
-          {/* Below md, a 7-column-by-N-row grid has no honest reflow: it either
-              collapses columns to slivers or forces sideways scroll through the
-              whole week. A day-at-a-time agenda keeps every block readable with
-              a thumb, so mobile gets its own view instead of a shrunk table. */}
-          {mode === "day" ? (
-            <ScheduleMobileDayList
-              classes={classes.data?.data ?? []}
-              lessonPeriods={lessonPeriods}
-              blockAt={blockInClass}
-              teacherMap={teacherMap}
-              subjectMap={subjectMap}
-              canManage={canManage}
-              copied={copied}
-              onAdd={(cls, startSeq) => {
-                setClassId(cls);
-                setCreating({ day: dayFilter, startSeq });
-              }}
-              onPaste={(cls, startSeq) => {
-                void pasteInto(dayFilter, startSeq, cls);
-              }}
-              onCopy={setCopied}
-              onEdit={setEditing}
-              onDelete={setPendingDelete}
-              t={t}
-            />
-          ) : (
-            // Outside the day view the agenda answers the same question a
-            // day at a time, which is the readable shape on a phone.
-            <ScheduleMobileAgenda
-              activeDays={activeDays}
-              lessonPeriods={lessonPeriods}
-              blockAt={blockAt}
-              mode={mode === "teacher" ? "teacher" : "class"}
-              teacherMap={teacherMap}
-              classMap={classMap}
-              subjectMap={subjectMap}
-              canManage={canManage}
-              mobileDay={mobileDay}
-              onSelectDay={setMobileDayOverride}
-              onAdd={(day, startSeq) => {
-                setCreating({ day, startSeq });
-              }}
-              onPaste={(day, startSeq) => {
-                void pasteInto(day, startSeq);
-              }}
-              onCopy={setCopied}
-              onEdit={setEditing}
-              onDelete={setPendingDelete}
-              copied={copied}
-              t={t}
-              tDays={tDays}
-            />
-          )}
-
-          {mode === "day" ? (
-            <ScheduleDayGrid
-              classes={classes.data?.data ?? []}
-              lessonPeriods={lessonPeriods}
-              blockAt={blockInClass}
-              teacherMap={teacherMap}
-              subjectMap={subjectMap}
-              canManage={canManage}
-              copied={copied}
-              onAdd={(cls, startSeq) => {
-                setClassId(cls);
-                setCreating({ day: dayFilter, startSeq });
-              }}
-              onPaste={(cls, startSeq) => {
-                void pasteInto(dayFilter, startSeq, cls);
-              }}
-              onCopy={setCopied}
-              onEdit={setEditing}
-              onDelete={setPendingDelete}
-              t={t}
-              currentSeq={dayFilter === todayOfWeek() ? periodNow.data?.sequence : undefined}
-            />
-          ) : null}
-
-          <ScheduleWeekGrid
-            hidden={mode === "day"}
-            activeDays={activeDays}
+      ) : /* Below md, a 7-column-by-N-row grid has no honest reflow: it either
+             collapses columns to slivers or forces sideways scroll through the
+             whole week, so mobile gets its own view instead of a shrunk table.
+             Exactly one of the mobile and desktop layouts mounts, matching the
+             viewport, instead of mounting both and hiding one with CSS. */
+      mode === "day" ? (
+        isDesktop ? (
+          <ScheduleDayGrid
+            classes={classes.data?.data ?? []}
             lessonPeriods={lessonPeriods}
-            blockAt={blockAt}
-            mode={mode === "teacher" ? "teacher" : "class"}
+            blocks={classSeqBlocks}
             teacherMap={teacherMap}
-            classMap={classMap}
             subjectMap={subjectMap}
             canManage={canManage}
             copied={copied}
-            onAdd={(day, startSeq) => {
-              setCreating({ day, startSeq });
-            }}
-            onPaste={(day, startSeq) => {
-              void pasteInto(day, startSeq);
-            }}
+            onAdd={handleDayAdd}
+            onPaste={handleDayPaste}
             onCopy={setCopied}
             onEdit={setEditing}
             onDelete={setPendingDelete}
             t={t}
-            tDays={tDays}
-            currentSeq={periodNow.data?.sequence}
+            currentSeq={dayFilter === todayOfWeek() ? periodNow.data?.sequence : undefined}
           />
-        </>
+        ) : (
+          <ScheduleMobileDayList
+            classes={classes.data?.data ?? []}
+            lessonPeriods={lessonPeriods}
+            blocks={classSeqBlocks}
+            teacherMap={teacherMap}
+            subjectMap={subjectMap}
+            canManage={canManage}
+            copied={copied}
+            onAdd={handleDayAdd}
+            onPaste={handleDayPaste}
+            onCopy={setCopied}
+            onEdit={setEditing}
+            onDelete={setPendingDelete}
+            t={t}
+          />
+        )
+      ) : isDesktop ? (
+        <ScheduleWeekGrid
+          activeDays={activeDays}
+          lessonPeriods={lessonPeriods}
+          blocks={daySeqBlocks}
+          mode={mode === "teacher" ? "teacher" : "class"}
+          teacherMap={teacherMap}
+          classMap={classMap}
+          subjectMap={subjectMap}
+          canManage={canManage}
+          copied={copied}
+          onAdd={handleWeekAdd}
+          onPaste={handleWeekPaste}
+          onCopy={setCopied}
+          onEdit={setEditing}
+          onDelete={setPendingDelete}
+          t={t}
+          tDays={tDays}
+          currentSeq={periodNow.data?.sequence}
+        />
+      ) : (
+        // Outside the day view the agenda answers the same question a day
+        // at a time, which is the readable shape on a phone.
+        <ScheduleMobileAgenda
+          activeDays={activeDays}
+          lessonPeriods={lessonPeriods}
+          blocks={daySeqBlocks}
+          mode={mode === "teacher" ? "teacher" : "class"}
+          teacherMap={teacherMap}
+          classMap={classMap}
+          subjectMap={subjectMap}
+          canManage={canManage}
+          mobileDay={mobileDay}
+          onSelectDay={setMobileDayOverride}
+          onAdd={handleWeekAdd}
+          onPaste={handleWeekPaste}
+          onCopy={setCopied}
+          onEdit={setEditing}
+          onDelete={setPendingDelete}
+          copied={copied}
+          t={t}
+          tDays={tDays}
+        />
       )}
 
       <ScheduleDialogs

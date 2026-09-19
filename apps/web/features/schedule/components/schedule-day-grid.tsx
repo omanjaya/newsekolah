@@ -28,7 +28,7 @@ import {
 export function ScheduleDayGrid({
   classes,
   lessonPeriods,
-  blockAt,
+  blocks,
   teacherMap,
   subjectMap,
   canManage,
@@ -43,7 +43,9 @@ export function ScheduleDayGrid({
 }: {
   classes: Named[];
   lessonPeriods: Period[];
-  blockAt: (classId: string, seq: number) => ScheduleBlock | undefined;
+  /** Lesson blocks keyed by `${classId}:${sequence}`, one entry per period
+   * the block spans, so a cell looks itself up in O(1). */
+  blocks: Map<string, ScheduleBlock>;
   teacherMap: Map<string, Named>;
   subjectMap: Map<string, Named>;
   canManage: boolean;
@@ -77,7 +79,7 @@ export function ScheduleDayGrid({
             <tr key={period.id} className={period.is_break ? BREAK_ROW : LESSON_ROW}>
               <PeriodCell period={period} current={period.sequence === currentSeq} />
               {classes.map((classItem) => {
-                const block = blockAt(classItem.id, period.sequence);
+                const block = blocks.get(`${classItem.id}:${period.sequence}`);
                 if (block && block.start_seq !== period.sequence) return null;
                 if (period.is_break) {
                   return <EmptyCell key={classItem.id} />;

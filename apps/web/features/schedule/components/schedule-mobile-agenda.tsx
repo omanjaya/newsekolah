@@ -53,7 +53,7 @@ function AgendaAction({
 export function ScheduleMobileAgenda({
   activeDays,
   lessonPeriods,
-  blockAt,
+  blocks,
   mode,
   teacherMap,
   classMap,
@@ -72,7 +72,9 @@ export function ScheduleMobileAgenda({
 }: {
   activeDays: readonly number[];
   lessonPeriods: Period[];
-  blockAt: (day: number, seq: number) => ScheduleBlock | undefined;
+  /** Lesson blocks keyed by `${dayOfWeek}:${sequence}`, one entry per
+   * period the block spans, so a row looks itself up in O(1). */
+  blocks: Map<string, ScheduleBlock>;
   mode: "class" | "teacher";
   teacherMap: NamedLookup;
   classMap: NamedLookup;
@@ -121,7 +123,7 @@ export function ScheduleMobileAgenda({
               </li>
             );
           }
-          const block = blockAt(mobileDay, period.sequence);
+          const block = blocks.get(`${mobileDay}:${period.sequence}`);
           if (block && block.start_seq !== period.sequence) {
             return null;
           }
