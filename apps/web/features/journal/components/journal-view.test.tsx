@@ -53,5 +53,8 @@ it("requests the next server page instead of paginating only the first fifty jou
   expect(query).toHaveBeenLastCalledWith(undefined, 0, 50);
   await user.click(screen.getByRole("button", { name: /berikut|next/i }));
   expect(query).toHaveBeenLastCalledWith(undefined, 1, 50);
-  expect(screen.getByText("Page 2")).toBeInTheDocument();
+  // DataTable mounts its table and card layouts together (CSS decides
+  // which is visible), so the cell text legitimately appears once per
+  // layout in the DOM.
+  expect(screen.getAllByText("Page 2").length).toBeGreaterThan(0);
 });

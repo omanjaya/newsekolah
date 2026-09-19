@@ -66,6 +66,7 @@ export type MessageKey =
   | "common.table.page"
   | "common.table.rowsSelected"
   | "errors.ADDITIONAL_ROLE_MUST_BE_CUSTOM"
+  | "errors.ANALYTICS_NOT_HOMEROOM_TEACHER"
   | "errors.ATTACHMENT_INVALID_TYPE"
   | "errors.ATTACHMENT_NOT_FOUND"
   | "errors.ATTACHMENT_TOO_LARGE"
@@ -127,6 +128,7 @@ export type MessageKey =
   | "errors.PRIMARY_ROLE_NOT_SYSTEM"
   | "errors.RATE_LIMITED"
   | "errors.REPORT_UNAVAILABLE"
+  | "errors.SCHEDULE_HAS_HISTORY"
   | "errors.SSO_ACCOUNT_NOT_FOUND"
   | "errors.SSO_CLIENT_SECRET_REQUIRED"
   | "errors.SSO_INVALID_TOKEN"
@@ -310,6 +312,7 @@ export const MESSAGE_KEYS: readonly MessageKey[] = [
   "common.table.page",
   "common.table.rowsSelected",
   "errors.ADDITIONAL_ROLE_MUST_BE_CUSTOM",
+  "errors.ANALYTICS_NOT_HOMEROOM_TEACHER",
   "errors.ATTACHMENT_INVALID_TYPE",
   "errors.ATTACHMENT_NOT_FOUND",
   "errors.ATTACHMENT_TOO_LARGE",
@@ -371,6 +374,7 @@ export const MESSAGE_KEYS: readonly MessageKey[] = [
   "errors.PRIMARY_ROLE_NOT_SYSTEM",
   "errors.RATE_LIMITED",
   "errors.REPORT_UNAVAILABLE",
+  "errors.SCHEDULE_HAS_HISTORY",
   "errors.SSO_ACCOUNT_NOT_FOUND",
   "errors.SSO_CLIENT_SECRET_REQUIRED",
   "errors.SSO_INVALID_TOKEN",
