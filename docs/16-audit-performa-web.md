@@ -86,3 +86,30 @@ Tanggal: 2026-09-19. Metode: tiga audit statis paralel (animasi, rendering/data-
 5. Dynamic import exceljs; Serwist `exclude` + saring `defaultCache`.
 6. Layar berat: promotion (batch lookup + paginasi), attendance session (row memo), gradebook (mount satu matriks), schedule (unmount grid tersembunyi).
 7. Scope i18n per segmen.
+
+## Status perbaikan (19 September 2026)
+
+Semua item prioritas tinggi dan menengah dikerjakan oleh enam pengerjaan paralel dan digabung ke `fix/schedule-grid-alignment`; item 3 (prefetch `/v1/me`) dan 11 (scoping i18n) menyusul di gelombang kedua pada hari yang sama.
+
+Hasil terukur setelah build produksi ulang (First Load JS gz, sebelum -> sesudah):
+
+| Route                  | Sebelum | Sesudah |
+| ---------------------- | ------- | ------- |
+| `/login`               | 289 kB  | 202 kB  |
+| `/dashboard`           | 263 kB  | 170 kB  |
+| `/schedule`            | 261 kB  | 210 kB  |
+| `/library/import`      | 500 kB  | 186 kB  |
+| `/school/users/import` | 511 kB  | 167 kB  |
+
+Precache service worker turun dari 4,14 MB (160 entri) ke 2,26 MB (112 entri); chunk exceljs 912 kB keluar dari precache lewat batas `maximumFileSizeToCacheInBytes` 700 kB (penamaan chunk vendor tidak bisa diandalkan untuk exclude berbasis nama). Rule `apis` 24 jam milik `defaultCache` dibuang dari `app/sw.ts`.
+
+Perubahan perilaku yang disengaja:
+
+- `/school/promotion` kini memanggil satu request batch directory (bukan satu per siswa) dan memakai `DataTable` berpaginasi 50 baris.
+- Gradebook dan grid jadwal me-mount satu layout saja lewat `useMediaQuery` bersama di `packages/ui` (bukan dua layout yang disembunyikan CSS).
+- Row presensi dibungkus `React.memo` eksplisit; temuan penting: React Compiler TIDAK aktif di build (hanya lint rules-nya), jadi bailout harus manual. Mengaktifkan compiler adalah opsi lanjutan yang belum diambil.
+- Dialog command palette (cmdk) dimuat saat pertama dibuka, bukan saat shell mount.
+- `DataTable` masih me-render layout tabel + kartu bersamaan (temuan 12) - dibiarkan sadar karena single-mount berisiko flash hidrasi di 57 call site; test journal disesuaikan.
+- Test `journal-view` yang gagal sudah gagal sejak snapshot WIP sebelumnya (bukan regresi perbaikan ini) dan diperbaiki di sini.
+
+Validasi: `pnpm typecheck`, `pnpm lint`, `pnpm test` lulus penuh; smoke test browser di dashboard, schedule, promotion, grading, dan command palette tanpa error console baru (404 `periods/today` adalah respons domain saat tidak ada jam pelajaran).

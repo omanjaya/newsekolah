@@ -2,7 +2,7 @@
 
 Catatan kerja untuk menyamakan logika bisnis newsekolah dengan SION, aplikasi asal yang kodenya ada di `reference/sion-rebuild-go`. Dokumen ini menjawab satu pertanyaan: sampai mana pekerjaan ini, dan apa yang tersisa. Perbarui setiap kali ada bagian yang selesai.
 
-Posisi terakhir: 16 September 2026.
+Posisi terakhir: 19 September 2026. Di luar paritas, sesi 19 September mengaudit dan memperbaiki performa web; hasil terukur dan statusnya ada di [dokumen 16](16-audit-performa-web.md).
 
 ## Catatan tentang baseline perbandingan
 
