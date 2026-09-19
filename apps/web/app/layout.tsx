@@ -6,7 +6,8 @@ import type { ReactElement } from "react";
 import "@newsekolah/ui/styles.css";
 import "./globals.css";
 
-import { getMessages } from "../lib/i18n/get-messages";
+import { getMessagesForNamespaces } from "../lib/i18n/get-messages";
+import { ROOT_NAMESPACES } from "../lib/i18n/namespace-sets";
 import { getTenantBrandingServer } from "../lib/tenant/get-branding.server";
 import { PRODUCT_NAME_FALLBACK } from "../lib/tenant/tenant-provider";
 import { getThemeBootstrapScript } from "../lib/theme/theme-script";
@@ -38,7 +39,10 @@ export default async function RootLayout({
 }): Promise<ReactElement> {
   const branding = await getTenantBrandingServer();
   const locale = branding?.locale ?? "id";
-  const messages = getMessages(locale);
+  // Only the namespaces every route needs (docs/16-audit-performa-web.md
+  // item 11) — `(app)/layout.tsx` and `(app)/library/layout.tsx` carry the
+  // rest, scoped to where they're actually read. See lib/i18n/namespace-sets.ts.
+  const messages = getMessagesForNamespaces(locale, ROOT_NAMESPACES);
   const nonce = (await headers()).get("x-nonce") ?? undefined;
 
   return (

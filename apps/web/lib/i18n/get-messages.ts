@@ -42,3 +42,53 @@ export function getMessages(locale: Locale) {
   merged.app = appSection;
   return merged;
 }
+
+function getByPath(source: unknown, path: readonly string[]): unknown {
+  let cursor = source;
+  for (const key of path) {
+    if (typeof cursor !== "object" || cursor === null) return undefined;
+    cursor = (cursor as Record<string, unknown>)[key];
+  }
+  return cursor;
+}
+
+function setByPath(target: Record<string, unknown>, path: readonly string[], value: unknown): void {
+  const [head, ...rest] = path;
+  if (head === undefined) return;
+  if (rest.length === 0) {
+    target[head] = value;
+    return;
+  }
+  const next = target[head];
+  const child = typeof next === "object" && next !== null ? (next as Record<string, unknown>) : {};
+  target[head] = child;
+  setByPath(child, rest, value);
+}
+
+/**
+ * `getMessages`, narrowed to the given dotted namespace paths (e.g.
+ * `"app.library"`, or `"app.library.opac"` for just that nested slice) —
+ * see `lib/i18n/namespace-sets.ts` for why the root layout, `(app)/layout.tsx`,
+ * and `(app)/library/layout.tsx` each need a different subset
+ * (docs/16-audit-performa-web.md item 11). Reuses `getMessages`'s merge
+ * instead of duplicating it, so a namespace picked here is always exactly
+ * what `getMessages` would have produced for it. A path with no match
+ * (typo, or a namespace not yet registered) is silently skipped rather
+ * than throwing: a missing string is a visible, fixable bug; a server
+ * layout crash on every request is not a trade worth making for it.
+ */
+export function getMessagesForNamespaces(
+  locale: Locale,
+  namespaces: readonly string[],
+): Record<string, unknown> {
+  const full = getMessages(locale);
+  const picked: Record<string, unknown> = {};
+  for (const namespace of namespaces) {
+    const path = namespace.split(".");
+    const value = getByPath(full, path);
+    if (value !== undefined) {
+      setByPath(picked, path, value);
+    }
+  }
+  return picked;
+}
