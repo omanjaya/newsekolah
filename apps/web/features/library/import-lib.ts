@@ -34,7 +34,9 @@ function cellToString(cell: unknown): string {
  * ./import-fields.ts) never pull it in.
  */
 export async function parseImportFile(file: File): Promise<ParsedImportSheet> {
-  const { default: ExcelJS } = await import("exceljs");
+  // The explicit chunk name is what next.config.ts's Serwist `exclude`
+  // matches to keep this ~900 kB chunk out of the precache manifest.
+  const { default: ExcelJS } = await import(/* webpackChunkName: "exceljs" */ "exceljs");
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(await file.arrayBuffer());
   const sheet =

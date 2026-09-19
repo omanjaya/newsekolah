@@ -150,7 +150,9 @@ export interface ParsedImportFile {
  * an admin left a stray note column in the sheet.
  */
 export async function parseUserImportFile(file: File): Promise<ParsedImportFile> {
-  const { default: ExcelJSRuntime } = await import("exceljs");
+  // The explicit chunk name is what next.config.ts's Serwist `exclude`
+  // matches to keep this ~900 kB chunk out of the precache manifest.
+  const { default: ExcelJSRuntime } = await import(/* webpackChunkName: "exceljs" */ "exceljs");
   const workbook = new ExcelJSRuntime.Workbook();
   try {
     const buffer = await file.arrayBuffer();

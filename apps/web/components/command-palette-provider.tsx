@@ -1,6 +1,7 @@
 "use client";
 
-import { CommandPalette, type CommandPaletteGroup } from "@newsekolah/ui";
+import type { CommandPaletteGroup } from "@newsekolah/ui";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
@@ -17,6 +18,15 @@ interface CommandPaletteContextValue {
 
 const CommandPaletteContext = createContext<CommandPaletteContextValue | null>(null);
 
+// The provider itself (context + Ctrl/Cmd+K listener) must mount with the
+// shell so the shortcut always works, but the palette dialog carries cmdk,
+// which no route needs for first paint (docs/16-audit-performa-web.md item
+// 8). Deferring only the dialog keeps the shell's initial chunk free of it
+// without gating the whole shell behind a client-only chunk.
+const CommandPalette = dynamic(() => import("@newsekolah/ui").then((mod) => mod.CommandPalette), {
+  ssr: false,
+});
+
 /**
  * Global Ctrl/Cmd+K search (docs/07-ui-ux.md section 2). Wired to the same
  * `navigation` registry as the sidebar and tab bar, filtered by the same
@@ -24,6 +34,8 @@ const CommandPaletteContext = createContext<CommandPaletteContextValue | null>(n
  */
 export function CommandPaletteProvider({ children }: { children: ReactNode }): ReactElement {
   const [isOpen, setIsOpen] = useState(false);
+  // The dialog (and its chunk) loads on the first open, not on shell mount.
+  const [hasOpened, setHasOpened] = useState(false);
   const router = useRouter();
   const { me } = useSession();
   const t = useTranslations("app.shell.commandPalette");
@@ -33,6 +45,7 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }): R
     function handleKeyDown(event: KeyboardEvent) {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
+        setHasOpened(true);
         setIsOpen((prev) => !prev);
       }
     }
@@ -64,6 +77,7 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }): R
   }, [me?.permissions, me?.profile_kind, router, tNav]);
 
   const open = useCallback(() => {
+    setHasOpened(true);
     setIsOpen(true);
   }, []);
   // Same rationale as SessionProvider/TenantProvider: keep the value's
@@ -74,14 +88,16 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }): R
   return (
     <CommandPaletteContext.Provider value={value}>
       {children}
-      <CommandPalette
-        open={isOpen}
-        onOpenChange={setIsOpen}
-        groups={groups}
-        placeholder={t("placeholder")}
-        label={t("trigger")}
-        emptyLabel={t("empty")}
-      />
+      {hasOpened && (
+        <CommandPalette
+          open={isOpen}
+          onOpenChange={setIsOpen}
+          groups={groups}
+          placeholder={t("placeholder")}
+          label={t("trigger")}
+          emptyLabel={t("empty")}
+        />
+      )}
     </CommandPaletteContext.Provider>
   );
 }

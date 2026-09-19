@@ -1,6 +1,5 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { ReactElement, ReactNode } from "react";
@@ -9,6 +8,7 @@ import { navigation, filterNavigation } from "../lib/navigation";
 import { permissionForPath } from "../lib/navigation-permissions";
 import { useSession } from "../lib/session/session-provider";
 
+import { CommandPaletteProvider } from "./command-palette-provider";
 import { ForbiddenPage } from "./forbidden-page";
 import { Header } from "./header";
 import { ImpersonationBanner } from "./impersonation-banner";
@@ -16,15 +16,6 @@ import { MobileTabBar } from "./mobile-tab-bar";
 import { OfflineIndicator } from "./offline-indicator";
 import { Sidebar } from "./sidebar";
 import { UpdateAvailable } from "./update-available";
-
-// Deferred to a client-only chunk (docs/16-audit-performa-web.md item 8):
-// cmdk and the navigation-filtering it does on every `/v1/me` change are not
-// needed for first paint, so every `(app)` route stops shipping them in its
-// initial JS.
-const CommandPaletteProvider = dynamic(
-  () => import("./command-palette-provider").then((mod) => mod.CommandPaletteProvider),
-  { ssr: false },
-);
 
 /**
  * Single layout for the `(app)` route group (docs/03-layered-architecture.md
