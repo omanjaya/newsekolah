@@ -2,6 +2,7 @@ package httpx
 
 import (
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -52,4 +53,80 @@ func ExpiredRefreshCookie(secure bool) string {
 		MaxAge:   -1,
 	}
 	return c.String()
+}
+
+// legacyRefreshCookiePath is the pre-widening RefreshCookiePath. Sessions
+// created before the widening still hold a refresh_token cookie scoped to
+// it, and once a rotation issues the "/"-scoped cookie the browser keeps
+// both, sending the legacy one FIRST (RFC 6265 orders longer paths first).
+// A refresh would then read the stale, already-rotated legacy value and
+// treat it as reuse -- revoking the whole session family (section 2 of
+// docs/08-security.md). Every response that issues a "/"-scoped refresh
+// cookie therefore also expires the legacy one. Removable once every
+// pre-widening session has aged out (one refresh-token TTL after the
+// widening shipped).
+const legacyRefreshCookiePath = "/v1/auth"
+
+func expiredLegacyRefreshCookie(secure bool) string {
+	c := &http.Cookie{ //nolint:gosec // Secure mirrors the cookie being cleared, per docs/08-security.md
+		Name:     RefreshCookieName,
+		Value:    "",
+		Path:     legacyRefreshCookiePath,
+		HttpOnly: true,
+		Secure:   secure,
+		SameSite: http.SameSiteLaxMode,
+		MaxAge:   -1,
+	}
+	return c.String()
+}
+
+// LegacyRefreshCookieCleanup appends the legacy-path expiry cookie to any
+// response that sets a "/"-scoped refresh_token cookie (login, refresh,
+// SSO, logout). The generated handler types only carry one Set-Cookie
+// header, so this lives here, at the response boundary, instead of in the
+// five call sites that mint the cookie.
+func LegacyRefreshCookieCleanup(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		next.ServeHTTP(&legacyCookieCleanupWriter{ResponseWriter: w}, r)
+	})
+}
+
+type legacyCookieCleanupWriter struct {
+	http.ResponseWriter
+	done bool
+}
+
+func (w *legacyCookieCleanupWriter) WriteHeader(status int) {
+	w.appendLegacyClear()
+	w.ResponseWriter.WriteHeader(status)
+}
+
+func (w *legacyCookieCleanupWriter) Write(b []byte) (int, error) {
+	w.appendLegacyClear()
+	return w.ResponseWriter.Write(b)
+}
+
+// Unwrap lets http.ResponseController reach Flush/Hijack on the wrapped writer.
+func (w *legacyCookieCleanupWriter) Unwrap() http.ResponseWriter {
+	return w.ResponseWriter
+}
+
+func (w *legacyCookieCleanupWriter) appendLegacyClear() {
+	if w.done {
+		return
+	}
+	w.done = true
+	header := w.ResponseWriter.Header()
+	for _, value := range header.Values("Set-Cookie") {
+		if !strings.HasPrefix(value, RefreshCookieName+"=") {
+			continue
+		}
+		if strings.Contains(value, "Path="+legacyRefreshCookiePath) {
+			return // already clearing the legacy path; nothing to add
+		}
+		if strings.Contains(value, "Path="+RefreshCookiePath) {
+			header.Add("Set-Cookie", expiredLegacyRefreshCookie(strings.Contains(value, "Secure")))
+			return
+		}
+	}
 }

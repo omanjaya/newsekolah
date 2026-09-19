@@ -31,6 +31,7 @@ func NewRouter(cfg RouterConfig) *chi.Mux {
 	r.Use(middleware.Timeout(30 * time.Second))
 	r.Use(BodyLimit(cfg.BodyLimitBytes))
 	r.Use(SecurityHeaders)
+	r.Use(LegacyRefreshCookieCleanup)
 	r.Use(CORS(cfg.AppOrigins))
 	r.Use(RequestLogger(cfg.Logger))
 
