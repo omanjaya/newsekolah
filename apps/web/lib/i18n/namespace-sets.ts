@@ -16,6 +16,8 @@
  * broader set rather than risk a missing string.
  */
 
+import { libraryNavItems } from "../navigation-library";
+
 /** The shared `@newsekolah/i18n` catalog, always carried whole: small (see
  * `packages/i18n/messages/*.json`) and read from `(auth)`, `(public)`, and
  * `(app)` alike (`common`/`errors` via `components/query-error.tsx`, `auth`
@@ -121,15 +123,28 @@ const APP_BASE_NAMESPACES = [
 ] as const;
 
 /**
+ * The sidebar, command palette, and mobile tab bar render under `(app)`'s
+ * provider on every page and label the library nav entries from the
+ * library catalog, so those exact leaf keys ride along with `(app)` even
+ * though the catalog itself stays scoped to `/library/*`. Derived from the
+ * registry so a new library screen can't silently lose its nav label.
+ */
+const LIBRARY_NAV_LABEL_KEYS = libraryNavItems
+  .map((item) => item.labelKey)
+  .filter((labelKey) => labelKey.startsWith("app.library."));
+
+/**
  * `(app)/layout.tsx`'s provider: everything the root carries (so shared
  * components like `QueryError` still resolve inside `(app)`, since nesting
  * replaces rather than merges — see the file doc comment) plus every
- * feature and base namespace `(app)` screens use, minus `library`.
+ * feature and base namespace `(app)` screens use, minus `library` (its nav
+ * labels excepted, see above).
  */
 export const APP_NAMESPACES: readonly string[] = [
   ...ROOT_NAMESPACES,
   ...APP_FEATURE_NAMESPACES,
   ...APP_BASE_NAMESPACES,
+  ...LIBRARY_NAV_LABEL_KEYS,
 ];
 
 /**
