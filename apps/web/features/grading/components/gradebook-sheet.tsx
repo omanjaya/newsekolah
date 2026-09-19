@@ -15,7 +15,7 @@ import {
 import { Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import {
@@ -63,8 +63,14 @@ export function GradebookSheet({
   const [starTarget, setStarTarget] = useState<GradebookStudent | null>(null);
   const [pendingPublish, setPendingPublish] = useState<boolean | null>(null);
 
-  const starBalances = new Map(
-    (starBalancesQuery.data?.data ?? []).map((b) => [b.student_user_id, b.balance]),
+  // Hoisted out of the render body: `new Map()` inline gave GradebookTable a
+  // fresh `starBalances` identity on every render of this component (e.g.
+  // every keystroke in the search box) even when the underlying balances
+  // had not changed, which a Map's reference identity cannot express to a
+  // memoized consumer the way a primitive value can.
+  const starBalances = useMemo(
+    () => new Map((starBalancesQuery.data?.data ?? []).map((b) => [b.student_user_id, b.balance])),
+    [starBalancesQuery.data],
   );
 
   if (isLoading) {

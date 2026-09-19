@@ -5,6 +5,7 @@ import {
   Badge,
   Button,
   ConfirmDialog,
+  DataTable,
   EmptyState,
   Input,
   PageHeader,
@@ -13,28 +14,22 @@ import {
   domainIcons,
   useToast,
 } from "@newsekolah/ui";
+import type { ColumnDef } from "@tanstack/react-table";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { useAcademicYearsQuery } from "../../academic/api";
+import { useDirectoryQuery, useLookup } from "../../reference/api";
 import {
   type PromotionAction,
   type PromotionOverride,
   type PromotionPlanItem,
-  useAcademicYearsQuery,
   useClassesForYearQuery,
   useCommitPromotionMutation,
-  useIdNameMap,
   usePreviewPromotionMutation,
-  useStudentNameQuery,
 } from "../api";
-
-/** One roster cell: the student's name once it loads, the raw id until then or if it fails to load. */
-function StudentName({ studentUserId }: { studentUserId: string }): ReactElement {
-  const query = useStudentNameQuery(studentUserId);
-  return <>{query.data?.name ?? studentUserId}</>;
-}
 
 const ACTIONS: PromotionAction[] = ["promote", "retain", "graduate", "transfer"];
 
@@ -55,9 +50,15 @@ export function PromotionView(): ReactElement {
   const [effectiveOn, setEffectiveOn] = useState(() => new Date().toISOString().slice(0, 10));
 
   const fromClasses = useClassesForYearQuery(fromYearId);
-  const fromClassMap = useIdNameMap(fromClasses.data?.data);
+  const fromClassMap = useLookup(fromClasses.data?.data);
   const toClasses = useClassesForYearQuery(toYearId);
   const toClassOptions = (toClasses.data?.data ?? []).map((c) => ({ value: c.id, label: c.name }));
+
+  // Batch directory lookup instead of one GET /v1/users/{id} per row: a
+  // school-wide plan can list ~900 students, so a per-row fetch would fire
+  // ~900 requests and ~1800 Selects worth of re-render on every override.
+  const students = useDirectoryQuery("student");
+  const studentMap = useLookup(students.data?.data);
 
   const preview = usePreviewPromotionMutation();
   const commit = useCommitPromotionMutation();
@@ -104,6 +105,78 @@ export function PromotionView(): ReactElement {
     }
     return { counts, unresolvedCount };
   }, [rows]);
+
+  function setOverride(row: PromotionPlanItem, override: PromotionOverride) {
+    setOverrides((prev) => ({ ...prev, [row.student_user_id]: override }));
+  }
+
+  const columns = useMemo<ColumnDef<PromotionPlanItem>[]>(
+    () => [
+      {
+        id: "student",
+        header: t("table.student"),
+        enableSorting: false,
+        accessorFn: (row) => studentMap.get(row.student_user_id)?.name ?? row.student_user_id,
+        cell: ({ row }) =>
+          studentMap.get(row.original.student_user_id)?.name ?? row.original.student_user_id,
+      },
+      {
+        id: "fromClass",
+        header: t("table.fromClass"),
+        enableSorting: false,
+        cell: ({ row }) => (
+          <span className="text-fg-muted">
+            {fromClassMap.get(row.original.from_class_id)?.name ?? "-"}
+          </span>
+        ),
+      },
+      {
+        id: "action",
+        header: t("table.action"),
+        enableSorting: false,
+        cell: ({ row }) => (
+          <Select
+            options={ACTIONS.map((a) => ({ value: a, label: t(`action.${a}`) }))}
+            value={row.original.action}
+            onValueChange={(action) => {
+              setOverride(row.original, {
+                student_user_id: row.original.student_user_id,
+                action: action as PromotionAction,
+                target_class_id:
+                  action === "promote" || action === "retain"
+                    ? row.original.target_class_id
+                    : undefined,
+              });
+            }}
+            className="w-32"
+          />
+        ),
+      },
+      {
+        id: "targetClass",
+        header: t("table.targetClass"),
+        enableSorting: false,
+        cell: ({ row }) =>
+          row.original.action === "promote" || row.original.action === "retain" ? (
+            <Select
+              options={toClassOptions}
+              value={row.original.target_class_id ?? ""}
+              onValueChange={(targetClassId) => {
+                setOverride(row.original, {
+                  student_user_id: row.original.student_user_id,
+                  action: row.original.action,
+                  target_class_id: targetClassId,
+                });
+              }}
+              placeholder={t("table.chooseClass")}
+              invalid={row.original.unresolved}
+              className="w-40"
+            />
+          ) : null,
+      },
+    ],
+    [t, studentMap, fromClassMap, toClassOptions],
+  );
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
@@ -166,71 +239,26 @@ export function PromotionView(): ReactElement {
               )}
             </div>
 
-            <div className="overflow-x-auto rounded-xs border border-border">
-              <table className="w-full min-w-[720px] text-[13px]">
-                <thead className="bg-bg text-left text-fg-muted">
-                  <tr>
-                    <th className="px-3 py-2">{t("table.student")}</th>
-                    <th className="px-3 py-2">{t("table.fromClass")}</th>
-                    <th className="px-3 py-2">{t("table.action")}</th>
-                    <th className="px-3 py-2">{t("table.targetClass")}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((row) => (
-                    <tr key={row.student_user_id} className="border-t border-border">
-                      <td className="px-3 py-2">
-                        <StudentName studentUserId={row.student_user_id} />
-                      </td>
-                      <td className="px-3 py-2 text-fg-muted">
-                        {fromClassMap.get(row.from_class_id)?.name ?? "-"}
-                      </td>
-                      <td className="px-3 py-2">
-                        <Select
-                          options={ACTIONS.map((a) => ({ value: a, label: t(`action.${a}`) }))}
-                          value={row.action}
-                          onValueChange={(action) => {
-                            setOverrides((prev) => ({
-                              ...prev,
-                              [row.student_user_id]: {
-                                student_user_id: row.student_user_id,
-                                action: action as PromotionAction,
-                                target_class_id:
-                                  action === "promote" || action === "retain"
-                                    ? row.target_class_id
-                                    : undefined,
-                              },
-                            }));
-                          }}
-                          className="w-32"
-                        />
-                      </td>
-                      <td className="px-3 py-2">
-                        {(row.action === "promote" || row.action === "retain") && (
-                          <Select
-                            options={toClassOptions}
-                            value={row.target_class_id ?? ""}
-                            onValueChange={(targetClassId) => {
-                              setOverrides((prev) => ({
-                                ...prev,
-                                [row.student_user_id]: {
-                                  student_user_id: row.student_user_id,
-                                  action: row.action,
-                                  target_class_id: targetClassId,
-                                },
-                              }));
-                            }}
-                            placeholder={t("table.chooseClass")}
-                            invalid={row.unresolved}
-                            className="w-40"
-                          />
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <DataTable
+              stateKey="features/promotion/components/promotion-view:1"
+              mode="local"
+              data={rows}
+              columns={columns}
+              rowCount={rows.length}
+              pagination={{ pageIndex: 0, pageSize: 50 }}
+              onPaginationChange={() => undefined}
+              sorting={[]}
+              onSortingChange={() => undefined}
+              globalFilter=""
+              getRowId={(r) => r.student_user_id}
+              emptyState={
+                <EmptyState
+                  icon={<domainIcons.users aria-hidden="true" />}
+                  title={t("emptyTitle")}
+                  description={t("emptyBody")}
+                />
+              }
+            />
 
             <div className="flex flex-wrap items-end gap-3 border-t border-border pt-4">
               <label className="flex flex-col gap-1 text-[13px]">
