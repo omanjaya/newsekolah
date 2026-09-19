@@ -89,7 +89,7 @@ Tanggal: 2026-09-19. Metode: tiga audit statis paralel (animasi, rendering/data-
 
 ## Status perbaikan (19 September 2026)
 
-Semua item prioritas tinggi dan menengah dikerjakan oleh enam pengerjaan paralel dan digabung ke `fix/schedule-grid-alignment`; item 3 (prefetch `/v1/me`) dan 11 (scoping i18n) menyusul di gelombang kedua pada hari yang sama.
+Semua item prioritas tinggi dan menengah dikerjakan oleh tujuh pengerjaan paralel dalam dua gelombang dan digabung ke `fix/schedule-grid-alignment`. Gelombang kedua menuntaskan scoping i18n (item 11): root membawa namespace bersama saja, `(app)` membawa namespace aplikasi, katalog `library` (35 kB, terbesar) di-scope ke `/library/*` dengan label nav-nya diturunkan dari registry navigasi ke set `(app)` (regresi `MISSING_MESSAGE` tertangkap smoke test browser dan diperbaiki). Prefetch `/v1/me` (item 3) hanya sampai infrastruktur `HydrationBoundary`: menyambungkan fetch dari Server Component tidak aman karena `/v1/me` hanya menerima Bearer token dan refresh akan merotasi cookie yang tak bisa di-relay dari layout, memicu proteksi reuse-token (docs/08-security.md); penyelesaian aman lewat middleware dicatat sebagai task lanjutan.
 
 Hasil terukur setelah build produksi ulang (First Load JS gz, sebelum -> sesudah):
 
