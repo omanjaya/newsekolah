@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { useToast } from "@newsekolah/ui";
+import { useMediaQuery, useToast } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -14,7 +14,6 @@ import {
   type GradebookStudent,
   useSaveComponentScoresMutation,
 } from "../api";
-import { useMediaQuery } from "../use-media-query";
 
 import { GradebookDesktopTable } from "./gradebook-desktop-table";
 import { GradebookMobileCards } from "./gradebook-mobile-cards";

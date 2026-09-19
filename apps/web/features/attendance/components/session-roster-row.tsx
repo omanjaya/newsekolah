@@ -2,8 +2,9 @@
 
 import { Input } from "@newsekolah/ui";
 import { Lock } from "lucide-react";
+import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useState } from "react";
+import { memo, useState } from "react";
 
 import type { ViolationType } from "../../discipline/api";
 import type { RosterItem, SessionDetail } from "../api";
@@ -16,10 +17,12 @@ type AttendanceStatus = SessionDetail["statuses"][number];
 /**
  * One roster row, kept in its own component so a keystroke in one
  * student's note does not re-render the other 35 rows: props are the
- * student's own status/note/violations slice plus stable callbacks, so
- * React Compiler can bail an unaffected row out of a re-render.
+ * student's own status/note/violations slice plus stable callbacks, and
+ * `memo` is what bails an unaffected row out of a re-render (the React
+ * Compiler lint rules run in this repo, but the compiler itself is not
+ * part of the build, so the bailout must be explicit).
  */
-export function SessionRosterRow({
+export const SessionRosterRow = memo(function SessionRosterRow({
   item,
   index,
   statuses,
@@ -30,7 +33,6 @@ export function SessionRosterRow({
   violationTypesLoading,
   isPresent,
   disabled,
-  t,
   onStatusChange,
   onNoteChange,
   onToggleViolation,
@@ -45,11 +47,11 @@ export function SessionRosterRow({
   violationTypesLoading: boolean;
   isPresent: boolean;
   disabled: boolean;
-  t: (key: string, values?: Record<string, string>) => string;
   onStatusChange: (studentId: string, statusCode: string) => void;
   onNoteChange: (studentId: string, value: string) => void;
   onToggleViolation: (studentId: string, violationTypeId: string) => void;
 }): ReactElement {
+  const t = useTranslations("app.attendance.session");
   // Local draft so typing paints instantly in this row; the value is
   // still committed to the parent on every change (cheap now that only
   // this row re-renders), which keeps the pending-changes count and the
@@ -111,4 +113,4 @@ export function SessionRosterRow({
       </div>
     </li>
   );
-}
+});

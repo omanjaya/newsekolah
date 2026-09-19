@@ -285,7 +285,6 @@ function SessionEditor({
               violationTypesLoading={violationTypes.isLoading}
               isPresent={presentCodes.has(current)}
               disabled={save.isPending}
-              t={t}
               onStatusChange={handleStatusChange}
               onNoteChange={handleNoteChange}
               onToggleViolation={handleToggleViolation}

@@ -12,6 +12,7 @@ import {
   TabsList,
   TabsTrigger,
   domainIcons,
+  useMediaQuery,
   useToast,
 } from "@newsekolah/ui";
 import { Plus } from "lucide-react";
@@ -40,7 +41,6 @@ import {
   useSchedulesQuery,
 } from "../api";
 import { conflictMessage } from "../conflict-message";
-import { useMediaQuery } from "../use-media-query";
 
 import { CopyBanner } from "./copy-banner";
 import { ScheduleDayGrid } from "./schedule-day-grid";
