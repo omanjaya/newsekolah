@@ -89,7 +89,7 @@
       "body": "Judul dengan ISBN ini sudah ada di katalog: {title}.",
       "view": "Lihat judul"
     },
-    "editTitle": "Edit judul"
+    "editTitle": "Ubah judul"
   },
   "copies": {
     "title": "Eksemplar",
@@ -387,7 +387,7 @@
     "cleared": "Anggota diberikan bebas pustaka",
     "printClearanceLetter": "Cetak surat bebas pustaka",
     "clearanceBlockedByLoan": "Bebas pustaka belum bisa diberikan selama masih ada peminjaman aktif atau denda belum lunas.",
-    "edit": "Edit keanggotaan"
+    "edit": "Ubah keanggotaan"
   },
   "violations": {
     "navLabel": "Pelanggaran perpustakaan",

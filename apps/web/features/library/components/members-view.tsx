@@ -3,6 +3,7 @@
 import { formatDate } from "@newsekolah/i18n";
 import type { Locale } from "@newsekolah/i18n";
 import {
+  Avatar,
   Badge,
   Button,
   DataTable,
@@ -70,14 +71,18 @@ export function MembersView(): ReactElement {
         id: "name",
         header: t("columns.name"),
         enableSorting: false,
-        cell: ({ row }) => (
-          <div className="flex flex-col">
-            <span className="text-fg">
-              {directoryMap.get(row.original.user_id)?.name ?? t("unknownUser")}
-            </span>
-            <span className="text-[12px] text-fg-muted">{row.original.member_no}</span>
-          </div>
-        ),
+        cell: ({ row }) => {
+          const name = directoryMap.get(row.original.user_id)?.name ?? t("unknownUser");
+          return (
+            <div className="flex min-w-0 items-center gap-2">
+              <Avatar size="sm" name={name} />
+              <div className="flex min-w-0 flex-col">
+                <span className="truncate text-fg">{name}</span>
+                <span className="truncate text-[12px] text-fg-muted">{row.original.member_no}</span>
+              </div>
+            </div>
+          );
+        },
       },
       {
         id: "type",
@@ -126,7 +131,11 @@ export function MembersView(): ReactElement {
   );
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
+    // Viewport-fit on desktop (100dvh minus the h-14 shell header): the page
+    // itself never scrolls; the table scrolls its rows internally while the
+    // filter row and header actions stay put. See school/users-view.tsx for
+    // the reference pattern.
+    <div className="flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
       <PageHeader
         eyebrow={t("eyebrow")}
         title={t("title")}
@@ -193,28 +202,31 @@ export function MembersView(): ReactElement {
         )}
       </div>
 
-      <DataTable
-        stateKey="features/library/components/members-view:1"
-        data={items}
-        columns={columns}
-        rowCount={items.length}
-        pagination={{ pageIndex: 0, pageSize: 200 }}
-        onPaginationChange={() => undefined}
-        sorting={[]}
-        onSortingChange={() => undefined}
-        globalFilter={search}
-        onGlobalFilterChange={setSearch}
-        toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
-        isLoading={isLoading}
-        getRowId={(item) => item.user_id}
-        emptyState={
-          <EmptyState
-            icon={<UsersRound aria-hidden="true" />}
-            title={isFiltered ? t("noMatchTitle") : t("emptyTitle")}
-            description={isFiltered ? t("noMatchBody") : t("emptyBody")}
-          />
-        }
-      />
+      <div className="flex flex-col md:min-h-0 md:flex-1">
+        <DataTable
+          stateKey="features/library/components/members-view:1"
+          data={items}
+          columns={columns}
+          rowCount={items.length}
+          pagination={{ pageIndex: 0, pageSize: 200 }}
+          onPaginationChange={() => undefined}
+          sorting={[]}
+          onSortingChange={() => undefined}
+          globalFilter={search}
+          onGlobalFilterChange={setSearch}
+          toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
+          isLoading={isLoading}
+          getRowId={(item) => item.user_id}
+          fillHeight
+          emptyState={
+            <EmptyState
+              icon={<UsersRound aria-hidden="true" />}
+              title={isFiltered ? t("noMatchTitle") : t("emptyTitle")}
+              description={isFiltered ? t("noMatchBody") : t("emptyBody")}
+            />
+          }
+        />
+      </div>
 
       <Dialog
         open={registering}

@@ -1,6 +1,6 @@
 "use client";
 
-import { PageHeader, Tabs, TabsList, TabsTrigger } from "@newsekolah/ui";
+import { PageHeader, Tabs, TabsContent, TabsList, TabsTrigger } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
@@ -23,7 +23,9 @@ export function MasterDataView(): ReactElement {
   );
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
+    // Viewport-fit on desktop (100dvh minus the h-14 shell header): the page
+    // itself never scrolls; the active tab's panel scrolls internally.
+    <div className="flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
       <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
 
       <Tabs
@@ -31,6 +33,7 @@ export function MasterDataView(): ReactElement {
         onValueChange={(value) => {
           setTab(value as Tab);
         }}
+        className="flex flex-col md:min-h-0 md:flex-1"
       >
         <TabsList>
           <TabsTrigger value="materialTypes">{t("tabs.materialTypes")}</TabsTrigger>
@@ -38,12 +41,19 @@ export function MasterDataView(): ReactElement {
           <TabsTrigger value="partners">{t("tabs.partners")}</TabsTrigger>
           <TabsTrigger value="ddcClasses">{t("tabs.ddcClasses")}</TabsTrigger>
         </TabsList>
+        <TabsContent value="materialTypes" className="md:min-h-0 md:flex-1">
+          <MaterialTypesTab />
+        </TabsContent>
+        <TabsContent value="acquisitionSources" className="md:min-h-0 md:flex-1">
+          <AcquisitionSourcesTab />
+        </TabsContent>
+        <TabsContent value="partners" className="md:min-h-0 md:flex-1">
+          <PartnersTab />
+        </TabsContent>
+        <TabsContent value="ddcClasses" className="md:min-h-0 md:flex-1">
+          <DdcClassesTab />
+        </TabsContent>
       </Tabs>
-
-      {tab === "materialTypes" && <MaterialTypesTab />}
-      {tab === "acquisitionSources" && <AcquisitionSourcesTab />}
-      {tab === "partners" && <PartnersTab />}
-      {tab === "ddcClasses" && <DdcClassesTab />}
     </div>
   );
 }

@@ -6,11 +6,12 @@ import {
   Dialog,
   DialogContent,
   EmptyState,
+  IconButton,
   PageHeader,
   domainIcons,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Plus } from "lucide-react";
+import { BookOpen, Pencil, Plus } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -60,23 +61,22 @@ export function CatalogueView(): ReactElement {
         header: t("columns.actions"),
         enableSorting: false,
         cell: ({ row }) => (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <Link
               href={`/library/catalogue/${row.original.id}`}
-              className="text-[13px] font-medium text-accent hover:underline"
+              aria-label={t("viewCopies")}
+              className="inline-flex size-11 items-center justify-center rounded-sm text-fg transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)] hover:bg-bg md:size-8 [&>svg]:size-5"
             >
-              {t("viewCopies")}
+              <BookOpen aria-hidden="true" />
             </Link>
             {canManage && (
-              <Button
-                size="sm"
-                variant="ghost"
+              <IconButton
+                icon={<Pencil />}
+                aria-label={t("editTitle")}
                 onClick={() => {
                   setEditing(row.original);
                 }}
-              >
-                {t("editTitle")}
-              </Button>
+              />
             )}
           </div>
         ),
@@ -86,7 +86,11 @@ export function CatalogueView(): ReactElement {
   );
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
+    // Viewport-fit on desktop (100dvh minus the h-14 shell header): the page
+    // itself never scrolls; the table scrolls its rows internally while the
+    // action row stays put. See school/users-view.tsx for the reference
+    // pattern.
+    <div className="flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
       <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
       <div className="flex flex-wrap items-center justify-end gap-2">
         <Button asChild size="sm" variant="secondary">
@@ -116,28 +120,31 @@ export function CatalogueView(): ReactElement {
         )}
       </div>
 
-      <DataTable
-        stateKey="features/library/components/catalogue-view:1"
-        data={titles}
-        columns={columns}
-        rowCount={titles.length}
-        pagination={{ pageIndex: 0, pageSize: 50 }}
-        onPaginationChange={() => undefined}
-        sorting={[]}
-        onSortingChange={() => undefined}
-        globalFilter={search}
-        onGlobalFilterChange={setSearch}
-        toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
-        isLoading={isLoading}
-        getRowId={(item) => item.id}
-        emptyState={
-          <EmptyState
-            icon={<domainIcons.library aria-hidden="true" />}
-            title={t("emptyTitle")}
-            description={t("emptyBody")}
-          />
-        }
-      />
+      <div className="flex flex-col md:min-h-0 md:flex-1">
+        <DataTable
+          stateKey="features/library/components/catalogue-view:1"
+          data={titles}
+          columns={columns}
+          rowCount={titles.length}
+          pagination={{ pageIndex: 0, pageSize: 50 }}
+          onPaginationChange={() => undefined}
+          sorting={[]}
+          onSortingChange={() => undefined}
+          globalFilter={search}
+          onGlobalFilterChange={setSearch}
+          toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
+          isLoading={isLoading}
+          getRowId={(item) => item.id}
+          fillHeight
+          emptyState={
+            <EmptyState
+              icon={<domainIcons.library aria-hidden="true" />}
+              title={t("emptyTitle")}
+              description={t("emptyBody")}
+            />
+          }
+        />
+      </div>
 
       <Dialog
         open={adding || editing !== null}

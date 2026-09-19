@@ -8,12 +8,13 @@ import {
   Dialog,
   DialogContent,
   EmptyState,
+  IconButton,
   PageHeader,
   domainIcons,
   useToast,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Plus } from "lucide-react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
@@ -95,25 +96,20 @@ export function MemberTypesView(): ReactElement {
         cell: ({ row }) =>
           canManage ? (
             <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant="secondary"
+              <IconButton
+                icon={<Pencil />}
+                aria-label={t("edit")}
                 onClick={() => {
                   setEditing(row.original);
                 }}
-              >
-                {t("edit")}
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="text-status-absent"
+              />
+              <IconButton
+                icon={<Trash2 />}
+                aria-label={t("delete")}
                 onClick={() => {
                   setDeleting(row.original);
                 }}
-              >
-                {t("delete")}
-              </Button>
+              />
             </div>
           ) : null,
       },
@@ -122,7 +118,9 @@ export function MemberTypesView(): ReactElement {
   );
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
+    // Viewport-fit on desktop (100dvh minus the h-14 shell header): the page
+    // itself never scrolls; the table scrolls its rows internally.
+    <div className="flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
       <PageHeader
         eyebrow={t("eyebrow")}
         title={t("title")}
@@ -141,27 +139,30 @@ export function MemberTypesView(): ReactElement {
         }
       />
 
-      <DataTable
-        stateKey="features/library/components/member-types-view:1"
-        mode="local"
-        data={items}
-        columns={columns}
-        rowCount={items.length}
-        pagination={{ pageIndex: 0, pageSize: 50 }}
-        onPaginationChange={() => undefined}
-        sorting={[]}
-        onSortingChange={() => undefined}
-        globalFilter=""
-        isLoading={isLoading}
-        getRowId={(item) => item.id}
-        emptyState={
-          <EmptyState
-            icon={<domainIcons.users aria-hidden="true" />}
-            title={t("emptyTitle")}
-            description={t("emptyBody")}
-          />
-        }
-      />
+      <div className="flex flex-col md:min-h-0 md:flex-1">
+        <DataTable
+          stateKey="features/library/components/member-types-view:1"
+          mode="local"
+          data={items}
+          columns={columns}
+          rowCount={items.length}
+          pagination={{ pageIndex: 0, pageSize: 50 }}
+          onPaginationChange={() => undefined}
+          sorting={[]}
+          onSortingChange={() => undefined}
+          globalFilter=""
+          isLoading={isLoading}
+          getRowId={(item) => item.id}
+          fillHeight
+          emptyState={
+            <EmptyState
+              icon={<domainIcons.users aria-hidden="true" />}
+              title={t("emptyTitle")}
+              description={t("emptyBody")}
+            />
+          }
+        />
+      </div>
 
       <Dialog
         open={creating}

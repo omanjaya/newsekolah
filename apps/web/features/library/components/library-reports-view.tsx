@@ -189,6 +189,7 @@ export function LibraryReportsView(): ReactElement {
 
 function LoansReportTable({ from, to }: { from: string; to: string }): ReactElement {
   const t = useTranslations("app.library.reports.loans");
+  const tStatus = useTranslations("app.library.memberHistory.status");
   const locale = useLocale() as Locale;
   const { data, isLoading } = useLoansReportQuery(from, to);
   const loans = data?.data ?? [];
@@ -229,7 +230,9 @@ function LoansReportTable({ from, to }: { from: string; to: string }): ReactElem
                 {formatDate(row.loan.borrowed_at, { locale })}
               </td>
               <td className="px-3 py-2 text-fg-muted">{formatDate(row.loan.due_on, { locale })}</td>
-              <td className="px-3 py-2 text-fg-muted">{row.loan.status}</td>
+              <td className="px-3 py-2 text-fg-muted">
+                {tStatus.has(row.loan.status) ? tStatus(row.loan.status) : row.loan.status}
+              </td>
             </tr>
           ))}
         </tbody>
