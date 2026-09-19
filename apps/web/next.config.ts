@@ -27,14 +27,15 @@ const withSerwist = withSerwistInit({
   reloadOnOnline: true,
   // Per-route app chunks change on every deploy and are only ever needed for
   // the route the visitor is already on (fetched normally, no offline value
-  // from precaching every other route's chunk). The exceljs chunk (import
-  // features, docs/16-audit-performa-web.md item 9) is ~250 kB gz on its own
-  // and only needed by the two screens that use it. `asset.name` is matched
-  // against these, e.g. `static/chunks/app/(app)/schedule/page-<hash>.js` or
-  // `static/chunks/<id>-exceljs-<hash>.js` once that import is code-split
-  // with a named chunk; the shared app shell, CSS, and offline page keep
-  // being precached as before.
-  exclude: [/\/chunks\/app\//, /exceljs/],
+  // from precaching every other route's chunk). The shared app shell, CSS,
+  // and offline page keep being precached as before.
+  exclude: [/\/chunks\/app\//],
+  // Keeps oversized on-demand chunks out of the precache no matter what
+  // webpack names them: the exceljs vendor chunk (~912 kB raw, import
+  // screens only, docs/16-audit-performa-web.md item 9) gets a hashed id
+  // that no name-based exclude can target. Every precached chunk today is
+  // well under this bound.
+  maximumFileSizeToCacheInBytes: 700 * 1024,
 });
 
 const nextConfig: NextConfig = {
