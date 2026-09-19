@@ -36,6 +36,58 @@ function Countdown({
   expiresInLabel,
   renewLabel,
 }: QrPanelProps) {
+  // Only the *transition* to expired lives here, not the 1s tick itself: a
+  // kiosk/duty screen keeps this panel mounted indefinitely, and re-running
+  // `Countdown` every second would reconcile the whole QR subtree (220px
+  // SVG) forever for no visual change 59 seconds out of 60. The tick lives
+  // in `CountdownText` below instead, which re-renders on its own without
+  // touching the QR. This component only re-renders once, when the token
+  // actually expires.
+  const [expired, setExpired] = useState(() => remaining(expiresAt) <= 0);
+
+  return (
+    <div className="flex flex-col items-center gap-3 rounded-sm border border-border bg-surface p-6">
+      <div className={expired ? "opacity-30" : undefined} aria-hidden={expired}>
+        <QRCodeSVG value={payload} size={220} level="M" marginSize={2} />
+      </div>
+      <code className="rounded-xs bg-bg px-2 py-1 text-[13px] tracking-wide">{code}</code>
+      <CountdownText
+        expiresAt={expiresAt}
+        expiredLabel={expiredLabel}
+        expiresInLabel={expiresInLabel}
+        onExpire={() => {
+          setExpired(true);
+        }}
+      />
+      <Button
+        variant={expired ? "primary" : "secondary"}
+        size="sm"
+        onClick={onRenew}
+        loading={renewing}
+      >
+        {renewLabel}
+      </Button>
+    </div>
+  );
+}
+
+/**
+ * Owns the 1s interval and re-renders every tick, but nothing above it
+ * does: it reports an expiry transition to the parent through `onExpire`
+ * (called once, not on every tick) instead of lifting the ticking state
+ * itself.
+ */
+function CountdownText({
+  expiresAt,
+  expiredLabel,
+  expiresInLabel,
+  onExpire,
+}: {
+  expiresAt: string;
+  expiredLabel: string;
+  expiresInLabel: (secondsLeft: number) => string;
+  onExpire: () => void;
+}) {
   const [secondsLeft, setSecondsLeft] = useState(() => remaining(expiresAt));
 
   useEffect(() => {
@@ -47,26 +99,15 @@ function Countdown({
     };
   }, [expiresAt]);
 
-  const expired = secondsLeft <= 0;
+  useEffect(() => {
+    if (secondsLeft <= 0) onExpire();
+  }, [secondsLeft, onExpire]);
 
+  const expired = secondsLeft <= 0;
   return (
-    <div className="flex flex-col items-center gap-3 rounded-sm border border-border bg-surface p-6">
-      <div className={expired ? "opacity-30" : undefined} aria-hidden={expired}>
-        <QRCodeSVG value={payload} size={220} level="M" marginSize={2} />
-      </div>
-      <code className="rounded-xs bg-bg px-2 py-1 text-[13px] tracking-wide">{code}</code>
-      <p className="text-[13px] text-fg-muted" aria-live="polite">
-        {expired ? expiredLabel : expiresInLabel(secondsLeft)}
-      </p>
-      <Button
-        variant={expired ? "primary" : "secondary"}
-        size="sm"
-        onClick={onRenew}
-        loading={renewing}
-      >
-        {renewLabel}
-      </Button>
-    </div>
+    <p className="text-[13px] text-fg-muted" aria-live="polite">
+      {expired ? expiredLabel : expiresInLabel(secondsLeft)}
+    </p>
   );
 }
 

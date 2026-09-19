@@ -59,6 +59,9 @@ export function useStaffAttendanceTodayQuery(date: string) {
     queryFn: () => client.GET("/v1/staff-attendance/today", { params: { query: { date } } }),
     enabled: date !== "",
     refetchInterval: 60_000,
+    // Pause polling on a hidden tab instead of ticking forever in the
+    // background.
+    refetchIntervalInBackground: false,
   });
 }
 

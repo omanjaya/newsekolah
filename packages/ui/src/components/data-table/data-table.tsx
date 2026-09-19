@@ -22,7 +22,6 @@ import {
 } from "react";
 
 import { cn } from "../../utils/cn.js";
-import { Skeleton } from "../skeleton.js";
 
 import { DataTableCards } from "./data-table-cards.js";
 import { DataTableSearchEmptyState } from "./data-table-empty-state.js";
@@ -342,11 +341,21 @@ export function DataTable<TData>({
           {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- rows use roving focus for j/k/Enter activation. */}
           <tbody onKeyDown={handleKeyDown}>
             {isLoading ? (
+              // The pulse animates once per row (not per cell): one running
+              // animation per skeleton row instead of one per cell keeps the
+              // same look with far fewer concurrent animations on wide
+              // tables. See docs/16-audit-performa-web.md "Temuan menengah".
               Array.from({ length: skeletonRowCount }).map((_, index) => (
-                <tr key={index} className={cn("border-b border-border", ROW_HEIGHT[density])}>
+                <tr
+                  key={index}
+                  className={cn("animate-pulse border-b border-border", ROW_HEIGHT[density])}
+                >
                   {columns.map((_column, columnIndex) => (
                     <td key={columnIndex} className="px-3">
-                      <Skeleton className="h-4 w-full max-w-40" />
+                      <div
+                        role="presentation"
+                        className="h-4 w-full max-w-40 rounded-xs bg-border/60"
+                      />
                     </td>
                   ))}
                 </tr>

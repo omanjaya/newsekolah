@@ -37,6 +37,9 @@ export function useTodaySessionsQuery(filter: TodaySessionsFilter, enabled = tru
       }),
     enabled: enabled && filter.date !== "",
     refetchInterval: 60_000,
+    // Pause polling on a hidden tab instead of ticking forever in the
+    // background.
+    refetchIntervalInBackground: false,
   });
 }
 

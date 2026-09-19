@@ -75,5 +75,8 @@ export function usePeriodTodayQuery(academicYearId: string) {
     retry: false,
     // Recomputed frequently: "the period in session" changes every lesson.
     refetchInterval: 60_000,
+    // Pause polling on a hidden tab instead of ticking forever in the
+    // background.
+    refetchIntervalInBackground: false,
   });
 }
