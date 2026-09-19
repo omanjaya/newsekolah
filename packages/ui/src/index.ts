@@ -4,6 +4,7 @@ export { domainIcons, type DomainIconName } from "./icons.js";
 export { Button, type ButtonProps } from "./components/button.js";
 export { IconButton, type IconButtonProps } from "./components/icon-button.js";
 export { Input, type InputProps } from "./components/input.js";
+export { SearchInput } from "./components/search-input.js";
 export { UiLabelsProvider, useUiLabels, type UiLabels } from "./components/ui-labels.js";
 
 export {

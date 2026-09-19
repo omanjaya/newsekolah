@@ -1044,6 +1044,7 @@
         "tabStudents": "Siswa",
         "tabTeachers": "Guru pengampu",
         "studentCount": "{n, plural, one {# siswa} other {# siswa}}",
+        "rosterOfCapacity": "{n}/{max} siswa",
         "assignStudents": "Tempatkan siswa",
         "noStudents": "Belum ada siswa di kelas ini.",
         "searchStudent": "Cari nama siswa",

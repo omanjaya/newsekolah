@@ -1044,6 +1044,7 @@
         "tabStudents": "Students",
         "tabTeachers": "Subject teachers",
         "studentCount": "{n, plural, one {# student} other {# students}}",
+        "rosterOfCapacity": "{n}/{max} students",
         "assignStudents": "Place students",
         "noStudents": "No students in this class yet.",
         "searchStudent": "Search student",

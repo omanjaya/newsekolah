@@ -2,6 +2,8 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import {
+  Avatar,
+  Badge,
   Button,
   ConfirmDialog,
   Dialog,
@@ -18,7 +20,7 @@ import {
   domainIcons,
   useToast,
 } from "@newsekolah/ui";
-import { Plus } from "lucide-react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useEffect, useMemo, useState } from "react";
@@ -32,12 +34,15 @@ import { useClassesQuery, useLookup, useTeachersQuery } from "../../reference/ap
 import {
   type ClassRow,
   useCreateClassMutation,
+  useEnrollmentsQuery,
   useGradeLevelsQuery,
+  useTeachingAssignmentsQuery,
   useUpdateClassMutation,
 } from "../api";
 
 import { ClassNavigation } from "./class-navigation";
-import { EnrollmentPanel, TeachingPanel } from "./class-panels";
+import { EnrollmentPanel } from "./class-panels";
+import { TeachingPanel } from "./teaching-panel";
 
 const CLASS_TABS = ["students", "teachers"] as const;
 
@@ -71,7 +76,9 @@ export function ClassesView(): ReactElement {
   }, [replaceSelectedId, selected]);
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
+    // Viewport-fit on desktop (100dvh minus the h-14 shell header): the page
+    // itself never scrolls; the class list and the roster scroll internally.
+    <div className="flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
       <PageHeader
         eyebrow={t("eyebrow")}
         title={t("title")}
@@ -116,7 +123,7 @@ export function ClassesView(): ReactElement {
           description={t("emptyBody")}
         />
       ) : (
-        <div className="grid min-w-0 gap-4 md:grid-cols-[minmax(0,220px)_minmax(0,1fr)]">
+        <div className="grid min-w-0 gap-4 md:min-h-0 md:flex-1 md:grid-cols-[minmax(0,220px)_minmax(0,1fr)]">
           <ClassNavigation items={items} selectedId={selected?.id} onSelect={setSelectedId} />
           {selected && (
             <ClassDetail
@@ -275,24 +282,53 @@ function ClassDetail({
   const remove = useDeleteClassMutation();
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
+  // Shared with EnrollmentPanel/TeachingPanel below; React Query dedupes the
+  // request so the header counts cost nothing extra over the panels' own.
+  const enrollments = useEnrollmentsQuery(cls.id);
+  const teachingAssignments = useTeachingAssignmentsQuery(cls.id);
+  const activeEnrollmentCount = useMemo(
+    () => (enrollments.data?.data ?? []).filter((e) => e.status === "active").length,
+    [enrollments.data],
+  );
+  const activeTeachingCount = useMemo(
+    () => (teachingAssignments.data?.data ?? []).filter((a) => a.is_active).length,
+    [teachingAssignments.data],
+  );
+  const homeroomTeacher = cls.homeroom_teacher_id
+    ? teacherMap.get(cls.homeroom_teacher_id)
+    : undefined;
   return (
-    <section className="flex min-w-0 flex-col gap-4 rounded-sm border border-border bg-surface p-4">
+    <section className="flex min-w-0 flex-col gap-4 rounded-sm border border-border bg-surface p-4 md:min-h-0">
       <div className="flex flex-wrap items-start justify-between gap-2">
-        <div className="flex flex-col">
-          <h2 className="text-[18px] font-medium text-fg">{cls.name}</h2>
-          <span className="text-[13px] text-fg-muted">
-            {t("homeroomLabel")}:{" "}
-            {cls.homeroom_teacher_id
-              ? (teacherMap.get(cls.homeroom_teacher_id)?.name ?? "-")
-              : t("noHomeroom")}
-            {cls.capacity ? ` · ${t("capacityLabel", { n: cls.capacity })}` : ""}
-          </span>
+        <div className="flex flex-col gap-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-[18px] font-medium text-fg">{cls.name}</h2>
+            {enrollments.data && (
+              <Badge variant="neutral" className="tabular-nums">
+                {cls.capacity
+                  ? t("rosterOfCapacity", { n: activeEnrollmentCount, max: cls.capacity })
+                  : t("studentCount", { n: activeEnrollmentCount })}
+              </Badge>
+            )}
+          </div>
+          <div className="flex items-center gap-2 text-[13px] text-fg-muted">
+            <span>{t("homeroomLabel")}:</span>
+            {homeroomTeacher ? (
+              <span className="flex items-center gap-2">
+                <Avatar size="sm" name={homeroomTeacher.name} />
+                {homeroomTeacher.name}
+              </span>
+            ) : (
+              <span>{t("noHomeroom")}</span>
+            )}
+          </div>
         </div>
         {canManage && (
           <div className="flex gap-2">
             <Button
               variant="secondary"
               size="sm"
+              icon={<Pencil />}
               onClick={() => {
                 setEditing(true);
               }}
@@ -302,6 +338,7 @@ function ClassDetail({
             <Button
               variant="secondary"
               size="sm"
+              icon={<Trash2 />}
               onClick={() => {
                 setDeleting(true);
               }}
@@ -316,15 +353,26 @@ function ClassDetail({
         onValueChange={(value) => {
           onTabChange(value as (typeof CLASS_TABS)[number]);
         }}
+        className="flex flex-col md:min-h-0 md:flex-1"
       >
         <TabsList>
-          <TabsTrigger value="students">{t("tabStudents")}</TabsTrigger>
-          <TabsTrigger value="teachers">{t("tabTeachers")}</TabsTrigger>
+          <TabsTrigger value="students">
+            {t("tabStudents")}
+            {enrollments.data && (
+              <span className="ml-1 tabular-nums text-fg-muted">({activeEnrollmentCount})</span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="teachers">
+            {t("tabTeachers")}
+            {teachingAssignments.data && (
+              <span className="ml-1 tabular-nums text-fg-muted">({activeTeachingCount})</span>
+            )}
+          </TabsTrigger>
         </TabsList>
-        <TabsContent value="students" className="pt-3">
+        <TabsContent value="students" className="pt-3 md:min-h-0 md:flex-1">
           <EnrollmentPanel classId={cls.id} canManage={canManage} />
         </TabsContent>
-        <TabsContent value="teachers" className="pt-3">
+        <TabsContent value="teachers" className="pt-3 md:min-h-0 md:flex-1">
           <TeachingPanel classId={cls.id} canManage={canManage} />
         </TabsContent>
       </Tabs>

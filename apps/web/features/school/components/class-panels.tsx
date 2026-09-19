@@ -2,38 +2,32 @@
 import { ApiError } from "@newsekolah/api-client";
 import {
   Alert,
+  Avatar,
   Button,
   Checkbox,
   Dialog,
   DialogContent,
+  EmptyState,
   IconButton,
   Input,
   Select,
+  SearchInput,
   Skeleton,
+  domainIcons,
   useToast,
 } from "@newsekolah/ui";
-import { ArrowRightLeft, Plus, Trash2 } from "lucide-react";
+import { ArrowRightLeft, Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
-import { useActiveYear } from "../../../lib/hooks/use-active-year";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useMoveStudentMutation } from "../../academic/api-school-extras";
-import {
-  useClassesQuery,
-  useDirectoryQuery,
-  useLookup,
-  useSubjectsQuery,
-  useTeachersQuery,
-} from "../../reference/api";
+import { useClassesQuery, useDirectoryQuery, useLookup } from "../../reference/api";
 import {
   type Enrollment,
   useBulkAssignMutation,
-  useCreateTeachingAssignmentMutation,
-  useDeleteTeachingAssignmentMutation,
   useEnrollmentsQuery,
-  useTeachingAssignmentsQuery,
   useUnassignedStudentsQuery,
 } from "../api";
 export function EnrollmentPanel({
@@ -77,7 +71,7 @@ export function EnrollmentPanel({
       error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
     );
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-3 md:h-full md:min-h-0">
       <div className="flex items-center justify-between">
         <span className="text-[13px] text-fg-muted">{t("studentCount", { n: rows.length })}</span>
         {canManage && (
@@ -94,7 +88,7 @@ export function EnrollmentPanel({
         )}
       </div>
       {!enrollments.isLoading && !enrollments.isError && rows.length > 0 && (
-        <Input
+        <SearchInput
           value={rosterSearch}
           onChange={(e) => {
             setRosterSearch(e.target.value);
@@ -112,34 +106,65 @@ export function EnrollmentPanel({
           </Button>
         </Alert>
       ) : rows.length === 0 ? (
-        <p className="text-[13px] text-fg-muted">{t("noStudents")}</p>
+        <EmptyState
+          icon={<domainIcons.users aria-hidden="true" />}
+          title={t("noStudents")}
+          action={
+            canManage && (
+              <Button
+                size="sm"
+                variant="secondary"
+                icon={<Plus />}
+                onClick={() => {
+                  setAdding(true);
+                }}
+              >
+                {t("assignStudents")}
+              </Button>
+            )
+          }
+          className="p-6"
+        />
       ) : filteredRows.length === 0 ? (
         <p role="status" className="text-[13px] text-fg-muted">
           {tCommon("noResults")}
         </p>
       ) : (
-        <ol className="grid min-w-0 gap-1 text-[14px] md:grid-cols-2">
-          {filteredRows.map((e, i) => (
-            <li key={e.id} className="flex min-w-0 items-center gap-2 rounded-xs px-2 py-1">
-              <span className="w-6 shrink-0 text-right text-fg-muted">{i + 1}</span>
-              <span
-                className="min-w-0 flex-1 break-words md:truncate"
-                title={e.student_name ?? studentMap.get(e.student_user_id)?.name}
+        <ol className="min-w-0 divide-y divide-border rounded-xs border border-border text-[14px] md:min-h-0 md:flex-1 md:overflow-y-auto">
+          {filteredRows.map((e, i) => {
+            const name =
+              e.student_name ?? studentMap.get(e.student_user_id)?.name ?? e.student_user_id;
+            return (
+              <li
+                key={e.id}
+                className="group flex min-w-0 items-center gap-2 px-3 py-2 transition-colors hover:bg-bg"
               >
-                {e.student_name ?? studentMap.get(e.student_user_id)?.name ?? e.student_user_id}
-              </span>
-              {canManage && (
-                <IconButton
-                  icon={<ArrowRightLeft />}
-                  aria-label={t("moveStudent")}
-                  onClick={() => {
-                    setMoving(e);
-                    setToClassId("");
-                  }}
-                />
-              )}
-            </li>
-          ))}
+                <span className="w-6 shrink-0 text-right text-[12px] tabular-nums text-fg-muted">
+                  {i + 1}
+                </span>
+                <Avatar size="sm" name={name} />
+                <div className="min-w-0 flex-1">
+                  <p className="break-words text-[14px] md:truncate" title={name}>
+                    {name}
+                  </p>
+                  {e.student_nis && (
+                    <p className="tabular-nums text-[12px] text-fg-muted">{e.student_nis}</p>
+                  )}
+                </div>
+                {canManage && (
+                  <IconButton
+                    icon={<ArrowRightLeft />}
+                    aria-label={t("moveStudent")}
+                    className="md:opacity-0 md:transition-opacity md:group-hover:opacity-100 md:focus-visible:opacity-100"
+                    onClick={() => {
+                      setMoving(e);
+                      setToClassId("");
+                    }}
+                  />
+                )}
+              </li>
+            );
+          })}
         </ol>
       )}
       <Dialog
@@ -151,12 +176,13 @@ export function EnrollmentPanel({
       >
         <DialogContent title={t("assignStudents")}>
           <div className="flex flex-col gap-3">
-            <Input
+            <SearchInput
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
               }}
               placeholder={t("searchStudent")}
+              aria-label={t("searchStudent")}
             />
             <div className="max-h-72 overflow-y-auto rounded-xs border border-border">
               {(unassigned.data?.data ?? []).map((s) => (
@@ -286,115 +312,5 @@ export function EnrollmentPanel({
     </div>
   );
 }
-export function TeachingPanel({
-  classId,
-  canManage,
-}: {
-  classId: string;
-  canManage: boolean;
-}): ReactElement {
-  const t = useTranslations("app.school.classes");
-  const toast = useToast();
-  const apiErrorMessage = useApiErrorMessage();
-  const year = useActiveYear();
-  const assignments = useTeachingAssignmentsQuery(classId);
-  const subjects = useSubjectsQuery();
-  const teachers = useTeachersQuery();
-  const subjectMap = useLookup(subjects.data?.data);
-  const teacherMap = useLookup(teachers.data?.data);
-  const create = useCreateTeachingAssignmentMutation();
-  const remove = useDeleteTeachingAssignmentMutation();
-  const [subjectId, setSubjectId] = useState("");
-  const [teacherId, setTeacherId] = useState("");
-  const rows = useMemo(
-    () => (assignments.data?.data ?? []).filter((a) => a.is_active),
-    [assignments.data],
-  );
-  const fail = (error: unknown) =>
-    toast.error(
-      error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
-    );
-  return (
-    <div className="flex flex-col gap-3">
-      {assignments.isLoading ? (
-        <Skeleton className="h-24 w-full" />
-      ) : rows.length === 0 ? (
-        <p className="text-[13px] text-fg-muted">{t("noTeachers")}</p>
-      ) : (
-        <ul className="divide-y divide-border rounded-xs border border-border text-[14px]">
-          {rows.map((a) => (
-            <li key={a.id} className="flex items-center justify-between px-3 py-2">
-              <span>
-                {subjectMap.get(a.subject_id)?.name ?? "-"}{" "}
-                <span className="text-fg-muted">
-                  · {teacherMap.get(a.teacher_user_id)?.name ?? "-"}
-                </span>
-              </span>
-              {canManage && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  icon={<Trash2 />}
-                  aria-label={t("removeTeaching")}
-                  onClick={() => {
-                    remove.mutate(a.id, { onError: fail });
-                  }}
-                >
-                  {t("removeTeaching")}
-                </Button>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-      {canManage && (
-        <form
-          className="flex flex-col gap-2 md:flex-row md:items-end"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (!subjectId || !teacherId) return;
-            create.mutate(
-              {
-                academic_year_id: year.id,
-                class_id: classId,
-                subject_id: subjectId,
-                teacher_user_id: teacherId,
-              },
-              {
-                onSuccess: () => {
-                  setSubjectId("");
-                  setTeacherId("");
-                  toast.success(t("teachingAdded"));
-                },
-                onError: fail,
-              },
-            );
-          }}
-        >
-          <Select
-            options={(subjects.data?.data ?? []).map((s) => ({ value: s.id, label: s.name }))}
-            value={subjectId}
-            onValueChange={setSubjectId}
-            placeholder={t("pickSubject")}
-            className="md:w-56"
-          />
-          <Select
-            options={(teachers.data?.data ?? []).map((u) => ({ value: u.id, label: u.name }))}
-            value={teacherId}
-            onValueChange={setTeacherId}
-            placeholder={t("pickTeacher")}
-            className="md:w-64"
-          />
-          <Button
-            type="submit"
-            size="sm"
-            loading={create.isPending}
-            disabled={!subjectId || !teacherId}
-          >
-            {t("addTeaching")}
-          </Button>
-        </form>
-      )}
-    </div>
-  );
-}
+// TeachingPanel lives in ./teaching-panel.tsx to keep this file under the
+// project's line limit; see api.ts for the same split pattern.

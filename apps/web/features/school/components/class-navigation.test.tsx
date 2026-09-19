@@ -20,15 +20,15 @@ describe("class picker", () => {
         onSelect={onSelect}
       />,
     );
-    fireEvent.change(screen.getByRole("textbox", { name: "searchClasses" }), {
+    fireEvent.change(screen.getByRole("searchbox", { name: "searchClasses" }), {
       target: { value: "X-12" },
     });
     expect(screen.queryByRole("button", { name: "X-1" })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "X-12" }));
     expect(onSelect).toHaveBeenCalledWith("class2");
-    fireEvent.change(screen.getByRole("textbox"), { target: { value: "missing" } });
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "missing" } });
     expect(screen.getByRole("status")).toHaveTextContent("states.noResults");
-    fireEvent.change(screen.getByRole("textbox"), { target: { value: "" } });
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "" } });
     expect(screen.getAllByRole("button")).toHaveLength(2);
   });
 });
