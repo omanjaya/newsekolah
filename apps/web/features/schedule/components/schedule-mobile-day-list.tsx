@@ -30,7 +30,7 @@ interface Period {
 export function ScheduleMobileDayList({
   classes,
   lessonPeriods,
-  blockAt,
+  blocks,
   teacherMap,
   subjectMap,
   canManage,
@@ -44,7 +44,9 @@ export function ScheduleMobileDayList({
 }: {
   classes: Named[];
   lessonPeriods: Period[];
-  blockAt: (classId: string, seq: number) => ScheduleBlock | undefined;
+  /** Lesson blocks keyed by `${classId}:${sequence}`, one entry per period
+   * the block spans, so a row looks itself up in O(1). */
+  blocks: Map<string, ScheduleBlock>;
   teacherMap: Map<string, Named>;
   subjectMap: Map<string, Named>;
   canManage: boolean;
@@ -68,7 +70,7 @@ export function ScheduleMobileDayList({
           <h3 className="text-[14px] font-medium text-fg">{classItem.name}</h3>
           <ul className="flex flex-col gap-2">
             {lessons.map((period) => {
-              const block = blockAt(classItem.id, period.sequence);
+              const block = blocks.get(`${classItem.id}:${period.sequence}`);
               if (block && block.start_seq !== period.sequence) return null;
 
               return (

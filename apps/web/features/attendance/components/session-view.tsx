@@ -11,21 +11,24 @@ import {
   Textarea,
   useToast,
 } from "@newsekolah/ui";
-import { Lock } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useUnsavedChangesProtection } from "../../../lib/navigation/use-unsaved-changes-protection";
-import { useViolationTypesQuery } from "../../discipline/api";
+import { type ViolationType, useViolationTypesQuery } from "../../discipline/api";
 import { useClassesQuery, useLookup, useSubjectsQuery } from "../../reference/api";
 import { type SessionDetail, useSaveEntriesMutation, useSessionQuery } from "../api";
 
-import { AttendanceStatusRadioGroup } from "./attendance-status-radio-group";
-import { ViolationPicker } from "./violation-picker";
+import { SessionRosterRow } from "./session-roster-row";
+
+/** Stable empty fallbacks so an unset lookup does not hand a row a fresh
+ * array identity every render, which would defeat its memoization. */
+const EMPTY_VIOLATION_TYPES: ViolationType[] = [];
+const EMPTY_VIOLATIONS: string[] = [];
 
 /**
  * The teacher's roster grid (docs/07-ui-ux.md section 4): every student
@@ -167,15 +170,28 @@ function SessionEditor({
   const isDirty = pendingChanges > 0;
   useUnsavedChangesProtection(isDirty && !savedSuccessfully, tEditor("discardChanges"));
 
-  function toggleViolation(studentId: string, violationTypeId: string) {
+  // Hoisted with stable identities (rather than a fresh closure built per
+  // row on every render) so an unchanged row's props stay referentially
+  // equal and React Compiler can bail it out of re-rendering.
+  const handleStatusChange = useCallback((studentId: string, statusCode: string) => {
+    setStatuses((prev) => ({ ...prev, [studentId]: statusCode }));
+  }, []);
+
+  const handleNoteChange = useCallback((studentId: string, value: string) => {
+    setNotes((prev) => ({ ...prev, [studentId]: value }));
+  }, []);
+
+  const handleToggleViolation = useCallback((studentId: string, violationTypeId: string) => {
     setViolations((prev) => {
-      const current = prev[studentId] ?? [];
+      const current = prev[studentId] ?? EMPTY_VIOLATIONS;
       const next = current.includes(violationTypeId)
         ? current.filter((id) => id !== violationTypeId)
         : [...current, violationTypeId];
       return { ...prev, [studentId]: next };
     });
-  }
+  }, []);
+
+  const violationTypesData = violationTypes.data?.data ?? EMPTY_VIOLATION_TYPES;
 
   async function submit() {
     setFormError(null);
@@ -257,61 +273,23 @@ function SessionEditor({
         {visible.map((item, index) => {
           const current = statuses[item.student_user_id] ?? defaultCode;
           return (
-            <li
+            <SessionRosterRow
               key={item.student_user_id}
-              className="flex flex-col gap-2 px-4 py-3 md:flex-row md:items-center md:justify-between"
-            >
-              <div className="flex min-w-0 items-center gap-3">
-                <span className="w-6 text-right text-[12px] text-fg-muted">{index + 1}</span>
-                <div className="flex min-w-0 flex-col">
-                  <span className="truncate text-[14px] text-fg">{item.name}</span>
-                  {item.blocked && (
-                    <span className="flex items-center gap-1 text-[12px] text-fg-muted">
-                      <Lock className="size-3" aria-hidden="true" />
-                      {item.blocked_reason ?? t("blocked")}
-                    </span>
-                  )}
-                  {!item.blocked && item.source && item.source !== "teacher" && (
-                    <span className="text-[12px] text-fg-muted">{t(`source.${item.source}`)}</span>
-                  )}
-                </div>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <AttendanceStatusRadioGroup
-                  statuses={session.statuses}
-                  value={current}
-                  label={item.name}
-                  disabled={Boolean(item.blocked) || save.isPending}
-                  onChange={(statusCode) => {
-                    setStatuses((prev) => ({ ...prev, [item.student_user_id]: statusCode }));
-                  }}
-                />
-                {!presentCodes.has(current) && !item.blocked && (
-                  <Input
-                    value={notes[item.student_user_id] ?? ""}
-                    onChange={(e) => {
-                      setNotes((prev) => ({ ...prev, [item.student_user_id]: e.target.value }));
-                    }}
-                    placeholder={t("notePlaceholder")}
-                    aria-label={t("noteFor", { name: item.name })}
-                    className="w-40"
-                    disabled={save.isPending}
-                  />
-                )}
-                {!item.blocked && (
-                  <ViolationPicker
-                    studentName={item.name}
-                    selected={violations[item.student_user_id] ?? []}
-                    types={violationTypes.data?.data ?? []}
-                    loading={violationTypes.isLoading}
-                    disabled={save.isPending}
-                    onToggle={(violationTypeId) => {
-                      toggleViolation(item.student_user_id, violationTypeId);
-                    }}
-                  />
-                )}
-              </div>
-            </li>
+              item={item}
+              index={index}
+              statuses={session.statuses}
+              currentStatus={current}
+              note={notes[item.student_user_id] ?? ""}
+              violationIds={violations[item.student_user_id] ?? EMPTY_VIOLATIONS}
+              violationTypes={violationTypesData}
+              violationTypesLoading={violationTypes.isLoading}
+              isPresent={presentCodes.has(current)}
+              disabled={save.isPending}
+              t={t}
+              onStatusChange={handleStatusChange}
+              onNoteChange={handleNoteChange}
+              onToggleViolation={handleToggleViolation}
+            />
           );
         })}
         {visible.length === 0 && (

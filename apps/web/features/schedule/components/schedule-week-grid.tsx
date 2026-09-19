@@ -21,7 +21,10 @@ import {
 
 /**
  * One class or one teacher across the week. Rows are periods, columns are
- * the days the school runs. Hidden below md, where the agenda takes over.
+ * the days the school runs. The caller mounts this only at md and above,
+ * where the agenda takes over below it; the `md:block` here is a defensive
+ * fallback for the brief window before the caller's media query sync
+ * lands, not the mechanism that hides the other layout.
  */
 /** 1 (Monday) through 7 (Sunday), matching the schedule's own numbering. */
 function todayOfWeek(): number {
@@ -30,10 +33,9 @@ function todayOfWeek(): number {
 }
 
 export function ScheduleWeekGrid({
-  hidden,
   activeDays,
   lessonPeriods,
-  blockAt,
+  blocks,
   mode,
   teacherMap,
   classMap,
@@ -49,10 +51,11 @@ export function ScheduleWeekGrid({
   tDays,
   currentSeq,
 }: {
-  hidden: boolean;
   activeDays: readonly number[];
   lessonPeriods: Period[];
-  blockAt: (day: number, seq: number) => ScheduleBlock | undefined;
+  /** Lesson blocks keyed by `${dayOfWeek}:${sequence}`, one entry per
+   * period the block spans, so a cell looks itself up in O(1). */
+  blocks: Map<string, ScheduleBlock>;
   mode: "class" | "teacher";
   teacherMap: Map<string, Named>;
   classMap: Map<string, Named>;
@@ -74,12 +77,7 @@ export function ScheduleWeekGrid({
   const today = todayOfWeek();
 
   return (
-    <div
-      className={cn(
-        "overflow-x-auto rounded-sm border border-border bg-surface",
-        hidden ? "hidden" : "hidden md:block",
-      )}
-    >
+    <div className="hidden overflow-x-auto rounded-sm border border-border bg-surface md:block">
       <table
         className="w-full table-fixed border-collapse text-[13px]"
         style={{ minWidth: gridMinWidth(activeDays.length) }}
@@ -100,7 +98,7 @@ export function ScheduleWeekGrid({
             <tr key={period.id} className={cn(period.is_break ? BREAK_ROW : LESSON_ROW)}>
               <PeriodCell period={period} current={period.sequence === currentSeq} />
               {activeDays.map((day) => {
-                const block = blockAt(day, period.sequence);
+                const block = blocks.get(`${day}:${period.sequence}`);
                 // A cell already covered by a block that started in
                 // an earlier row emits nothing, break or not.
                 // Emitting one anyway pushed every later cell in the
