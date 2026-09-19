@@ -44,6 +44,9 @@ export function useVisitorBoardQuery() {
     queryKey: keys.board(),
     queryFn: () => client.GET("/v1/visitors/board"),
     refetchInterval: 30_000,
+    // Pause polling on a hidden tab instead of ticking forever in the
+    // background.
+    refetchIntervalInBackground: false,
   });
 }
 

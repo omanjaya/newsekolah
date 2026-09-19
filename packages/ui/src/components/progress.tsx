@@ -30,8 +30,8 @@ export function Progress({ value, label, className }: ProgressProps) {
         className="h-2 w-full overflow-hidden rounded-full bg-border/60"
       >
         <div
-          className="h-full rounded-full bg-accent transition-[width] duration-200 ease-out"
-          style={{ width: `${clamped}%` }}
+          className="h-full w-full origin-left rounded-full bg-accent transition-transform duration-200 ease-out"
+          style={{ transform: `scaleX(${clamped / 100})` }}
         />
       </div>
     </div>

@@ -43,6 +43,10 @@ export function useSchedulesQuery(filter: ScheduleFilter) {
         },
       }),
     enabled,
+    // Timetables change a few times per semester, not per navigation: the
+    // global 30s staleTime would otherwise refetch the whole grid on every
+    // window focus.
+    staleTime: 5 * 60_000,
   });
 }
 

@@ -74,6 +74,9 @@ export function useExitPermitQuery(id: string) {
       client.GET("/v1/exit-permits/{instanceId}", { params: { path: { instanceId: id } } }),
     enabled: id !== "",
     refetchInterval: 15_000,
+    // Pause polling on a hidden tab instead of ticking forever in the
+    // background.
+    refetchIntervalInBackground: false,
   });
 }
 
@@ -85,6 +88,9 @@ export function useExitPermitReviewQueueQuery(enabled = true) {
     queryFn: () => client.GET("/v1/exit-permits/review-queue"),
     enabled,
     refetchInterval: 30_000,
+    // Pause polling on a hidden tab instead of ticking forever in the
+    // background.
+    refetchIntervalInBackground: false,
   });
 }
 
@@ -173,6 +179,9 @@ export function useLateArrivalQueueQuery(enabled = true) {
     queryFn: () => client.GET("/v1/late-arrivals/review-queue"),
     enabled,
     refetchInterval: 30_000,
+    // Pause polling on a hidden tab instead of ticking forever in the
+    // background.
+    refetchIntervalInBackground: false,
   });
 }
 
@@ -240,6 +249,9 @@ export function useLeaveReviewQueueQuery(enabled = true) {
     queryFn: () => client.GET("/v1/leave-requests/review-queue"),
     enabled,
     refetchInterval: 60_000,
+    // Pause polling on a hidden tab instead of ticking forever in the
+    // background.
+    refetchIntervalInBackground: false,
   });
 }
 
@@ -264,6 +276,9 @@ export function useGuardianLeaveQueueQuery(enabled = true) {
     queryFn: () => client.GET("/v1/leave-requests/guardian-queue"),
     enabled,
     refetchInterval: 60_000,
+    // Pause polling on a hidden tab instead of ticking forever in the
+    // background.
+    refetchIntervalInBackground: false,
   });
 }
 

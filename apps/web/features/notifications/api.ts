@@ -57,6 +57,9 @@ export function useUnreadCountQuery(enabled = true) {
     queryKey: queryKeys.notificationsUnreadCount(),
     queryFn: () => client.GET("/v1/notifications/unread-count"),
     refetchInterval: 60_000,
+    // Pause polling on a hidden tab instead of ticking forever in the
+    // background.
+    refetchIntervalInBackground: false,
     enabled,
   });
 }
