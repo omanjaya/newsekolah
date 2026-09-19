@@ -2,6 +2,7 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import {
+  Badge,
   Button,
   ConfirmDialog,
   EmptyState,
@@ -91,17 +92,23 @@ function AssignmentsEditor({
 
   return (
     <>
-      <ul className="divide-y divide-border rounded-xs border border-border text-[14px]">
+      <ul className="divide-y divide-border rounded-xs border border-border">
         {pairs.map((pair) => (
-          <li key={pairKey(pair)} className="flex items-center justify-between gap-2 px-3 py-2">
-            <span className="min-w-0 truncate">
-              {subjectMap.get(pair.subject_id)?.name ?? "-"}{" "}
-              <span className="text-fg-muted">· {classMap.get(pair.class_id)?.name ?? "-"}</span>
-            </span>
+          <li
+            key={pairKey(pair)}
+            className="group flex items-center justify-between gap-2 px-3 py-2 transition-colors hover:bg-bg"
+          >
+            <div className="flex min-w-0 items-center gap-2">
+              <span className="truncate text-[14px] font-medium">
+                {subjectMap.get(pair.subject_id)?.name ?? "-"}
+              </span>
+              <Badge variant="neutral">{classMap.get(pair.class_id)?.name ?? "-"}</Badge>
+            </div>
             {canManage && (
               <IconButton
                 icon={<Trash2 />}
                 aria-label={t("removePair")}
+                className="md:opacity-0 md:transition-opacity md:group-hover:opacity-100 md:focus-visible:opacity-100"
                 onClick={() => {
                   setPairs((prev) => prev.filter((p) => pairKey(p) !== pairKey(pair)));
                 }}
@@ -204,7 +211,6 @@ export function TeachingAssignmentsView(): ReactElement {
     // md:h-full: fills the tab panel's height; the whole column scrolls
     // since the form and result list together are usually short.
     <div className="flex flex-col gap-4 md:h-full md:min-h-0 md:overflow-y-auto">
-      <h2 className="text-[18px] font-medium text-fg">{t("title")}</h2>
       <p className="text-[13px] text-fg-muted">{t("description")}</p>
 
       <div className="flex flex-wrap items-end gap-3">

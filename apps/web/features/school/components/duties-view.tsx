@@ -4,6 +4,7 @@ import { ApiError } from "@newsekolah/api-client";
 import type { Locale } from "@newsekolah/i18n";
 import { formatDate } from "@newsekolah/i18n";
 import {
+  Avatar,
   Badge,
   Button,
   Combobox,
@@ -42,9 +43,13 @@ export function DutiesView(): ReactElement {
   const apiErrorMessage = useApiErrorMessage();
   const types = useDutyTypesQuery();
   const assignments = useDutyAssignmentsQuery();
-  const people = useDirectoryQuery();
+  // Duty holders can be teachers or non-teaching staff; a single unscoped
+  // directory query missed most staff, so names fell back to raw ids.
+  const teachers = useDirectoryQuery("teacher");
+  const staff = useDirectoryQuery("staff");
   const classes = useClassesQuery();
-  const peopleMap = useLookup(people.data?.data);
+  const teacherMap = useLookup(teachers.data?.data);
+  const staffMap = useLookup(staff.data?.data);
   const classMap = useLookup(classes.data?.data);
   const end = useEndDutyAssignmentMutation();
   const [adding, setAdding] = useState(false);
@@ -54,8 +59,10 @@ export function DutiesView(): ReactElement {
     // md:h-full: fills the tab panel's height; the assignments list below
     // the fixed heading and action row scrolls internally.
     <div className="flex flex-col gap-4 md:h-full md:min-h-0">
-      <h2 className="text-[18px] font-medium text-fg">{t("tabs.assignments")}</h2>
-      <div className="flex justify-end">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[13px] text-fg-muted tabular-nums">
+          {assignments.data ? t("activeCount", { n: rows.length }) : null}
+        </p>
         <Button
           size="sm"
           icon={<Plus />}
@@ -77,48 +84,58 @@ export function DutiesView(): ReactElement {
           />
         ) : (
           <ul className="divide-y divide-border rounded-sm border border-border bg-surface">
-            {rows.map((a) => (
-              <li
-                key={a.id}
-                className="flex flex-col gap-2 px-4 py-3 md:flex-row md:items-center md:justify-between"
-              >
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[14px] text-fg">
-                    {peopleMap.get(a.user_id)?.name ?? a.user_id}
-                  </span>
-                  <span className="flex flex-wrap items-center gap-2 text-[13px] text-fg-muted">
-                    <Badge variant="accent">{a.duty_name}</Badge>
-                    {a.scope_class_id && <span>{classMap.get(a.scope_class_id)?.name ?? "-"}</span>}
-                    <span>
-                      {t("since", {
-                        date: formatDate(a.starts_on, { locale, timeZone: me?.tenant.timezone }),
-                      })}
-                    </span>
-                  </span>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  loading={end.isPending && end.variables === a.id}
-                  onClick={() => {
-                    end.mutate(a.id, {
-                      onSuccess: () => {
-                        toast.success(t("ended"));
-                      },
-                      onError: (error) => {
-                        toast.error(
-                          error instanceof ApiError
-                            ? apiErrorMessage(error.code)
-                            : apiErrorMessage("UNKNOWN"),
-                        );
-                      },
-                    });
-                  }}
+            {rows.map((a) => {
+              const name = teacherMap.get(a.user_id)?.name ?? staffMap.get(a.user_id)?.name ?? "-";
+              return (
+                <li
+                  key={a.id}
+                  className="group flex flex-col gap-2 px-4 py-3 transition-colors hover:bg-bg md:flex-row md:items-center md:justify-between"
                 >
-                  {t("end")}
-                </Button>
-              </li>
-            ))}
+                  <div className="flex min-w-0 items-center gap-2">
+                    {name !== "-" && <Avatar size="sm" name={name} />}
+                    <div className="flex min-w-0 flex-col gap-0.5">
+                      <span className="truncate text-[14px] text-fg">{name}</span>
+                      <span className="flex flex-wrap items-center gap-2 text-[13px] text-fg-muted">
+                        <Badge variant="accent">{a.duty_name}</Badge>
+                        {a.scope_class_id && (
+                          <span>{classMap.get(a.scope_class_id)?.name ?? "-"}</span>
+                        )}
+                        <span>
+                          {t("since", {
+                            date: formatDate(a.starts_on, {
+                              locale,
+                              timeZone: me?.tenant.timezone,
+                            }),
+                          })}
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="self-start md:self-auto"
+                    loading={end.isPending && end.variables === a.id}
+                    onClick={() => {
+                      end.mutate(a.id, {
+                        onSuccess: () => {
+                          toast.success(t("ended"));
+                        },
+                        onError: (error) => {
+                          toast.error(
+                            error instanceof ApiError
+                              ? apiErrorMessage(error.code)
+                              : apiErrorMessage("UNKNOWN"),
+                          );
+                        },
+                      });
+                    }}
+                  >
+                    {t("end")}
+                  </Button>
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>

@@ -159,8 +159,16 @@ export function SubjectOfferingsView(): ReactElement {
   return (
     // md:h-full: fills the tab panel's height so only the table rows scroll.
     <div className="flex flex-col gap-4 md:h-full md:min-h-0">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-[18px] font-medium text-fg">{t("title")}</h2>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <label className="flex w-fit flex-col gap-1 text-[13px]">
+          <span className="font-medium">{t("year")}</span>
+          <Select
+            options={(years.data?.data ?? []).map((y) => ({ value: y.id, label: y.label }))}
+            value={effectiveYearId}
+            onValueChange={setYearId}
+            className="w-64"
+          />
+        </label>
         {canManage && (
           <Button
             size="sm"
@@ -174,15 +182,6 @@ export function SubjectOfferingsView(): ReactElement {
           </Button>
         )}
       </div>
-      <label className="flex w-fit flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("year")}</span>
-        <Select
-          options={(years.data?.data ?? []).map((y) => ({ value: y.id, label: y.label }))}
-          value={effectiveYearId}
-          onValueChange={setYearId}
-          className="w-64"
-        />
-      </label>
       <DataTable
         stateKey="features/academic/components/subject-offerings-view:1"
         mode="local"

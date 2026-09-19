@@ -1145,6 +1145,7 @@
         "eyebrow": "School Data",
         "title": "Duties",
         "assign": "Assign duty",
+        "activeCount": "{n, plural, one {# active assignment} other {# active assignments}}",
         "emptyTitle": "No duties assigned yet",
         "emptyBody": "Set homeroom teachers, counselors, duty teachers and security for this year.",
         "since": "since {date}",

@@ -1145,6 +1145,7 @@
         "eyebrow": "Data Sekolah",
         "title": "Tugas tambahan",
         "assign": "Beri tugas",
+        "activeCount": "{n, plural, other {# penugasan aktif}}",
         "emptyTitle": "Belum ada tugas diberikan",
         "emptyBody": "Tetapkan wali kelas, guru BK, guru piket, dan satpam untuk tahun ajaran ini.",
         "since": "sejak {date}",

@@ -67,7 +67,6 @@ export function PeriodsView(): ReactElement {
     // md:h-full: fills the tab panel's height; the periods/week grid below
     // the fixed template row scrolls internally.
     <div className="flex min-w-0 flex-col gap-4 md:h-full md:min-h-0">
-      <h2 className="text-[18px] font-medium text-fg">{t("title")}</h2>
       <div className="flex flex-wrap items-end gap-3">
         <label className="flex flex-col gap-1 text-[13px]">
           <span className="font-medium">{t("template")}</span>
@@ -302,10 +301,10 @@ function PeriodTable({ templateId }: { templateId: string }): ReactElement {
           </thead>
           <tbody className="divide-y divide-border">
             {rows.map((p) => (
-              <tr key={p.id}>
-                <td className="px-3 py-2 text-fg-muted">{p.sequence}</td>
+              <tr key={p.id} className="group transition-colors hover:bg-bg">
+                <td className="px-3 py-2 tabular-nums text-fg-muted">{p.sequence}</td>
                 <td className="px-3 py-2">{p.name}</td>
-                <td className="px-3 py-2">
+                <td className="px-3 py-2 tabular-nums">
                   {p.starts_at.slice(0, 5)}-{p.ends_at.slice(0, 5)}
                 </td>
                 <td className="px-3 py-2 text-fg-muted">{p.is_break ? t("break") : t("lesson")}</td>
@@ -314,6 +313,7 @@ function PeriodTable({ templateId }: { templateId: string }): ReactElement {
                     <IconButton
                       icon={<Pencil />}
                       aria-label={t("edit")}
+                      className="md:opacity-0 md:transition-opacity md:group-hover:opacity-100 md:focus-visible:opacity-100"
                       onClick={() => {
                         setEditing(p);
                       }}
@@ -321,6 +321,7 @@ function PeriodTable({ templateId }: { templateId: string }): ReactElement {
                     <IconButton
                       icon={<Trash2 />}
                       aria-label={t("delete")}
+                      className="md:opacity-0 md:transition-opacity md:group-hover:opacity-100 md:focus-visible:opacity-100"
                       onClick={() => {
                         remove.mutate(p.id, { onError: fail });
                       }}

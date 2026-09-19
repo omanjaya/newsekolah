@@ -113,19 +113,16 @@ export function SubjectsView(): ReactElement {
   return (
     // md:h-full: fills the tab panel's height so only the table rows scroll.
     <div className="flex flex-col gap-4 md:h-full md:min-h-0">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-[18px] font-medium text-fg">{t("title")}</h2>
-        {
-          <Button
-            size="sm"
-            icon={<Plus />}
-            onClick={() => {
-              open("new");
-            }}
-          >
-            {t("add")}
-          </Button>
-        }
+      <div className="flex justify-end">
+        <Button
+          size="sm"
+          icon={<Plus />}
+          onClick={() => {
+            open("new");
+          }}
+        >
+          {t("add")}
+        </Button>
       </div>
       <DataTable
         stateKey="features/school/components/subjects-view:1"
