@@ -14,12 +14,12 @@ import { AppLayoutClient } from "./app-layout-client";
  * items 1 and 11). Two things need a Server Component here, not the old
  * `"use client"` layout:
  *
- * - `HydrationBoundary` around `AppLayoutClient`, so a server-side prefetch
- *   of `/v1/me` can hydrate `useMe` instantly instead of the client firing
- *   its own request after hydrate. See
- *   `lib/session/dehydrate-app-query-client.server.ts` for why that
- *   prefetch is not wired up to a real fetch yet — the `HydrationBoundary`
- *   is in place either way so wiring it later touches only that one file.
+ * - `HydrationBoundary` around `AppLayoutClient`, fed by a server-side
+ *   prefetch of `/v1/me` (`lib/session/dehydrate-app-query-client.server.ts`)
+ *   so `useMe` hydrates instantly instead of the client firing its own
+ *   request after hydrate. That prefetch depends on `middleware.ts` having
+ *   minted the `sat` access cookie for this navigation; see that file's
+ *   doc comment for the full flow and docs/08-security.md section 2.
  * - A nested `NextIntlClientProvider` carrying `APP_NAMESPACES` (everything
  *   `(app)` screens read except the `library` catalog, which gets its own
  *   provider in `library/layout.tsx`) instead of the full ~158 kB raw
@@ -35,10 +35,14 @@ export default async function AppLayout({
 }: {
   children: ReactNode;
 }): Promise<ReactElement> {
-  const branding = await getTenantBrandingServer();
+  // Independent of each other -- run concurrently rather than paying for
+  // both round trips in sequence.
+  const [branding, dehydratedState] = await Promise.all([
+    getTenantBrandingServer(),
+    dehydrateAppQueryClient(),
+  ]);
   const locale = branding?.locale ?? "id";
   const messages = getMessagesForNamespaces(locale, APP_NAMESPACES);
-  const dehydratedState = dehydrateAppQueryClient();
 
   return (
     <NextIntlClientProvider locale={locale} messages={messages}>
