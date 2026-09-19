@@ -5,7 +5,6 @@ import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef } from "react";
 import type { ReactElement, ReactNode } from "react";
 
-import { DataTableStateScope } from "../components/data-table-state-scope";
 import { UiLocaleProvider } from "../components/ui-locale-provider";
 import { ApiClientProvider } from "../lib/api/client";
 import { QueryProvider } from "../lib/query/query-provider";
@@ -41,9 +40,12 @@ export function AppProviders({
         <TenantProvider>
           <SessionProvider>
             <ThemeProvider>
-              <UiLocaleProvider>
-                <DataTableStateScope>{children}</DataTableStateScope>
-              </UiLocaleProvider>
+              {/*
+                Kept global (rather than scoped to `(app)`, docs/16-audit-performa-web.md
+                item 8) because `(auth)/change-password` and `(auth)/reset-password`
+                also call `useToast()` and need a mounted `<Toaster />` to render it.
+              */}
+              <UiLocaleProvider>{children}</UiLocaleProvider>
               <Toaster />
             </ThemeProvider>
           </SessionProvider>

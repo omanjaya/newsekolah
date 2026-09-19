@@ -2,7 +2,7 @@
 
 import type { components } from "@newsekolah/api-client";
 import { useTenantBranding } from "@newsekolah/api-client/react";
-import { createContext, useContext, useEffect } from "react";
+import { createContext, useContext, useEffect, useMemo } from "react";
 import type { ReactElement, ReactNode } from "react";
 
 import { useApiClient } from "../api/client";
@@ -63,13 +63,16 @@ export function TenantProvider({ children }: { children: ReactNode }): ReactElem
     document.title = branding?.name ?? PRODUCT_NAME_FALLBACK;
   }, [branding?.name]);
 
-  return (
-    <TenantContext.Provider
-      value={{ branding, isLoading, displayName: branding?.name ?? PRODUCT_NAME_FALLBACK }}
-    >
-      {children}
-    </TenantContext.Provider>
+  const displayName = branding?.name ?? PRODUCT_NAME_FALLBACK;
+  // Same rationale as SessionProvider: an inline value object here would
+  // re-render every consumer on each branding refetch, even when nothing
+  // about the branding actually changed (docs/16-audit-performa-web.md item 3).
+  const value = useMemo<TenantContextValue>(
+    () => ({ branding, isLoading, displayName }),
+    [branding, isLoading, displayName],
   );
+
+  return <TenantContext.Provider value={value}>{children}</TenantContext.Provider>;
 }
 
 export function useTenant(): TenantContextValue {
