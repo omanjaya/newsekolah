@@ -1,7 +1,7 @@
 {
   "board": {
-    "eyebrow": "Tamu & Insiden",
-    "title": "Papan Tamu",
+    "eyebrow": "Tamu & insiden",
+    "title": "Papan tamu",
     "count": "{count, plural, other {# tamu di kampus}}",
     "newVisitor": "Tamu Baru",
     "overdue": "Belum Keluar",
@@ -40,8 +40,8 @@
     "signedIn": "Tamu sudah dicatat masuk"
   },
   "expected": {
-    "eyebrow": "Tamu & Insiden",
-    "title": "Tamu Dijadwalkan",
+    "eyebrow": "Tamu & insiden",
+    "title": "Tamu dijadwalkan",
     "filters": {
       "date": "Tanggal"
     },
@@ -79,7 +79,7 @@
     }
   },
   "incidents": {
-    "eyebrow": "Tamu & Insiden",
+    "eyebrow": "Tamu & insiden",
     "title": "Insiden",
     "record": "Catat Insiden",
     "open": "Buka",
@@ -106,7 +106,7 @@
     "emptyTitle": "Belum ada insiden",
     "emptyBody": "Insiden yang tercatat dalam 30 hari terakhir akan muncul di sini.",
     "detail": {
-      "title": "Detail Insiden",
+      "title": "Detail insiden",
       "loading": "Memuat...",
       "status": {
         "open": "Terbuka",
@@ -146,8 +146,8 @@
     }
   },
   "recap": {
-    "eyebrow": "Tamu & Insiden",
-    "title": "Rekap Kunjungan",
+    "eyebrow": "Tamu & insiden",
+    "title": "Rekap kunjungan",
     "tabs": {
       "daily": "Harian",
       "monthly": "Bulanan"

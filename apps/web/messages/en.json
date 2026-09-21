@@ -1218,7 +1218,19 @@
         "users": "Users",
         "settings": "Settings",
         "reports": "Reports",
-        "audit": "Audit"
+        "audit": "Audit",
+        "access": "Access",
+        "activities": "Activities",
+        "analytics": "Analytics",
+        "billing": "Billing",
+        "integrations": "Integrations",
+        "mentoring": "Mentoring",
+        "parent": "Parent",
+        "platform": "Platform",
+        "supervision": "Supervision",
+        "visitors": "Visitors",
+        "scheduling": "Scheduling",
+        "staff_attendance": "Staff attendance"
       },
       "dutyOnlyHint": "Cannot be granted directly to the teacher role. Grant it through a duty assignment under School Data > Assignments."
     }

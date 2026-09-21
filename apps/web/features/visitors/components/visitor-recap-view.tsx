@@ -5,6 +5,8 @@ import {
   Input,
   PageHeader,
   Skeleton,
+  Stat,
+  StatGrid,
   Tabs,
   TabsContent,
   TabsList,
@@ -40,30 +42,22 @@ function RecapFigures({ recap }: { recap: VisitorRecap }): ReactElement {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <div className="rounded-lg border border-border bg-bg-raised p-4">
-          <p className="text-[13px] text-fg-muted">{t("totalVisits")}</p>
-          <p className="text-[28px] font-semibold">{recap.total_visits}</p>
-        </div>
-        <div className="rounded-lg border border-border bg-bg-raised p-4">
-          <p className="text-[13px] text-fg-muted">{t("stillOnCampus")}</p>
-          <p className="text-[28px] font-semibold">{recap.still_on_campus}</p>
-        </div>
-        <div className="rounded-lg border border-border bg-bg-raised p-4">
-          <p className="text-[13px] text-fg-muted">{t("avgStayMinutes")}</p>
-          <p className="text-[28px] font-semibold">{Math.round(recap.avg_stay_minutes)}</p>
-        </div>
-      </div>
-      <div className="rounded-lg border border-border bg-bg-raised p-4">
+      <StatGrid className="rounded-sm border border-border bg-surface p-4 sm:grid-cols-3">
+        <Stat label={t("totalVisits")} value={recap.total_visits} />
+        <Stat label={t("stillOnCampus")} value={recap.still_on_campus} />
+        <Stat label={t("avgStayMinutes")} value={Math.round(recap.avg_stay_minutes)} />
+      </StatGrid>
+      <div className="rounded-sm border border-border bg-surface p-4">
         <p className="mb-2 text-[13px] font-medium text-fg-muted">{t("incidentsBySeverity")}</p>
-        <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <StatGrid>
           {SEVERITIES.map((sev) => (
-            <div key={sev} className="flex flex-col">
-              <dt className="text-[12px] text-fg-muted">{t(`severities.${sev}`)}</dt>
-              <dd className="text-[18px] font-semibold">{recap.incidents_by_severity[sev] ?? 0}</dd>
-            </div>
+            <Stat
+              key={sev}
+              label={t(`severities.${sev}`)}
+              value={recap.incidents_by_severity[sev] ?? 0}
+            />
           ))}
-        </dl>
+        </StatGrid>
       </div>
     </div>
   );

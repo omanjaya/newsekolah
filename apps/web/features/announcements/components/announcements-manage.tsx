@@ -216,7 +216,7 @@ export function AnnouncementsManage(): ReactElement {
   ];
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 md:h-full md:min-h-0">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <Select
           options={statusOptions}
@@ -241,27 +241,30 @@ export function AnnouncementsManage(): ReactElement {
         )}
       </div>
 
-      <DataTable
-        stateKey="features/announcements/components/announcements-manage:1"
-        mode="cursor"
-        data={items}
-        columns={columns}
-        rowCount={items.length}
-        pagination={{ pageIndex: 0, pageSize: 20 }}
-        onPaginationChange={() => undefined}
-        sorting={[]}
-        onSortingChange={() => undefined}
-        globalFilter=""
-        isLoading={isLoading}
-        getRowId={(a) => a.id}
-        emptyState={
-          <EmptyState
-            icon={<domainIcons.announcement aria-hidden="true" />}
-            title={t("manageEmptyTitle")}
-            description={t("manageEmptyBody")}
-          />
-        }
-      />
+      <div className="flex flex-col md:min-h-0 md:flex-1">
+        <DataTable
+          stateKey="features/announcements/components/announcements-manage:1"
+          mode="cursor"
+          data={items}
+          columns={columns}
+          rowCount={items.length}
+          pagination={{ pageIndex: 0, pageSize: 20 }}
+          onPaginationChange={() => undefined}
+          sorting={[]}
+          onSortingChange={() => undefined}
+          globalFilter=""
+          isLoading={isLoading}
+          getRowId={(a) => a.id}
+          fillHeight
+          emptyState={
+            <EmptyState
+              icon={<domainIcons.announcement aria-hidden="true" />}
+              title={t("manageEmptyTitle")}
+              description={t("manageEmptyBody")}
+            />
+          }
+        />
+      </div>
       <div className="flex justify-end gap-2">
         <Button
           variant="secondary"

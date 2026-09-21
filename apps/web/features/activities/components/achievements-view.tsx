@@ -2,6 +2,7 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import {
+  Avatar,
   Button,
   ConfirmDialog,
   DataTable,
@@ -21,6 +22,7 @@ import { useMemo, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
+import { useDirectoryQuery } from "../../reference/api";
 import {
   type Achievement,
   type AchievementLevel,
@@ -31,7 +33,19 @@ import {
   useDeleteAchievementMutation,
 } from "../api";
 
-import { StudentPicker, StudentName } from "./student-picker";
+import { StudentPicker } from "./student-picker";
+
+function AchievementStudentCell({ id }: { id: string }): ReactElement {
+  const t = useTranslations("app.activities.students");
+  const directory = useDirectoryQuery("student");
+  const name = directory.data?.data.find((student) => student.id === id)?.name ?? t("unknown");
+  return (
+    <div className="flex min-w-0 items-center gap-2">
+      <Avatar size="sm" name={name} />
+      <span className="truncate text-fg">{name}</span>
+    </div>
+  );
+}
 
 const LEVELS: AchievementLevel[] = [
   "school",
@@ -60,7 +74,7 @@ export function AchievementsView(): ReactElement {
         accessorKey: "student_user_id",
         header: t("columns.student"),
         enableSorting: false,
-        cell: ({ row }) => <StudentName id={row.original.student_user_id} />,
+        cell: ({ row }) => <AchievementStudentCell id={row.original.student_user_id} />,
       },
       { accessorKey: "competition_name", header: t("columns.competition"), enableSorting: false },
       {
@@ -105,7 +119,11 @@ export function AchievementsView(): ReactElement {
   );
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
+    // Viewport-fit on desktop (100dvh minus the h-14 shell header): the page
+    // itself never scrolls; the table scrolls its rows internally while the
+    // actions row stays put. See school/components/users-view.tsx for the
+    // reference pattern.
+    <div className="flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
       <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
 
       {canManage && (
@@ -122,27 +140,30 @@ export function AchievementsView(): ReactElement {
         </div>
       )}
 
-      <DataTable
-        stateKey="features/activities/components/achievements-view:1"
-        mode="local"
-        data={achievements}
-        columns={columns}
-        rowCount={achievements.length}
-        pagination={{ pageIndex: 0, pageSize: 50 }}
-        onPaginationChange={() => undefined}
-        sorting={[]}
-        onSortingChange={() => undefined}
-        globalFilter=""
-        isLoading={isLoading}
-        getRowId={(item) => item.id}
-        emptyState={
-          <EmptyState
-            icon={<Trophy aria-hidden="true" />}
-            title={t("emptyTitle")}
-            description={t("emptyBody")}
-          />
-        }
-      />
+      <div className="flex flex-col md:min-h-0 md:flex-1">
+        <DataTable
+          stateKey="features/activities/components/achievements-view:1"
+          mode="local"
+          data={achievements}
+          columns={columns}
+          rowCount={achievements.length}
+          pagination={{ pageIndex: 0, pageSize: 50 }}
+          onPaginationChange={() => undefined}
+          sorting={[]}
+          onSortingChange={() => undefined}
+          globalFilter=""
+          isLoading={isLoading}
+          getRowId={(item) => item.id}
+          fillHeight
+          emptyState={
+            <EmptyState
+              icon={<Trophy aria-hidden="true" />}
+              title={t("emptyTitle")}
+              description={t("emptyBody")}
+            />
+          }
+        />
+      </div>
 
       <Dialog
         open={editing !== null}

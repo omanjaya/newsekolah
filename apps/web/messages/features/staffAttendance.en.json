@@ -1,6 +1,6 @@
 {
-  "navLabel": "Staff Attendance",
-  "title": "Staff Attendance",
+  "navLabel": "Staff attendance",
+  "title": "Staff attendance",
   "tabs": {
     "today": "Today",
     "schedule": "Work Schedule",
@@ -21,7 +21,7 @@
     "import": "Device import"
   },
   "today": {
-    "title": "Today's Board",
+    "title": "Today's board",
     "subtitle": "Attendance status for every employee with a work schedule",
     "empty": "No employee has a work schedule yet. Set one up first.",
     "scan": "Record My Attendance",
@@ -41,7 +41,7 @@
     "correct": "Correct"
   },
   "manualForm": {
-    "title": "Manual Entry",
+    "title": "Manual entry",
     "employee": "Employee",
     "employeePlaceholder": "Select an employee",
     "date": "Date",
@@ -53,7 +53,7 @@
     "saved": "Record saved"
   },
   "schedule": {
-    "title": "Work Schedule",
+    "title": "Work schedule",
     "subtitle": "Expected working hours for each day of the week",
     "employee": "Employee",
     "employeePlaceholder": "Select an employee",
@@ -75,14 +75,14 @@
     }
   },
   "history": {
-    "title": "Attendance History",
+    "title": "Attendance history",
     "from": "From",
     "to": "To",
     "empty": "No records in this date range",
     "date": "Date"
   },
   "recap": {
-    "title": "Monthly Recap",
+    "title": "Monthly recap",
     "month": "Month",
     "download": "Download XLSX",
     "totalLate": "Total late (min)",
@@ -90,7 +90,7 @@
     "empty": "No records this month"
   },
   "correction": {
-    "title": "Correct Record",
+    "title": "Record correction",
     "body": "This change is saved as a correction along with its reason.",
     "arrival": "Arrival time",
     "departure": "Departure time",

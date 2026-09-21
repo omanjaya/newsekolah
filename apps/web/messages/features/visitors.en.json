@@ -1,7 +1,7 @@
 {
   "board": {
     "eyebrow": "Visitors & Incidents",
-    "title": "Gate Board",
+    "title": "Visitor board",
     "count": "{count, plural, one {# visitor on campus} other {# visitors on campus}}",
     "newVisitor": "New Visitor",
     "overdue": "Not Signed Out",
@@ -41,7 +41,7 @@
   },
   "expected": {
     "eyebrow": "Visitors & Incidents",
-    "title": "Expected Guests",
+    "title": "Expected visitors",
     "filters": {
       "date": "Date"
     },
@@ -106,7 +106,7 @@
     "emptyTitle": "No incidents yet",
     "emptyBody": "Incidents recorded in the last 30 days will appear here.",
     "detail": {
-      "title": "Incident Detail",
+      "title": "Incident detail",
       "loading": "Loading...",
       "status": {
         "open": "Open",
@@ -147,7 +147,7 @@
   },
   "recap": {
     "eyebrow": "Visitors & Incidents",
-    "title": "Visitor Recap",
+    "title": "Visit recap",
     "tabs": {
       "daily": "Daily",
       "monthly": "Monthly"

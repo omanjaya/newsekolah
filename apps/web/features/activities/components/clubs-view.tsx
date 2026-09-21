@@ -131,7 +131,11 @@ export function ClubsView(): ReactElement {
   );
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
+    // Viewport-fit on desktop (100dvh minus the h-14 shell header): the page
+    // itself never scrolls; the table scrolls its rows internally while the
+    // filter row stays put. See school/components/users-view.tsx for the
+    // reference pattern.
+    <div className="flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
       <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
 
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -172,27 +176,30 @@ export function ClubsView(): ReactElement {
         )}
       </div>
 
-      <DataTable
-        stateKey="features/activities/components/clubs-view:1"
-        mode="local"
-        data={clubs}
-        columns={columns}
-        rowCount={clubs.length}
-        pagination={{ pageIndex: 0, pageSize: 50 }}
-        onPaginationChange={() => undefined}
-        sorting={[]}
-        onSortingChange={() => undefined}
-        globalFilter=""
-        isLoading={isLoading}
-        getRowId={(item) => item.id}
-        emptyState={
-          <EmptyState
-            icon={<Users aria-hidden="true" />}
-            title={t("emptyTitle")}
-            description={t("emptyBody")}
-          />
-        }
-      />
+      <div className="flex flex-col md:min-h-0 md:flex-1">
+        <DataTable
+          stateKey="features/activities/components/clubs-view:1"
+          mode="local"
+          data={clubs}
+          columns={columns}
+          rowCount={clubs.length}
+          pagination={{ pageIndex: 0, pageSize: 50 }}
+          onPaginationChange={() => undefined}
+          sorting={[]}
+          onSortingChange={() => undefined}
+          globalFilter=""
+          isLoading={isLoading}
+          getRowId={(item) => item.id}
+          fillHeight
+          emptyState={
+            <EmptyState
+              icon={<Users aria-hidden="true" />}
+              title={t("emptyTitle")}
+              description={t("emptyBody")}
+            />
+          }
+        />
+      </div>
 
       <Dialog
         open={editing !== null}

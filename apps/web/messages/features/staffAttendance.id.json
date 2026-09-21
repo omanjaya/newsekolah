@@ -1,6 +1,6 @@
 {
-  "navLabel": "Presensi Pegawai",
-  "title": "Presensi Pegawai",
+  "navLabel": "Presensi pegawai",
+  "title": "Presensi pegawai",
   "tabs": {
     "today": "Hari Ini",
     "schedule": "Jadwal Kerja",
@@ -21,7 +21,7 @@
     "import": "Impor perangkat"
   },
   "today": {
-    "title": "Papan Hari Ini",
+    "title": "Papan hari ini",
     "subtitle": "Status kehadiran setiap pegawai yang memiliki jadwal kerja",
     "empty": "Belum ada pegawai dengan jadwal kerja. Atur jadwal kerja terlebih dahulu.",
     "scan": "Catat Kehadiran Saya",
@@ -41,7 +41,7 @@
     "correct": "Koreksi"
   },
   "manualForm": {
-    "title": "Entri Manual",
+    "title": "Entri manual",
     "employee": "Pegawai",
     "employeePlaceholder": "Pilih pegawai",
     "date": "Tanggal",
@@ -53,7 +53,7 @@
     "saved": "Catatan tersimpan"
   },
   "schedule": {
-    "title": "Jadwal Kerja",
+    "title": "Jadwal kerja",
     "subtitle": "Jam kerja yang diharapkan untuk setiap hari dalam seminggu",
     "employee": "Pegawai",
     "employeePlaceholder": "Pilih pegawai",
@@ -75,14 +75,14 @@
     }
   },
   "history": {
-    "title": "Riwayat Kehadiran",
+    "title": "Riwayat kehadiran",
     "from": "Dari",
     "to": "Sampai",
     "empty": "Tidak ada catatan pada rentang tanggal ini",
     "date": "Tanggal"
   },
   "recap": {
-    "title": "Rekap Bulanan",
+    "title": "Rekap bulanan",
     "month": "Bulan",
     "download": "Unduh XLSX",
     "totalLate": "Total keterlambatan (menit)",
@@ -90,7 +90,7 @@
     "empty": "Tidak ada catatan pada bulan ini"
   },
   "correction": {
-    "title": "Koreksi Catatan",
+    "title": "Koreksi catatan",
     "body": "Perubahan ini tercatat sebagai koreksi beserta alasannya.",
     "arrival": "Waktu datang",
     "departure": "Waktu pulang",

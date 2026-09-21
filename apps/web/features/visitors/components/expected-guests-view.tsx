@@ -114,7 +114,11 @@ export function ExpectedGuestsView(): ReactElement {
   );
 
   return (
-    <div className="flex flex-col gap-4 p-4 md:p-6">
+    // Viewport-fit on desktop (100dvh minus the h-14 shell header): the page
+    // itself never scrolls; the table scrolls its rows internally while the
+    // filter row stays put. See school/components/users-view.tsx for the
+    // reference pattern.
+    <div className="flex flex-col gap-4 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
       <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
       <div className="flex flex-wrap items-end justify-between gap-3">
         <label className="flex flex-col gap-1 text-[13px]">
@@ -141,27 +145,30 @@ export function ExpectedGuestsView(): ReactElement {
         )}
       </div>
 
-      <DataTable
-        stateKey="features/visitors/components/expected-guests-view:1"
-        mode="local"
-        data={items}
-        columns={columns}
-        rowCount={items.length}
-        pagination={{ pageIndex: 0, pageSize: 50 }}
-        onPaginationChange={() => undefined}
-        sorting={[]}
-        onSortingChange={() => undefined}
-        globalFilter=""
-        isLoading={isLoading}
-        getRowId={(item) => item.id}
-        emptyState={
-          <EmptyState
-            icon={<domainIcons.visitor aria-hidden="true" />}
-            title={t("emptyTitle")}
-            description={t("emptyBody")}
-          />
-        }
-      />
+      <div className="flex flex-col md:min-h-0 md:flex-1">
+        <DataTable
+          stateKey="features/visitors/components/expected-guests-view:1"
+          mode="local"
+          data={items}
+          columns={columns}
+          rowCount={items.length}
+          pagination={{ pageIndex: 0, pageSize: 50 }}
+          onPaginationChange={() => undefined}
+          sorting={[]}
+          onSortingChange={() => undefined}
+          globalFilter=""
+          isLoading={isLoading}
+          getRowId={(item) => item.id}
+          fillHeight
+          emptyState={
+            <EmptyState
+              icon={<domainIcons.visitor aria-hidden="true" />}
+              title={t("emptyTitle")}
+              description={t("emptyBody")}
+            />
+          }
+        />
+      </div>
 
       <Dialog
         open={creating}

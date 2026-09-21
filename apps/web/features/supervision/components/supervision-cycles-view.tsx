@@ -71,7 +71,9 @@ export function SupervisionCyclesView(): ReactElement {
   }, [t, canManage]);
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
+    // Viewport-fit on desktop (100dvh minus the h-14 shell header): the page
+    // itself never scrolls; the table scrolls its rows internally.
+    <div className="flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
       <PageHeader
         eyebrow={t("eyebrow")}
         title={t("title")}
@@ -90,30 +92,33 @@ export function SupervisionCyclesView(): ReactElement {
         }
       />
 
-      <DataTable
-        stateKey="features/supervision/components/supervision-cycles-view:1"
-        mode="local"
-        data={items}
-        columns={columns}
-        rowCount={items.length}
-        pagination={{ pageIndex: 0, pageSize: 50 }}
-        onPaginationChange={() => undefined}
-        sorting={[]}
-        onSortingChange={() => undefined}
-        globalFilter=""
-        isLoading={isLoading}
-        getRowId={(item) => item.id}
-        onRowActivate={(item) => {
-          router.push(`/supervision/cycles/${item.id}`);
-        }}
-        emptyState={
-          <EmptyState
-            icon={<domainIcons.supervision aria-hidden="true" />}
-            title={t("emptyTitle")}
-            description={t("emptyBody")}
-          />
-        }
-      />
+      <div className="flex flex-col md:min-h-0 md:flex-1">
+        <DataTable
+          stateKey="features/supervision/components/supervision-cycles-view:1"
+          mode="local"
+          data={items}
+          columns={columns}
+          rowCount={items.length}
+          pagination={{ pageIndex: 0, pageSize: 50 }}
+          onPaginationChange={() => undefined}
+          sorting={[]}
+          onSortingChange={() => undefined}
+          globalFilter=""
+          isLoading={isLoading}
+          getRowId={(item) => item.id}
+          onRowActivate={(item) => {
+            router.push(`/supervision/cycles/${item.id}`);
+          }}
+          fillHeight
+          emptyState={
+            <EmptyState
+              icon={<domainIcons.supervision aria-hidden="true" />}
+              title={t("emptyTitle")}
+              description={t("emptyBody")}
+            />
+          }
+        />
+      </div>
 
       <Dialog
         open={editing !== null}

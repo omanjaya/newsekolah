@@ -59,7 +59,11 @@ export function GenerationView(): ReactElement {
       id: "amount",
       header: t("columns.amount"),
       enableSorting: false,
-      cell: ({ row }) => formatCurrency(row.original.amount_minor, "IDR", { locale }),
+      cell: ({ row }) => (
+        <span className="tabular-nums">
+          {formatCurrency(row.original.amount_minor, "IDR", { locale })}
+        </span>
+      ),
     },
   ];
 
@@ -95,7 +99,7 @@ export function GenerationView(): ReactElement {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 md:h-full md:min-h-0">
       <div className="flex flex-wrap items-end gap-2">
         <label className="flex flex-col gap-1 text-[13px]">
           <span className="font-medium">{t("period")}</span>
@@ -128,9 +132,9 @@ export function GenerationView(): ReactElement {
       )}
 
       {preview && (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3 md:min-h-0 md:flex-1">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-[13px] text-fg-muted">
+            <p className="text-[13px] tabular-nums text-fg-muted">
               {t("previewSummary", {
                 count: rows.length,
                 skipped: preview.skipped,
@@ -148,27 +152,30 @@ export function GenerationView(): ReactElement {
               </Button>
             )}
           </div>
-          <DataTable
-            stateKey="features/billing/components/generation-view:1"
-            mode="local"
-            data={rows}
-            columns={columns}
-            rowCount={rows.length}
-            pagination={{ pageIndex: 0, pageSize: 50 }}
-            onPaginationChange={() => undefined}
-            sorting={[]}
-            onSortingChange={() => undefined}
-            globalFilter=""
-            isLoading={false}
-            getRowId={(item) => `${item.fee_type_id}-${item.student_user_id}-${item.period}`}
-            emptyState={
-              <EmptyState
-                icon={<domainIcons.billing aria-hidden="true" />}
-                title={t("emptyTitle")}
-                description={t("emptyBody")}
-              />
-            }
-          />
+          <div className="flex flex-col md:min-h-0 md:flex-1">
+            <DataTable
+              stateKey="features/billing/components/generation-view:1"
+              mode="local"
+              data={rows}
+              columns={columns}
+              rowCount={rows.length}
+              pagination={{ pageIndex: 0, pageSize: 50 }}
+              onPaginationChange={() => undefined}
+              sorting={[]}
+              onSortingChange={() => undefined}
+              globalFilter=""
+              isLoading={false}
+              getRowId={(item) => `${item.fee_type_id}-${item.student_user_id}-${item.period}`}
+              fillHeight
+              emptyState={
+                <EmptyState
+                  icon={<domainIcons.billing aria-hidden="true" />}
+                  title={t("emptyTitle")}
+                  description={t("emptyBody")}
+                />
+              }
+            />
+          </div>
         </div>
       )}
 

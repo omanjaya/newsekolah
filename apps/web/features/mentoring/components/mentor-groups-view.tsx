@@ -109,7 +109,9 @@ export function MentorGroupsView(): ReactElement {
   }, [t, teacherMap, canManage]);
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
+    // Viewport-fit on desktop (100dvh minus the h-14 shell header): the page
+    // itself never scrolls; the active tab's panel scrolls internally.
+    <div className="flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
       <PageHeader
         eyebrow={t("eyebrow")}
         title={t("title")}
@@ -129,38 +131,41 @@ export function MentorGroupsView(): ReactElement {
         }
       />
 
-      <Tabs value={tab} onValueChange={setTab}>
+      <Tabs value={tab} onValueChange={setTab} className="flex flex-col md:min-h-0 md:flex-1">
         <TabsList>
           <TabsTrigger value="groups">{t("tabs.groups")}</TabsTrigger>
           <TabsTrigger value="limit">{t("tabs.limit")}</TabsTrigger>
         </TabsList>
-        <TabsContent value="groups" className="pt-4">
-          <DataTable
-            stateKey="features/mentoring/components/mentor-groups-view:1"
-            mode="local"
-            data={items}
-            columns={columns}
-            rowCount={items.length}
-            pagination={{ pageIndex: 0, pageSize: 50 }}
-            onPaginationChange={() => undefined}
-            sorting={[]}
-            onSortingChange={() => undefined}
-            globalFilter=""
-            isLoading={isLoading}
-            getRowId={(item) => item.id}
-            onRowActivate={(item) => {
-              router.push(`/mentoring/groups/${item.id}`);
-            }}
-            emptyState={
-              <EmptyState
-                icon={<domainIcons.mentoring aria-hidden="true" />}
-                title={t("emptyTitle")}
-                description={t("emptyBody")}
-              />
-            }
-          />
+        <TabsContent value="groups" className="pt-4 md:min-h-0 md:flex-1">
+          <div className="flex flex-col md:h-full md:min-h-0">
+            <DataTable
+              stateKey="features/mentoring/components/mentor-groups-view:1"
+              mode="local"
+              data={items}
+              columns={columns}
+              rowCount={items.length}
+              pagination={{ pageIndex: 0, pageSize: 50 }}
+              onPaginationChange={() => undefined}
+              sorting={[]}
+              onSortingChange={() => undefined}
+              globalFilter=""
+              isLoading={isLoading}
+              getRowId={(item) => item.id}
+              onRowActivate={(item) => {
+                router.push(`/mentoring/groups/${item.id}`);
+              }}
+              fillHeight
+              emptyState={
+                <EmptyState
+                  icon={<domainIcons.mentoring aria-hidden="true" />}
+                  title={t("emptyTitle")}
+                  description={t("emptyBody")}
+                />
+              }
+            />
+          </div>
         </TabsContent>
-        <TabsContent value="limit" className="pt-4">
+        <TabsContent value="limit" className="pt-4 md:min-h-0 md:flex-1 md:overflow-y-auto">
           <GroupSizeLimitPanel />
         </TabsContent>
       </Tabs>

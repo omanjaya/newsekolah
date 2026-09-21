@@ -939,7 +939,7 @@
     "success": "Peminjaman ditutup sebagai hilang"
   },
   "opac": {
-    "title": "Katalog Perpustakaan",
+    "title": "Katalog perpustakaan",
     "searchPlaceholder": "Cari judul, penulis, atau ISBN",
     "columns": {
       "title": "Judul",

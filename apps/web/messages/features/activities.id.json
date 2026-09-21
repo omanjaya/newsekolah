@@ -1,7 +1,7 @@
 {
   "navGroupLabel": "Kegiatan",
   "navLabelClubs": "Ekstrakurikuler",
-  "navLabelEvents": "Kalender Kegiatan",
+  "navLabelEvents": "Kalender kegiatan",
   "navLabelAchievements": "Prestasi",
   "clubs": {
     "eyebrow": "Kegiatan",
@@ -104,7 +104,7 @@
   },
   "events": {
     "eyebrow": "Kegiatan",
-    "title": "Kalender Kegiatan",
+    "title": "Kalender kegiatan",
     "add": "Tambah kegiatan",
     "saved": "Kegiatan tersimpan",
     "emptyTitle": "Belum ada kegiatan",
@@ -152,7 +152,7 @@
   },
   "achievements": {
     "eyebrow": "Kegiatan",
-    "title": "Prestasi Siswa",
+    "title": "Prestasi siswa",
     "add": "Catat prestasi",
     "saved": "Prestasi tersimpan",
     "emptyTitle": "Belum ada catatan prestasi",

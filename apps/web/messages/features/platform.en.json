@@ -1,7 +1,7 @@
 {
   "tenants": {
     "eyebrow": "Platform",
-    "title": "Platform Console",
+    "title": "Platform console",
     "subtitle": "Manage every school on this multi-tenant deployment.",
     "add": "Add school",
     "columns": {

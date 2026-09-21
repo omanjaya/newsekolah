@@ -1,7 +1,7 @@
 {
   "navGroupLabel": "Activities",
   "navLabelClubs": "Extracurriculars",
-  "navLabelEvents": "Activity Calendar",
+  "navLabelEvents": "Events calendar",
   "navLabelAchievements": "Achievements",
   "clubs": {
     "eyebrow": "Activities",
@@ -104,7 +104,7 @@
   },
   "events": {
     "eyebrow": "Activities",
-    "title": "Activity Calendar",
+    "title": "Events calendar",
     "add": "Add activity",
     "saved": "Activity saved",
     "emptyTitle": "No activities yet",
@@ -152,7 +152,7 @@
   },
   "achievements": {
     "eyebrow": "Activities",
-    "title": "Student Achievements",
+    "title": "Student achievements",
     "add": "Record achievement",
     "saved": "Achievement saved",
     "emptyTitle": "No achievements recorded yet",

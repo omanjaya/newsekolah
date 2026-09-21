@@ -275,9 +275,9 @@
         "saved": "Default disimpan"
       },
       "session": {
-        "navLabel": "Sesi & Login",
+        "navLabel": "Sesi & login",
         "eyebrow": "Pengaturan",
-        "title": "Sesi & Login",
+        "title": "Sesi & login",
         "intro": "Berlaku untuk semua pengguna sekolah ini, mulai sesi berikutnya yang dibuka.",
         "daysLabel": "Lama sesi (hari)",
         "daysHint": "Pengguna diminta masuk kembali setelah sesi ini berakhir. Antara 1 dan 365 hari.",
@@ -1218,7 +1218,19 @@
         "users": "Pengguna",
         "settings": "Pengaturan",
         "reports": "Laporan",
-        "audit": "Audit"
+        "audit": "Audit",
+        "access": "Akses",
+        "activities": "Kegiatan",
+        "analytics": "Peringatan dini",
+        "billing": "Keuangan",
+        "integrations": "Integrasi",
+        "mentoring": "Guru wali",
+        "parent": "Orang tua",
+        "platform": "Platform",
+        "supervision": "Supervisi",
+        "visitors": "Tamu & insiden",
+        "scheduling": "Penjadwalan",
+        "staff_attendance": "Presensi pegawai"
       },
       "dutyOnlyHint": "Tidak bisa diberikan langsung ke peran guru. Berikan lewat penugasan tugas di Data Sekolah > Penugasan."
     }

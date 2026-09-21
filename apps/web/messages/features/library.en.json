@@ -939,7 +939,7 @@
     "success": "Loan closed as lost"
   },
   "opac": {
-    "title": "Library Catalogue",
+    "title": "Library catalog",
     "searchPlaceholder": "Search title, author, or ISBN",
     "columns": {
       "title": "Title",

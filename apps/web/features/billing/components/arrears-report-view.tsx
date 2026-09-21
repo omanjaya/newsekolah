@@ -48,7 +48,11 @@ export function ArrearsReportView(): ReactElement {
         id: "outstanding",
         header: t("columns.outstanding"),
         enableSorting: false,
-        cell: ({ row }) => formatCurrency(row.original.outstanding_minor, "IDR", { locale }),
+        cell: ({ row }) => (
+          <span className="tabular-nums">
+            {formatCurrency(row.original.outstanding_minor, "IDR", { locale })}
+          </span>
+        ),
       },
     ],
     [t, locale, studentMap, classMap],
@@ -70,7 +74,11 @@ export function ArrearsReportView(): ReactElement {
         id: "outstanding",
         header: t("columns.outstanding"),
         enableSorting: false,
-        cell: ({ row }) => formatCurrency(row.original.outstanding_minor, "IDR", { locale }),
+        cell: ({ row }) => (
+          <span className="tabular-nums">
+            {formatCurrency(row.original.outstanding_minor, "IDR", { locale })}
+          </span>
+        ),
       },
     ],
     [t, locale, classMap],
@@ -89,7 +97,7 @@ export function ArrearsReportView(): ReactElement {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 md:h-full md:min-h-0">
       <div className="flex flex-col gap-2">
         <h3 className="text-[14px] font-medium text-fg">{t("byClass")}</h3>
         <DataTable
@@ -107,22 +115,25 @@ export function ArrearsReportView(): ReactElement {
           getRowId={(item) => item.class_id ?? "none"}
         />
       </div>
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-2 md:min-h-0 md:flex-1">
         <h3 className="text-[14px] font-medium text-fg">{t("byStudent")}</h3>
-        <DataTable
-          stateKey="features/billing/components/arrears-report-view:2"
-          mode="local"
-          data={byStudent}
-          columns={studentColumns}
-          rowCount={byStudent.length}
-          pagination={{ pageIndex: 0, pageSize: 50 }}
-          onPaginationChange={() => undefined}
-          sorting={[]}
-          onSortingChange={() => undefined}
-          globalFilter=""
-          isLoading={false}
-          getRowId={(item) => item.student_user_id}
-        />
+        <div className="flex flex-col md:min-h-0 md:flex-1">
+          <DataTable
+            stateKey="features/billing/components/arrears-report-view:2"
+            mode="local"
+            data={byStudent}
+            columns={studentColumns}
+            rowCount={byStudent.length}
+            pagination={{ pageIndex: 0, pageSize: 50 }}
+            onPaginationChange={() => undefined}
+            sorting={[]}
+            onSortingChange={() => undefined}
+            globalFilter=""
+            isLoading={false}
+            getRowId={(item) => item.student_user_id}
+            fillHeight
+          />
+        </div>
       </div>
     </div>
   );

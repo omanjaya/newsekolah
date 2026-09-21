@@ -1,7 +1,7 @@
 {
-  "navLabel": "Pusat Laporan",
+  "navLabel": "Pusat laporan",
   "eyebrow": "Data Sekolah",
-  "title": "Pusat Laporan",
+  "title": "Pusat laporan",
   "description": "Unduh laporan sebagai berkas Excel. Hanya laporan yang boleh dijalankan akun ini yang ditampilkan.",
   "emptyTitle": "Tidak ada laporan yang bisa diunduh",
   "emptyBody": "Akun ini belum memiliki akses ke laporan apa pun. Hubungi admin sekolah bila akses ini diperlukan.",

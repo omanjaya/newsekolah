@@ -56,8 +56,11 @@ export function FeeTypesView(): ReactElement {
         id: "amount",
         header: t("columns.amount"),
         enableSorting: false,
-        cell: ({ row }) =>
-          formatCurrency(row.original.amount_minor, row.original.currency, { locale }),
+        cell: ({ row }) => (
+          <span className="tabular-nums">
+            {formatCurrency(row.original.amount_minor, row.original.currency, { locale })}
+          </span>
+        ),
       },
       {
         id: "recurrence",
@@ -125,7 +128,7 @@ export function FeeTypesView(): ReactElement {
   );
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 md:h-full md:min-h-0">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <label className="flex items-center gap-2 text-[13px]">
           <Checkbox
@@ -149,27 +152,30 @@ export function FeeTypesView(): ReactElement {
         )}
       </div>
 
-      <DataTable
-        stateKey="features/billing/components/fee-types-view:1"
-        mode="local"
-        data={items}
-        columns={columns}
-        rowCount={items.length}
-        pagination={{ pageIndex: 0, pageSize: 50 }}
-        onPaginationChange={() => undefined}
-        sorting={[]}
-        onSortingChange={() => undefined}
-        globalFilter=""
-        isLoading={isLoading}
-        getRowId={(item) => item.id}
-        emptyState={
-          <EmptyState
-            icon={<domainIcons.billing aria-hidden="true" />}
-            title={t("emptyTitle")}
-            description={t("emptyBody")}
-          />
-        }
-      />
+      <div className="flex flex-col md:min-h-0 md:flex-1">
+        <DataTable
+          stateKey="features/billing/components/fee-types-view:1"
+          mode="local"
+          data={items}
+          columns={columns}
+          rowCount={items.length}
+          pagination={{ pageIndex: 0, pageSize: 50 }}
+          onPaginationChange={() => undefined}
+          sorting={[]}
+          onSortingChange={() => undefined}
+          globalFilter=""
+          isLoading={isLoading}
+          getRowId={(item) => item.id}
+          fillHeight
+          emptyState={
+            <EmptyState
+              icon={<domainIcons.billing aria-hidden="true" />}
+              title={t("emptyTitle")}
+              description={t("emptyBody")}
+            />
+          }
+        />
+      </div>
 
       <Dialog
         open={editing !== null}

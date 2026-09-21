@@ -1,5 +1,5 @@
 {
-  "navLabel": "Sessions and Security",
+  "navLabel": "Sessions and security",
   "eyebrow": "Settings",
   "title": "Two-factor authentication",
   "description": "Add a code from an authenticator app as a second layer at sign-in, alongside your password.",
