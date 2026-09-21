@@ -16,7 +16,11 @@ COPY openapi ./openapi
 COPY apps/web ./apps/web
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL} NEXT_OUTPUT=standalone NEXT_TELEMETRY_DISABLED=1
-RUN pnpm --filter @newsekolah/web build
+# Build the workspace dependencies (api-client, ui, schemas, i18n, ui-tokens,
+# config) before web: their package "exports" point at compiled dist/ output,
+# so web cannot resolve them until they are built. The "..." selector includes
+# web and its dependencies, and pnpm runs the builds in topological order.
+RUN pnpm --filter "@newsekolah/web..." build
 
 FROM node:24-alpine AS runner
 ENV NODE_ENV=production HOSTNAME=0.0.0.0 PORT=3000 NEXT_TELEMETRY_DISABLED=1
