@@ -1,8 +1,8 @@
 {
-  "navLabel": "Peringatan Dini",
+  "navLabel": "Peringatan dini",
   "list": {
     "eyebrow": "Kesiswaan",
-    "title": "Peringatan Dini",
+    "title": "Peringatan dini",
     "description": "Siswa yang perlu diperhatikan, diurutkan dari skor tertinggi.",
     "columns": {
       "student": "Siswa",
@@ -22,7 +22,7 @@
     "at_risk": "Berisiko"
   },
   "detail": {
-    "eyebrow": "Peringatan Dini",
+    "eyebrow": "Peringatan dini",
     "back": "Kembali",
     "unknownStudent": "Siswa tidak dikenal",
     "freshness": "Data dihitung {time}",

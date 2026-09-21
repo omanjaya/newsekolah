@@ -455,7 +455,7 @@
     },
     "duty": {
       "navLabel": "Duty desk",
-      "eyebrow": "Permits",
+      "eyebrow": "Student Affairs",
       "title": "Duty desk",
       "intro": "Show the QR for each purpose. Every code is single-use and renews itself when it expires. Exit permit approvals live on the Exit Permits page, Approve tab.",
       "purposes": {
@@ -750,7 +750,7 @@
         "renew": "Generate a new code"
       },
       "exit": {
-        "eyebrow": "Permits",
+        "eyebrow": "Student Affairs",
         "title": "Exit permits",
         "tabMine": "My permits",
         "tabQueue": "Queue",
@@ -806,7 +806,7 @@
         }
       },
       "late": {
-        "eyebrow": "Permits",
+        "eyebrow": "Student Affairs",
         "title": "Late arrivals",
         "tabQueue": "Duty queue",
         "tabMine": "Me",
@@ -838,7 +838,7 @@
         "submitReview": "Save review"
       },
       "leave": {
-        "eyebrow": "Permits",
+        "eyebrow": "Student Affairs",
         "title": "Planned leave",
         "tabQueue": "Queue",
         "tabMine": "My requests",

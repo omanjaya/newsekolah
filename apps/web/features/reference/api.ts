@@ -74,7 +74,10 @@ export function useDirectoryQuery(profileKind?: ProfileKind, enabled = true) {
     queryKey: queryKeys.directory(profileKind ?? "all"),
     queryFn: () =>
       client.GET("/v1/directory/users", {
-        params: { query: { ...(profileKind ? { profile_kind: profileKind } : {}), limit: 500 } },
+        // The ceiling, not a page size: lookup maps (violation ledger,
+        // duty holders) must resolve every id they meet, and a school's
+        // student body does not fit in the old cap of 500.
+        params: { query: { ...(profileKind ? { profile_kind: profileKind } : {}), limit: 5000 } },
       }),
     enabled,
     staleTime: REFERENCE_STALE_MS,

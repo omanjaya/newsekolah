@@ -4,6 +4,7 @@ import { ApiError } from "@newsekolah/api-client";
 import type { Locale } from "@newsekolah/i18n";
 import { formatDate } from "@newsekolah/i18n";
 import {
+  Avatar,
   Button,
   ConfirmDialog,
   DataTable,
@@ -60,8 +61,17 @@ export function CounselingView(): ReactElement {
         id: "student",
         header: t("columns.student"),
         enableSorting: false,
-        cell: ({ row }) =>
-          studentMap.get(row.original.student_user_id)?.name ?? t("unknownStudent"),
+        cell: ({ row }) => {
+          const student = studentMap.get(row.original.student_user_id);
+          return student ? (
+            <div className="flex min-w-0 items-center gap-2">
+              <Avatar size="sm" name={student.name} />
+              <span className="truncate">{student.name}</span>
+            </div>
+          ) : (
+            t("unknownStudent")
+          );
+        },
       },
       {
         id: "date",
@@ -80,7 +90,10 @@ export function CounselingView(): ReactElement {
   );
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
+    // Viewport-fit on desktop (100dvh minus the h-14 shell header): the page
+    // itself never scrolls; the active tab's table scrolls its rows
+    // internally. See users-view.tsx / learning-view.tsx for the pattern.
+    <div className="flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
       <PageHeader
         eyebrow={t("eyebrow")}
         title={t("title")}
@@ -99,38 +112,41 @@ export function CounselingView(): ReactElement {
         }
       />
 
-      <Tabs value={tab} onValueChange={setTab}>
+      <Tabs value={tab} onValueChange={setTab} className="flex flex-col md:min-h-0 md:flex-1">
         <TabsList>
           <TabsTrigger value="mine">{t("tabs.mine")}</TabsTrigger>
           <TabsTrigger value="bkTeam">{t("tabs.bkTeam")}</TabsTrigger>
         </TabsList>
-        <TabsContent value="mine" className="pt-4">
-          <DataTable
-            stateKey="features/discipline/components/counseling-view:1"
-            mode="local"
-            data={items}
-            columns={columns}
-            rowCount={items.length}
-            pagination={{ pageIndex: 0, pageSize: 50 }}
-            onPaginationChange={() => undefined}
-            sorting={[]}
-            onSortingChange={() => undefined}
-            globalFilter=""
-            isLoading={isLoading}
-            getRowId={(item) => item.id}
-            onRowActivate={(item) => {
-              setViewingId(item.id);
-            }}
-            emptyState={
-              <EmptyState
-                icon={<domainIcons.users aria-hidden="true" />}
-                title={t("emptyTitle")}
-                description={t("emptyBody")}
-              />
-            }
-          />
+        <TabsContent value="mine" className="pt-4 md:min-h-0 md:flex-1">
+          <div className="flex flex-col md:h-full md:min-h-0">
+            <DataTable
+              stateKey="features/discipline/components/counseling-view:1"
+              mode="local"
+              data={items}
+              columns={columns}
+              rowCount={items.length}
+              pagination={{ pageIndex: 0, pageSize: 50 }}
+              onPaginationChange={() => undefined}
+              sorting={[]}
+              onSortingChange={() => undefined}
+              globalFilter=""
+              isLoading={isLoading}
+              getRowId={(item) => item.id}
+              onRowActivate={(item) => {
+                setViewingId(item.id);
+              }}
+              fillHeight
+              emptyState={
+                <EmptyState
+                  icon={<domainIcons.users aria-hidden="true" />}
+                  title={t("emptyTitle")}
+                  description={t("emptyBody")}
+                />
+              }
+            />
+          </div>
         </TabsContent>
-        <TabsContent value="bkTeam" className="pt-4">
+        <TabsContent value="bkTeam" className="pt-4 md:min-h-0 md:flex-1">
           <CounselingBKTeamPanel
             onOpen={(id) => {
               setViewingId(id);

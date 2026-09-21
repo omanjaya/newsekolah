@@ -2,7 +2,7 @@
 
 import type { Locale } from "@newsekolah/i18n";
 import { formatDate } from "@newsekolah/i18n";
-import { DataTable, EmptyState, Select, domainIcons } from "@newsekolah/ui";
+import { Avatar, DataTable, EmptyState, Select, domainIcons } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -44,8 +44,17 @@ export function CounselingBKTeamPanel({ onOpen }: { onOpen: (id: string) => void
         id: "student",
         header: t("columns.student"),
         enableSorting: false,
-        cell: ({ row }) =>
-          studentMap.get(row.original.student_user_id)?.name ?? t("unknownStudent"),
+        cell: ({ row }) => {
+          const student = studentMap.get(row.original.student_user_id);
+          return student ? (
+            <div className="flex min-w-0 items-center gap-2">
+              <Avatar size="sm" name={student.name} />
+              <span className="truncate">{student.name}</span>
+            </div>
+          ) : (
+            t("unknownStudent")
+          );
+        },
       },
       {
         id: "date",
@@ -64,7 +73,7 @@ export function CounselingBKTeamPanel({ onOpen }: { onOpen: (id: string) => void
   );
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 md:h-full md:min-h-0">
       <label className="flex flex-col gap-1 text-[13px]">
         <span className="font-medium">{t("bkTeam.topicFilter")}</span>
         <Select
@@ -77,30 +86,33 @@ export function CounselingBKTeamPanel({ onOpen }: { onOpen: (id: string) => void
           aria-label={t("bkTeam.topicFilter")}
         />
       </label>
-      <DataTable
-        stateKey="features/discipline/components/counseling-bk-team-panel:1"
-        mode="local"
-        data={items}
-        columns={columns}
-        rowCount={items.length}
-        pagination={{ pageIndex: 0, pageSize: 50 }}
-        onPaginationChange={() => undefined}
-        sorting={[]}
-        onSortingChange={() => undefined}
-        globalFilter=""
-        isLoading={isLoading}
-        getRowId={(item) => item.id}
-        onRowActivate={(item) => {
-          onOpen(item.id);
-        }}
-        emptyState={
-          <EmptyState
-            icon={<domainIcons.users aria-hidden="true" />}
-            title={t("bkTeam.emptyTitle")}
-            description={t("bkTeam.emptyBody")}
-          />
-        }
-      />
+      <div className="flex flex-col md:min-h-0 md:flex-1">
+        <DataTable
+          stateKey="features/discipline/components/counseling-bk-team-panel:1"
+          mode="local"
+          data={items}
+          columns={columns}
+          rowCount={items.length}
+          pagination={{ pageIndex: 0, pageSize: 50 }}
+          onPaginationChange={() => undefined}
+          sorting={[]}
+          onSortingChange={() => undefined}
+          globalFilter=""
+          isLoading={isLoading}
+          getRowId={(item) => item.id}
+          onRowActivate={(item) => {
+            onOpen(item.id);
+          }}
+          fillHeight
+          emptyState={
+            <EmptyState
+              icon={<domainIcons.users aria-hidden="true" />}
+              title={t("bkTeam.emptyTitle")}
+              description={t("bkTeam.emptyBody")}
+            />
+          }
+        />
+      </div>
     </div>
   );
 }

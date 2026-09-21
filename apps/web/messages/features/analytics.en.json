@@ -1,8 +1,8 @@
 {
-  "navLabel": "Early Warning",
+  "navLabel": "Early warning",
   "list": {
     "eyebrow": "Student Affairs",
-    "title": "Early Warning",
+    "title": "Early warning",
     "description": "Students to check on, ranked by score.",
     "columns": {
       "student": "Student",
@@ -22,7 +22,7 @@
     "at_risk": "At risk"
   },
   "detail": {
-    "eyebrow": "Early Warning",
+    "eyebrow": "Early warning",
     "back": "Back",
     "unknownStudent": "Unknown student",
     "freshness": "Computed {time}",

@@ -3,7 +3,7 @@
 import { ApiError } from "@newsekolah/api-client";
 import type { Locale } from "@newsekolah/i18n";
 import { formatDateTime } from "@newsekolah/i18n";
-import { Alert, Button, DataTable, EmptyState, PageHeader, Skeleton } from "@newsekolah/ui";
+import { Alert, Avatar, Button, DataTable, EmptyState, PageHeader, Skeleton } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { ShieldAlert } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -52,8 +52,17 @@ export function AtRiskStudentsView(): ReactElement {
         id: "student",
         header: t("columns.student"),
         enableSorting: false,
-        cell: ({ row }) =>
-          studentMap.get(row.original.student_user_id)?.name ?? t("unknownStudent"),
+        cell: ({ row }) => {
+          const student = studentMap.get(row.original.student_user_id);
+          return student ? (
+            <div className="flex min-w-0 items-center gap-2">
+              <Avatar size="sm" name={student.name} />
+              <span className="truncate">{student.name}</span>
+            </div>
+          ) : (
+            t("unknownStudent")
+          );
+        },
       },
       {
         id: "class",
@@ -117,7 +126,10 @@ export function AtRiskStudentsView(): ReactElement {
   }
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
+    // Viewport-fit on desktop (100dvh minus the h-14 shell header): the page
+    // itself never scrolls; the table scrolls its rows internally while the
+    // header and description stay put. See users-view.tsx for the pattern.
+    <div className="flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
       <PageHeader
         eyebrow={t("eyebrow")}
         title={t("title")}
@@ -136,29 +148,32 @@ export function AtRiskStudentsView(): ReactElement {
       />
       {canManage && policyOpen && <PolicyDialog open={policyOpen} onOpenChange={setPolicyOpen} />}
       <p className="text-[13px] text-fg-muted">{t("description")}</p>
-      <DataTable
-        stateKey="features/analytics/components/at-risk-students-view:1"
-        mode="local"
-        data={rows}
-        columns={columns}
-        rowCount={rows.length}
-        pagination={{ pageIndex: 0, pageSize: 50 }}
-        onPaginationChange={() => undefined}
-        sorting={[]}
-        onSortingChange={() => undefined}
-        globalFilter=""
-        getRowId={(item) => item.student_user_id}
-        onRowActivate={(item) => {
-          router.push(`/analytics/${item.student_user_id}`);
-        }}
-        emptyState={
-          <EmptyState
-            icon={<ShieldAlert aria-hidden="true" />}
-            title={t("emptyTitle")}
-            description={t("emptyBody")}
-          />
-        }
-      />
+      <div className="flex flex-col md:min-h-0 md:flex-1">
+        <DataTable
+          stateKey="features/analytics/components/at-risk-students-view:1"
+          mode="local"
+          data={rows}
+          columns={columns}
+          rowCount={rows.length}
+          pagination={{ pageIndex: 0, pageSize: 50 }}
+          onPaginationChange={() => undefined}
+          sorting={[]}
+          onSortingChange={() => undefined}
+          globalFilter=""
+          getRowId={(item) => item.student_user_id}
+          onRowActivate={(item) => {
+            router.push(`/analytics/${item.student_user_id}`);
+          }}
+          fillHeight
+          emptyState={
+            <EmptyState
+              icon={<ShieldAlert aria-hidden="true" />}
+              title={t("emptyTitle")}
+              description={t("emptyBody")}
+            />
+          }
+        />
+      </div>
     </div>
   );
 }

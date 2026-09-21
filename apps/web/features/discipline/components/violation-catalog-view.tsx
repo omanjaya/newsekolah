@@ -101,7 +101,7 @@ export function ViolationCatalogView(): ReactElement {
   );
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 md:h-full md:min-h-0">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <label className="flex items-center gap-2 text-[13px]">
           <Checkbox
@@ -123,27 +123,30 @@ export function ViolationCatalogView(): ReactElement {
         </Button>
       </div>
 
-      <DataTable
-        stateKey="features/discipline/components/violation-catalog-view:1"
-        mode="local"
-        data={items}
-        columns={columns}
-        rowCount={items.length}
-        pagination={{ pageIndex: 0, pageSize: 50 }}
-        onPaginationChange={() => undefined}
-        sorting={[]}
-        onSortingChange={() => undefined}
-        globalFilter=""
-        isLoading={isLoading}
-        getRowId={(item) => item.id}
-        emptyState={
-          <EmptyState
-            icon={<domainIcons.violation aria-hidden="true" />}
-            title={t("emptyTitle")}
-            description={t("emptyBody")}
-          />
-        }
-      />
+      <div className="flex flex-col md:min-h-0 md:flex-1">
+        <DataTable
+          stateKey="features/discipline/components/violation-catalog-view:1"
+          mode="local"
+          data={items}
+          columns={columns}
+          rowCount={items.length}
+          pagination={{ pageIndex: 0, pageSize: 50 }}
+          onPaginationChange={() => undefined}
+          sorting={[]}
+          onSortingChange={() => undefined}
+          globalFilter=""
+          isLoading={isLoading}
+          getRowId={(item) => item.id}
+          fillHeight
+          emptyState={
+            <EmptyState
+              icon={<domainIcons.violation aria-hidden="true" />}
+              title={t("emptyTitle")}
+              description={t("emptyBody")}
+            />
+          }
+        />
+      </div>
 
       <Dialog
         open={editing !== null}

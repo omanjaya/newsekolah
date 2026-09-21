@@ -191,7 +191,7 @@ export function AtRiskPanel(): ReactElement {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 md:h-full md:min-h-0">
       <div className="flex flex-wrap items-end gap-2">
         <label className="flex flex-col gap-1 text-[13px]">
           <span className="font-medium">{t("filters.class")}</span>
@@ -221,34 +221,37 @@ export function AtRiskPanel(): ReactElement {
         </label>
       </div>
 
-      <DataTable
-        stateKey="features/discipline/components/at-risk-panel:1"
-        data={rows}
-        columns={columns}
-        rowCount={rowCount}
-        pagination={pagination}
-        onPaginationChange={setPagination}
-        sorting={[]}
-        onSortingChange={() => undefined}
-        globalFilter={search}
-        onGlobalFilterChange={(value) => {
-          setSearch(value);
-          setPagination((p) => ({ ...p, pageIndex: 0 }));
-        }}
-        isLoading={candidates.isLoading}
-        getRowId={(item) => item.student_user_id}
-        onRowActivate={(item) => {
-          router.push(`/discipline/students/${item.student_user_id}`);
-        }}
-        toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
-        emptyState={
-          <EmptyState
-            icon={<domainIcons.violation aria-hidden="true" />}
-            title={t("emptyTitle")}
-            description={t("emptyBody")}
-          />
-        }
-      />
+      <div className="flex flex-col md:min-h-0 md:flex-1">
+        <DataTable
+          stateKey="features/discipline/components/at-risk-panel:1"
+          data={rows}
+          columns={columns}
+          rowCount={rowCount}
+          pagination={pagination}
+          onPaginationChange={setPagination}
+          sorting={[]}
+          onSortingChange={() => undefined}
+          globalFilter={search}
+          onGlobalFilterChange={(value) => {
+            setSearch(value);
+            setPagination((p) => ({ ...p, pageIndex: 0 }));
+          }}
+          isLoading={candidates.isLoading}
+          getRowId={(item) => item.student_user_id}
+          onRowActivate={(item) => {
+            router.push(`/discipline/students/${item.student_user_id}`);
+          }}
+          toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
+          fillHeight
+          emptyState={
+            <EmptyState
+              icon={<domainIcons.violation aria-hidden="true" />}
+              title={t("emptyTitle")}
+              description={t("emptyBody")}
+            />
+          }
+        />
+      </div>
     </div>
   );
 }

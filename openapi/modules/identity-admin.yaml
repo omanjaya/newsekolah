@@ -803,7 +803,10 @@ paths:
           schema: { type: string, maxLength: 80 }
         - name: limit
           in: query
-          schema: { type: integer, minimum: 1, maximum: 500, default: 200 }
+          # High ceiling on purpose: lookup maps (violation ledger, rosters)
+          # need every student's name at once, and an entry is only id, name
+          # and username. The handler pages internally either way.
+          schema: { type: integer, minimum: 1, maximum: 5000, default: 200 }
       responses:
         "200":
           description: Directory entries

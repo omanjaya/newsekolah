@@ -3,7 +3,15 @@
 import { ApiError } from "@newsekolah/api-client";
 import type { Locale } from "@newsekolah/i18n";
 import { formatDateTime } from "@newsekolah/i18n";
-import { Button, DataTable, EmptyState, Select, domainIcons, useToast } from "@newsekolah/ui";
+import {
+  Avatar,
+  Button,
+  DataTable,
+  EmptyState,
+  Select,
+  domainIcons,
+  useToast,
+} from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
@@ -59,8 +67,16 @@ export function IssuedLettersPanel(): ReactElement {
         id: "student",
         header: t("columns.student"),
         enableSorting: false,
-        cell: ({ row }) =>
-          studentMap.get(row.original.student_user_id)?.name ?? t("unknownStudent"),
+        cell: ({ row }) => {
+          const name = studentMap.get(row.original.student_user_id)?.name;
+          if (!name) return t("unknownStudent");
+          return (
+            <div className="flex min-w-0 items-center gap-2">
+              <Avatar size="sm" name={name} />
+              <span className="truncate">{name}</span>
+            </div>
+          );
+        },
       },
       { accessorKey: "level_label", header: t("columns.level"), enableSorting: false },
       { accessorKey: "letter_number", header: t("columns.letterNumber"), enableSorting: false },
@@ -96,7 +112,7 @@ export function IssuedLettersPanel(): ReactElement {
   );
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 md:h-full md:min-h-0">
       <Select
         options={classOptions}
         value={classId || "all"}
@@ -106,30 +122,33 @@ export function IssuedLettersPanel(): ReactElement {
         className="w-44"
         aria-label={t("filters.class")}
       />
-      <DataTable
-        stateKey="features/discipline/components/issued-letters-panel:1"
-        mode="local"
-        data={items}
-        columns={columns}
-        rowCount={items.length}
-        pagination={{ pageIndex: 0, pageSize: 50 }}
-        onPaginationChange={() => undefined}
-        sorting={[]}
-        onSortingChange={() => undefined}
-        globalFilter=""
-        isLoading={isLoading}
-        getRowId={(item) => item.id}
-        onRowActivate={(item) => {
-          router.push(`/discipline/students/${item.student_user_id}`);
-        }}
-        emptyState={
-          <EmptyState
-            icon={<domainIcons.violation aria-hidden="true" />}
-            title={t("emptyTitle")}
-            description={t("emptyBody")}
-          />
-        }
-      />
+      <div className="flex flex-col md:min-h-0 md:flex-1">
+        <DataTable
+          stateKey="features/discipline/components/issued-letters-panel:1"
+          mode="local"
+          data={items}
+          columns={columns}
+          rowCount={items.length}
+          pagination={{ pageIndex: 0, pageSize: 50 }}
+          onPaginationChange={() => undefined}
+          sorting={[]}
+          onSortingChange={() => undefined}
+          globalFilter=""
+          isLoading={isLoading}
+          getRowId={(item) => item.id}
+          onRowActivate={(item) => {
+            router.push(`/discipline/students/${item.student_user_id}`);
+          }}
+          fillHeight
+          emptyState={
+            <EmptyState
+              icon={<domainIcons.violation aria-hidden="true" />}
+              title={t("emptyTitle")}
+              description={t("emptyBody")}
+            />
+          }
+        />
+      </div>
     </div>
   );
 }

@@ -455,7 +455,7 @@
     },
     "duty": {
       "navLabel": "Piket",
-      "eyebrow": "Perizinan",
+      "eyebrow": "Kesiswaan",
       "title": "Meja piket",
       "intro": "Tampilkan QR sesuai keperluan. Setiap kode sekali pakai dan diperbarui otomatis saat kedaluwarsa. Persetujuan izin keluar ada di halaman Izin Keluar, tab Setujui.",
       "purposes": {
@@ -750,7 +750,7 @@
         "renew": "Buat kode baru"
       },
       "exit": {
-        "eyebrow": "Perizinan",
+        "eyebrow": "Kesiswaan",
         "title": "Izin keluar",
         "tabMine": "Izin saya",
         "tabQueue": "Antrean",
@@ -806,7 +806,7 @@
         }
       },
       "late": {
-        "eyebrow": "Perizinan",
+        "eyebrow": "Kesiswaan",
         "title": "Terlambat",
         "tabQueue": "Antrean piket",
         "tabMine": "Saya",
@@ -838,7 +838,7 @@
         "submitReview": "Simpan peninjauan"
       },
       "leave": {
-        "eyebrow": "Perizinan",
+        "eyebrow": "Kesiswaan",
         "title": "Izin terencana",
         "tabQueue": "Antrean",
         "tabMine": "Pengajuan saya",

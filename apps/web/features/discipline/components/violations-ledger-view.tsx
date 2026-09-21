@@ -5,6 +5,7 @@ import type { Locale } from "@newsekolah/i18n";
 import { formatDate } from "@newsekolah/i18n";
 import {
   Alert,
+  Avatar,
   Badge,
   Button,
   Checkbox,
@@ -79,8 +80,16 @@ export function ViolationsLedgerView(): ReactElement {
         id: "student",
         header: t("columns.student"),
         enableSorting: false,
-        cell: ({ row }) =>
-          studentMap.get(row.original.student_user_id)?.name ?? t("unknownStudent"),
+        cell: ({ row }) => {
+          const name = studentMap.get(row.original.student_user_id)?.name;
+          if (!name) return t("unknownStudent");
+          return (
+            <div className="flex min-w-0 items-center gap-2">
+              <Avatar size="sm" name={name} />
+              <span className="truncate">{name}</span>
+            </div>
+          );
+        },
       },
       {
         id: "type",
@@ -139,7 +148,7 @@ export function ViolationsLedgerView(): ReactElement {
   );
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 md:h-full md:min-h-0">
       {saveSummary && (
         <Alert
           variant={saveSummary.dueLevels.length > 0 ? "warning" : "info"}
@@ -268,30 +277,33 @@ export function ViolationsLedgerView(): ReactElement {
         )}
       </div>
 
-      <DataTable
-        stateKey="features/discipline/components/violations-ledger-view:1"
-        mode="local"
-        data={items}
-        columns={columns}
-        rowCount={items.length}
-        pagination={{ pageIndex: 0, pageSize: 50 }}
-        onPaginationChange={() => undefined}
-        sorting={[]}
-        onSortingChange={() => undefined}
-        globalFilter=""
-        isLoading={isLoading}
-        getRowId={(item) => item.id}
-        onRowActivate={(item) => {
-          router.push(`/discipline/students/${item.student_user_id}`);
-        }}
-        emptyState={
-          <EmptyState
-            icon={<domainIcons.violation aria-hidden="true" />}
-            title={t("emptyTitle")}
-            description={t("emptyBody")}
-          />
-        }
-      />
+      <div className="flex flex-col md:min-h-0 md:flex-1">
+        <DataTable
+          stateKey="features/discipline/components/violations-ledger-view:1"
+          mode="local"
+          data={items}
+          columns={columns}
+          rowCount={items.length}
+          pagination={{ pageIndex: 0, pageSize: 50 }}
+          onPaginationChange={() => undefined}
+          sorting={[]}
+          onSortingChange={() => undefined}
+          globalFilter=""
+          isLoading={isLoading}
+          getRowId={(item) => item.id}
+          onRowActivate={(item) => {
+            router.push(`/discipline/students/${item.student_user_id}`);
+          }}
+          fillHeight
+          emptyState={
+            <EmptyState
+              icon={<domainIcons.violation aria-hidden="true" />}
+              title={t("emptyTitle")}
+              description={t("emptyBody")}
+            />
+          }
+        />
+      </div>
 
       <Dialog
         open={recording}

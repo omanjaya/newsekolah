@@ -23,5 +23,9 @@ export function DisciplinePolicyView(): ReactElement {
     return <Skeleton className="h-40 w-full" aria-busy="true" />;
   }
 
-  return <DisciplinePolicyEditor initialLevels={policy.data.levels} />;
+  return (
+    <div className="md:h-full md:min-h-0 md:flex-1 md:overflow-y-auto">
+      <DisciplinePolicyEditor initialLevels={policy.data.levels} />
+    </div>
+  );
 }

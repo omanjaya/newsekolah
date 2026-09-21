@@ -24,31 +24,35 @@ export function ViolationsView(): ReactElement {
   const showTabs = canManageCatalog || canManagePolicy;
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
+    // Viewport-fit on desktop (100dvh minus the h-14 shell header): the page
+    // itself never scrolls; the active tab's panel scrolls internally.
+    <div className="flex flex-col gap-6 p-4 md:h-[calc(100dvh-3.5rem)] md:p-6">
       <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
       {showTabs ? (
-        <Tabs value={tab} onValueChange={setTab}>
+        <Tabs value={tab} onValueChange={setTab} className="flex flex-col md:min-h-0 md:flex-1">
           <TabsList>
             <TabsTrigger value="ledger">{t("tabs.ledger")}</TabsTrigger>
             {canManageCatalog && <TabsTrigger value="catalog">{t("tabs.catalog")}</TabsTrigger>}
             {canManagePolicy && <TabsTrigger value="policy">{t("tabs.policy")}</TabsTrigger>}
           </TabsList>
-          <TabsContent value="ledger" className="pt-4">
+          <TabsContent value="ledger" className="pt-4 md:min-h-0 md:flex-1">
             <ViolationsLedgerView />
           </TabsContent>
           {canManageCatalog && (
-            <TabsContent value="catalog" className="pt-4">
+            <TabsContent value="catalog" className="pt-4 md:min-h-0 md:flex-1">
               <ViolationCatalogView />
             </TabsContent>
           )}
           {canManagePolicy && (
-            <TabsContent value="policy" className="pt-4">
+            <TabsContent value="policy" className="pt-4 md:min-h-0 md:flex-1">
               <DisciplinePolicyView />
             </TabsContent>
           )}
         </Tabs>
       ) : (
-        <ViolationsLedgerView />
+        <div className="flex flex-col md:min-h-0 md:flex-1">
+          <ViolationsLedgerView />
+        </div>
       )}
     </div>
   );

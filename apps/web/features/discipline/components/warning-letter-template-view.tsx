@@ -34,7 +34,11 @@ export function WarningLetterTemplateView(): ReactElement {
     return <Skeleton className="h-64 w-full" aria-busy="true" />;
   }
 
-  return <WarningLetterTemplateEditor t={t} initial={policy.data} />;
+  return (
+    <div className="md:h-full md:min-h-0">
+      <WarningLetterTemplateEditor t={t} initial={policy.data} />
+    </div>
+  );
 }
 
 function WarningLetterTemplateEditor({
@@ -109,7 +113,7 @@ function WarningLetterTemplateEditor({
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 md:h-full md:min-h-0 md:flex-1 md:overflow-y-auto">
       <p className="text-[13px] text-fg-muted">{t("description")}</p>
 
       <section className="flex flex-col gap-4 rounded-sm border border-border bg-surface p-4">
