@@ -1,0 +1,14 @@
+# The api image builds from apps/api with `COPY . .`; keep out build artifacts,
+# local secrets and the air hot-reload output.
+tmp
+seed
+api
+worker
+migrate
+bootstrap
+keygen
+etl
+*.log
+.env
+.env.*
+!.env.example

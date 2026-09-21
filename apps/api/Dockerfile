@@ -50,3 +50,18 @@ FROM gcr.io/distroless/static-debian12:nonroot AS keygen
 COPY --from=build /out/keygen /app/keygen
 USER nonroot:nonroot
 ENTRYPOINT ["/app/keygen"]
+
+# Combined runtime image used by the compose stack (migrate/api/worker share one
+# image and select a binary via `command`). All binaries live at the root so
+# `command: ["/api"]`, `["/migrate", "up"]`, `["/worker"]` and the
+# `["/api", "--healthcheck"]` healthcheck resolve without an entrypoint. Kept as
+# the final stage so a targetless `docker build` produces it.
+FROM gcr.io/distroless/static-debian12:nonroot AS runtime
+COPY --from=build /out/api /api
+COPY --from=build /out/migrate /migrate
+COPY --from=build /out/worker /worker
+COPY --from=build /out/seed /seed
+COPY --from=build /out/bootstrap /bootstrap
+COPY --from=build /out/keygen /keygen
+USER nonroot:nonroot
+EXPOSE 8080

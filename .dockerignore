@@ -1,0 +1,18 @@
+# Keep the build context small. The web image builds from the monorepo root,
+# so exclude everything the pnpm workspace build does not need.
+**/node_modules
+.git
+.gitignore
+.claude
+reference
+docs
+apps/mobile
+**/.next
+**/.turbo
+**/dist
+**/tmp
+**/*.log
+infra/docker/backup/**/tmp
+**/.env
+**/.env.*
+!**/.env.example

@@ -149,9 +149,11 @@ services:
         condition: service_started
 
   web:
+    # The web image is a pnpm workspace build: the context must be the monorepo
+    # root so the Dockerfile can copy packages/ and the workspace manifests.
     build:
-      context: ../../apps/web
-      dockerfile: Dockerfile
+      context: ../..
+      dockerfile: apps/web/Dockerfile
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
     image: ${WEB_IMAGE:-newsekolah-web:local}
