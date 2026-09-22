@@ -82,22 +82,35 @@ type QueuedReservation struct {
 
 // ReservationQueue lists a title's waiting reservations in service order.
 func (s *Service) ReservationQueue(ctx context.Context, tenantID, titleID uuid.UUID) ([]QueuedReservation, error) {
-	all, err := s.repo.ListReservationsForTitle(ctx, tenantID, titleID)
+	var out []QueuedReservation
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		all, err := s.repo.ListReservationsForTitle(ctx, tenantID, titleID)
+		if err != nil {
+			return err
+		}
+		out = make([]QueuedReservation, 0, len(all))
+		for _, r := range all {
+			if r.Status != domain.ReservationWaiting {
+				continue
+			}
+			out = append(out, QueuedReservation{Reservation: r, Position: domain.QueuePosition(all, r.ID)})
+		}
+		return nil
+	})
 	if err != nil {
 		return nil, err
-	}
-	out := make([]QueuedReservation, 0, len(all))
-	for _, r := range all {
-		if r.Status != domain.ReservationWaiting {
-			continue
-		}
-		out = append(out, QueuedReservation{Reservation: r, Position: domain.QueuePosition(all, r.ID)})
 	}
 	return out, nil
 }
 
 func (s *Service) MemberReservations(ctx context.Context, tenantID, memberID uuid.UUID) ([]domain.Reservation, error) {
-	return s.repo.ListReservationsForMember(ctx, tenantID, memberID)
+	var reservations []domain.Reservation
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		reservations, err = s.repo.ListReservationsForMember(ctx, tenantID, memberID)
+		return err
+	})
+	return reservations, err
 }
 
 // ExpireReadyReservations is the periodic job's body: every ready hold past

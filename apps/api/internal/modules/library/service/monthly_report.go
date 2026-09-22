@@ -58,107 +58,115 @@ func (s *Service) MonthlyReport(ctx context.Context, tenantID uuid.UUID, month s
 		return MonthlyReport{}, err
 	}
 
-	totalTitles, err := s.repo.CountTitlesActive(ctx, tenantID)
-	if err != nil {
-		return MonthlyReport{}, err
-	}
-	totalCopies, err := s.repo.CountCopiesTotal(ctx, tenantID)
-	if err != nil {
-		return MonthlyReport{}, err
-	}
-	titlesAdded, err := s.repo.CountTitlesAddedInPeriod(ctx, tenantID, from, to)
-	if err != nil {
-		return MonthlyReport{}, err
-	}
-	copiesAdded, err := s.repo.CountCopiesAddedInPeriod(ctx, tenantID, from, to)
-	if err != nil {
-		return MonthlyReport{}, err
-	}
-	membersTotal, err := s.repo.CountMembersTotal(ctx, tenantID)
-	if err != nil {
-		return MonthlyReport{}, err
-	}
-	visits, err := s.repo.CountVisitsBetween(ctx, tenantID, from, to)
-	if err != nil {
-		return MonthlyReport{}, err
-	}
-	loans, err := s.repo.CountLoansBetween(ctx, tenantID, from, to)
-	if err != nil {
-		return MonthlyReport{}, err
-	}
-	returns, err := s.repo.CountReturnsBetween(ctx, tenantID, from, to)
-	if err != nil {
-		return MonthlyReport{}, err
-	}
-	lateReturns, err := s.repo.CountLateReturnsBetween(ctx, tenantID, from, to)
-	if err != nil {
-		return MonthlyReport{}, err
-	}
-	finesRecorded, err := s.repo.SumFinesRecordedBetween(ctx, tenantID, from, to)
-	if err != nil {
-		return MonthlyReport{}, err
-	}
-
-	topTitleCounts, err := s.repo.MostBorrowedTitles(ctx, tenantID, from, to, 10)
-	if err != nil {
-		return MonthlyReport{}, err
-	}
-	topTitles := make([]MostBorrowedTitle, 0, len(topTitleCounts))
-	for _, c := range topTitleCounts {
-		title, found, err := s.repo.GetTitle(ctx, tenantID, c.TitleID)
+	var report MonthlyReport
+	err = s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		totalTitles, err := s.repo.CountTitlesActive(ctx, tenantID)
 		if err != nil {
-			return MonthlyReport{}, err
+			return err
 		}
-		if !found {
-			continue
-		}
-		withAvailability, err := s.withAvailability(ctx, tenantID, title)
+		totalCopies, err := s.repo.CountCopiesTotal(ctx, tenantID)
 		if err != nil {
-			return MonthlyReport{}, err
+			return err
 		}
-		topTitles = append(topTitles, MostBorrowedTitle{Title: withAvailability, LoanCount: c.LoanCount})
-	}
+		titlesAdded, err := s.repo.CountTitlesAddedInPeriod(ctx, tenantID, from, to)
+		if err != nil {
+			return err
+		}
+		copiesAdded, err := s.repo.CountCopiesAddedInPeriod(ctx, tenantID, from, to)
+		if err != nil {
+			return err
+		}
+		membersTotal, err := s.repo.CountMembersTotal(ctx, tenantID)
+		if err != nil {
+			return err
+		}
+		visits, err := s.repo.CountVisitsBetween(ctx, tenantID, from, to)
+		if err != nil {
+			return err
+		}
+		loans, err := s.repo.CountLoansBetween(ctx, tenantID, from, to)
+		if err != nil {
+			return err
+		}
+		returns, err := s.repo.CountReturnsBetween(ctx, tenantID, from, to)
+		if err != nil {
+			return err
+		}
+		lateReturns, err := s.repo.CountLateReturnsBetween(ctx, tenantID, from, to)
+		if err != nil {
+			return err
+		}
+		finesRecorded, err := s.repo.SumFinesRecordedBetween(ctx, tenantID, from, to)
+		if err != nil {
+			return err
+		}
 
-	borrowerRows, err := s.repo.TopBorrowersInPeriod(ctx, tenantID, from, to, 10)
-	if err != nil {
-		return MonthlyReport{}, err
-	}
-	topBorrowers := make([]TopBorrower, len(borrowerRows))
-	for i, r := range borrowerRows {
-		name := r.MemberUserID.String()
-		if s.members != nil {
-			if resolved, err := s.members.UserDisplayName(ctx, tenantID, r.MemberUserID); err == nil && resolved != "" {
-				name = resolved
+		topTitleCounts, err := s.repo.MostBorrowedTitles(ctx, tenantID, from, to, 10)
+		if err != nil {
+			return err
+		}
+		topTitles := make([]MostBorrowedTitle, 0, len(topTitleCounts))
+		for _, c := range topTitleCounts {
+			title, found, err := s.repo.GetTitle(ctx, tenantID, c.TitleID)
+			if err != nil {
+				return err
 			}
+			if !found {
+				continue
+			}
+			withAvailability, err := s.withAvailability(ctx, tenantID, title)
+			if err != nil {
+				return err
+			}
+			topTitles = append(topTitles, MostBorrowedTitle{Title: withAvailability, LoanCount: c.LoanCount})
 		}
-		topBorrowers[i] = TopBorrower{MemberUserID: r.MemberUserID, MemberName: name, ClassName: r.ClassName, LoanCount: r.LoanCount}
-	}
 
-	visitsPerClass, err := s.repo.VisitsPerClass(ctx, tenantID, from, to)
+		borrowerRows, err := s.repo.TopBorrowersInPeriod(ctx, tenantID, from, to, 10)
+		if err != nil {
+			return err
+		}
+		topBorrowers := make([]TopBorrower, len(borrowerRows))
+		for i, r := range borrowerRows {
+			name := r.MemberUserID.String()
+			if s.members != nil {
+				if resolved, err := s.members.UserDisplayName(ctx, tenantID, r.MemberUserID); err == nil && resolved != "" {
+					name = resolved
+				}
+			}
+			topBorrowers[i] = TopBorrower{MemberUserID: r.MemberUserID, MemberName: name, ClassName: r.ClassName, LoanCount: r.LoanCount}
+		}
+
+		visitsPerClass, err := s.repo.VisitsPerClass(ctx, tenantID, from, to)
+		if err != nil {
+			return err
+		}
+		for i := range visitsPerClass {
+			visitsPerClass[i].ClassName = labelClass(visitsPerClass[i].ClassName)
+		}
+
+		policy, err := s.loadPolicy(ctx, tenantID)
+		if err != nil {
+			return err
+		}
+
+		// Calendar days in the reported month: the day-of-month of the day
+		// before the next month starts, e.g. from=2024-02-01 -> to-1day is
+		// 2024-02-29 -> 29 (old app: divides by the calendar month length,
+		// not by how much of it has elapsed).
+		daysInMonth := to.AddDate(0, 0, -1).Day()
+
+		report = MonthlyReport{
+			Month: from, LibraryName: policy.Name, TotalTitles: totalTitles, TotalCopies: totalCopies,
+			TitlesAdded: titlesAdded, CopiesAdded: copiesAdded, MembersTotal: membersTotal, VisitsThisMonth: visits,
+			AvgVisitsPerDay: safeDiv(visits, daysInMonth), Loans: loans, Returns: returns, LateReturns: lateReturns,
+			FinesRecorded: finesRecorded, TopTitles: topTitles, TopBorrowers: topBorrowers, VisitsPerClass: visitsPerClass,
+		}
+		return nil
+	})
 	if err != nil {
 		return MonthlyReport{}, err
 	}
-	for i := range visitsPerClass {
-		visitsPerClass[i].ClassName = labelClass(visitsPerClass[i].ClassName)
-	}
-
-	policy, err := s.Policy(ctx, tenantID)
-	if err != nil {
-		return MonthlyReport{}, err
-	}
-
-	// Calendar days in the reported month: the day-of-month of the day
-	// before the next month starts, e.g. from=2024-02-01 -> to-1day is
-	// 2024-02-29 -> 29 (old app: divides by the calendar month length,
-	// not by how much of it has elapsed).
-	daysInMonth := to.AddDate(0, 0, -1).Day()
-
-	return MonthlyReport{
-		Month: from, LibraryName: policy.Name, TotalTitles: totalTitles, TotalCopies: totalCopies,
-		TitlesAdded: titlesAdded, CopiesAdded: copiesAdded, MembersTotal: membersTotal, VisitsThisMonth: visits,
-		AvgVisitsPerDay: safeDiv(visits, daysInMonth), Loans: loans, Returns: returns, LateReturns: lateReturns,
-		FinesRecorded: finesRecorded, TopTitles: topTitles, TopBorrowers: topBorrowers, VisitsPerClass: visitsPerClass,
-	}, nil
+	return report, nil
 }
 
 // formatThousands renders n with "." as the thousands separator, the

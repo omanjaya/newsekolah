@@ -30,12 +30,16 @@ func (s *Service) SendDueReminders(ctx context.Context, tenantID uuid.UUID) (int
 	if err := s.requireEnabled(ctx, tenantID); err != nil {
 		return 0, err
 	}
-	policy, err := s.loadPolicy(ctx, tenantID)
-	if err != nil {
-		return 0, err
-	}
 	now := s.clock.Now()
-	due, err := s.repo.ListLoansDueForReminder(ctx, tenantID, now, now.AddDate(0, 0, policy.DueReminderDays))
+	var due []domain.Loan
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		policy, err := s.loadPolicy(ctx, tenantID)
+		if err != nil {
+			return err
+		}
+		due, err = s.repo.ListLoansDueForReminder(ctx, tenantID, now, now.AddDate(0, 0, policy.DueReminderDays))
+		return err
+	})
 	if err != nil {
 		return 0, err
 	}
