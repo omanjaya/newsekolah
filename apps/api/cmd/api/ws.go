@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/subtle"
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 	"time"
@@ -17,6 +18,7 @@ import (
 	attendanceservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance/service"
 	attendancehttp "github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance/transport/http"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/auth"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/realtime"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/tenant"
 )
@@ -164,7 +166,21 @@ func wsMonitorHandler(pool *pgxpool.Pool, hub *realtime.Hub, snapshots monitorSn
 			return
 		}
 
-		raw, err := db.New(pool).GetTenantSettingValue(r.Context(), db.GetTenantSettingValueParams{TenantID: t.ID, Key: settingKey})
+		// tenant_settings is RLS-protected (row level security section of
+		// docs/06-database-schema.md): reading it on the raw pool, outside
+		// database.WithTenantTx, only ever sees rows when the connection
+		// happens to run under a superuser (dev) -- under app_rw it would
+		// always deny the row and report "not configured" even when it is.
+		var raw []byte
+		err := database.WithTenantTx(r.Context(), pool, t.ID, func(ctx context.Context) error {
+			tx, ok := database.TxFromContext(ctx)
+			if !ok {
+				return errors.New("tenant transaction missing from context")
+			}
+			var err error
+			raw, err = db.New(tx).GetTenantSettingValue(ctx, db.GetTenantSettingValueParams{TenantID: t.ID, Key: settingKey})
+			return err
+		})
 		if err != nil {
 			http.Error(w, "monitor display is not configured for this school", http.StatusUnauthorized)
 			return

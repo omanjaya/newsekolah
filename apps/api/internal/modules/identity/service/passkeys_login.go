@@ -33,20 +33,32 @@ func (s *Service) BeginPasskeyLogin(ctx context.Context, in PasskeyLoginInput) (
 		return protocol.CredentialAssertion{}, "", err
 	}
 
-	user, found, err := s.repo.GetUserByUsernameOrEmail(ctx, in.TenantID, domain.NormalizeUsername(in.Username))
-	if err != nil {
-		return protocol.CredentialAssertion{}, "", fmt.Errorf("look up passkey login user: %w", err)
-	}
-	if !found || !user.CanAuthenticate() {
-		return protocol.CredentialAssertion{}, "", domain.ErrPasskeyNotFound
-	}
+	// Runs pre-auth, off a pooled connection that may have served an
+	// unrelated tenant's transaction moments earlier, so app.tenant_id
+	// must be set explicitly here (see database.WithTenantTx's doc
+	// comment and migration 0110) rather than left to whatever the
+	// connection's session GUC happens to be.
+	var pkUser passkeyUser
+	err = s.withTx(ctx, in.TenantID, func(ctx context.Context) error {
+		user, found, err := s.repo.GetUserByUsernameOrEmail(ctx, in.TenantID, domain.NormalizeUsername(in.Username))
+		if err != nil {
+			return fmt.Errorf("look up passkey login user: %w", err)
+		}
+		if !found || !user.CanAuthenticate() {
+			return domain.ErrPasskeyNotFound
+		}
 
-	pkUser, err := s.loadPasskeyUser(ctx, in.TenantID, user.ID, user.Username, user.Name)
+		pkUser, err = s.loadPasskeyUser(ctx, in.TenantID, user.ID, user.Username, user.Name)
+		if err != nil {
+			return err
+		}
+		if len(pkUser.credentials) == 0 {
+			return domain.ErrPasskeyNotFound
+		}
+		return nil
+	})
 	if err != nil {
 		return protocol.CredentialAssertion{}, "", err
-	}
-	if len(pkUser.credentials) == 0 {
-		return protocol.CredentialAssertion{}, "", domain.ErrPasskeyNotFound
 	}
 
 	assertion, session, err := w.BeginLogin(pkUser)
@@ -56,7 +68,7 @@ func (s *Service) BeginPasskeyLogin(ctx context.Context, in PasskeyLoginInput) (
 
 	ceremonyID := uuid.NewString()
 	if err := s.storeCeremony(ctx, loginCeremonyKey(in.TenantID, ceremonyID), passkeyCeremony{
-		TenantID: in.TenantID, UserID: user.ID, Session: *session,
+		TenantID: in.TenantID, UserID: pkUser.id, Session: *session,
 	}); err != nil {
 		return protocol.CredentialAssertion{}, "", err
 	}

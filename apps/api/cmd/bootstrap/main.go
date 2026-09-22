@@ -61,6 +61,17 @@ func run(logger *slog.Logger, tenantSlug, tenantName, educationLevel, adminUsern
 	}
 	defer pool.Close()
 
+	// tenants itself carries no RLS policy (it defines the tenant
+	// boundary, so there is nothing to scope it by), but every table this
+	// function writes next -- roles, role_permissions, users, user_roles,
+	// password_resets -- is RLS-protected and requires app.tenant_id set
+	// for its WITH CHECK to pass. Under app_rw (the least-privilege
+	// runtime role every production deployment connects as, migration
+	// 0004) a plain db.New(pool) insert here has no tenant context and
+	// fails with "new row violates row-level security policy" -- this
+	// command is the documented `/bootstrap` step of a fresh self-host
+	// install (infra/README.md), so that failure would block every new
+	// tenant from ever being created.
 	q := db.New(pool)
 
 	tenant, err := q.CreateTenant(ctx, db.CreateTenantParams{
@@ -72,51 +83,65 @@ func run(logger *slog.Logger, tenantSlug, tenantName, educationLevel, adminUsern
 	}
 	logger.Info("tenant created", "id", tenant.ID, "slug", tenant.Slug)
 
-	role, err := q.CreateRole(ctx, db.CreateRoleParams{
-		TenantID: tenant.ID, Slug: "super_admin", Name: "Super Admin", IsSystem: true,
-	})
-	if err != nil {
-		return fmt.Errorf("create super_admin role: %w", err)
-	}
-	for _, code := range authz.Codes() {
-		if err := q.AddRolePermission(ctx, db.AddRolePermissionParams{RoleID: role.ID, PermissionCode: code, TenantID: tenant.ID}); err != nil {
-			return fmt.Errorf("grant %s: %w", code, err)
+	var user db.User
+	var token string
+	err = database.WithTenantTx(ctx, pool, tenant.ID, func(ctx context.Context) error {
+		tx, ok := database.TxFromContext(ctx)
+		if !ok {
+			return fmt.Errorf("tenant transaction missing from context")
 		}
-	}
+		tq := db.New(tx)
 
-	// The account starts locked behind an unguessable password nobody
-	// (including this process) retains; only the set-password link below
-	// can activate it.
-	lockPassword, err := randomToken(32)
-	if err != nil {
-		return err
-	}
-	passwordHash, err := auth.HashPassword(lockPassword)
-	if err != nil {
-		return err
-	}
+		role, err := tq.CreateRole(ctx, db.CreateRoleParams{
+			TenantID: tenant.ID, Slug: "super_admin", Name: "Super Admin", IsSystem: true,
+		})
+		if err != nil {
+			return fmt.Errorf("create super_admin role: %w", err)
+		}
+		for _, code := range authz.Codes() {
+			if err := tq.AddRolePermission(ctx, db.AddRolePermissionParams{RoleID: role.ID, PermissionCode: code, TenantID: tenant.ID}); err != nil {
+				return fmt.Errorf("grant %s: %w", code, err)
+			}
+		}
 
-	user, err := q.CreateUser(ctx, db.CreateUserParams{
-		TenantID: tenant.ID, Username: adminUsername, Email: database.Text(adminEmail),
-		PasswordHash: passwordHash, Name: adminName, Status: "active",
-		MustChangePassword: true, Locale: "id",
+		// The account starts locked behind an unguessable password nobody
+		// (including this process) retains; only the set-password link
+		// below can activate it.
+		lockPassword, err := randomToken(32)
+		if err != nil {
+			return err
+		}
+		passwordHash, err := auth.HashPassword(lockPassword)
+		if err != nil {
+			return err
+		}
+
+		user, err = tq.CreateUser(ctx, db.CreateUserParams{
+			TenantID: tenant.ID, Username: adminUsername, Email: database.Text(adminEmail),
+			PasswordHash: passwordHash, Name: adminName, Status: "active",
+			MustChangePassword: true, Locale: "id",
+		})
+		if err != nil {
+			return fmt.Errorf("create admin user: %w", err)
+		}
+		if err := tq.AssignUserRole(ctx, db.AssignUserRoleParams{UserID: user.ID, RoleID: role.ID, TenantID: tenant.ID, IsPrimary: true}); err != nil {
+			return fmt.Errorf("assign super_admin role: %w", err)
+		}
+
+		token, err = randomToken(32)
+		if err != nil {
+			return err
+		}
+		if _, err := tq.CreatePasswordReset(ctx, db.CreatePasswordResetParams{
+			TenantID: tenant.ID, UserID: user.ID, TokenHash: auth.HashRefreshToken(token),
+			Channel: "admin", ExpiresAt: database.Timestamptz((clock.Real{}).Now().Add(setPasswordTokenTTL)),
+		}); err != nil {
+			return fmt.Errorf("create password reset: %w", err)
+		}
+		return nil
 	})
 	if err != nil {
-		return fmt.Errorf("create admin user: %w", err)
-	}
-	if err := q.AssignUserRole(ctx, db.AssignUserRoleParams{UserID: user.ID, RoleID: role.ID, TenantID: tenant.ID, IsPrimary: true}); err != nil {
-		return fmt.Errorf("assign super_admin role: %w", err)
-	}
-
-	token, err := randomToken(32)
-	if err != nil {
 		return err
-	}
-	if _, err := q.CreatePasswordReset(ctx, db.CreatePasswordResetParams{
-		TenantID: tenant.ID, UserID: user.ID, TokenHash: auth.HashRefreshToken(token),
-		Channel: "admin", ExpiresAt: database.Timestamptz((clock.Real{}).Now().Add(setPasswordTokenTTL)),
-	}); err != nil {
-		return fmt.Errorf("create password reset: %w", err)
 	}
 
 	logger.Info("administrator created", "tenant_slug", tenant.Slug, "username", user.Username)

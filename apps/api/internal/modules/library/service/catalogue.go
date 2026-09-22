@@ -75,21 +75,32 @@ func (s *Service) UpdateTitle(ctx context.Context, t domain.Title) (domain.Title
 	if err != nil {
 		return domain.Title{}, err
 	}
-	return s.repo.UpdateTitle(ctx, t)
+	var updated domain.Title
+	err = s.withTx(ctx, t.TenantID, func(ctx context.Context) error {
+		var err error
+		updated, err = s.repo.UpdateTitle(ctx, t)
+		return err
+	})
+	return updated, err
 }
 
 func (s *Service) GetTitle(ctx context.Context, tenantID, id uuid.UUID) (TitleWithAvailability, error) {
 	if err := s.requireEnabled(ctx, tenantID); err != nil {
 		return TitleWithAvailability{}, err
 	}
-	title, found, err := s.repo.GetTitle(ctx, tenantID, id)
-	if err != nil {
-		return TitleWithAvailability{}, err
-	}
-	if !found {
-		return TitleWithAvailability{}, domain.ErrTitleNotFound
-	}
-	return s.withAvailability(ctx, tenantID, title)
+	var out TitleWithAvailability
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		title, found, err := s.repo.GetTitle(ctx, tenantID, id)
+		if err != nil {
+			return err
+		}
+		if !found {
+			return domain.ErrTitleNotFound
+		}
+		out, err = s.withAvailability(ctx, tenantID, title)
+		return err
+	})
+	return out, err
 }
 
 // LookupTitleByISBN finds an existing title with the same (normalized)
@@ -103,12 +114,18 @@ func (s *Service) LookupTitleByISBN(ctx context.Context, tenantID uuid.UUID, isb
 	if normalized == "" {
 		return TitleWithAvailability{}, false, domain.ErrInvalidInput
 	}
-	title, found, err := s.repo.GetTitleByISBN(ctx, tenantID, normalized)
-	if err != nil || !found {
-		return TitleWithAvailability{}, false, err
-	}
-	withAvailability, err := s.withAvailability(ctx, tenantID, title)
-	return withAvailability, true, err
+	var out TitleWithAvailability
+	var found bool
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		title, ok, err := s.repo.GetTitleByISBN(ctx, tenantID, normalized)
+		if err != nil || !ok {
+			return err
+		}
+		found = ok
+		out, err = s.withAvailability(ctx, tenantID, title)
+		return err
+	})
+	return out, found, err
 }
 
 // DeleteTitle removes a title, refusing while it still has copies --
@@ -118,21 +135,23 @@ func (s *Service) DeleteTitle(ctx context.Context, tenantID, id uuid.UUID) error
 	if err := s.requireEnabled(ctx, tenantID); err != nil {
 		return err
 	}
-	count, err := s.repo.CountTitleCopies(ctx, tenantID, id)
-	if err != nil {
-		return err
-	}
-	if count > 0 {
-		return domain.ErrTitleHasCopies
-	}
-	ok, err := s.repo.DeleteTitle(ctx, tenantID, id)
-	if err != nil {
-		return err
-	}
-	if !ok {
-		return domain.ErrTitleNotFound
-	}
-	return nil
+	return s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		count, err := s.repo.CountTitleCopies(ctx, tenantID, id)
+		if err != nil {
+			return err
+		}
+		if count > 0 {
+			return domain.ErrTitleHasCopies
+		}
+		ok, err := s.repo.DeleteTitle(ctx, tenantID, id)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			return domain.ErrTitleNotFound
+		}
+		return nil
+	})
 }
 
 // TitleSearch is the catalogue list/search request, translated from
@@ -158,18 +177,22 @@ func (s *Service) ListTitles(ctx context.Context, tenantID uuid.UUID, q TitleSea
 		filter.Search = q.Search
 		filter.SearchISBN = domain.NormalizeISBN(q.Search)
 	}
-	titles, err := s.repo.ListTitles(ctx, tenantID, filter, clampLimit(q.Limit), q.Offset)
-	if err != nil {
-		return nil, err
-	}
-	out := make([]TitleWithAvailability, len(titles))
-	for i, t := range titles {
-		out[i], err = s.withAvailability(ctx, tenantID, t)
+	var out []TitleWithAvailability
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		titles, err := s.repo.ListTitles(ctx, tenantID, filter, clampLimit(q.Limit), q.Offset)
 		if err != nil {
-			return nil, err
+			return err
 		}
-	}
-	return out, nil
+		out = make([]TitleWithAvailability, len(titles))
+		for i, t := range titles {
+			out[i], err = s.withAvailability(ctx, tenantID, t)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	return out, err
 }
 
 func (s *Service) withAvailability(ctx context.Context, tenantID uuid.UUID, t domain.Title) (TitleWithAvailability, error) {
@@ -188,7 +211,13 @@ func (s *Service) ListCopies(ctx context.Context, tenantID, titleID uuid.UUID) (
 	if err := s.requireEnabled(ctx, tenantID); err != nil {
 		return nil, err
 	}
-	return s.repo.ListCopiesForTitle(ctx, tenantID, titleID)
+	var out []domain.Copy
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		out, err = s.repo.ListCopiesForTitle(ctx, tenantID, titleID)
+		return err
+	})
+	return out, err
 }
 
 func clampLimit(limit int) int {
