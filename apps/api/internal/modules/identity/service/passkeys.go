@@ -103,7 +103,12 @@ func (s *Service) BeginPasskeyRegistration(ctx context.Context, tenantID, userID
 		return protocol.CredentialCreation{}, "", err
 	}
 
-	user, err := s.loadPasskeyUser(ctx, tenantID, userID, username, displayName)
+	var user passkeyUser
+	err = s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		user, err = s.loadPasskeyUser(ctx, tenantID, userID, username, displayName)
+		return err
+	})
 	if err != nil {
 		return protocol.CredentialCreation{}, "", err
 	}

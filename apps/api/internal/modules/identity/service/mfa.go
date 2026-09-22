@@ -144,11 +144,16 @@ func (s *Service) RequiresTOTP(ctx context.Context, tenantID, userID uuid.UUID) 
 	if s.mfaRepo == nil {
 		return false, nil
 	}
-	record, ok, err := s.mfaRepo.GetTOTP(ctx, tenantID, userID)
-	if err != nil {
-		return false, err
-	}
-	return ok && record.Confirmed, nil
+	var requires bool
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		record, ok, err := s.mfaRepo.GetTOTP(ctx, tenantID, userID)
+		if err != nil {
+			return err
+		}
+		requires = ok && record.Confirmed
+		return nil
+	})
+	return requires, err
 }
 
 // verifyTOTPInTx accepts either a current TOTP code or one unused recovery

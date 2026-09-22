@@ -258,7 +258,10 @@ func (s *Service) MutationPolicyFor(ctx context.Context, tenantID uuid.UUID, sch
 	if sched.TeacherUserID != actor.UserID {
 		return MutationPolicy{Reason: domain.ErrTeacherEditForbidden.Error()}
 	}
-	if err := s.enforceTeacherWindow(ctx, tenantID, sched, s.now()); err != nil {
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		return s.enforceTeacherWindow(ctx, tenantID, sched, s.now())
+	})
+	if err != nil {
 		return MutationPolicy{Reason: err.Error()}
 	}
 	return MutationPolicy{CanEdit: true, CanDelete: true}

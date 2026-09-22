@@ -314,7 +314,11 @@ func (s *Service) PruneSessions(ctx context.Context) error {
 		return err
 	}
 	for _, tenantID := range tenantIDs {
-		if _, err := s.repo.PruneOldSessions(ctx, tenantID); err != nil {
+		err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+			_, err := s.repo.PruneOldSessions(ctx, tenantID)
+			return err
+		})
+		if err != nil {
 			return err
 		}
 	}

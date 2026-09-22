@@ -82,7 +82,12 @@ func (s *Service) ImportTemplate(ctx context.Context, tenantID, yearID uuid.UUID
 		}
 	}
 
-	classes, _, err := s.repo.ListClasses(ctx, tenantID, yearID, "", nil, Page{Limit: 200})
+	var classes []domain.Class
+	err = s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		classes, _, err = s.repo.ListClasses(ctx, tenantID, yearID, "", nil, Page{Limit: 200})
+		return err
+	})
 	if err != nil {
 		return nil, err
 	}

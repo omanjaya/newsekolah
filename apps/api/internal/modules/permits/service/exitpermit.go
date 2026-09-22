@@ -171,7 +171,13 @@ func (s *Service) ExitPermitScan(ctx context.Context, tenantID, instanceID, scan
 // permit (docs/analysis/backend-inventory.md 1.15: "Cancel bila belum
 // exited").
 func (s *Service) CancelExitPermit(ctx context.Context, tenantID, instanceID, actorUserID uuid.UUID) (domain.Instance, error) {
-	return s.cancelInstance(ctx, tenantID, instanceID, actorUserID, "cancelled by student")
+	var out domain.Instance
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		out, err = s.cancelInstance(ctx, tenantID, instanceID, actorUserID, "cancelled by student")
+		return err
+	})
+	return out, err
 }
 
 // IssueGateToken mints the gate_exit token once every approval stage has

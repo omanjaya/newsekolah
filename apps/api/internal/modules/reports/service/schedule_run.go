@@ -30,7 +30,12 @@ func (s *ScheduleService) RunDueSchedules(ctx context.Context) ([]PendingNotific
 		loc := s.locationFor(t)
 		local := now.In(loc)
 
-		due, err := s.repo.ListEnabledSchedulesForTenantHour(ctx, t.ID, local.Hour())
+		var due []domain.Schedule
+		err := s.withTx(ctx, t.ID, func(ctx context.Context) error {
+			var err error
+			due, err = s.repo.ListEnabledSchedulesForTenantHour(ctx, t.ID, local.Hour())
+			return err
+		})
 		if err != nil {
 			errs = append(errs, fmt.Errorf("tenant %s: list due schedules: %w", t.ID, err))
 			continue
@@ -69,7 +74,13 @@ func (s *ScheduleService) locationFor(t TenantRef) *time.Location {
 // there is nothing left to send.
 func (s *ScheduleService) runOne(ctx context.Context, tenantID uuid.UUID, sched domain.Schedule, local time.Time) (PendingNotification, bool, error) {
 	dueAt := domain.SlotStart(local)
-	run, claimed, err := s.repo.ClaimRun(ctx, tenantID, sched.ID, dueAt)
+	var run domain.Run
+	var claimed bool
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		run, claimed, err = s.repo.ClaimRun(ctx, tenantID, sched.ID, dueAt)
+		return err
+	})
 	if err != nil {
 		return PendingNotification{}, false, fmt.Errorf("claim run: %w", err)
 	}
@@ -105,7 +116,10 @@ func (s *ScheduleService) runOne(ctx context.Context, tenantID uuid.UUID, sched 
 }
 
 func (s *ScheduleService) failRun(ctx context.Context, tenantID, runID uuid.UUID, message string) {
-	if err := s.repo.CompleteRun(ctx, tenantID, runID, domain.RunStatusFailed, message, "", s.clock.Now()); err != nil {
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		return s.repo.CompleteRun(ctx, tenantID, runID, domain.RunStatusFailed, message, "", s.clock.Now())
+	})
+	if err != nil {
 		// The run row already exists (it was just claimed); losing this
 		// update only means its status stays "pending" instead of
 		// "failed" -- logged by the caller, which holds the logger.
@@ -117,8 +131,10 @@ func (s *ScheduleService) failRun(ctx context.Context, tenantID, runID uuid.UUID
 // render that RunDueSchedules already completed successfully on the
 // storage side. sendErr nil means every recipient was sent to.
 func (s *ScheduleService) FinalizeRun(ctx context.Context, n PendingNotification, sendErr error) error {
-	if sendErr != nil {
-		return s.repo.CompleteRun(ctx, n.TenantID, n.RunID, domain.RunStatusFailed, sendErr.Error(), n.objectKey, s.clock.Now())
-	}
-	return s.repo.CompleteRun(ctx, n.TenantID, n.RunID, domain.RunStatusSuccess, "", n.objectKey, s.clock.Now())
+	return s.withTx(ctx, n.TenantID, func(ctx context.Context) error {
+		if sendErr != nil {
+			return s.repo.CompleteRun(ctx, n.TenantID, n.RunID, domain.RunStatusFailed, sendErr.Error(), n.objectKey, s.clock.Now())
+		}
+		return s.repo.CompleteRun(ctx, n.TenantID, n.RunID, domain.RunStatusSuccess, "", n.objectKey, s.clock.Now())
+	})
 }

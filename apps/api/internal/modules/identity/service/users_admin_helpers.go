@@ -53,7 +53,13 @@ func (s *Service) resolveNewUsername(ctx context.Context, tenantID uuid.UUID, ex
 // real account (e.g. reports' schedule recipients) without importing
 // identity's repository directly.
 func (s *Service) EmailExists(ctx context.Context, tenantID uuid.UUID, email string) (bool, error) {
-	return s.repo.EmailExists(ctx, tenantID, email)
+	var exists bool
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		exists, err = s.repo.EmailExists(ctx, tenantID, email)
+		return err
+	})
+	return exists, err
 }
 
 func (s *Service) checkEmailFree(ctx context.Context, tenantID uuid.UUID, email string) error {

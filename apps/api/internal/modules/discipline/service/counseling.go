@@ -367,7 +367,9 @@ func (s *Service) RequestAttachmentUpload(ctx context.Context, tenantID, counsel
 	if s.storage == nil {
 		return AttachmentUploadTarget{}, domain.ErrReportUnavailable
 	}
-	if err := s.requireCounselingOwner(ctx, tenantID, counselingID, actorUserID); err != nil {
+	if err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		return s.requireCounselingOwner(ctx, tenantID, counselingID, actorUserID)
+	}); err != nil {
 		return AttachmentUploadTarget{}, err
 	}
 	key := fmt.Sprintf("tenants/%s/counseling/%s/%s", tenantID, counselingID, uuid.New())

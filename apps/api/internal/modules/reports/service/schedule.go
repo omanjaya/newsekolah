@@ -221,7 +221,13 @@ func (s *ScheduleService) UpdateSchedule(ctx context.Context, tenantID, requeste
 }
 
 func (s *ScheduleService) GetSchedule(ctx context.Context, tenantID, id uuid.UUID) (domain.Schedule, error) {
-	sched, ok, err := s.repo.GetSchedule(ctx, tenantID, id)
+	var sched domain.Schedule
+	var ok bool
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		sched, ok, err = s.repo.GetSchedule(ctx, tenantID, id)
+		return err
+	})
 	if err != nil {
 		return domain.Schedule{}, err
 	}
@@ -232,7 +238,13 @@ func (s *ScheduleService) GetSchedule(ctx context.Context, tenantID, id uuid.UUI
 }
 
 func (s *ScheduleService) ListSchedules(ctx context.Context, tenantID uuid.UUID) ([]domain.Schedule, error) {
-	return s.repo.ListSchedules(ctx, tenantID)
+	var scheds []domain.Schedule
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		scheds, err = s.repo.ListSchedules(ctx, tenantID)
+		return err
+	})
+	return scheds, err
 }
 
 // ScheduleView pairs a schedule with its next due instant, computed once
@@ -243,7 +255,12 @@ type ScheduleView struct {
 }
 
 func (s *ScheduleService) ListSchedulesWithNextRun(ctx context.Context, tenantID uuid.UUID) ([]ScheduleView, error) {
-	scheds, err := s.repo.ListSchedules(ctx, tenantID)
+	var scheds []domain.Schedule
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		scheds, err = s.repo.ListSchedules(ctx, tenantID)
+		return err
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -276,7 +293,13 @@ func (s *ScheduleService) ListRuns(ctx context.Context, tenantID, scheduleID uui
 	if limit <= 0 || limit > 200 {
 		limit = 50
 	}
-	return s.repo.ListRuns(ctx, tenantID, scheduleID, limit)
+	var runs []domain.Run
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		runs, err = s.repo.ListRuns(ctx, tenantID, scheduleID, limit)
+		return err
+	})
+	return runs, err
 }
 
 // NextRunAt is the schedule's next due instant, for the UI's "next run"
