@@ -15,7 +15,8 @@ FROM deps AS build
 COPY openapi ./openapi
 COPY apps/web ./apps/web
 ARG NEXT_PUBLIC_API_URL
-ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL} NEXT_OUTPUT=standalone NEXT_TELEMETRY_DISABLED=1
+ARG NEXT_PUBLIC_VAPID_PUBLIC_KEY
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL} NEXT_PUBLIC_VAPID_PUBLIC_KEY=${NEXT_PUBLIC_VAPID_PUBLIC_KEY} NEXT_OUTPUT=standalone NEXT_TELEMETRY_DISABLED=1
 # Build the workspace dependencies (api-client, ui, schemas, i18n, ui-tokens,
 # config) before web: their package "exports" point at compiled dist/ output,
 # so web cannot resolve them until they are built. The "..." selector includes
