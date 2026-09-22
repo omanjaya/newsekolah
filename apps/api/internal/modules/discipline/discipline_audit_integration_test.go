@@ -9,7 +9,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/require"
-	"github.com/testcontainers/testcontainers-go/modules/postgres"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/db"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/discipline/domain"
@@ -18,43 +17,9 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/crypto"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
-	"github.com/omanjaya/newsekolah/apps/api/internal/platform/migrator"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/dbtest"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/tenant"
 )
-
-// startTestPostgres mirrors the grading and attendance modules' helper of
-// the same name: a real Postgres in Docker, every migration applied.
-// Skips instead of failing when Docker is unreachable, and skips under
-// -short -- this asserts against real audit_logs rows, which the memory
-// on verifying with a real Postgres requires for "done".
-func startTestPostgres(t *testing.T) *pgxpool.Pool {
-	t.Helper()
-	if testing.Short() {
-		t.Skip("skipping integration test in -short mode")
-	}
-
-	ctx := context.Background()
-	container, err := postgres.Run(ctx, "postgres:16-alpine",
-		postgres.WithDatabase("newsekolah"),
-		postgres.WithUsername("newsekolah"),
-		postgres.WithPassword("newsekolah"),
-		postgres.BasicWaitStrategies(),
-	)
-	if err != nil {
-		t.Skipf("docker not available, skipping integration test: %v", err)
-	}
-	t.Cleanup(func() { _ = container.Terminate(context.Background()) })
-
-	dsn, err := container.ConnectionString(ctx, "sslmode=disable")
-	require.NoError(t, err)
-
-	pool, err := database.NewPool(ctx, dsn)
-	require.NoError(t, err)
-	t.Cleanup(pool.Close)
-
-	require.NoError(t, migrator.UpAll(ctx, dsn, pool))
-	return pool
-}
 
 // disciplineFixture is one tenant with an active academic year, one
 // class, one enrolled student and one counselor, built straight through
@@ -66,10 +31,14 @@ type disciplineFixture struct {
 	counselorID uuid.UUID
 }
 
-func seedDisciplineFixture(t *testing.T, pool *pgxpool.Pool) disciplineFixture {
+// seedDisciplineFixture seeds raw fixture rows through adminPool
+// (bypasses RLS the way a migration or a one-off admin script would); the
+// module under test is constructed separately against AppPool so its
+// service calls run under the same row level security production does.
+func seedDisciplineFixture(t *testing.T, adminPool *pgxpool.Pool) disciplineFixture {
 	t.Helper()
 	ctx := context.Background()
-	q := db.New(pool)
+	q := db.New(adminPool)
 
 	tenantRow, err := q.CreateTenant(ctx, db.CreateTenantParams{
 		Slug: "discipline-test-" + uuid.NewString(), Name: "Discipline Test", EducationLevel: "sma",
@@ -117,13 +86,16 @@ func seedDisciplineFixture(t *testing.T, pool *pgxpool.Pool) disciplineFixture {
 	return disciplineFixture{tenantID: tenantRow.ID, yearID: year.ID, studentID: student.ID, counselorID: counselor.ID}
 }
 
-func newTestDisciplineModule(t *testing.T, pool *pgxpool.Pool) *Module {
+// newTestDisciplineModule wires the discipline module against appPool --
+// the least-privilege app_rw role, so row level security applies exactly
+// like production -- never the admin pool used for fixture seeding.
+func newTestDisciplineModule(t *testing.T, appPool *pgxpool.Pool) *Module {
 	t.Helper()
 	sealer, err := crypto.NewSealer("v1", "a-test-secret-of-at-least-32-bytes!")
 	require.NoError(t, err)
-	schoolModule := school.Register(pool, tenant.ModeSingle, nil)
+	schoolModule := school.Register(appPool, tenant.ModeSingle, nil)
 	return Register(Dependencies{
-		Pool: pool, Years: schoolModule.Service, Sealer: sealer, Clock: clock.Real{},
+		Pool: appPool, Years: schoolModule.Service, Sealer: sealer, Clock: clock.Real{},
 		Config: service.DefaultConfig("test-bucket"),
 	})
 }
@@ -147,9 +119,9 @@ func auditLogsFor(t *testing.T, pool *pgxpool.Pool, tenantID, entityID uuid.UUID
 // none of them may leak the note's encrypted content, follow-up plan,
 // career goals or problem description into the audit payload.
 func TestCounselingLifecycleWritesAuditRecords(t *testing.T) {
-	pool := startTestPostgres(t)
-	fx := seedDisciplineFixture(t, pool)
-	mod := newTestDisciplineModule(t, pool)
+	pg := dbtest.Start(t)
+	fx := seedDisciplineFixture(t, pg.AdminPool)
+	mod := newTestDisciplineModule(t, pg.AppPool)
 	ctx := context.Background()
 
 	created, err := mod.Service.CreateCounseling(ctx, fx.tenantID, fx.counselorID, service.CounselingInput{
@@ -159,7 +131,7 @@ func TestCounselingLifecycleWritesAuditRecords(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	logs := auditLogsFor(t, pool, fx.tenantID, created.ID)
+	logs := auditLogsFor(t, pg.AdminPool, fx.tenantID, created.ID)
 	require.Len(t, logs, 1, "CreateCounseling must write exactly one audit_logs row")
 	require.Equal(t, "counseling.create", logs[0].Action)
 	require.Equal(t, "counseling", logs[0].EntityType)
@@ -172,7 +144,7 @@ func TestCounselingLifecycleWritesAuditRecords(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	logs = auditLogsFor(t, pool, fx.tenantID, created.ID)
+	logs = auditLogsFor(t, pg.AdminPool, fx.tenantID, created.ID)
 	require.Len(t, logs, 2, "UpdateCounseling must add one more audit_logs row")
 	require.Equal(t, "counseling.update", logs[0].Action, "ListAuditLogs orders newest first")
 	require.NotContains(t, string(logs[0].Before), "rahasia")
@@ -181,7 +153,7 @@ func TestCounselingLifecycleWritesAuditRecords(t *testing.T) {
 	_, err = mod.Service.GetCounseling(ctx, fx.tenantID, created.ID, fx.counselorID)
 	require.NoError(t, err)
 
-	logs = auditLogsFor(t, pool, fx.tenantID, created.ID)
+	logs = auditLogsFor(t, pg.AdminPool, fx.tenantID, created.ID)
 	require.Len(t, logs, 3, "reading a sensitive note must also be recorded")
 	require.Equal(t, "counseling.read", logs[0].Action)
 }
@@ -190,9 +162,9 @@ func TestCounselingLifecycleWritesAuditRecords(t *testing.T) {
 // VoidViolation must write an audit_logs row, inside the same transaction
 // that flips the record's voided_at, recording who voided it and why.
 func TestVoidViolationWritesAuditRecord(t *testing.T) {
-	pool := startTestPostgres(t)
-	fx := seedDisciplineFixture(t, pool)
-	mod := newTestDisciplineModule(t, pool)
+	pg := dbtest.Start(t)
+	fx := seedDisciplineFixture(t, pg.AdminPool)
+	mod := newTestDisciplineModule(t, pg.AppPool)
 	ctx := context.Background()
 
 	vt, err := mod.Service.CreateViolationType(ctx, domain.ViolationType{
@@ -208,7 +180,7 @@ func TestVoidViolationWritesAuditRecord(t *testing.T) {
 	_, err = mod.Service.VoidViolation(ctx, fx.tenantID, result.Record.ID, fx.counselorID, "salah input")
 	require.NoError(t, err)
 
-	logs := auditLogsFor(t, pool, fx.tenantID, result.Record.ID)
+	logs := auditLogsFor(t, pg.AdminPool, fx.tenantID, result.Record.ID)
 	require.Len(t, logs, 1, "VoidViolation must write exactly one audit_logs row")
 	require.Equal(t, "violation.void", logs[0].Action)
 	require.Equal(t, "violation_record", logs[0].EntityType)
