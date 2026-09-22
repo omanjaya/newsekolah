@@ -92,6 +92,27 @@ func (c *Client) PresignedGetURL(ctx context.Context, objectKey string, ttl time
 	return u, nil
 }
 
+// PresignedGetURLAsAttachment is PresignedGetURL, but forces the
+// response's Content-Type and Content-Disposition via S3's
+// response-content-* query overrides, ignoring whatever headers the
+// object was actually stored with (a direct client PUT controls those,
+// not this server). Used for object types a browser would otherwise
+// render as a document if the link is opened directly -- SVG chief among
+// them, since a <script> inside one then runs in the storage origin's
+// security context. Forcing "attachment" only changes that direct-open
+// behavior: <img src="..."> and other resource fetches ignore
+// Content-Disposition and keep rendering the file as an image.
+func (c *Client) PresignedGetURLAsAttachment(ctx context.Context, objectKey string, ttl time.Duration, contentType, filename string) (*url.URL, error) {
+	reqParams := url.Values{}
+	reqParams.Set("response-content-type", contentType)
+	reqParams.Set("response-content-disposition", fmt.Sprintf("attachment; filename=%q", filename))
+	u, err := c.mc.PresignedGetObject(ctx, c.bucket, objectKey, ttl, reqParams)
+	if err != nil {
+		return nil, fmt.Errorf("presign get %s: %w", objectKey, err)
+	}
+	return u, nil
+}
+
 // ObjectInfo is the subset of minio.ObjectInfo callers that only need size
 // actually use.
 type ObjectInfo struct {
