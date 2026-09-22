@@ -19,10 +19,10 @@ import (
 // forgot-password request supersedes the first: the earlier token must no
 // longer confirm a reset once a newer one has been issued.
 func TestRequestPasswordResetInvalidatesPreviousToken(t *testing.T) {
-	pool, svc, _ := setupIdentityTest(t)
+	pg, svc, _ := setupIdentityTest(t)
 	ctx := context.Background()
-	tenantID := insertTestTenant(t, pool, "reset-request-test")
-	insertTestUser(t, pool, tenantID, "resetuser")
+	tenantID := insertTestTenant(t, pg.AdminPool, "reset-request-test")
+	insertTestUser(t, pg.AdminPool, tenantID, "resetuser")
 
 	var tokens []string
 	recordingNewRefresh := func() (string, []byte, error) {
@@ -33,8 +33,8 @@ func TestRequestPasswordResetInvalidatesPreviousToken(t *testing.T) {
 		tokens = append(tokens, token)
 		return token, hash, nil
 	}
-	repo := repository.New(pool)
-	svc = service.New(pool, repo, nil, nil, nil, clock.Real{}, service.Config{}, recordingNewRefresh, service.Extras{})
+	repo := repository.New(pg.AppPool)
+	svc = service.New(pg.AppPool, repo, nil, nil, nil, clock.Real{}, service.Config{}, recordingNewRefresh, service.Extras{})
 
 	require.NoError(t, svc.RequestPasswordReset(ctx, tenantID, "resetuser", "127.0.0.1"))
 	require.NoError(t, svc.RequestPasswordReset(ctx, tenantID, "resetuser", "127.0.0.1"))
@@ -52,21 +52,25 @@ func TestRequestPasswordResetInvalidatesPreviousToken(t *testing.T) {
 // account, not just the one that was consumed, and still revokes and
 // invalidates the account's active sessions from the cache.
 func TestConfirmPasswordResetInvalidatesOtherTokens(t *testing.T) {
-	pool, svc, cache := setupIdentityTest(t)
+	pg, svc, cache := setupIdentityTest(t)
 	ctx := context.Background()
-	tenantID := insertTestTenant(t, pool, "reset-confirm-test")
-	userID := insertTestUser(t, pool, tenantID, "confirmuser")
-	sessionID := insertTestSession(t, pool, tenantID, userID, "login", uuid.NullUUID{})
+	tenantID := insertTestTenant(t, pg.AdminPool, "reset-confirm-test")
+	userID := insertTestUser(t, pg.AdminPool, tenantID, "confirmuser")
+	sessionID := insertTestSession(t, pg.AdminPool, tenantID, userID, "login", uuid.NullUUID{})
 
-	repo := repository.New(pool)
+	// Fixture seeding for the two reset tokens goes through AdminPool,
+	// bypassing RLS the same way insertTestSession above does: these rows
+	// stand in for what RequestPasswordReset would have created, seeded
+	// directly so the test controls the token values.
+	fixtureRepo := repository.New(pg.AdminPool)
 	token1, hash1, err := auth.NewRefreshToken()
 	require.NoError(t, err)
 	token2, hash2, err := auth.NewRefreshToken()
 	require.NoError(t, err)
-	require.NoError(t, repo.CreatePasswordResetRecord(ctx, service.NewPasswordReset{
+	require.NoError(t, fixtureRepo.CreatePasswordResetRecord(ctx, service.NewPasswordReset{
 		TenantID: tenantID, UserID: userID, TokenHash: hash1, Channel: "email", ExpiresAt: time.Now().Add(30 * time.Minute),
 	}))
-	require.NoError(t, repo.CreatePasswordResetRecord(ctx, service.NewPasswordReset{
+	require.NoError(t, fixtureRepo.CreatePasswordResetRecord(ctx, service.NewPasswordReset{
 		TenantID: tenantID, UserID: userID, TokenHash: hash2, Channel: "email", ExpiresAt: time.Now().Add(30 * time.Minute),
 	}))
 

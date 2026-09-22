@@ -9,7 +9,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/require"
-	"github.com/testcontainers/testcontainers-go/modules/postgres"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/db"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/billing/domain"
@@ -17,40 +16,9 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/school"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
-	"github.com/omanjaya/newsekolah/apps/api/internal/platform/migrator"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/dbtest"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/tenant"
 )
-
-// startTestPostgres mirrors the grading and discipline modules' helper of
-// the same name: a real Postgres in Docker, every migration applied.
-func startTestPostgres(t *testing.T) *pgxpool.Pool {
-	t.Helper()
-	if testing.Short() {
-		t.Skip("skipping integration test in -short mode")
-	}
-
-	ctx := context.Background()
-	container, err := postgres.Run(ctx, "postgres:16-alpine",
-		postgres.WithDatabase("newsekolah"),
-		postgres.WithUsername("newsekolah"),
-		postgres.WithPassword("newsekolah"),
-		postgres.BasicWaitStrategies(),
-	)
-	if err != nil {
-		t.Skipf("docker not available, skipping integration test: %v", err)
-	}
-	t.Cleanup(func() { _ = container.Terminate(context.Background()) })
-
-	dsn, err := container.ConnectionString(ctx, "sslmode=disable")
-	require.NoError(t, err)
-
-	pool, err := database.NewPool(ctx, dsn)
-	require.NoError(t, err)
-	t.Cleanup(pool.Close)
-
-	require.NoError(t, migrator.UpAll(ctx, dsn, pool))
-	return pool
-}
 
 // billingFixture is one tenant with an active academic year, one class,
 // one enrolled student and a paid-in-full bill against them, built
@@ -62,10 +30,17 @@ type billingFixture struct {
 	staffID  uuid.UUID
 }
 
-func seedBillingFixture(t *testing.T, pool *pgxpool.Pool, mod *Module) billingFixture {
+// seedBillingFixture seeds raw fixture rows (tenant, year, class,
+// enrollment, staff) through adminPool, bypassing RLS the way a migration
+// or a one-off admin script would; mod's own service calls
+// (CreateFeeType, GenerateBills) run through whatever pool mod was
+// constructed with, so the caller must pass a mod already wired against
+// AppPool for this to exercise row level security the way production
+// does.
+func seedBillingFixture(t *testing.T, adminPool *pgxpool.Pool, mod *Module) billingFixture {
 	t.Helper()
 	ctx := context.Background()
-	q := db.New(pool)
+	q := db.New(adminPool)
 
 	tenantRow, err := q.CreateTenant(ctx, db.CreateTenantParams{
 		Slug: "billing-test-" + uuid.NewString(), Name: "Billing Test", EducationLevel: "sma",
@@ -123,9 +98,12 @@ func seedBillingFixture(t *testing.T, pool *pgxpool.Pool, mod *Module) billingFi
 	return billingFixture{tenantID: tenantRow.ID, billID: summary.Created[0].ID, staffID: staff.ID}
 }
 
-func newTestBillingModule(pool *pgxpool.Pool) *Module {
-	schoolModule := school.Register(pool, tenant.ModeSingle, nil)
-	return Register(Dependencies{Pool: pool, Years: schoolModule.Service, Clock: clock.Real{}})
+// newTestBillingModule wires the billing module against appPool -- the
+// least-privilege app_rw role, so row level security applies exactly like
+// production -- never the admin pool used for fixture seeding.
+func newTestBillingModule(appPool *pgxpool.Pool) *Module {
+	schoolModule := school.Register(appPool, tenant.ModeSingle, nil)
+	return Register(Dependencies{Pool: appPool, Years: schoolModule.Service, Clock: clock.Real{}})
 }
 
 func auditLogsFor(t *testing.T, pool *pgxpool.Pool, tenantID, entityID uuid.UUID) []db.AuditLog {
@@ -143,9 +121,9 @@ func auditLogsFor(t *testing.T, pool *pgxpool.Pool, tenantID, entityID uuid.UUID
 // RecordPayment must write an audit_logs row inside the same transaction
 // that inserts the payment.
 func TestRecordPaymentWritesAuditRecord(t *testing.T) {
-	pool := startTestPostgres(t)
-	mod := newTestBillingModule(pool)
-	fx := seedBillingFixture(t, pool, mod)
+	pg := dbtest.Start(t)
+	mod := newTestBillingModule(pg.AppPool)
+	fx := seedBillingFixture(t, pg.AdminPool, mod)
 	ctx := context.Background()
 
 	payment, err := mod.Service.RecordPayment(ctx, fx.tenantID, service.PaymentInput{
@@ -153,7 +131,7 @@ func TestRecordPaymentWritesAuditRecord(t *testing.T) {
 	}, fx.staffID)
 	require.NoError(t, err)
 
-	logs := auditLogsFor(t, pool, fx.tenantID, payment.ID)
+	logs := auditLogsFor(t, pg.AdminPool, fx.tenantID, payment.ID)
 	require.Len(t, logs, 1, "RecordPayment must write exactly one audit_logs row")
 	require.Equal(t, "payment.record", logs[0].Action)
 	require.Equal(t, "payment", logs[0].EntityType)
@@ -163,9 +141,9 @@ func TestRecordPaymentWritesAuditRecord(t *testing.T) {
 // VoidPayment must write an audit_logs row inside the same transaction
 // that flips the payment's voided_at and recomputes the bill.
 func TestVoidPaymentWritesAuditRecord(t *testing.T) {
-	pool := startTestPostgres(t)
-	mod := newTestBillingModule(pool)
-	fx := seedBillingFixture(t, pool, mod)
+	pg := dbtest.Start(t)
+	mod := newTestBillingModule(pg.AppPool)
+	fx := seedBillingFixture(t, pg.AdminPool, mod)
 	ctx := context.Background()
 
 	payment, err := mod.Service.RecordPayment(ctx, fx.tenantID, service.PaymentInput{
@@ -176,7 +154,7 @@ func TestVoidPaymentWritesAuditRecord(t *testing.T) {
 	_, err = mod.Service.VoidPayment(ctx, fx.tenantID, payment.ID, fx.staffID, "salah catat")
 	require.NoError(t, err)
 
-	logs := auditLogsFor(t, pool, fx.tenantID, payment.ID)
+	logs := auditLogsFor(t, pg.AdminPool, fx.tenantID, payment.ID)
 	require.Len(t, logs, 2, "record then void must write two audit_logs rows")
 	require.Equal(t, "payment.void", logs[0].Action, "ListAuditLogs orders newest first")
 }
