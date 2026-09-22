@@ -270,6 +270,27 @@ jobs:
           go install golang.org/x/vuln/cmd/govulncheck@latest
           govulncheck ./...
 
+      - name: gosec
+        working-directory: apps/api
+        # golangci-lint (the api job) already runs gosec as one of its
+        # linters, but only at whatever severity/confidence its default
+        # config implies; this is the standalone scanner with its own
+        # report, run independently so a gosec-only regression cannot
+        # slip through if golangci-lint's own config ever drifts.
+        # internal/gen is sqlc/oapi-codegen output (never hand-edited,
+        # excluded the same way apps/api/.golangci.yml excludes it).
+        # G115 (int -> int32/uint32 narrowing) is excluded: the codebase
+        # applies it ~180 times, almost all bounded pagination limits/
+        # offsets and backoff counters already clamped before the
+        # conversion, not attacker-controlled overflow paths; annotating
+        # every call site individually would not add signal, so the
+        # exclusion is recorded here instead of ~180 scattered #nosec
+        # comments. Every other finding must be fixed or carry a narrow
+        # #nosec/nolint:gosec justification.
+        run: |
+          go install github.com/securego/gosec/v2/cmd/gosec@latest
+          gosec -exclude-dir=internal/gen -exclude-generated -exclude=G115 ./...
+
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}

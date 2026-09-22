@@ -228,6 +228,7 @@ func Load() (Config, error) {
 // contents), then falls back to the plain `<name>` env var.
 func lookup(name string) string {
 	if path := os.Getenv(name + "_FILE"); path != "" {
+		// #nosec G304 G703 -- operator-controlled secrets-file path from *_FILE env vars, not user input
 		data, err := os.ReadFile(path) //nolint:gosec // operator-controlled secrets-file path from *_FILE env vars, not user input
 		if err == nil {
 			return strings.TrimSpace(string(data))
