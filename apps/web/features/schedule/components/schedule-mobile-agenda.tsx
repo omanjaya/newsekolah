@@ -67,6 +67,8 @@ export function ScheduleMobileAgenda({
   onEdit,
   onDelete,
   copied,
+  today,
+  currentSeq,
   t,
   tDays,
 }: {
@@ -88,12 +90,20 @@ export function ScheduleMobileAgenda({
   onEdit: (block: ScheduleBlock) => void;
   onDelete: (block: ScheduleBlock) => void;
   copied: ScheduleBlock | null;
+  /** Today's weekday (1-7), marked on its chip so a teacher finds it at once. */
+  today: number;
+  /** The period in session right now, highlighted when showing today. */
+  currentSeq?: number;
   t: (key: string) => string;
   tDays: (key: string) => string;
 }): ReactElement {
+  const periodBySeq = new Map(lessonPeriods.map((p) => [p.sequence, p]));
+  const hasLessons = lessonPeriods.some((p) => blocks.has(`${mobileDay}:${p.sequence}`));
+  const nowSeq = mobileDay === today ? currentSeq : undefined;
+
   return (
     <div className="flex flex-col gap-3 md:hidden">
-      <div className="flex gap-2 overflow-x-auto pb-1">
+      <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
         {activeDays.map((day) => (
           <button
             key={day}
@@ -103,17 +113,31 @@ export function ScheduleMobileAgenda({
               onSelectDay(day);
             }}
             className={cn(
-              "flex min-h-11 shrink-0 items-center justify-center rounded-xs px-3 text-[13px] font-medium",
+              "flex min-h-11 shrink-0 flex-col items-center justify-center rounded-xs px-3 text-[13px] font-medium",
               mobileDay === day ? "bg-accent/10 text-accent" : "text-fg-muted hover:bg-bg",
             )}
           >
             {tDays(String(day))}
+            {day === today && (
+              <span className="text-[10px] font-normal leading-none">{t("today")}</span>
+            )}
           </button>
         ))}
       </div>
-      <ul className="flex flex-col gap-2">
+      {!canManage && !hasLessons && (
+        <p className="rounded-xs border border-dashed border-border px-3 py-6 text-center text-[13px] text-fg-muted">
+          {t("noLessonsOnDay")}
+        </p>
+      )}
+      <ul className={cn("flex flex-col gap-2", !canManage && !hasLessons && "hidden")}>
         {lessonPeriods.map((period) => {
-          if (period.is_break) {
+          const block = blocks.get(`${mobileDay}:${period.sequence}`);
+          if (block && block.start_seq !== period.sequence) {
+            return null;
+          }
+          // A block starting on a break row (possible with imported
+          // timetables) is still listed rather than hidden behind it.
+          if (period.is_break && !block) {
             return (
               <li
                 key={period.id}
@@ -123,34 +147,42 @@ export function ScheduleMobileAgenda({
               </li>
             );
           }
-          const block = blocks.get(`${mobileDay}:${period.sequence}`);
-          if (block && block.start_seq !== period.sequence) {
-            return null;
-          }
+          const time = `${period.starts_at.slice(0, 5)}-${period.ends_at.slice(0, 5)}`;
           if (!block) {
+            // A reader who cannot edit only needs to see the gap, so an
+            // empty period is a single muted line instead of a full card.
+            if (!canManage) {
+              return (
+                <li
+                  key={period.id}
+                  className="flex items-center justify-between rounded-xs border border-border px-3 py-2 text-[12px] text-fg-muted"
+                >
+                  <span>
+                    {period.name} <span className="tabular-nums">{time}</span>
+                  </span>
+                  <span>{t("emptySlot")}</span>
+                </li>
+              );
+            }
             return (
               <li key={period.id} className="rounded-xs border border-border px-3 py-2">
                 <div className="flex flex-col">
                   <span className="text-[13px] text-fg">{period.name}</span>
-                  <span className="text-[12px] text-fg-muted">
-                    {period.starts_at.slice(0, 5)}-{period.ends_at.slice(0, 5)}
-                  </span>
+                  <span className="text-[12px] text-fg-muted">{time}</span>
                 </div>
-                {canManage && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (copied) {
-                        onPaste(mobileDay, period.sequence);
-                        return;
-                      }
-                      onAdd(mobileDay, period.sequence);
-                    }}
-                    className="mt-2 flex min-h-11 w-full items-center justify-center rounded-xs border border-dashed border-border text-[12px] text-fg-muted hover:bg-bg"
-                  >
-                    {copied ? t("pasteHere") : t("addHere")}
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (copied) {
+                      onPaste(mobileDay, period.sequence);
+                      return;
+                    }
+                    onAdd(mobileDay, period.sequence);
+                  }}
+                  className="mt-2 flex min-h-11 w-full items-center justify-center rounded-xs border border-dashed border-border text-[12px] text-fg-muted hover:bg-bg"
+                >
+                  {copied ? t("pasteHere") : t("addHere")}
+                </button>
               </li>
             );
           }
@@ -158,21 +190,35 @@ export function ScheduleMobileAgenda({
             mode === "class"
               ? (teacherMap.get(block.teacher_user_id)?.name ?? t("unknownTeacher"))
               : (classMap.get(block.class_id)?.name ?? t("unknownClass"));
+          // A block may span several periods; its label and time run from
+          // the first period's start to the last period's end.
+          const endPeriod = periodBySeq.get(block.end_seq) ?? period;
+          const spanLabel =
+            endPeriod.sequence === period.sequence
+              ? period.name
+              : `${period.name} - ${endPeriod.name}`;
+          const spanTime = `${period.starts_at.slice(0, 5)}-${endPeriod.ends_at.slice(0, 5)}`;
+          const isNow =
+            nowSeq !== undefined && nowSeq >= block.start_seq && nowSeq <= block.end_seq;
           return (
             <li
               key={period.id}
-              className="flex flex-col gap-1 rounded-xs border border-accent/30 bg-accent/10 px-3 py-2"
+              aria-current={isNow ? "time" : undefined}
+              className={cn(
+                "flex flex-col gap-1 rounded-xs border px-3 py-2",
+                isNow ? "border-accent bg-accent/15" : "border-accent/30 bg-accent/10",
+              )}
             >
-              <div className="flex flex-col">
-                <span className="text-[13px] text-fg-muted">{period.name}</span>
-                <span className="text-[12px] text-fg-muted">
-                  {period.starts_at.slice(0, 5)}-{period.ends_at.slice(0, 5)}
+              <div className="flex items-center justify-between gap-2 text-[12px] text-fg-muted">
+                <span>
+                  {spanLabel} <span className="tabular-nums">{spanTime}</span>
                 </span>
+                {isNow && <span className="font-medium text-accent">{t("now")}</span>}
               </div>
-              <span className="font-medium text-fg">
+              <span className="text-[15px] font-medium text-fg">
                 {subjectMap.get(block.subject_id)?.name ?? t("unknownSubject")}
               </span>
-              <span className="text-[12px] text-fg-muted">{title}</span>
+              <span className="text-[13px] text-fg-muted">{title}</span>
               {canManage && (
                 // The same three actions the wide grid offers. A phone is
                 // where a teacher fixes one lesson between classes, so

@@ -2,15 +2,12 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import {
+  Alert,
   Button,
   ConfirmDialog,
   EmptyState,
   PageHeader,
-  Select,
   Skeleton,
-  Tabs,
-  TabsList,
-  TabsTrigger,
   domainIcons,
   useMediaQuery,
   useToast,
@@ -39,6 +36,7 @@ import {
   useCreateScheduleMutation,
   useDeleteScheduleBlockMutation,
   useSchedulesQuery,
+  useStudentOwnClassQuery,
 } from "../api";
 import { conflictMessage } from "../conflict-message";
 
@@ -47,9 +45,10 @@ import { ScheduleDayGrid } from "./schedule-day-grid";
 import { ScheduleDialogs } from "./schedule-dialogs";
 import { ScheduleMobileAgenda } from "./schedule-mobile-agenda";
 import { ScheduleMobileDayList } from "./schedule-mobile-day-list";
+import { type ScheduleMode, ScheduleScopeBar } from "./schedule-scope-bar";
 import { ScheduleWeekGrid } from "./schedule-week-grid";
 
-type Mode = "class" | "teacher" | "day";
+type Mode = ScheduleMode;
 
 const WEEKDAYS = [1, 2, 3, 4, 5, 6, 7] as const;
 
@@ -67,10 +66,18 @@ function todayOfWeek(): number {
 export function ScheduleView(): ReactElement {
   const t = useTranslations("app.schedule");
   const tDays = useTranslations("app.common.weekdays");
+  const tApp = useTranslations("app");
   const { me } = useSession();
   const year = useActiveYear();
   const canManage = useCan("manage_schedules");
   const isTeacher = me?.roles.some((role) => role.slug === "teacher") ?? false;
+  // Mirrors the API's view scope: these permissions read every timetable;
+  // without them a teacher reads their own lessons and a student only
+  // their own class, so the pickers offer nothing the server would refuse.
+  const canViewAll =
+    canManage ||
+    (me?.permissions.some((p) => p === "view_reports" || p === "manage_attendance") ?? false);
+  const isStudent = !canViewAll && me?.profile_kind === "student";
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
 
@@ -104,8 +111,15 @@ export function ScheduleView(): ReactElement {
   const remove = useDeleteScheduleBlockMutation();
   const create = useCreateScheduleMutation();
 
-  const effectiveClassId = mode === "class" ? classId || (classes.data?.data[0]?.id ?? "") : "";
-  const effectiveTeacherId = mode === "teacher" ? teacherId : "";
+  const classIds = useMemo(() => (classes.data?.data ?? []).map((c) => c.id), [classes.data]);
+  const ownClass = useStudentOwnClassQuery(year.id, classIds, isStudent);
+  const effectiveClassId =
+    mode !== "class"
+      ? ""
+      : isStudent
+        ? (ownClass.data ?? "")
+        : classId || (classes.data?.data[0]?.id ?? "");
+  const effectiveTeacherId = mode === "teacher" ? (canViewAll ? teacherId : (me?.id ?? "")) : "";
   const schedules = useSchedulesQuery({
     academicYearId: year.id,
     classId: mode === "day" ? undefined : effectiveClassId || undefined,
@@ -206,8 +220,13 @@ export function ScheduleView(): ReactElement {
   // at once.
   const isDesktop = useMediaQuery("(min-width: 768px)");
 
-  const mobileDay = mobileDayOverride ?? activeDays[0] ?? 1;
-  const loading = periods.isLoading || schedules.isLoading || classes.isLoading;
+  // The phone agenda opens on today when the school meets today, because
+  // "what do I teach now" is the question a teacher opens it with.
+  const today = todayOfWeek();
+  const mobileDay =
+    mobileDayOverride ?? (activeDays.includes(today) ? today : (activeDays[0] ?? 1));
+  const loading =
+    periods.isLoading || schedules.isLoading || classes.isLoading || ownClass.isLoading;
   const classOptions = (classes.data?.data ?? []).map((c) => ({ value: c.id, label: c.name }));
   const teacherOptions = (teachers.data?.data ?? []).map((u) => ({ value: u.id, label: u.name }));
 
@@ -272,50 +291,24 @@ export function ScheduleView(): ReactElement {
 
       <TodayPeriodBanner />
 
-      <div className="flex flex-wrap items-center gap-3">
-        <Tabs
-          value={mode}
-          onValueChange={(value) => {
-            setMode(value as Mode);
-          }}
-        >
-          <TabsList>
-            <TabsTrigger value="class">{t("byClass")}</TabsTrigger>
-            <TabsTrigger value="teacher">{t("byTeacher")}</TabsTrigger>
-            <TabsTrigger value="day">{t("byDay")}</TabsTrigger>
-          </TabsList>
-        </Tabs>
-        {mode === "day" ? (
-          <Select
-            options={activeDays.map((day) => ({ value: String(day), label: tDays(String(day)) }))}
-            value={String(dayFilter)}
-            onValueChange={(value) => {
-              setDayFilter(Number(value));
-            }}
-            aria-label={t("pickDay")}
-            className="w-40"
-          />
-        ) : mode === "class" ? (
-          <Select
-            options={classOptions}
-            value={effectiveClassId}
-            onValueChange={setClassId}
-            placeholder={t("pickClass")}
-            aria-label={t("pickClass")}
-            className="w-56"
-          />
-        ) : (
-          <Select
-            options={teacherOptions}
-            value={effectiveTeacherId}
-            onValueChange={setTeacherId}
-            placeholder={t("pickTeacher")}
-            aria-label={t("pickTeacher")}
-            className="w-64"
-          />
-        )}
-        <span className="text-[13px] text-fg-muted">{year.label}</span>
-      </div>
+      <ScheduleScopeBar
+        mode={mode}
+        onModeChange={setMode}
+        isStudent={isStudent}
+        ownTimetableOnly={isTeacher && !canViewAll}
+        canViewAll={canViewAll}
+        activeDays={activeDays}
+        dayFilter={dayFilter}
+        onDayFilterChange={setDayFilter}
+        classOptions={classOptions}
+        classId={effectiveClassId}
+        className={classMap.get(effectiveClassId)?.name ?? ""}
+        onClassChange={setClassId}
+        teacherOptions={teacherOptions}
+        teacherId={effectiveTeacherId}
+        onTeacherChange={setTeacherId}
+        yearLabel={year.label}
+      />
 
       <CopyBanner
         copied={copied}
@@ -329,6 +322,28 @@ export function ScheduleView(): ReactElement {
 
       {loading ? (
         <Skeleton className="h-96 w-full" aria-busy="true" />
+      ) : schedules.isError || ownClass.isError ? (
+        <Alert variant="warning" title={t("loadError")}>
+          <div className="flex flex-col items-start gap-2">
+            {schedules.error instanceof ApiError && <p>{apiErrorMessage(schedules.error.code)}</p>}
+            <Button
+              variant="secondary"
+              loading={schedules.isRefetching}
+              onClick={() => {
+                void schedules.refetch();
+                void ownClass.refetch();
+              }}
+            >
+              {tApp("offlinePage.retry")}
+            </Button>
+          </div>
+        </Alert>
+      ) : isStudent && !effectiveClassId ? (
+        <EmptyState
+          icon={<domainIcons.schedule aria-hidden="true" />}
+          title={t("noClassTitle")}
+          description={t("noClassBody")}
+        />
       ) : lessonPeriods.length === 0 ? (
         <EmptyState
           icon={<domainIcons.schedule aria-hidden="true" />}
@@ -415,6 +430,8 @@ export function ScheduleView(): ReactElement {
           onEdit={setEditing}
           onDelete={setPendingDelete}
           copied={copied}
+          today={today}
+          currentSeq={periodNow.data?.sequence}
           t={t}
           tDays={tDays}
         />

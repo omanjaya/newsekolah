@@ -81,11 +81,10 @@ export function ScheduleDayGrid({
               {classes.map((classItem) => {
                 const block = blocks.get(`${classItem.id}:${period.sequence}`);
                 if (block && block.start_seq !== period.sequence) return null;
-                if (period.is_break) {
-                  return <EmptyCell key={classItem.id} />;
-                }
+                // Drawn from its first row even on a break; see
+                // schedule-week-grid.tsx for why.
                 if (!block) {
-                  if (!canManage) {
+                  if (period.is_break || !canManage) {
                     return <EmptyCell key={classItem.id} />;
                   }
                   return (

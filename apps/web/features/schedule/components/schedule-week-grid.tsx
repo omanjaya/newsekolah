@@ -106,11 +106,12 @@ export function ScheduleWeekGrid({
                 if (block && block.start_seq !== period.sequence) {
                   return null;
                 }
-                if (period.is_break) {
-                  return <EmptyCell key={day} today={day === today} />;
-                }
+                // A block is drawn from its first row even when that row is
+                // a break: timetables imported against another period
+                // template can start on one, and skipping it left a hole
+                // that shifted every cell after it.
                 if (!block) {
-                  if (!canManage) {
+                  if (period.is_break || !canManage) {
                     return <EmptyCell key={day} today={day === today} />;
                   }
                   return (
