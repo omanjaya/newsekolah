@@ -6,6 +6,8 @@ import type { ReactElement } from "react";
 
 import type { LibraryImportPreview } from "../import-api";
 
+import { ReportCard, ReportCardTitle, ReportField } from "./report-mobile-card";
+
 /** Step 3: every row's status and message, with an explicit, visible commit decision. */
 export function ImportPreviewTable({
   preview,
@@ -51,7 +53,31 @@ export function ImportPreviewTable({
         </p>
       )}
 
-      <div className="overflow-x-auto rounded-sm border border-border bg-surface">
+      <ul className="flex flex-col gap-2 md:hidden">
+        {preview.rows.map((row) => (
+          <li key={row.row_number}>
+            <ReportCard>
+              <div className="mb-1.5 flex items-center justify-between gap-2">
+                <ReportCardTitle>{row.title || "-"}</ReportCardTitle>
+                <Badge variant={row.status === "error" ? "neutral" : "accent"}>
+                  {t(`status.${row.status}`)}
+                </Badge>
+              </div>
+              <ReportField
+                label={t("columns.row")}
+                value={<span className="tabular-nums">{row.row_number}</span>}
+              />
+              <ReportField
+                label={t("columns.copies")}
+                value={<span className="tabular-nums">{row.copies}</span>}
+              />
+              <ReportField label={t("columns.message")} value={row.message || "-"} />
+            </ReportCard>
+          </li>
+        ))}
+      </ul>
+
+      <div className="hidden overflow-x-auto rounded-sm border border-border bg-surface md:block">
         <table className="w-full min-w-[560px] text-[13px]">
           <thead>
             <tr className="bg-bg text-left text-fg-muted">

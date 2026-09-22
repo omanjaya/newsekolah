@@ -26,7 +26,7 @@ export function DdcClassesTab(): ReactElement {
 
   return (
     <div className="overflow-x-auto rounded-sm border border-border bg-surface md:h-full md:min-h-0 md:overflow-y-auto">
-      <table className="w-full min-w-[360px] text-[13px]">
+      <table className="w-full text-[13px]">
         <thead>
           <tr className="bg-bg text-left text-fg-muted">
             <th scope="col" className="w-24 px-3 py-2 font-medium">

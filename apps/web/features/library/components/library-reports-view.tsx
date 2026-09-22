@@ -37,6 +37,7 @@ import {
 
 import { ReportAccessionRegisterTable } from "./report-accession-register-table";
 import { ReportMembersTable } from "./report-members-table";
+import { ReportCard, ReportCardTitle, ReportField } from "./report-mobile-card";
 import { ReportSummaryTable } from "./report-summary-table";
 import { ReportVisitsTable } from "./report-visits-table";
 
@@ -199,45 +200,68 @@ function LoansReportTable({ from, to }: { from: string; to: string }): ReactElem
     return <EmptyState icon={<domainIcons.library aria-hidden="true" />} title={t("emptyTitle")} />;
   }
 
+  const statusLabel = (status: string) => (tStatus.has(status) ? tStatus(status) : status);
+
   return (
-    <div className="overflow-x-auto rounded-sm border border-border bg-surface">
-      <table className="w-full min-w-[560px] text-[13px]">
-        <thead>
-          <tr className="bg-bg text-left text-fg-muted">
-            <th scope="col" className="px-3 py-2 font-medium">
-              {t("columns.copy")}
-            </th>
-            <th scope="col" className="px-3 py-2 font-medium">
-              {t("columns.member")}
-            </th>
-            <th scope="col" className="px-3 py-2 font-medium">
-              {t("columns.borrowedAt")}
-            </th>
-            <th scope="col" className="px-3 py-2 font-medium">
-              {t("columns.dueOn")}
-            </th>
-            <th scope="col" className="px-3 py-2 font-medium">
-              {t("columns.status")}
-            </th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border">
-          {loans.map((row) => (
-            <tr key={row.loan.id}>
-              <td className="px-3 py-2 text-fg">{row.title}</td>
-              <td className="px-3 py-2 text-fg">{row.member_name}</td>
-              <td className="px-3 py-2 text-fg-muted">
-                {formatDate(row.loan.borrowed_at, { locale })}
-              </td>
-              <td className="px-3 py-2 text-fg-muted">{formatDate(row.loan.due_on, { locale })}</td>
-              <td className="px-3 py-2 text-fg-muted">
-                {tStatus.has(row.loan.status) ? tStatus(row.loan.status) : row.loan.status}
-              </td>
+    <>
+      <ul className="flex flex-col gap-2 md:hidden">
+        {loans.map((row) => (
+          <li key={row.loan.id}>
+            <ReportCard>
+              <ReportCardTitle>{row.title}</ReportCardTitle>
+              <ReportField label={t("columns.member")} value={row.member_name} />
+              <ReportField
+                label={t("columns.borrowedAt")}
+                value={formatDate(row.loan.borrowed_at, { locale })}
+              />
+              <ReportField
+                label={t("columns.dueOn")}
+                value={formatDate(row.loan.due_on, { locale })}
+              />
+              <ReportField label={t("columns.status")} value={statusLabel(row.loan.status)} />
+            </ReportCard>
+          </li>
+        ))}
+      </ul>
+      <div className="hidden overflow-x-auto rounded-sm border border-border bg-surface md:block">
+        <table className="w-full min-w-[560px] text-[13px]">
+          <thead>
+            <tr className="bg-bg text-left text-fg-muted">
+              <th scope="col" className="px-3 py-2 font-medium">
+                {t("columns.copy")}
+              </th>
+              <th scope="col" className="px-3 py-2 font-medium">
+                {t("columns.member")}
+              </th>
+              <th scope="col" className="px-3 py-2 font-medium">
+                {t("columns.borrowedAt")}
+              </th>
+              <th scope="col" className="px-3 py-2 font-medium">
+                {t("columns.dueOn")}
+              </th>
+              <th scope="col" className="px-3 py-2 font-medium">
+                {t("columns.status")}
+              </th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {loans.map((row) => (
+              <tr key={row.loan.id}>
+                <td className="px-3 py-2 text-fg">{row.title}</td>
+                <td className="px-3 py-2 text-fg">{row.member_name}</td>
+                <td className="px-3 py-2 text-fg-muted">
+                  {formatDate(row.loan.borrowed_at, { locale })}
+                </td>
+                <td className="px-3 py-2 text-fg-muted">
+                  {formatDate(row.loan.due_on, { locale })}
+                </td>
+                <td className="px-3 py-2 text-fg-muted">{statusLabel(row.loan.status)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }
 
@@ -249,32 +273,45 @@ function OverdueMembersReportTable(): ReactElement {
   if (isLoading) return <Skeleton className="h-64 w-full" />;
 
   return (
-    <div className="overflow-x-auto rounded-sm border border-border bg-surface">
-      <table className="w-full min-w-[480px] text-[13px]">
-        <thead>
-          <tr className="bg-bg text-left text-fg-muted">
-            <th scope="col" className="px-3 py-2 font-medium">
-              {t("columns.member")}
-            </th>
-            <th scope="col" className="px-3 py-2 font-medium">
-              {t("columns.loanCount")}
-            </th>
-            <th scope="col" className="px-3 py-2 font-medium">
-              {t("columns.fine")}
-            </th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border">
-          {members.map((member) => (
-            <tr key={member.member_user_id}>
-              <td className="px-3 py-2 text-fg">{member.member_user_id}</td>
-              <td className="px-3 py-2 text-fg-muted">{member.loan_count}</td>
-              <td className="px-3 py-2 text-fg-muted">{member.total_fine}</td>
+    <>
+      <ul className="flex flex-col gap-2 md:hidden">
+        {members.map((member) => (
+          <li key={member.member_user_id}>
+            <ReportCard>
+              <ReportCardTitle>{member.member_user_id}</ReportCardTitle>
+              <ReportField label={t("columns.loanCount")} value={member.loan_count} />
+              <ReportField label={t("columns.fine")} value={member.total_fine} />
+            </ReportCard>
+          </li>
+        ))}
+      </ul>
+      <div className="hidden overflow-x-auto rounded-sm border border-border bg-surface md:block">
+        <table className="w-full min-w-[480px] text-[13px]">
+          <thead>
+            <tr className="bg-bg text-left text-fg-muted">
+              <th scope="col" className="px-3 py-2 font-medium">
+                {t("columns.member")}
+              </th>
+              <th scope="col" className="px-3 py-2 font-medium">
+                {t("columns.loanCount")}
+              </th>
+              <th scope="col" className="px-3 py-2 font-medium">
+                {t("columns.fine")}
+              </th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {members.map((member) => (
+              <tr key={member.member_user_id}>
+                <td className="px-3 py-2 text-fg">{member.member_user_id}</td>
+                <td className="px-3 py-2 text-fg-muted">{member.loan_count}</td>
+                <td className="px-3 py-2 text-fg-muted">{member.total_fine}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }
 
@@ -286,27 +323,39 @@ function MostBorrowedReportTable({ from, to }: { from: string; to: string }): Re
   if (isLoading) return <Skeleton className="h-64 w-full" />;
 
   return (
-    <div className="overflow-x-auto rounded-sm border border-border bg-surface">
-      <table className="w-full min-w-[480px] text-[13px]">
-        <thead>
-          <tr className="bg-bg text-left text-fg-muted">
-            <th scope="col" className="px-3 py-2 font-medium">
-              {t("columns.title")}
-            </th>
-            <th scope="col" className="px-3 py-2 font-medium">
-              {t("columns.loanCount")}
-            </th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border">
-          {titles.map((entry) => (
-            <tr key={entry.title.id}>
-              <td className="px-3 py-2 text-fg">{entry.title.title}</td>
-              <td className="px-3 py-2 text-fg-muted">{entry.loan_count}</td>
+    <>
+      <ul className="flex flex-col gap-2 md:hidden">
+        {titles.map((entry) => (
+          <li key={entry.title.id}>
+            <ReportCard>
+              <ReportCardTitle>{entry.title.title}</ReportCardTitle>
+              <ReportField label={t("columns.loanCount")} value={entry.loan_count} />
+            </ReportCard>
+          </li>
+        ))}
+      </ul>
+      <div className="hidden overflow-x-auto rounded-sm border border-border bg-surface md:block">
+        <table className="w-full min-w-[480px] text-[13px]">
+          <thead>
+            <tr className="bg-bg text-left text-fg-muted">
+              <th scope="col" className="px-3 py-2 font-medium">
+                {t("columns.title")}
+              </th>
+              <th scope="col" className="px-3 py-2 font-medium">
+                {t("columns.loanCount")}
+              </th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {titles.map((entry) => (
+              <tr key={entry.title.id}>
+                <td className="px-3 py-2 text-fg">{entry.title.title}</td>
+                <td className="px-3 py-2 text-fg-muted">{entry.loan_count}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }
