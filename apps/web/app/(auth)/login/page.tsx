@@ -21,7 +21,10 @@ export default function LoginPage(): ReactElement {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-center text-[20px] font-medium text-fg">{t("title")}</h1>
+      <div className="flex flex-col gap-1">
+        <h1 className="text-[24px] font-medium text-fg">{t("title")}</h1>
+        <p className="text-[13px] text-fg-muted">{t("subtitle")}</p>
+      </div>
       {/* LoginForm reads the `next` query param via useSearchParams, which needs a Suspense boundary. */}
       <Suspense fallback={<Skeleton className="h-40 w-full" />}>
         <LoginForm />

@@ -74,7 +74,11 @@
       "passkeyButton": "Masuk dengan passkey",
       "passkeyUsernameRequired": "Isi nama pengguna dahulu untuk masuk dengan passkey",
       "backToPassword": "Masuk dengan kata sandi",
-      "forgotPasswordLink": "Lupa kata sandi?"
+      "forgotPasswordLink": "Lupa kata sandi?",
+      "subtitle": "Masuk ke akun sekolah Anda untuk melanjutkan.",
+      "panelHeadline": "Satu tempat untuk operasional harian sekolah.",
+      "panelTagline": "Presensi, izin, nilai, dan administrasi dalam satu sistem yang rapi dan cepat.",
+      "panelFootnote": "Sistem Informasi Sekolah"
     },
     "changePassword": {
       "title": "Ubah kata sandi",

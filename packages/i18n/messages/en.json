@@ -74,7 +74,11 @@
       "passkeyButton": "Sign in with a passkey",
       "passkeyUsernameRequired": "Enter your username first to sign in with a passkey",
       "backToPassword": "Sign in with a password",
-      "forgotPasswordLink": "Forgot your password?"
+      "forgotPasswordLink": "Forgot your password?",
+      "subtitle": "Sign in to your school account to continue.",
+      "panelHeadline": "One place for the school’s daily operations.",
+      "panelTagline": "Attendance, leave, grades, and administration in one tidy, fast system.",
+      "panelFootnote": "School Information System"
     },
     "changePassword": {
       "title": "Change password",
