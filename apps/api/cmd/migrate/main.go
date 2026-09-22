@@ -121,8 +121,10 @@ func runForce(m *migrate.Migrate, args []string, logger *slog.Logger) error {
 
 // postUp runs River's own schema migrations, upserts the static permission
 // catalog (internal/platform/authz/permissions.go is the single source of
-// truth; this keeps the database in sync with it on every run), and rotates
-// the app_rw role's password off its migration-time default.
+// truth; this keeps the database in sync with it on every run), rotates the
+// app_rw role's password off its migration-time default, and locks down
+// app_platform (nothing currently connects as it -- see
+// ensureAppPlatformNoLogin).
 func postUp(cfg config.Config, logger *slog.Logger) error {
 	ctx := context.Background()
 
@@ -139,6 +141,9 @@ func postUp(cfg config.Config, logger *slog.Logger) error {
 	logger.Info("permission catalog upserted")
 
 	if err := ensureAppRolePassword(ctx, pool, cfg, logger); err != nil {
+		return err
+	}
+	if err := ensureAppPlatformNoLogin(ctx, pool, logger); err != nil {
 		return err
 	}
 	return nil
@@ -177,6 +182,33 @@ func ensureAppRolePassword(ctx context.Context, pool *pgxpool.Pool, cfg config.C
 		return fmt.Errorf("set app_rw password: %w", err)
 	}
 	logger.Info("app_rw password set from APP_DB_PASSWORD")
+	return nil
+}
+
+// ensureAppPlatformNoLogin locks the app_platform role (also created by
+// 0004_db_roles.up.sql, with the same default password) out of logging in
+// at all. Nothing in this codebase opens a connection as app_platform --
+// database.WithPlatformTx only sets app.platform_admin on whatever role the
+// caller's pool already uses (app_rw in production) -- so unlike app_rw
+// there is no APP_PLATFORM_DB_PASSWORD to rotate to: the safer fix for an
+// unused login role with a hardcoded default password is to make it unable
+// to log in at all. If a future platform-console connection needs this
+// role, re-enable LOGIN with its own rotated password at that point.
+func ensureAppPlatformNoLogin(ctx context.Context, pool *pgxpool.Pool, logger *slog.Logger) error {
+	var exists bool
+	if err := pool.QueryRow(ctx,
+		"select exists (select 1 from pg_roles where rolname = 'app_platform')",
+	).Scan(&exists); err != nil {
+		return fmt.Errorf("check app_platform role: %w", err)
+	}
+	if !exists {
+		return nil
+	}
+
+	if _, err := pool.Exec(ctx, "alter role app_platform nologin"); err != nil {
+		return fmt.Errorf("set app_platform nologin: %w", err)
+	}
+	logger.Info("app_platform set to nologin (unused login role)")
 	return nil
 }
 

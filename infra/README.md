@@ -61,6 +61,14 @@ migration-time default (`change-me-in-production`) is never left active, and `mi
 run in production without `APP_DB_PASSWORD` set. `api`/`worker` also refuse to start in production
 if they ever find themselves connected as a superuser or `BYPASSRLS` role regardless.
 
+The same migration also creates `app_platform` with the same default password, for a future
+platform-console connection that does not exist yet — nothing in this codebase connects as it
+today (`database.WithPlatformTx` just sets `app.platform_admin` on whatever role the caller's pool
+already uses, i.e. `app_rw`). Since there is nothing to rotate a real deployment password into,
+`migrate` instead runs `ALTER ROLE app_platform NOLOGIN` on every run, so that unused role's
+hardcoded default password can never be used to connect. Re-enable `LOGIN` with its own rotated
+password if a platform-console process ever needs this role.
+
 ## Update
 
 ```
