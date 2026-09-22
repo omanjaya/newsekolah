@@ -780,6 +780,10 @@ type Querier interface {
 	InsertStocktakeResult(ctx context.Context, arg InsertStocktakeResultParams) error
 	InsertWebAuthnCredential(ctx context.Context, arg InsertWebAuthnCredentialParams) (WebauthnCredential, error)
 	InsertWhatsAppTemplate(ctx context.Context, arg InsertWhatsAppTemplateParams) (WhatsappTemplate, error)
+	// Marks every still-unused password reset token for a user as used, so a
+	// token issued (or confirmed) does not leave older tokens redeemable
+	// alongside it (docs/08-security.md section 2).
+	InvalidatePasswordResetsForUser(ctx context.Context, arg InvalidatePasswordResetsForUserParams) error
 	IsAcademicYearArchivedRef(ctx context.Context, arg IsAcademicYearArchivedRefParams) (bool, error)
 	// A duty assignment's student-scope target must be an active user with a
 	// student profile -- the same strictness IsActiveTeacherOrStaff already

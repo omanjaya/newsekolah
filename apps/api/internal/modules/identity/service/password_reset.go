@@ -28,6 +28,10 @@ type PasswordResetRepository interface {
 	GetUserByUsernameOrEmail(ctx context.Context, tenantID uuid.UUID, identifier string) (domain.User, bool, error)
 	GetValidPasswordReset(ctx context.Context, tenantID uuid.UUID, tokenHash []byte) (PasswordResetRecord, error)
 	MarkPasswordResetUsed(ctx context.Context, tenantID, id uuid.UUID) error
+	// InvalidatePasswordResetsForUser marks every still-unused password
+	// reset token for userID as used, so an older token cannot be
+	// redeemed alongside (or after) a newer one.
+	InvalidatePasswordResetsForUser(ctx context.Context, tenantID, userID uuid.UUID) error
 }
 
 // RequestPasswordReset always behaves the same way to the caller (202,
@@ -59,6 +63,12 @@ func (s *Service) RequestPasswordReset(ctx context.Context, tenantID uuid.UUID, 
 		token, hash, err := s.newRefresh()
 		if err != nil {
 			return err
+		}
+		// A fresh token supersedes any earlier one still outstanding for
+		// this account, so a stale reset link cannot be used after a
+		// newer request was made.
+		if err := s.repo.InvalidatePasswordResetsForUser(ctx, tenantID, user.ID); err != nil {
+			return fmt.Errorf("invalidate previous password resets: %w", err)
 		}
 		if err := s.repo.CreatePasswordResetRecord(ctx, NewPasswordReset{
 			TenantID: tenantID, UserID: user.ID, TokenHash: hash, Channel: "email",
@@ -116,6 +126,12 @@ func (s *Service) ConfirmPasswordReset(ctx context.Context, tenantID uuid.UUID, 
 		}
 		if err := s.repo.MarkPasswordResetUsed(ctx, tenantID, reset.ID); err != nil {
 			return fmt.Errorf("mark password reset used: %w", err)
+		}
+		// Any other unused reset token for this account is now stale: the
+		// password it targets no longer applies, so it must not stay
+		// redeemable.
+		if err := s.repo.InvalidatePasswordResetsForUser(ctx, tenantID, reset.UserID); err != nil {
+			return fmt.Errorf("invalidate other password resets: %w", err)
 		}
 		// uuid.Nil never matches a real session id, so this revokes every
 		// session for the account -- there is no "current session" to

@@ -29,7 +29,11 @@ func RoleDefaults() []RoleDefault {
 	all := Codes()
 	return []RoleDefault{
 		{RoleSlugSuperAdmin, "Super Admin", all},
-		{RoleSlugAdmin, "Admin Sekolah", without(all, PermManagePermissions)},
+		// PermPlatformSuperadmin gates the cross-tenant platform console
+		// (see permissions_platform.go): a tenant's own admin role must
+		// never carry it, so it is excluded here alongside
+		// PermManagePermissions.
+		{RoleSlugAdmin, "Admin Sekolah", without(without(all, PermManagePermissions), PermPlatformSuperadmin)},
 		{RoleSlugTeacher, "Guru", []string{
 			PermViewDashboard, PermViewAnnouncements, PermViewSchedules, PermViewAcademicData,
 			PermViewAttendance, PermManageAttendance, PermViewNotifications,

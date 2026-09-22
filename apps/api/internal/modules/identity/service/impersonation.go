@@ -109,7 +109,7 @@ func (s *Service) StartImpersonation(ctx context.Context, tenantID, actorID, tar
 // domain.ErrNotImpersonating for a normal login session, closing off any
 // use of this endpoint as a generic "log me out" shortcut.
 func (s *Service) StopImpersonation(ctx context.Context, tenantID, sessionID uuid.UUID) error {
-	return s.withTx(ctx, tenantID, func(ctx context.Context) error {
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		session, err := s.repo.GetSessionByID(ctx, tenantID, sessionID)
 		if err != nil {
 			return domain.ErrSessionNotFound
@@ -122,6 +122,14 @@ func (s *Service) StopImpersonation(ctx context.Context, tenantID, sessionID uui
 		}
 		return audit.Record(ctx, tenantID, "impersonation.stop", "user", session.UserID, nil, nil)
 	})
+	if err != nil {
+		return err
+	}
+	// Impersonation must stop effective immediately, not wait out the
+	// cache TTL (docs/08-security.md section 2: "dapat dihentikan dan
+	// pencabutannya efektif seketika").
+	s.invalidateSessions(ctx, []uuid.UUID{sessionID})
+	return nil
 }
 
 // RecordImpersonationAction logs one request made under an impersonation

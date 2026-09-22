@@ -274,6 +274,7 @@ func (s *Service) Logout(ctx context.Context, tenantID, userID, sessionID uuid.U
 	if err != nil {
 		return err
 	}
+	s.invalidateSessions(ctx, []uuid.UUID{sessionID})
 	s.revokePushDevices(ctx, tenantID, userID)
 	return nil
 }
@@ -292,7 +293,7 @@ func (s *Service) ListSessions(ctx context.Context, tenantID, userID uuid.UUID) 
 // revoking another user's session (object-level check, not just a
 // permission check, per docs/08-security.md section 3).
 func (s *Service) RevokeSession(ctx context.Context, tenantID, userID, sessionID uuid.UUID) error {
-	return s.withTx(ctx, tenantID, func(ctx context.Context) error {
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		sessions, err := s.repo.ListActiveSessions(ctx, tenantID, userID)
 		if err != nil {
 			return err
@@ -309,6 +310,11 @@ func (s *Service) RevokeSession(ctx context.Context, tenantID, userID, sessionID
 		}
 		return s.repo.RevokeSession(ctx, tenantID, sessionID, "revoked_by_user")
 	})
+	if err != nil {
+		return err
+	}
+	s.invalidateSessions(ctx, []uuid.UUID{sessionID})
+	return nil
 }
 
 // ChangePassword verifies the current password, stores the new one, and
