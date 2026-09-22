@@ -13,6 +13,13 @@ storybook-static/
 *.log
 apps/api/bin/
 apps/api/tmp/
+# Built binaries from `go build ./cmd/...` at the module root (not the
+# cmd/* source directories, which stay tracked).
+/apps/api/api
+/apps/api/worker
+/apps/api/migrate
+/apps/api/seed
+/apps/api/bootstrap
 apps/mobile/.expo/
 apps/mobile/ios/
 apps/mobile/android/

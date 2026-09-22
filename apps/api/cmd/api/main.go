@@ -107,6 +107,7 @@ func healthcheck() int {
 		addr = "127.0.0.1" + addr
 	}
 	client := &http.Client{Timeout: 3 * time.Second}
+	// #nosec G704 -- addr is the process's own listen address from config, not user input
 	resp, err := client.Get("http://" + addr + "/health") //nolint:gosec // addr is the process's own listen address from config, not user input
 	if err != nil {
 		return 1

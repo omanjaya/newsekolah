@@ -92,6 +92,7 @@ func (s *TableStat) RecordGap(description string) {
 
 // WriteJSON writes the machine-readable report to path.
 func (r *Report) WriteJSON(path string) error {
+	// #nosec G304 -- operator-supplied report path, not user input
 	f, err := os.Create(path) //nolint:gosec // operator-supplied report path, not user input
 	if err != nil {
 		return fmt.Errorf("create report file: %w", err)

@@ -528,7 +528,8 @@ func impersonationActionLogger(svc *identityservice.Service) func(http.Handler) 
 			}
 			ip := httpx.RequestMetaFromContext(ctx).IP
 			method, path := r.Method, r.URL.Path
-			go svc.RecordImpersonationAction(context.Background(), tenantID, sessionID, method, path, ip)
+			// #nosec G118 -- background context is intentional, per this function's own doc comment: it must outlive the request it describes
+			go svc.RecordImpersonationAction(context.Background(), tenantID, sessionID, method, path, ip) //nolint:gosec // background context is intentional, per this function's own doc comment: it must outlive the request it describes
 		})
 	}
 }

@@ -20,6 +20,7 @@ import (
 )
 
 const (
+	// #nosec G101 -- not a credential, an endpoint URL
 	fcmTokenURL = "https://oauth2.googleapis.com/token" //nolint:gosec // not a credential, an endpoint URL
 	fcmScope    = "https://www.googleapis.com/auth/firebase.messaging"
 )

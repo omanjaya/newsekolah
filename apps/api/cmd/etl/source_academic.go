@@ -134,6 +134,7 @@ type SionTeachingAssignment struct {
 func (s *Source) FetchTeachingAssignments(scheduleVersionIDs []int64) ([]SionTeachingAssignment, error) {
 	placeholders, args := int64InClause(scheduleVersionIDs)
 	rows, err := s.db.Query(
+		// #nosec G202 -- placeholders is a "?,?,..." run built from len(scheduleVersionIDs), never from external input; the ids themselves are bound as args
 		//nolint:gosec // placeholders is a "?,?,..." run built from len(scheduleVersionIDs), never from external input; the ids themselves are bound as args
 		`select id, user_id, group_id, subject_id from teacher_classes where schedule_version_id in (`+placeholders+`)`,
 		args...,

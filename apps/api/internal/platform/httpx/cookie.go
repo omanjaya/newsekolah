@@ -29,6 +29,7 @@ const RefreshCookiePath = "/"
 // token: httpOnly, SameSite=Lax, scoped to RefreshCookiePath, Secure only
 // outside development (docs/08-security.md section 2).
 func RefreshCookie(value string, expiresAt time.Time, secure bool) string {
+	// #nosec G124 -- Secure is intentionally conditional: false only outside APP_ENV=production, per docs/08-security.md
 	c := &http.Cookie{ //nolint:gosec // Secure is intentionally conditional: false only outside APP_ENV=production, per docs/08-security.md
 		Name:     RefreshCookieName,
 		Value:    value,
@@ -43,6 +44,7 @@ func RefreshCookie(value string, expiresAt time.Time, secure bool) string {
 
 // ExpiredRefreshCookie clears the refresh cookie on logout.
 func ExpiredRefreshCookie(secure bool) string {
+	// #nosec G124 -- Secure is intentionally conditional: false only outside APP_ENV=production, per docs/08-security.md
 	c := &http.Cookie{ //nolint:gosec // Secure is intentionally conditional: false only outside APP_ENV=production, per docs/08-security.md
 		Name:     RefreshCookieName,
 		Value:    "",
@@ -68,6 +70,7 @@ func ExpiredRefreshCookie(secure bool) string {
 const legacyRefreshCookiePath = "/v1/auth"
 
 func expiredLegacyRefreshCookie(secure bool) string {
+	// #nosec G124 -- Secure mirrors the cookie being cleared, per docs/08-security.md
 	c := &http.Cookie{ //nolint:gosec // Secure mirrors the cookie being cleared, per docs/08-security.md
 		Name:     RefreshCookieName,
 		Value:    "",

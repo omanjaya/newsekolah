@@ -131,7 +131,13 @@ func wsMeHandler(tokenIssuer *auth.TokenIssuer, sessions auth.SessionLookup, hub
 			presence.Remove(presenceKey)
 			return
 		}
-		go watchSessionValidity(client, sessions, t.ID, sessionID)
+		// watchSessionValidity uses context.Background() internally by
+		// design, not by oversight: per its doc comment, it runs for the
+		// life of the WebSocket connection, which outlives this request's
+		// context, so tying it to r.Context() would cancel the watcher the
+		// moment this upgrade handler returns.
+		// #nosec G118 -- see watchSessionValidity's doc comment
+		go watchSessionValidity(client, sessions, t.ID, sessionID) //nolint:gosec // see watchSessionValidity's doc comment
 	}
 }
 

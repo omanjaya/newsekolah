@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/discipline/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/audit"
 )
 
 func (s *Service) ListViolationTypes(ctx context.Context, tenantID uuid.UUID, includeInactive bool, search string) ([]domain.ViolationType, error) {
@@ -280,8 +281,11 @@ func recordOne(ctx context.Context, repo Repository, tenantID, yearID uuid.UUID,
 // atomically replaces every violation recorded against
 // (attendance_session_id, student_user_id) with violationTypeIDs, mirroring
 // the old system's delete-then-reinsert per session
-// (reference/sion-rebuild-go teacher_attendance.go L295-309) rather than
-// discipline's usual audited void.
+// (reference/sion-rebuild-go teacher_attendance.go L295-309). This is a
+// hard delete with no audit_logs entry of its own -- unlike VoidViolation
+// below, which does audit every void -- because this path corrects
+// session-linked records automatically from attendance, not a counselor's
+// manual, reasoned decision to void one.
 func (s *Service) ReplaceSessionViolations(
 	ctx context.Context, tenantID, sessionID, studentUserID uuid.UUID, violationTypeIDs []uuid.UUID, occurredOn time.Time, reporterUserID uuid.UUID,
 ) error {
@@ -374,7 +378,10 @@ func (s *Service) VoidViolation(ctx context.Context, tenantID, recordID, actorUs
 			return domain.ErrRecordAlreadyVoided
 		}
 		out, _, err = s.repo.VoidRecord(ctx, tenantID, recordID, actorUserID, strings.TrimSpace(reason))
-		return err
+		if err != nil {
+			return err
+		}
+		return audit.Record(ctx, tenantID, "violation.void", "violation_record", recordID, current, out)
 	})
 	return out, err
 }

@@ -109,6 +109,7 @@ type SionSchedule struct {
 func (s *Source) FetchSchedules(scheduleVersionIDs []int64) ([]SionSchedule, error) {
 	placeholders, args := int64InClause(scheduleVersionIDs)
 	rows, err := s.db.Query(
+		// #nosec G202 -- placeholders is a "?,?,..." run built from len(scheduleVersionIDs), never from external input; the ids themselves are bound as args
 		//nolint:gosec // placeholders is a "?,?,..." run built from len(scheduleVersionIDs), never from external input; the ids themselves are bound as args
 		`select s.id, s.day, s.teacher_class_id, s.period_id, tc.schedule_version_id
 		 from schedules s
