@@ -43,7 +43,6 @@ const (
 	PermScanExitPermits     = "scan_exit_permits"
 
 	PermViewNotifications = "view_notifications"
-	PermCanSupervise      = "can_supervise"
 
 	PermManageGrades  = "manage_grades"
 	PermViewOwnGrades = "view_own_grades"
@@ -97,7 +96,6 @@ var Catalog = []Permission{
 	{PermScanExitPermits, "permits", "Scan exit permit gate tokens (security duty)"},
 
 	{PermViewNotifications, "notifications", "View notifications"},
-	{PermCanSupervise, "general", "Supervisory oversight flag"},
 
 	{PermManageGrades, "grading", "Enter and edit grades"},
 	{PermViewOwnGrades, "grading", "View own grades (student)"},
