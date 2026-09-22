@@ -89,9 +89,10 @@ export function GradeLevelsView(): ReactElement {
 
   const columns = useMemo<ColumnDef<GradeLevel>[]>(
     () => [
-      { accessorKey: "sequence", header: t("columns.sequence"), enableSorting: false },
-      { accessorKey: "code", header: t("columns.code"), enableSorting: false },
+      // Name leads because the phone card uses the first column as its title.
       { accessorKey: "name", header: t("columns.name"), enableSorting: false },
+      { accessorKey: "code", header: t("columns.code"), enableSorting: false },
+      { accessorKey: "sequence", header: t("columns.sequence"), enableSorting: false },
       {
         id: "actions",
         header: t("columns.actions"),

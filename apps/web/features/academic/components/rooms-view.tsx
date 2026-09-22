@@ -80,8 +80,9 @@ export function RoomsView(): ReactElement {
 
   const columns = useMemo<ColumnDef<Room>[]>(
     () => [
-      { accessorKey: "code", header: t("columns.code"), enableSorting: false },
+      // Name leads because the phone card uses the first column as its title.
       { accessorKey: "name", header: t("columns.name"), enableSorting: false },
+      { accessorKey: "code", header: t("columns.code"), enableSorting: false },
       {
         accessorKey: "capacity",
         header: t("columns.capacity"),

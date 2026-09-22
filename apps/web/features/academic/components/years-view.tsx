@@ -14,7 +14,7 @@ import {
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Archive, CalendarRange, CircleCheck, Pencil, Plus, Rows3 } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useFormatter, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
@@ -40,6 +40,7 @@ interface PendingAction {
 
 export function YearsView(): ReactElement {
   const t = useTranslations("app.academic.years");
+  const format = useFormatter();
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const canManage = useCan("manage_master_data");
@@ -85,7 +86,8 @@ export function YearsView(): ReactElement {
         enableSorting: false,
         cell: ({ row }) => (
           <span className="text-fg-muted">
-            {row.original.starts_on} - {row.original.ends_on}
+            {formatCalendarDate(format, row.original.starts_on)} -{" "}
+            {formatCalendarDate(format, row.original.ends_on)}
           </span>
         ),
       },
@@ -138,7 +140,7 @@ export function YearsView(): ReactElement {
         },
       },
     ],
-    [t, canManage],
+    [t, format, canManage],
   );
 
   return (
@@ -251,4 +253,13 @@ export function YearsView(): ReactElement {
       />
     </div>
   );
+}
+
+/** A YYYY-MM-DD calendar date as a short id-ID style date, read at local midnight. */
+function formatCalendarDate(format: ReturnType<typeof useFormatter>, value: string): string {
+  return format.dateTime(new Date(`${value}T00:00:00`), {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 }
