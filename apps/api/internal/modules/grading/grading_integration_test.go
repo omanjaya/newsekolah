@@ -12,6 +12,8 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/db"
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/grading/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/grading/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/school"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
@@ -119,6 +121,12 @@ func seedFixture(t *testing.T, pool *pgxpool.Pool) fixture {
 	})
 	require.NoError(t, err)
 
+	_, err = q.AcademicCreateEnrollment(ctx, db.AcademicCreateEnrollmentParams{
+		TenantID: tenantRow.ID, AcademicYearID: year.ID, StudentUserID: student.ID, ClassID: class.ID,
+		JoinedOn: database.Date(time.Date(2026, 7, 1, 0, 0, 0, 0, time.UTC)),
+	})
+	require.NoError(t, err)
+
 	return fixture{
 		tenantID: tenantRow.ID, classID: class.ID, subjectID: subject.ID, termID: term.ID,
 		teacherID: teacher.ID, studentID: student.ID,
@@ -160,4 +168,67 @@ func TestSetManualScoreOnStudentWithNoGrades(t *testing.T) {
 	require.NoError(t, err, "clearing the override on the now-existing row must succeed")
 	require.Nil(t, result.ManualScore)
 	require.InDelta(t, 0, result.FinalScore, 0.001, "clearing the override restores the automatic baseline")
+}
+
+// auditLogsFor loads every audit_logs row for one tenant/entity, newest
+// first, to assert a service call wrote the record it claims to.
+func auditLogsFor(t *testing.T, pool *pgxpool.Pool, tenantID, entityID uuid.UUID) []db.AuditLog {
+	t.Helper()
+	rows, err := db.New(pool).ListAuditLogs(context.Background(), db.ListAuditLogsParams{
+		TenantID:  pgtype.UUID{Bytes: tenantID, Valid: true},
+		EntityID:  pgtype.UUID{Bytes: entityID, Valid: true},
+		PageLimit: 50,
+	})
+	require.NoError(t, err)
+	return rows
+}
+
+// TestSaveScoresWritesAuditRecord covers grading's score save: SaveScores
+// must write an audit_logs row, keyed on the component, inside the same
+// transaction as the grade upserts.
+func TestSaveScoresWritesAuditRecord(t *testing.T) {
+	pool := startTestPostgres(t)
+	fx := seedFixture(t, pool)
+	ctx := context.Background()
+
+	schoolModule := school.Register(pool, tenant.ModeSingle, nil)
+	gradingModule := Register(Dependencies{Pool: pool, Years: schoolModule.Service, Clock: clock.Real{}})
+
+	component, err := gradingModule.Service.CreateComponent(ctx, fx.tenantID, fx.teacherID, true, service.ComponentInput{
+		ClassID: fx.classID, SubjectID: fx.subjectID, TermID: uuid.NullUUID{UUID: fx.termID, Valid: true},
+		Code: "UH1", Kind: domain.KindFormative, Weight: 1,
+	})
+	require.NoError(t, err)
+
+	score := 85.0
+	_, err = gradingModule.Service.SaveScores(ctx, fx.tenantID, component.ID, fx.teacherID, true, []service.ScoreEntry{
+		{StudentUserID: fx.studentID, Score: &score},
+	})
+	require.NoError(t, err)
+
+	logs := auditLogsFor(t, pool, fx.tenantID, component.ID)
+	require.Len(t, logs, 1, "SaveScores must write exactly one audit_logs row")
+	require.Equal(t, "grading.score_save", logs[0].Action)
+	require.Equal(t, "assessment_component", logs[0].EntityType)
+}
+
+// TestPublishWritesAuditRecord covers grading's report publish: Publish
+// must write an audit_logs row inside the same transaction that flips
+// the class-subject publication flag.
+func TestPublishWritesAuditRecord(t *testing.T) {
+	pool := startTestPostgres(t)
+	fx := seedFixture(t, pool)
+	ctx := context.Background()
+
+	schoolModule := school.Register(pool, tenant.ModeSingle, nil)
+	gradingModule := Register(Dependencies{Pool: pool, Years: schoolModule.Service, Clock: clock.Real{}})
+
+	_, err := gradingModule.Service.Publish(ctx, fx.tenantID, fx.teacherID, true, fx.classID, fx.subjectID,
+		uuid.NullUUID{UUID: fx.termID, Valid: true}, true)
+	require.NoError(t, err)
+
+	logs := auditLogsFor(t, pool, fx.tenantID, fx.classID)
+	require.Len(t, logs, 1, "Publish must write exactly one audit_logs row")
+	require.Equal(t, "grading.report_publish", logs[0].Action)
+	require.Equal(t, "report_publication", logs[0].EntityType)
 }

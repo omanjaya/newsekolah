@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/grading/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/audit"
 )
 
 // PreviousTerm returns the term immediately before currentTermID in
@@ -261,7 +262,12 @@ func (s *Service) Publish(ctx context.Context, tenantID, actorID uuid.UUID, canM
 			}
 		}
 		out, err = s.repo.SetPublication(ctx, tenantID, yearID, term.ID, classID, subjectID, published, actorID)
-		return err
+		if err != nil {
+			return err
+		}
+		return audit.Record(ctx, tenantID, "grading.report_publish", "report_publication", classID, nil, map[string]any{
+			"term_id": term.ID, "subject_id": subjectID, "published": published,
+		})
 	})
 	return out, err
 }

@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/grading/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/audit"
 )
 
 // Gradebook is one class-subject sheet: the components across the top,
@@ -209,6 +210,7 @@ func (s *Service) SaveScores(ctx context.Context, tenantID, componentID, actorID
 		if err != nil {
 			return err
 		}
+		saved := make([]map[string]any, 0, len(entries))
 		for _, e := range entries {
 			if !members[e.StudentUserID] {
 				return domain.ErrStudentNotInClass
@@ -217,6 +219,7 @@ func (s *Service) SaveScores(ctx context.Context, tenantID, componentID, actorID
 				if err := s.repo.DeleteGrade(ctx, tenantID, componentID, e.StudentUserID); err != nil {
 					return err
 				}
+				saved = append(saved, map[string]any{"student_user_id": e.StudentUserID, "score": nil})
 				continue
 			}
 			if !scale.InRange(*e.Score) {
@@ -225,6 +228,10 @@ func (s *Service) SaveScores(ctx context.Context, tenantID, componentID, actorID
 			if _, err := s.repo.UpsertGrade(ctx, tenantID, componentID, e.StudentUserID, scale.Round(*e.Score), actorID); err != nil {
 				return err
 			}
+			saved = append(saved, map[string]any{"student_user_id": e.StudentUserID, "score": scale.Round(*e.Score)})
+		}
+		if err := audit.Record(ctx, tenantID, "grading.score_save", "assessment_component", componentID, nil, map[string]any{"entries": saved}); err != nil {
+			return err
 		}
 		if err := s.recomputeReportScores(ctx, tenantID, component.AcademicYearID, component.TermID, component.ClassID, component.SubjectID, scale); err != nil {
 			return err
