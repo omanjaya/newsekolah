@@ -43,7 +43,7 @@ func (f *fakeSessionCache) has(id uuid.UUID) bool {
 }
 
 // setupIdentityTest brings up a real Postgres in Docker, migrates it
-// (including migration 0110, which removes platform_superadmin from the
+// (including migration 0108, which removes platform_superadmin from the
 // system admin role), and returns a service wired with a repository
 // backed by that database plus a fakeSessionCache the test can inspect.
 // Shared by every _test.go file in this package.
