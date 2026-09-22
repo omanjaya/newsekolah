@@ -18,7 +18,7 @@ type DutyTypeDefault struct {
 // permission catalog it draws from is assembled by init() across files.
 func DutyTypeDefaults() []DutyTypeDefault {
 	return []DutyTypeDefault{
-		{"homeroom", "Wali Kelas", "class", []string{PermReviewLeaveRequests, PermCorrectAttendance}},
+		{"homeroom", "Wali Kelas", "class", []string{PermViewAttendance, PermReviewLeaveRequests, PermCorrectAttendance}},
 		{"counselor", "Guru BK", "school", []string{PermIssueLeaveLetters, PermViewReports, PermManageCounseling, PermIssueWarningLetters, PermViewDiscipline, PermRecordViolations}},
 		{"picket", "Guru Piket", "school", []string{PermManageAttendance}},
 		{"leadership", "Wakil Kepala Sekolah", "school", []string{PermReviewLeaveRequests, PermIssueLeaveLetters, PermViewReports, PermIssueWarningLetters, PermViewDiscipline}},

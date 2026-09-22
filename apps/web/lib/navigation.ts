@@ -106,7 +106,7 @@ export const navigation: NavItem[] = [
     labelKey: "nav.academic.items.homeroomClass",
     href: "/homeroom",
     icon: UsersRound,
-    permission: "manage_attendance",
+    permission: "view_attendance",
     group: GROUP.academic,
   },
   {
