@@ -15,6 +15,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/audit"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/documents"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/storage"
 )
@@ -404,6 +405,11 @@ func (s *Service) IssueLeaveLetter(ctx context.Context, tenantID, instanceID, is
 			TenantID: tenantID, Kind: leaveLetterDocumentKind, EntityType: leaveEntityType, EntityID: instanceID, Number: number,
 			AssetID: assetID, SHA256: hex.EncodeToString(sum[:]), VerificationCodeHash: codeHash,
 			IssuedBy: uuid.NullUUID{UUID: issuerUserID, Valid: true},
+		}); err != nil {
+			return err
+		}
+		if err := audit.Record(ctx, tenantID, "document.issue", leaveEntityType, instanceID, nil, map[string]any{
+			"kind": leaveLetterDocumentKind, "number": number, "asset_id": assetID,
 		}); err != nil {
 			return err
 		}

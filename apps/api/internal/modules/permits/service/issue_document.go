@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/audit"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/documents"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/storage"
 )
@@ -99,6 +100,11 @@ func (s *Service) IssueDocument(ctx context.Context, tenantID uuid.UUID, in Issu
 			TenantID: tenantID, Kind: string(in.Kind), EntityType: in.EntityType, EntityID: in.EntityID, Number: number,
 			AssetID: assetID, SHA256: hex.EncodeToString(sum[:]), VerificationCodeHash: codeHash,
 			IssuedBy: uuid.NullUUID{UUID: in.IssuerUserID, Valid: true},
+		}); err != nil {
+			return err
+		}
+		if err := audit.Record(ctx, tenantID, "document.issue", in.EntityType, in.EntityID, nil, map[string]any{
+			"kind": in.Kind, "number": number, "asset_id": assetID,
 		}); err != nil {
 			return err
 		}
