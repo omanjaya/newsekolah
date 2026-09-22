@@ -78,7 +78,10 @@
       "subtitle": "Sign in to your school account to continue.",
       "panelHeadline": "One place for the school’s daily operations.",
       "panelTagline": "Attendance, leave, grades, and administration in one tidy, fast system.",
-      "panelFootnote": "School Information System"
+      "panelFootnote": "School Information System",
+      "featureAttendance": "Fast daily attendance",
+      "featureGrades": "Grades and report cards in one place",
+      "featureLibrary": "Library and circulation"
     },
     "changePassword": {
       "title": "Change password",

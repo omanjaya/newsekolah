@@ -67,3 +67,41 @@ body {
     --color-accent-fg: var(--tenant-accent-dark-fg);
   }
 }
+
+/*
+ * Auth hero motion: slow-drifting gradient orbs behind the login brand panel.
+ * Purely decorative, so it collapses to a static position under
+ * prefers-reduced-motion.
+ */
+@keyframes auth-orb-a {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  100% {
+    transform: translate3d(6%, -8%, 0) scale(1.15);
+  }
+}
+
+@keyframes auth-orb-b {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  100% {
+    transform: translate3d(-8%, 6%, 0) scale(1.1);
+  }
+}
+
+.auth-orb-a {
+  animation: auth-orb-a 18s ease-in-out infinite alternate;
+}
+
+.auth-orb-b {
+  animation: auth-orb-b 22s ease-in-out infinite alternate;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-orb-a,
+  .auth-orb-b {
+    animation: none;
+  }
+}

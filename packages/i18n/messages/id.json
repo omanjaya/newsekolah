@@ -78,7 +78,10 @@
       "subtitle": "Masuk ke akun sekolah Anda untuk melanjutkan.",
       "panelHeadline": "Satu tempat untuk operasional harian sekolah.",
       "panelTagline": "Presensi, izin, nilai, dan administrasi dalam satu sistem yang rapi dan cepat.",
-      "panelFootnote": "Sistem Informasi Sekolah"
+      "panelFootnote": "Sistem Informasi Sekolah",
+      "featureAttendance": "Presensi harian yang cepat",
+      "featureGrades": "Nilai dan rapor terpusat",
+      "featureLibrary": "Perpustakaan dan sirkulasi"
     },
     "changePassword": {
       "title": "Ubah kata sandi",
