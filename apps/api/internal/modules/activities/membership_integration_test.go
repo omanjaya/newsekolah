@@ -52,7 +52,9 @@ func TestArchivedClubReleasesMembershipLimitWithoutDeletingHistory(t *testing.T)
 	require.ErrorIs(t, err, domain.ErrClubNotFound)
 	_, err = svc.JoinClub(ctx, tenant, other, student, today)
 	require.NoError(t, err)
-	historical, found, err := repo.GetMembership(ctx, tenant, membership.ID)
+	// Read back with the admin pool: the repository outside a tenant
+	// transaction sees nothing under RLS, by design.
+	historical, found, err := repository.New(pg.AdminPool).GetMembership(ctx, tenant, membership.ID)
 	require.NoError(t, err)
 	require.True(t, found)
 	require.Equal(t, membership.ID, historical.ID)
