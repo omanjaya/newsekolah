@@ -11,6 +11,7 @@ import {
   Input,
   PageHeader,
   Skeleton,
+  cn,
   useToast,
 } from "@newsekolah/ui";
 import { Plus } from "lucide-react";
@@ -79,7 +80,7 @@ export function RolesView(): ReactElement {
                 onClick={() => {
                   setSelectedId(r.id);
                 }}
-                className={`flex min-h-11 items-center justify-between rounded-xs px-3 py-2 text-left text-[14px] ${selected?.id === r.id ? "bg-accent/10 text-accent" : "text-fg hover:bg-bg"}`}
+                className={`flex min-h-11 shrink-0 items-center justify-between gap-3 whitespace-nowrap rounded-xs px-3 py-2 text-left text-[14px] ${selected?.id === r.id ? "bg-accent/10 text-accent" : "text-fg hover:bg-bg"}`}
               >
                 <span>{r.name}</span>
                 {r.user_count !== undefined && (
@@ -123,6 +124,31 @@ function RoleMatrix({ role, canManage }: { role: AdminRole; canManage: boolean }
   }, [role.permissions, granted]);
   const editable = canManage && !role.is_system;
 
+  function save() {
+    replace.mutate(
+      { id: role.id, permissions: [...granted] },
+      {
+        onSuccess: () => {
+          toast.success(t("saved"));
+        },
+        onError: (error) => {
+          toast.error(
+            error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
+          );
+        },
+      },
+    );
+  }
+
+  function permissionText(code: string, fallback: string): { label: string; description: string } {
+    return t.has(`permissions.${code}.label`)
+      ? {
+          label: t(`permissions.${code}.label`),
+          description: t(`permissions.${code}.description`),
+        }
+      : { label: code, description: fallback };
+  }
+
   return (
     <section className="flex flex-col gap-4 rounded-sm border border-border bg-surface p-4">
       <div className="flex flex-wrap items-start justify-between gap-2">
@@ -133,41 +159,15 @@ function RoleMatrix({ role, canManage }: { role: AdminRole; canManage: boolean }
           <span className="text-[13px] text-fg-muted">{role.description ?? role.slug}</span>
         </div>
         {editable && (
-          <div className="flex gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setConfirmDelete(true);
-              }}
-            >
-              {t("deleteRole")}
-            </Button>
-            <Button
-              size="sm"
-              disabled={!dirty}
-              loading={replace.isPending}
-              onClick={() => {
-                replace.mutate(
-                  { id: role.id, permissions: [...granted] },
-                  {
-                    onSuccess: () => {
-                      toast.success(t("saved"));
-                    },
-                    onError: (error) => {
-                      toast.error(
-                        error instanceof ApiError
-                          ? apiErrorMessage(error.code)
-                          : apiErrorMessage("UNKNOWN"),
-                      );
-                    },
-                  },
-                );
-              }}
-            >
-              {t("save")}
-            </Button>
-          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setConfirmDelete(true);
+            }}
+          >
+            {t("deleteRole")}
+          </Button>
         )}
       </div>
       {role.is_system && <p className="text-[13px] text-fg-muted">{t("systemHint")}</p>}
@@ -175,44 +175,88 @@ function RoleMatrix({ role, canManage }: { role: AdminRole; canManage: boolean }
         <Skeleton className="h-64 w-full" />
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
-          {(permissions.data?.groups ?? []).map((group) => (
-            <fieldset
-              key={group.name}
-              className="flex flex-col gap-2 rounded-xs border border-border p-3"
-            >
-              <legend className="px-1 text-[13px] font-medium text-fg">
-                {t.has(`groups.${group.name}`) ? t(`groups.${group.name}`) : group.name}
-              </legend>
-              {group.permissions.map((p) => {
-                const dutyOnly = role.slug === "teacher" && DUTY_ONLY_PERMISSIONS.has(p.code);
-                return (
-                  <div key={p.code} className="flex items-start gap-2 text-[13px]">
-                    <Checkbox
-                      id={`perm-${p.code}`}
-                      aria-label={p.code}
-                      checked={granted.has(p.code)}
-                      disabled={!editable || dutyOnly}
-                      onCheckedChange={(v) => {
-                        setGranted((prev) => {
-                          const next = new Set(prev);
-                          if (v === true) next.add(p.code);
-                          else next.delete(p.code);
-                          return next;
-                        });
-                      }}
-                    />
-                    <span className="flex flex-col">
-                      <label htmlFor={`perm-${p.code}`}>{p.code}</label>
-                      <span className="text-[12px] text-fg-muted">{p.description}</span>
-                      {dutyOnly && (
-                        <span className="text-[12px] text-fg-muted">{t("dutyOnlyHint")}</span>
+          {(permissions.data?.groups ?? []).map((group) => {
+            const grantedInGroup = group.permissions.filter((p) => granted.has(p.code)).length;
+            return (
+              <fieldset
+                key={group.name}
+                className="flex min-w-0 flex-col rounded-xs border border-border p-3 pt-1"
+              >
+                <legend className="flex items-center gap-2 px-1 text-[13px] font-medium text-fg">
+                  {t.has(`groups.${group.name}`) ? t(`groups.${group.name}`) : group.name}
+                  <span className="text-[12px] font-normal text-fg-muted">
+                    {t("permissionCount", {
+                      granted: grantedInGroup,
+                      total: group.permissions.length,
+                    })}
+                  </span>
+                </legend>
+                {group.permissions.map((p) => {
+                  const dutyOnly = role.slug === "teacher" && DUTY_ONLY_PERMISSIONS.has(p.code);
+                  const text = permissionText(p.code, p.description);
+                  const disabled = !editable || dutyOnly;
+                  return (
+                    // The whole row is the label, so a thumb anywhere on
+                    // it toggles the permission, not only the 16px box.
+                    <label
+                      key={p.code}
+                      htmlFor={`perm-${p.code}`}
+                      className={cn(
+                        "-mx-1 flex items-start gap-3 rounded-xs px-1 py-2 text-[13px]",
+                        !disabled && "cursor-pointer hover:bg-bg",
                       )}
-                    </span>
-                  </div>
-                );
-              })}
-            </fieldset>
-          ))}
+                    >
+                      <Checkbox
+                        id={`perm-${p.code}`}
+                        className="mt-0.5"
+                        checked={granted.has(p.code)}
+                        disabled={disabled}
+                        onCheckedChange={(v) => {
+                          setGranted((prev) => {
+                            const next = new Set(prev);
+                            if (v === true) next.add(p.code);
+                            else next.delete(p.code);
+                            return next;
+                          });
+                        }}
+                      />
+                      <span className="flex min-w-0 flex-col gap-0.5">
+                        <span className="font-medium text-fg">{text.label}</span>
+                        <span className="text-[12px] text-fg-muted">{text.description}</span>
+                        <span className="break-all font-mono text-[11px] text-fg-muted">
+                          {p.code}
+                        </span>
+                        {dutyOnly && (
+                          <span className="text-[12px] text-fg-muted">{t("dutyOnlyHint")}</span>
+                        )}
+                      </span>
+                    </label>
+                  );
+                })}
+              </fieldset>
+            );
+          })}
+        </div>
+      )}
+      {editable && dirty && (
+        // Sticky so a long matrix never hides the save button: on a phone
+        // it rides just above the tab bar.
+        <div className="sticky bottom-[calc(var(--shell-mobile-tab-offset)+0.5rem)] z-10 flex flex-wrap items-center justify-between gap-2 rounded-sm border border-border bg-surface p-3 shadow-(--shadow-float) md:bottom-4">
+          <span className="text-[13px] text-fg">{t("unsaved")}</span>
+          <div className="flex gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                setGranted(new Set(role.permissions));
+              }}
+            >
+              {t("cancel")}
+            </Button>
+            <Button size="sm" loading={replace.isPending} onClick={save}>
+              {t("save")}
+            </Button>
+          </div>
         </div>
       )}
       <ConfirmDialog
