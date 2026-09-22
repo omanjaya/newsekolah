@@ -394,6 +394,7 @@
     "eyebrow": "Library",
     "title": "Violations and fines",
     "record": "Record violation",
+    "settleAction": "Settle",
     "settle": {
       "title": "Settle violation",
       "description": "Settle as paid or waived. A suspended member reactivates once every violation is clear.",
