@@ -3,7 +3,6 @@
 Rebuild platform sistem informasi sekolah (asal: SION, Go + Next.js) menjadi platform multi-sekolah dengan web, iOS, dan Android.
 
 - Rencana lengkap: `docs/README.md` (mulai dari sana).
-- Arah desain: `DESIGN.md`.
 - Kode lama sebagai referensi logika (jangan diedit): `reference/sion` (snapshot GitHub arimartana/sion) dan `reference/sion-rebuild-go` (versi lokal lebih baru, menambah modul perpustakaan).
 
 ## Aturan kerja

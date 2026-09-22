@@ -9,12 +9,10 @@ import { useTenant } from "../../lib/tenant/tenant-provider";
 
 /**
  * Two-pane frame shared by every /(auth) page (login, change/forgot/reset
- * password). DESIGN.md permits ENERGY 3 on public pages, so the login flow
- * gets a solid accent brand panel in the school's own colour on the left and
- * the form on a bordered surface at the right. It stays within the system:
- * one accent, no gradient, cards separated by a line rather than a shadow, and
- * the only ornament is the school's own initials set faint behind the panel.
- * On narrow screens the panel drops away and the brand sits above the card.
+ * password): a solid accent brand panel in the school's own colour on the left
+ * and the form on a bordered surface at the right, with the school's initials
+ * set faint behind the panel as the only ornament. On narrow screens the panel
+ * drops away and the brand sits above the card.
  */
 export default function AuthLayout({ children }: { children: ReactNode }): ReactElement {
   const { displayName } = useTenant();
