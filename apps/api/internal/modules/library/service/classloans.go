@@ -44,37 +44,43 @@ func (s *Service) PreviewClassLoans(ctx context.Context, tenantID, classID, titl
 	if err := s.requireEnabled(ctx, tenantID); err != nil {
 		return ClassLoanPreview{}, err
 	}
-	roster, err := s.repo.ListClassRoster(ctx, tenantID, classID)
-	if err != nil {
-		return ClassLoanPreview{}, err
-	}
-	copies, err := s.repo.ListCopiesForTitle(ctx, tenantID, titleID)
-	if err != nil {
-		return ClassLoanPreview{}, err
-	}
-	available := make([]domain.Copy, 0, len(copies))
-	for _, c := range copies {
-		if c.Status == domain.CopyAvailable {
-			available = append(available, c)
-		}
-	}
-
 	out := ClassLoanPreview{}
-	copyIdx := 0
-	for _, student := range roster {
-		if reason, skip := s.classLoanRejectReason(ctx, tenantID, titleID, student.UserID); skip {
-			out.Rejected = append(out.Rejected, ClassLoanRejected{StudentUserID: student.UserID, StudentName: student.UserName, Reason: reason})
-			continue
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		roster, err := s.repo.ListClassRoster(ctx, tenantID, classID)
+		if err != nil {
+			return err
 		}
-		if copyIdx >= len(available) {
-			out.Rejected = append(out.Rejected, ClassLoanRejected{StudentUserID: student.UserID, StudentName: student.UserName, Reason: "no copy available"})
-			continue
+		copies, err := s.repo.ListCopiesForTitle(ctx, tenantID, titleID)
+		if err != nil {
+			return err
 		}
-		cp := available[copyIdx]
-		copyIdx++
-		out.Pairs = append(out.Pairs, ClassLoanPair{
-			StudentUserID: student.UserID, StudentName: student.UserName, TitleID: titleID, CopyID: cp.ID, Barcode: cp.Barcode,
-		})
+		available := make([]domain.Copy, 0, len(copies))
+		for _, c := range copies {
+			if c.Status == domain.CopyAvailable {
+				available = append(available, c)
+			}
+		}
+
+		copyIdx := 0
+		for _, student := range roster {
+			if reason, skip := s.classLoanRejectReason(ctx, tenantID, titleID, student.UserID); skip {
+				out.Rejected = append(out.Rejected, ClassLoanRejected{StudentUserID: student.UserID, StudentName: student.UserName, Reason: reason})
+				continue
+			}
+			if copyIdx >= len(available) {
+				out.Rejected = append(out.Rejected, ClassLoanRejected{StudentUserID: student.UserID, StudentName: student.UserName, Reason: "no copy available"})
+				continue
+			}
+			cp := available[copyIdx]
+			copyIdx++
+			out.Pairs = append(out.Pairs, ClassLoanPair{
+				StudentUserID: student.UserID, StudentName: student.UserName, TitleID: titleID, CopyID: cp.ID, Barcode: cp.Barcode,
+			})
+		}
+		return nil
+	})
+	if err != nil {
+		return ClassLoanPreview{}, err
 	}
 	return out, nil
 }
@@ -126,32 +132,38 @@ func (s *Service) ClassReturns(ctx context.Context, tenantID, classID, titleID, 
 	if err := s.requireEnabled(ctx, tenantID); err != nil {
 		return BatchBorrowResult{}, err
 	}
-	roster, err := s.repo.ListClassRoster(ctx, tenantID, classID)
-	if err != nil {
-		return BatchBorrowResult{}, err
-	}
 	var result BatchBorrowResult
-	for _, student := range roster {
-		loans, err := s.repo.ListLoansForMember(ctx, tenantID, student.UserID, false, 50, 0)
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		roster, err := s.repo.ListClassRoster(ctx, tenantID, classID)
 		if err != nil {
-			return result, err
+			return err
 		}
-		var active *domain.Loan
-		for i := range loans {
-			if loans[i].TitleID == titleID && loans[i].Status == domain.LoanActive {
-				active = &loans[i]
-				break
+		for _, student := range roster {
+			loans, err := s.repo.ListLoansForMember(ctx, tenantID, student.UserID, false, 50, 0)
+			if err != nil {
+				return err
 			}
+			var active *domain.Loan
+			for i := range loans {
+				if loans[i].TitleID == titleID && loans[i].Status == domain.LoanActive {
+					active = &loans[i]
+					break
+				}
+			}
+			if active == nil {
+				continue
+			}
+			loan, err := s.Return(ctx, tenantID, ReturnInput{LoanID: uuid.NullUUID{UUID: active.ID, Valid: true}, CheckedInBy: checkedInBy})
+			if err != nil {
+				result.Rejected = append(result.Rejected, RejectedBarcode{Barcode: student.UserName, Reason: err.Error()})
+				continue
+			}
+			result.Loans = append(result.Loans, loan)
 		}
-		if active == nil {
-			continue
-		}
-		loan, err := s.Return(ctx, tenantID, ReturnInput{LoanID: uuid.NullUUID{UUID: active.ID, Valid: true}, CheckedInBy: checkedInBy})
-		if err != nil {
-			result.Rejected = append(result.Rejected, RejectedBarcode{Barcode: student.UserName, Reason: err.Error()})
-			continue
-		}
-		result.Loans = append(result.Loans, loan)
+		return nil
+	})
+	if err != nil {
+		return result, err
 	}
 	return result, nil
 }

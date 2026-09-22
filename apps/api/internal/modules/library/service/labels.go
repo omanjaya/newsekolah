@@ -59,7 +59,12 @@ func (s *Service) PrintCopyLabels(ctx context.Context, tenantID uuid.UUID, copyI
 	if len(copyIDs) == 0 || len(copyIDs) > domain.LabelMaxPerPrint {
 		return nil, domain.ErrInvalidInput
 	}
-	copies, err := s.repo.GetCopiesByIDs(ctx, tenantID, copyIDs)
+	var copies []domain.Copy
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		copies, err = s.repo.GetCopiesByIDs(ctx, tenantID, copyIDs)
+		return err
+	})
 	if err != nil {
 		return nil, err
 	}

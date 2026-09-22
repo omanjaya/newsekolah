@@ -94,7 +94,14 @@ func (s *Service) LookupISBN(ctx context.Context, tenantID uuid.UUID, isbn strin
 		return cached, nil
 	}
 
-	if title, found, err := s.repo.GetTitleByISBN(ctx, tenantID, normalized); err == nil && found {
+	var title domain.Title
+	var foundLocal bool
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		title, foundLocal, err = s.repo.GetTitleByISBN(ctx, tenantID, normalized)
+		return err
+	})
+	if err == nil && foundLocal {
 		result := ISBNLookupResult{
 			Found: true, Source: "local", LocalTitleID: uuid.NullUUID{UUID: title.ID, Valid: true},
 			Bibliography: domain.ExternalBibliography{

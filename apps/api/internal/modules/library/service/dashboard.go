@@ -55,88 +55,103 @@ func (s *Service) Dashboard(ctx context.Context, tenantID uuid.UUID) (Dashboard,
 	dayStart := timeToDay(now)
 	dayEnd := dayStart.AddDate(0, 0, 1)
 
-	titles, err := s.repo.CountTitlesActive(ctx, tenantID)
-	if err != nil {
-		return Dashboard{}, err
-	}
-	copies, err := s.repo.CountCopiesTotal(ctx, tenantID)
-	if err != nil {
-		return Dashboard{}, err
-	}
-	available, err := s.repo.CountCopiesByStatus(ctx, tenantID, domain.CopyAvailable)
-	if err != nil {
-		return Dashboard{}, err
-	}
-	onLoan, err := s.repo.CountCopiesByStatus(ctx, tenantID, domain.CopyOnLoan)
-	if err != nil {
-		return Dashboard{}, err
-	}
-	overdue, err := s.repo.CountOverdueNow(ctx, tenantID, now)
-	if err != nil {
-		return Dashboard{}, err
-	}
-	loansToday, err := s.repo.CountLoansBetween(ctx, tenantID, dayStart, dayEnd)
-	if err != nil {
-		return Dashboard{}, err
-	}
-	returnsToday, err := s.repo.CountReturnsBetween(ctx, tenantID, dayStart, dayEnd)
-	if err != nil {
-		return Dashboard{}, err
-	}
-	unpaidFines, err := s.repo.SumUnpaidFines(ctx, tenantID)
-	if err != nil {
-		return Dashboard{}, err
-	}
-	members, err := s.repo.CountMembersTotal(ctx, tenantID)
-	if err != nil {
-		return Dashboard{}, err
-	}
-	activeMembers, err := s.repo.CountActiveMembersTotal(ctx, tenantID)
-	if err != nil {
-		return Dashboard{}, err
-	}
-	visitsToday, err := s.repo.CountVisitsBetween(ctx, tenantID, dayStart, dayEnd)
-	if err != nil {
-		return Dashboard{}, err
-	}
-	latestLoans, err := s.repo.ListLatestLoans(ctx, tenantID, 10)
-	if err != nil {
-		return Dashboard{}, err
-	}
-	longestOverdue, err := s.repo.ListLongestOverdueLoans(ctx, tenantID, now, 10)
-	if err != nil {
-		return Dashboard{}, err
-	}
-	popularCounts, err := s.repo.PopularTitlesAllTime(ctx, tenantID, 10)
-	if err != nil {
-		return Dashboard{}, err
-	}
-	popular := make([]MostBorrowedTitle, 0, len(popularCounts))
-	for _, c := range popularCounts {
-		title, found, err := s.repo.GetTitle(ctx, tenantID, c.TitleID)
+	var (
+		titles, copies, available, onLoan, overdue int
+		loansToday, returnsToday, unpaidFines      int
+		members, activeMembers, visitsToday        int
+		latestLoans, longestOverdue                []domain.Loan
+		popular                                    []MostBorrowedTitle
+		series                                     []DashboardSeriesPoint
+	)
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		titles, err = s.repo.CountTitlesActive(ctx, tenantID)
 		if err != nil {
-			return Dashboard{}, err
+			return err
 		}
-		if !found {
-			continue
-		}
-		withAvailability, err := s.withAvailability(ctx, tenantID, title)
+		copies, err = s.repo.CountCopiesTotal(ctx, tenantID)
 		if err != nil {
-			return Dashboard{}, err
+			return err
 		}
-		popular = append(popular, MostBorrowedTitle{Title: withAvailability, LoanCount: c.LoanCount})
-	}
+		available, err = s.repo.CountCopiesByStatus(ctx, tenantID, domain.CopyAvailable)
+		if err != nil {
+			return err
+		}
+		onLoan, err = s.repo.CountCopiesByStatus(ctx, tenantID, domain.CopyOnLoan)
+		if err != nil {
+			return err
+		}
+		overdue, err = s.repo.CountOverdueNow(ctx, tenantID, now)
+		if err != nil {
+			return err
+		}
+		loansToday, err = s.repo.CountLoansBetween(ctx, tenantID, dayStart, dayEnd)
+		if err != nil {
+			return err
+		}
+		returnsToday, err = s.repo.CountReturnsBetween(ctx, tenantID, dayStart, dayEnd)
+		if err != nil {
+			return err
+		}
+		unpaidFines, err = s.repo.SumUnpaidFines(ctx, tenantID)
+		if err != nil {
+			return err
+		}
+		members, err = s.repo.CountMembersTotal(ctx, tenantID)
+		if err != nil {
+			return err
+		}
+		activeMembers, err = s.repo.CountActiveMembersTotal(ctx, tenantID)
+		if err != nil {
+			return err
+		}
+		visitsToday, err = s.repo.CountVisitsBetween(ctx, tenantID, dayStart, dayEnd)
+		if err != nil {
+			return err
+		}
+		latestLoans, err = s.repo.ListLatestLoans(ctx, tenantID, 10)
+		if err != nil {
+			return err
+		}
+		longestOverdue, err = s.repo.ListLongestOverdueLoans(ctx, tenantID, now, 10)
+		if err != nil {
+			return err
+		}
+		popularCounts, err := s.repo.PopularTitlesAllTime(ctx, tenantID, 10)
+		if err != nil {
+			return err
+		}
+		popular = make([]MostBorrowedTitle, 0, len(popularCounts))
+		for _, c := range popularCounts {
+			title, found, err := s.repo.GetTitle(ctx, tenantID, c.TitleID)
+			if err != nil {
+				return err
+			}
+			if !found {
+				continue
+			}
+			withAvailability, err := s.withAvailability(ctx, tenantID, title)
+			if err != nil {
+				return err
+			}
+			popular = append(popular, MostBorrowedTitle{Title: withAvailability, LoanCount: c.LoanCount})
+		}
 
-	since := dayStart.AddDate(0, 0, -dashboardSeriesDays)
-	loanSeries, err := s.repo.DailyLoansSeries(ctx, tenantID, since)
+		since := dayStart.AddDate(0, 0, -dashboardSeriesDays)
+		loanSeries, err := s.repo.DailyLoansSeries(ctx, tenantID, since)
+		if err != nil {
+			return err
+		}
+		returnSeries, err := s.repo.DailyReturnsSeries(ctx, tenantID, since)
+		if err != nil {
+			return err
+		}
+		series = mergeSeries(loanSeries, returnSeries)
+		return nil
+	})
 	if err != nil {
 		return Dashboard{}, err
 	}
-	returnSeries, err := s.repo.DailyReturnsSeries(ctx, tenantID, since)
-	if err != nil {
-		return Dashboard{}, err
-	}
-	series := mergeSeries(loanSeries, returnSeries)
 
 	return Dashboard{
 		Summary: DashboardSummary{

@@ -27,17 +27,25 @@ func (s *Service) Lookup(ctx context.Context, tenantID uuid.UUID, query string) 
 	if len(query) < 2 {
 		return nil, nil
 	}
-	members, err := s.repo.LookupMembers(ctx, tenantID, query, maxLookupResults)
+	var members []MemberLookupResult
+	var copies []CopyLookupResult
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		members, err = s.repo.LookupMembers(ctx, tenantID, query, maxLookupResults)
+		if err != nil {
+			return err
+		}
+		remaining := maxLookupResults - len(members)
+		if remaining > 0 {
+			copies, err = s.repo.LookupCopies(ctx, tenantID, query, remaining)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 	if err != nil {
 		return nil, err
-	}
-	remaining := maxLookupResults - len(members)
-	var copies []CopyLookupResult
-	if remaining > 0 {
-		copies, err = s.repo.LookupCopies(ctx, tenantID, query, remaining)
-		if err != nil {
-			return nil, err
-		}
 	}
 	out := make([]LookupResult, 0, len(members)+len(copies))
 	for i := range members {
