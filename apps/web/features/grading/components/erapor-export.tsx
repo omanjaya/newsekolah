@@ -89,9 +89,14 @@ export function EraporExport(): ReactElement {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-end gap-3">
-        <label className="flex flex-col gap-1 text-[13px]">
+        <label className="flex w-full flex-col gap-1 text-[13px] md:w-auto">
           <span className="font-medium">{t("pickTerm")}</span>
-          <Select options={termOptions} value={termId} onValueChange={setTermId} className="w-56" />
+          <Select
+            options={termOptions}
+            value={termId}
+            onValueChange={setTermId}
+            className="w-full md:w-56"
+          />
         </label>
         <label className="flex flex-col gap-1 text-[13px]">
           <span className="font-medium">{t("formatLabel")}</span>
@@ -104,12 +109,15 @@ export function EraporExport(): ReactElement {
             className="w-40"
           />
         </label>
-        <Select
-          options={classOptions}
-          value={effectiveClassId}
-          onValueChange={setClassId}
-          className="w-56"
-        />
+        <label className="flex w-full flex-col gap-1 text-[13px] md:w-auto">
+          <span className="font-medium">{t("pickClass")}</span>
+          <Select
+            options={classOptions}
+            value={effectiveClassId}
+            onValueChange={setClassId}
+            className="w-full md:w-56"
+          />
+        </label>
         <Button
           icon={<Download />}
           loading={downloading}
@@ -201,13 +209,13 @@ export function EraporExport(): ReactElement {
         <h3 className="text-[14px] font-medium text-fg">{t("legacyTitle")}</h3>
         <p className="text-[13px] text-fg-muted">{t("legacyHint")}</p>
         <div className="flex flex-wrap items-end gap-3">
-          <label className="flex flex-col gap-1 text-[13px]">
+          <label className="flex w-full flex-col gap-1 text-[13px] md:w-auto">
             <span className="font-medium">{t("legacySubject")}</span>
             <Select
               options={subjectOptions}
               value={legacySubjectId}
               onValueChange={setLegacySubjectId}
-              className="w-56"
+              className="w-full md:w-56"
             />
           </label>
           <Button

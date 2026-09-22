@@ -79,7 +79,7 @@ export function TPMappingEditor({
           options={termOptions}
           value={effectiveTermId}
           onValueChange={setTermId}
-          className="w-56"
+          className="w-full md:w-56"
         />
       </label>
 
