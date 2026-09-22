@@ -8,6 +8,7 @@ storybook-static/
 .env
 .env.*
 !.env.example
+!infra/docker/.env.prod.example
 .DS_Store
 *.log
 apps/api/bin/
