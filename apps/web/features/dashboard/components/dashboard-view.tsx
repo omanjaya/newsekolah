@@ -28,19 +28,23 @@ export function DashboardView(): ReactElement {
   const format = useFormatter();
   const canManageAttendance = useCan("manage_attendance");
   const canReviewLeave = useCan("review_leave_requests");
-  const canIssueLeave = useCan("issue_leave_letters");
   const canManageCirculation = useCan("manage_library_circulation");
   const canIssueScanTokens = useCan("issue_scan_tokens");
   const canViewChildren = useCan("view_child_attendance");
   const canViewAcademicData = useCan("view_academic_data");
   const canViewOwnGrades = useCan("view_own_grades");
-  const canHandleLeave = canReviewLeave || canIssueLeave;
   const sessions = useTodaySessionsQuery(
     { date: todayInZone(me?.tenant.timezone) },
     canManageAttendance,
   );
   const lateQueue = useLateArrivalQueueQuery(canManageAttendance);
-  const leaveQueue = useLeaveReviewQueueQuery(canHandleLeave);
+  // GET /v1/leave-requests/review-queue is gated server-side on
+  // review_leave_requests specifically (openapi/modules/permits.yaml); a
+  // counselor duty grants issue_leave_letters without it, and querying this
+  // for them only produced a 403 the dashboard then rendered as a task-list
+  // error (docs/07-ui-ux.md's "layar pertama ... tanpa scroll" promise, not
+  // an error card on first load).
+  const leaveQueue = useLeaveReviewQueueQuery(canReviewLeave);
   const unread = useUnreadCountQuery(Boolean(me));
   const classes = useClassesQuery(canManageAttendance);
   const subjects = useSubjectsQuery(canManageAttendance);
@@ -67,7 +71,7 @@ export function DashboardView(): ReactElement {
   const taskQueries = [
     unread,
     ...(canManageAttendance ? [sessions, lateQueue] : []),
-    ...(canHandleLeave ? [leaveQueue] : []),
+    ...(canReviewLeave ? [leaveQueue] : []),
   ];
   const tasksFailed = taskQueries.some((query) => query.isError);
   const tasksLoading = taskQueries.some((query) => query.isLoading);
@@ -101,7 +105,7 @@ export function DashboardView(): ReactElement {
           },
         ]
       : []),
-    ...(canHandleLeave
+    ...(canReviewLeave
       ? [
           {
             key: "leave",
