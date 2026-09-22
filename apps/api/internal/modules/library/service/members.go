@@ -171,12 +171,21 @@ func (s *Service) BulkRegisterByRole(ctx context.Context, tenantID, memberTypeID
 }
 
 func (s *Service) GetMember(ctx context.Context, tenantID, userID uuid.UUID) (domain.Member, error) {
-	member, found, err := s.repo.GetMember(ctx, tenantID, userID)
+	var member domain.Member
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var found bool
+		var err error
+		member, found, err = s.repo.GetMember(ctx, tenantID, userID)
+		if err != nil {
+			return err
+		}
+		if !found {
+			return domain.ErrMemberNotFound
+		}
+		return nil
+	})
 	if err != nil {
 		return domain.Member{}, err
-	}
-	if !found {
-		return domain.Member{}, domain.ErrMemberNotFound
 	}
 	return member, nil
 }
@@ -191,7 +200,13 @@ type ListMembersInput struct {
 }
 
 func (s *Service) ListMembers(ctx context.Context, tenantID uuid.UUID, in ListMembersInput) ([]domain.Member, error) {
-	return s.repo.ListMembers(ctx, tenantID, MemberListFilter{Status: in.Status, MemberTypeID: in.MemberTypeID, Search: in.Search}, clampLimit(in.Limit), in.Offset)
+	var members []domain.Member
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		members, err = s.repo.ListMembers(ctx, tenantID, MemberListFilter{Status: in.Status, MemberTypeID: in.MemberTypeID, Search: in.Search}, clampLimit(in.Limit), in.Offset)
+		return err
+	})
+	return members, err
 }
 
 // UpdateMemberStatus lets staff move a member between statuses directly
@@ -201,23 +216,41 @@ func (s *Service) UpdateMemberStatus(ctx context.Context, tenantID, userID uuid.
 	if !status.Valid() {
 		return domain.Member{}, domain.ErrInvalidInput
 	}
-	member, found, err := s.repo.UpdateMemberStatus(ctx, tenantID, userID, status, nil)
+	var member domain.Member
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var found bool
+		var err error
+		member, found, err = s.repo.UpdateMemberStatus(ctx, tenantID, userID, status, nil)
+		if err != nil {
+			return err
+		}
+		if !found {
+			return domain.ErrMemberNotFound
+		}
+		return nil
+	})
 	if err != nil {
 		return domain.Member{}, err
-	}
-	if !found {
-		return domain.Member{}, domain.ErrMemberNotFound
 	}
 	return member, nil
 }
 
 func (s *Service) UpdateMemberProfile(ctx context.Context, tenantID, userID, memberTypeID uuid.UUID, validUntil *time.Time, notes string) (domain.Member, error) {
-	member, found, err := s.repo.UpdateMemberProfile(ctx, tenantID, userID, memberTypeID, validUntil, notes)
+	var member domain.Member
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var found bool
+		var err error
+		member, found, err = s.repo.UpdateMemberProfile(ctx, tenantID, userID, memberTypeID, validUntil, notes)
+		if err != nil {
+			return err
+		}
+		if !found {
+			return domain.ErrMemberNotFound
+		}
+		return nil
+	})
 	if err != nil {
 		return domain.Member{}, err
-	}
-	if !found {
-		return domain.Member{}, domain.ErrMemberNotFound
 	}
 	return member, nil
 }
@@ -262,7 +295,13 @@ func (s *Service) CreateMemberType(ctx context.Context, tenantID uuid.UUID, t do
 	if err := t.Validate(); err != nil {
 		return domain.MemberType{}, err
 	}
-	return s.repo.CreateMemberType(ctx, t)
+	var created domain.MemberType
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		created, err = s.repo.CreateMemberType(ctx, t)
+		return err
+	})
+	return created, err
 }
 
 func (s *Service) UpdateMemberType(ctx context.Context, tenantID uuid.UUID, t domain.MemberType) (domain.MemberType, error) {
@@ -270,27 +309,41 @@ func (s *Service) UpdateMemberType(ctx context.Context, tenantID uuid.UUID, t do
 	if err := t.Validate(); err != nil {
 		return domain.MemberType{}, err
 	}
-	return s.repo.UpdateMemberType(ctx, t)
+	var updated domain.MemberType
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		updated, err = s.repo.UpdateMemberType(ctx, t)
+		return err
+	})
+	return updated, err
 }
 
 func (s *Service) ListMemberTypes(ctx context.Context, tenantID uuid.UUID) ([]domain.MemberType, error) {
-	return s.repo.ListMemberTypes(ctx, tenantID)
+	var types []domain.MemberType
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		types, err = s.repo.ListMemberTypes(ctx, tenantID)
+		return err
+	})
+	return types, err
 }
 
 func (s *Service) DeleteMemberType(ctx context.Context, tenantID, id uuid.UUID) error {
-	count, err := s.repo.CountMembersByType(ctx, tenantID, id)
-	if err != nil {
-		return err
-	}
-	if count > 0 {
-		return domain.ErrMemberTypeInUse
-	}
-	ok, err := s.repo.DeleteMemberType(ctx, tenantID, id)
-	if err != nil {
-		return err
-	}
-	if !ok {
-		return domain.ErrMemberTypeNotFound
-	}
-	return nil
+	return s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		count, err := s.repo.CountMembersByType(ctx, tenantID, id)
+		if err != nil {
+			return err
+		}
+		if count > 0 {
+			return domain.ErrMemberTypeInUse
+		}
+		ok, err := s.repo.DeleteMemberType(ctx, tenantID, id)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			return domain.ErrMemberTypeNotFound
+		}
+		return nil
+	})
 }

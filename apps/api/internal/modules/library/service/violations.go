@@ -64,11 +64,23 @@ func ifValid(id uuid.NullUUID) uuid.UUID {
 }
 
 func (s *Service) ListViolationsForMember(ctx context.Context, tenantID, memberID uuid.UUID) ([]domain.Violation, error) {
-	return s.repo.ListViolationsForMember(ctx, tenantID, memberID)
+	var violations []domain.Violation
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		violations, err = s.repo.ListViolationsForMember(ctx, tenantID, memberID)
+		return err
+	})
+	return violations, err
 }
 
 func (s *Service) ListViolations(ctx context.Context, tenantID uuid.UUID, status, kind string, limit, offset int) ([]domain.Violation, error) {
-	return s.repo.ListViolations(ctx, tenantID, status, kind, clampLimit(limit), offset)
+	var violations []domain.Violation
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		violations, err = s.repo.ListViolations(ctx, tenantID, status, kind, clampLimit(limit), offset)
+		return err
+	})
+	return violations, err
 }
 
 // SettleViolation marks a violation paid or waived. If the member's

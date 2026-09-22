@@ -100,7 +100,14 @@ func (s *Service) PrintMemberCard(ctx context.Context, tenantID, memberUserID uu
 	if err := s.requireEnabled(ctx, tenantID); err != nil {
 		return nil, err
 	}
-	rendered, err := s.renderer.Render(ctx, documents.Template{Engine: documents.EngineHTML, Body: memberCardTemplate}, s.memberCardVars(ctx, tenantID, memberUserID))
+	var vars map[string]any
+	if err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		vars = s.memberCardVars(ctx, tenantID, memberUserID)
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	rendered, err := s.renderer.Render(ctx, documents.Template{Engine: documents.EngineHTML, Body: memberCardTemplate}, vars)
 	if err != nil {
 		return nil, fmt.Errorf("render member card: %w", err)
 	}
@@ -114,14 +121,21 @@ func (s *Service) PrintClearanceLetter(ctx context.Context, tenantID, memberUser
 	if err := s.requireEnabled(ctx, tenantID); err != nil {
 		return nil, err
 	}
-	member, found, err := s.repo.GetMember(ctx, tenantID, memberUserID)
+	var vars map[string]any
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		member, found, err := s.repo.GetMember(ctx, tenantID, memberUserID)
+		if err != nil {
+			return err
+		}
+		if !found || member.Status != domain.MemberCleared {
+			return domain.ErrMemberNotClearable
+		}
+		vars = s.memberCardVars(ctx, tenantID, memberUserID)
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
-	if !found || member.Status != domain.MemberCleared {
-		return nil, domain.ErrMemberNotClearable
-	}
-	vars := s.memberCardVars(ctx, tenantID, memberUserID)
 	vars["IssuedOn"] = s.clock.Now().Format("2006-01-02")
 	rendered, err := s.renderer.Render(ctx, documents.Template{Engine: documents.EngineHTML, Body: clearanceLetterTemplate}, vars)
 	if err != nil {

@@ -74,11 +74,23 @@ func (s *Service) TodayVisitSummary(ctx context.Context, tenantID uuid.UUID) (Vi
 	}
 	now := s.clock.Now().In(loc)
 	from := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, loc)
-	return s.repo.TodayVisitSummary(ctx, tenantID, from, from.AddDate(0, 0, 1))
+	var summary VisitSummary
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		summary, err = s.repo.TodayVisitSummary(ctx, tenantID, from, from.AddDate(0, 0, 1))
+		return err
+	})
+	return summary, err
 }
 
 func (s *Service) ListVisits(ctx context.Context, tenantID uuid.UUID, from, to time.Time) ([]domain.Visit, error) {
-	return s.repo.ListVisitsForRange(ctx, tenantID, from, to)
+	var visits []domain.Visit
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		visits, err = s.repo.ListVisitsForRange(ctx, tenantID, from, to)
+		return err
+	})
+	return visits, err
 }
 
 // StartReadInPlace logs a copy being read at a library table rather than
@@ -87,19 +99,34 @@ func (s *Service) StartReadInPlace(ctx context.Context, tenantID uuid.UUID, copy
 	if err := s.requireEnabled(ctx, tenantID); err != nil {
 		return domain.ReadInPlace{}, err
 	}
-	if _, found, err := s.repo.GetCopy(ctx, tenantID, copyID); err != nil {
-		return domain.ReadInPlace{}, err
-	} else if !found {
-		return domain.ReadInPlace{}, domain.ErrCopyNotFound
-	}
-	return s.repo.CreateReadInPlace(ctx, domain.ReadInPlace{
-		TenantID: tenantID, CopyID: copyID, MemberUserID: memberUserID, VisitorName: visitorName,
-		StartedAt: s.clock.Now(), CreatedBy: createdBy,
+	var readInPlace domain.ReadInPlace
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		if _, found, err := s.repo.GetCopy(ctx, tenantID, copyID); err != nil {
+			return err
+		} else if !found {
+			return domain.ErrCopyNotFound
+		}
+		var err error
+		readInPlace, err = s.repo.CreateReadInPlace(ctx, domain.ReadInPlace{
+			TenantID: tenantID, CopyID: copyID, MemberUserID: memberUserID, VisitorName: visitorName,
+			StartedAt: s.clock.Now(), CreatedBy: createdBy,
+		})
+		return err
 	})
+	if err != nil {
+		return domain.ReadInPlace{}, err
+	}
+	return readInPlace, nil
 }
 
 func (s *Service) ReadInPlaceHistory(ctx context.Context, tenantID, copyID uuid.UUID) ([]domain.ReadInPlace, error) {
-	return s.repo.ListReadInPlaceForCopy(ctx, tenantID, copyID)
+	var history []domain.ReadInPlace
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		history, err = s.repo.ListReadInPlaceForCopy(ctx, tenantID, copyID)
+		return err
+	})
+	return history, err
 }
 
 // IssueKioskVisitToken mints a scan token the library kiosk shows for a

@@ -27,36 +27,42 @@ func (s *Service) MyProfile(ctx context.Context, tenantID, userID uuid.UUID) (My
 		return MyProfile{}, err
 	}
 	var out MyProfile
-	if member, found, err := s.repo.GetMember(ctx, tenantID, userID); err != nil {
-		return MyProfile{}, err
-	} else if found {
-		out.Member = &member
-	}
-	active, err := s.repo.ListLoansForMember(ctx, tenantID, userID, false, myHistoryLimit, 0)
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		if member, found, err := s.repo.GetMember(ctx, tenantID, userID); err != nil {
+			return err
+		} else if found {
+			out.Member = &member
+		}
+		active, err := s.repo.ListLoansForMember(ctx, tenantID, userID, false, myHistoryLimit, 0)
+		if err != nil {
+			return err
+		}
+		out.ActiveLoans = active
+		history, err := s.repo.ListLoansForMember(ctx, tenantID, userID, true, myHistoryLimit, 0)
+		if err != nil {
+			return err
+		}
+		out.History = history
+		reservations, err := s.repo.ListReservationsForMember(ctx, tenantID, userID)
+		if err != nil {
+			return err
+		}
+		out.Reservations = reservations
+		violations, err := s.repo.ListViolationsForMember(ctx, tenantID, userID)
+		if err != nil {
+			return err
+		}
+		out.Violations = violations
+		policy, err := s.loadPolicy(ctx, tenantID)
+		if err != nil {
+			return err
+		}
+		out.BookingEnabled = policy.BookingEnabled
+		return nil
+	})
 	if err != nil {
 		return MyProfile{}, err
 	}
-	out.ActiveLoans = active
-	history, err := s.repo.ListLoansForMember(ctx, tenantID, userID, true, myHistoryLimit, 0)
-	if err != nil {
-		return MyProfile{}, err
-	}
-	out.History = history
-	reservations, err := s.repo.ListReservationsForMember(ctx, tenantID, userID)
-	if err != nil {
-		return MyProfile{}, err
-	}
-	out.Reservations = reservations
-	violations, err := s.repo.ListViolationsForMember(ctx, tenantID, userID)
-	if err != nil {
-		return MyProfile{}, err
-	}
-	out.Violations = violations
-	policy, err := s.loadPolicy(ctx, tenantID)
-	if err != nil {
-		return MyProfile{}, err
-	}
-	out.BookingEnabled = policy.BookingEnabled
 	return out, nil
 }
 
@@ -73,15 +79,20 @@ func (s *Service) CancelMyReservation(ctx context.Context, tenantID, reservation
 	if err := s.requireEnabled(ctx, tenantID); err != nil {
 		return domain.Reservation{}, err
 	}
-	existing, found, err := s.repo.GetReservation(ctx, tenantID, reservationID)
-	if err != nil {
-		return domain.Reservation{}, err
-	}
-	if !found {
-		return domain.Reservation{}, domain.ErrReservationNotFound
-	}
-	if existing.MemberUserID != userID {
-		return domain.Reservation{}, domain.ErrForbidden
-	}
-	return s.CancelReservation(ctx, tenantID, reservationID)
+	var reservation domain.Reservation
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		existing, found, err := s.repo.GetReservation(ctx, tenantID, reservationID)
+		if err != nil {
+			return err
+		}
+		if !found {
+			return domain.ErrReservationNotFound
+		}
+		if existing.MemberUserID != userID {
+			return domain.ErrForbidden
+		}
+		reservation, err = s.CancelReservation(ctx, tenantID, reservationID)
+		return err
+	})
+	return reservation, err
 }

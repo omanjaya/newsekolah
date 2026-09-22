@@ -18,21 +18,36 @@ func (s *Service) StartStocktake(ctx context.Context, tenantID uuid.UUID, name s
 	if name == "" {
 		return domain.Stocktake{}, domain.ErrInvalidInput
 	}
-	return s.repo.CreateStocktake(ctx, domain.Stocktake{
-		TenantID: tenantID, Name: name, StartedOn: s.clock.Now(), CoordinatorUserID: coordinatorUserID, Notes: notes,
+	var created domain.Stocktake
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		created, err = s.repo.CreateStocktake(ctx, domain.Stocktake{
+			TenantID: tenantID, Name: name, StartedOn: s.clock.Now(), CoordinatorUserID: coordinatorUserID, Notes: notes,
+		})
+		return err
 	})
+	return created, err
 }
 
 func (s *Service) GetStocktake(ctx context.Context, tenantID, id uuid.UUID) (domain.Stocktake, error) {
 	if err := s.requireEnabled(ctx, tenantID); err != nil {
 		return domain.Stocktake{}, err
 	}
-	st, found, err := s.repo.GetStocktake(ctx, tenantID, id)
+	var st domain.Stocktake
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var found bool
+		var err error
+		st, found, err = s.repo.GetStocktake(ctx, tenantID, id)
+		if err != nil {
+			return err
+		}
+		if !found {
+			return domain.ErrStocktakeNotFound
+		}
+		return nil
+	})
 	if err != nil {
 		return domain.Stocktake{}, err
-	}
-	if !found {
-		return domain.Stocktake{}, domain.ErrStocktakeNotFound
 	}
 	return st, nil
 }
@@ -41,7 +56,13 @@ func (s *Service) ListStocktakes(ctx context.Context, tenantID uuid.UUID, limit,
 	if err := s.requireEnabled(ctx, tenantID); err != nil {
 		return nil, err
 	}
-	return s.repo.ListStocktakes(ctx, tenantID, clampLimit(limit), offset)
+	var stocktakes []domain.Stocktake
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		stocktakes, err = s.repo.ListStocktakes(ctx, tenantID, clampLimit(limit), offset)
+		return err
+	})
+	return stocktakes, err
 }
 
 // ScanCodes records a batch of scanned codes (barcode, accession number,
@@ -56,35 +77,42 @@ func (s *Service) ScanCodes(ctx context.Context, tenantID, stocktakeID uuid.UUID
 	if len(codes) == 0 {
 		return nil, domain.ErrInvalidInput
 	}
-	st, found, err := s.repo.GetStocktake(ctx, tenantID, stocktakeID)
+	now := s.clock.Now()
+	var out []domain.StocktakeScan
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		st, found, err := s.repo.GetStocktake(ctx, tenantID, stocktakeID)
+		if err != nil {
+			return err
+		}
+		if !found {
+			return domain.ErrStocktakeNotFound
+		}
+		if st.Status != domain.StocktakeOpen {
+			return domain.ErrStocktakeClosed
+		}
+
+		out = make([]domain.StocktakeScan, 0, len(codes))
+		for _, code := range codes {
+			scan := domain.StocktakeScan{
+				TenantID: tenantID, StocktakeID: stocktakeID, RawCode: code, LocationID: locationID,
+				ScannedAt: now, ScannedByUser: scannedBy, Outcome: domain.ScanRejected,
+			}
+			if item, found, err := s.repo.FindCopyByCode(ctx, tenantID, code); err != nil {
+				return err
+			} else if found {
+				scan.CopyID = uuid.NullUUID{UUID: item.ID, Valid: true}
+				scan.Outcome = domain.ScanFound
+			}
+			recorded, err := s.repo.RecordStocktakeScan(ctx, scan)
+			if err != nil {
+				return err
+			}
+			out = append(out, recorded)
+		}
+		return nil
+	})
 	if err != nil {
 		return nil, err
-	}
-	if !found {
-		return nil, domain.ErrStocktakeNotFound
-	}
-	if st.Status != domain.StocktakeOpen {
-		return nil, domain.ErrStocktakeClosed
-	}
-
-	now := s.clock.Now()
-	out := make([]domain.StocktakeScan, 0, len(codes))
-	for _, code := range codes {
-		scan := domain.StocktakeScan{
-			TenantID: tenantID, StocktakeID: stocktakeID, RawCode: code, LocationID: locationID,
-			ScannedAt: now, ScannedByUser: scannedBy, Outcome: domain.ScanRejected,
-		}
-		if item, found, err := s.repo.FindCopyByCode(ctx, tenantID, code); err != nil {
-			return nil, err
-		} else if found {
-			scan.CopyID = uuid.NullUUID{UUID: item.ID, Valid: true}
-			scan.Outcome = domain.ScanFound
-		}
-		recorded, err := s.repo.RecordStocktakeScan(ctx, scan)
-		if err != nil {
-			return nil, err
-		}
-		out = append(out, recorded)
 	}
 	return out, nil
 }
@@ -102,17 +130,25 @@ func (s *Service) StocktakeProgress(ctx context.Context, tenantID, stocktakeID u
 	if err := s.requireEnabled(ctx, tenantID); err != nil {
 		return Progress{}, err
 	}
-	if _, err := s.GetStocktake(ctx, tenantID, stocktakeID); err != nil {
-		return Progress{}, err
-	}
-	result, err := s.reconcile(ctx, tenantID, stocktakeID)
+	var progress Progress
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		if _, err := s.GetStocktake(ctx, tenantID, stocktakeID); err != nil {
+			return err
+		}
+		result, err := s.reconcile(ctx, tenantID, stocktakeID)
+		if err != nil {
+			return err
+		}
+		progress = Progress{
+			ExpectedCount: result.ExpectedCount, ScannedCount: result.ScannedCount,
+			MissingCount: len(result.Missing), MisplacedCount: len(result.Misplaced),
+		}
+		return nil
+	})
 	if err != nil {
 		return Progress{}, err
 	}
-	return Progress{
-		ExpectedCount: result.ExpectedCount, ScannedCount: result.ScannedCount,
-		MissingCount: len(result.Missing), MisplacedCount: len(result.Misplaced),
-	}, nil
+	return progress, nil
 }
 
 // reconcile is the shared read path for Progress and Close: load what was
@@ -229,14 +265,23 @@ func (s *Service) StocktakeResults(ctx context.Context, tenantID, stocktakeID uu
 	if err := s.requireEnabled(ctx, tenantID); err != nil {
 		return domain.StocktakeResult{}, err
 	}
-	st, err := s.GetStocktake(ctx, tenantID, stocktakeID)
+	var result domain.StocktakeResult
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		st, err := s.GetStocktake(ctx, tenantID, stocktakeID)
+		if err != nil {
+			return err
+		}
+		if st.Status == domain.StocktakeOpen {
+			result, err = s.reconcile(ctx, tenantID, stocktakeID)
+			return err
+		}
+		result, err = s.persistedResult(ctx, tenantID, stocktakeID)
+		return err
+	})
 	if err != nil {
 		return domain.StocktakeResult{}, err
 	}
-	if st.Status == domain.StocktakeOpen {
-		return s.reconcile(ctx, tenantID, stocktakeID)
-	}
-	return s.persistedResult(ctx, tenantID, stocktakeID)
+	return result, nil
 }
 
 // persistedResult rebuilds a domain.StocktakeResult from the rows Close
