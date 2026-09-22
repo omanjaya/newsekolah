@@ -7,6 +7,9 @@ import { Checkbox } from "../checkbox.js";
 import { Skeleton } from "../skeleton.js";
 import { useUiLabels } from "../ui-labels.js";
 
+/** Column id whose cell renders row actions; see the card layout below. */
+const ACTIONS_COLUMN_ID = "actions";
+
 export interface DataTableCardsProps<TData> {
   rows: Row<TData>[];
   /**
@@ -78,7 +81,11 @@ export function DataTableCards<TData>({
       <ul className="flex flex-col gap-2">
         {rows.map((row) => {
           const cells = row.getVisibleCells().filter((cell) => cell.column.id !== "select");
-          const [title, ...rest] = cells;
+          // A column with id "actions" holds the row's buttons, not a field:
+          // on a card it sits beside the title instead of taking a labelled
+          // row of its own at the bottom.
+          const actions = cells.find((cell) => cell.column.id === ACTIONS_COLUMN_ID);
+          const [title, ...rest] = cells.filter((cell) => cell !== actions);
           const activate = onRowActivate
             ? () => {
                 onRowActivate(row.original);
@@ -88,9 +95,18 @@ export function DataTableCards<TData>({
           const titleId = `${row.id}-card-title`;
           const body = (
             <>
-              {title && (
-                <div id={titleId} className="text-[14px] font-medium text-fg">
-                  {flexRender(title.column.columnDef.cell, title.getContext())}
+              {(title ?? actions) && (
+                <div className="flex items-start justify-between gap-2">
+                  {title && (
+                    <div id={titleId} className="min-w-0 text-[14px] font-medium text-fg">
+                      {flexRender(title.column.columnDef.cell, title.getContext())}
+                    </div>
+                  )}
+                  {actions && (
+                    <div className="relative z-10 -my-1 -mr-1 flex shrink-0 items-center [&_a]:min-h-11 [&_a]:min-w-11 [&_button]:min-h-11 [&_button]:min-w-11">
+                      {flexRender(actions.column.columnDef.cell, actions.getContext())}
+                    </div>
+                  )}
                 </div>
               )}
               <dl className="flex flex-col gap-1">

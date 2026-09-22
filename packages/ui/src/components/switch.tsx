@@ -16,7 +16,7 @@ export const Switch = forwardRef<HTMLButtonElement, SwitchProps>(function Switch
     <SwitchPrimitive.Root
       ref={ref}
       className={cn(
-        "relative h-5 w-9 rounded-sm border border-border bg-bg transition-colors",
+        "relative h-5 w-9 shrink-0 rounded-sm border border-border bg-bg transition-colors",
         // Same trick as the checkbox: the switch keeps its size, the area
         // a thumb can hit grows around it and moves nothing.
         "before:absolute before:-inset-x-2 before:-inset-y-3 before:content-[''] md:before:hidden",
