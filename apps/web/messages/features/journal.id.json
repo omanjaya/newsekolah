@@ -37,5 +37,6 @@
     "cancel": "Batal",
     "submit": "Simpan",
     "saved": "Jurnal disimpan."
-  }
+  },
+  "loadError": "Jurnal gagal dimuat."
 }

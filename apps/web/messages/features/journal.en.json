@@ -37,5 +37,6 @@
     "cancel": "Cancel",
     "submit": "Save",
     "saved": "Journal entry saved."
-  }
+  },
+  "loadError": "Journals could not be loaded."
 }
