@@ -192,7 +192,7 @@ describe("DataTable", () => {
       <Harness data={ROWS} rowCount={ROWS.length} onGlobalFilterChange={onGlobalFilterChange} />,
     );
 
-    fireEvent.change(screen.getByRole("textbox", { name: "Cari" }), { target: { value: "sit" } });
+    fireEvent.change(screen.getByRole("searchbox", { name: "Cari" }), { target: { value: "sit" } });
     expect(onGlobalFilterChange).not.toHaveBeenCalled();
 
     act(() => {
@@ -214,7 +214,9 @@ describe("DataTable", () => {
     fireEvent.click(screen.getByRole("button", { name: "Ke halaman berikutnya" }));
     expect(screen.getAllByText("Siti Aminah").length).toBeGreaterThan(0);
 
-    fireEvent.change(screen.getByRole("textbox", { name: "Cari" }), { target: { value: "Siti" } });
+    fireEvent.change(screen.getByRole("searchbox", { name: "Cari" }), {
+      target: { value: "Siti" },
+    });
     act(() => {
       vi.advanceTimersByTime(300);
     });
@@ -223,7 +225,7 @@ describe("DataTable", () => {
     expect(screen.queryByText("Siswa 0")).not.toBeInTheDocument();
     expect(screen.getByText("Halaman 1 dari 1")).toBeInTheDocument();
 
-    fireEvent.change(screen.getByRole("textbox", { name: "Cari" }), {
+    fireEvent.change(screen.getByRole("searchbox", { name: "Cari" }), {
       target: { value: "missing" },
     });
     act(() => {
@@ -233,7 +235,7 @@ describe("DataTable", () => {
     const [clearSearch] = screen.getAllByRole("button", { name: "Hapus pencarian" });
     if (!clearSearch) throw new Error("Clear search action is missing");
     fireEvent.click(clearSearch);
-    expect(screen.getByRole("textbox", { name: "Cari" })).toHaveValue("");
+    expect(screen.getByRole("searchbox", { name: "Cari" })).toHaveValue("");
     expect(screen.getAllByText("Siswa 0").length).toBeGreaterThan(0);
     vi.useRealTimers();
   });
@@ -241,7 +243,7 @@ describe("DataTable", () => {
   it("does not render offset pagination for cursor data", () => {
     render(<CursorHarness />);
     expect(screen.queryByText(/Halaman 1 dari/)).not.toBeInTheDocument();
-    expect(screen.queryByRole("textbox", { name: "Cari" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("searchbox", { name: "Cari" })).not.toBeInTheDocument();
   });
 
   it("uses column headers in the visibility menu and keeps action columns out", async () => {
@@ -288,14 +290,16 @@ describe("DataTable", () => {
   it("restores explicitly keyed local state after a route return", () => {
     vi.useFakeTimers();
     const view = render(<RememberedHarness visible />);
-    fireEvent.change(screen.getByRole("textbox", { name: "Cari" }), { target: { value: "Siti" } });
+    fireEvent.change(screen.getByRole("searchbox", { name: "Cari" }), {
+      target: { value: "Siti" },
+    });
     act(() => {
       vi.advanceTimersByTime(300);
     });
 
     view.rerender(<RememberedHarness visible={false} />);
     view.rerender(<RememberedHarness visible />);
-    expect(screen.getByRole("textbox", { name: "Cari" })).toHaveValue("Siti");
+    expect(screen.getByRole("searchbox", { name: "Cari" })).toHaveValue("Siti");
     vi.useRealTimers();
   });
 
@@ -306,7 +310,9 @@ describe("DataTable", () => {
       name: index === 51 ? "Siti Aminah" : `Siswa ${index}`,
     }));
     const view = render(<AsyncRememberedHarness data={rows} isLoading={false} />);
-    fireEvent.change(screen.getByRole("textbox", { name: "Cari" }), { target: { value: "Siswa" } });
+    fireEvent.change(screen.getByRole("searchbox", { name: "Cari" }), {
+      target: { value: "Siswa" },
+    });
     act(() => {
       vi.advanceTimersByTime(300);
     });
@@ -315,7 +321,7 @@ describe("DataTable", () => {
 
     view.rerender(<AsyncRememberedHarness data={[]} isLoading />);
     view.rerender(<AsyncRememberedHarness data={rows} isLoading={false} />);
-    expect(screen.getByRole("textbox", { name: "Cari" })).toHaveValue("Siswa");
+    expect(screen.getByRole("searchbox", { name: "Cari" })).toHaveValue("Siswa");
     expect(screen.getAllByText("Siswa 50").length).toBeGreaterThan(0);
     vi.useRealTimers();
   });
@@ -338,13 +344,15 @@ describe("DataTable", () => {
   it("does not expose remembered state across scopes", () => {
     vi.useFakeTimers();
     const view = render(<AsyncRememberedHarness data={ROWS} isLoading={false} scope="tenant:a" />);
-    fireEvent.change(screen.getByRole("textbox", { name: "Cari" }), { target: { value: "Siti" } });
+    fireEvent.change(screen.getByRole("searchbox", { name: "Cari" }), {
+      target: { value: "Siti" },
+    });
     act(() => {
       vi.advanceTimersByTime(300);
     });
 
     view.rerender(<AsyncRememberedHarness data={ROWS} isLoading={false} scope="tenant:b" />);
-    expect(screen.getByRole("textbox", { name: "Cari" })).toHaveValue("");
+    expect(screen.getByRole("searchbox", { name: "Cari" })).toHaveValue("");
     vi.useRealTimers();
   });
 });
