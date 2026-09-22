@@ -29,6 +29,15 @@ type Config struct {
 	DatabaseURL string
 	RedisURL    string
 
+	// AppDBPassword is the login password for the least-privilege app_rw
+	// database role (apps/api/migrations/0004_db_roles.up.sql). Only
+	// cmd/migrate reads this, to rotate app_rw off its migration-time
+	// default password via ALTER ROLE on every run; api and worker connect
+	// using DatabaseURL, which in production is already built from this
+	// same value (see infra/docker/docker-compose.prod.yml). Optional:
+	// empty on a managed Postgres where app_rw is provisioned out of band.
+	AppDBPassword string
+
 	JWTSigningKey   string
 	AccessTokenTTL  time.Duration
 	RefreshTokenTTL time.Duration
@@ -120,6 +129,8 @@ func Load() (Config, error) {
 
 		DatabaseURL: req("DATABASE_URL"),
 		RedisURL:    lookup("REDIS_URL"),
+
+		AppDBPassword: lookup("APP_DB_PASSWORD"),
 
 		JWTSigningKey:      req("JWT_SIGNING_KEY"),
 		DocumentSigningKey: req("DOCUMENT_SIGNING_KEY"),
