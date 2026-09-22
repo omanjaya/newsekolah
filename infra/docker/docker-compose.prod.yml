@@ -113,6 +113,15 @@ services:
     environment:
       APP_ENV: production
       TENANCY_MODE: ${TENANCY_MODE:-single}
+      # Connect as the least-privilege app_rw role, never as POSTGRES_USER
+      # (the initdb superuser DATABASE_URL above points migrate at): a
+      # superuser always bypasses row level security, so RLS would never
+      # actually apply. The migrate service rotates app_rw's password to
+      # APP_DB_PASSWORD via ALTER ROLE on every run (see
+      # apps/api/migrations/0004_db_roles.up.sql), and api itself refuses to
+      # start in production if it ever finds itself connected as a
+      # superuser or BYPASSRLS role anyway.
+      DATABASE_URL: postgresql://app_rw:${APP_DB_PASSWORD}@postgres:5432/${POSTGRES_DB:-newsekolah}?sslmode=disable
     command: ["/api"]
     depends_on:
       migrate:
@@ -141,6 +150,9 @@ services:
     environment:
       APP_ENV: production
       TENANCY_MODE: ${TENANCY_MODE:-single}
+      # See the api service above: connect as app_rw, not the migrate
+      # service's superuser DATABASE_URL.
+      DATABASE_URL: postgresql://app_rw:${APP_DB_PASSWORD}@postgres:5432/${POSTGRES_DB:-newsekolah}?sslmode=disable
     command: ["/worker"]
     depends_on:
       migrate:
@@ -156,6 +168,9 @@ services:
       dockerfile: apps/web/Dockerfile
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+        # Baked into the client bundle at build time like every
+        # NEXT_PUBLIC_* var; must match VAPID_PUBLIC_KEY the api reads.
+        NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${NEXT_PUBLIC_VAPID_PUBLIC_KEY:-}
     image: ${WEB_IMAGE:-newsekolah-web:local}
     restart: unless-stopped
     env_file: .env
@@ -187,8 +202,9 @@ services:
         condition: service_started
 
   # Optional daily backup sidecar: pg_dump + MinIO mirror to an S3 target,
-  # encrypted with age when BACKUP_AGE_RECIPIENT is set. Enable with
-  # `docker compose --profile backup up -d`. See infra/scripts/backup.sh.
+  # the Postgres dump always encrypted with age (BACKUP_AGE_RECIPIENT is
+  # required; infra/scripts/backup.sh refuses to run without it). Enable
+  # with `docker compose --profile backup up -d`. See infra/scripts/backup.sh.
   backup:
     build:
       context: ../..
