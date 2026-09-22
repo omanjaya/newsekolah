@@ -19,3 +19,13 @@ if (!API_URL && typeof window !== "undefined") {
  * or when the public URL points back at this app (e2e mocks).
  */
 export const API_INTERNAL_URL = process.env.API_INTERNAL_URL ?? API_URL;
+
+/**
+ * The rebuild is still in its test period (docs/15-paritas-sion.md), so
+ * every deployment defaults to keeping search engines out: `app/robots.ts`
+ * disallows all crawling and `app/layout.tsx`'s metadata sets
+ * `robots: noindex, nofollow`, both gated on this flag rather than on
+ * `NODE_ENV`, so a production deployment stays unindexed until someone
+ * deliberately opts in by setting this to `"true"`.
+ */
+export const ALLOW_INDEXING = process.env.NEXT_PUBLIC_ALLOW_INDEXING === "true";

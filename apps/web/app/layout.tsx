@@ -6,6 +6,7 @@ import type { ReactElement } from "react";
 import "@newsekolah/ui/styles.css";
 import "./globals.css";
 
+import { ALLOW_INDEXING } from "../lib/env";
 import { getMessagesForNamespaces } from "../lib/i18n/get-messages";
 import { ROOT_NAMESPACES } from "../lib/i18n/namespace-sets";
 import { getTenantBrandingServer } from "../lib/tenant/get-branding.server";
@@ -21,6 +22,13 @@ export async function generateMetadata(): Promise<Metadata> {
     title: { default: name, template: `%s - ${name}` },
     description: branding?.tagline ?? "Sistem informasi sekolah",
     manifest: "/manifest.webmanifest",
+    // Test period (docs/15-paritas-sion.md): stays out of search engines
+    // until NEXT_PUBLIC_ALLOW_INDEXING is explicitly set, matching
+    // app/robots.ts's disallow-all default. Kept here too, not just in
+    // robots.ts, so a page reached without robots.txt being read first
+    // (an indexed link, a crawler that ignores robots.txt) still carries
+    // the directive.
+    robots: ALLOW_INDEXING ? undefined : { index: false, follow: false, nocache: true },
   };
 }
 

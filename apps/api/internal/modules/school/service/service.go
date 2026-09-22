@@ -148,17 +148,40 @@ func (s *Service) Branding(ctx context.Context, tenantID uuid.UUID) (domain.Bran
 	}
 	if s.storage != nil {
 		if key, ok := settings["branding.logo_object_key"]; ok && key != "" {
-			if u, err := s.storage.PresignedGetURL(ctx, key, brandingImageURLTTL); err == nil {
-				b.LogoURL = u.String()
+			if u, err := s.brandingAssetURL(ctx, key, settings["branding.logo_mime"], "logo"); err == nil {
+				b.LogoURL = u
 			}
 		}
 		if key, ok := settings["branding.favicon_object_key"]; ok && key != "" {
-			if u, err := s.storage.PresignedGetURL(ctx, key, brandingImageURLTTL); err == nil {
-				b.FaviconURL = u.String()
+			if u, err := s.brandingAssetURL(ctx, key, settings["branding.favicon_mime"], "favicon"); err == nil {
+				b.FaviconURL = u
 			}
 		}
 	}
 	return b, nil
+}
+
+// brandingAssetURL presigns a logo/favicon object's GET URL. An SVG asset
+// is forced to download as an attachment (see
+// storage.Client.PresignedGetURLAsAttachment) so opening the link directly
+// cannot run script in the storage origin -- the confirm step already
+// rejects an unsafe SVG (domain.ValidateSVGUpload), but this is a second,
+// independent layer that does not depend on that check having run for
+// every object that ever reaches this setting. PNG/WebP behavior is
+// unchanged: a plain presigned GET, same as before this existed.
+func (s *Service) brandingAssetURL(ctx context.Context, objectKey, mime, assetType string) (string, error) {
+	if mime == "image/svg+xml" {
+		u, err := s.storage.PresignedGetURLAsAttachment(ctx, objectKey, brandingImageURLTTL, mime, assetType+".svg")
+		if err != nil {
+			return "", err
+		}
+		return u.String(), nil
+	}
+	u, err := s.storage.PresignedGetURL(ctx, objectKey, brandingImageURLTTL)
+	if err != nil {
+		return "", err
+	}
+	return u.String(), nil
 }
 
 // brandingImageURLTTL is long relative to storage.DefaultUploadURLTTL (5

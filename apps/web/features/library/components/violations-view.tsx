@@ -121,7 +121,7 @@ export function ViolationsView(): ReactElement {
                 setSettling(row.original);
               }}
             >
-              {t("settle")}
+              {t("settleAction")}
             </Button>
           ) : null,
       },

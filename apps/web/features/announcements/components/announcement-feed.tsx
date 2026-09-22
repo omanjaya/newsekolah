@@ -2,7 +2,7 @@
 
 import type { Locale } from "@newsekolah/i18n";
 import { formatRelative } from "@newsekolah/i18n";
-import { Badge, EmptyState, Skeleton, cn, domainIcons } from "@newsekolah/ui";
+import { Badge, EmptyState, SafeHtml, Skeleton, cn, domainIcons } from "@newsekolah/ui";
 import { Pin } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -15,7 +15,9 @@ import { useMarkAnnouncementReadMutation, useMyAnnouncementsQuery } from "../api
 /**
  * The reader's list: pinned first, unread marked, body expands in place and
  * that first expansion records the read receipt. Body HTML is sanitised
- * server-side (bluemonday UGC policy) before it is stored.
+ * server-side (bluemonday UGC policy) before it is stored, and sanitised
+ * again client-side by `SafeHtml` as defense in depth before it reaches
+ * the DOM.
  */
 export function AnnouncementFeed({
   limit,
@@ -89,10 +91,9 @@ export function AnnouncementFeed({
               </span>
             </button>
             {expanded && (
-              <div
+              <SafeHtml
+                html={item.body_html}
                 className="prose-announcement border-t border-border px-4 py-3 text-[14px] text-fg"
-                // Sanitised server-side; see announcements/service/content.go.
-                dangerouslySetInnerHTML={{ __html: item.body_html }}
               />
             )}
           </li>

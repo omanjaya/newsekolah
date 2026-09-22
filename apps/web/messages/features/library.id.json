@@ -394,6 +394,7 @@
     "eyebrow": "Perpustakaan",
     "title": "Pelanggaran dan denda",
     "record": "Catat pelanggaran",
+    "settleAction": "Selesaikan",
     "settle": {
       "title": "Selesaikan pelanggaran",
       "description": "Menyelesaikan sebagai lunas atau dibebaskan. Anggota yang sedang ditangguhkan akan aktif kembali begitu semua pelanggarannya selesai.",

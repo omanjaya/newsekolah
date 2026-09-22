@@ -114,6 +114,12 @@ func (s *Service) confirmBrandingUpload(ctx context.Context, tenantID, actorID u
 		_ = s.storage.RemoveObject(ctx, objectKey)
 		return domain.Branding{}, domain.ErrUploadInvalidType
 	}
+	if contentType == "image/svg+xml" {
+		if err := domain.ValidateSVGUpload(data); err != nil {
+			_ = s.storage.RemoveObject(ctx, objectKey)
+			return domain.Branding{}, err
+		}
+	}
 	sum := sha256.Sum256(data)
 
 	err = s.withTx(ctx, tenantID, func(ctx context.Context) error {
@@ -124,12 +130,26 @@ func (s *Service) confirmBrandingUpload(ctx context.Context, tenantID, actorID u
 		}); err != nil {
 			return fmt.Errorf("record %s asset: %w", assetType, err)
 		}
-		return s.repo.SetBrandingSetting(ctx, tenantID, actorID, settingKey, objectKey)
+		if err := s.repo.SetBrandingSetting(ctx, tenantID, actorID, settingKey, objectKey); err != nil {
+			return err
+		}
+		// Recorded alongside the object key so Branding() can force the
+		// presigned GET's response-content-type (and, for SVG, force
+		// response-content-disposition: attachment) rather than trusting
+		// whatever Content-Type the client's direct PUT left on the object.
+		return s.repo.SetBrandingSetting(ctx, tenantID, actorID, mimeSettingKey(settingKey), contentType)
 	})
 	if err != nil {
 		return domain.Branding{}, err
 	}
 	return s.Branding(ctx, tenantID)
+}
+
+// mimeSettingKey derives the sibling tenant_settings key that stores an
+// asset's sniffed content type, e.g. "branding.logo_object_key" ->
+// "branding.logo_mime".
+func mimeSettingKey(objectKeySettingKey string) string {
+	return strings.TrimSuffix(objectKeySettingKey, "_object_key") + "_mime"
 }
 
 // sniffBrandingImageType extends http.DetectContentType with SVG
