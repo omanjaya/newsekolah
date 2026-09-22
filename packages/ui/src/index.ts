@@ -64,6 +64,7 @@ export { Avatar, type AvatarProps } from "./components/avatar.js";
 export { Skeleton } from "./components/skeleton.js";
 export { Stat, StatGrid, type StatProps, type StatGridProps } from "./components/stat.js";
 export { EmptyState, type EmptyStateProps } from "./components/empty-state.js";
+export { SafeHtml, type SafeHtmlProps } from "./components/safe-html.js";
 export {
   PageHeader,
   type PageHeaderBreadcrumbItem,
