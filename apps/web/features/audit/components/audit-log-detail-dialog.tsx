@@ -6,6 +6,8 @@ import type { ReactElement } from "react";
 
 import type { AuditLogEntry } from "../api";
 
+import { useAuditLabels } from "./use-audit-labels";
+
 function renderJson(value: Record<string, unknown> | undefined, emptyLabel: string): string {
   if (!value || Object.keys(value).length === 0) return emptyLabel;
   return JSON.stringify(value, null, 2);
@@ -24,24 +26,31 @@ export function AuditLogDetailDialog({
   onOpenChange: (open: boolean) => void;
 }): ReactElement {
   const t = useTranslations("app.audit");
+  const labels = useAuditLabels();
 
   return (
     <Dialog open={entry !== null} onOpenChange={onOpenChange}>
       <DialogContent title={t("detail.title")} className="max-w-3xl">
         {entry && (
           <div className="flex flex-col gap-4">
-            <dl className="grid grid-cols-2 gap-x-6 gap-y-1 text-[13px]">
+            <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-6 gap-y-1 text-[13px]">
               <dt className="text-fg-muted">{t("columns.action")}</dt>
-              <dd className="text-fg">{entry.action}</dd>
-              <dt className="text-fg-muted">{t("columns.entity")}</dt>
               <dd className="text-fg">
-                {entry.entity_type}
-                {entry.entity_id ? ` · ${entry.entity_id}` : ""}
+                {labels.action(entry.action)}
+                <span className="ml-2 font-mono text-[12px] text-fg-muted">{entry.action}</span>
               </dd>
+              <dt className="text-fg-muted">{t("columns.entity")}</dt>
+              <dd className="text-fg">{labels.entityType(entry.entity_type)}</dd>
+              {entry.entity_id && (
+                <>
+                  <dt className="text-fg-muted">{t("detail.entityId")}</dt>
+                  <dd className="break-all font-mono text-[12px] text-fg">{entry.entity_id}</dd>
+                </>
+              )}
               {entry.request_id && (
                 <>
                   <dt className="text-fg-muted">{t("detail.requestId")}</dt>
-                  <dd className="text-fg">{entry.request_id}</dd>
+                  <dd className="break-all font-mono text-[12px] text-fg">{entry.request_id}</dd>
                 </>
               )}
             </dl>

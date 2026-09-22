@@ -16,6 +16,7 @@ import { useDirectoryQuery, useLookup } from "../../reference/api";
 import { type AuditLogEntry, useAuditLogsQuery } from "../api";
 
 import { AuditLogDetailDialog } from "./audit-log-detail-dialog";
+import { AUDIT_ENTITY_TYPES, shortId, useAuditLabels } from "./use-audit-labels";
 
 const SYSTEM_ACTOR = "system";
 
@@ -35,6 +36,7 @@ export function AuditLogsView(): ReactElement {
 
   const directory = useDirectoryQuery();
   const actorMap = useLookup(directory.data?.data);
+  const labels = useAuditLabels();
 
   const { data, isLoading } = useAuditLogsQuery({
     actorUserId: actorUserId || undefined,
@@ -83,17 +85,25 @@ export function AuditLogsView(): ReactElement {
         accessorKey: "action",
         header: t("columns.action"),
         enableSorting: false,
+        cell: ({ row }) => labels.action(row.original.action),
       },
       {
         id: "entity",
         header: t("columns.entity"),
         enableSorting: false,
-        cell: ({ row }) => (
-          <span className="text-fg-muted">
-            {row.original.entity_type}
-            {row.original.entity_id ? ` · ${row.original.entity_id}` : ""}
-          </span>
-        ),
+        cell: ({ row }) => {
+          const { entity_type: type, entity_id: id } = row.original;
+          // A user entity resolves to a name through the same directory as
+          // the actor column; anything else shows a short id tail, and the
+          // full id stays in the detail dialog.
+          const target = id ? (type === "user" ? actorMap.get(id)?.name : undefined) : undefined;
+          return (
+            <span className="text-fg-muted">
+              {labels.entityType(type)}
+              {id ? ` · ${target ?? shortId(id)}` : ""}
+            </span>
+          );
+        },
       },
       {
         accessorKey: "ip",
@@ -123,8 +133,8 @@ export function AuditLogsView(): ReactElement {
         </div>
       )}
 
-      <div className="flex flex-wrap items-end gap-2">
-        <label className="flex flex-col gap-1 text-[13px]">
+      <div className="grid grid-cols-2 items-end gap-2 sm:flex sm:flex-wrap">
+        <label className="col-span-2 flex flex-col gap-1 text-[13px]">
           <span className="font-medium text-fg">{t("filters.actor")}</span>
           <Select
             options={[
@@ -140,25 +150,33 @@ export function AuditLogsView(): ReactElement {
               resetPaging();
             }}
             aria-label={t("filters.actor")}
-            className="w-56"
+            className="w-full sm:w-56"
           />
         </label>
-        <label className="flex flex-col gap-1 text-[13px]">
+        <label className="col-span-2 flex flex-col gap-1 text-[13px]">
           <span className="font-medium text-fg">{t("filters.entityType")}</span>
-          <Input
-            value={entityType}
-            placeholder={t("filters.entityTypePlaceholder")}
-            onChange={(e) => {
-              setEntityType(e.target.value);
+          <Select
+            options={[
+              { value: "all", label: t("filters.entityTypeAll") },
+              ...AUDIT_ENTITY_TYPES.map((type) => ({
+                value: type,
+                label: labels.entityType(type),
+              })),
+            ]}
+            value={entityType || "all"}
+            onValueChange={(value) => {
+              setEntityType(value === "all" ? "" : value);
               resetPaging();
             }}
-            className="w-44"
+            aria-label={t("filters.entityType")}
+            className="w-full sm:w-48"
           />
         </label>
-        <label className="flex flex-col gap-1 text-[13px]">
+        <label className="flex min-w-0 flex-col gap-1 text-[13px]">
           <span className="font-medium text-fg">{t("filters.from")}</span>
           <Input
             type="date"
+            className="w-full"
             value={from}
             onChange={(e) => {
               setFrom(e.target.value);
@@ -166,10 +184,11 @@ export function AuditLogsView(): ReactElement {
             }}
           />
         </label>
-        <label className="flex flex-col gap-1 text-[13px]">
+        <label className="flex min-w-0 flex-col gap-1 text-[13px]">
           <span className="font-medium text-fg">{t("filters.to")}</span>
           <Input
             type="date"
+            className="w-full"
             value={to}
             onChange={(e) => {
               setTo(e.target.value);
@@ -181,6 +200,7 @@ export function AuditLogsView(): ReactElement {
           <Button
             variant="secondary"
             size="sm"
+            className="col-span-2 sm:col-span-1"
             onClick={() => {
               setActorUserId("");
               setEntityType("");

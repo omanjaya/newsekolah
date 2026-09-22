@@ -9,10 +9,10 @@
     "actor": "Pelaku",
     "actorAll": "Semua pengguna",
     "entityType": "Jenis entitas",
-    "entityTypePlaceholder": "mis. user, class",
     "from": "Dari tanggal",
     "to": "Sampai tanggal",
-    "reset": "Reset filter"
+    "reset": "Reset filter",
+    "entityTypeAll": "Semua jenis"
   },
   "columns": {
     "when": "Waktu",
@@ -30,7 +30,8 @@
     "before": "Sebelum",
     "after": "Sesudah",
     "noValue": "Tidak ada data",
-    "requestId": "ID permintaan"
+    "requestId": "ID permintaan",
+    "entityId": "ID entitas"
   },
   "impersonationNote": "Sesi ini sedang meniru pengguna lain. Lihat detail dan hentikan di halaman profil.",
   "impersonationLink": "Buka profil",
@@ -41,5 +42,62 @@
     "lastLoginUnknown": "Tidak diketahui",
     "resetLinkLabel": "Tautan reset kata sandi",
     "resetLinkBody": "Admin sekolah hanya bisa membuat tautan set kata sandi baru, bukan melihat kata sandi Anda. Tautan itu berlaku sekali pakai dan kedaluwarsa dalam 30 menit."
+  },
+  "actions": {
+    "duty_assignment": {
+      "create": "Menambah penugasan tugas",
+      "update": "Mengubah penugasan tugas",
+      "delete": "Menghapus penugasan tugas"
+    },
+    "duty_type": {
+      "create": "Menambah jenis tugas",
+      "update": "Mengubah jenis tugas",
+      "delete": "Menghapus jenis tugas",
+      "replace_permissions": "Mengubah izin jenis tugas"
+    },
+    "impersonation": {
+      "start": "Mulai meniru pengguna",
+      "stop": "Berhenti meniru pengguna"
+    },
+    "passkey": {
+      "register": "Mendaftarkan passkey",
+      "remove": "Menghapus passkey"
+    },
+    "password_reset": {
+      "request": "Meminta reset kata sandi",
+      "confirm": "Mengatur ulang kata sandi"
+    },
+    "role": {
+      "create": "Membuat peran",
+      "update": "Mengubah peran",
+      "delete": "Menghapus peran",
+      "replace_permissions": "Mengubah izin peran"
+    },
+    "sso_google": {
+      "configure": "Mengatur masuk dengan Google",
+      "remove": "Mencabut masuk dengan Google"
+    },
+    "user": {
+      "create": "Membuat pengguna",
+      "update": "Mengubah pengguna",
+      "archive": "Mengarsipkan pengguna",
+      "restore": "Memulihkan pengguna",
+      "reset_password": "Membuat tautan reset kata sandi",
+      "avatar_update": "Mengganti foto profil",
+      "update_own_profile": "Mengubah profil sendiri",
+      "import_create": "Membuat pengguna lewat impor",
+      "import_commit": "Menyelesaikan impor pengguna"
+    },
+    "read": "Membuka data"
+  },
+  "entityTypes": {
+    "user": "Pengguna",
+    "role": "Peran",
+    "duty_type": "Jenis tugas",
+    "duty_assignment": "Penugasan tugas",
+    "webauthn_credential": "Passkey",
+    "sso_google_config": "Masuk dengan Google",
+    "tenant": "Sekolah",
+    "visitor_incident": "Insiden kampus"
   }
 }

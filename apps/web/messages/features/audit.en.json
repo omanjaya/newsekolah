@@ -9,10 +9,10 @@
     "actor": "Actor",
     "actorAll": "All users",
     "entityType": "Entity type",
-    "entityTypePlaceholder": "e.g. user, class",
     "from": "From date",
     "to": "To date",
-    "reset": "Reset filters"
+    "reset": "Reset filters",
+    "entityTypeAll": "All types"
   },
   "columns": {
     "when": "When",
@@ -30,7 +30,8 @@
     "before": "Before",
     "after": "After",
     "noValue": "No data",
-    "requestId": "Request ID"
+    "requestId": "Request ID",
+    "entityId": "Entity ID"
   },
   "impersonationNote": "This session is impersonating another user. View details and stop it from the profile page.",
   "impersonationLink": "Open profile",
@@ -41,5 +42,62 @@
     "lastLoginUnknown": "Unknown",
     "resetLinkLabel": "Password reset link",
     "resetLinkBody": "A school admin can only generate a set-password link, never see your password. That link is single-use and expires after 30 minutes."
+  },
+  "actions": {
+    "duty_assignment": {
+      "create": "Added a duty assignment",
+      "update": "Updated a duty assignment",
+      "delete": "Removed a duty assignment"
+    },
+    "duty_type": {
+      "create": "Added a duty type",
+      "update": "Updated a duty type",
+      "delete": "Removed a duty type",
+      "replace_permissions": "Changed duty type permissions"
+    },
+    "impersonation": {
+      "start": "Started impersonating a user",
+      "stop": "Stopped impersonating a user"
+    },
+    "passkey": {
+      "register": "Registered a passkey",
+      "remove": "Removed a passkey"
+    },
+    "password_reset": {
+      "request": "Requested a password reset",
+      "confirm": "Completed a password reset"
+    },
+    "role": {
+      "create": "Created a role",
+      "update": "Updated a role",
+      "delete": "Deleted a role",
+      "replace_permissions": "Changed role permissions"
+    },
+    "sso_google": {
+      "configure": "Configured Google sign-in",
+      "remove": "Removed Google sign-in"
+    },
+    "user": {
+      "create": "Created a user",
+      "update": "Updated a user",
+      "archive": "Archived a user",
+      "restore": "Restored a user",
+      "reset_password": "Issued a password reset link",
+      "avatar_update": "Changed a profile photo",
+      "update_own_profile": "Updated own profile",
+      "import_create": "Created a user by import",
+      "import_commit": "Committed a user import"
+    },
+    "read": "Viewed a record"
+  },
+  "entityTypes": {
+    "user": "User",
+    "role": "Role",
+    "duty_type": "Duty type",
+    "duty_assignment": "Duty assignment",
+    "webauthn_credential": "Passkey",
+    "sso_google_config": "Google sign-in",
+    "tenant": "School",
+    "visitor_incident": "Campus incident"
   }
 }
