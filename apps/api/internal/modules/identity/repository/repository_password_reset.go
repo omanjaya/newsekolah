@@ -38,3 +38,10 @@ func (r *Repository) MarkPasswordResetUsed(ctx context.Context, tenantID, id uui
 	}
 	return nil
 }
+
+func (r *Repository) InvalidatePasswordResetsForUser(ctx context.Context, tenantID, userID uuid.UUID) error {
+	if err := r.queries(ctx).InvalidatePasswordResetsForUser(ctx, db.InvalidatePasswordResetsForUserParams{TenantID: tenantID, UserID: userID}); err != nil {
+		return fmt.Errorf("invalidate password resets for user: %w", err)
+	}
+	return nil
+}

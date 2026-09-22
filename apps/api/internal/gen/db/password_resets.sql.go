@@ -47,3 +47,20 @@ func (q *Queries) CreatePasswordReset(ctx context.Context, arg CreatePasswordRes
 	)
 	return i, err
 }
+
+const invalidatePasswordResetsForUser = `-- name: InvalidatePasswordResetsForUser :exec
+update password_resets set used_at = now() where tenant_id = $1 and user_id = $2 and used_at is null
+`
+
+type InvalidatePasswordResetsForUserParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	UserID   uuid.UUID `json:"user_id"`
+}
+
+// Marks every still-unused password reset token for a user as used, so a
+// token issued (or confirmed) does not leave older tokens redeemable
+// alongside it (docs/08-security.md section 2).
+func (q *Queries) InvalidatePasswordResetsForUser(ctx context.Context, arg InvalidatePasswordResetsForUserParams) error {
+	_, err := q.db.Exec(ctx, invalidatePasswordResetsForUser, arg.TenantID, arg.UserID)
+	return err
+}
