@@ -16,9 +16,28 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/discipline/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/audit"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/documents"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/storage"
 )
+
+// counselingAuditPayload is the audit-safe subset of a counseling note's
+// fields: structured metadata only. Title and the separately encrypted
+// Content, FollowUpPlan, CareerGoals and ProblemDescription never reach
+// audit_logs -- a counseling note is sensitive by design (see the
+// module's crypto.Sealer use), and the audit trail must prove a note was
+// created, changed or read without becoming a second, unencrypted copy of
+// what it says.
+func counselingAuditPayload(c domain.Counseling) map[string]any {
+	return map[string]any{
+		"student_user_id":   c.StudentUserID,
+		"counselor_user_id": c.CounselorUserID,
+		"session_at":        c.SessionAt,
+		"kind":              c.Kind,
+		"topic":             c.Topic,
+		"visibility":        c.Visibility,
+	}
+}
 
 type CounselingInput struct {
 	StudentUserID      uuid.UUID
@@ -134,6 +153,9 @@ func (s *Service) CreateCounseling(ctx context.Context, tenantID, counselorUserI
 		if err != nil {
 			return err
 		}
+		if err := audit.Record(ctx, tenantID, "counseling.create", "counseling", out.ID, nil, counselingAuditPayload(out)); err != nil {
+			return err
+		}
 		out.Content, out.FollowUpPlan, out.CareerGoals, out.ProblemDescription = in.Content, in.FollowUpPlan, in.CareerGoals, in.ProblemDescription
 		return nil
 	})
@@ -178,6 +200,9 @@ func (s *Service) UpdateCounseling(ctx context.Context, tenantID, id, actorUserI
 		if err != nil {
 			return err
 		}
+		if err := audit.Record(ctx, tenantID, "counseling.update", "counseling", id, counselingAuditPayload(current.Counseling), counselingAuditPayload(out)); err != nil {
+			return err
+		}
 		out.Content, out.FollowUpPlan, out.CareerGoals, out.ProblemDescription = in.Content, in.FollowUpPlan, in.CareerGoals, in.ProblemDescription
 		return nil
 	})
@@ -202,7 +227,10 @@ func (s *Service) GetCounseling(ctx context.Context, tenantID, id, readerUserID 
 			return domain.ErrCounselingForbidden
 		}
 		out, err = s.open(enc)
-		return err
+		if err != nil {
+			return err
+		}
+		return audit.RecordSimple(ctx, tenantID, "counseling.read", "counseling", id)
 	})
 	return out, err
 }
