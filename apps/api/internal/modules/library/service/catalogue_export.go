@@ -15,11 +15,17 @@ func (s *Service) CatalogueExportXLSX(ctx context.Context, tenantID uuid.UUID) (
 	if err := s.requireEnabled(ctx, tenantID); err != nil {
 		return nil, err
 	}
-	titles, err := s.repo.ListTitlesForExport(ctx, tenantID)
-	if err != nil {
-		return nil, err
-	}
-	copies, err := s.repo.ListCopiesForExport(ctx, tenantID)
+	var titles []TitleExportRow
+	var copies []CopyExportRow
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		titles, err = s.repo.ListTitlesForExport(ctx, tenantID)
+		if err != nil {
+			return err
+		}
+		copies, err = s.repo.ListCopiesForExport(ctx, tenantID)
+		return err
+	})
 	if err != nil {
 		return nil, err
 	}

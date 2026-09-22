@@ -458,7 +458,13 @@ func (s *Service) Renew(ctx context.Context, tenantID, loanID uuid.UUID, renewed
 
 // RenewalHistory returns every renewal recorded for one loan.
 func (s *Service) RenewalHistory(ctx context.Context, tenantID, loanID uuid.UUID) ([]domain.LoanRenewal, error) {
-	return s.repo.ListLoanRenewalsForLoan(ctx, tenantID, loanID)
+	var out []domain.LoanRenewal
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		out, err = s.repo.ListLoanRenewalsForLoan(ctx, tenantID, loanID)
+		return err
+	})
+	return out, err
 }
 
 // MarkLost closes a loan as lost and charges the copy's condition instead
@@ -515,17 +521,35 @@ func (s *Service) MarkLost(ctx context.Context, tenantID, loanID, checkedInBy uu
 }
 
 func (s *Service) MemberLoanHistory(ctx context.Context, tenantID, memberID uuid.UUID, includeReturned bool, limit, offset int) ([]domain.Loan, error) {
-	return s.repo.ListLoansForMember(ctx, tenantID, memberID, includeReturned, clampLimit(limit), offset)
+	var out []domain.Loan
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		out, err = s.repo.ListLoansForMember(ctx, tenantID, memberID, includeReturned, clampLimit(limit), offset)
+		return err
+	})
+	return out, err
 }
 
 func (s *Service) OverdueLoans(ctx context.Context, tenantID uuid.UUID) ([]domain.Loan, error) {
-	return s.repo.ListOverdueLoans(ctx, tenantID, s.clock.Now())
+	var out []domain.Loan
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		out, err = s.repo.ListOverdueLoans(ctx, tenantID, s.clock.Now())
+		return err
+	})
+	return out, err
 }
 
 // OverdueLoansDetailed is the overdue list with class and guardian phone
 // (old app: library_circulation_v2.go:634-678).
 func (s *Service) OverdueLoansDetailed(ctx context.Context, tenantID uuid.UUID) ([]OverdueLoanDetail, error) {
-	return s.repo.ListOverdueLoansDetailed(ctx, tenantID, s.clock.Now())
+	var out []OverdueLoanDetail
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		out, err = s.repo.ListOverdueLoansDetailed(ctx, tenantID, s.clock.Now())
+		return err
+	})
+	return out, err
 }
 
 func nullableDatePtr(t time.Time) *pgtype.Date {

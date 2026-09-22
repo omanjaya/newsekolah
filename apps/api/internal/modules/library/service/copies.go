@@ -187,12 +187,21 @@ func (s *Service) FindCopyByCode(ctx context.Context, tenantID uuid.UUID, code s
 	if code == "" {
 		return domain.Copy{}, domain.ErrInvalidInput
 	}
-	c, found, err := s.repo.FindCopyByCode(ctx, tenantID, code)
+	var c domain.Copy
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var found bool
+		var err error
+		c, found, err = s.repo.FindCopyByCode(ctx, tenantID, code)
+		if err != nil {
+			return err
+		}
+		if !found {
+			return domain.ErrCopyNotFound
+		}
+		return nil
+	})
 	if err != nil {
 		return domain.Copy{}, err
-	}
-	if !found {
-		return domain.Copy{}, domain.ErrCopyNotFound
 	}
 	return c, nil
 }
@@ -212,9 +221,15 @@ func (s *Service) ListCopiesFiltered(ctx context.Context, tenantID uuid.UUID, q 
 	if err := s.requireEnabled(ctx, tenantID); err != nil {
 		return nil, err
 	}
-	return s.repo.ListCopiesFiltered(ctx, tenantID, CopyFilter{
-		TitleID: q.TitleID, Status: q.Status, CategoryID: q.CategoryID, LocationID: q.LocationID, Search: q.Search,
-	}, clampLimit(q.Limit), q.Offset)
+	var out []domain.Copy
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		out, err = s.repo.ListCopiesFiltered(ctx, tenantID, CopyFilter{
+			TitleID: q.TitleID, Status: q.Status, CategoryID: q.CategoryID, LocationID: q.LocationID, Search: q.Search,
+		}, clampLimit(q.Limit), q.Offset)
+		return err
+	})
+	return out, err
 }
 
 // SetCopyStatus is the manual status change endpoint: only a librarian's
@@ -305,26 +320,34 @@ func (s *Service) DeleteCopy(ctx context.Context, tenantID, copyID uuid.UUID) er
 	if err := s.requireEnabled(ctx, tenantID); err != nil {
 		return err
 	}
-	hasHistory, err := s.repo.HasLoanHistory(ctx, tenantID, copyID)
-	if err != nil {
-		return err
-	}
-	if hasHistory {
-		return domain.ErrCopyHasLoanHistory
-	}
-	ok, err := s.repo.DeleteCopy(ctx, tenantID, copyID)
-	if err != nil {
-		return err
-	}
-	if !ok {
-		return domain.ErrCopyNotFound
-	}
-	return nil
+	return s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		hasHistory, err := s.repo.HasLoanHistory(ctx, tenantID, copyID)
+		if err != nil {
+			return err
+		}
+		if hasHistory {
+			return domain.ErrCopyHasLoanHistory
+		}
+		ok, err := s.repo.DeleteCopy(ctx, tenantID, copyID)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			return domain.ErrCopyNotFound
+		}
+		return nil
+	})
 }
 
 func (s *Service) ListItemEvents(ctx context.Context, tenantID, copyID uuid.UUID) ([]domain.ItemEvent, error) {
 	if err := s.requireEnabled(ctx, tenantID); err != nil {
 		return nil, err
 	}
-	return s.repo.ListItemEvents(ctx, tenantID, copyID)
+	var out []domain.ItemEvent
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		out, err = s.repo.ListItemEvents(ctx, tenantID, copyID)
+		return err
+	})
+	return out, err
 }
