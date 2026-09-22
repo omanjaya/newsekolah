@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/billing/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/audit"
 )
 
 // PaymentInput is what the payment desk submits for one bill.
@@ -56,6 +57,12 @@ func (s *Service) RecordPayment(ctx context.Context, tenantID uuid.UUID, in Paym
 		}
 		out, err = s.repo.CreatePayment(ctx, payment)
 		if err != nil {
+			return err
+		}
+		if err := audit.Record(ctx, tenantID, "payment.record", "payment", out.ID, nil, map[string]any{
+			"bill_id": out.BillID, "amount_minor": out.AmountMinor, "method": out.Method,
+			"paid_on": out.PaidOn, "reference": out.Reference,
+		}); err != nil {
 			return err
 		}
 		if err := s.recomputeBill(ctx, tenantID, bill); err != nil {
@@ -137,6 +144,9 @@ func (s *Service) VoidPayment(ctx context.Context, tenantID, paymentID, actorUse
 		}
 		out, _, err = s.repo.VoidPayment(ctx, tenantID, paymentID, actorUserID, reason)
 		if err != nil {
+			return err
+		}
+		if err := audit.Record(ctx, tenantID, "payment.void", "payment", paymentID, current, out); err != nil {
 			return err
 		}
 		bill, ok, err := s.repo.GetBill(ctx, tenantID, current.BillID)
