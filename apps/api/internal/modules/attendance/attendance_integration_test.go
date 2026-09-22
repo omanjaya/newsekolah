@@ -11,7 +11,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/require"
-	"github.com/testcontainers/testcontainers-go/modules/postgres"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/db"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance/domain"
@@ -21,44 +20,10 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/school"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/authz"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/dbtest"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/events"
-	"github.com/omanjaya/newsekolah/apps/api/internal/platform/migrator"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/tenant"
 )
-
-// startTestPostgres mirrors cmd/api/integration_test.go's helper of the
-// same name: a real Postgres 16 in Docker, every migration applied, ready
-// for the service layer under test. Every test here skips instead of
-// failing when Docker is not reachable, and skips entirely under
-// `go test -short`.
-func startTestPostgres(t *testing.T) *pgxpool.Pool {
-	t.Helper()
-	if testing.Short() {
-		t.Skip("skipping integration test in -short mode")
-	}
-
-	ctx := context.Background()
-	container, err := postgres.Run(ctx, "postgres:16-alpine",
-		postgres.WithDatabase("newsekolah"),
-		postgres.WithUsername("newsekolah"),
-		postgres.WithPassword("newsekolah"),
-		postgres.BasicWaitStrategies(),
-	)
-	if err != nil {
-		t.Skipf("docker not available, skipping integration test: %v", err)
-	}
-	t.Cleanup(func() { _ = container.Terminate(context.Background()) })
-
-	dsn, err := container.ConnectionString(ctx, "sslmode=disable")
-	require.NoError(t, err)
-
-	pool, err := database.NewPool(ctx, dsn)
-	require.NoError(t, err)
-	t.Cleanup(pool.Close)
-
-	require.NoError(t, migrator.UpAll(ctx, dsn, pool))
-	return pool
-}
 
 // noopPerms satisfies authz.PermissionsProvider for scheduling.Register,
 // whose transport layer these tests never exercise (they call
@@ -249,10 +214,10 @@ func seedWorld(t *testing.T, ctx context.Context, pool *pgxpool.Pool, slug strin
 }
 
 func TestOpenSessionIsIdempotent(t *testing.T) {
-	pool := startTestPostgres(t)
+	pg := dbtest.Start(t)
 	ctx := context.Background()
-	svc := buildService(pool)
-	w := seedWorld(t, ctx, pool, "open-idem")
+	svc := buildService(pg.AppPool)
+	w := seedWorld(t, ctx, pg.AdminPool, "open-idem")
 
 	actor := service.Actor{UserID: w.teacherID}
 
@@ -267,10 +232,10 @@ func TestOpenSessionIsIdempotent(t *testing.T) {
 }
 
 func TestSaveEntriesPolicyAndWindow(t *testing.T) {
-	pool := startTestPostgres(t)
+	pg := dbtest.Start(t)
 	ctx := context.Background()
-	svc := buildService(pool)
-	w := seedWorld(t, ctx, pool, "save-window")
+	svc := buildService(pg.AppPool)
+	w := seedWorld(t, ctx, pg.AdminPool, "save-window")
 
 	actor := service.Actor{UserID: w.teacherID}
 
@@ -291,7 +256,7 @@ func TestSaveEntriesPolicyAndWindow(t *testing.T) {
 	// Once attendance.correction_days is exhausted (set to 0, so
 	// yesterday's deadline is end of yesterday), the same owner saving
 	// the same past session in normal mode is rejected again.
-	q := db.New(pool)
+	q := db.New(pg.AdminPool)
 	zeroDays, err := json.Marshal(0)
 	require.NoError(t, err)
 	require.NoError(t, q.UpsertTenantSetting(ctx, db.UpsertTenantSettingParams{
@@ -347,7 +312,7 @@ func TestSaveEntriesPolicyAndWindow(t *testing.T) {
 	require.NoError(t, err)
 
 	var correctionCount int
-	require.NoError(t, pool.QueryRow(ctx,
+	require.NoError(t, pg.AdminPool.QueryRow(ctx,
 		`select count(*) from attendance_corrections where tenant_id = $1 and old_status = 'H' and new_status = 'A'`, w.tenantID,
 	).Scan(&correctionCount))
 	require.Equal(t, 1, correctionCount, "changing an already-submitted entry must write a correction row")
@@ -375,10 +340,10 @@ func TestSaveEntriesPolicyAndWindow(t *testing.T) {
 }
 
 func TestHomeroomScopeForbidden(t *testing.T) {
-	pool := startTestPostgres(t)
+	pg := dbtest.Start(t)
 	ctx := context.Background()
-	svc := buildService(pool)
-	w := seedWorld(t, ctx, pool, "homeroom-scope")
+	svc := buildService(pg.AppPool)
+	w := seedWorld(t, ctx, pg.AdminPool, "homeroom-scope")
 
 	roster, err := svc.GetHomeroomAttendance(ctx, w.tenantID, service.Actor{UserID: w.teacherID}, w.today, service.HomeroomFilter{})
 	require.NoError(t, err)
@@ -393,14 +358,14 @@ func TestHomeroomScopeForbidden(t *testing.T) {
 // student's violation summary through one ViolationSummaryForClass call,
 // never by calling ViolationSummary per student in the roster loop.
 func TestHomeroomAttendanceBatchesViolationSummary(t *testing.T) {
-	pool := startTestPostgres(t)
+	pg := dbtest.Start(t)
 	ctx := context.Background()
-	w := seedWorld(t, ctx, pool, "homeroom-violation-batch")
+	w := seedWorld(t, ctx, pg.AdminPool, "homeroom-violation-batch")
 
 	spy := &spyDisciplineReader{summaries: map[uuid.UUID]service.ViolationSummary{
 		w.student1ID: {Count: 2, Points: 15},
 	}}
-	svc := buildServiceWithDiscipline(pool, spy)
+	svc := buildServiceWithDiscipline(pg.AppPool, spy)
 
 	roster, err := svc.GetHomeroomAttendance(ctx, w.tenantID, service.Actor{UserID: w.teacherID}, w.today, service.HomeroomFilter{})
 	require.NoError(t, err)
@@ -424,12 +389,12 @@ func TestHomeroomAttendanceBatchesViolationSummary(t *testing.T) {
 }
 
 func TestTenantIsolation(t *testing.T) {
-	pool := startTestPostgres(t)
+	pg := dbtest.Start(t)
 	ctx := context.Background()
-	svc := buildService(pool)
+	svc := buildService(pg.AppPool)
 
-	tenantA := seedWorld(t, ctx, pool, fmt.Sprintf("iso-a-%d", time.Now().UnixNano()))
-	tenantB := seedWorld(t, ctx, pool, fmt.Sprintf("iso-b-%d", time.Now().UnixNano()))
+	tenantA := seedWorld(t, ctx, pg.AdminPool, fmt.Sprintf("iso-a-%d", time.Now().UnixNano()))
+	tenantB := seedWorld(t, ctx, pg.AdminPool, fmt.Sprintf("iso-b-%d", time.Now().UnixNano()))
 
 	sessionB, err := svc.OpenSession(ctx, tenantB.tenantID, service.Actor{UserID: tenantB.teacherID}, tenantB.scheduleTodayID, tenantB.today, domain.SaveModeNormal)
 	require.NoError(t, err)

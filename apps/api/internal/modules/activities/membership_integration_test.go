@@ -7,33 +7,20 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
-	"github.com/testcontainers/testcontainers-go/modules/postgres"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/activities/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/activities/repository"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/activities/service"
-	"github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
-	"github.com/omanjaya/newsekolah/apps/api/internal/platform/migrator"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/dbtest"
 )
 
 func TestArchivedClubReleasesMembershipLimitWithoutDeletingHistory(t *testing.T) {
-	if testing.Short() {
-		t.Skip("integration test requires Docker")
-	}
 	ctx := context.Background()
-	container, err := postgres.Run(ctx, "postgres:16-alpine", postgres.WithDatabase("activities"), postgres.WithUsername("test"), postgres.WithPassword("test"), postgres.BasicWaitStrategies())
-	require.NoError(t, err)
-	t.Cleanup(func() { _ = container.Terminate(context.Background()) })
-	dsn, err := container.ConnectionString(ctx, "sslmode=disable")
-	require.NoError(t, err)
-	pool, err := database.NewPool(ctx, dsn)
-	require.NoError(t, err)
-	t.Cleanup(pool.Close)
-	require.NoError(t, migrator.UpAll(ctx, dsn, pool))
+	pg := dbtest.Start(t)
 	insertID := func(sql string, args ...any) uuid.UUID {
 		t.Helper()
 		var id uuid.UUID
-		require.NoError(t, pool.QueryRow(ctx, sql+" returning id", args...).Scan(&id))
+		require.NoError(t, pg.AdminPool.QueryRow(ctx, sql+" returning id", args...).Scan(&id))
 		return id
 	}
 	tenant := insertID(`insert into tenants (slug,name,education_level,timezone,locale,status,plan) values ('activities-test','Test','sma','UTC','id','active','default')`)
@@ -42,9 +29,9 @@ func TestArchivedClubReleasesMembershipLimitWithoutDeletingHistory(t *testing.T)
 	coach := insertID(`insert into users (tenant_id,username,password_hash,name,status,locale) values ($1,'coach','x','Coach','active','id')`, tenant)
 	club := insertID(`insert into extracurriculars (tenant_id,academic_year_id,name) values ($1,$2,'First club')`, tenant, year)
 	other := insertID(`insert into extracurriculars (tenant_id,academic_year_id,name) values ($1,$2,'Second club')`, tenant, year)
-	repo := repository.New(pool)
-	svc := service.New(pool, repo, nil, nil)
-	_, err = svc.UpdateMembershipPolicy(ctx, tenant, coach, 1)
+	repo := repository.New(pg.AppPool)
+	svc := service.New(pg.AppPool, repo, nil, nil)
+	_, err := svc.UpdateMembershipPolicy(ctx, tenant, coach, 1)
 	require.NoError(t, err)
 	today := time.Date(2026, 9, 18, 0, 0, 0, 0, time.UTC)
 	membership, err := svc.JoinClub(ctx, tenant, club, student, today)

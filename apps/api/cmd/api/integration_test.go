@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -16,54 +15,18 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/require"
-	"github.com/testcontainers/testcontainers-go/modules/postgres"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/db"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/auth"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/authz"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/config"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
-	"github.com/omanjaya/newsekolah/apps/api/internal/platform/migrator"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/dbtest"
 )
 
 // testJWTSigningKey is a fixed, throwaway ES256 key (base64 PKCS8) used
 // only in tests -- never a real secret.
 const testJWTSigningKey = "MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgyZOuzgGHqLcnTNx0rFY+4xp/4PmYcGnmVw+0zvdYy1qhRANCAATZXimBF2/ovrkvqh4FA0A9LOzv8Jh0bWLWh6XQVBFAKCsu9sIZl0akO0PbAIaW3nAiqXMXAWaT/uhX1c2WBQGW"
-
-// startTestPostgres brings up a real Postgres 16 in Docker, applies every
-// migration (SQL + River) and the permission catalog, and returns a ready
-// pool plus the DSN buildRouter itself needs. Every integration test in
-// this file skips instead of failing when Docker is not reachable, and
-// skips entirely under `go test -short`.
-func startTestPostgres(t *testing.T) (string, *pgxpool.Pool) {
-	t.Helper()
-	if testing.Short() {
-		t.Skip("skipping integration test in -short mode")
-	}
-
-	ctx := context.Background()
-	container, err := postgres.Run(ctx, "postgres:16-alpine",
-		postgres.WithDatabase("newsekolah"),
-		postgres.WithUsername("newsekolah"),
-		postgres.WithPassword("newsekolah"),
-		postgres.BasicWaitStrategies(),
-	)
-	if err != nil {
-		t.Skipf("docker not available, skipping integration test: %v", err)
-	}
-	t.Cleanup(func() { _ = container.Terminate(context.Background()) })
-
-	dsn, err := container.ConnectionString(ctx, "sslmode=disable")
-	require.NoError(t, err)
-
-	pool, err := database.NewPool(ctx, dsn)
-	require.NoError(t, err)
-	t.Cleanup(pool.Close)
-
-	require.NoError(t, migrator.UpAll(ctx, dsn, pool))
-
-	return dsn, pool
-}
 
 func testConfig(dsn string) config.Config {
 	return config.Config{
@@ -134,11 +97,11 @@ func doJSON(t *testing.T, handler http.Handler, method, path string, body any, h
 }
 
 func TestLoginRefreshLogoutFlow(t *testing.T) {
-	dsn, pool := startTestPostgres(t)
+	pg := dbtest.Start(t)
 	ctx := context.Background()
 
-	seedTenantWithUser(t, ctx, pool, "flow-tenant", "flowuser", "Password123!", []string{authz.PermViewDashboard})
-	server := newTestServer(t, dsn, pool)
+	seedTenantWithUser(t, ctx, pg.AdminPool, "flow-tenant", "flowuser", "Password123!", []string{authz.PermViewDashboard})
+	server := newTestServer(t, pg.DSN, pg.AppPool)
 
 	// Web login: refresh token via cookie, not body.
 	rec := doJSON(t, server, http.MethodPost, "/v1/auth/login", map[string]any{
@@ -207,11 +170,11 @@ func TestLoginRefreshLogoutFlow(t *testing.T) {
 }
 
 func TestMePermissionsIncludeActiveDuty(t *testing.T) {
-	dsn, pool := startTestPostgres(t)
+	pg := dbtest.Start(t)
 	ctx := context.Background()
-	q := db.New(pool)
+	q := db.New(pg.AdminPool)
 
-	tenantID, userID := seedTenantWithUser(t, ctx, pool, "duty-tenant", "teacher1", "Password123!", []string{authz.PermViewDashboard})
+	tenantID, userID := seedTenantWithUser(t, ctx, pg.AdminPool, "duty-tenant", "teacher1", "Password123!", []string{authz.PermViewDashboard})
 
 	year, err := q.CreateAcademicYear(ctx, db.CreateAcademicYearParams{
 		TenantID: tenantID, Label: "2026/2027",
@@ -230,7 +193,7 @@ func TestMePermissionsIncludeActiveDuty(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	server := newTestServer(t, dsn, pool)
+	server := newTestServer(t, pg.DSN, pg.AppPool)
 	rec := doJSON(t, server, http.MethodPost, "/v1/auth/login", map[string]any{
 		"username": "teacher1", "password": "Password123!", "client": "web",
 	}, nil)
@@ -257,40 +220,22 @@ func toStringSlice(v any) []string {
 // TestTenantIsolationRLS proves the RLS policies themselves deny
 // cross-tenant reads even when a query has no WHERE tenant_id clause --
 // the exact "buggy query" scenario the isolation model exists to catch.
-// It connects as a fresh, superuser-free role, never as the migration
-// role, which (like any Postgres superuser) always bypasses RLS regardless
-// of FORCE ROW LEVEL SECURITY.
+// It connects as app_rw, the same non-superuser, non-BYPASSRLS role every
+// production deployment runs as (dbtest.Postgres.AppPool), never as the
+// migration role, which (like any Postgres superuser) always bypasses RLS
+// regardless of FORCE ROW LEVEL SECURITY.
 func TestTenantIsolationRLS(t *testing.T) {
-	dsn, pool := startTestPostgres(t)
+	pg := dbtest.Start(t)
 	ctx := context.Background()
 
-	tenantA, _ := seedTenantWithUser(t, ctx, pool, "isolation-a", "usera", "Password123!", nil)
-	tenantB, _ := seedTenantWithUser(t, ctx, pool, "isolation-b", "userb", "Password123!", nil)
+	tenantA, _ := seedTenantWithUser(t, ctx, pg.AdminPool, "isolation-a", "usera", "Password123!", nil)
+	tenantB, _ := seedTenantWithUser(t, ctx, pg.AdminPool, "isolation-b", "userb", "Password123!", nil)
 
-	const testRole = "app_rw_test"
-	_, err := pool.Exec(ctx, fmt.Sprintf(`
-		do $$
-		begin
-		  if not exists (select 1 from pg_roles where rolname = '%s') then
-		    create role %s with login password 'testpass' nosuperuser nobypassrls;
-		  end if;
-		end
-		$$;
-		grant usage on schema public to %s;
-		grant select on all tables in schema public to %s;
-	`, testRole, testRole, testRole, testRole))
-	require.NoError(t, err)
-
-	restrictedDSN := restrictedConnString(dsn, testRole, "testpass")
-	restrictedPool, err := database.NewPool(ctx, restrictedDSN)
-	require.NoError(t, err)
-	defer restrictedPool.Close()
-
-	_, err = restrictedPool.Exec(ctx, "select set_config('app.tenant_id', $1, false)", tenantA.String())
+	_, err := pg.AppPool.Exec(ctx, "select set_config('app.tenant_id', $1, false)", tenantA.String())
 	require.NoError(t, err)
 
 	// The "buggy query": no WHERE tenant_id at all.
-	rows, err := restrictedPool.Query(ctx, "select id, tenant_id from users")
+	rows, err := pg.AppPool.Query(ctx, "select id, tenant_id from users")
 	require.NoError(t, err)
 	var seenTenants []string
 	for rows.Next() {
@@ -305,18 +250,4 @@ func TestTenantIsolationRLS(t *testing.T) {
 		require.NotEqual(t, tenantB.String(), tid, "RLS must never leak tenant B's rows into tenant A's context")
 	}
 	require.NotEmpty(t, seenTenants, "tenant A's own user must still be visible")
-}
-
-// restrictedConnString swaps the user:password in a Postgres DSN while
-// keeping host/port/db/query the same (testcontainers' ConnectionString
-// always has the form postgres://user:password@host:port/db?query).
-func restrictedConnString(dsn, user, password string) string {
-	at := -1
-	for i := len("postgres://"); i < len(dsn); i++ {
-		if dsn[i] == '@' {
-			at = i
-			break
-		}
-	}
-	return "postgres://" + user + ":" + password + dsn[at:]
 }

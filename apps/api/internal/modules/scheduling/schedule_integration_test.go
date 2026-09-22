@@ -11,7 +11,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
-	"github.com/testcontainers/testcontainers-go/modules/postgres"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/api"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling/domain"
@@ -20,8 +19,8 @@ import (
 	schedulehttp "github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling/transport/http"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/authz"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/dbtest"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
-	"github.com/omanjaya/newsekolah/apps/api/internal/platform/migrator"
 	tenantctx "github.com/omanjaya/newsekolah/apps/api/internal/platform/tenant"
 )
 
@@ -32,15 +31,8 @@ func TestScheduleBlockMutationsPreserveHistory(t *testing.T) {
 		t.Skip("integration test requires Docker")
 	}
 	ctx := context.Background()
-	container, err := postgres.Run(ctx, "postgres:16-alpine", postgres.WithDatabase("scheduling"), postgres.WithUsername("test"), postgres.WithPassword("test"), postgres.BasicWaitStrategies())
-	require.NoError(t, err)
-	t.Cleanup(func() { _ = container.Terminate(context.Background()) })
-	dsn, err := container.ConnectionString(ctx, "sslmode=disable")
-	require.NoError(t, err)
-	pool, err := database.NewPool(ctx, dsn)
-	require.NoError(t, err)
-	t.Cleanup(pool.Close)
-	require.NoError(t, migrator.UpAll(ctx, dsn, pool))
+	pg := dbtest.Start(t)
+	dsn, pool := pg.DSN, pg.AdminPool
 	insertID := func(sql string, args ...any) uuid.UUID {
 		t.Helper()
 		var id uuid.UUID
@@ -67,7 +59,7 @@ func TestScheduleBlockMutationsPreserveHistory(t *testing.T) {
 		exec(`insert into school_days (tenant_id,academic_year_id,day_of_week) values ($1,$2,$3)`, tenant, year, day)
 		exec(`insert into period_day_assignments (tenant_id,academic_year_id,day_of_week,template_id) values ($1,$2,$3,$4)`, tenant, year, day, template)
 	}
-	svc := service.New(pool, repository.New(pool))
+	svc := service.New(pg.AppPool, repository.New(pg.AppPool))
 	actor := service.Actor{CanManage: true, UserID: teacher}
 	input := service.ScheduleInput{AcademicYearID: year, ClassID: class, SubjectID: subject, TeacherUserID: teacher, DayOfWeek: 1, StartPeriodID: p1, EndPeriodID: p1, Source: domain.SourceAdmin}
 	createPair := func(day int16) (domain.Schedule, domain.Schedule) {
