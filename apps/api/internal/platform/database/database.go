@@ -35,6 +35,40 @@ func NewPool(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
 	return pool, nil
 }
 
+// EnsureLeastPrivilege checks whether the role pool is connected as is a
+// superuser or carries BYPASSRLS. PostgreSQL always lets either one skip
+// row level security, FORCE ROW LEVEL SECURITY notwithstanding, so if this
+// were ever true in production the entire tenant isolation model
+// (docs/08-security.md section 4) would silently stop applying. It refuses
+// to start in that case rather than run unprotected; outside production
+// (local/dev compose intentionally connects as the initdb superuser for
+// convenience, see apps/api/migrations/0004_db_roles.up.sql) it is a no-op.
+func EnsureLeastPrivilege(ctx context.Context, pool *pgxpool.Pool, appEnv string) error {
+	privileged, err := isPrivilegedRole(ctx, pool)
+	if err != nil {
+		return fmt.Errorf("check database role privilege: %w", err)
+	}
+	return refuseIfPrivileged(privileged, appEnv)
+}
+
+func isPrivilegedRole(ctx context.Context, pool *pgxpool.Pool) (bool, error) {
+	var privileged bool
+	err := pool.QueryRow(ctx,
+		"select rolsuper or rolbypassrls from pg_roles where rolname = current_user",
+	).Scan(&privileged)
+	return privileged, err
+}
+
+// refuseIfPrivileged is split out from EnsureLeastPrivilege so the
+// production/non-production decision is unit-testable without a live
+// Postgres connection.
+func refuseIfPrivileged(privileged bool, appEnv string) error {
+	if !privileged || appEnv != "production" {
+		return nil
+	}
+	return fmt.Errorf("database: connected role is a superuser or has BYPASSRLS, so row level security would not apply; refusing to start in production (see docs/08-security.md section 4)")
+}
+
 // TxFromContext returns the transaction started by WithTenantTx or
 // WithPlatformTx for the current call chain. Repositories call this instead
 // of accepting a pool directly, so a repository never opens its own

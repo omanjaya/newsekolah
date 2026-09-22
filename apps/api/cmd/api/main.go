@@ -58,6 +58,10 @@ func run(logger *slog.Logger) error {
 	}
 	defer pool.Close()
 
+	if err := database.EnsureLeastPrivilege(ctx, pool, cfg.AppEnv); err != nil {
+		return err
+	}
+
 	redisClient := newRedisClient(cfg.RedisURL, logger)
 	if redisClient != nil {
 		defer func() { _ = redisClient.Close() }()
