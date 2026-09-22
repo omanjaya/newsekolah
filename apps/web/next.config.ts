@@ -54,12 +54,12 @@ const nextConfig: NextConfig = {
     // even on routes (like /login) that use none of them.
     optimizePackageImports: ["@newsekolah/ui"],
   },
-  images: {
-    remotePatterns: [
-      { protocol: "https", hostname: "**" },
-      { protocol: "http", hostname: "localhost" },
-    ],
-  },
+  // next/image is not used anywhere in this app (every tenant-supplied
+  // image is rendered with a plain <img>, per the comment in
+  // components/tenant-brand.tsx), so there is no optimizer to configure a
+  // remote allow-list for. The previous `images.remotePatterns` allowed
+  // any HTTPS host, which is not a real restriction and had no effect
+  // here besides suggesting next/image is used to render remote images.
   webpack: (config: WebpackConfigLike) => {
     // @newsekolah/ui and @newsekolah/ui-tokens ship as TypeScript source
     // (package.json `exports` points at `./src/index.ts`) and internally
