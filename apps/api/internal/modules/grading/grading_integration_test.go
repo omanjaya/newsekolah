@@ -154,12 +154,12 @@ func auditLogsFor(t *testing.T, pool *pgxpool.Pool, tenantID, entityID uuid.UUID
 // must write an audit_logs row, keyed on the component, inside the same
 // transaction as the grade upserts.
 func TestSaveScoresWritesAuditRecord(t *testing.T) {
-	pool := startTestPostgres(t)
-	fx := seedFixture(t, pool)
+	pg := dbtest.Start(t)
+	fx := seedFixture(t, pg.AdminPool)
 	ctx := context.Background()
 
-	schoolModule := school.Register(pool, tenant.ModeSingle, nil)
-	gradingModule := Register(Dependencies{Pool: pool, Years: schoolModule.Service, Clock: clock.Real{}})
+	schoolModule := school.Register(pg.AppPool, tenant.ModeSingle, nil)
+	gradingModule := Register(Dependencies{Pool: pg.AppPool, Years: schoolModule.Service, Clock: clock.Real{}})
 
 	component, err := gradingModule.Service.CreateComponent(ctx, fx.tenantID, fx.teacherID, true, service.ComponentInput{
 		ClassID: fx.classID, SubjectID: fx.subjectID, TermID: uuid.NullUUID{UUID: fx.termID, Valid: true},
@@ -173,7 +173,7 @@ func TestSaveScoresWritesAuditRecord(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	logs := auditLogsFor(t, pool, fx.tenantID, component.ID)
+	logs := auditLogsFor(t, pg.AdminPool, fx.tenantID, component.ID)
 	require.Len(t, logs, 1, "SaveScores must write exactly one audit_logs row")
 	require.Equal(t, "grading.score_save", logs[0].Action)
 	require.Equal(t, "assessment_component", logs[0].EntityType)
@@ -183,18 +183,18 @@ func TestSaveScoresWritesAuditRecord(t *testing.T) {
 // must write an audit_logs row inside the same transaction that flips
 // the class-subject publication flag.
 func TestPublishWritesAuditRecord(t *testing.T) {
-	pool := startTestPostgres(t)
-	fx := seedFixture(t, pool)
+	pg := dbtest.Start(t)
+	fx := seedFixture(t, pg.AdminPool)
 	ctx := context.Background()
 
-	schoolModule := school.Register(pool, tenant.ModeSingle, nil)
-	gradingModule := Register(Dependencies{Pool: pool, Years: schoolModule.Service, Clock: clock.Real{}})
+	schoolModule := school.Register(pg.AppPool, tenant.ModeSingle, nil)
+	gradingModule := Register(Dependencies{Pool: pg.AppPool, Years: schoolModule.Service, Clock: clock.Real{}})
 
 	_, err := gradingModule.Service.Publish(ctx, fx.tenantID, fx.teacherID, true, fx.classID, fx.subjectID,
 		uuid.NullUUID{UUID: fx.termID, Valid: true}, true)
 	require.NoError(t, err)
 
-	logs := auditLogsFor(t, pool, fx.tenantID, fx.classID)
+	logs := auditLogsFor(t, pg.AdminPool, fx.tenantID, fx.classID)
 	require.Len(t, logs, 1, "Publish must write exactly one audit_logs row")
 	require.Equal(t, "grading.report_publish", logs[0].Action)
 	require.Equal(t, "report_publication", logs[0].EntityType)
