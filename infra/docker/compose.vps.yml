@@ -1,0 +1,42 @@
+# Override for running the stack on a VPS that already has a system-wide
+# Caddy instance fronting several projects, instead of the bundled `caddy`
+# service in docker-compose.prod.yml owning ports 80/443 outright. Combine
+# with the base file, base first:
+#
+#   docker compose -f docker-compose.prod.yml -f compose.vps.yml up -d
+#
+# or set COMPOSE_EXTRA_FILES=infra/docker/compose.vps.yml so
+# infra/scripts/update.sh picks it up automatically. No secrets live here;
+# it only changes port bindings, image registries, and which services run.
+# See infra/README.md "Shared system Caddy (VPS)" for the vhost the system
+# Caddy needs and how to point it at the ports published below.
+name: newsekolah
+
+services:
+  # Published on loopback only: the system Caddy on the same host proxies to
+  # these, nothing else should reach them directly.
+  api:
+    ports:
+      - "127.0.0.1:8081:8080"
+
+  web:
+    ports:
+      - "127.0.0.1:3011:3000"
+
+  # quay.io mirrors of the MinIO images: Docker Hub rate-limits anonymous
+  # pulls, which a shared VPS running several projects' compose stacks can
+  # hit during `docker compose pull`/`build`. Functionally identical images.
+  minio:
+    image: quay.io/minio/minio:latest
+
+  minio-init:
+    image: quay.io/minio/mc:latest
+
+  # The bundled caddy service assumes it owns ports 80/443 on the host,
+  # which is false here (the system Caddy already does). Moving it behind a
+  # profile that nothing activates keeps it defined (so `docker compose
+  # --profile bundled-caddy up -d caddy` still works if this host ever stops
+  # sharing) without starting it, or binding 80/443, as part of the normal
+  # `up -d`.
+  caddy:
+    profiles: ["bundled-caddy"]

@@ -6,8 +6,16 @@ set -euo pipefail
 
 DEPLOY_DIR="${DEPLOY_DIR:-/opt/newsekolah}"
 COMPOSE_FILE="infra/docker/docker-compose.prod.yml"
-COMPOSE=(docker compose -f "$COMPOSE_FILE")
 HEALTH_TIMEOUT_SECONDS="${HEALTH_TIMEOUT_SECONDS:-60}"
+
+# Space-separated list of additional compose files layered on top of
+# COMPOSE_FILE, e.g. COMPOSE_EXTRA_FILES="infra/docker/compose.vps.yml" for
+# a host running a shared system Caddy (infra/README.md "Shared system
+# Caddy (VPS)"). Paths are relative to DEPLOY_DIR.
+COMPOSE=(docker compose -f "$COMPOSE_FILE")
+for extra_file in ${COMPOSE_EXTRA_FILES:-}; do
+    COMPOSE+=(-f "$extra_file")
+done
 
 log() { printf '==> %s\n' "$1"; }
 fail() {
@@ -59,7 +67,7 @@ rolling_restart() {
     prev_web="$(previous_image_id web)"
 
     log "restarting api"
-    "${COMPOSE[@]}" up -d --no-deps api
+    "${COMPOSE[@]}" up -d --no-deps --no-build api
     if ! wait_healthy api; then
         log "api failed health check, rolling back"
         rollback_service api "$prev_api"
@@ -67,10 +75,10 @@ rolling_restart() {
     fi
 
     log "restarting worker"
-    "${COMPOSE[@]}" up -d --no-deps worker
+    "${COMPOSE[@]}" up -d --no-deps --no-build worker
 
     log "restarting web"
-    "${COMPOSE[@]}" up -d --no-deps web
+    "${COMPOSE[@]}" up -d --no-deps --no-build web
     sleep 5
     if [[ "$("${COMPOSE[@]}" ps --status running -q web)" == "" ]]; then
         log "web failed to start, rolling back"
@@ -91,7 +99,7 @@ rollback_service() {
     "${COMPOSE[@]}" stop "$service"
     docker tag "$image_id" "newsekolah-${service}:rollback"
     NEWSEKOLAH_ROLLBACK_IMAGE="newsekolah-${service}:rollback" \
-        "${COMPOSE[@]}" up -d --no-deps "$service"
+        "${COMPOSE[@]}" up -d --no-deps --no-build "$service"
 }
 
 main() {
