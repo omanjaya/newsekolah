@@ -9,8 +9,10 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"strings"
 
 	"github.com/golang-migrate/migrate/v4"
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/config"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
@@ -46,7 +48,7 @@ func run(args []string, logger *slog.Logger) error {
 
 	switch args[0] {
 	case "up":
-		return runUp(m, cfg.DatabaseURL, logger)
+		return runUp(m, cfg, logger)
 	case "down":
 		return runDown(m, logger)
 	case "status":
@@ -60,12 +62,12 @@ func run(args []string, logger *slog.Logger) error {
 	}
 }
 
-func runUp(m *migrate.Migrate, databaseURL string, logger *slog.Logger) error {
+func runUp(m *migrate.Migrate, cfg config.Config, logger *slog.Logger) error {
 	if err := m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		return fmt.Errorf("migrate up: %w", err)
 	}
 	logger.Info("sql migrations applied")
-	return postUp(databaseURL, logger)
+	return postUp(cfg, logger)
 }
 
 func runDown(m *migrate.Migrate, logger *slog.Logger) error {
@@ -117,13 +119,14 @@ func runForce(m *migrate.Migrate, args []string, logger *slog.Logger) error {
 	return nil
 }
 
-// postUp runs River's own schema migrations and upserts the static
-// permission catalog (internal/platform/authz/permissions.go is the single
-// source of truth; this keeps the database in sync with it on every run).
-func postUp(databaseURL string, logger *slog.Logger) error {
+// postUp runs River's own schema migrations, upserts the static permission
+// catalog (internal/platform/authz/permissions.go is the single source of
+// truth; this keeps the database in sync with it on every run), and rotates
+// the app_rw role's password off its migration-time default.
+func postUp(cfg config.Config, logger *slog.Logger) error {
 	ctx := context.Background()
 
-	pool, err := database.NewPool(ctx, databaseURL)
+	pool, err := database.NewPool(ctx, cfg.DatabaseURL)
 	if err != nil {
 		return err
 	}
@@ -134,5 +137,55 @@ func postUp(databaseURL string, logger *slog.Logger) error {
 	}
 	logger.Info("river migrations applied")
 	logger.Info("permission catalog upserted")
+
+	if err := ensureAppRolePassword(ctx, pool, cfg, logger); err != nil {
+		return err
+	}
 	return nil
+}
+
+// ensureAppRolePassword sets the app_rw role's login password from
+// APP_DB_PASSWORD via ALTER ROLE, so the default password
+// 0004_db_roles.up.sql creates it with ('change-me-in-production') is never
+// left active. This runs here rather than as a SQL migration because a
+// migration file cannot read the process environment.
+func ensureAppRolePassword(ctx context.Context, pool *pgxpool.Pool, cfg config.Config, logger *slog.Logger) error {
+	var exists bool
+	if err := pool.QueryRow(ctx,
+		"select exists (select 1 from pg_roles where rolname = 'app_rw')",
+	).Scan(&exists); err != nil {
+		return fmt.Errorf("check app_rw role: %w", err)
+	}
+	if !exists {
+		// Managed Postgres (RDS, Cloud SQL, ...) where 0004_db_roles skipped
+		// role creation for lack of CREATEROLE; app_rw is provisioned out of
+		// band there (see that migration's comment), so there is nothing to
+		// rotate here.
+		return nil
+	}
+
+	if cfg.AppDBPassword == "" {
+		if cfg.IsProduction() {
+			return fmt.Errorf("APP_DB_PASSWORD is required in production: without it app_rw would keep its default migration password (apps/api/migrations/0004_db_roles.up.sql)")
+		}
+		logger.Warn("APP_DB_PASSWORD not set; app_rw keeps its default migration password (non-production only)")
+		return nil
+	}
+
+	stmt := fmt.Sprintf("alter role app_rw with password %s", quoteLiteral(cfg.AppDBPassword))
+	if _, err := pool.Exec(ctx, stmt); err != nil {
+		return fmt.Errorf("set app_rw password: %w", err)
+	}
+	logger.Info("app_rw password set from APP_DB_PASSWORD")
+	return nil
+}
+
+// quoteLiteral escapes s for use as a single-quoted SQL string literal.
+// ALTER ROLE ... PASSWORD takes a string constant, not a query parameter
+// (Postgres's grammar requires a literal there), so this stands in for
+// parameter binding. Doubling embedded quotes is sufficient because
+// standard_conforming_strings is on by default (Postgres 9.1+), so
+// backslashes are not treated as escapes.
+func quoteLiteral(s string) string {
+	return "'" + strings.ReplaceAll(s, "'", "''") + "'"
 }
