@@ -44,6 +44,26 @@ const nextConfig: NextConfig = {
   output: process.env.NEXT_OUTPUT === "standalone" ? "standalone" : undefined,
   reactStrictMode: true,
   poweredByHeader: false,
+  // Pages merged into tabbed screens keep their old URLs working. These
+  // were page-level redirect() calls, which run after the (app) shell and
+  // its loading boundary have streamed, so the browser performed them and
+  // the dev router crashed with "Rendered more hooks than during the
+  // previous render". An HTTP redirect happens before anything renders.
+  redirects() {
+    const moved: [source: string, destination: string][] = [
+      ["/academic/grade-levels", "/school/structure?tab=grade-levels"],
+      ["/academic/rooms", "/school/structure?tab=rooms"],
+      ["/academic/tracks", "/school/structure?tab=tracks"],
+      ["/academic/subject-offerings", "/school/learning?tab=offerings"],
+      ["/academic/teaching-assignments", "/school/assignments?tab=teaching"],
+      ["/school/duties", "/school/assignments?tab=duties"],
+      ["/school/subjects", "/school/learning?tab=subjects"],
+      ["/school/periods", "/school/learning?tab=periods"],
+    ];
+    return Promise.resolve(
+      moved.map(([source, destination]) => ({ source, destination, permanent: false })),
+    );
+  },
   eslint: {
     ignoreDuringBuilds: true,
   },
