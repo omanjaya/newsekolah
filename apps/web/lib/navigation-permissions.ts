@@ -1,4 +1,4 @@
-import { navigation, type NavItem } from "./navigation";
+import { navigation, type NavItem, type NavProfileKind } from "./navigation";
 
 /**
  * The permission a path needs, taken from the registry rather than repeated
@@ -9,10 +9,36 @@ import { navigation, type NavItem } from "./navigation";
  * Its own file because navigation.ts is at the 400-line cap.
  */
 export function permissionForPath(pathname: string): string | undefined {
+  const best = navItemForPath(pathname);
+  return best?.routePermission ?? best?.permission;
+}
+
+/**
+ * Whether a reader may open `pathname`: the permission above, plus the
+ * profile kinds the registry scopes the page to (a teacher's journal is
+ * not a parent's page even though the list endpoint accepts any session).
+ * Checked before the page mounts, so a refused page fires no requests.
+ */
+export function canOpenPath(
+  pathname: string,
+  can: (permission: string) => boolean,
+  profileKind: NavProfileKind | undefined,
+): boolean {
+  const best = navItemForPath(pathname);
+  if (!best) return true;
+  const required = best.routePermission ?? best.permission;
+  if (required && !can(required)) return false;
+  if (best.profileKinds && (!profileKind || !best.profileKinds.includes(profileKind))) {
+    return false;
+  }
+  return true;
+}
+
+function navItemForPath(pathname: string): NavItem | undefined {
   let best: NavItem | undefined;
   for (const item of navigation) {
     if (pathname !== item.href && !pathname.startsWith(`${item.href}/`)) continue;
     if (!best || item.href.length > best.href.length) best = item;
   }
-  return best?.routePermission ?? best?.permission;
+  return best;
 }

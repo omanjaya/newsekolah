@@ -134,7 +134,13 @@ export function AttendanceCalendar(): ReactElement {
               <>
                 <span>{Number(date.slice(-2))}</span>
                 {code !== "NONE" && (
-                  <span className="text-[11px] font-semibold">{t(`codes.${code}`)}</span>
+                  // A phone gives each day about 45px, where "Belum lengkap"
+                  // breaks over two lines and stretches its row; the short
+                  // form fits on one, and the legend below spells it out.
+                  <span className="max-w-full truncate px-0.5 text-[11px] leading-tight font-semibold">
+                    <span className="sm:hidden">{t(`codesShort.${code}`)}</span>
+                    <span className="hidden sm:inline">{t(`codes.${code}`)}</span>
+                  </span>
                 )}
               </>
             );
@@ -218,8 +224,14 @@ export function AttendanceCalendar(): ReactElement {
       )}
       <dl className="flex flex-wrap gap-4 text-[13px]">
         {Object.entries(summary).map(([code, count]) => (
-          <div key={code} className="flex items-center gap-1">
-            <dt className="text-fg-muted">{t(`codes.${code}`)}</dt>
+          <div key={code} className="flex items-center gap-1.5">
+            <dt className="flex items-center gap-1.5 text-fg-muted">
+              <span
+                aria-hidden="true"
+                className={cn("size-2.5 shrink-0 rounded-full", STATUS_CLASS[code])}
+              />
+              {t(`codes.${code}`)}
+            </dt>
             <dd className="font-medium text-fg">{count}</dd>
           </div>
         ))}

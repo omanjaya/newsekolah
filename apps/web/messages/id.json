@@ -621,6 +621,16 @@
           "INCOMPLETE": "Belum lengkap",
           "MIXED": "Campuran",
           "NONE": "Tidak ada jadwal"
+        },
+        "codesShort": {
+          "H": "Hadir",
+          "S": "Sakit",
+          "I": "Izin",
+          "D": "Disp.",
+          "A": "Alpha",
+          "INCOMPLETE": "Belum",
+          "MIXED": "Camp.",
+          "NONE": "-"
         }
       },
       "session": {

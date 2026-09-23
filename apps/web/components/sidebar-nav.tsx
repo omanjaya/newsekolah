@@ -17,10 +17,6 @@ import { useEffect, useRef, useState } from "react";
 
 import { navGroupIcons, type NavItem } from "../lib/navigation";
 
-export function isActive(pathname: string, href: string): boolean {
-  return pathname === href || pathname.startsWith(`${href}/`);
-}
-
 /** Shows the label as a tooltip only while the sidebar is a rail and the text is hidden. */
 export function RailLabel({
   label,
@@ -46,6 +42,7 @@ export function NavLink({
   animate,
   delayMs,
   nested,
+  activeHref,
 }: {
   item: NavItem;
   rail: boolean;
@@ -54,10 +51,11 @@ export function NavLink({
   delayMs: number;
   /** Inside a group, where the active marker lands on the guide rule rather than the row edge. */
   nested: boolean;
+  /** The single best-matching href across the whole menu (see `activeNavHref`). */
+  activeHref: string | undefined;
 }): ReactElement {
-  const pathname = usePathname();
   const t = useTranslations();
-  const active = isActive(pathname, item.href);
+  const active = item.href === activeHref;
   const label = t(item.labelKey);
 
   return (
@@ -128,11 +126,13 @@ export function GroupFlyout({
   group,
   items,
   animate,
+  activeHref,
   rail = true,
 }: {
   group: string;
   items: NavItem[];
   animate: boolean;
+  activeHref: string | undefined;
   rail?: boolean;
 }): ReactElement {
   const t = useTranslations();
@@ -156,7 +156,7 @@ export function GroupFlyout({
 
   const label = t(group);
   const Icon = navGroupIcons[group];
-  const hasActivePage = items.some((item) => isActive(pathname, item.href));
+  const hasActivePage = items.some((item) => item.href === activeHref);
 
   function cancelClose() {
     if (closeTimer.current !== null) {
@@ -237,6 +237,7 @@ export function GroupFlyout({
             animate={animate}
             delayMs={0}
             nested={false}
+            activeHref={activeHref}
           />
         ))}
       </PopoverContent>

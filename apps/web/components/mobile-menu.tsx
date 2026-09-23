@@ -10,6 +10,7 @@ import { useState } from "react";
 
 import { groupNavigation } from "../lib/group-navigation";
 import type { NavItem } from "../lib/navigation";
+import { activeNavHref } from "../lib/navigation/active-href";
 import { useNavigationPreferences } from "../lib/navigation/use-navigation-preferences";
 
 /** Browse every permitted destination without needing to know its search term. */
@@ -18,6 +19,7 @@ export function MobileMenu({ items, scope }: { items: NavItem[]; scope?: string 
   const pathname = usePathname();
   const t = useTranslations();
   const preferences = useNavigationPreferences(scope, items, pathname);
+  const activeHref = activeNavHref(pathname, items);
   const groups = [
     ...(preferences.favorites.length
       ? [{ labelKey: "app.shell.mobileMenu.favorites", items: preferences.favorites }]
@@ -50,7 +52,7 @@ export function MobileMenu({ items, scope }: { items: NavItem[]; scope?: string 
               </h2>
               <ul className="grid gap-1 sm:grid-cols-2">
                 {group.items.map((item) => {
-                  const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+                  const active = item.href === activeHref;
                   return (
                     <li key={item.key} className="flex min-w-0 items-center">
                       <Link

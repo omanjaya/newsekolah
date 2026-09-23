@@ -621,6 +621,16 @@
           "INCOMPLETE": "Incomplete",
           "MIXED": "Mixed",
           "NONE": "No sessions"
+        },
+        "codesShort": {
+          "H": "Pres.",
+          "S": "Sick",
+          "I": "Exc.",
+          "D": "Disp.",
+          "A": "Abs.",
+          "INCOMPLETE": "Inc.",
+          "MIXED": "Mixed",
+          "NONE": "-"
         }
       },
       "session": {

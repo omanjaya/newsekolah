@@ -8,6 +8,7 @@ import type { ReactElement } from "react";
 
 import { mobileNavigation } from "../lib/mobile-navigation";
 import type { NavItem, NavProfileKind } from "../lib/navigation";
+import { activeNavHref } from "../lib/navigation/active-href";
 
 import { MobileMenu } from "./mobile-menu";
 
@@ -29,13 +30,14 @@ export function MobileTabBar({
   const pathname = usePathname();
   const t = useTranslations();
   const tabItems = mobileNavigation(items, profile);
+  const activeHref = activeNavHref(pathname, tabItems);
   const [left, right] = [
     tabItems.slice(0, Math.ceil(tabItems.length / 2)),
     tabItems.slice(Math.ceil(tabItems.length / 2)),
   ];
 
   function renderItem(item: NavItem): ReactElement {
-    const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+    const active = item.href === activeHref;
     return (
       <Link
         key={item.key}

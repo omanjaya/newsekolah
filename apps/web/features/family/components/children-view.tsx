@@ -13,7 +13,7 @@ import {
 } from "@newsekolah/ui";
 import { FileText, GraduationCap, ShieldCheck, Star } from "lucide-react";
 import Link from "next/link";
-import { useLocale, useTranslations } from "next-intl";
+import { useFormatter, useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
@@ -172,16 +172,35 @@ function AttendanceSection({
 
 function GradesSection({ query }: { query: ReturnType<typeof useChildGradesQuery> }): ReactElement {
   const t = useTranslations("app.family.myChildren.grades");
-  const subjects = useSubjectsQuery();
+  const format = useFormatter();
+  // The subject catalogue needs view_academic_data, which a parent does not
+  // hold; the grades response carries only subject ids. Asking anyway only
+  // collects a 403, so without the catalogue the rows go unnamed and a
+  // summary line carries the term's overall picture instead.
+  const canReadSubjects = useCan("view_academic_data");
+  const subjects = useSubjectsQuery(canReadSubjects);
   const subjectMap = useLookup(subjects.data?.data);
   const rows = query.data?.subjects ?? [];
+  const score = (value: number) =>
+    format.number(value, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  const averages = rows.flatMap((row) => {
+    const value = row.average ?? row.report_score;
+    return value === undefined ? [] : [value];
+  });
+  const overall =
+    averages.length > 0 ? averages.reduce((sum, value) => sum + value, 0) / averages.length : null;
 
   return (
     <section className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-4">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-[16px] font-medium text-fg">{t("title")}</h2>
+        <div className="flex min-w-0 flex-col">
+          <h2 className="text-[16px] font-medium text-fg">{t("title")}</h2>
+          {query.data?.term_name && (
+            <p className="text-[13px] text-fg-muted">{query.data.term_name}</p>
+          )}
+        </div>
         {query.data && (
-          <span className="flex items-center gap-1.5 text-[13px] text-fg-muted">
+          <span className="flex shrink-0 items-center gap-1.5 text-[13px] text-fg-muted">
             <Star className="size-4" aria-hidden="true" />
             {t("stars", { count: query.data.stars })}
           </span>
@@ -196,24 +215,33 @@ function GradesSection({ query }: { query: ReturnType<typeof useChildGradesQuery
           description={t("emptyBody")}
         />
       ) : (
-        <ul className="flex flex-col gap-1.5">
-          {rows.map((subject) => (
-            <li
-              key={subject.subject_id}
-              className="flex items-center justify-between gap-2 text-[13px]"
-            >
-              <span className="text-fg">
-                {subjectMap.get(subject.subject_id)?.name ?? t("unknownSubject")}
-              </span>
-              <span className="text-fg-muted [font-variant-numeric:tabular-nums]">
-                {subject.average !== undefined &&
-                  t("average", { score: subject.average.toFixed(1) })}
-                {subject.report_score !== undefined &&
-                  ` · ${t("reportScore", { score: subject.report_score.toFixed(1) })}`}
-              </span>
-            </li>
-          ))}
-        </ul>
+        <>
+          {overall !== null && (
+            <p className="text-[13px] text-fg">
+              {t("overall", { score: score(overall), count: rows.length })}
+            </p>
+          )}
+          {canReadSubjects && (
+            <ul className="flex flex-col gap-1.5 border-t border-border pt-2">
+              {rows.map((subject) => (
+                <li
+                  key={subject.subject_id}
+                  className="flex items-center justify-between gap-2 text-[13px]"
+                >
+                  <span className="min-w-0 text-fg">
+                    {subjectMap.get(subject.subject_id)?.name ?? t("unknownSubject")}
+                  </span>
+                  <span className="shrink-0 text-fg-muted [font-variant-numeric:tabular-nums]">
+                    {subject.average !== undefined &&
+                      t("average", { score: score(subject.average) })}
+                    {subject.report_score !== undefined &&
+                      ` · ${t("reportScore", { score: score(subject.report_score) })}`}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
       )}
     </section>
   );

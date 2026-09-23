@@ -6,7 +6,7 @@ import type { ReactElement, ReactNode } from "react";
 
 import { useNotificationsSocket } from "../features/notifications/realtime";
 import { navigation, filterNavigation } from "../lib/navigation";
-import { permissionForPath } from "../lib/navigation-permissions";
+import { canOpenPath } from "../lib/navigation-permissions";
 import { useSession } from "../lib/session/session-provider";
 
 import { CommandPaletteProvider } from "./command-palette-provider";
@@ -40,8 +40,11 @@ export function AppShell({ children }: { children: ReactNode }): ReactElement {
   // navigation registry, where every page already declares it. This sits
   // inside the shell rather than around it, so a refusal still leaves the
   // reader somewhere to go.
-  const required = permissionForPath(pathname);
-  const allowed = !required || (me?.permissions.includes(required) ?? false);
+  const allowed = canOpenPath(
+    pathname,
+    (permission) => me?.permissions.includes(permission) ?? false,
+    me?.profile_kind,
+  );
 
   return (
     <CommandPaletteProvider>
