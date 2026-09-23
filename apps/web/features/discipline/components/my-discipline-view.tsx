@@ -1,10 +1,14 @@
 "use client";
 
-import { Alert, EmptyState, PageHeader, Skeleton, domainIcons } from "@newsekolah/ui";
+import type { Locale } from "@newsekolah/i18n";
+import { formatDate } from "@newsekolah/i18n";
+import { EmptyState, PageHeader, Skeleton, domainIcons } from "@newsekolah/ui";
 import { FileText } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
+import { QueryError } from "../../../components/query-error";
+import { useSession } from "../../../lib/session/session-provider";
 import { useMyDisciplineQuery } from "../api";
 
 /**
@@ -14,7 +18,10 @@ import { useMyDisciplineQuery } from "../api";
  */
 export function MyDisciplineView(): ReactElement {
   const t = useTranslations("app.discipline.myDiscipline");
-  const { data, isLoading, error } = useMyDisciplineQuery();
+  const locale = useLocale() as Locale;
+  const { me } = useSession();
+  const timeZone = me?.tenant.timezone;
+  const { data, isLoading, error, refetch } = useMyDisciplineQuery();
   const records = (data?.records ?? []).filter((r) => !r.is_voided);
   const letters = data?.letters ?? [];
 
@@ -27,7 +34,7 @@ export function MyDisciplineView(): ReactElement {
     );
   }
   if (error || !data) {
-    return <Alert variant="warning" title={t("loadError")} className="m-6" />;
+    return <QueryError retry={() => refetch()} className="m-4 md:m-6" />;
   }
 
   return (
@@ -42,7 +49,7 @@ export function MyDisciplineView(): ReactElement {
         />
       ) : (
         <div className="flex flex-col gap-4">
-          <p className="text-[13px] text-fg-muted">
+          <p className="text-[15px] font-medium text-fg [font-variant-numeric:tabular-nums]">
             {t("totalPoints", { points: data.total_points })}
           </p>
 
@@ -51,9 +58,14 @@ export function MyDisciplineView(): ReactElement {
               <h2 className="text-[16px] font-medium text-fg">{t("letters")}</h2>
               <ul className="flex flex-col gap-1.5">
                 {letters.map((letter) => (
-                  <li key={letter.id} className="flex items-center gap-2 text-[13px] text-fg">
-                    <FileText className="size-4 text-fg-muted" aria-hidden="true" />
-                    {letter.letter_number} · {letter.level_label} · {letter.issued_at.slice(0, 10)}
+                  <li key={letter.id} className="flex items-start gap-2 text-[13px] text-fg">
+                    <FileText className="mt-0.5 size-4 shrink-0 text-fg-muted" aria-hidden="true" />
+                    <span>
+                      {letter.letter_number} · {letter.level_label} ·{" "}
+                      <span className="text-fg-muted">
+                        {formatDate(letter.issued_at, { locale, timeZone })}
+                      </span>
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -65,14 +77,17 @@ export function MyDisciplineView(): ReactElement {
             {records.length === 0 ? (
               <p className="text-[13px] text-fg-muted">{t("recordsEmpty")}</p>
             ) : (
-              <ul className="flex flex-col gap-1.5">
+              <ul className="flex flex-col divide-y divide-border">
                 {records.map((record) => (
                   <li
                     key={record.id}
-                    className="flex items-center justify-between gap-2 text-[13px] text-fg"
+                    className="flex items-center justify-between gap-3 py-2 text-[13px] text-fg"
                   >
-                    <span>
-                      {record.type_name} <span className="text-fg-muted">{record.occurred_on}</span>
+                    <span className="flex flex-col">
+                      <span>{record.type_name}</span>
+                      <span className="text-[12px] text-fg-muted">
+                        {formatDate(record.occurred_on, { locale, timeZone })}
+                      </span>
                     </span>
                     <span className="[font-variant-numeric:tabular-nums]">{record.points}</span>
                   </li>

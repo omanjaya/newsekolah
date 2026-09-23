@@ -14,5 +14,5 @@ export function permissionForPath(pathname: string): string | undefined {
     if (pathname !== item.href && !pathname.startsWith(`${item.href}/`)) continue;
     if (!best || item.href.length > best.href.length) best = item;
   }
-  return best?.permission;
+  return best?.routePermission ?? best?.permission;
 }

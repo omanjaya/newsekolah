@@ -225,6 +225,7 @@ function DisciplineSection({
   query: ReturnType<typeof useChildDisciplineQuery>;
 }): ReactElement {
   const t = useTranslations("app.family.myChildren.discipline");
+  const locale = useLocale() as Locale;
   const records = query.data?.records ?? [];
   const letters = query.data?.letters ?? [];
 
@@ -251,21 +252,25 @@ function DisciplineSection({
                   key={`${letter.number}-${index}`}
                   className="flex items-center gap-2 text-[13px] text-fg"
                 >
-                  <FileText className="size-4 text-fg-muted" aria-hidden="true" />
-                  {letter.number} · {letter.level_label} · {letter.issued_at}
+                  <FileText className="size-4 shrink-0 text-fg-muted" aria-hidden="true" />
+                  {letter.number} · {letter.level_label} ·{" "}
+                  {formatDate(letter.issued_at, { locale })}
                 </li>
               ))}
             </ul>
           )}
           {records.length > 0 && (
-            <ul className="flex flex-col gap-1.5">
+            <ul className="flex flex-col divide-y divide-border">
               {records.map((record, index) => (
                 <li
                   key={`${record.type_name}-${record.occurred_on}-${index}`}
-                  className="flex items-center justify-between gap-2 text-[13px] text-fg"
+                  className="flex items-center justify-between gap-3 py-2 text-[13px] text-fg"
                 >
-                  <span>
-                    {record.type_name} <span className="text-fg-muted">{record.occurred_on}</span>
+                  <span className="flex flex-col">
+                    <span>{record.type_name}</span>
+                    <span className="text-[12px] text-fg-muted">
+                      {formatDate(record.occurred_on, { locale })}
+                    </span>
                   </span>
                   <span className="[font-variant-numeric:tabular-nums]">{record.points}</span>
                 </li>

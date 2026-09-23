@@ -8,7 +8,8 @@ import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
-import { useSession } from "../../../lib/session/session-provider";
+import { QueryError } from "../../../components/query-error";
+import { useCan, useSession } from "../../../lib/session/session-provider";
 import { useExitPermitReviewQueueQuery } from "../api";
 
 import { WorkflowStatusBadge } from "./workflow-stepper";
@@ -31,22 +32,30 @@ export function ExitPermitReviewQueue({
   const t = useTranslations("app.permits.exit.queue");
   const locale = useLocale() as Locale;
   const { me } = useSession();
+  // The yearly report lives in the report centre, which needs view_reports;
+  // a homeroom approver without it would land on a no-access page.
+  const canViewReports = useCan("view_reports");
   const queue = useExitPermitReviewQueueQuery();
   const items = queue.data?.data ?? [];
 
   if (queue.isLoading) {
     return <Skeleton className="h-40 w-full" aria-busy="true" />;
   }
+  if (queue.isError && !queue.data) {
+    return <QueryError retry={() => queue.refetch()} />;
+  }
 
   return (
     <div className="flex flex-col gap-4">
-      {canApprove && (
-        <Link href="/reports" className="text-[13px] text-accent underline underline-offset-2">
-          <span className="inline-flex items-center gap-1.5">
-            <FileBarChart className="size-4" aria-hidden="true" />
-            {t("yearlyReportLink")}
-          </span>
-        </Link>
+      {canApprove && canViewReports && (
+        <div>
+          <Button asChild variant="secondary" size="sm">
+            <Link href="/reports">
+              <FileBarChart className="size-4" aria-hidden="true" />
+              {t("yearlyReportLink")}
+            </Link>
+          </Button>
+        </div>
       )}
 
       {items.length === 0 ? (

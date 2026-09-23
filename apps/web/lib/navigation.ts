@@ -44,6 +44,12 @@ export interface NavItem {
   /** Permission code required to see this item; omitted means "any signed-in user". */
   permission?: string;
   /**
+   * Permission needed to open the route when it is looser than the one
+   * gating the menu entry (a page with a self-scoped tab for users who do
+   * not get the entry). Defaults to `permission`.
+   */
+  routePermission?: string;
+  /**
    * Restricts this item to specific profile kinds, for a screen scoped by
    * account type rather than by a permission code (e.g. a student's own
    * discipline record, which every authenticated user can technically
@@ -115,6 +121,9 @@ export const navigation: NavItem[] = [
     href: "/attendance/reports",
     icon: FileBarChart,
     permission: "view_reports",
+    // The "mine" tab lists a teacher's own sessions; any teacher who takes
+    // attendance may open it without view_reports.
+    routePermission: "manage_attendance",
     group: GROUP.academic,
   },
   {

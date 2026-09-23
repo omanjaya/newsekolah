@@ -253,13 +253,13 @@ function SessionEditor({
           }}
           placeholder={t("searchPlaceholder")}
           aria-label={t("searchPlaceholder")}
-          className="w-64"
+          className="w-full sm:w-64"
         />
-        <label className="flex items-center gap-2 text-[13px]">
+        <label className="flex min-h-11 items-center gap-2 text-[13px] sm:min-h-0">
           <Switch checked={onlyAbsent} onCheckedChange={setOnlyAbsent} />
           {t("onlyNotPresent")}
         </label>
-        <div className="ml-auto flex flex-wrap gap-3 text-[13px]" aria-live="polite">
+        <div className="flex flex-wrap gap-3 text-[13px] sm:ml-auto" aria-live="polite">
           {session.statuses.map((s) => (
             <span key={s.code} className="flex items-center gap-1">
               <span className="text-fg-muted">{s.label}</span>
@@ -354,13 +354,17 @@ function SessionEditor({
               {isDirty ? tEditor("unsavedChanges", { count: pendingChanges }) : t("saveHint")}
             </span>
           )}
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
             {formError && (
               <span role="alert" className="text-[13px] text-status-absent">
                 {formError}
               </span>
             )}
-            <Button onClick={() => void submit()} loading={save.isPending}>
+            <Button
+              onClick={() => void submit()}
+              loading={save.isPending}
+              className="w-full md:w-auto"
+            >
               {isCorrection ? t("saveCorrection") : t("save")}
             </Button>
           </div>

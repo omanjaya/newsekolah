@@ -220,9 +220,9 @@ export function ViolationsLedgerView(): ReactElement {
         </Alert>
       )}
 
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div className="flex flex-wrap items-end gap-2">
-          <label className="flex flex-col gap-1 text-[13px]">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
+        <div className="grid grid-cols-2 items-end gap-2 sm:flex sm:flex-wrap">
+          <label className="col-span-2 flex flex-col gap-1 text-[13px]">
             <span className="font-medium">{t("filters.class")}</span>
             <Select
               options={classOptions}
@@ -230,7 +230,7 @@ export function ViolationsLedgerView(): ReactElement {
               onValueChange={(v) => {
                 setClassId(v === "all" ? "" : v);
               }}
-              className="w-44"
+              className="w-full sm:w-44"
               aria-label={t("filters.class")}
             />
           </label>
@@ -254,7 +254,7 @@ export function ViolationsLedgerView(): ReactElement {
               }}
             />
           </label>
-          <label className="flex items-center gap-2 pb-2 text-[13px]">
+          <label className="col-span-2 flex min-h-11 items-center gap-2 text-[13px] sm:min-h-0 sm:pb-2">
             <Checkbox
               checked={includeVoided}
               onCheckedChange={(v) => {
