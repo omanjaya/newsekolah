@@ -161,6 +161,13 @@ func (h *Handler) toAPIMe(ctx context.Context, tenantID uuid.UUID, me service.Me
 		}{Id: me.ActiveAcademicYear.ID, Label: me.ActiveAcademicYear.Label}
 	}
 
+	if me.CurrentClass != nil {
+		result.CurrentClass = &struct {
+			Id   uuid.UUID `json:"id"`
+			Name string    `json:"name"`
+		}{Id: me.CurrentClass.ID, Name: me.CurrentClass.Name}
+	}
+
 	if len(me.Duties) > 0 {
 		duties := make([]struct {
 			ScopeId    *uuid.UUID            `json:"scope_id,omitempty"`

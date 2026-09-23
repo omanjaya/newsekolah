@@ -6865,6 +6865,9 @@ paths:
       operationId: createDutyType
       x-permission: manage_permissions
       summary: Create a duty type
+      description: |
+        Slugs are unique per tenant, including soft-deleted duty types; a taken slug returns 409
+        DUTY_TYPE_ALREADY_EXISTS.
       requestBody:
         required: true
         content:
@@ -13923,6 +13926,9 @@ paths:
       operationId: getCurrentLateArrival
       x-permission: authenticated
       summary: The current student's in-progress late arrival, if any
+      description: |
+        404 NOT_FOUND is the normal answer when the caller has no late arrival in progress; clients treat it
+        as "none", not as a failure.
       responses:
         "200":
           description: Detail
@@ -22077,6 +22083,21 @@ components:
               type: string
               format: uuid
             label:
+              type: string
+        current_class:
+          type: object
+          description: |
+            The student's class from their active enrollment in the active academic year. Only set for
+            students; omitted for every other profile kind, for students with no active enrollment, and when
+            the tenant has no active academic year. Parents read each child's class from GET /v1/me/children.
+          required:
+            - id
+            - name
+          properties:
+            id:
+              type: string
+              format: uuid
+            name:
               type: string
         tenant:
           $ref: "#/components/schemas/TenantBranding"

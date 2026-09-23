@@ -357,6 +357,21 @@ func (r *Repository) ListChildren(ctx context.Context, tenantID, parentID uuid.U
 	return out, nil
 }
 
+// ActiveClassForStudent returns the student's class for the given year,
+// with found=false when the student has no active enrollment in it.
+func (r *Repository) ActiveClassForStudent(ctx context.Context, tenantID, studentID, yearID uuid.UUID) (service.ClassRef, bool, error) {
+	row, err := r.queries(ctx).GetActiveClassForStudent(ctx, db.GetActiveClassForStudentParams{
+		TenantID: tenantID, StudentUserID: studentID, AcademicYearID: yearID,
+	})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return service.ClassRef{}, false, nil
+	}
+	if err != nil {
+		return service.ClassRef{}, false, fmt.Errorf("get active class for student: %w", err)
+	}
+	return service.ClassRef{ID: row.ClassID, Name: row.ClassName}, true, nil
+}
+
 func (r *Repository) ListGuardians(ctx context.Context, tenantID, studentID uuid.UUID) ([]service.Guardian, error) {
 	rows, err := r.queries(ctx).ListParentsForStudent(ctx, db.ListParentsForStudentParams{TenantID: tenantID, StudentUserID: studentID})
 	if err != nil {

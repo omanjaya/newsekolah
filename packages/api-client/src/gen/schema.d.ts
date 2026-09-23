@@ -3019,7 +3019,11 @@ export interface paths {
         /** Duty types with their granted permissions */
         get: operations["listDutyTypes"];
         put?: never;
-        /** Create a duty type */
+        /**
+         * Create a duty type
+         * @description Slugs are unique per tenant, including soft-deleted duty types; a taken slug returns 409
+         *     DUTY_TYPE_ALREADY_EXISTS.
+         */
         post: operations["createDutyType"];
         delete?: never;
         options?: never;
@@ -6079,7 +6083,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The current student's in-progress late arrival, if any */
+        /**
+         * The current student's in-progress late arrival, if any
+         * @description 404 NOT_FOUND is the normal answer when the caller has no late arrival in progress; clients treat it
+         *     as "none", not as a failure.
+         */
         get: operations["getCurrentLateArrival"];
         put?: never;
         post?: never;
@@ -9563,6 +9571,16 @@ export interface components {
                 /** Format: uuid */
                 id: string;
                 label: string;
+            };
+            /**
+             * @description The student's class from their active enrollment in the active academic year. Only set for
+             *     students; omitted for every other profile kind, for students with no active enrollment, and when
+             *     the tenant has no active academic year. Parents read each child's class from GET /v1/me/children.
+             */
+            current_class?: {
+                /** Format: uuid */
+                id: string;
+                name: string;
             };
             tenant: components["schemas"]["TenantBranding"];
             must_change_password: boolean;

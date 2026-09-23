@@ -47,6 +47,9 @@ type MeResult struct {
 	Permissions        []string
 	Duties             []DutyView
 	ActiveAcademicYear *AcademicYearView
+	// CurrentClass is the student's active enrollment in the active
+	// academic year; nil for non-students and unenrolled students.
+	CurrentClass       *ClassRef
 	MustChangePassword bool
 	ImpersonatedBy     *ImpersonatorView
 }
@@ -128,6 +131,16 @@ func (s *Service) me(ctx context.Context, user domain.User) (MeResult, error) {
 		result.ProfileKind = row.ProfileKind
 		if detail, found, err := s.loadProfileFields(ctx, user.TenantID, user.ID, row.ProfileKind); err == nil && found {
 			result.Detail = detail
+		}
+	}
+
+	if result.ProfileKind == domain.ProfileStudent && result.ActiveAcademicYear != nil {
+		class, found, err := s.repo.ActiveClassForStudent(ctx, user.TenantID, user.ID, result.ActiveAcademicYear.ID)
+		if err != nil {
+			return MeResult{}, err
+		}
+		if found {
+			result.CurrentClass = &class
 		}
 	}
 

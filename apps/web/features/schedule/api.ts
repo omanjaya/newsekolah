@@ -1,6 +1,6 @@
 "use client";
 
-import { ApiError, queryKeys, type components } from "@newsekolah/api-client";
+import { queryKeys, type components } from "@newsekolah/api-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { useApiClient } from "../../lib/api/client";
@@ -47,41 +47,6 @@ export function useSchedulesQuery(filter: ScheduleFilter) {
     // global 30s staleTime would otherwise refetch the whole grid on every
     // window focus.
     staleTime: 5 * 60_000,
-  });
-}
-
-/**
- * The class whose timetable a student may read. The API lets a student
- * read only their own class's schedule but does not name that class in
- * /v1/me, so this asks for each class in turn and keeps the first one the
- * server allows. It runs once per session (the answer is cached) and only
- * for a student; a staff or teacher account never calls it.
- */
-export function useStudentOwnClassQuery(
-  academicYearId: string,
-  classIds: string[],
-  enabled: boolean,
-) {
-  const client = useApiClient();
-  return useQuery({
-    queryKey: ["schedules", "student-own-class", academicYearId, classIds.join(",")],
-    queryFn: async (): Promise<string | null> => {
-      for (const classId of classIds) {
-        try {
-          await client.GET("/v1/schedules", {
-            params: { query: { academic_year_id: academicYearId, class_id: classId } },
-          });
-          return classId;
-        } catch (error) {
-          if (error instanceof ApiError && error.status === 403) continue;
-          throw error;
-        }
-      }
-      return null;
-    },
-    enabled: enabled && academicYearId !== "" && classIds.length > 0,
-    staleTime: Infinity,
-    retry: false,
   });
 }
 

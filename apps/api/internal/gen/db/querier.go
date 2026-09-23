@@ -503,6 +503,7 @@ type Querier interface {
 	GetAchievement(ctx context.Context, arg GetAchievementParams) (StudentAchievement, error)
 	GetAcquisitionSource(ctx context.Context, arg GetAcquisitionSourceParams) (LibraryAcquisitionSource, error)
 	GetActiveAcademicYear(ctx context.Context, tenantID uuid.UUID) (AcademicYear, error)
+	GetActiveClassForStudent(ctx context.Context, arg GetActiveClassForStudentParams) (GetActiveClassForStudentRow, error)
 	GetActiveClassNameForStudent(ctx context.Context, arg GetActiveClassNameForStudentParams) (string, error)
 	// cross-module read; replace with reader interface after merge.
 	//
