@@ -55,6 +55,16 @@ export function useIssueScanTokenMutation() {
   });
 }
 
+// Classroom entry (student scans a teacher's QR to record self-attendance).
+
+export function useScanClassroomEntryMutation() {
+  const client = useApiClient();
+  return useMutation({
+    mutationFn: (body: { token: string; reason?: string }) =>
+      client.POST("/v1/classroom-entry/scan", { body }),
+  });
+}
+
 // Exit permits.
 
 export function useMyExitPermitsQuery(enabled = true) {

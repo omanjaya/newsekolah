@@ -26,6 +26,8 @@ import {
   useStudentDisciplineReportMutation,
 } from "../api";
 
+import { StudentCounselingHistory } from "./student-counseling-history";
+
 /**
  * The staff-facing detail behind one student's discipline record: the same
  * points and letters a counselor sees on the SP-candidates row, plus when
@@ -38,6 +40,7 @@ export function StudentDisciplineView({ studentId }: { studentId: string }): Rea
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const canIssue = useCan("issue_warning_letters");
+  const canSeeCounseling = useCan("manage_counseling");
 
   const students = useDirectoryQuery("student");
   const studentMap = useLookup(students.data?.data);
@@ -196,6 +199,8 @@ export function StudentDisciplineView({ studentId }: { studentId: string }): Rea
           </ul>
         )}
       </section>
+
+      {canSeeCounseling && <StudentCounselingHistory studentId={studentId} />}
     </div>
   );
 }

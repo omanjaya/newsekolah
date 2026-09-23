@@ -318,6 +318,9 @@
     "LEAVE_PERMISSION_REQUIRES_DUTY": "Meninjau izin dan menerbitkan surat izin tidak bisa diberikan langsung ke peran guru, izin ini datang dari penugasan tugas",
     "IMPORT_TOO_MANY_ROWS": "Berkas impor melebihi batas 5000 baris",
     "IMPORT_FILE_INVALID": "Berkas impor tidak terbaca atau tidak sesuai format templat",
-    "ANALYTICS_NOT_HOMEROOM_TEACHER": "Daftar ini tersedia untuk wali kelas, guru BK, atau pimpinan sekolah yang memiliki penugasan aktif."
+    "ANALYTICS_NOT_HOMEROOM_TEACHER": "Daftar ini tersedia untuk wali kelas, guru BK, atau pimpinan sekolah yang memiliki penugasan aktif.",
+    "SCAN_TOKEN_GONE": "Kode sudah kedaluwarsa, sudah dipakai, atau bukan untuk keperluan ini. Minta guru menampilkan kode baru.",
+    "SCAN_TOKEN_CONSUMER_NOT_STUDENT": "Hanya akun siswa yang bisa memindai kode ini.",
+    "REASON_TOO_LONG": "Alasan maksimal 500 karakter."
   }
 }

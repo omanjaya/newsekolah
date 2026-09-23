@@ -8,14 +8,21 @@ export type MessageKey =
   | "auth.changePassword.success"
   | "auth.changePassword.title"
   | "auth.login.backToPassword"
+  | "auth.login.featureAttendance"
+  | "auth.login.featureGrades"
+  | "auth.login.featureLibrary"
   | "auth.login.forgotPasswordLink"
   | "auth.login.googleButton"
   | "auth.login.orDivider"
+  | "auth.login.panelFootnote"
+  | "auth.login.panelHeadline"
+  | "auth.login.panelTagline"
   | "auth.login.passkeyButton"
   | "auth.login.passkeyUsernameRequired"
   | "auth.login.passwordLabel"
   | "auth.login.submit"
   | "auth.login.submitting"
+  | "auth.login.subtitle"
   | "auth.login.tenantLabel"
   | "auth.login.title"
   | "auth.login.usernameLabel"
@@ -127,7 +134,10 @@ export type MessageKey =
   | "errors.PAYMENT_NOT_FOUND"
   | "errors.PRIMARY_ROLE_NOT_SYSTEM"
   | "errors.RATE_LIMITED"
+  | "errors.REASON_TOO_LONG"
   | "errors.REPORT_UNAVAILABLE"
+  | "errors.SCAN_TOKEN_CONSUMER_NOT_STUDENT"
+  | "errors.SCAN_TOKEN_GONE"
   | "errors.SCHEDULE_HAS_HISTORY"
   | "errors.SSO_ACCOUNT_NOT_FOUND"
   | "errors.SSO_CLIENT_SECRET_REQUIRED"
@@ -254,14 +264,21 @@ export const MESSAGE_KEYS: readonly MessageKey[] = [
   "auth.changePassword.success",
   "auth.changePassword.title",
   "auth.login.backToPassword",
+  "auth.login.featureAttendance",
+  "auth.login.featureGrades",
+  "auth.login.featureLibrary",
   "auth.login.forgotPasswordLink",
   "auth.login.googleButton",
   "auth.login.orDivider",
+  "auth.login.panelFootnote",
+  "auth.login.panelHeadline",
+  "auth.login.panelTagline",
   "auth.login.passkeyButton",
   "auth.login.passkeyUsernameRequired",
   "auth.login.passwordLabel",
   "auth.login.submit",
   "auth.login.submitting",
+  "auth.login.subtitle",
   "auth.login.tenantLabel",
   "auth.login.title",
   "auth.login.usernameLabel",
@@ -373,7 +390,10 @@ export const MESSAGE_KEYS: readonly MessageKey[] = [
   "errors.PAYMENT_NOT_FOUND",
   "errors.PRIMARY_ROLE_NOT_SYSTEM",
   "errors.RATE_LIMITED",
+  "errors.REASON_TOO_LONG",
   "errors.REPORT_UNAVAILABLE",
+  "errors.SCAN_TOKEN_CONSUMER_NOT_STUDENT",
+  "errors.SCAN_TOKEN_GONE",
   "errors.SCHEDULE_HAS_HISTORY",
   "errors.SSO_ACCOUNT_NOT_FOUND",
   "errors.SSO_CLIENT_SECRET_REQUIRED",

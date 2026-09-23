@@ -25,6 +25,19 @@ export function useDutyTypesQuery(includeInactive = false) {
   });
 }
 
+export function useCreateDutyTypeMutation() {
+  const client = useApiClient();
+  const invalidate = useInvalidate(["duties"]);
+  return useMutation({
+    mutationFn: (body: {
+      slug: string;
+      name: string;
+      scope_kind: components["schemas"]["DutyScopeKind"];
+    }) => client.POST("/v1/duties", { body }),
+    onSuccess: invalidate,
+  });
+}
+
 export function useUpdateDutyTypeMutation() {
   const client = useApiClient();
   const invalidate = useInvalidate(["duties"]);
@@ -99,6 +112,20 @@ export function useCreateDutyAssignmentMutation() {
   return useMutation({
     mutationFn: (body: components["schemas"]["DutyAssignmentWrite"]) =>
       client.POST("/v1/duty-assignments", { body }),
+    onSuccess: invalidate,
+  });
+}
+
+/** Activates, deactivates (with an optional end date), or ends a duty assignment without deleting its row. */
+export function useUpdateDutyAssignmentMutation() {
+  const client = useApiClient();
+  const invalidate = useInvalidate(["duties"]);
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: { is_active: boolean; ends_on?: string } }) =>
+      client.PUT("/v1/duty-assignments/{assignmentId}", {
+        params: { path: { assignmentId: id } },
+        body,
+      }),
     onSuccess: invalidate,
   });
 }

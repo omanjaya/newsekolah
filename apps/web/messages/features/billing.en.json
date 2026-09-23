@@ -5,6 +5,7 @@
   "title": "School Fees",
   "tabs": {
     "desk": "Payment Desk",
+    "bills": "Bills",
     "feeTypes": "Fee Types",
     "generate": "Generate Bills",
     "arrears": "Arrears"
@@ -152,6 +153,39 @@
       "body": "The {amount} payment stays on file for audit but no longer counts toward paid.",
       "reason": "Reason for voiding"
     }
+  },
+  "bills": {
+    "periodPlaceholder": "All periods",
+    "statusLabel": "Status",
+    "statusAll": "All statuses",
+    "classLabel": "Class",
+    "classAll": "All classes",
+    "unknownStudent": "Unknown student",
+    "emptyTitle": "No bills",
+    "emptyBody": "No bills match this filter.",
+    "columns": {
+      "student": "Student",
+      "feeType": "Fee type",
+      "period": "Period",
+      "dueDate": "Due date",
+      "amount": "Amount",
+      "status": "Status"
+    },
+    "status": {
+      "label": "Status",
+      "unpaid": "Unpaid",
+      "partial": "Partially paid",
+      "paid": "Paid"
+    },
+    "detailTitle": "Bill detail",
+    "originalAmount": "Original amount",
+    "discountAmount": "Discount",
+    "billAmount": "Bill amount",
+    "paidAmount": "Paid so far",
+    "paymentsTitle": "Payments",
+    "noPayments": "No payments recorded for this bill yet.",
+    "pagePrev": "Previous",
+    "pageNext": "Next"
   },
   "arrears": {
     "byClass": "By class",
