@@ -3,7 +3,17 @@
 import { ApiError } from "@newsekolah/api-client";
 import type { Locale } from "@newsekolah/i18n";
 import { formatDate } from "@newsekolah/i18n";
-import { Alert, Button, Input, Select, Skeleton, Textarea, useToast } from "@newsekolah/ui";
+import {
+  Alert,
+  Button,
+  EmptyState,
+  Input,
+  Select,
+  Skeleton,
+  Textarea,
+  domainIcons,
+  useToast,
+} from "@newsekolah/ui";
 import { Download, Upload } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -150,6 +160,15 @@ export function LeaveRequestDetail({ id }: { id: string }): ReactElement {
   const [guardianError, setGuardianError] = useState<string | null>(null);
 
   if (isLoading) return <Skeleton className="h-64 w-full" aria-busy="true" />;
+  if (error instanceof ApiError && (error.status === 404 || error.status === 403)) {
+    return (
+      <EmptyState
+        icon={<domainIcons.exitPermit aria-hidden="true" />}
+        title={t("notFoundTitle")}
+        description={t("notFoundBody")}
+      />
+    );
+  }
   if (error || !data) return <QueryError retry={refetch} />;
   const inst = data.instance;
   const isOwner = inst.subject_user_id === me?.id;

@@ -3,6 +3,7 @@
 import type { Locale } from "@newsekolah/i18n";
 import { formatDate } from "@newsekolah/i18n";
 import {
+  Alert,
   Button,
   Dialog,
   DialogContent,
@@ -16,10 +17,12 @@ import {
   domainIcons,
 } from "@newsekolah/ui";
 import { Plus } from "lucide-react";
+import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
+import { QueryError } from "../../../components/query-error";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useCan, useSession } from "../../../lib/session/session-provider";
 import {
@@ -38,10 +41,18 @@ export function LeaveRequestsView(): ReactElement {
   const canReviewStage = useCan("review_leave_requests");
   const canIssueLetter = useCan("issue_leave_letters");
   const canApproveAsGuardian = useCan("approve_child_leave_requests");
-  const canReview = canReviewStage || canIssueLetter;
+  // GET /v1/leave-requests/review-queue is authorized for
+  // review_leave_requests only; a counselor holding issue_leave_letters
+  // alone would get a 403, so the queue is only fetched for reviewers.
+  // Issuers still get the tab, explaining where their requests arrive.
+  const showQueueTab = canReviewStage || canIssueLetter;
 
   const tabs = [
-    canReview && { value: "queue", label: t("tabQueue"), content: <ReviewQueue /> },
+    showQueueTab && {
+      value: "queue",
+      label: t("tabQueue"),
+      content: canReviewStage ? <ReviewQueue /> : <IssuerQueueUnavailable />,
+    },
     canApproveAsGuardian && {
       value: "guardianQueue",
       label: t("tabGuardianQueue"),
@@ -131,7 +142,7 @@ function SummaryRow({
 
 function MyLeaveRequests(): ReactElement {
   const t = useTranslations("app.permits.leave");
-  const { data, isLoading } = useMyLeaveRequestsQuery();
+  const { data, isLoading, isError, refetch } = useMyLeaveRequestsQuery();
   const [creating, setCreating] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
   const items = data?.data ?? [];
@@ -151,6 +162,8 @@ function MyLeaveRequests(): ReactElement {
       </div>
       {isLoading ? (
         <Skeleton className="h-40 w-full" aria-busy="true" />
+      ) : isError && !data ? (
+        <QueryError retry={() => refetch()} />
       ) : items.length === 0 ? (
         <EmptyState
           icon={<domainIcons.exitPermit aria-hidden="true" />}
@@ -197,15 +210,40 @@ function MyLeaveRequests(): ReactElement {
   );
 }
 
+/**
+ * Shown instead of ReviewQueue to a user who can issue letters
+ * (issue_leave_letters) but cannot list the queue (review_leave_requests):
+ * the API endpoint behind the queue only authorizes reviewers, so fetching
+ * it here would just surface a 403. The counselor acts on a request by
+ * opening the notification sent when the homeroom teacher approves it,
+ * which links to /leave-requests/{instanceId}.
+ */
+function IssuerQueueUnavailable(): ReactElement {
+  const t = useTranslations("app.permits.leave");
+  return (
+    <Alert variant="info" title={t("issuerQueueUnavailableTitle")}>
+      <p>{t("issuerQueueUnavailableBody")}</p>
+      <Link
+        href="/notifications"
+        className="mt-2 inline-flex min-h-11 items-center font-medium underline underline-offset-2"
+      >
+        {t("openNotifications")}
+      </Link>
+    </Alert>
+  );
+}
+
 function ReviewQueue(): ReactElement {
   const t = useTranslations("app.permits.leave");
-  const { data, isLoading } = useLeaveReviewQueueQuery();
+  const { data, isLoading, isError, refetch } = useLeaveReviewQueueQuery();
   const [openId, setOpenId] = useState<string | null>(null);
   const items = data?.data ?? [];
   return (
     <div className="flex flex-col gap-4">
       {isLoading ? (
         <Skeleton className="h-40 w-full" aria-busy="true" />
+      ) : isError && !data ? (
+        <QueryError retry={() => refetch()} />
       ) : items.length === 0 ? (
         <EmptyState
           icon={<domainIcons.exitPermit aria-hidden="true" />}
@@ -243,13 +281,15 @@ function ReviewQueue(): ReactElement {
 /** A guardian's queue: their children's requests awaiting their decision. */
 function GuardianQueue(): ReactElement {
   const t = useTranslations("app.permits.leave");
-  const { data, isLoading } = useGuardianLeaveQueueQuery();
+  const { data, isLoading, isError, refetch } = useGuardianLeaveQueueQuery();
   const [openId, setOpenId] = useState<string | null>(null);
   const items = data?.data ?? [];
   return (
     <div className="flex flex-col gap-4">
       {isLoading ? (
         <Skeleton className="h-40 w-full" aria-busy="true" />
+      ) : isError && !data ? (
+        <QueryError retry={() => refetch()} />
       ) : items.length === 0 ? (
         <EmptyState
           icon={<domainIcons.exitPermit aria-hidden="true" />}
