@@ -139,7 +139,7 @@ export function ClubsView(): ReactElement {
       <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
 
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <label className="flex items-center gap-2 text-[13px]">
+        <label className="flex min-h-11 items-center gap-2 text-[13px] sm:min-h-0">
           <Checkbox
             checked={includeInactive}
             onCheckedChange={(v) => {
@@ -149,7 +149,7 @@ export function ClubsView(): ReactElement {
           {t("includeInactive")}
         </label>
         {(canManage || canManagePolicy) && (
-          <div className="flex gap-2">
+          <div className="grid w-full gap-2 sm:flex sm:w-auto">
             {canManagePolicy && (
               <Button
                 variant="secondary"
@@ -165,6 +165,7 @@ export function ClubsView(): ReactElement {
               <Button
                 size="sm"
                 icon={<Plus />}
+                className="order-first sm:order-none"
                 onClick={() => {
                   setEditing("new");
                 }}

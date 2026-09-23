@@ -1,5 +1,7 @@
 "use client";
 
+import type { Locale } from "@newsekolah/i18n";
+import { formatDate } from "@newsekolah/i18n";
 import {
   Button,
   Popover,
@@ -10,7 +12,7 @@ import {
   cn,
 } from "@newsekolah/ui";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
@@ -44,6 +46,7 @@ export function AttendanceCalendar(): ReactElement {
   const t = useTranslations("app.attendance.calendar");
   const tDays = useTranslations("app.common.weekdaysShort");
   const { me } = useSession();
+  const locale = useLocale() as Locale;
   const today = todayInZone(me?.tenant.timezone);
   const [month, setMonth] = useState(today.slice(0, 7));
   const { data, isLoading } = useMyCalendarQuery(month);
@@ -92,7 +95,7 @@ export function AttendanceCalendar(): ReactElement {
           }}
           aria-label={t("prevMonth")}
         >
-          {t("prevMonth")}
+          <span className="hidden sm:inline">{t("prevMonth")}</span>
         </Button>
         <h2 className="text-[16px] font-medium text-fg">{monthLabel}</h2>
         <Button
@@ -104,7 +107,7 @@ export function AttendanceCalendar(): ReactElement {
           }}
           aria-label={t("nextMonth")}
         >
-          {t("nextMonth")}
+          <span className="hidden sm:inline">{t("nextMonth")}</span>
         </Button>
       </div>
       {isLoading ? (
@@ -166,8 +169,10 @@ export function AttendanceCalendar(): ReactElement {
                     {cellContent}
                   </button>
                 </PopoverTrigger>
-                <PopoverContent className="w-80">
-                  <p className="mb-2 text-[13px] font-medium text-fg">{date}</p>
+                <PopoverContent className="w-[min(20rem,calc(100vw-2rem))]">
+                  <p className="mb-2 text-[13px] font-medium text-fg">
+                    {formatDate(date, { locale, timeZone: me?.tenant.timezone })}
+                  </p>
                   <ul className="flex flex-col gap-3">
                     {sessions.map((session) => {
                       const sessionToken = session.status_code

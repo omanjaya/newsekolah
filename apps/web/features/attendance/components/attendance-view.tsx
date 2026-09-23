@@ -77,6 +77,9 @@ function DaySessions(): ReactElement {
   const year = useActiveYear();
   const canViewReports = useCan("view_reports");
   const canViewMonitor = useCan("view_monitor_presence");
+  const canManageSchedules = useCan("manage_schedules");
+  const canManageMasterData = useCan("manage_master_data");
+  const canPickAnyTeacher = canManageSchedules || canManageMasterData;
 
   const today = todayInZone(me?.tenant.timezone);
   const [date, setDate] = useDateFilter("date", today);
@@ -89,7 +92,9 @@ function DaySessions(): ReactElement {
     isTeacher ? (me?.id ?? "") : "",
   );
 
-  const teacherOptions = useTeacherOptionsQuery(year.id);
+  // The server lists every teacher only for schedule/master-data managers;
+  // other teachers get just themselves, and a non-teaching user gets a 403.
+  const teacherOptions = useTeacherOptionsQuery(year.id, "", canPickAnyTeacher || isTeacher);
   const sessions = useTodaySessionsQuery(
     { date, teacherUserId: selectedTeacherId || undefined },
     selectedTeacherId !== "",
@@ -143,6 +148,12 @@ function DaySessions(): ReactElement {
     label: o.id === me?.id ? t("teacherSelf", { name: o.name }) : o.name,
   }));
 
+  // A picker holding only "me" (or nothing, for a counselor without a
+  // teaching load) is noise on the phone where teachers take attendance.
+  const showTeacherPicker = teacherOptions.isLoading
+    ? canPickAnyTeacher
+    : teacherSelectOptions.some((option) => option.value !== me?.id);
+
   const items = sessions.data?.data ?? [];
   const loading = sessions.isLoading && selectedTeacherId !== "";
 
@@ -190,28 +201,32 @@ function DaySessions(): ReactElement {
             {t("today")}
           </Button>
         )}
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium text-fg">{t("teacherLabel")}</span>
-          <Select
-            options={teacherSelectOptions}
-            value={selectedTeacherId}
-            onValueChange={setSelectedTeacherId}
-            placeholder={t("teacherPlaceholder")}
-            disabled={teacherOptions.isLoading}
-            aria-label={t("teacherLabel")}
-            className="w-56"
-          />
-        </label>
+        {showTeacherPicker && (
+          <label className="flex flex-col gap-1 text-[13px]">
+            <span className="font-medium text-fg">{t("teacherLabel")}</span>
+            <Select
+              options={teacherSelectOptions}
+              value={selectedTeacherId}
+              onValueChange={setSelectedTeacherId}
+              placeholder={t("teacherPlaceholder")}
+              disabled={teacherOptions.isLoading}
+              aria-label={t("teacherLabel")}
+              className="w-56"
+            />
+          </label>
+        )}
       </div>
 
-      <div>
-        <Button asChild variant="secondary" size="sm">
-          <Link href="/attendance/reports">
-            <FileBarChart className="size-4" aria-hidden="true" />
-            {t("myReportLink")}
-          </Link>
-        </Button>
-      </div>
+      {isTeacher && (
+        <div>
+          <Button asChild variant="secondary" size="sm">
+            <Link href="/attendance/reports?tab=mine">
+              <FileBarChart className="size-4" aria-hidden="true" />
+              {t("myReportLink")}
+            </Link>
+          </Button>
+        </div>
+      )}
 
       {selectedTeacherId === "" ? (
         <EmptyState
