@@ -241,6 +241,7 @@
     "PASSKEY_INVALID_RESPONSE": "Your device could not verify this passkey",
     "USER_ALREADY_EXISTS": "That username, email, or number is already in use",
     "DUTY_TYPE_IN_USE": "This duty still has one or more assignments",
+    "DUTY_TYPE_ALREADY_EXISTS": "A duty type with a similar name already exists, including deleted ones",
     "IMPERSONATION_NOT_ALLOWED": "This user cannot be impersonated",
     "NOT_IMPERSONATING": "This session is not an impersonation session",
     "PASSWORD_RESET_TOKEN_INVALID": "This link is invalid or has expired",

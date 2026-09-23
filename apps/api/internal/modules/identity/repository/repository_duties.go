@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/db"
@@ -46,10 +47,20 @@ func (r *Repository) CreateDutyTypeRecord(ctx context.Context, tenantID uuid.UUI
 	row, err := r.queries(ctx).CreateDutyType(ctx, db.CreateDutyTypeParams{
 		TenantID: tenantID, Slug: slug, Name: name, ScopeKind: string(scope),
 	})
+	if isUniqueViolation(err) {
+		// unique (tenant_id, slug) also covers soft-deleted rows, so a
+		// deleted duty type's slug stays taken.
+		return service.DutyTypeRecord{}, domain.ErrDutyTypeExists
+	}
 	if err != nil {
 		return service.DutyTypeRecord{}, fmt.Errorf("create duty type: %w", err)
 	}
 	return toDutyTypeRecord(row), nil
+}
+
+func isUniqueViolation(err error) bool {
+	var pgErr *pgconn.PgError
+	return errors.As(err, &pgErr) && pgErr.Code == "23505"
 }
 
 // GetDutyTypeBySlug is the lookup tenant bootstrap uses to seed the

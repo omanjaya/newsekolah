@@ -13,6 +13,7 @@ var (
 	ErrRoleInUse                        = NewError(http.StatusConflict, "ROLE_IN_USE")
 	ErrUnknownPermission                = NewError(http.StatusBadRequest, "UNKNOWN_PERMISSION")
 	ErrDutyTypeInUse                    = NewError(http.StatusConflict, "DUTY_TYPE_IN_USE")
+	ErrDutyTypeExists                   = NewError(http.StatusConflict, "DUTY_TYPE_ALREADY_EXISTS")
 	ErrImpersonationNotAllowed          = NewError(http.StatusForbidden, "IMPERSONATION_NOT_ALLOWED")
 	ErrNotImpersonating                 = NewError(http.StatusBadRequest, "NOT_IMPERSONATING")
 	ErrPasswordResetTokenInvalid        = NewError(http.StatusBadRequest, "PASSWORD_RESET_TOKEN_INVALID")

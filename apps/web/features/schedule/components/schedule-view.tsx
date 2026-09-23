@@ -36,7 +36,6 @@ import {
   useCreateScheduleMutation,
   useDeleteScheduleBlockMutation,
   useSchedulesQuery,
-  useStudentOwnClassQuery,
 } from "../api";
 import { conflictMessage } from "../conflict-message";
 
@@ -111,13 +110,12 @@ export function ScheduleView(): ReactElement {
   const remove = useDeleteScheduleBlockMutation();
   const create = useCreateScheduleMutation();
 
-  const classIds = useMemo(() => (classes.data?.data ?? []).map((c) => c.id), [classes.data]);
-  const ownClass = useStudentOwnClassQuery(year.id, classIds, isStudent);
+  // A student reads only their own class's timetable; /v1/me names it.
   const effectiveClassId =
     mode !== "class"
       ? ""
       : isStudent
-        ? (ownClass.data ?? "")
+        ? (me.current_class?.id ?? "")
         : classId || (classes.data?.data[0]?.id ?? "");
   const effectiveTeacherId = mode === "teacher" ? (canViewAll ? teacherId : (me?.id ?? "")) : "";
   const schedules = useSchedulesQuery({
@@ -225,8 +223,7 @@ export function ScheduleView(): ReactElement {
   const today = todayOfWeek();
   const mobileDay =
     mobileDayOverride ?? (activeDays.includes(today) ? today : (activeDays[0] ?? 1));
-  const loading =
-    periods.isLoading || schedules.isLoading || classes.isLoading || ownClass.isLoading;
+  const loading = periods.isLoading || schedules.isLoading || classes.isLoading;
   const classOptions = (classes.data?.data ?? []).map((c) => ({ value: c.id, label: c.name }));
   const teacherOptions = (teachers.data?.data ?? []).map((u) => ({ value: u.id, label: u.name }));
 
@@ -322,7 +319,7 @@ export function ScheduleView(): ReactElement {
 
       {loading ? (
         <Skeleton className="h-96 w-full" aria-busy="true" />
-      ) : schedules.isError || ownClass.isError ? (
+      ) : schedules.isError ? (
         <Alert variant="warning" title={t("loadError")}>
           <div className="flex flex-col items-start gap-2">
             {schedules.error instanceof ApiError && <p>{apiErrorMessage(schedules.error.code)}</p>}
@@ -331,7 +328,6 @@ export function ScheduleView(): ReactElement {
               loading={schedules.isRefetching}
               onClick={() => {
                 void schedules.refetch();
-                void ownClass.refetch();
               }}
             >
               {tApp("offlinePage.retry")}

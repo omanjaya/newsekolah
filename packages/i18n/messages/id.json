@@ -241,6 +241,7 @@
     "PASSKEY_INVALID_RESPONSE": "Perangkat tidak dapat memverifikasi passkey ini",
     "USER_ALREADY_EXISTS": "Username, email, atau nomor tersebut sudah dipakai",
     "DUTY_TYPE_IN_USE": "Jenis tugas ini masih dipakai oleh satu atau lebih penugasan",
+    "DUTY_TYPE_ALREADY_EXISTS": "Jenis tugas dengan nama serupa sudah ada, termasuk yang pernah dihapus",
     "IMPERSONATION_NOT_ALLOWED": "Pengguna ini tidak dapat diimpersonasi",
     "NOT_IMPERSONATING": "Sesi ini bukan sesi impersonasi",
     "PASSWORD_RESET_TOKEN_INVALID": "Tautan ini tidak valid atau sudah kedaluwarsa",

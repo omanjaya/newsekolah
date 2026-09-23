@@ -316,6 +316,9 @@ paths:
       operationId: getCurrentLateArrival
       x-permission: authenticated
       summary: The current student's in-progress late arrival, if any
+      description: |
+        404 NOT_FOUND is the normal answer when the caller has no late arrival in progress; clients treat it
+        as "none", not as a failure.
       responses:
         "200":
           description: Detail

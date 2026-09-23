@@ -35,6 +35,13 @@ type ParentsRepository interface {
 	ListChildren(ctx context.Context, tenantID, parentID uuid.UUID, yearID uuid.NullUUID) ([]Child, error)
 	ListGuardians(ctx context.Context, tenantID, studentID uuid.UUID) ([]Guardian, error)
 	IsParentOf(ctx context.Context, tenantID, parentID, studentID uuid.UUID) (bool, error)
+	ActiveClassForStudent(ctx context.Context, tenantID, studentID, yearID uuid.UUID) (ClassRef, bool, error)
+}
+
+// ClassRef names a class without pulling in the academic module's types.
+type ClassRef struct {
+	ID   uuid.UUID
+	Name string
 }
 
 func validRelation(relation string) bool {

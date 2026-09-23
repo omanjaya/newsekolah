@@ -528,6 +528,9 @@ paths:
       operationId: createDutyType
       x-permission: manage_permissions
       summary: Create a duty type
+      description: |
+        Slugs are unique per tenant, including soft-deleted duty types; a taken slug returns 409
+        DUTY_TYPE_ALREADY_EXISTS.
       requestBody:
         required: true
         content:

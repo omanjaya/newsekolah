@@ -40,6 +40,7 @@ var (
 	// Duties
 	ErrDutyTypeNotFound       = errors.New("duty type not found")
 	ErrDutyTypeInUse          = errors.New("duty type has one or more assignments")
+	ErrDutyTypeExists         = errors.New("a duty type with this slug already exists")
 	ErrDutyAssignmentNotFound = errors.New("duty assignment not found")
 	ErrInvalidScopeKind       = errors.New("invalid scope kind")
 	ErrScopeTargetNotFound    = errors.New("scope target (class or student) not found")

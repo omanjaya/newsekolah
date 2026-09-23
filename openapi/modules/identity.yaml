@@ -721,6 +721,21 @@ components:
               format: uuid
             label:
               type: string
+        current_class:
+          type: object
+          description: |
+            The student's class from their active enrollment in the active academic year. Only set for
+            students; omitted for every other profile kind, for students with no active enrollment, and when
+            the tenant has no active academic year. Parents read each child's class from GET /v1/me/children.
+          required:
+            - id
+            - name
+          properties:
+            id:
+              type: string
+              format: uuid
+            name:
+              type: string
         tenant:
           $ref: "#/components/schemas/TenantBranding"
         must_change_password:
