@@ -1,6 +1,8 @@
 package httpx
 
 import (
+	"bufio"
+	"net"
 	"net/http"
 	"strings"
 	"time"
@@ -112,6 +114,14 @@ func (w *legacyCookieCleanupWriter) Write(b []byte) (int, error) {
 // Unwrap lets http.ResponseController reach Flush/Hijack on the wrapped writer.
 func (w *legacyCookieCleanupWriter) Unwrap() http.ResponseWriter {
 	return w.ResponseWriter
+}
+
+// Hijack is needed as a method, not only through Unwrap: the WebSocket
+// upgrade for /ws/me and /ws/monitor type-asserts http.Hijacker directly and
+// failed with a 500 ("response does not implement http.Hijacker") while this
+// middleware wrapped every response.
+func (w *legacyCookieCleanupWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	return http.NewResponseController(w.ResponseWriter).Hijack()
 }
 
 func (w *legacyCookieCleanupWriter) appendLegacyClear() {

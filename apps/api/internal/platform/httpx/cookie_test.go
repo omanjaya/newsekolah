@@ -81,3 +81,30 @@ func TestLegacyRefreshCookieCleanupSkipsWhenLegacyPathAlreadyCleared(t *testing.
 		t.Fatalf("must not double-append the legacy clear, got %d headers", got)
 	}
 }
+
+func TestLegacyRefreshCookieCleanupAllowsHijack(t *testing.T) {
+	server := httptest.NewServer(LegacyRefreshCookieCleanup(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		hijacker, ok := w.(http.Hijacker)
+		if !ok {
+			t.Error("wrapped writer must implement http.Hijacker for WebSocket upgrades")
+			return
+		}
+		conn, _, err := hijacker.Hijack()
+		if err != nil {
+			t.Errorf("hijack: %v", err)
+			return
+		}
+		_, _ = conn.Write([]byte("HTTP/1.1 204 No Content\r\n\r\n"))
+		_ = conn.Close()
+	})))
+	defer server.Close()
+
+	response, err := http.Get(server.URL)
+	if err != nil {
+		t.Fatalf("request: %v", err)
+	}
+	defer func() { _ = response.Body.Close() }()
+	if response.StatusCode != http.StatusNoContent {
+		t.Fatalf("want 204 written on the hijacked connection, got %d", response.StatusCode)
+	}
+}
