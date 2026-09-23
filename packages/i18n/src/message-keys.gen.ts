@@ -84,6 +84,7 @@ export type MessageKey =
   | "errors.BILL_NOT_FOUND"
   | "errors.COUNSELING_FORBIDDEN"
   | "errors.DISCOUNT_NOT_FOUND"
+  | "errors.DUTY_TYPE_ALREADY_EXISTS"
   | "errors.DUTY_TYPE_IN_USE"
   | "errors.EXPECTED_GUEST_NOT_FOUND"
   | "errors.EXPECTED_GUEST_RESOLVED"
@@ -340,6 +341,7 @@ export const MESSAGE_KEYS: readonly MessageKey[] = [
   "errors.BILL_NOT_FOUND",
   "errors.COUNSELING_FORBIDDEN",
   "errors.DISCOUNT_NOT_FOUND",
+  "errors.DUTY_TYPE_ALREADY_EXISTS",
   "errors.DUTY_TYPE_IN_USE",
   "errors.EXPECTED_GUEST_NOT_FOUND",
   "errors.EXPECTED_GUEST_RESOLVED",

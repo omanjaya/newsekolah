@@ -40,6 +40,7 @@ var adminErrorMap = map[error]error{
 	domain.ErrRoleInUse:                   httpx.ErrRoleInUse,
 	domain.ErrUnknownPermission:           httpx.ErrUnknownPermission,
 	domain.ErrDutyTypeInUse:               httpx.ErrDutyTypeInUse,
+	domain.ErrDutyTypeExists:              httpx.ErrDutyTypeExists,
 	domain.ErrInvalidScopeKind:            httpx.ErrValidation.WithDetails(httpx.ErrorDetail{Field: "scope_kind", Code: "INVALID"}),
 	domain.ErrScopeTargetNotFound:         httpx.ErrValidation.WithDetails(httpx.ErrorDetail{Field: "scope", Code: "TARGET_NOT_FOUND"}),
 	domain.ErrAssigneeNotEligible:         httpx.ErrValidation.WithDetails(httpx.ErrorDetail{Field: "user_id", Code: "NOT_TEACHER_OR_STAFF"}),
