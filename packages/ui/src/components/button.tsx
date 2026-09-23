@@ -18,7 +18,9 @@ const buttonVariants = cva(
         primary: "bg-accent text-accent-fg hover:shadow-[inset_0_0_0_1px_currentColor]",
         secondary: "border border-border bg-surface text-fg hover:bg-bg",
         ghost: "text-fg hover:bg-bg",
-        danger: "bg-status-absent text-status-absent-fg hover:opacity-90",
+        // status-absent-fg is the same hue as status-absent (it is meant for
+        // text on a tinted surface), so the filled button needs white text.
+        danger: "bg-status-absent text-accent-fg hover:opacity-90",
       },
       size: {
         // Both sizes clear 44px on a touch screen and shrink once there is

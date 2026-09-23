@@ -44,7 +44,8 @@ export function PageHeader({ eyebrow, title, actions, breadcrumb, className }: P
           {eyebrow && <p className="text-[13px] font-medium text-fg-muted">{eyebrow}</p>}
           <h1 className="text-[24px] font-medium text-fg">{title}</h1>
         </div>
-        {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
+        {/* Wraps on a phone so two long action labels never push the page sideways. */}
+        {actions && <div className="flex flex-wrap items-center gap-2 md:shrink-0">{actions}</div>}
       </div>
     </div>
   );
