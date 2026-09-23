@@ -7,18 +7,36 @@ import type { ReactElement } from "react";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 
 import { AcquisitionSourcesTab } from "./acquisition-sources-tab";
+import { CollectionCategoriesTab } from "./collection-categories-tab";
 import { DdcClassesTab } from "./ddc-classes-tab";
+import { LocationsTab } from "./locations-tab";
 import { MaterialTypesTab } from "./material-types-tab";
 import { PartnersTab } from "./partners-tab";
 
-type Tab = "materialTypes" | "acquisitionSources" | "partners" | "ddcClasses";
+type Tab =
+  | "materialTypes"
+  | "acquisitionSources"
+  | "partners"
+  | "ddcClasses"
+  | "collectionCategories"
+  | "locations";
 
-/** Cataloguing master data: material types, acquisition sources, partners, and the DDC class list. */
+/**
+ * Cataloguing master data: material types, acquisition sources, partners,
+ * collection categories, shelf locations, and the DDC class list.
+ */
 export function MasterDataView(): ReactElement {
   const t = useTranslations("app.library.masterData");
   const [tab, setTab] = useUrlState<Tab>(
     "tab",
-    ["materialTypes", "acquisitionSources", "partners", "ddcClasses"],
+    [
+      "materialTypes",
+      "acquisitionSources",
+      "partners",
+      "collectionCategories",
+      "locations",
+      "ddcClasses",
+    ],
     "materialTypes",
   );
 
@@ -35,10 +53,13 @@ export function MasterDataView(): ReactElement {
         }}
         className="flex flex-col md:min-h-0 md:flex-1"
       >
-        <TabsList>
+        {/* Six tabs do not fit a phone: scroll the strip instead of the page. */}
+        <TabsList className="overflow-x-auto [&>button]:shrink-0 [&>button]:whitespace-nowrap">
           <TabsTrigger value="materialTypes">{t("tabs.materialTypes")}</TabsTrigger>
           <TabsTrigger value="acquisitionSources">{t("tabs.acquisitionSources")}</TabsTrigger>
           <TabsTrigger value="partners">{t("tabs.partners")}</TabsTrigger>
+          <TabsTrigger value="collectionCategories">{t("tabs.collectionCategories")}</TabsTrigger>
+          <TabsTrigger value="locations">{t("tabs.locations")}</TabsTrigger>
           <TabsTrigger value="ddcClasses">{t("tabs.ddcClasses")}</TabsTrigger>
         </TabsList>
         <TabsContent value="materialTypes" className="md:min-h-0 md:flex-1">
@@ -49,6 +70,12 @@ export function MasterDataView(): ReactElement {
         </TabsContent>
         <TabsContent value="partners" className="md:min-h-0 md:flex-1">
           <PartnersTab />
+        </TabsContent>
+        <TabsContent value="collectionCategories" className="md:min-h-0 md:flex-1">
+          <CollectionCategoriesTab />
+        </TabsContent>
+        <TabsContent value="locations" className="md:min-h-0 md:flex-1">
+          <LocationsTab />
         </TabsContent>
         <TabsContent value="ddcClasses" className="md:min-h-0 md:flex-1">
           <DdcClassesTab />

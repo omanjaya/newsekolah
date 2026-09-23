@@ -18,7 +18,12 @@ const REFERENCE_STALE_MS = 5 * 60 * 1000;
 
 function useInvalidate(key: string) {
   const queryClient = useQueryClient();
-  return () => queryClient.invalidateQueries({ queryKey: ["library", key] });
+  // The copy forms read every master list through the combined options query.
+  return () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["library", key] }),
+      queryClient.invalidateQueries({ queryKey: ["library", "catalogue-options"] }),
+    ]);
 }
 
 // Material types.

@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { formatDate } from "@newsekolah/i18n";
+import { formatCurrency, formatDate } from "@newsekolah/i18n";
 import type { Locale } from "@newsekolah/i18n";
 import {
   Badge,
@@ -36,6 +36,8 @@ import {
   useLibraryMemberTypesQuery,
 } from "../members-api";
 
+import { LibraryTitleName } from "./library-title-name";
+import { LoanRenewalsDialog } from "./loan-renewals-dialog";
 import { MarkLostDialog } from "./mark-lost-dialog";
 import { MemberProfileForm } from "./member-profile-form";
 import { MemberStatusMenu } from "./member-status-menu";
@@ -43,6 +45,7 @@ import { MemberStatusMenu } from "./member-status-menu";
 export function MemberDetailView({ userId }: { userId: string }): ReactElement {
   const t = useTranslations("app.library.memberDetail");
   const tHistory = useTranslations("app.library.memberHistory");
+  const tReserve = useTranslations("app.library.me.reserve");
   const locale = useLocale() as Locale;
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
@@ -59,6 +62,7 @@ export function MemberDetailView({ userId }: { userId: string }): ReactElement {
 
   const [editing, setEditing] = useState(false);
   const [markingLost, setMarkingLost] = useState<string | null>(null);
+  const [viewingRenewals, setViewingRenewals] = useState<string | null>(null);
   const [clearanceError, setClearanceError] = useState("");
 
   const items = loans.data?.data ?? [];
@@ -67,7 +71,12 @@ export function MemberDetailView({ userId }: { userId: string }): ReactElement {
 
   const columns = useMemo<ColumnDef<LibraryLoan>[]>(
     () => [
-      { accessorKey: "title_id", header: tHistory("columns.title"), enableSorting: false },
+      {
+        accessorKey: "title_id",
+        header: tHistory("columns.title"),
+        enableSorting: false,
+        cell: ({ row }) => <LibraryTitleName titleId={row.original.title_id} />,
+      },
       {
         accessorKey: "borrowed_at",
         header: tHistory("columns.borrowedAt"),
@@ -90,24 +99,46 @@ export function MemberDetailView({ userId }: { userId: string }): ReactElement {
           </Badge>
         ),
       },
-      { accessorKey: "fine_amount", header: tHistory("columns.fine"), enableSorting: false },
+      {
+        accessorKey: "fine_amount",
+        header: tHistory("columns.fine"),
+        enableSorting: false,
+        cell: ({ row }) =>
+          row.original.fine_amount > 0
+            ? formatCurrency(row.original.fine_amount, "IDR", { locale })
+            : "-",
+      },
       {
         id: "actions",
         header: tHistory("columns.actions"),
         enableSorting: false,
-        cell: ({ row }) =>
-          row.original.status === "active" ? (
-            <Button
-              size="sm"
-              variant="ghost"
-              className="text-status-absent"
-              onClick={() => {
-                setMarkingLost(row.original.id);
-              }}
-            >
-              {tHistory("markLost")}
-            </Button>
-          ) : null,
+        cell: ({ row }) => (
+          <div className="flex flex-wrap gap-2">
+            {row.original.renewal_count > 0 && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  setViewingRenewals(row.original.id);
+                }}
+              >
+                {tHistory("renewals.viewHistory")}
+              </Button>
+            )}
+            {row.original.status === "active" && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="text-status-absent"
+                onClick={() => {
+                  setMarkingLost(row.original.id);
+                }}
+              >
+                {tHistory("markLost")}
+              </Button>
+            )}
+          </div>
+        ),
       },
     ],
     [tHistory, locale],
@@ -269,8 +300,11 @@ export function MemberDetailView({ userId }: { userId: string }): ReactElement {
           <ul className="flex flex-col gap-1 text-[13px]">
             {reservations.data?.data.map((r) => (
               <li key={r.id} className="rounded-sm border border-border bg-surface p-2">
-                {r.title_id} - {r.status}
-                {r.position ? ` (#${r.position})` : ""}
+                <LibraryTitleName titleId={r.title_id} />
+                {" - "}
+                {r.status === "waiting" && r.position
+                  ? tReserve("queuePosition", { position: r.position })
+                  : tReserve(`status.${r.status}`)}
               </li>
             ))}
           </ul>
@@ -297,6 +331,13 @@ export function MemberDetailView({ userId }: { userId: string }): ReactElement {
         }}
         onDone={() => {
           setMarkingLost(null);
+        }}
+      />
+
+      <LoanRenewalsDialog
+        loanId={viewingRenewals}
+        onOpenChange={(open) => {
+          if (!open) setViewingRenewals(null);
         }}
       />
     </div>

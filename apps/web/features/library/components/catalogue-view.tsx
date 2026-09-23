@@ -2,6 +2,7 @@
 
 import {
   Button,
+  ConfirmDialog,
   DataTable,
   Dialog,
   DialogContent,
@@ -9,9 +10,10 @@ import {
   IconButton,
   PageHeader,
   domainIcons,
+  useToast,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
-import { BookOpen, Pencil, Plus } from "lucide-react";
+import { BookOpen, Pencil, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -22,18 +24,24 @@ import { useRememberedViewState } from "../../../lib/view-state/view-state-provi
 import {
   type LibraryTitle,
   downloadLibraryCatalogueExportXlsx,
+  useDeleteLibraryTitleMutation,
   useLibraryTitlesQuery,
 } from "../api";
+import { useLibraryErrorMessage } from "../use-library-error-message";
 
 import { TitleForm } from "./title-form";
 
 export function CatalogueView(): ReactElement {
   const t = useTranslations("app.library.catalogue");
+  const toast = useToast();
+  const libraryErrorMessage = useLibraryErrorMessage();
   const canManage = useCan("manage_library_catalog");
   const [search, setSearch] = useRememberedViewState("catalogue-search", "");
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<LibraryTitle | null>(null);
+  const [deleting, setDeleting] = useState<LibraryTitle | null>(null);
   const { data, isLoading } = useLibraryTitlesQuery(search);
+  const deleteTitle = useDeleteLibraryTitleMutation();
   const titles = data?.data ?? [];
 
   const columns = useMemo<ColumnDef<LibraryTitle>[]>(
@@ -75,6 +83,15 @@ export function CatalogueView(): ReactElement {
                 aria-label={t("editTitle")}
                 onClick={() => {
                   setEditing(row.original);
+                }}
+              />
+            )}
+            {canManage && (
+              <IconButton
+                icon={<Trash2 />}
+                aria-label={t("deleteTitle")}
+                onClick={() => {
+                  setDeleting(row.original);
                 }}
               />
             )}
@@ -168,6 +185,29 @@ export function CatalogueView(): ReactElement {
           )}
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={deleting !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleting(null);
+        }}
+        title={t("deleteTitle")}
+        description={deleting ? t("deleteBody", { title: deleting.title }) : ""}
+        confirmLabel={t("deleteConfirm")}
+        destructive
+        confirming={deleteTitle.isPending}
+        onConfirm={async () => {
+          if (!deleting) return;
+          try {
+            await deleteTitle.mutateAsync(deleting.id);
+            toast.success(t("deleted"));
+            setDeleting(null);
+          } catch (error) {
+            toast.error(libraryErrorMessage(error));
+            setDeleting(null);
+          }
+        }}
+      />
     </div>
   );
 }
