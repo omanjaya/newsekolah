@@ -36,8 +36,8 @@ export function StageRow({
   return (
     <div className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-3">
       <div className="flex items-start justify-between gap-3">
-        <span className="mt-2 text-[13px] font-medium text-fg-muted">{`${index + 1}.`}</span>
-        <div className="grid flex-1 gap-3 md:grid-cols-2">
+        <span className="mt-2 w-5 shrink-0 text-[13px] font-medium tabular-nums text-fg-muted">{`${index + 1}.`}</span>
+        <div className="grid min-w-0 flex-1 gap-3 md:grid-cols-2">
           <label className="flex flex-col gap-1 text-[13px]">
             <span className="font-medium text-fg">{t("labelField")}</span>
             <Input

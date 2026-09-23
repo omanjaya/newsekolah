@@ -85,7 +85,7 @@ function SessionSettingsForm({ initial }: { initial: AuthSettings }): ReactEleme
       <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
       <p className="text-[13px] text-fg-muted">{t("intro")}</p>
 
-      <section className="flex flex-col gap-6 rounded-sm border border-border bg-surface p-4">
+      <section className="flex flex-col gap-6 rounded-sm border border-border bg-surface p-4 md:max-w-2xl">
         {error && (
           <p role="alert" className="rounded-xs border border-status-late/40 px-3 py-2 text-[13px]">
             {error}

@@ -1,7 +1,7 @@
 "use client";
 
 import { Badge, Skeleton } from "@newsekolah/ui";
-import { Check, Circle } from "lucide-react";
+import { Check, ChevronRight, Circle } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -82,39 +82,44 @@ function ChecklistRow({ step, href }: { step: SetupStep; href: string }): ReactE
   const showCount = step.count > 0 && !STEPS_WITHOUT_COUNT.has(step.key);
 
   return (
-    <li className="flex items-start justify-between gap-3 py-3">
-      <div className="flex items-start gap-3">
-        <span
-          className={
-            step.done
-              ? "mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border border-accent bg-accent text-accent-fg"
-              : "mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border border-border text-fg-muted"
-          }
-        >
-          {step.done ? (
-            <Check className="size-3.5" aria-hidden="true" />
-          ) : (
-            <Circle className="size-2 fill-current" aria-hidden="true" />
-          )}
-        </span>
-        <div className="flex flex-col gap-0.5">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-[14px] font-medium text-fg">{tStep("label")}</span>
-            {!step.required && <Badge>{t("optional")}</Badge>}
-          </div>
-          <p className="text-[13px] text-fg-muted">{tStep("description")}</p>
-          {showCount && (
-            <p className="text-[13px] tabular-nums text-fg-muted">
-              {tStep("count", { count: step.count })}
-            </p>
-          )}
-        </div>
-      </div>
+    <li>
+      {/* The whole row is the link: a thumb-sized target on a phone rather
+          than a lone word at the edge. */}
       <Link
         href={href}
-        className="shrink-0 whitespace-nowrap text-[13px] font-medium text-accent hover:underline"
+        className="-mx-2 flex items-start justify-between gap-3 rounded-xs px-2 py-3 hover:bg-bg"
       >
-        {t("openStep")}
+        <div className="flex min-w-0 items-start gap-3">
+          <span
+            className={
+              step.done
+                ? "mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border border-accent bg-accent text-accent-fg"
+                : "mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border border-border text-fg-muted"
+            }
+          >
+            {step.done ? (
+              <Check className="size-3.5" aria-hidden="true" />
+            ) : (
+              <Circle className="size-2 fill-current" aria-hidden="true" />
+            )}
+          </span>
+          <div className="flex flex-col gap-0.5">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[14px] font-medium text-fg">{tStep("label")}</span>
+              {!step.required && <Badge>{t("optional")}</Badge>}
+            </div>
+            <p className="text-[13px] text-fg-muted">{tStep("description")}</p>
+            {showCount && (
+              <p className="text-[13px] tabular-nums text-fg-muted">
+                {tStep("count", { count: step.count })}
+              </p>
+            )}
+          </div>
+        </div>
+        <span className="flex shrink-0 items-center gap-0.5 whitespace-nowrap text-[13px] font-medium text-accent">
+          {t("openStep")}
+          <ChevronRight className="size-4" aria-hidden="true" />
+        </span>
       </Link>
     </li>
   );

@@ -27,7 +27,7 @@ export function WhatsAppSettingsView(): ReactElement {
           <TabsTrigger value="templates">{t("tabs.templates")}</TabsTrigger>
           <TabsTrigger value="deliveries">{t("tabs.deliveries")}</TabsTrigger>
         </TabsList>
-        <TabsContent value="provider">
+        <TabsContent value="provider" className="md:max-w-2xl">
           <ProviderConfigView />
         </TabsContent>
         <TabsContent value="templates">

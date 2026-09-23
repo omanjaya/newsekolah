@@ -116,10 +116,11 @@ export function WebhookEndpointsPanel({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-[13px] text-fg-muted">{t("description")}</p>
         <Button
           size="sm"
+          className="shrink-0 self-start sm:self-auto"
           icon={<Plus />}
           onClick={() => {
             setDialogTarget("create");

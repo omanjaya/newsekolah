@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
   EmptyState,
   IconButton,
+  PageHeader,
   useToast,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -147,23 +148,23 @@ export function TenantsView(): ReactElement {
   );
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <p className="text-[13px] text-fg-muted">{t("eyebrow")}</p>
-          <h1 className="text-[20px] font-semibold">{t("title")}</h1>
-          <p className="text-[13px] text-fg-muted">{t("subtitle")}</p>
-        </div>
-        <Button
-          size="sm"
-          icon={<Plus />}
-          onClick={() => {
-            setCreating(true);
-          }}
-        >
-          {t("add")}
-        </Button>
-      </div>
+    <div className="flex flex-col gap-6 p-4 md:p-6">
+      <PageHeader
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+        actions={
+          <Button
+            size="sm"
+            icon={<Plus />}
+            onClick={() => {
+              setCreating(true);
+            }}
+          >
+            {t("add")}
+          </Button>
+        }
+      />
+      <p className="text-[13px] text-fg-muted">{t("subtitle")}</p>
 
       <DataTable
         stateKey="features/platform/components/tenants-view:1"
