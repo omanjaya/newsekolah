@@ -89,11 +89,17 @@
       "body": "A title with this ISBN already exists in the catalogue: {title}.",
       "view": "View title"
     },
-    "editTitle": "Edit title"
+    "editTitle": "Edit title",
+    "deleteTitle": "Delete title",
+    "deleteBody": "Title \"{title}\" will be deleted.",
+    "deleted": "Title deleted",
+    "deleteConfirm": "Delete"
   },
   "copies": {
     "title": "Copies",
     "addCopy": "Add copy",
+    "addCopiesBatch": "Add several copies",
+    "viewDetail": "Detail",
     "columns": {
       "barcode": "Barcode",
       "condition": "Condition",
@@ -136,7 +142,35 @@
       "saved": "Copy added"
     },
     "emptyTitle": "No copies yet",
-    "emptyBody": "Add physical copies, each with its own barcode."
+    "emptyBody": "Add physical copies, each with its own barcode.",
+    "batchForm": {
+      "count": "Number of copies",
+      "save": "Add",
+      "saved": "{count} copies added"
+    },
+    "detail": {
+      "condition": "Condition: {condition}",
+      "changeStatus": "Change status",
+      "newStatus": "New status",
+      "newStatusPlaceholder": "Pick a status",
+      "note": "Note",
+      "applyStatus": "Apply",
+      "statusChanged": "Copy status changed",
+      "statusBlockedByLoan": "Status cannot be changed while the copy is on loan.",
+      "eventsHeading": "Copy history",
+      "noEvents": "No history yet for this copy.",
+      "eventType": {
+        "created": "Registered",
+        "status_changed": "Status changed",
+        "circulation": "Circulation",
+        "stocktake": "Stocktake"
+      },
+      "deleteCopy": "Delete copy",
+      "deleteBody": "Copy \"{barcode}\" will be deleted.",
+      "deleted": "Copy deleted",
+      "statusTransition": "{from} to {to}",
+      "deleteConfirm": "Delete"
+    }
   },
   "desk": {
     "eyebrow": "Library",
@@ -245,7 +279,14 @@
     },
     "reservationsHeading": "Reservations",
     "printCard": "Print member card",
-    "emptyTitle": "No loan history yet"
+    "emptyTitle": "No loan history yet",
+    "renewals": {
+      "viewHistory": "Renewal history",
+      "title": "Renewal history",
+      "close": "Close",
+      "empty": "No renewals for this loan yet.",
+      "dueChange": "Due date {previous} became {next}"
+    }
   },
   "members": {
     "navLabel": "Library members",
@@ -671,11 +712,17 @@
       "closed": "Closed"
     },
     "emptyTitle": "No stocktake sessions yet",
+    "downloadReport": "Download report (XLSX)",
+    "progress": {
+      "heading": "Stocktake progress",
+      "live": "Refreshes every 5 seconds while the session is open."
+    },
     "scan": {
       "heading": "Scan barcode",
       "label": "Barcode",
       "placeholder": "Scan or type a barcode",
-      "submit": "Record"
+      "submit": "Record",
+      "thisDevice": "{count, plural, =0 {No barcodes scanned from this device yet.} one {# barcode scanned from this device.} other {# barcodes scanned from this device.}}"
     },
     "close": "Close session",
     "result": {
@@ -683,8 +730,13 @@
       "expected": "Expected",
       "scanned": "Scanned",
       "missing": "Missing",
-      "unexpected": "Unexpected"
-    }
+      "unexpected": "Unexpected",
+      "misplaced": "Misplaced",
+      "moreInReport": "and {count} more. The full list is in the XLSX report."
+    },
+    "viewResult": "View results",
+    "closeConfirmTitle": "Close this stocktake session?",
+    "closeConfirmBody": "Once closed, no more barcodes can be scanned and the reconciliation is saved permanently."
   },
   "masterData": {
     "eyebrow": "Library",
@@ -694,6 +746,8 @@
       "materialTypes": "Material types",
       "acquisitionSources": "Acquisition sources",
       "partners": "Partners",
+      "collectionCategories": "Collection categories",
+      "locations": "Shelf locations",
       "ddcClasses": "DDC classes"
     },
     "materialTypes": {
@@ -755,7 +809,8 @@
         "isActive": "Active",
         "cancel": "Cancel",
         "save": "Save"
-      }
+      },
+      "saved": "Acquisition source saved"
     },
     "partners": {
       "add": "Add partner",
@@ -788,6 +843,64 @@
         "cancel": "Cancel",
         "save": "Save"
       }
+    },
+    "collectionCategories": {
+      "add": "Add category",
+      "editTitle": "Edit collection category",
+      "columns": {
+        "code": "Code",
+        "name": "Name",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "active": "Active",
+      "inactive": "Inactive",
+      "edit": "Edit",
+      "delete": "Delete",
+      "deleteTitle": "Delete collection category",
+      "deleteBody": "Category \"{name}\" will be deleted.",
+      "deleted": "Collection category deleted",
+      "stillInUse": "This category is still used by another copy, so it cannot be deleted.",
+      "emptyTitle": "No collection categories yet",
+      "emptyBody": "Add categories such as fiction or reference to group the catalogue.",
+      "form": {
+        "code": "Code",
+        "name": "Name",
+        "sortOrder": "Sort order",
+        "isActive": "Active",
+        "cancel": "Cancel",
+        "save": "Save"
+      },
+      "saved": "Collection category saved"
+    },
+    "locations": {
+      "add": "Add location",
+      "editTitle": "Edit shelf location",
+      "columns": {
+        "code": "Code",
+        "name": "Name",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "active": "Active",
+      "inactive": "Inactive",
+      "edit": "Edit",
+      "delete": "Delete",
+      "deleteTitle": "Delete shelf location",
+      "deleteBody": "Location \"{name}\" will be deleted.",
+      "deleted": "Shelf location deleted",
+      "stillInUse": "This location is still used by another copy, so it cannot be deleted.",
+      "emptyTitle": "No shelf locations yet",
+      "emptyBody": "Add locations such as a room or shelf name to mark where copies sit.",
+      "form": {
+        "code": "Code",
+        "name": "Name",
+        "sortOrder": "Sort order",
+        "isActive": "Active",
+        "cancel": "Cancel",
+        "save": "Save"
+      },
+      "saved": "Shelf location saved"
     },
     "ddcClasses": {
       "columns": {
@@ -951,9 +1064,33 @@
     "unavailable": "All copies out",
     "emptyTitle": "Nothing found",
     "emptyBody": "Try a different search term.",
+    "backToSearch": "Back to search",
     "highlights": {
       "newest": "Newest",
       "mostBorrowed": "Most borrowed"
+    },
+    "detail": {
+      "notFoundTitle": "Title not found",
+      "notFoundBody": "This title may have been removed from the public catalogue.",
+      "publisher": "Publisher",
+      "isbn": "ISBN",
+      "classification": "Classification",
+      "language": "Language",
+      "subjects": "Subjects",
+      "copiesHeading": "Copies ({count})",
+      "noCopies": "No copies are shown for this title yet.",
+      "copyStatus": {
+        "available": "Available",
+        "on_loan": "On loan",
+        "reserved": "Reserved",
+        "damaged": "Damaged",
+        "lost": "Lost",
+        "in_repair": "In repair",
+        "processing": "Processing",
+        "donated": "Donated",
+        "reserve_stack": "Reserve stack",
+        "unknown": "Unknown"
+      }
     }
   },
   "kiosk": {
@@ -1049,7 +1186,9 @@
       "submit": "Reserve",
       "reserved": "Reservation created",
       "bookingDisabled": "Self-service reservations are turned off right now. Ask a librarian to reserve a title."
-    }
+    },
+    "dueOn": "Due {date}",
+    "overdueSince": "Overdue, was due {date}"
   },
   "memberProfile": {
     "memberType": "Member type",
@@ -1059,5 +1198,16 @@
     "cancel": "Cancel",
     "save": "Save changes",
     "saved": "Membership updated."
+  },
+  "errors": {
+    "LIBRARY_TITLE_HAS_COPIES": "This title still has copies. Delete or move its copies first.",
+    "LIBRARY_CONTROL_NUMBER_EXISTS": "This control number is already used by another title.",
+    "LIBRARY_COPY_ACCESSION_EXISTS": "This accession number is already used by another copy.",
+    "LIBRARY_COPY_HAS_LOAN_HISTORY": "This copy has been borrowed before, so it cannot be deleted. Change its status (for example donated or lost) to take it out of the collection.",
+    "LIBRARY_COPY_STATUS_NOT_MANUAL": "This status is only set automatically by circulation.",
+    "LIBRARY_MASTER_DATA_NOT_FOUND": "This entry no longer exists. Reload the page.",
+    "LIBRARY_MASTER_DATA_CODE_EXISTS": "This code is already in use. Choose another code.",
+    "LIBRARY_MASTER_DATA_IN_USE": "This entry is still used by copies, so it cannot be deleted. Deactivate it instead if it is no longer needed.",
+    "LIBRARY_MODULE_DISABLED": "The library module is not enabled for this school."
   }
 }

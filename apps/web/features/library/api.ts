@@ -11,15 +11,16 @@ export type LibraryTitle = components["schemas"]["LibraryTitle"];
 export type LibraryTitleWrite = components["schemas"]["LibraryTitleWrite"];
 export type LibraryCopy = components["schemas"]["LibraryCopy"];
 export type LibraryCopyWrite = components["schemas"]["LibraryCopyWrite"];
+export type LibraryCopyStatus = components["schemas"]["LibraryCopyStatus"];
+export type LibraryItemEvent = components["schemas"]["LibraryItemEvent"];
 export type LibraryLoan = components["schemas"]["LibraryLoan"];
+export type LibraryLoanRenewal = components["schemas"]["LibraryLoanRenewal"];
 export type LibraryReservation = components["schemas"]["LibraryReservation"];
-export type LibraryStocktake = components["schemas"]["LibraryStocktake"];
-export type LibraryStocktakeScan = components["schemas"]["LibraryStocktakeScan"];
-export type LibraryStocktakeResult = components["schemas"]["LibraryStocktakeResult"];
 export type LibraryPolicy = components["schemas"]["LibraryPolicy"];
 export type LibraryPolicyWrite = components["schemas"]["LibraryPolicyWrite"];
 export type LibraryOverdueMember = components["schemas"]["LibraryOverdueMember"];
 export type LibraryMostBorrowedTitle = components["schemas"]["LibraryMostBorrowedTitle"];
+export type LibraryOpacTitleDetail = components["schemas"]["LibraryOpacTitleDetail"];
 
 /**
  * Query keys local to this feature, all under `["library", ...]` so a
@@ -30,13 +31,14 @@ const keys = {
   titles: (search: string) => ["library", "titles", search] as const,
   title: (id: string) => ["library", "titles", "detail", id] as const,
   copies: (titleId: string) => ["library", "titles", titleId, "copies"] as const,
+  copyEvents: (copyId: string) => ["library", "copies", copyId, "events"] as const,
   reservationQueue: (titleId: string) => ["library", "titles", titleId, "reservations"] as const,
   overdueLoans: () => ["library", "loans", "overdue"] as const,
+  loanRenewals: (loanId: string) => ["library", "loans", loanId, "renewals"] as const,
   memberLoans: (userId: string) => ["library", "members", userId, "loans"] as const,
   memberReservations: (userId: string) => ["library", "members", userId, "reservations"] as const,
-  stocktakes: () => ["library", "stocktakes"] as const,
-  stocktake: (id: string) => ["library", "stocktakes", "detail", id] as const,
   opac: (search: string) => ["library", "opac", search] as const,
+  opacTitle: (titleId: string) => ["library", "opac", "titles", titleId] as const,
 };
 
 function useInvalidateLibrary() {
@@ -117,6 +119,17 @@ export function useUpdateLibraryTitleMutation() {
   });
 }
 
+/** Refused (409) while the title still has any copy registered under it. */
+export function useDeleteLibraryTitleMutation() {
+  const client = useApiClient();
+  const invalidate = useInvalidateLibrary();
+  return useMutation({
+    mutationFn: (titleId: string) =>
+      client.DELETE("/v1/library/titles/{titleId}", { params: { path: { titleId } } }),
+    onSuccess: invalidate,
+  });
+}
+
 export function useLibraryCopiesQuery(titleId: string) {
   const client = useApiClient();
   return useQuery({
@@ -134,6 +147,73 @@ export function useCreateLibraryCopyMutation() {
     mutationFn: ({ titleId, ...body }: LibraryCopyWrite & { titleId: string }) =>
       client.POST("/v1/library/titles/{titleId}/copies", { params: { path: { titleId } }, body }),
     onSuccess: invalidate,
+  });
+}
+
+export interface LibraryCopiesBatchWrite {
+  count: number;
+  category_id?: string;
+  location_id?: string;
+  source_id?: string;
+  partner_id?: string;
+  price?: number;
+  is_opac?: boolean;
+  access?: LibraryCopy["access"];
+  condition?: LibraryCopy["condition"];
+  notes?: string;
+}
+
+/** Adds several copies of the same title at once; every barcode/accession number is auto-generated. */
+export function useCreateLibraryCopiesBatchMutation() {
+  const client = useApiClient();
+  const invalidate = useInvalidateLibrary();
+  return useMutation({
+    mutationFn: ({ titleId, ...body }: LibraryCopiesBatchWrite & { titleId: string }) =>
+      client.POST("/v1/library/titles/{titleId}/copies/batch", {
+        params: { path: { titleId } },
+        body,
+      }),
+    onSuccess: invalidate,
+  });
+}
+
+/** Refused (409) if the copy was ever borrowed; kept for the audit trail instead. */
+export function useDeleteLibraryCopyMutation() {
+  const client = useApiClient();
+  const invalidate = useInvalidateLibrary();
+  return useMutation({
+    mutationFn: (copyId: string) =>
+      client.DELETE("/v1/library/copies/{copyId}", { params: { path: { copyId } } }),
+    onSuccess: invalidate,
+  });
+}
+
+/** Manual status change (weeding, damage, repair); refused (409) while the copy is on loan. */
+export function useSetLibraryCopyStatusMutation() {
+  const client = useApiClient();
+  const invalidate = useInvalidateLibrary();
+  return useMutation({
+    mutationFn: ({
+      copyId,
+      ...body
+    }: {
+      copyId: string;
+      status: LibraryCopyStatus;
+      condition?: LibraryCopy["condition"];
+      note?: string;
+    }) => client.PUT("/v1/library/copies/{copyId}/status", { params: { path: { copyId } }, body }),
+    onSuccess: invalidate,
+  });
+}
+
+/** A copy's audit trail: created, status changes, circulation, stocktake. */
+export function useLibraryCopyEventsQuery(copyId: string, enabled = true) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: keys.copyEvents(copyId),
+    queryFn: () =>
+      client.GET("/v1/library/copies/{copyId}/events", { params: { path: { copyId } } }),
+    enabled: enabled && Boolean(copyId),
   });
 }
 
@@ -182,6 +262,17 @@ export function useRenewLoanMutation() {
     mutationFn: (loanId: string) =>
       client.POST("/v1/library/loans/{loanId}/renew", { params: { path: { loanId } } }),
     onSuccess: invalidate,
+  });
+}
+
+/** Renewal history for one loan, newest first as returned by the API. */
+export function useLibraryLoanRenewalsQuery(loanId: string) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: keys.loanRenewals(loanId),
+    queryFn: () =>
+      client.GET("/v1/library/loans/{loanId}/renewals", { params: { path: { loanId } } }),
+    enabled: Boolean(loanId),
   });
 }
 
@@ -247,59 +338,8 @@ export function useMemberReservationsQuery(userId: string) {
   });
 }
 
-// Stocktake.
-
-export function useLibraryStocktakesQuery() {
-  const client = useApiClient();
-  return useQuery({
-    queryKey: keys.stocktakes(),
-    queryFn: () => client.GET("/v1/library/stocktakes"),
-  });
-}
-
-export function useLibraryStocktakeQuery(stocktakeId: string) {
-  const client = useApiClient();
-  return useQuery({
-    queryKey: keys.stocktake(stocktakeId),
-    queryFn: () =>
-      client.GET("/v1/library/stocktakes/{stocktakeId}", { params: { path: { stocktakeId } } }),
-    enabled: Boolean(stocktakeId),
-  });
-}
-
-export function useStartStocktakeMutation() {
-  const client = useApiClient();
-  const invalidate = useInvalidateLibrary();
-  return useMutation({
-    mutationFn: (body: { name: string; notes?: string }) =>
-      client.POST("/v1/library/stocktakes", { body }),
-    onSuccess: invalidate,
-  });
-}
-
-export function useScanStocktakeMutation() {
-  const client = useApiClient();
-  return useMutation({
-    mutationFn: ({ stocktakeId, barcode }: { stocktakeId: string; barcode: string }) =>
-      client.POST("/v1/library/stocktakes/{stocktakeId}/scans", {
-        params: { path: { stocktakeId } },
-        body: { codes: [barcode] },
-      }),
-  });
-}
-
-export function useCloseStocktakeMutation() {
-  const client = useApiClient();
-  const invalidate = useInvalidateLibrary();
-  return useMutation({
-    mutationFn: ({ stocktakeId, notes }: { stocktakeId: string; notes?: string }) =>
-      client.POST("/v1/library/stocktakes/{stocktakeId}/close", {
-        params: { path: { stocktakeId } },
-        body: notes ? { notes } : undefined,
-      }),
-    onSuccess: invalidate,
-  });
-}
+// Stocktake: see stocktake-api.ts (split out to keep this file under the
+// max-lines limit).
 
 // Reports.
 
@@ -410,6 +450,19 @@ export function useOpacTitlesQuery(search: string) {
     queryKey: keys.opac(search),
     queryFn: () =>
       client.GET("/v1/opac/titles", { params: { query: { search: search || undefined } } }),
+  });
+}
+
+/**
+ * GET /v1/opac/titles/{titleId}: public title detail with its visible
+ * copies (no session required), for the OPAC title detail page.
+ */
+export function useOpacTitleQuery(titleId: string) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: keys.opacTitle(titleId),
+    queryFn: () => client.GET("/v1/opac/titles/{titleId}", { params: { path: { titleId } } }),
+    enabled: Boolean(titleId),
   });
 }
 

@@ -89,11 +89,17 @@
       "body": "Judul dengan ISBN ini sudah ada di katalog: {title}.",
       "view": "Lihat judul"
     },
-    "editTitle": "Ubah judul"
+    "editTitle": "Ubah judul",
+    "deleteTitle": "Hapus judul",
+    "deleteBody": "Judul \"{title}\" akan dihapus.",
+    "deleted": "Judul dihapus",
+    "deleteConfirm": "Hapus"
   },
   "copies": {
     "title": "Eksemplar",
     "addCopy": "Tambah eksemplar",
+    "addCopiesBatch": "Tambah beberapa eksemplar",
+    "viewDetail": "Detail",
     "columns": {
       "barcode": "Barcode",
       "condition": "Kondisi",
@@ -136,7 +142,35 @@
       "saved": "Eksemplar ditambahkan"
     },
     "emptyTitle": "Belum ada eksemplar",
-    "emptyBody": "Tambahkan eksemplar fisik dengan barcode masing-masing."
+    "emptyBody": "Tambahkan eksemplar fisik dengan barcode masing-masing.",
+    "batchForm": {
+      "count": "Jumlah eksemplar",
+      "save": "Tambahkan",
+      "saved": "{count} eksemplar ditambahkan"
+    },
+    "detail": {
+      "condition": "Kondisi: {condition}",
+      "changeStatus": "Ubah status",
+      "newStatus": "Status baru",
+      "newStatusPlaceholder": "Pilih status",
+      "note": "Catatan",
+      "applyStatus": "Terapkan",
+      "statusChanged": "Status eksemplar diubah",
+      "statusBlockedByLoan": "Status belum bisa diubah selagi eksemplar sedang dipinjam.",
+      "eventsHeading": "Riwayat eksemplar",
+      "noEvents": "Belum ada riwayat untuk eksemplar ini.",
+      "eventType": {
+        "created": "Didaftarkan",
+        "status_changed": "Status diubah",
+        "circulation": "Sirkulasi",
+        "stocktake": "Opname"
+      },
+      "deleteCopy": "Hapus eksemplar",
+      "deleteBody": "Eksemplar \"{barcode}\" akan dihapus.",
+      "deleted": "Eksemplar dihapus",
+      "statusTransition": "{from} ke {to}",
+      "deleteConfirm": "Hapus"
+    }
   },
   "desk": {
     "eyebrow": "Perpustakaan",
@@ -245,7 +279,14 @@
     },
     "reservationsHeading": "Reservasi",
     "printCard": "Cetak kartu anggota",
-    "emptyTitle": "Belum ada riwayat peminjaman"
+    "emptyTitle": "Belum ada riwayat peminjaman",
+    "renewals": {
+      "viewHistory": "Riwayat perpanjangan",
+      "title": "Riwayat perpanjangan",
+      "close": "Tutup",
+      "empty": "Belum ada perpanjangan untuk peminjaman ini.",
+      "dueChange": "Jatuh tempo {previous} menjadi {next}"
+    }
   },
   "members": {
     "navLabel": "Anggota perpustakaan",
@@ -671,11 +712,17 @@
       "closed": "Selesai"
     },
     "emptyTitle": "Belum ada sesi opname",
+    "downloadReport": "Unduh laporan (XLSX)",
+    "progress": {
+      "heading": "Perkembangan opname",
+      "live": "Diperbarui otomatis setiap 5 detik selama sesi berjalan."
+    },
     "scan": {
       "heading": "Pindai barcode",
       "label": "Barcode",
       "placeholder": "Pindai atau ketik barcode",
-      "submit": "Catat"
+      "submit": "Catat",
+      "thisDevice": "{count, plural, =0 {Belum ada barcode yang dipindai dari perangkat ini.} other {# barcode dipindai dari perangkat ini.}}"
     },
     "close": "Tutup sesi",
     "result": {
@@ -683,8 +730,13 @@
       "expected": "Diharapkan",
       "scanned": "Terpindai",
       "missing": "Hilang",
-      "unexpected": "Tidak terduga"
-    }
+      "unexpected": "Tidak terduga",
+      "misplaced": "Salah tempat",
+      "moreInReport": "dan {count} lainnya. Daftar lengkap ada di laporan XLSX."
+    },
+    "viewResult": "Lihat hasil",
+    "closeConfirmTitle": "Tutup sesi opname?",
+    "closeConfirmBody": "Setelah ditutup, barcode tidak bisa dipindai lagi dan hasil rekonsiliasi disimpan permanen."
   },
   "masterData": {
     "eyebrow": "Perpustakaan",
@@ -694,6 +746,8 @@
       "materialTypes": "Jenis bahan",
       "acquisitionSources": "Sumber perolehan",
       "partners": "Mitra",
+      "collectionCategories": "Kategori koleksi",
+      "locations": "Lokasi rak",
       "ddcClasses": "Kelas DDC"
     },
     "materialTypes": {
@@ -755,7 +809,8 @@
         "isActive": "Aktif",
         "cancel": "Batal",
         "save": "Simpan"
-      }
+      },
+      "saved": "Sumber perolehan disimpan"
     },
     "partners": {
       "add": "Tambah mitra",
@@ -788,6 +843,64 @@
         "cancel": "Batal",
         "save": "Simpan"
       }
+    },
+    "collectionCategories": {
+      "add": "Tambah kategori",
+      "editTitle": "Ubah kategori koleksi",
+      "columns": {
+        "code": "Kode",
+        "name": "Nama",
+        "status": "Status",
+        "actions": "Aksi"
+      },
+      "active": "Aktif",
+      "inactive": "Nonaktif",
+      "edit": "Ubah",
+      "delete": "Hapus",
+      "deleteTitle": "Hapus kategori koleksi",
+      "deleteBody": "Kategori \"{name}\" akan dihapus.",
+      "deleted": "Kategori koleksi dihapus",
+      "stillInUse": "Kategori ini masih dipakai oleh eksemplar lain, sehingga tidak bisa dihapus.",
+      "emptyTitle": "Belum ada kategori koleksi",
+      "emptyBody": "Tambahkan kategori seperti fiksi atau referensi untuk mengelompokkan koleksi.",
+      "form": {
+        "code": "Kode",
+        "name": "Nama",
+        "sortOrder": "Urutan",
+        "isActive": "Aktif",
+        "cancel": "Batal",
+        "save": "Simpan"
+      },
+      "saved": "Kategori koleksi disimpan"
+    },
+    "locations": {
+      "add": "Tambah lokasi",
+      "editTitle": "Ubah lokasi rak",
+      "columns": {
+        "code": "Kode",
+        "name": "Nama",
+        "status": "Status",
+        "actions": "Aksi"
+      },
+      "active": "Aktif",
+      "inactive": "Nonaktif",
+      "edit": "Ubah",
+      "delete": "Hapus",
+      "deleteTitle": "Hapus lokasi rak",
+      "deleteBody": "Lokasi \"{name}\" akan dihapus.",
+      "deleted": "Lokasi rak dihapus",
+      "stillInUse": "Lokasi ini masih dipakai oleh eksemplar lain, sehingga tidak bisa dihapus.",
+      "emptyTitle": "Belum ada lokasi rak",
+      "emptyBody": "Tambahkan lokasi seperti nama ruangan atau rak untuk menandai posisi eksemplar.",
+      "form": {
+        "code": "Kode",
+        "name": "Nama",
+        "sortOrder": "Urutan",
+        "isActive": "Aktif",
+        "cancel": "Batal",
+        "save": "Simpan"
+      },
+      "saved": "Lokasi rak disimpan"
     },
     "ddcClasses": {
       "columns": {
@@ -951,9 +1064,33 @@
     "unavailable": "Sedang dipinjam semua",
     "emptyTitle": "Tidak ditemukan",
     "emptyBody": "Coba kata kunci lain.",
+    "backToSearch": "Kembali ke pencarian",
     "highlights": {
       "newest": "Terbaru",
       "mostBorrowed": "Paling banyak dipinjam"
+    },
+    "detail": {
+      "notFoundTitle": "Judul tidak ditemukan",
+      "notFoundBody": "Judul ini mungkin sudah dihapus dari katalog publik.",
+      "publisher": "Penerbit",
+      "isbn": "ISBN",
+      "classification": "Klasifikasi",
+      "language": "Bahasa",
+      "subjects": "Subjek",
+      "copiesHeading": "Eksemplar ({count})",
+      "noCopies": "Belum ada eksemplar yang ditampilkan untuk judul ini.",
+      "copyStatus": {
+        "available": "Tersedia",
+        "on_loan": "Dipinjam",
+        "reserved": "Dipesan",
+        "damaged": "Rusak",
+        "lost": "Hilang",
+        "in_repair": "Diperbaiki",
+        "processing": "Diproses",
+        "donated": "Dihibahkan",
+        "reserve_stack": "Rak cadangan",
+        "unknown": "Tidak diketahui"
+      }
     }
   },
   "kiosk": {
@@ -1049,7 +1186,9 @@
       "submit": "Pesan",
       "reserved": "Reservasi dibuat",
       "bookingDisabled": "Reservasi mandiri sedang dinonaktifkan. Hubungi pustakawan untuk memesan judul."
-    }
+    },
+    "dueOn": "Kembali {date}",
+    "overdueSince": "Terlambat, jatuh tempo {date}"
   },
   "memberProfile": {
     "memberType": "Jenis anggota",
@@ -1059,5 +1198,16 @@
     "cancel": "Batal",
     "save": "Simpan perubahan",
     "saved": "Keanggotaan diperbarui."
+  },
+  "errors": {
+    "LIBRARY_TITLE_HAS_COPIES": "Judul ini masih punya eksemplar. Hapus atau pindahkan eksemplarnya lebih dulu.",
+    "LIBRARY_CONTROL_NUMBER_EXISTS": "Nomor kendali ini sudah dipakai judul lain.",
+    "LIBRARY_COPY_ACCESSION_EXISTS": "Nomor induk ini sudah dipakai eksemplar lain.",
+    "LIBRARY_COPY_HAS_LOAN_HISTORY": "Eksemplar ini pernah dipinjam, sehingga tidak bisa dihapus. Ubah statusnya (misalnya dihibahkan atau hilang) bila ingin mengeluarkannya dari koleksi.",
+    "LIBRARY_COPY_STATUS_NOT_MANUAL": "Status ini hanya diatur otomatis oleh sirkulasi.",
+    "LIBRARY_MASTER_DATA_NOT_FOUND": "Data ini sudah tidak ada. Muat ulang halaman.",
+    "LIBRARY_MASTER_DATA_CODE_EXISTS": "Kode ini sudah dipakai. Gunakan kode lain.",
+    "LIBRARY_MASTER_DATA_IN_USE": "Data ini masih dipakai oleh eksemplar, sehingga tidak bisa dihapus. Nonaktifkan saja bila tidak dipakai lagi.",
+    "LIBRARY_MODULE_DISABLED": "Modul perpustakaan belum diaktifkan untuk sekolah ini."
   }
 }

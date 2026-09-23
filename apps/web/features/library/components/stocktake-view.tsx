@@ -18,6 +18,7 @@ import {
 import type { ColumnDef } from "@tanstack/react-table";
 import { Plus } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
@@ -27,10 +28,11 @@ import {
   type LibraryStocktake,
   useLibraryStocktakesQuery,
   useStartStocktakeMutation,
-} from "../api";
+} from "../stocktake-api";
 
 export function StocktakeView(): ReactElement {
   const t = useTranslations("app.library.stocktake");
+  const router = useRouter();
   const locale = useLocale() as Locale;
   const { data, isLoading } = useLibraryStocktakesQuery();
   const [starting, setStarting] = useState(false);
@@ -62,9 +64,9 @@ export function StocktakeView(): ReactElement {
         cell: ({ row }) => (
           <Link
             href={`/library/stocktake/${row.original.id}`}
-            className="text-[13px] font-medium text-accent hover:underline"
+            className="inline-flex min-h-11 items-center text-[13px] font-medium text-accent hover:underline md:min-h-0"
           >
-            {t("scan.heading")}
+            {row.original.status === "open" ? t("scan.heading") : t("viewResult")}
           </Link>
         ),
       },
@@ -113,8 +115,9 @@ export function StocktakeView(): ReactElement {
       >
         <DialogContent title={t("startNew")}>
           <StartStocktakeForm
-            onDone={() => {
+            onDone={(stocktakeId) => {
               setStarting(false);
+              router.push(`/library/stocktake/${stocktakeId}`);
             }}
           />
         </DialogContent>
@@ -123,7 +126,7 @@ export function StocktakeView(): ReactElement {
   );
 }
 
-function StartStocktakeForm({ onDone }: { onDone: () => void }): ReactElement {
+function StartStocktakeForm({ onDone }: { onDone: (stocktakeId: string) => void }): ReactElement {
   const t = useTranslations("app.library.stocktake.form");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
@@ -139,7 +142,9 @@ function StartStocktakeForm({ onDone }: { onDone: () => void }): ReactElement {
         start.mutate(
           { name: name.trim(), notes: notes.trim() || undefined },
           {
-            onSuccess: onDone,
+            onSuccess: (stocktake) => {
+              onDone(stocktake.id);
+            },
             onError: (error) => {
               toast.error(
                 error instanceof ApiError

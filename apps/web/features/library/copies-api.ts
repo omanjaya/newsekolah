@@ -9,6 +9,7 @@ import { API_URL } from "../../lib/env";
 
 export type LibraryCopyStatus = components["schemas"]["LibraryCopyStatus"];
 export type LibraryMasterEntry = components["schemas"]["LibraryMasterEntry"];
+export type LibraryMasterEntryWrite = components["schemas"]["LibraryMasterEntryWrite"];
 export type LibraryCopy = components["schemas"]["LibraryCopy"];
 
 /**
@@ -73,6 +74,16 @@ export function useLibraryCopiesFilteredQuery(params: {
 
 const REFERENCE_STALE_MS = 5 * 60 * 1000;
 
+function useInvalidate(key: string) {
+  const queryClient = useQueryClient();
+  // The copy forms read every master list through the combined options query.
+  return () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["library", key] }),
+      queryClient.invalidateQueries({ queryKey: ["library", "catalogue-options"] }),
+    ]);
+}
+
 export function useCollectionCategoriesQuery() {
   const client = useApiClient();
   return useQuery({
@@ -82,12 +93,71 @@ export function useCollectionCategoriesQuery() {
   });
 }
 
+export function useCreateCollectionCategoryMutation() {
+  const client = useApiClient();
+  const invalidate = useInvalidate("collection-categories");
+  return useMutation({
+    mutationFn: (body: LibraryMasterEntryWrite) =>
+      client.POST("/v1/library/collection-categories", { body }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useUpdateCollectionCategoryMutation() {
+  const client = useApiClient();
+  const invalidate = useInvalidate("collection-categories");
+  return useMutation({
+    mutationFn: ({ id, ...body }: LibraryMasterEntryWrite & { id: string }) =>
+      client.PUT("/v1/library/collection-categories/{id}", { params: { path: { id } }, body }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useDeleteCollectionCategoryMutation() {
+  const client = useApiClient();
+  const invalidate = useInvalidate("collection-categories");
+  return useMutation({
+    mutationFn: (id: string) =>
+      client.DELETE("/v1/library/collection-categories/{id}", { params: { path: { id } } }),
+    onSuccess: invalidate,
+  });
+}
+
 export function useLibraryLocationsQuery() {
   const client = useApiClient();
   return useQuery({
     queryKey: ["library", "locations"],
     queryFn: () => client.GET("/v1/library/locations"),
     staleTime: REFERENCE_STALE_MS,
+  });
+}
+
+export function useCreateLibraryLocationMutation() {
+  const client = useApiClient();
+  const invalidate = useInvalidate("locations");
+  return useMutation({
+    mutationFn: (body: LibraryMasterEntryWrite) => client.POST("/v1/library/locations", { body }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useUpdateLibraryLocationMutation() {
+  const client = useApiClient();
+  const invalidate = useInvalidate("locations");
+  return useMutation({
+    mutationFn: ({ id, ...body }: LibraryMasterEntryWrite & { id: string }) =>
+      client.PUT("/v1/library/locations/{id}", { params: { path: { id } }, body }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useDeleteLibraryLocationMutation() {
+  const client = useApiClient();
+  const invalidate = useInvalidate("locations");
+  return useMutation({
+    mutationFn: (id: string) =>
+      client.DELETE("/v1/library/locations/{id}", { params: { path: { id } } }),
+    onSuccess: invalidate,
   });
 }
 

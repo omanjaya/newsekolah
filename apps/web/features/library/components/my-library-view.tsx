@@ -14,14 +14,20 @@ import { LibraryTitleName } from "./library-title-name";
 import { MyLibraryReservations } from "./my-library-reservations";
 
 function LoanRow({ loan, showDueOn }: { loan: LibraryLoan; showDueOn: boolean }): ReactElement {
+  const t = useTranslations("app.library.me");
   const locale = useLocale() as Locale;
+  // due_on is a calendar date (YYYY-MM-DD); compare it as one, not as an instant.
+  const overdue = showDueOn && loan.due_on < new Date().toLocaleDateString("en-CA");
+  const date = formatDate(showDueOn ? loan.due_on : (loan.returned_at ?? loan.borrowed_at), {
+    locale,
+  });
   return (
     <li className="flex items-center justify-between gap-3 text-[13px]">
-      <span className="text-fg">
+      <span className="min-w-0 text-fg">
         <LibraryTitleName titleId={loan.title_id} />
       </span>
-      <span className="shrink-0 text-fg-muted">
-        {formatDate(showDueOn ? loan.due_on : (loan.returned_at ?? loan.borrowed_at), { locale })}
+      <span className={overdue ? "shrink-0 text-status-absent" : "shrink-0 text-fg-muted"}>
+        {showDueOn ? t(overdue ? "overdueSince" : "dueOn", { date }) : date}
       </span>
     </li>
   );

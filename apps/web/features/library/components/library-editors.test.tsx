@@ -64,6 +64,7 @@ vi.mock("../api", () => ({
   useLibraryTitlesQuery: () => ({ data: { data: [title] }, isLoading: false }),
   useCreateLibraryTitleMutation: () => ({ mutate: mocks.createTitle, isPending: false }),
   useUpdateLibraryTitleMutation: () => ({ mutate: mocks.updateTitle, isPending: false }),
+  useDeleteLibraryTitleMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useLibraryPolicyQuery: () => ({ data: policy, isLoading: false, isError: false }),
   useUpdateLibraryPolicyMutation: () => ({ mutate: mocks.updatePolicy, isPending: false }),
   downloadLibraryCatalogueExportXlsx: vi.fn(),
@@ -133,6 +134,7 @@ describe("library editors", () => {
     render(<CatalogueView />);
     expect(screen.queryByRole("button", { name: "editTitle" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "addTitle" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "deleteTitle" })).not.toBeInTheDocument();
   });
 
   it("clears member expiry without changing their status", async () => {

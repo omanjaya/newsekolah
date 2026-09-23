@@ -16,12 +16,13 @@ import {
   useToast,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Plus } from "lucide-react";
+import { Layers, Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { useCan } from "../../../lib/session/session-provider";
 import {
   type LibraryCopy,
   type LibraryCopyWrite,
@@ -33,6 +34,8 @@ import {
 import { useLibraryCatalogueOptionsQuery } from "../master-data-api";
 import { useOrderedSelection } from "../use-ordered-selection";
 
+import { CopiesBatchForm } from "./copies-batch-form";
+import { CopyDetailSheet } from "./copy-detail-sheet";
 import { CopyLabelPrintBar } from "./copy-label-print-bar";
 import { ReadInPlaceDialog } from "./read-in-place-dialog";
 
@@ -40,16 +43,20 @@ const CONDITIONS: LibraryCopyWrite["condition"][] = ["good", "fair", "damaged", 
 
 export function TitleCopiesView({ titleId }: { titleId: string }): ReactElement {
   const t = useTranslations("app.library.copies");
+  const tCatalogue = useTranslations("app.library.catalogue");
+  const canManage = useCan("manage_library_catalog");
   const title = useLibraryTitleQuery(titleId);
   const { data, isLoading } = useLibraryCopiesQuery(titleId);
   const [adding, setAdding] = useState(false);
+  const [addingBatch, setAddingBatch] = useState(false);
   const [readingInPlace, setReadingInPlace] = useState<string | null>(null);
+  const [viewingCopyId, setViewingCopyId] = useState<string | null>(null);
   const { selection, onSelectionChange, orderedIds, clear } = useOrderedSelection();
   const copies = data?.data ?? [];
 
   const columns = useMemo<ColumnDef<LibraryCopy>[]>(
     () => [
-      selectionColumn<LibraryCopy>(),
+      ...(canManage ? [selectionColumn<LibraryCopy>()] : []),
       { accessorKey: "barcode", header: t("columns.barcode"), enableSorting: false },
       {
         accessorKey: "condition",
@@ -77,11 +84,22 @@ export function TitleCopiesView({ titleId }: { titleId: string }): ReactElement 
               size="sm"
               variant="secondary"
               onClick={() => {
-                void printCopyLabel(row.original.id);
+                setViewingCopyId(row.original.id);
               }}
             >
-              {t("printLabel")}
+              {t("viewDetail")}
             </Button>
+            {canManage && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  void printCopyLabel(row.original.id);
+                }}
+              >
+                {t("printLabel")}
+              </Button>
+            )}
             <Button
               size="sm"
               variant="ghost"
@@ -95,23 +113,41 @@ export function TitleCopiesView({ titleId }: { titleId: string }): ReactElement 
         ),
       },
     ],
-    [t],
+    [t, canManage],
   );
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
-      <PageHeader eyebrow={title.data?.title ?? ""} title={t("title")} />
-      <div className="flex justify-end">
-        <Button
-          size="sm"
-          icon={<Plus />}
-          onClick={() => {
-            setAdding(true);
-          }}
-        >
-          {t("addCopy")}
-        </Button>
-      </div>
+      <PageHeader
+        breadcrumb={[
+          { label: tCatalogue("title"), href: "/library/catalogue" },
+          { label: title.data?.title ?? "" },
+        ]}
+        title={t("title")}
+        actions={
+          canManage ? (
+            <>
+              <Button
+                variant="secondary"
+                icon={<Layers />}
+                onClick={() => {
+                  setAddingBatch(true);
+                }}
+              >
+                {t("addCopiesBatch")}
+              </Button>
+              <Button
+                icon={<Plus />}
+                onClick={() => {
+                  setAdding(true);
+                }}
+              >
+                {t("addCopy")}
+              </Button>
+            </>
+          ) : undefined
+        }
+      />
 
       <CopyLabelPrintBar selectedIds={orderedIds} onClear={clear} />
 
@@ -155,10 +191,39 @@ export function TitleCopiesView({ titleId }: { titleId: string }): ReactElement 
         </DialogContent>
       </Dialog>
 
+      <Dialog
+        open={addingBatch}
+        onOpenChange={(open) => {
+          setAddingBatch(open);
+        }}
+      >
+        <DialogContent title={t("addCopiesBatch")}>
+          {addingBatch && (
+            <CopiesBatchForm
+              titleId={titleId}
+              onDone={() => {
+                setAddingBatch(false);
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
       <ReadInPlaceDialog
         copyId={readingInPlace}
         onOpenChange={(open) => {
           if (!open) setReadingInPlace(null);
+        }}
+      />
+
+      <CopyDetailSheet
+        copy={copies.find((copy) => copy.id === viewingCopyId) ?? null}
+        canManage={canManage}
+        onOpenChange={(open) => {
+          if (!open) setViewingCopyId(null);
+        }}
+        onDeleted={() => {
+          setViewingCopyId(null);
         }}
       />
     </div>
