@@ -7672,7 +7672,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The daily recap as a workbook */
+        /** The daily recap as a workbook or PDF */
         get: operations["exportDailyVisitorRecap"];
         put?: never;
         post?: never;
@@ -7706,7 +7706,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The monthly recap as a workbook */
+        /** The monthly recap as a workbook or PDF */
         get: operations["exportMonthlyVisitorRecap"];
         put?: never;
         post?: never;
@@ -27410,6 +27410,14 @@ export interface operations {
         parameters: {
             query: {
                 date: string;
+                /** @description xlsx (default) or pdf */
+                format?: components["parameters"]["ReportFormat"];
+                /** @description Overrides the report's default title */
+                title?: components["parameters"]["ReportTitle"];
+                /** @description Show the tenant's letterhead (default true; has no visible effect until the tenant has configured one) */
+                letterhead?: components["parameters"]["ReportLetterhead"];
+                /** @description Comma-separated column selection and order, each entry "key" or "key:label" (URL-encoded). Omitted or empty keeps every column in the report's own order. */
+                columns?: components["parameters"]["ReportColumns"];
             };
             header?: never;
             path?: never;
@@ -27417,13 +27425,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Workbook */
+            /** @description File */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
+                    "application/pdf": string;
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -27462,6 +27471,14 @@ export interface operations {
             query: {
                 /** @description Any date within the target month */
                 month: string;
+                /** @description xlsx (default) or pdf */
+                format?: components["parameters"]["ReportFormat"];
+                /** @description Overrides the report's default title */
+                title?: components["parameters"]["ReportTitle"];
+                /** @description Show the tenant's letterhead (default true; has no visible effect until the tenant has configured one) */
+                letterhead?: components["parameters"]["ReportLetterhead"];
+                /** @description Comma-separated column selection and order, each entry "key" or "key:label" (URL-encoded). Omitted or empty keeps every column in the report's own order. */
+                columns?: components["parameters"]["ReportColumns"];
             };
             header?: never;
             path?: never;
@@ -27469,13 +27486,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Workbook */
+            /** @description File */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
+                    "application/pdf": string;
                 };
             };
             400: components["responses"]["BadRequest"];

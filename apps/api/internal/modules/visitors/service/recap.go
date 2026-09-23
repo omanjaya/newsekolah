@@ -2,13 +2,12 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/xuri/excelize/v2"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/visitors/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 )
 
 // Recap is the security office's daily or monthly summary: how many
@@ -60,44 +59,59 @@ func (s *Service) recap(ctx context.Context, tenantID uuid.UUID, from, to time.T
 	}, nil
 }
 
-// ExportRecapXLSX renders a Recap as a one-sheet workbook for the security
-// office, using the same excelize dependency the reports module uses for
-// its own exports.
-func ExportRecapXLSX(title string, r Recap) ([]byte, error) {
-	f := excelize.NewFile()
-	defer f.Close() //nolint:errcheck // an in-memory workbook cannot fail to close after WriteToBuffer
-
-	sheet := "Recap"
-	if err := f.SetSheetName("Sheet1", sheet); err != nil {
-		return nil, fmt.Errorf("rename sheet: %w", err)
+// recapColumns is the report's stable two-column shape: every recap
+// figure (visit counts, incident counts by severity) is a label/value
+// pair, matching the hand-written export's layout before this module
+// moved onto reportdoc.
+func recapColumns() []reportdoc.Column {
+	return []reportdoc.Column{
+		{Key: "label", Label: "Keterangan", Kind: reportdoc.ColumnText, Width: 30},
+		{Key: "value", Label: "Jumlah", Kind: reportdoc.ColumnNumber, Width: 14},
 	}
-	rows := [][]any{
-		{title},
-		{"Periode", r.From.Format("2006-01-02"), "sampai", r.To.AddDate(0, 0, -1).Format("2006-01-02")},
-		{},
+}
+
+// severityOrder is the fixed display order every recap export uses for
+// its incident breakdown, low to critical.
+var severityOrder = []domain.Severity{domain.SeverityLow, domain.SeverityMedium, domain.SeverityHigh, domain.SeverityCritical}
+
+// buildRecapDocument assembles the reportdoc.Document title renders as a
+// two-section report: overall figures, then incidents by severity.
+func buildRecapDocument(title string, r Recap) reportdoc.Document {
+	summaryRows := [][]any{
 		{"Total kunjungan", r.TotalVisits},
 		{"Masih di kampus", r.StillOnCampus},
 		{"Rata-rata durasi (menit)", r.AvgStayMinutes},
-		{},
-		{"Insiden per tingkat keparahan"},
 	}
-	for _, sev := range []domain.Severity{domain.SeverityLow, domain.SeverityMedium, domain.SeverityHigh, domain.SeverityCritical} {
-		rows = append(rows, []any{string(sev), r.Incidents[sev]})
+	incidentRows := make([][]any, len(severityOrder))
+	for i, sev := range severityOrder {
+		incidentRows[i] = []any{string(sev), r.Incidents[sev]}
 	}
-	for i, row := range rows {
-		for col, value := range row {
-			cell, err := excelize.CoordinatesToCellName(col+1, i+1)
-			if err != nil {
-				return nil, fmt.Errorf("cell name: %w", err)
-			}
-			if err := f.SetCellValue(sheet, cell, value); err != nil {
-				return nil, fmt.Errorf("write cell: %w", err)
-			}
-		}
+	return reportdoc.Document{
+		Title: title,
+		Scope: []reportdoc.ScopeLine{
+			{Label: "Periode", Value: r.From.Format("2006-01-02") + " s.d. " + r.To.AddDate(0, 0, -1).Format("2006-01-02")},
+		},
+		Columns: recapColumns(),
+		Sections: []reportdoc.Section{
+			{Name: "Ringkasan", Rows: summaryRows},
+			{Name: "Insiden per Tingkat Keparahan", Rows: incidentRows},
+		},
 	}
-	buf, err := f.WriteToBuffer()
+}
+
+// ExportRecapReport renders a Recap per opts (format, title override,
+// letterhead visibility, column subset/order). Letterhead is always nil
+// today: no tenant report-header reader is wired into this module yet, so
+// opts.ShowLetterhead has no visible effect until one is (see
+// apps/api/internal/platform/reportdoc's package comment for that
+// follow-up).
+func ExportRecapReport(title string, r Recap, opts reportdoc.Options) ([]byte, error) {
+	doc, err := reportdoc.Apply(buildRecapDocument(title, r), opts)
 	if err != nil {
-		return nil, fmt.Errorf("write workbook: %w", err)
+		return nil, err
 	}
-	return buf.Bytes(), nil
+	if opts.Format == reportdoc.FormatPDF {
+		return reportdoc.RenderPDF(doc)
+	}
+	return reportdoc.RenderXLSX(doc)
 }

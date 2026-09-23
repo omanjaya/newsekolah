@@ -13,6 +13,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/visitors/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/visitors/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 )
 
 type VisitorsHandler struct{ service *service.Service }
@@ -222,12 +223,18 @@ func (h *VisitorsHandler) ExportDailyVisitorRecap(ctx context.Context, request a
 	if err != nil {
 		return nil, mapError(err)
 	}
-	xlsx, err := service.ExportRecapXLSX("Rekap Kunjungan Harian", recap)
+	opts := recapOptions(formatPtr(request.Params.Format), request.Params.Title, request.Params.Letterhead, request.Params.Columns)
+	body, err := service.ExportRecapReport("Rekap Kunjungan Harian", recap, opts)
 	if err != nil {
-		return nil, mapError(err)
+		return nil, mapReportError(err)
+	}
+	if opts.Format == reportdoc.FormatPDF {
+		return api.ExportDailyVisitorRecap200ApplicationpdfResponse{
+			Body: bytes.NewReader(body), ContentLength: int64(len(body)),
+		}, nil
 	}
 	return api.ExportDailyVisitorRecap200ApplicationvndOpenxmlformatsOfficedocumentSpreadsheetmlSheetResponse{
-		Body: bytes.NewReader(xlsx), ContentLength: int64(len(xlsx)),
+		Body: bytes.NewReader(body), ContentLength: int64(len(body)),
 	}, nil
 }
 
@@ -244,11 +251,60 @@ func (h *VisitorsHandler) ExportMonthlyVisitorRecap(ctx context.Context, request
 	if err != nil {
 		return nil, mapError(err)
 	}
-	xlsx, err := service.ExportRecapXLSX("Rekap Kunjungan Bulanan", recap)
+	opts := recapOptions(formatPtr(request.Params.Format), request.Params.Title, request.Params.Letterhead, request.Params.Columns)
+	body, err := service.ExportRecapReport("Rekap Kunjungan Bulanan", recap, opts)
 	if err != nil {
-		return nil, mapError(err)
+		return nil, mapReportError(err)
+	}
+	if opts.Format == reportdoc.FormatPDF {
+		return api.ExportMonthlyVisitorRecap200ApplicationpdfResponse{
+			Body: bytes.NewReader(body), ContentLength: int64(len(body)),
+		}, nil
 	}
 	return api.ExportMonthlyVisitorRecap200ApplicationvndOpenxmlformatsOfficedocumentSpreadsheetmlSheetResponse{
-		Body: bytes.NewReader(xlsx), ContentLength: int64(len(xlsx)),
+		Body: bytes.NewReader(body), ContentLength: int64(len(body)),
 	}, nil
+}
+
+// formatPtr widens oapi-codegen's per-operation Format enum type (a
+// distinct named string type per operation, even though every export
+// endpoint declares the same [xlsx, pdf] enum) to a plain *string, so one
+// recapOptions can serve both exports below.
+func formatPtr[T ~string](p *T) *string {
+	if p == nil {
+		return nil
+	}
+	s := string(*p)
+	return &s
+}
+
+// recapOptions decodes the shared format/title/letterhead/columns query
+// contract into reportdoc.Options, defaulting to XLSX with every column
+// and the letterhead shown -- the behaviour both recap exports kept
+// before this query-param contract existed, so a caller that predates it
+// never breaks.
+func recapOptions(format *string, title *string, letterhead *bool, columns *string) reportdoc.Options {
+	opts := reportdoc.Options{Format: reportdoc.FormatXLSX, ShowLetterhead: true}
+	if format != nil {
+		opts.Format = reportdoc.Format(*format)
+	}
+	if title != nil {
+		opts.Title = *title
+	}
+	if letterhead != nil {
+		opts.ShowLetterhead = *letterhead
+	}
+	if columns != nil {
+		for _, c := range httpx.ParseReportColumns(*columns) {
+			opts.Columns = append(opts.Columns, reportdoc.ColumnChoice{Key: c.Key, Label: c.Label})
+		}
+	}
+	return opts
+}
+
+func mapReportError(err error) error {
+	if errors.Is(err, reportdoc.ErrUnknownColumn) {
+		return httpx.ErrValidation
+	}
+	return mapError(err)
 }

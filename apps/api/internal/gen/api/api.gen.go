@@ -2709,6 +2709,42 @@ func (e ApplyLevelTemplateJSONBodyTemplate) Valid() bool {
 	}
 }
 
+// Defines values for ExportDailyVisitorRecapParamsFormat.
+const (
+	ExportDailyVisitorRecapParamsFormatPdf  ExportDailyVisitorRecapParamsFormat = "pdf"
+	ExportDailyVisitorRecapParamsFormatXlsx ExportDailyVisitorRecapParamsFormat = "xlsx"
+)
+
+// Valid indicates whether the value is a known member of the ExportDailyVisitorRecapParamsFormat enum.
+func (e ExportDailyVisitorRecapParamsFormat) Valid() bool {
+	switch e {
+	case ExportDailyVisitorRecapParamsFormatPdf:
+		return true
+	case ExportDailyVisitorRecapParamsFormatXlsx:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ExportMonthlyVisitorRecapParamsFormat.
+const (
+	ExportMonthlyVisitorRecapParamsFormatPdf  ExportMonthlyVisitorRecapParamsFormat = "pdf"
+	ExportMonthlyVisitorRecapParamsFormatXlsx ExportMonthlyVisitorRecapParamsFormat = "xlsx"
+)
+
+// Valid indicates whether the value is a known member of the ExportMonthlyVisitorRecapParamsFormat enum.
+func (e ExportMonthlyVisitorRecapParamsFormat) Valid() bool {
+	switch e {
+	case ExportMonthlyVisitorRecapParamsFormatPdf:
+		return true
+	case ExportMonthlyVisitorRecapParamsFormatXlsx:
+		return true
+	default:
+		return false
+	}
+}
+
 // APIKey defines model for APIKey.
 type APIKey struct {
 	CreatedAt          time.Time          `json:"created_at"`
@@ -8389,7 +8425,22 @@ type GetDailyVisitorRecapParams struct {
 // ExportDailyVisitorRecapParams defines parameters for ExportDailyVisitorRecap.
 type ExportDailyVisitorRecapParams struct {
 	Date openapi_types.Date `form:"date" json:"date"`
+
+	// Format xlsx (default) or pdf
+	Format *ExportDailyVisitorRecapParamsFormat `form:"format,omitempty" json:"format,omitempty"`
+
+	// Title Overrides the report's default title
+	Title *ReportTitle `form:"title,omitempty" json:"title,omitempty"`
+
+	// Letterhead Show the tenant's letterhead (default true; has no visible effect until the tenant has configured one)
+	Letterhead *ReportLetterhead `form:"letterhead,omitempty" json:"letterhead,omitempty"`
+
+	// Columns Comma-separated column selection and order, each entry "key" or "key:label" (URL-encoded). Omitted or empty keeps every column in the report's own order.
+	Columns *ReportColumns `form:"columns,omitempty" json:"columns,omitempty"`
 }
+
+// ExportDailyVisitorRecapParamsFormat defines parameters for ExportDailyVisitorRecap.
+type ExportDailyVisitorRecapParamsFormat string
 
 // GetMonthlyVisitorRecapParams defines parameters for GetMonthlyVisitorRecap.
 type GetMonthlyVisitorRecapParams struct {
@@ -8401,7 +8452,22 @@ type GetMonthlyVisitorRecapParams struct {
 type ExportMonthlyVisitorRecapParams struct {
 	// Month Any date within the target month
 	Month openapi_types.Date `form:"month" json:"month"`
+
+	// Format xlsx (default) or pdf
+	Format *ExportMonthlyVisitorRecapParamsFormat `form:"format,omitempty" json:"format,omitempty"`
+
+	// Title Overrides the report's default title
+	Title *ReportTitle `form:"title,omitempty" json:"title,omitempty"`
+
+	// Letterhead Show the tenant's letterhead (default true; has no visible effect until the tenant has configured one)
+	Letterhead *ReportLetterhead `form:"letterhead,omitempty" json:"letterhead,omitempty"`
+
+	// Columns Comma-separated column selection and order, each entry "key" or "key:label" (URL-encoded). Omitted or empty keeps every column in the report's own order.
+	Columns *ReportColumns `form:"columns,omitempty" json:"columns,omitempty"`
 }
+
+// ExportMonthlyVisitorRecapParamsFormat defines parameters for ExportMonthlyVisitorRecap.
+type ExportMonthlyVisitorRecapParamsFormat string
 
 // ListVisitsParams defines parameters for ListVisits.
 type ListVisitsParams struct {
@@ -10772,13 +10838,13 @@ type ServerInterface interface {
 	// GetDailyVisitorRecap The security office's recap for one day
 	// (GET /v1/visitors/recap/daily)
 	GetDailyVisitorRecap(w http.ResponseWriter, r *http.Request, params GetDailyVisitorRecapParams)
-	// ExportDailyVisitorRecap The daily recap as a workbook
+	// ExportDailyVisitorRecap The daily recap as a workbook or PDF
 	// (GET /v1/visitors/recap/daily/export)
 	ExportDailyVisitorRecap(w http.ResponseWriter, r *http.Request, params ExportDailyVisitorRecapParams)
 	// GetMonthlyVisitorRecap The security office's recap for one month
 	// (GET /v1/visitors/recap/monthly)
 	GetMonthlyVisitorRecap(w http.ResponseWriter, r *http.Request, params GetMonthlyVisitorRecapParams)
-	// ExportMonthlyVisitorRecap The monthly recap as a workbook
+	// ExportMonthlyVisitorRecap The monthly recap as a workbook or PDF
 	// (GET /v1/visitors/recap/monthly/export)
 	ExportMonthlyVisitorRecap(w http.ResponseWriter, r *http.Request, params ExportMonthlyVisitorRecapParams)
 	// ListVisits Visit history for a date range
@@ -14171,7 +14237,7 @@ func (_ Unimplemented) GetDailyVisitorRecap(w http.ResponseWriter, r *http.Reque
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// ExportDailyVisitorRecap The daily recap as a workbook
+// ExportDailyVisitorRecap The daily recap as a workbook or PDF
 // (GET /v1/visitors/recap/daily/export)
 func (_ Unimplemented) ExportDailyVisitorRecap(w http.ResponseWriter, r *http.Request, params ExportDailyVisitorRecapParams) {
 	w.WriteHeader(http.StatusNotImplemented)
@@ -14183,7 +14249,7 @@ func (_ Unimplemented) GetMonthlyVisitorRecap(w http.ResponseWriter, r *http.Req
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// ExportMonthlyVisitorRecap The monthly recap as a workbook
+// ExportMonthlyVisitorRecap The monthly recap as a workbook or PDF
 // (GET /v1/visitors/recap/monthly/export)
 func (_ Unimplemented) ExportMonthlyVisitorRecap(w http.ResponseWriter, r *http.Request, params ExportMonthlyVisitorRecapParams) {
 	w.WriteHeader(http.StatusNotImplemented)
@@ -29722,6 +29788,58 @@ func (siw *ServerInterfaceWrapper) ExportDailyVisitorRecap(w http.ResponseWriter
 		return
 	}
 
+	// ------------- Optional query parameter "format" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "format", r.URL.Query(), &params.Format, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "format"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "format", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "title" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "title", r.URL.Query(), &params.Title, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "title"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "title", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "letterhead" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "letterhead", r.URL.Query(), &params.Letterhead, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "letterhead"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "letterhead", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "columns" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "columns", r.URL.Query(), &params.Columns, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "columns"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "columns", Err: err})
+		}
+		return
+	}
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ExportDailyVisitorRecap(w, r, params)
 	}))
@@ -29784,6 +29902,58 @@ func (siw *ServerInterfaceWrapper) ExportMonthlyVisitorRecap(w http.ResponseWrit
 			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "month"})
 		} else {
 			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "month", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "format" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "format", r.URL.Query(), &params.Format, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "format"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "format", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "title" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "title", r.URL.Query(), &params.Title, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "title"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "title", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "letterhead" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "letterhead", r.URL.Query(), &params.Letterhead, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "letterhead"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "letterhead", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "columns" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "columns", r.URL.Query(), &params.Columns, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "columns"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "columns", Err: err})
 		}
 		return
 	}
@@ -65609,6 +65779,26 @@ type ExportDailyVisitorRecapResponseObject interface {
 	VisitExportDailyVisitorRecapResponse(w http.ResponseWriter) error
 }
 
+type ExportDailyVisitorRecap200ApplicationpdfResponse struct {
+	Body          io.Reader
+	ContentLength int64
+}
+
+func (response ExportDailyVisitorRecap200ApplicationpdfResponse) VisitExportDailyVisitorRecapResponse(w http.ResponseWriter) error {
+
+	w.Header().Set("Content-Type", "application/pdf")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
 type ExportDailyVisitorRecap200ApplicationvndOpenxmlformatsOfficedocumentSpreadsheetmlSheetResponse struct {
 	Body          io.Reader
 	ContentLength int64
@@ -65741,6 +65931,26 @@ type ExportMonthlyVisitorRecapRequestObject struct {
 
 type ExportMonthlyVisitorRecapResponseObject interface {
 	VisitExportMonthlyVisitorRecapResponse(w http.ResponseWriter) error
+}
+
+type ExportMonthlyVisitorRecap200ApplicationpdfResponse struct {
+	Body          io.Reader
+	ContentLength int64
+}
+
+func (response ExportMonthlyVisitorRecap200ApplicationpdfResponse) VisitExportMonthlyVisitorRecapResponse(w http.ResponseWriter) error {
+
+	w.Header().Set("Content-Type", "application/pdf")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
 }
 
 type ExportMonthlyVisitorRecap200ApplicationvndOpenxmlformatsOfficedocumentSpreadsheetmlSheetResponse struct {
@@ -68612,13 +68822,13 @@ type StrictServerInterface interface {
 	// GetDailyVisitorRecap The security office's recap for one day
 	// (GET /v1/visitors/recap/daily)
 	GetDailyVisitorRecap(ctx context.Context, request GetDailyVisitorRecapRequestObject) (GetDailyVisitorRecapResponseObject, error)
-	// ExportDailyVisitorRecap The daily recap as a workbook
+	// ExportDailyVisitorRecap The daily recap as a workbook or PDF
 	// (GET /v1/visitors/recap/daily/export)
 	ExportDailyVisitorRecap(ctx context.Context, request ExportDailyVisitorRecapRequestObject) (ExportDailyVisitorRecapResponseObject, error)
 	// GetMonthlyVisitorRecap The security office's recap for one month
 	// (GET /v1/visitors/recap/monthly)
 	GetMonthlyVisitorRecap(ctx context.Context, request GetMonthlyVisitorRecapRequestObject) (GetMonthlyVisitorRecapResponseObject, error)
-	// ExportMonthlyVisitorRecap The monthly recap as a workbook
+	// ExportMonthlyVisitorRecap The monthly recap as a workbook or PDF
 	// (GET /v1/visitors/recap/monthly/export)
 	ExportMonthlyVisitorRecap(ctx context.Context, request ExportMonthlyVisitorRecapRequestObject) (ExportMonthlyVisitorRecapResponseObject, error)
 	// ListVisits Visit history for a date range
@@ -85926,52 +86136,52 @@ var swaggerSpec = []string{
 	"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",
-	"b4b/ZB/Zk/V1l+iqTKe2DCb+cEopGPITGm0FWCgjommelPFJZstbJwG0Y6dbKcvTQNExBIKcCOBw7z3I",
-	"qCY0L7DYP8wSKcysnUl9cE3aAbbkGS0WTgn31ewwzw3mhSbYYUMkfPjtK2M7DsYW9mM3mOvG3J4v+r4y",
-	"xM5A9YjZNUt0FTlbLfW/uCbP2kz/Ozeq4xb3Z1H3iDmZUGWs5jlj2ki1WLGn93s9P4Po7p34xd/c7iS9",
-	"h+vinUizvWf28DiqKUbsykIw8Xzzetgp5nf3TBCfIW2KgYYiJqliwvib+zGNuwJr7XWr4+CjR/x3jRk9",
-	"4G69Tce/7WgNOo1Iy1nZiZjOcaFzu3kvnnDLiBgh3EJtnVZs/GBb/qz4yWCkeuj5Kbb7V9tGXU4xXAsX",
-	"b3IioaulAjx22MRIZEHIeTCCGYFArl+/3Q3OInv0DGXWlnTINvmY/R44kT/z7HI8U9ty5ciTmRn4TO1A",
-	"XGah4gBEv2Src4PSwaU/2e4AnM+o0TRNRzFwdg+Krcnm/8W2f5mmr4vma5Tqt5jrLYTn+m4WxOVg/COR",
-	"CTN4U6kIJKlZ5GEJUGp22aB5b5jIcWnwi3VJHWtyGvaQw/BqrzkMN1mPa8wVWFfqKt/sg2nyYawFgric",
-	"DoiAuSUbrGFQooQA62ZKyFu0UMLoMXQWorNE3BrWAiJeXtNO3Lno5mgZ9Mq8anDyE8yL7flHBtkJxdIM",
-	"7eYRWuAsAa3pFAZEoX8PJtLCAnxlADp/0J6Alyp5z2JQQ5f7uU3MDKO89o+8ck/sYf9DjznvXL0J9pmr",
-	"fcykb3covuGyE7/Qxcbao3ROF3mGbTdOHxRnnHVbgSHMaOCTiydubu4us5R5AOg9QimKQGsXmEjOw87/",
-	"ZwKGXtiz0A/y1sXo3t5TnkGpnf/5wp+ZdwApZhr8m8AMdzLTfEE0vceCozib4dBlIswjdkmIAhzGTKec",
-	"LjSh/hEc1YBo6ZOOC2kwoeM4YXZZLv8mzgarlf9aMNm/fWa5sw0MNYegidMqH/Aqzz1vWino/AMYSl5x",
-	"mcXk5fU7rEVFuIwoD00uemKN3UpNhQEeQ7Wp5bE8q0pTq5DwpyUxpaV/IttscYleWdTdMpfQzUGswKsA",
-	"On1X6TxrcyNu+uYXo8fwcU301Wv8vgZgS9J73cSLJqvQic+6BVW5/k9FXnaj3cFGtnoZ7253joqHXO2V",
-	"hzxHt+L6NJWHYTqdk3WfMrr9FI4C5Nchx3edp5WIQUF8CnnAtzVo2JmW6xzSKWVCG+JqApJ7qhgdc9CD",
-	"PGG4BhE35AvfhizmMJ5Jedcouf8Cik0WYRe/+NadHGVm2fgykXG7N2pHk6191z0OxacL6umd0YxyDs4F",
-	"ovsL15vysO5zyilbIpW1jlyvwoAIRDMJMRnT6O6pol1DUSqrGL7QxG89wXX11E1mVMR6Ru+AnFfWB4fT",
-	"ojCWS0sVasJSjS2rkFoc+wxdVJNlxjIg48w5FYxlvCBMkxgiTi1XmIGC5UdkZMAMtVFAE3Ku6PxvYrww",
-	"oC+IFCTNVCo1fO8LZE0FNVZrTjJtyBj8tCEmMpiW4IFGhuALiIII2D3Eg1DhjYoF+T83H3/6m4ghkpYU",
-	"XTAX3v+AwLpvMdGg7Nuk4Au3lO7tlCg6J0xefnIRqs4BR0gxtK8kHjjEoqPOfvPJDaYbFTqjVAHz/x7+",
-	"KRsPb8L8h99+96+bg73LIVXejF3VO68C6lrJCHQ1smU50NCV/Mi3v5Uw3omx5dY11xnOUBrK0pNz/4PF",
-	"hwIadySMwHyluptwOdcjLG/L7FjX2E78E69L7Q9oPVkZTX/2k/IMD1P30U+OlPaGnFPOLcOwp6plLpOS",
-	"7a209Xj0mpYb3nznz1qxMHq8Y8JpxLUK1ydIOY2gZh+63Gf5KnjNHKDL3vtMmv1l8cxvVWgc41wovy61",
-	"qCSQCPAZnGlDp+4FGyH3xvjCawkT79yD36xBsO/p0AXF62iv/q6PRobdQ0DtyVihri3D1DN/nedHj4VU",
-	"yHyVNLcgvrkeJc2Fcr7oDyslcb6pO2Fu5sxEmFngWkkjI8mfyrhaDqZPQDlmj0xBDTFNZDSjQgAn519g",
-	"fCOjOzAkS7GQ9MUleZmZGQhjEWYlSJcSx11q5ddHVt4AZmZWOtGEkjFQBQoftQPy0qATV84FRSz5bLJ4",
-	"B4YP/d09dfm37OrqDxG+Gj/C30kxLp2NU7805Hys5FyD0pVi1okUzEjVcGLajfINWnbLt+ikmWyuQvx6",
-	"fFDwa/IEJGD9NP/4pb9f9JedVJMf33wm9mTyDUZa0FTPpBlgJlKI3c7jipJ8rX39/LC74V5SgyFRpo1M",
-	"PJR0EKftOApdwy4JBwO6Iyqq6/N45mBoJ2uXy+6WE8TrXJ7e4xVYDPfAZZq4KGF0qjybGZN+PxrhHdlM",
-	"avP9v1/9+9XZaunX15ByuUBfb22onfd5KPcutbmovE9/Pxo92q9/Oxuc5Wq9xcMs15G879GZZVeXOppd",
-	"MgsBOwu/FKsZ8u9BWGK2CkgChqJ4VTheLbSBpGbg7+WUiYHPOusTRw9C4mRdvMBCsebxV5nClPU+j2kI",
-	"sIKapq64e1iXCxIzHUmUpO2QsQi/s2EEinSi1OqLPgN1JGVpM844uEnrbKwNM5mpDtw3QppdHT6nWpP/",
-	"kZkSlJceyr9p6B3U0HmZWOwbAyK2ez4IyfpJRLn9Tg1ICEEqFjJvXvNyPOki4gnQVcYMxO2JWlfi2JAa",
-	"Vt/zMqIxJCwiC6BKD4gBlehBaVjIDIg2KousCjQgkV0J0AMCQknOLRHogV1TK9HogT1lmIzxVX71qbYa",
-	"VOKTmYXZ+Y5rxoR1tGicMMG0cYy6mjK4brU/SbR4FWe3rpZTrnvmdWYWqDc7XNSOM84Mq334ZRYzzDBV",
-	"hn7MTC2gaUjOPiDwwAzx8saAOAOeUuyecvsn0HsgXirWAxLi/koDCqLKaje/MOnKaegBmVMl7NpzMPY0",
-	"G5BIZkIDrxCOJSyWcibqEPbS7rJOEKT5oePxoANciY6ksn9qQ1VpkLZVPSF9cs9FIIxygR8u5rO8XSEY",
-	"bxX1ruzFPYO5k+p8hZjIF54IUXY0YXxRR8VKah3KoKecmolUCYmk0JIDOU8yblj4OUZGjYuPJpmL0hb4",
-	"J+t6oIZyOc0soTAVZW5D7HLZQyXsjjYyujP0DgozkDujyMfrl6/KzqZj5SrVr+zO9TtyBwsHXJmZqbS7",
-	"7a1yzoU4QfIryW7Yz8vrd+XMJAamjsLqlvsNVXwxDFBSTN85WwjXFsClgiMB/4LyhWFR7bsejKJRphSz",
-	"i6JIxLNxOIOScchwlAC4wpZlVumOA1RJmCVGt2iBg9pZwj2ssJfQumYsP2YqI3PKGbFPSUWmSmapLroX",
-	"0nhmktfVsJjzuwUqIU6mck7S+Vlm31WP+vd5FicixxYJzunQuCPihSYctJYiN+VTR1hOSlBZUllmnaX2",
-	"DV4ze6yJ5q0uIZocXE/+ADR0MiHDYXEuDooEA1LFyC6UgsjDtRJrW/HRnkyGrceUSyBdifU6z9P8cqbN",
-	"wLm+DxBYQyZG6CaPcRgXrkCvS5XNSukwy4EPsvYweAvg+PrACQ8Zsq4x4zyYW5EoU7rwxxdabFPjzwGl",
-	"oMLN7IO4r7/+9v8DAAD//w==",
+	"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",
+	"6cIfX2ixTY0/B5SCCjezD+K+/vrb/w8AAP//",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,
