@@ -8,6 +8,7 @@ import type { ReactElement, ReactNode } from "react";
 import { UiLocaleProvider } from "../components/ui-locale-provider";
 import { ApiClientProvider } from "../lib/api/client";
 import { QueryProvider } from "../lib/query/query-provider";
+import { isExcludedPath } from "../lib/session/access-cookie";
 import { SessionProvider } from "../lib/session/session-provider";
 import { TenantProvider } from "../lib/tenant/tenant-provider";
 import { ThemeProvider } from "../lib/theme/theme-provider";
@@ -30,7 +31,9 @@ export function AppProviders({
   // would remount the login form mid-submit, so only leave protected pages.
   const handleUnauthorized = useCallback(() => {
     const current = pathnameRef.current;
-    if (current.startsWith("/login") || current.startsWith("/change-password")) return;
+    // Public pages (OPAC, certificate verification, password reset) work
+    // without a session, so a failed boot refresh leaves them where they are.
+    if (isExcludedPath(current)) return;
     router.replace(`/login?next=${encodeURIComponent(current)}`);
   }, [router]);
 

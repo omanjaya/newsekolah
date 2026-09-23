@@ -57,7 +57,12 @@ const EXCLUDED_PATH_PREFIXES = [
   "/favicon.ico",
 ] as const;
 
-function isExcludedPath(pathname: string): boolean {
+/**
+ * True for the `(auth)` and `(public)` routes (and static assets): pages an
+ * anonymous visitor may stay on, so a failed session refresh must not
+ * bounce them to `/login`.
+ */
+export function isExcludedPath(pathname: string): boolean {
   return EXCLUDED_PATH_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
   );
