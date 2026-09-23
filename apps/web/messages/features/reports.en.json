@@ -114,6 +114,10 @@
     "permits_leave_requests": {
       "label": "Leave requests",
       "description": "Student leave requests, per class if selected."
+    },
+    "permits_exit_permits_yearly": {
+      "label": "Yearly exit permits",
+      "description": "Summary of every student exit permit for the school year."
     }
   }
 }

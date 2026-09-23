@@ -19,6 +19,7 @@ import type { ReactElement } from "react";
 import { QueryError } from "../../../components/query-error";
 import { useDateFilter } from "../../../lib/hooks/use-date-filter";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
+import { thisMonthInZone, todayInZone } from "../../../lib/tenant-date";
 import {
   type VisitorRecap,
   useDailyRecapQuery,
@@ -30,11 +31,11 @@ import {
 const SEVERITIES = ["low", "medium", "high", "critical"] as const;
 
 function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
+  return todayInZone();
 }
 
 function thisMonthIso(): string {
-  return new Date().toISOString().slice(0, 7);
+  return thisMonthInZone();
 }
 
 function RecapFigures({ recap }: { recap: VisitorRecap }): ReactElement {

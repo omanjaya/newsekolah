@@ -7,6 +7,7 @@ import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { toDateTimeLocalValue } from "../../../lib/tenant-date";
 import {
   type Incident,
   type IncidentWrite,
@@ -19,9 +20,7 @@ type Severity = IncidentWrite["severity"];
 const SEVERITIES: Severity[] = ["low", "medium", "high", "critical"];
 
 function nowLocal(): string {
-  const d = new Date();
-  d.setSeconds(0, 0);
-  return d.toISOString().slice(0, 16);
+  return toDateTimeLocalValue(new Date());
 }
 
 export function IncidentForm({
@@ -38,7 +37,7 @@ export function IncidentForm({
   const update = useUpdateIncidentMutation();
 
   const [occurredAt, setOccurredAt] = useState(
-    incident ? incident.occurred_at.slice(0, 16) : nowLocal(),
+    incident ? toDateTimeLocalValue(new Date(incident.occurred_at)) : nowLocal(),
   );
   const [severity, setSeverity] = useState<Severity>(incident?.severity ?? "low");
   const [description, setDescription] = useState(incident?.description ?? "");

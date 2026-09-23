@@ -23,7 +23,7 @@ export function PageHeader({ eyebrow, title, actions, breadcrumb, className }: P
       {breadcrumb && breadcrumb.length > 0 && (
         <nav
           aria-label="Navigasi halaman"
-          className="flex items-center gap-1 text-[13px] text-fg-muted"
+          className="flex flex-wrap items-center gap-x-1 gap-y-0.5 text-[13px] text-fg-muted"
         >
           {breadcrumb.map((item, index) => (
             <span key={`${item.label}-${index}`} className="flex items-center gap-1">

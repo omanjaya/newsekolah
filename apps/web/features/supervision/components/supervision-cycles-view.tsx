@@ -17,6 +17,7 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { QueryError } from "../../../components/query-error";
 import { useCan } from "../../../lib/session/session-provider";
 import { type SupervisionCycle, useSupervisionCyclesQuery } from "../api";
 
@@ -27,7 +28,7 @@ export function SupervisionCyclesView(): ReactElement {
   const router = useRouter();
   const canManage = useCan("manage_supervision");
 
-  const { data, isLoading } = useSupervisionCyclesQuery();
+  const { data, isLoading, isError, refetch } = useSupervisionCyclesQuery();
   const [editing, setEditing] = useState<SupervisionCycle | "new" | null>(null);
 
   const items = data?.data ?? [];
@@ -111,11 +112,15 @@ export function SupervisionCyclesView(): ReactElement {
           }}
           fillHeight
           emptyState={
-            <EmptyState
-              icon={<domainIcons.supervision aria-hidden="true" />}
-              title={t("emptyTitle")}
-              description={t("emptyBody")}
-            />
+            isError ? (
+              <QueryError retry={refetch} />
+            ) : (
+              <EmptyState
+                icon={<domainIcons.supervision aria-hidden="true" />}
+                title={t("emptyTitle")}
+                description={t("emptyBody")}
+              />
+            )
           }
         />
       </div>

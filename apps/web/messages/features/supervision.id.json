@@ -36,7 +36,6 @@
     }
   },
   "cycleDetail": {
-    "eyebrow": "Supervisi",
     "columns": {
       "lessonDate": "Tanggal pelajaran",
       "teacher": "Guru"
@@ -51,7 +50,6 @@
     "completeTitle": "Isi hasil observasi"
   },
   "cycleReport": {
-    "eyebrow": "Supervisi",
     "title": "Laporan siklus: {cycle}",
     "columns": {
       "teacher": "Guru",
@@ -59,7 +57,8 @@
     },
     "unknownTeacher": "Guru tidak diketahui",
     "emptyTitle": "Belum ada guru yang dijadwalkan",
-    "emptyBody": "Guru yang dijadwalkan untuk diobservasi pada siklus ini akan muncul di sini."
+    "emptyBody": "Guru yang dijadwalkan untuk diobservasi pada siklus ini akan muncul di sini.",
+    "breadcrumb": "Laporan"
   },
   "schedule": {
     "form": {
@@ -84,7 +83,6 @@
     "saved": "Hasil observasi tersimpan"
   },
   "teacherReport": {
-    "eyebrow": "Siklus: {cycle}",
     "export": "Unduh",
     "overallAverage": "Rata-rata keseluruhan",
     "byCriterion": "Rata-rata per kriteria",
@@ -93,7 +91,6 @@
     "scoreCount": "{count} skor"
   },
   "observationDetail": {
-    "eyebrow": "Siklus: {cycle}",
     "scores": "Skor",
     "observerNotes": "Catatan pengamat",
     "teacherResponse": "Tanggapan guru",
@@ -113,6 +110,7 @@
     "title": "Supervisi saya",
     "cycle": "Siklus",
     "cyclePlaceholder": "Pilih siklus",
-    "noCycles": "Belum ada siklus supervisi."
+    "noCyclesTitle": "Belum ada siklus supervisi",
+    "noCyclesBody": "Anda belum menjadi peserta di siklus supervisi mana pun. Hubungi admin sekolah bila ini seharusnya sudah ada."
   }
 }

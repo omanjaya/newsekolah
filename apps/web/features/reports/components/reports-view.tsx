@@ -15,6 +15,7 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
+import { QueryError } from "../../../components/query-error";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useCan } from "../../../lib/session/session-provider";
 import { useReportsQuery } from "../api";
@@ -80,6 +81,9 @@ function ExportsTab(): ReactElement {
 
   if (reports.isLoading) {
     return <Skeleton className="h-64 w-full" aria-busy="true" />;
+  }
+  if (reports.isError) {
+    return <QueryError retry={reports.refetch} />;
   }
   if (items.length === 0) {
     return (

@@ -114,6 +114,10 @@
     "permits_leave_requests": {
       "label": "Pengajuan izin",
       "description": "Daftar pengajuan izin siswa, per kelas bila dipilih."
+    },
+    "permits_exit_permits_yearly": {
+      "label": "Izin keluar tahunan",
+      "description": "Rekap seluruh izin keluar siswa dalam satu tahun ajaran."
     }
   }
 }

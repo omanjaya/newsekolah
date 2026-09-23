@@ -24,6 +24,7 @@ interface TeacherRow {
  */
 export function SupervisionCycleReportView({ cycleId }: { cycleId: string }): ReactElement {
   const t = useTranslations("app.supervision.cycleReport");
+  const tRoot = useTranslations("app.supervision");
   const router = useRouter();
 
   const cycle = useSupervisionCycleQuery(cycleId);
@@ -74,7 +75,14 @@ export function SupervisionCycleReportView({ cycleId }: { cycleId: string }): Re
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
-      <PageHeader eyebrow={t("eyebrow")} title={t("title", { cycle: cycle.data.name })} />
+      <PageHeader
+        breadcrumb={[
+          { label: tRoot("navLabelCycles"), href: "/supervision/cycles" },
+          { label: cycle.data.name, href: `/supervision/cycles/${cycleId}` },
+          { label: t("breadcrumb") },
+        ]}
+        title={t("title", { cycle: cycle.data.name })}
+      />
 
       <DataTable
         stateKey="features/supervision/components/supervision-cycle-report-view:1"
