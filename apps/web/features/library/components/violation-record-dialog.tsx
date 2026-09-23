@@ -28,6 +28,7 @@ export function ViolationRecordDialog({
   onRecorded: () => void;
 }): ReactElement {
   const t = useTranslations("app.library.violations.form");
+  const tViolations = useTranslations("app.library.violations");
   const apiErrorMessage = useApiErrorMessage();
   const directory = useDirectoryQuery();
   const create = useCreateLibraryViolationMutation();
@@ -108,7 +109,7 @@ export function ViolationRecordDialog({
           <label className="flex flex-col gap-1 text-[13px]">
             <span className="font-medium">{t("kind")}</span>
             <Select
-              options={KINDS.map((k) => ({ value: k, label: t(`kinds.${k}`) }))}
+              options={KINDS.map((k) => ({ value: k, label: tViolations(`kinds.${k}`) }))}
               value={kind}
               onValueChange={(v) => {
                 setKind(v as LibraryViolationKind);

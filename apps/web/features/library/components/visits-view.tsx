@@ -63,7 +63,7 @@ export function VisitsView(): ReactElement {
           row.original.member_user_id ? (
             <Link
               href={`/library/members/${row.original.member_user_id}`}
-              className="font-medium text-accent hover:underline"
+              className="inline-flex min-h-11 items-center font-medium text-accent hover:underline md:min-h-0"
             >
               {directoryMap.get(row.original.member_user_id)?.name ?? t("unknownMember")}
             </Link>
