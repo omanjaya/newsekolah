@@ -18,7 +18,9 @@ const buttonVariants = cva(
         primary: "bg-accent text-accent-fg hover:shadow-[inset_0_0_0_1px_currentColor]",
         secondary: "border border-border bg-surface text-fg hover:bg-bg",
         ghost: "text-fg hover:bg-bg",
-        danger: "bg-status-absent text-status-absent-fg hover:opacity-90",
+        // status-absent-fg is the same red as the fill (it is meant for text on
+        // a neutral surface), so the label takes the white accent foreground.
+        danger: "bg-status-absent text-accent-fg hover:opacity-90",
       },
       size: {
         // Both sizes clear 44px on a touch screen and shrink once there is
