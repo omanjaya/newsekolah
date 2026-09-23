@@ -7043,6 +7043,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/staff-attendance/recap/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every tracked employee's monthly recap as one XLSX workbook, one block per employee */
+        get: operations["exportAllStaffAttendanceMonthlyRecap"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/staff-attendance/records/{recordId}/correct": {
         parameters: {
             query?: never;
@@ -26163,6 +26180,30 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+        };
+    };
+    exportAllStaffAttendanceMonthlyRecap: {
+        parameters: {
+            query: {
+                month: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description XLSX file */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
         };
     };
     correctStaffAttendanceRecord: {

@@ -86,6 +86,7 @@
     "title": "Rekap bulanan",
     "month": "Bulan",
     "download": "Unduh XLSX",
+    "downloadAll": "Unduh semua pegawai (XLSX)",
     "totalLate": "Total keterlambatan (menit)",
     "totalEarly": "Total pulang cepat (menit)",
     "empty": "Tidak ada catatan pada bulan ini"

@@ -196,28 +196,37 @@ func (s *Service) GetEmployeeHistory(ctx context.Context, tenantID, employeeUser
 		if err != nil {
 			return err
 		}
-		records, err := s.repo.ListRecordsByEmployeeRange(ctx, tenantID, employeeUserID, from, to)
-		if err != nil {
-			return err
-		}
-		byDate := make(map[string]domain.Record, len(records))
-		for _, r := range records {
-			byDate[r.Date.Format("2006-01-02")] = r
-		}
-
-		out = make([]RecordView, 0, 31)
-		for d := from; d.Before(to); d = d.AddDate(0, 0, 1) {
-			if rec, ok := byDate[d.Format("2006-01-02")]; ok {
-				out = append(out, toRecordView(rec, name))
-				continue
-			}
-			result, err := s.computeStatus(ctx, tenantID, employeeUserID, d, nil, nil)
-			if err != nil {
-				return err
-			}
-			out = append(out, RecordView{EmployeeUserID: employeeUserID, EmployeeName: name, Date: d, StatusCode: result.StatusCode})
-		}
-		return nil
+		out, err = s.employeeHistory(ctx, tenantID, employeeUserID, name, from, to)
+		return err
 	})
 	return out, err
+}
+
+// employeeHistory is GetEmployeeHistory's day-by-day computation without
+// opening its own transaction, so a caller that already holds one --
+// GetAllEmployeesMonthlyRecap, which would otherwise pay for one
+// transaction per roster row -- can reuse it.
+func (s *Service) employeeHistory(ctx context.Context, tenantID, employeeUserID uuid.UUID, name string, from, to time.Time) ([]RecordView, error) {
+	records, err := s.repo.ListRecordsByEmployeeRange(ctx, tenantID, employeeUserID, from, to)
+	if err != nil {
+		return nil, err
+	}
+	byDate := make(map[string]domain.Record, len(records))
+	for _, r := range records {
+		byDate[r.Date.Format("2006-01-02")] = r
+	}
+
+	out := make([]RecordView, 0, 31)
+	for d := from; d.Before(to); d = d.AddDate(0, 0, 1) {
+		if rec, ok := byDate[d.Format("2006-01-02")]; ok {
+			out = append(out, toRecordView(rec, name))
+			continue
+		}
+		result, err := s.computeStatus(ctx, tenantID, employeeUserID, d, nil, nil)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, RecordView{EmployeeUserID: employeeUserID, EmployeeName: name, Date: d, StatusCode: result.StatusCode})
+	}
+	return out, nil
 }

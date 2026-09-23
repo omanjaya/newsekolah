@@ -21,6 +21,7 @@ import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import {
   type AttendanceRecord,
   type Employee,
+  downloadAllStaffAttendanceRecap,
   downloadStaffAttendanceRecap,
   todayInZone,
   useStaffAttendanceHistoryQuery,
@@ -54,6 +55,8 @@ export function EmployeeRecapView({ employees }: { employees: Employee[] }): Rea
   const [month, setMonth] = useDateFilter("month", today.slice(0, 7), true);
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [downloadingAll, setDownloadingAll] = useState(false);
+  const [downloadAllError, setDownloadAllError] = useState<string | null>(null);
 
   const history = useStaffAttendanceHistoryQuery(employeeId, from, to);
   const recap = useStaffAttendanceRecapQuery(employeeId, month);
@@ -95,18 +98,46 @@ export function EmployeeRecapView({ employees }: { employees: Employee[] }): Rea
     }
   }
 
+  async function handleDownloadAll() {
+    setDownloadAllError(null);
+    setDownloadingAll(true);
+    try {
+      await downloadAllStaffAttendanceRecap(month);
+    } catch (error) {
+      setDownloadAllError(
+        error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
+      );
+    } finally {
+      setDownloadingAll(false);
+    }
+  }
+
   return (
     <div className="flex flex-col gap-6">
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium text-fg">{t("schedule.employee")}</span>
-        <Select
-          options={employees.map((e) => ({ value: e.id, label: e.name }))}
-          value={employeeId}
-          onValueChange={setEmployeeId}
-          placeholder={t("schedule.employeePlaceholder")}
-          className="w-72"
-        />
-      </label>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <label className="flex flex-col gap-1 text-[13px]">
+          <span className="font-medium text-fg">{t("schedule.employee")}</span>
+          <Select
+            options={employees.map((e) => ({ value: e.id, label: e.name }))}
+            value={employeeId}
+            onValueChange={setEmployeeId}
+            placeholder={t("schedule.employeePlaceholder")}
+            className="w-72"
+          />
+        </label>
+        <div className="flex flex-col items-end gap-1">
+          <Button
+            variant="secondary"
+            size="sm"
+            loading={downloadingAll}
+            onClick={() => void handleDownloadAll()}
+          >
+            <Download className="size-4" aria-hidden="true" />
+            {t("recap.downloadAll")}
+          </Button>
+          {downloadAllError && <p className="text-[13px] text-status-absent">{downloadAllError}</p>}
+        </div>
+      </div>
 
       {employeeId === "" ? (
         <EmptyState

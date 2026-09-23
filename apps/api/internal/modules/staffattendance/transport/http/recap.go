@@ -24,3 +24,17 @@ func (h *StaffAttendanceHandler) ExportStaffAttendanceMonthlyRecap(ctx context.C
 		Body: bytes.NewReader(xlsx), ContentLength: int64(len(xlsx)),
 	}, nil
 }
+
+// ExportAllStaffAttendanceMonthlyRecap is the tenant-wide counterpart to
+// ExportStaffAttendanceMonthlyRecap: every tracked employee's recap for the
+// month in one workbook, for the administrative export screen rather than
+// one employee's own history.
+func (h *StaffAttendanceHandler) ExportAllStaffAttendanceMonthlyRecap(ctx context.Context, request api.ExportAllStaffAttendanceMonthlyRecapRequestObject) (api.ExportAllStaffAttendanceMonthlyRecapResponseObject, error) {
+	xlsx, err := h.service.ExportAllEmployeesMonthlyRecapXLSX(ctx, tenantIDFromContext(ctx), request.Params.Month)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return api.ExportAllStaffAttendanceMonthlyRecap200ApplicationvndOpenxmlformatsOfficedocumentSpreadsheetmlSheetResponse{
+		Body: bytes.NewReader(xlsx), ContentLength: int64(len(xlsx)),
+	}, nil
+}
