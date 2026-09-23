@@ -1,6 +1,7 @@
 {
   "navLabel": "Staff attendance",
   "title": "Staff attendance",
+  "eyebrow": "Staff",
   "tabs": {
     "today": "Today",
     "schedule": "Work Schedule",
@@ -130,5 +131,21 @@
       "bad_time": "time format not recognised",
       "unknown_employee": "employee not recognised"
     }
+  },
+  "self": {
+    "navLabel": "Work check-in",
+    "eyebrow": "Staff",
+    "title": "My work attendance",
+    "today": "Today",
+    "arrival": "Arrival",
+    "departure": "Departure",
+    "recordArrival": "Record arrival",
+    "recordDeparture": "Record departure",
+    "arrivalSaved": "Arrival recorded",
+    "departureSaved": "Departure recorded",
+    "lateBy": "{minutes} minutes late",
+    "doneTitle": "Today's attendance is complete",
+    "doneBody": "Arrival and departure are both recorded. Contact the admin if anything needs correcting.",
+    "hint": "Tap once when you arrive and once more when you leave. The time comes from the school server."
   }
 }

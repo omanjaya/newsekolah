@@ -1,6 +1,7 @@
 {
   "navLabel": "Presensi pegawai",
   "title": "Presensi pegawai",
+  "eyebrow": "Kepegawaian",
   "tabs": {
     "today": "Hari Ini",
     "schedule": "Jadwal Kerja",
@@ -130,5 +131,21 @@
       "bad_time": "format jam tidak dikenali",
       "unknown_employee": "pegawai tidak dikenali"
     }
+  },
+  "self": {
+    "navLabel": "Presensi kerja",
+    "eyebrow": "Kepegawaian",
+    "title": "Presensi kerja saya",
+    "today": "Hari ini",
+    "arrival": "Datang",
+    "departure": "Pulang",
+    "recordArrival": "Catat kedatangan",
+    "recordDeparture": "Catat kepulangan",
+    "arrivalSaved": "Kedatangan tercatat",
+    "departureSaved": "Kepulangan tercatat",
+    "lateBy": "Terlambat {minutes} menit",
+    "doneTitle": "Presensi hari ini lengkap",
+    "doneBody": "Kedatangan dan kepulangan sudah tercatat. Hubungi admin bila ada yang perlu dikoreksi.",
+    "hint": "Tekan sekali saat tiba dan sekali lagi saat pulang. Jam dicatat dari server sekolah."
   }
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
+import { formatTime as formatClock, type Locale } from "@newsekolah/i18n";
 import {
   Button,
   DataTable,
@@ -12,12 +13,13 @@ import {
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Fingerprint, Pencil, Plus } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { useCan } from "../../../lib/session/session-provider";
+import { useCan, useSession } from "../../../lib/session/session-provider";
 import {
   type AttendanceRecord,
   type Employee,
@@ -34,9 +36,12 @@ const STATUS_TOKEN: Partial<Record<AttendanceRecord["status_code"], StatusName>>
   absent: "absent",
 };
 
-function formatTime(iso: string | null | undefined): string {
-  if (!iso) return "-";
-  return new Date(iso).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+function formatTime(
+  iso: string | null | undefined,
+  locale: Locale,
+  timeZone: string | undefined,
+): string {
+  return iso ? formatClock(iso, { locale, timeZone }) : "-";
 }
 
 export function TodayBoardView({
@@ -49,6 +54,8 @@ export function TodayBoardView({
   employees: Employee[];
 }): ReactElement {
   const t = useTranslations("app.staffAttendance");
+  const locale = useLocale() as Locale;
+  const timeZone = useSession().me?.tenant.timezone;
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const canManage = useCan("manage_staff_attendance");
@@ -82,13 +89,13 @@ export function TodayBoardView({
         id: "arrival",
         header: t("today.columns.arrival"),
         enableSorting: false,
-        cell: ({ row }) => formatTime(row.original.arrival_at),
+        cell: ({ row }) => formatTime(row.original.arrival_at, locale, timeZone),
       },
       {
         id: "departure",
         header: t("today.columns.departure"),
         enableSorting: false,
-        cell: ({ row }) => formatTime(row.original.departure_at),
+        cell: ({ row }) => formatTime(row.original.departure_at, locale, timeZone),
       },
       {
         accessorKey: "late_minutes",
@@ -129,7 +136,7 @@ export function TodayBoardView({
           ]
         : []),
     ],
-    [t, canCorrect],
+    [t, canCorrect, locale, timeZone],
   );
 
   return (
@@ -198,7 +205,11 @@ export function TodayBoardView({
         isLoading={board.isLoading}
         getRowId={(r) => r.employee_user_id}
         emptyState={
-          <EmptyState icon={<Fingerprint aria-hidden="true" />} title={t("today.empty")} />
+          board.isError ? (
+            <QueryError retry={board.refetch} />
+          ) : (
+            <EmptyState icon={<Fingerprint aria-hidden="true" />} title={t("today.empty")} />
+          )
         }
       />
       {canManage && (
