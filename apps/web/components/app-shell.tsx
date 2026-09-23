@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { ReactElement, ReactNode } from "react";
 
+import { useNotificationsSocket } from "../features/notifications/realtime";
 import { navigation, filterNavigation } from "../lib/navigation";
 import { permissionForPath } from "../lib/navigation-permissions";
 import { useSession } from "../lib/session/session-provider";
@@ -26,6 +27,7 @@ export function AppShell({ children }: { children: ReactNode }): ReactElement {
   const { me } = useSession();
   const t = useTranslations("app.shell");
   const pathname = usePathname();
+  useNotificationsSocket(me?.id);
   const items = filterNavigation(
     navigation,
     (permission) => me?.permissions.includes(permission) ?? false,

@@ -48,6 +48,8 @@ const keys = {
     offset: number;
   }) => ["discipline", "sp-candidates", params] as const,
   myCounselings: () => ["discipline", "counselings", "mine"] as const,
+  studentCounselings: (studentId: string) =>
+    ["discipline", "counselings", "student", studentId] as const,
   counseling: (id: string) => ["discipline", "counselings", "detail", id] as const,
   counselingAttachments: (id: string) => ["discipline", "counselings", "attachments", id] as const,
   bkTeamCounselings: (topic: string) => ["discipline", "counselings", "bk-team", topic] as const,
@@ -314,6 +316,19 @@ export function useMyCounselingsQuery() {
   return useQuery({
     queryKey: keys.myCounselings(),
     queryFn: () => client.GET("/v1/discipline/counselings", { params: { query: { limit: 100 } } }),
+  });
+}
+
+/** Notes about one student the caller is permitted to read (own notes, or shared with the BK team). */
+export function useStudentCounselingsQuery(studentId: string, enabled = true) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: keys.studentCounselings(studentId),
+    queryFn: () =>
+      client.GET("/v1/discipline/students/{studentId}/counselings", {
+        params: { path: { studentId } },
+      }),
+    enabled: enabled && studentId !== "",
   });
 }
 

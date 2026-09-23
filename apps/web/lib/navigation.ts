@@ -11,6 +11,7 @@ import {
   MonitorSmartphone,
   NotebookPen,
   Repeat,
+  ScanLine,
   ShieldAlert,
   ShieldCheck,
   UserRound,
@@ -243,6 +244,14 @@ export const navigation: NavItem[] = [
     href: "/duty",
     icon: domainIcons.qr,
     permission: "issue_scan_tokens",
+    group: GROUP.students,
+  },
+  {
+    key: "classroom-entry",
+    labelKey: "app.permits.classroomEntry.navLabel",
+    href: "/classroom-entry",
+    icon: ScanLine,
+    profileKinds: ["student"],
     group: GROUP.students,
   },
 

@@ -134,7 +134,10 @@ export type MessageKey =
   | "errors.PAYMENT_NOT_FOUND"
   | "errors.PRIMARY_ROLE_NOT_SYSTEM"
   | "errors.RATE_LIMITED"
+  | "errors.REASON_TOO_LONG"
   | "errors.REPORT_UNAVAILABLE"
+  | "errors.SCAN_TOKEN_CONSUMER_NOT_STUDENT"
+  | "errors.SCAN_TOKEN_GONE"
   | "errors.SCHEDULE_HAS_HISTORY"
   | "errors.SSO_ACCOUNT_NOT_FOUND"
   | "errors.SSO_CLIENT_SECRET_REQUIRED"
@@ -387,7 +390,10 @@ export const MESSAGE_KEYS: readonly MessageKey[] = [
   "errors.PAYMENT_NOT_FOUND",
   "errors.PRIMARY_ROLE_NOT_SYSTEM",
   "errors.RATE_LIMITED",
+  "errors.REASON_TOO_LONG",
   "errors.REPORT_UNAVAILABLE",
+  "errors.SCAN_TOKEN_CONSUMER_NOT_STUDENT",
+  "errors.SCAN_TOKEN_GONE",
   "errors.SCHEDULE_HAS_HISTORY",
   "errors.SSO_ACCOUNT_NOT_FOUND",
   "errors.SSO_CLIENT_SECRET_REQUIRED",

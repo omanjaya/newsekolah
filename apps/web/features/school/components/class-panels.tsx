@@ -16,13 +16,15 @@ import {
   domainIcons,
   useToast,
 } from "@newsekolah/ui";
-import { ArrowRightLeft, Plus } from "lucide-react";
+import { ArrowRightLeft, Plus, UserMinus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { useMoveStudentMutation } from "../../academic/api-school-extras";
+import { useCan, useSession } from "../../../lib/session/session-provider";
+import { useMoveStudentMutation, useRemoveStudentMutation } from "../../academic/api-school-extras";
+import { todayInZone } from "../../attendance/api";
 import { useClassesQuery, useDirectoryQuery, useLookup } from "../../reference/api";
 import {
   type Enrollment,
@@ -38,6 +40,8 @@ export function EnrollmentPanel({
   canManage: boolean;
 }): ReactElement {
   const t = useTranslations("app.school.classes");
+  const { me } = useSession();
+  const timeZone = me?.tenant.timezone;
   const tApp = useTranslations("app");
   const tCommon = useTranslations("common.states");
   const toast = useToast();
@@ -55,9 +59,16 @@ export function EnrollmentPanel({
   const classes = useClassesQuery();
   const moveTargets = (classes.data?.data ?? []).filter((c) => c.id !== classId);
   const moveStudent = useMoveStudentMutation(classId);
+  const removeStudent = useRemoveStudentMutation(classId);
+  // Moving and leaving both close an enrollment, which the API gates on
+  // manage_enrollments rather than the master-data permission behind `canManage`.
+  const canManageEnrollments = useCan("manage_enrollments");
+  const canChangeEnrollment = canManage && canManageEnrollments;
   const [moving, setMoving] = useState<Enrollment | null>(null);
   const [toClassId, setToClassId] = useState("");
-  const [effectiveOn, setEffectiveOn] = useState(() => new Date().toISOString().slice(0, 10));
+  const [effectiveOn, setEffectiveOn] = useState(() => todayInZone(timeZone));
+  const [leaving, setLeaving] = useState<Enrollment | null>(null);
+  const [leftOn, setLeftOn] = useState(() => todayInZone(timeZone));
   const filteredRows = useMemo(() => {
     const query = rosterSearch.trim().toLocaleLowerCase();
     if (!query) return rows;
@@ -151,16 +162,25 @@ export function EnrollmentPanel({
                     <p className="tabular-nums text-[12px] text-fg-muted">{e.student_nis}</p>
                   )}
                 </div>
-                {canManage && (
-                  <IconButton
-                    icon={<ArrowRightLeft />}
-                    aria-label={t("moveStudent")}
-                    className="md:opacity-0 md:transition-opacity md:group-hover:opacity-100 md:focus-visible:opacity-100"
-                    onClick={() => {
-                      setMoving(e);
-                      setToClassId("");
-                    }}
-                  />
+                {canChangeEnrollment && (
+                  <div className="flex shrink-0 items-center gap-1 md:opacity-0 md:transition-opacity md:group-hover:opacity-100 md:focus-within:opacity-100">
+                    <IconButton
+                      icon={<ArrowRightLeft />}
+                      aria-label={t("moveStudent")}
+                      onClick={() => {
+                        setMoving(e);
+                        setToClassId("");
+                      }}
+                    />
+                    <IconButton
+                      icon={<UserMinus />}
+                      aria-label={t("leaveStudent")}
+                      onClick={() => {
+                        setLeaving(e);
+                        setLeftOn(todayInZone(timeZone));
+                      }}
+                    />
+                  </div>
                 )}
               </li>
             );
@@ -219,7 +239,7 @@ export function EnrollmentPanel({
                 loading={assign.isPending}
                 onClick={() => {
                   assign.mutate(
-                    { student_user_ids: picked, joined_on: new Date().toISOString().slice(0, 10) },
+                    { student_user_ids: picked, joined_on: todayInZone(timeZone) },
                     {
                       onSuccess: (r) => {
                         toast.success(t("assigned", { n: r.assigned.length }));
@@ -304,6 +324,67 @@ export function EnrollmentPanel({
                 }}
               >
                 {t("moveSubmit")}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+      <Dialog
+        open={leaving !== null}
+        onOpenChange={(o) => {
+          if (!o) setLeaving(null);
+        }}
+      >
+        <DialogContent title={t("leaveStudent")}>
+          <div className="flex flex-col gap-4">
+            <p className="text-[13px] text-fg-muted">
+              {leaving
+                ? t("leaveBody", {
+                    name:
+                      leaving.student_name ??
+                      studentMap.get(leaving.student_user_id)?.name ??
+                      leaving.student_user_id,
+                  })
+                : ""}
+            </p>
+            <label className="flex flex-col gap-1 text-[13px]">
+              <span className="font-medium">{t("leaveOn")}</span>
+              <Input
+                type="date"
+                value={leftOn}
+                onChange={(e) => {
+                  setLeftOn(e.target.value);
+                }}
+              />
+            </label>
+            <div className="flex justify-end gap-2 border-t border-border pt-3">
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setLeaving(null);
+                }}
+              >
+                {t("form.cancel")}
+              </Button>
+              <Button
+                variant="danger"
+                disabled={!leftOn}
+                loading={removeStudent.isPending}
+                onClick={() => {
+                  if (!leaving) return;
+                  removeStudent.mutate(
+                    { enrollmentId: leaving.id, body: { left_on: leftOn } },
+                    {
+                      onSuccess: () => {
+                        toast.success(t("studentLeft"));
+                        setLeaving(null);
+                      },
+                      onError: fail,
+                    },
+                  );
+                }}
+              >
+                {t("leaveSubmit")}
               </Button>
             </div>
           </div>

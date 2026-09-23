@@ -754,6 +754,22 @@
         "placeholder": "Tempel atau ketik kode di bawah QR",
         "submit": "Kirim kode"
       },
+      "classroomEntry": {
+        "navLabel": "Pindai masuk kelas",
+        "eyebrow": "Kesiswaan",
+        "title": "Pindai masuk kelas",
+        "intro": "Pindai QR yang ditampilkan guru di depan kelas untuk mencatat kehadiran Anda pada sesi yang sedang berjalan.",
+        "scanLabel": "Kode masuk kelas",
+        "placeholder": "Tempel atau ketik kode di bawah QR",
+        "submit": "Kirim kode",
+        "cameraLabel": "Pindai dengan kamera",
+        "successTitle": "Berhasil dicatat",
+        "successBody": "Anda tercatat masuk kelas {teacher} pada {time}.",
+        "scanAgain": "Pindai lagi",
+        "errorTitle": "Pindai gagal",
+        "studentsOnlyTitle": "Khusus siswa",
+        "studentsOnlyBody": "Halaman ini dipakai siswa untuk memindai QR masuk kelas dari guru. Akun Anda bukan akun siswa."
+      },
       "qr": {
         "expiresIn": "Berlaku {seconds} detik lagi",
         "expired": "Kode sudah kedaluwarsa",
@@ -1079,6 +1095,11 @@
         "moveEffectiveOn": "Berlaku mulai",
         "moveSubmit": "Pindahkan",
         "moved": "Siswa dipindahkan",
+        "leaveStudent": "Siswa keluar sekolah",
+        "leaveBody": "Tandai {name} keluar dari sekolah. Pendaftaran aktif di kelas ini akan ditutup dan riwayatnya tetap tersimpan.",
+        "leaveOn": "Tanggal keluar",
+        "leaveSubmit": "Tandai keluar",
+        "studentLeft": "Siswa ditandai keluar",
         "form": {
           "name": "Nama kelas",
           "grade": "Tingkat",
@@ -1164,8 +1185,17 @@
         "emptyTitle": "Belum ada tugas diberikan",
         "emptyBody": "Tetapkan wali kelas, guru BK, guru piket, dan satpam untuk tahun ajaran ini.",
         "since": "sejak {date}",
+        "showEnded": "Tampilkan yang sudah berakhir",
         "end": "Akhiri",
+        "endBody": "Akhiri penugasan {duty}. Riwayat penugasan tetap tersimpan dan bisa diaktifkan kembali.",
+        "endsOn": "Berakhir pada",
         "ended": "Tugas diakhiri",
+        "endedOn": "berakhir {date}",
+        "reactivate": "Aktifkan kembali",
+        "reactivated": "Penugasan diaktifkan kembali",
+        "remove": "Hapus penugasan",
+        "removeBody": "Hapus penugasan {duty} secara permanen. Tindakan ini tidak bisa dibatalkan.",
+        "removed": "Penugasan dihapus",
         "duty": "Tugas",
         "person": "Pemegang tugas",
         "personSearchPlaceholder": "Cari nama guru atau staf",
@@ -1184,6 +1214,7 @@
           "title": "Jenis tugas",
           "empty": "Belum ada jenis tugas",
           "inactive": "Tidak aktif",
+          "add": "Tambah jenis tugas",
           "name": "Nama",
           "scope": "Cakupan",
           "scopeKinds": {
@@ -1198,7 +1229,11 @@
           "deleteBody": "{name} hanya bisa dihapus jika sudah tidak ada penugasan yang memakainya.",
           "deleted": "Jenis tugas dihapus",
           "permissionsTitle": "Izin selama bertugas",
-          "permissionsBody": "Diberikan hanya kepada pemegang tugas ini, di luar izin dari perannya, dan hanya selama penugasan aktif."
+          "permissionsBody": "Diberikan hanya kepada pemegang tugas ini, di luar izin dari perannya, dan hanya selama penugasan aktif.",
+          "form": {
+            "nameError": "Nama wajib diisi dan harus mengandung minimal 2 huruf atau angka.",
+            "nameTaken": "Nama ini sudah dipakai jenis tugas lain. Pilih nama yang berbeda."
+          }
         }
       }
     },

@@ -8,16 +8,19 @@ import {
   Badge,
   Button,
   Combobox,
+  ConfirmDialog,
   Dialog,
   DialogContent,
   EmptyState,
+  IconButton,
   Input,
   Select,
   Skeleton,
+  Switch,
   useDebouncedCallback,
   useToast,
 } from "@newsekolah/ui";
-import { Plus, ShieldCheck } from "lucide-react";
+import { Plus, RotateCcw, ShieldCheck, Trash2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
@@ -25,14 +28,19 @@ import { useMemo, useState } from "react";
 import { useActiveYear } from "../../../lib/hooks/use-active-year";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSession } from "../../../lib/session/session-provider";
+import { todayInZone } from "../../attendance/api";
 import { useClassesQuery, useDirectoryQuery, useLookup } from "../../reference/api";
+import { type DutyAssignment } from "../api";
 import {
   useCreateDutyAssignmentMutation,
   useDutyAssignmentsQuery,
   useDutyTypesQuery,
   useEndDutyAssignmentMutation,
   useStaffOptionsQuery,
+  useUpdateDutyAssignmentMutation,
 } from "../duties-api";
+
+import { EndDutyAssignmentDialog } from "./end-duty-assignment-dialog";
 
 /** Active additional duties and the form for assigning staff. */
 export function DutiesView(): ReactElement {
@@ -52,17 +60,35 @@ export function DutiesView(): ReactElement {
   const staffMap = useLookup(staff.data?.data);
   const classMap = useLookup(classes.data?.data);
   const end = useEndDutyAssignmentMutation();
+  const update = useUpdateDutyAssignmentMutation();
   const [adding, setAdding] = useState(false);
-  const rows = (assignments.data?.data ?? []).filter((a) => a.is_active);
+  const [showEnded, setShowEnded] = useState(false);
+  const [ending, setEnding] = useState<DutyAssignment | null>(null);
+  const [removing, setRemoving] = useState<DutyAssignment | null>(null);
+  const allRows = assignments.data?.data ?? [];
+  const activeRows = allRows.filter((a) => a.is_active);
+  const rows = showEnded ? allRows : activeRows;
+
+  function fail(error: unknown) {
+    toast.error(
+      error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
+    );
+  }
 
   return (
     // md:h-full: fills the tab panel's height; the assignments list below
     // the fixed heading and action row scrolls internally.
     <div className="flex flex-col gap-4 md:h-full md:min-h-0">
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-[13px] text-fg-muted tabular-nums">
-          {assignments.data ? t("activeCount", { n: rows.length }) : null}
-        </p>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="text-[13px] text-fg-muted tabular-nums">
+            {assignments.data ? t("activeCount", { n: activeRows.length }) : null}
+          </p>
+          <label className="flex items-center gap-2 text-[13px] text-fg-muted">
+            <Switch checked={showEnded} onCheckedChange={setShowEnded} />
+            {t("showEnded")}
+          </label>
+        </div>
         <Button
           size="sm"
           icon={<Plus />}
@@ -96,7 +122,7 @@ export function DutiesView(): ReactElement {
                     <div className="flex min-w-0 flex-col gap-0.5">
                       <span className="truncate text-[14px] text-fg">{name}</span>
                       <span className="flex flex-wrap items-center gap-2 text-[13px] text-fg-muted">
-                        <Badge variant="accent">{a.duty_name}</Badge>
+                        <Badge variant={a.is_active ? "accent" : "neutral"}>{a.duty_name}</Badge>
                         {a.scope_class_id && (
                           <span>{classMap.get(a.scope_class_id)?.name ?? "-"}</span>
                         )}
@@ -108,31 +134,61 @@ export function DutiesView(): ReactElement {
                             }),
                           })}
                         </span>
+                        {!a.is_active && a.ends_on && (
+                          <span>
+                            {t("endedOn", {
+                              date: formatDate(a.ends_on, {
+                                locale,
+                                timeZone: me?.tenant.timezone,
+                              }),
+                            })}
+                          </span>
+                        )}
                       </span>
                     </div>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="self-start md:self-auto"
-                    loading={end.isPending && end.variables === a.id}
-                    onClick={() => {
-                      end.mutate(a.id, {
-                        onSuccess: () => {
-                          toast.success(t("ended"));
-                        },
-                        onError: (error) => {
-                          toast.error(
-                            error instanceof ApiError
-                              ? apiErrorMessage(error.code)
-                              : apiErrorMessage("UNKNOWN"),
-                          );
-                        },
-                      });
-                    }}
-                  >
-                    {t("end")}
-                  </Button>
+                  <div className="flex shrink-0 items-center gap-1 self-start md:self-auto">
+                    {a.is_active ? (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setEnding(a);
+                        }}
+                      >
+                        {t("end")}
+                      </Button>
+                    ) : (
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          icon={<RotateCcw />}
+                          loading={update.isPending && update.variables.id === a.id}
+                          onClick={() => {
+                            update.mutate(
+                              { id: a.id, body: { is_active: true } },
+                              {
+                                onSuccess: () => {
+                                  toast.success(t("reactivated"));
+                                },
+                                onError: fail,
+                              },
+                            );
+                          }}
+                        >
+                          {t("reactivate")}
+                        </Button>
+                        <IconButton
+                          icon={<Trash2 />}
+                          aria-label={t("remove")}
+                          onClick={() => {
+                            setRemoving(a);
+                          }}
+                        />
+                      </>
+                    )}
+                  </div>
                 </li>
               );
             })}
@@ -151,6 +207,34 @@ export function DutiesView(): ReactElement {
           )}
         </DialogContent>
       </Dialog>
+      <EndDutyAssignmentDialog
+        assignment={ending}
+        onClose={() => {
+          setEnding(null);
+        }}
+      />
+      <ConfirmDialog
+        open={removing !== null}
+        onOpenChange={(open) => {
+          if (!open) setRemoving(null);
+        }}
+        title={t("remove")}
+        description={removing ? t("removeBody", { duty: removing.duty_name }) : ""}
+        confirmLabel={t("remove")}
+        destructive
+        confirming={end.isPending}
+        onConfirm={async () => {
+          if (!removing) return;
+          try {
+            await end.mutateAsync(removing.id);
+            toast.success(t("removed"));
+          } catch (error) {
+            fail(error);
+          } finally {
+            setRemoving(null);
+          }
+        }}
+      />
     </div>
   );
 }
@@ -165,6 +249,7 @@ function AssignForm({
   const t = useTranslations("app.school.duties");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
+  const { me } = useSession();
   const year = useActiveYear();
   const classes = useClassesQuery();
   const create = useCreateDutyAssignmentMutation();
@@ -173,7 +258,7 @@ function AssignForm({
   const [userLabel, setUserLabel] = useState("");
   const [userSearch, setUserSearch] = useState("");
   const [classId, setClassId] = useState("");
-  const [startsOn, setStartsOn] = useState(new Date().toISOString().slice(0, 10));
+  const [startsOn, setStartsOn] = useState(() => todayInZone(me?.tenant.timezone));
   const [error, setError] = useState<string | null>(null);
   const type = types.find((x) => x.id === typeId);
 

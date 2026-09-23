@@ -7,6 +7,7 @@ import { useApiClient } from "../../lib/api/client";
 
 export type PeriodTemplateInput = components["schemas"]["PeriodTemplateInput"];
 export type MoveStudentInput = components["schemas"]["MoveStudentInput"];
+export type RemoveStudentInput = components["schemas"]["RemoveStudentInput"];
 
 /**
  * Mutations for two controls this slice adds to screens that already live
@@ -47,6 +48,23 @@ export function useMoveStudentMutation(classId: string) {
   return useMutation({
     mutationFn: ({ enrollmentId, body }: { enrollmentId: string; body: MoveStudentInput }) =>
       client.POST("/v1/academic/enrollments/{enrollmentId}/move", {
+        params: { path: { enrollmentId } },
+        body,
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.enrollments(classId) });
+      void queryClient.invalidateQueries({ queryKey: ["academic", "unassigned"] });
+    },
+  });
+}
+
+/** Closes the enrollment as "left the school" mid-year, distinct from moving to another class. */
+export function useRemoveStudentMutation(classId: string) {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ enrollmentId, body }: { enrollmentId: string; body: RemoveStudentInput }) =>
+      client.POST("/v1/academic/enrollments/{enrollmentId}/leave", {
         params: { path: { enrollmentId } },
         body,
       }),

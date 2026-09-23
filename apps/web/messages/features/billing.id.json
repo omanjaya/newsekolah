@@ -5,6 +5,7 @@
   "title": "Pembayaran SPP",
   "tabs": {
     "desk": "Loket Pembayaran",
+    "bills": "Daftar Tagihan",
     "feeTypes": "Jenis Biaya",
     "generate": "Terbitkan Tagihan",
     "arrears": "Tunggakan"
@@ -152,6 +153,39 @@
       "body": "Pembayaran {amount} tetap tersimpan untuk audit tetapi tidak lagi dihitung sebagai lunas.",
       "reason": "Alasan pembatalan"
     }
+  },
+  "bills": {
+    "periodPlaceholder": "Semua periode",
+    "statusLabel": "Status",
+    "statusAll": "Semua status",
+    "classLabel": "Kelas",
+    "classAll": "Semua kelas",
+    "unknownStudent": "Siswa tidak diketahui",
+    "emptyTitle": "Tidak ada tagihan",
+    "emptyBody": "Tidak ada tagihan yang cocok dengan filter ini.",
+    "columns": {
+      "student": "Siswa",
+      "feeType": "Jenis biaya",
+      "period": "Periode",
+      "dueDate": "Jatuh tempo",
+      "amount": "Jumlah",
+      "status": "Status"
+    },
+    "status": {
+      "label": "Status",
+      "unpaid": "Belum dibayar",
+      "partial": "Dibayar sebagian",
+      "paid": "Lunas"
+    },
+    "detailTitle": "Detail tagihan",
+    "originalAmount": "Jumlah awal",
+    "discountAmount": "Potongan",
+    "billAmount": "Jumlah tagihan",
+    "paidAmount": "Sudah dibayar",
+    "paymentsTitle": "Pembayaran",
+    "noPayments": "Belum ada pembayaran untuk tagihan ini.",
+    "pagePrev": "Sebelumnya",
+    "pageNext": "Berikutnya"
   },
   "arrears": {
     "byClass": "Per kelas",

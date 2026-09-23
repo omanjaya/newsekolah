@@ -754,6 +754,22 @@
         "placeholder": "Paste or type the code under the QR",
         "submit": "Submit code"
       },
+      "classroomEntry": {
+        "navLabel": "Scan classroom entry",
+        "eyebrow": "Students",
+        "title": "Scan classroom entry",
+        "intro": "Scan the QR your teacher displays at the front of the room to record your attendance for the running session.",
+        "scanLabel": "Classroom entry code",
+        "placeholder": "Paste or type the code under the QR",
+        "submit": "Submit code",
+        "cameraLabel": "Scan with camera",
+        "successTitle": "Recorded",
+        "successBody": "You are recorded as present in {teacher}'s class at {time}.",
+        "scanAgain": "Scan again",
+        "errorTitle": "Scan failed",
+        "studentsOnlyTitle": "Students only",
+        "studentsOnlyBody": "Students use this page to scan the classroom-entry QR shown by a teacher. Your account is not a student account."
+      },
       "qr": {
         "expiresIn": "Valid for {seconds} more seconds",
         "expired": "This code has expired",
@@ -1079,6 +1095,11 @@
         "moveEffectiveOn": "Effective from",
         "moveSubmit": "Move",
         "moved": "Student moved",
+        "leaveStudent": "Student left school",
+        "leaveBody": "Mark {name} as having left the school. Their active enrollment in this class is closed; history is kept.",
+        "leaveOn": "Left on",
+        "leaveSubmit": "Mark as left",
+        "studentLeft": "Student marked as left",
         "form": {
           "name": "Class name",
           "grade": "Grade",
@@ -1164,8 +1185,17 @@
         "emptyTitle": "No duties assigned yet",
         "emptyBody": "Set homeroom teachers, counselors, duty teachers and security for this year.",
         "since": "since {date}",
+        "showEnded": "Show ended",
         "end": "End",
+        "endBody": "End the {duty} assignment. Its history is kept and it can be reactivated later.",
+        "endsOn": "Ends on",
         "ended": "Duty ended",
+        "endedOn": "ended {date}",
+        "reactivate": "Reactivate",
+        "reactivated": "Assignment reactivated",
+        "remove": "Remove assignment",
+        "removeBody": "Permanently remove the {duty} assignment. This cannot be undone.",
+        "removed": "Assignment removed",
         "duty": "Duty",
         "person": "Holder",
         "personSearchPlaceholder": "Search teacher or staff name",
@@ -1184,6 +1214,7 @@
           "title": "Duty types",
           "empty": "No duty types yet",
           "inactive": "Inactive",
+          "add": "Add duty type",
           "name": "Name",
           "scope": "Scope",
           "scopeKinds": {
@@ -1198,7 +1229,11 @@
           "deleteBody": "{name} can only be deleted once it has no assignments.",
           "deleted": "Duty type deleted",
           "permissionsTitle": "Permissions while active",
-          "permissionsBody": "Granted only to whoever holds this duty, on top of their role, and only while the assignment is active."
+          "permissionsBody": "Granted only to whoever holds this duty, on top of their role, and only while the assignment is active.",
+          "form": {
+            "nameError": "Name is required and must contain at least 2 letters or digits.",
+            "nameTaken": "Another duty type already uses this name. Choose a different name."
+          }
         }
       }
     },

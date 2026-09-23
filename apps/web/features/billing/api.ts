@@ -34,7 +34,8 @@ const keys = {
   feeTypeDiscounts: (feeTypeId: string) =>
     ["billing", "fee-types", feeTypeId, "discounts"] as const,
   studentDiscounts: (studentId: string) => ["billing", "students", studentId, "discounts"] as const,
-  bills: (filters: BillFilters) => ["billing", "bills", filters] as const,
+  bills: (filters: BillFilters, page: BillPage) => ["billing", "bills", filters, page] as const,
+  bill: (billId: string) => ["billing", "bills", billId] as const,
   studentHistory: (studentId: string) => ["billing", "students", studentId, "history"] as const,
   arrears: () => ["billing", "arrears"] as const,
 };
@@ -176,10 +177,15 @@ export interface BillFilters {
   classId: string;
 }
 
-export function useBillsQuery(filters: BillFilters) {
+export interface BillPage {
+  limit: number;
+  offset: number;
+}
+
+export function useBillsQuery(filters: BillFilters, page: BillPage = { limit: 200, offset: 0 }) {
   const client = useApiClient();
   return useQuery({
-    queryKey: keys.bills(filters),
+    queryKey: keys.bills(filters, page),
     queryFn: () =>
       client.GET("/v1/billing/bills", {
         params: {
@@ -187,10 +193,21 @@ export function useBillsQuery(filters: BillFilters) {
             period: filters.period || undefined,
             status: filters.status || undefined,
             class_id: filters.classId || undefined,
-            limit: 200,
+            limit: page.limit,
+            offset: page.offset,
           },
         },
       }),
+  });
+}
+
+export function useBillQuery(billId: string | null) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: keys.bill(billId ?? ""),
+    queryFn: () =>
+      client.GET("/v1/billing/bills/{billId}", { params: { path: { billId: billId ?? "" } } }),
+    enabled: billId !== null && billId !== "",
   });
 }
 

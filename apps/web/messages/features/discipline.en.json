@@ -290,6 +290,8 @@
     "lettersEmpty": "No warning letters issued yet",
     "records": "Violation records",
     "recordsEmptyTitle": "No violation records",
-    "recordsEmptyBody": "This student has no violations on file this year."
+    "recordsEmptyBody": "This student has no violations on file this year.",
+    "counselingHistory": "Counseling history",
+    "counselingHistoryEmpty": "No counseling notes for this student yet, or you don't have access to read them."
   }
 }

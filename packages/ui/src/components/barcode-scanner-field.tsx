@@ -33,6 +33,12 @@ export interface BarcodeScannerFieldProps {
    * "default" matches the compact desk/back-office density.
    */
   size?: "default" | "large";
+  /**
+   * Let the manual-entry input grow to fill the row (and the full width on
+   * a phone) instead of keeping its intrinsic width. Off by default so the
+   * existing desk layouts are unchanged.
+   */
+  stretch?: boolean;
 }
 
 const SIZE_INPUT_CLASS: Record<NonNullable<BarcodeScannerFieldProps["size"]>, string> = {
@@ -71,6 +77,7 @@ export function BarcodeScannerField({
   maxAverageIntervalMs,
   duplicateWindowMs = 1500,
   size = "default",
+  stretch = false,
 }: BarcodeScannerFieldProps): ReactElement {
   const inputId = useId();
   const [value, setValue] = useState("");
@@ -98,7 +105,14 @@ export function BarcodeScannerField({
 
   return (
     <div className={cn("flex flex-wrap items-end gap-3", className)}>
-      <label htmlFor={inputId} className={cn("flex flex-col gap-1", SIZE_LABEL_CLASS[size])}>
+      <label
+        htmlFor={inputId}
+        className={cn(
+          "flex flex-col gap-1",
+          SIZE_LABEL_CLASS[size],
+          stretch && "min-w-0 flex-1 basis-60",
+        )}
+      >
         <span className="font-medium">{label}</span>
         <Input
           id={inputId}

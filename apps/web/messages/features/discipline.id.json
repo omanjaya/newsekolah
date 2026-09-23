@@ -290,6 +290,8 @@
     "lettersEmpty": "Belum ada surat peringatan yang diterbitkan",
     "records": "Catatan pelanggaran",
     "recordsEmptyTitle": "Tidak ada catatan pelanggaran",
-    "recordsEmptyBody": "Siswa ini tidak memiliki pelanggaran tahun ini."
+    "recordsEmptyBody": "Siswa ini tidak memiliki pelanggaran tahun ini.",
+    "counselingHistory": "Riwayat konseling",
+    "counselingHistoryEmpty": "Belum ada catatan konseling untuk siswa ini, atau Anda tidak memiliki akses membacanya."
   }
 }

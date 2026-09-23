@@ -6,13 +6,15 @@ import {
   Button,
   Checkbox,
   ConfirmDialog,
+  Dialog,
+  DialogContent,
   Input,
   Select,
   Skeleton,
   Switch,
   useToast,
 } from "@newsekolah/ui";
-import { Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
@@ -21,6 +23,7 @@ import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { usePermissionsQuery } from "../../roles/api";
 import { type DutyType } from "../api";
 import {
+  useCreateDutyTypeMutation,
   useDeleteDutyTypeMutation,
   useDutyTypesQuery,
   useReplaceDutyPermissionsMutation,
@@ -29,46 +32,172 @@ import {
 
 const SCOPE_KINDS: DutyType["scope_kind"][] = ["school", "class", "student"];
 
+/** Turns a duty name into the `^[a-z0-9_]{2,50}$` slug the API requires. */
+function slugifyDutyName(name: string): string {
+  return name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 50);
+}
+
 /** Names and permission sets of the duty types themselves (homeroom, counselor, ...), not who holds one. */
 export function DutyTypesPanel({ canManage }: { canManage: boolean }): ReactElement {
   const t = useTranslations("app.school.duties");
+  const toast = useToast();
+  const apiErrorMessage = useApiErrorMessage();
   const types = useDutyTypesQuery(true);
+  const create = useCreateDutyTypeMutation();
   const list = types.data?.data ?? [];
   const [selectedId, setSelectedId] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [name, setName] = useState("");
+  const [scopeKind, setScopeKind] = useState<DutyType["scope_kind"]>("school");
+  const [error, setError] = useState<string | null>(null);
   const selected = list.find((d) => d.id === selectedId) ?? list[0];
 
   if (types.isLoading) {
     return <Skeleton className="h-64 w-full" />;
   }
 
+  function resetCreateForm() {
+    setName("");
+    setScopeKind("school");
+    setError(null);
+  }
+
+  function submitCreate() {
+    const slug = slugifyDutyName(name);
+    if (name.trim() === "" || slug.length < 2) {
+      setError(t("types.form.nameError"));
+      return;
+    }
+    if (list.some((d) => d.slug === slug)) {
+      setError(t("types.form.nameTaken"));
+      return;
+    }
+    create.mutate(
+      { name: name.trim(), scope_kind: scopeKind, slug },
+      {
+        onSuccess: (duty) => {
+          toast.success(t("types.saved"));
+          setSelectedId(duty.id);
+          setCreating(false);
+          resetCreateForm();
+        },
+        onError: (err) => {
+          setError(
+            err instanceof ApiError ? apiErrorMessage(err.code) : apiErrorMessage("UNKNOWN"),
+          );
+        },
+      },
+    );
+  }
+
   return (
     // md:h-full: fills the tab panel's height; the type list and the
     // detail panel each scroll internally instead of the whole page.
     <div className="grid gap-4 md:h-full md:min-h-0 md:grid-cols-[240px_1fr]">
-      <nav
-        aria-label={t("types.title")}
-        className="flex flex-row gap-1 overflow-x-auto md:min-h-0 md:flex-col md:overflow-y-auto"
-      >
-        {list.map((d) => (
-          <button
-            key={d.id}
-            type="button"
-            aria-current={selected?.id === d.id ? "true" : undefined}
+      <div className="flex min-h-0 min-w-0 flex-col gap-2">
+        {canManage && (
+          <Button
+            size="sm"
+            variant="secondary"
+            icon={<Plus />}
             onClick={() => {
-              setSelectedId(d.id);
+              resetCreateForm();
+              setCreating(true);
             }}
-            className={`flex min-h-11 items-center justify-between rounded-xs px-3 py-2 text-left text-[14px] ${selected?.id === d.id ? "bg-accent/10 text-accent" : "text-fg hover:bg-bg"}`}
           >
-            <span>{d.name}</span>
-            {!d.is_active && <Badge>{t("types.inactive")}</Badge>}
-          </button>
-        ))}
-      </nav>
+            {t("types.add")}
+          </Button>
+        )}
+        <nav
+          aria-label={t("types.title")}
+          className="flex flex-row gap-1 overflow-x-auto md:min-h-0 md:flex-col md:overflow-y-auto"
+        >
+          {list.map((d) => (
+            <button
+              key={d.id}
+              type="button"
+              aria-current={selected?.id === d.id ? "true" : undefined}
+              onClick={() => {
+                setSelectedId(d.id);
+              }}
+              className={`flex min-h-11 items-center justify-between rounded-xs px-3 py-2 text-left text-[14px] ${selected?.id === d.id ? "bg-accent/10 text-accent" : "text-fg hover:bg-bg"}`}
+            >
+              <span>{d.name}</span>
+              {!d.is_active && <Badge>{t("types.inactive")}</Badge>}
+            </button>
+          ))}
+        </nav>
+      </div>
       {selected ? (
         <DutyTypeDetail key={selected.id} duty={selected} canManage={canManage} />
       ) : (
         <p className="text-[13px] text-fg-muted">{t("types.empty")}</p>
       )}
+      <Dialog
+        open={creating}
+        onOpenChange={(open) => {
+          setCreating(open);
+          if (!open) resetCreateForm();
+        }}
+      >
+        <DialogContent title={t("types.add")}>
+          <form
+            className="flex flex-col gap-4"
+            onSubmit={(e) => {
+              e.preventDefault();
+              submitCreate();
+            }}
+          >
+            {error && (
+              <p
+                role="alert"
+                className="rounded-xs border border-status-late/40 px-3 py-2 text-[13px]"
+              >
+                {error}
+              </p>
+            )}
+            <label className="flex flex-col gap-1 text-[13px]">
+              <span className="font-medium">{t("types.name")}</span>
+              <Input
+                value={name}
+                onChange={(e) => {
+                  setName(e.target.value);
+                }}
+                required
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-[13px]">
+              <span className="font-medium">{t("types.scope")}</span>
+              <Select
+                options={SCOPE_KINDS.map((s) => ({ value: s, label: t(`types.scopeKinds.${s}`) }))}
+                value={scopeKind}
+                onValueChange={(v) => {
+                  setScopeKind(v as DutyType["scope_kind"]);
+                }}
+              />
+            </label>
+            <div className="flex justify-end gap-2 border-t border-border pt-4">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => {
+                  setCreating(false);
+                }}
+              >
+                {t("cancel")}
+              </Button>
+              <Button type="submit" loading={create.isPending}>
+                {t("types.save")}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
