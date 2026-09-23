@@ -127,9 +127,17 @@ export function NotificationSettingsView(): ReactElement {
               return (
                 <li key={kind} className="flex flex-col gap-2 rounded-sm border border-border p-3">
                   <span className="text-[13px] font-medium text-fg">{tKinds(kind)}</span>
-                  <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+                  {/*
+                    Rows are 44px tall, the height of the switch's touch
+                    target, so neighbouring targets never overlap; the whole
+                    row is a label, so tapping the channel name toggles too.
+                  */}
+                  <div className="grid grid-cols-2 gap-x-6">
                     {NOTIFICATION_CHANNELS.map((channel) => (
-                      <div key={channel} className="flex items-center justify-between gap-3">
+                      <label
+                        key={channel}
+                        className="flex min-h-11 items-center justify-between gap-3"
+                      >
                         <span className="text-[13px] text-fg-muted">
                           {t(`channels.${channel}`)}
                         </span>
@@ -141,7 +149,7 @@ export function NotificationSettingsView(): ReactElement {
                             toggle(kind, channel, checked);
                           }}
                         />
-                      </div>
+                      </label>
                     ))}
                   </div>
                 </li>

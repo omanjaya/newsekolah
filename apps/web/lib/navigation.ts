@@ -149,6 +149,10 @@ export const navigation: NavItem[] = [
     labelKey: "app.journal.navLabel",
     href: "/journal",
     icon: NotebookPen,
+    // The page lists classes and subjects (view_academic_data) and records
+    // the reader's own teaching; parents and students have no journal.
+    permission: "view_academic_data",
+    profileKinds: ["teacher", "staff"],
     group: GROUP.academic,
   },
   {

@@ -5,7 +5,7 @@ import { useToast } from "@newsekolah/ui";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 
-import { getAccessToken } from "../../lib/api/access-token";
+import { getAccessToken, subscribeAccessToken } from "../../lib/api/access-token";
 import { API_URL } from "../../lib/env";
 
 /**
@@ -16,12 +16,24 @@ import { API_URL } from "../../lib/env";
 const MAX_RECONNECT_ATTEMPTS = 6;
 /**
  * A handshake that never opens (endpoint missing, rejected token, proxy
- * without WebSocket support) is retried once, with a freshly read token,
- * then left alone: the browser logs every failed handshake to the console
- * and nothing JavaScript can do suppresses that, so retrying a socket that
- * is simply unavailable would only produce noise.
+ * without WebSocket support) is never retried with the token it was
+ * rejected with: the hook waits for the next token the app obtains (a
+ * refresh) and tries once more, then leaves it alone. The browser logs
+ * every failed handshake to the console and nothing JavaScript can do
+ * suppresses that, so retrying a socket that is simply unavailable would
+ * only produce noise.
  */
 const MAX_HANDSHAKE_FAILURES = 2;
+/**
+ * The first connect waits for the page to settle. A full page load right
+ * after login (or any navigation) makes `middleware.ts` rotate the refresh
+ * token, which revokes the session the previous document's token names;
+ * a handshake that previous document starts in that window is rejected.
+ * The delay also lets React's development double-mount cancel the timer
+ * instead of opening and dropping a socket. Notifications arriving in this
+ * window are still picked up by the unread-count poll.
+ */
+const INITIAL_CONNECT_DELAY_MS = 1_500;
 const BASE_DELAY_MS = 1_000;
 const MAX_DELAY_MS = 30_000;
 /** A connection that stayed up this long counts as healthy and resets the backoff. */
@@ -55,7 +67,10 @@ export function reconnectDelay(attempt: number): number {
  * On `notification_created` the inbox list and unread count are refetched
  * and a toast is shown. `userId` gates the connection on a resolved
  * session and forces a reconnect when the signed-in user changes. Each
- * reconnect reads the current token, so a refreshed token is picked up.
+ * reconnect reads the current token, so a refreshed token is picked up;
+ * with no usable token yet (a fresh page load, before the API client's boot
+ * refresh) or only a rejected one, it waits for the next token instead of
+ * handshaking with nothing or with a token the API already refused.
  */
 export function useNotificationsSocket(userId: string | undefined): void {
   const queryClient = useQueryClient();
@@ -70,8 +85,10 @@ export function useNotificationsSocket(userId: string | undefined): void {
     let cancelled = false;
     let attempts = 0;
     let handshakeFailures = 0;
+    let rejectedToken: string | null = null;
     let socket: WebSocket | null = null;
     let timer: ReturnType<typeof setTimeout> | null = null;
+    let unsubscribe: (() => void) | null = null;
 
     function scheduleReconnect() {
       if (cancelled || attempts >= MAX_RECONNECT_ATTEMPTS) return;
@@ -79,11 +96,27 @@ export function useNotificationsSocket(userId: string | undefined): void {
       attempts += 1;
     }
 
+    function usableToken(): string | null {
+      const token = getAccessToken();
+      return token && token !== rejectedToken ? token : null;
+    }
+
+    /** Connects as soon as the app holds a token the API has not already refused. */
+    function waitForToken() {
+      if (unsubscribe) return;
+      unsubscribe = subscribeAccessToken(() => {
+        if (cancelled || !usableToken()) return;
+        unsubscribe?.();
+        unsubscribe = null;
+        connect();
+      });
+    }
+
     function connect() {
       if (cancelled) return;
-      const token = getAccessToken();
+      const token = usableToken();
       if (!token) {
-        scheduleReconnect();
+        waitForToken();
         return;
       }
       let openedAt = 0;
@@ -92,6 +125,7 @@ export function useNotificationsSocket(userId: string | undefined): void {
 
       current.onopen = () => {
         openedAt = Date.now();
+        rejectedToken = null;
       };
       current.onmessage = (event) => {
         let message: RealtimeMessage;
@@ -115,21 +149,24 @@ export function useNotificationsSocket(userId: string | undefined): void {
         if (openedAt === 0) {
           handshakeFailures += 1;
           if (handshakeFailures >= MAX_HANDSHAKE_FAILURES) return;
-        } else {
-          handshakeFailures = 0;
-          if (Date.now() - openedAt >= STABLE_AFTER_MS) attempts = 0;
+          rejectedToken = token;
+          waitForToken();
+          return;
         }
+        handshakeFailures = 0;
+        if (Date.now() - openedAt >= STABLE_AFTER_MS) attempts = 0;
         scheduleReconnect();
       };
       // A failed handshake fires error then close; close drives the retry.
       current.onerror = () => undefined;
     }
 
-    connect();
+    timer = setTimeout(connect, INITIAL_CONNECT_DELAY_MS);
 
     return () => {
       cancelled = true;
       if (timer) clearTimeout(timer);
+      unsubscribe?.();
       socket?.close();
     };
   }, [userId, queryClient]);

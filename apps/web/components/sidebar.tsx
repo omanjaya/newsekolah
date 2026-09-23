@@ -8,9 +8,10 @@ import type { ReactElement } from "react";
 import { useEffect, useRef, useState } from "react";
 
 import type { NavItem } from "../lib/navigation";
+import { activeNavHref } from "../lib/navigation/active-href";
 import { navGroupOrder } from "../lib/navigation-groups";
 
-import { GroupFlyout, NavLink, RailLabel, isActive } from "./sidebar-nav";
+import { GroupFlyout, NavLink, RailLabel } from "./sidebar-nav";
 import { TenantBrand } from "./tenant-brand";
 
 const GROUPS_STORAGE_KEY = "newsekolah-sidebar-collapsed-groups-v2";
@@ -129,7 +130,10 @@ export function Sidebar({
   );
 
   // Open the active group by default, preserving the reader's saved choice.
-  const activeGroup = items.find((item) => item.group && isActive(pathname, item.href))?.group;
+  // Only the best match is active, across every group: on /library/copies
+  // the library dashboard ("/library") is an ancestor, not the current page.
+  const activeHref = activeNavHref(pathname, items);
+  const activeGroup = items.find((item) => item.group && item.href === activeHref)?.group;
 
   function isOpen(group: string): boolean {
     // A rail has no room for a group header, so its items always show:
@@ -235,12 +239,19 @@ export function Sidebar({
                 animate={animate}
                 delayMs={0}
                 nested={false}
+                activeHref={activeHref}
               />
             ))}
 
             {rail
               ? orderedGroups.map(([group, groupItems]) => (
-                  <GroupFlyout key={group} group={group} items={groupItems} animate={animate} />
+                  <GroupFlyout
+                    key={group}
+                    group={group}
+                    items={groupItems}
+                    animate={animate}
+                    activeHref={activeHref}
+                  />
                 ))
               : orderedGroups.map(([group, groupItems]) => {
                   const open = isOpen(group);
@@ -296,6 +307,7 @@ export function Sidebar({
                                 animate={animate}
                                 delayMs={open ? index * 25 : 0}
                                 nested
+                                activeHref={activeHref}
                               />
                             ))}
                           </div>
@@ -333,6 +345,7 @@ export function Sidebar({
               group={group}
               items={groupItems}
               animate={animate}
+              activeHref={activeHref}
               rail={rail}
             />
           ))}

@@ -34,7 +34,8 @@
       "emptyBody": "Nilai akan muncul di sini setelah guru menerbitkannya.",
       "unknownSubject": "Mapel",
       "average": "Rata-rata {score}",
-      "reportScore": "Nilai rapor {score}"
+      "reportScore": "Nilai rapor {score}",
+      "overall": "Rata-rata {score} dari {count} mata pelajaran"
     },
     "discipline": {
       "title": "Poin kedisiplinan",
