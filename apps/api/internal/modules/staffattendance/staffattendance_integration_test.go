@@ -11,6 +11,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/db"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/staffattendance/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/dbtest"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 )
 
 // stubYears always answers "no active academic year", so
@@ -105,7 +106,18 @@ func TestGetAllEmployeesMonthlyRecap(t *testing.T) {
 	require.Equal(t, 0, recapB.StatusTotals["present"])
 	require.Equal(t, 28, recapB.StatusTotals["absent"])
 
-	xlsx, err := mod.Service.ExportAllEmployeesMonthlyRecapXLSX(ctx, tenant.ID, "2025-02")
+	xlsx, err := mod.Service.ExportAllEmployeesMonthlyRecapReport(ctx, tenant.ID, "2025-02", reportdoc.Options{Format: reportdoc.FormatXLSX})
 	require.NoError(t, err)
 	require.NotEmpty(t, xlsx)
+
+	pdf, err := mod.Service.ExportMonthlyRecapReport(ctx, tenant.ID, employeeA, "2025-02", reportdoc.Options{Format: reportdoc.FormatPDF, ShowLetterhead: true})
+	require.NoError(t, err)
+	require.NotEmpty(t, pdf)
+
+	// An unknown column key in the caller's selection is rejected rather
+	// than silently ignored.
+	_, err = mod.Service.ExportMonthlyRecapReport(ctx, tenant.ID, employeeA, "2025-02", reportdoc.Options{
+		Format: reportdoc.FormatXLSX, Columns: []reportdoc.ColumnChoice{{Key: "not_a_real_column"}},
+	})
+	require.ErrorIs(t, err, reportdoc.ErrUnknownColumn)
 }

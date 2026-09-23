@@ -7033,7 +7033,7 @@ export interface paths {
             };
             cookie?: never;
         };
-        /** The monthly recap as an XLSX workbook */
+        /** The monthly recap as an XLSX workbook or PDF */
         get: operations["exportStaffAttendanceMonthlyRecap"];
         put?: never;
         post?: never;
@@ -7050,7 +7050,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Every tracked employee's monthly recap as one XLSX workbook, one block per employee */
+        /** Every tracked employee's monthly recap as one workbook or PDF, one block per employee */
         get: operations["exportAllStaffAttendanceMonthlyRecap"];
         put?: never;
         post?: never;
@@ -7225,7 +7225,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The same report as an XLSX workbook */
+        /** The same report as an XLSX workbook or a formal PDF report with a supervisor/principal signature block */
         get: operations["exportTeacherSupervisionReport"];
         put?: never;
         post?: never;
@@ -11716,6 +11716,14 @@ export interface components {
         };
     };
     parameters: {
+        /** @description xlsx (default) or pdf */
+        ReportFormat: "xlsx" | "pdf";
+        /** @description Overrides the report's default title */
+        ReportTitle: string;
+        /** @description Show the tenant's letterhead (default true; has no visible effect until the tenant has configured one) */
+        ReportLetterhead: boolean;
+        /** @description Comma-separated column selection and order, each entry "key" or "key:label" (URL-encoded). Omitted or empty keeps every column in the report's own order. */
+        ReportColumns: string;
         /** @description Client-generated key (mobile clients on unstable networks) that makes a POST/PUT safe to retry; docs/08-security.md section 7. The same key replays the first response instead of repeating the write. */
         IdempotencyKeyHeader: string;
         YearIdParam: string;
@@ -26161,6 +26169,14 @@ export interface operations {
         parameters: {
             query: {
                 month: string;
+                /** @description xlsx (default) or pdf */
+                format?: components["parameters"]["ReportFormat"];
+                /** @description Overrides the report's default title */
+                title?: components["parameters"]["ReportTitle"];
+                /** @description Show the tenant's letterhead (default true; has no visible effect until the tenant has configured one) */
+                letterhead?: components["parameters"]["ReportLetterhead"];
+                /** @description Comma-separated column selection and order, each entry "key" or "key:label" (URL-encoded). Omitted or empty keeps every column in the report's own order. */
+                columns?: components["parameters"]["ReportColumns"];
             };
             header?: never;
             path: {
@@ -26170,13 +26186,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description XLSX file */
+            /** @description File */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
+                    "application/pdf": string;
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -26186,6 +26203,14 @@ export interface operations {
         parameters: {
             query: {
                 month: string;
+                /** @description xlsx (default) or pdf */
+                format?: components["parameters"]["ReportFormat"];
+                /** @description Overrides the report's default title */
+                title?: components["parameters"]["ReportTitle"];
+                /** @description Show the tenant's letterhead (default true; has no visible effect until the tenant has configured one) */
+                letterhead?: components["parameters"]["ReportLetterhead"];
+                /** @description Comma-separated column selection and order, each entry "key" or "key:label" (URL-encoded). Omitted or empty keeps every column in the report's own order. */
+                columns?: components["parameters"]["ReportColumns"];
             };
             header?: never;
             path?: never;
@@ -26193,13 +26218,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description XLSX file */
+            /** @description File */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
+                    "application/pdf": string;
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -26538,7 +26564,16 @@ export interface operations {
     };
     exportTeacherSupervisionReport: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description xlsx (default) or pdf */
+                format?: components["parameters"]["ReportFormat"];
+                /** @description Overrides the report's default title */
+                title?: components["parameters"]["ReportTitle"];
+                /** @description Show the tenant's letterhead (default true; has no visible effect until the tenant has configured one) */
+                letterhead?: components["parameters"]["ReportLetterhead"];
+                /** @description Comma-separated column selection and order, each entry "key" or "key:label" (URL-encoded). Omitted or empty keeps every column in the report's own order. */
+                columns?: components["parameters"]["ReportColumns"];
+            };
             header?: never;
             path: {
                 cycleId: string;
@@ -26548,13 +26583,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Workbook */
+            /** @description File */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
+                    "application/pdf": string;
                 };
             };
             401: components["responses"]["Unauthorized"];

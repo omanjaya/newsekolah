@@ -236,15 +236,21 @@ paths:
       tags: [supervision]
       operationId: exportTeacherSupervisionReport
       x-permission: view_supervision
-      summary: The same report as an XLSX workbook
+      summary: The same report as an XLSX workbook or a formal PDF report with a supervisor/principal signature block
       parameters:
         - { name: cycleId, in: path, required: true, schema: { type: string, format: uuid } }
         - { name: teacherId, in: path, required: true, schema: { type: string, format: uuid } }
+        - $ref: "#/components/parameters/ReportFormat"
+        - $ref: "#/components/parameters/ReportTitle"
+        - $ref: "#/components/parameters/ReportLetterhead"
+        - $ref: "#/components/parameters/ReportColumns"
       responses:
         "200":
-          description: Workbook
+          description: File
           content:
             application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: { type: string, format: binary }
+            application/pdf:
               schema: { type: string, format: binary }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }

@@ -16146,7 +16146,7 @@ paths:
         - staff-attendance
       operationId: exportStaffAttendanceMonthlyRecap
       x-permission: view_staff_attendance
-      summary: The monthly recap as an XLSX workbook
+      summary: The monthly recap as an XLSX workbook or PDF
       parameters:
         - name: month
           in: query
@@ -16154,11 +16154,19 @@ paths:
           schema:
             type: string
             pattern: ^[0-9]{4}-[0-9]{2}$
+        - $ref: "#/components/parameters/ReportFormat"
+        - $ref: "#/components/parameters/ReportTitle"
+        - $ref: "#/components/parameters/ReportLetterhead"
+        - $ref: "#/components/parameters/ReportColumns"
       responses:
         "200":
-          description: XLSX file
+          description: File
           content:
             application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+            application/pdf:
               schema:
                 type: string
                 format: binary
@@ -16170,7 +16178,7 @@ paths:
         - staff-attendance
       operationId: exportAllStaffAttendanceMonthlyRecap
       x-permission: view_staff_attendance
-      summary: Every tracked employee's monthly recap as one XLSX workbook, one block per employee
+      summary: Every tracked employee's monthly recap as one workbook or PDF, one block per employee
       parameters:
         - name: month
           in: query
@@ -16178,11 +16186,19 @@ paths:
           schema:
             type: string
             pattern: ^[0-9]{4}-[0-9]{2}$
+        - $ref: "#/components/parameters/ReportFormat"
+        - $ref: "#/components/parameters/ReportTitle"
+        - $ref: "#/components/parameters/ReportLetterhead"
+        - $ref: "#/components/parameters/ReportColumns"
       responses:
         "200":
-          description: XLSX file
+          description: File
           content:
             application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+            application/pdf:
               schema:
                 type: string
                 format: binary
@@ -16574,7 +16590,7 @@ paths:
         - supervision
       operationId: exportTeacherSupervisionReport
       x-permission: view_supervision
-      summary: The same report as an XLSX workbook
+      summary: The same report as an XLSX workbook or a formal PDF report with a supervisor/principal signature block
       parameters:
         - name: cycleId
           in: path
@@ -16588,11 +16604,19 @@ paths:
           schema:
             type: string
             format: uuid
+        - $ref: "#/components/parameters/ReportFormat"
+        - $ref: "#/components/parameters/ReportTitle"
+        - $ref: "#/components/parameters/ReportLetterhead"
+        - $ref: "#/components/parameters/ReportColumns"
       responses:
         "200":
-          description: Workbook
+          description: File
           content:
             application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+            application/pdf:
               schema:
                 type: string
                 format: binary
@@ -27088,6 +27112,35 @@ components:
           additionalProperties:
             type: integer
   parameters:
+    ReportFormat:
+      name: format
+      in: query
+      description: xlsx (default) or pdf
+      schema:
+        type: string
+        enum:
+          - xlsx
+          - pdf
+    ReportTitle:
+      name: title
+      in: query
+      description: Overrides the report's default title
+      schema:
+        type: string
+        maxLength: 200
+    ReportLetterhead:
+      name: letterhead
+      in: query
+      description: Show the tenant's letterhead (default true; has no visible effect until the tenant has configured one)
+      schema:
+        type: boolean
+    ReportColumns:
+      name: columns
+      in: query
+      description: Comma-separated column selection and order, each entry "key" or "key:label" (URL-encoded). Omitted or empty
+        keeps every column in the report's own order.
+      schema:
+        type: string
     IdempotencyKeyHeader:
       name: Idempotency-Key
       in: header

@@ -2,12 +2,12 @@ package service
 
 import (
 	"context"
-	"fmt"
+	"time"
 
 	"github.com/google/uuid"
-	"github.com/xuri/excelize/v2"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/supervision/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 )
 
 // TeacherCycleReport is one teacher's observations within one cycle,
@@ -73,79 +73,121 @@ func buildTeacherCycleReport(teacherUserID uuid.UUID, teacherName string, cycle 
 	}
 }
 
-// ExportTeacherReportXLSX renders a teacher's cycle report as a workbook,
-// reusing the excelize dependency the reports module already depends on
-// for report-centre exports.
-func ExportTeacherReportXLSX(report TeacherCycleReport) ([]byte, error) {
-	f := excelize.NewFile()
-	defer f.Close() //nolint:errcheck // an in-memory workbook cannot fail to close after WriteToBuffer
-
-	sheet := "Supervisi"
-	if err := f.SetSheetName("Sheet1", sheet); err != nil {
-		return nil, fmt.Errorf("rename sheet: %w", err)
+// teacherReportColumns is the report's stable column set: the observation
+// date, one column per instrument criterion (a criterion's own Key,
+// prefixed so it can never collide with the four fixed keys below), the
+// per-observation average, and the three free-text fields.
+func teacherReportColumns(criteria []domain.Criterion) []reportdoc.Column {
+	columns := make([]reportdoc.Column, 0, len(criteria)+5)
+	columns = append(columns, reportdoc.Column{Key: "date", Label: "Tanggal Observasi", Kind: reportdoc.ColumnDate, Width: 14})
+	for _, c := range criteria {
+		columns = append(columns, reportdoc.Column{Key: "criterion_" + c.Key, Label: c.Name, Kind: reportdoc.ColumnNumber, Width: 12})
 	}
-
-	headers := []string{"Tanggal Observasi"}
-	for _, c := range report.Cycle.Instrument.Criteria {
-		headers = append(headers, c.Name)
-	}
-	headers = append(headers, "Rata-rata", "Catatan Pengamat", "Tanggapan Guru", "Tindak Lanjut")
-	for col, header := range headers {
-		cell, err := excelize.CoordinatesToCellName(col+1, 1)
-		if err != nil {
-			return nil, fmt.Errorf("cell name: %w", err)
-		}
-		if err := f.SetCellValue(sheet, cell, header); err != nil {
-			return nil, fmt.Errorf("write header: %w", err)
-		}
-	}
-
-	for rowIdx, obs := range report.Observations {
-		if err := writeObservationRow(f, sheet, rowIdx+2, report.Cycle.Instrument.Criteria, obs); err != nil {
-			return nil, err
-		}
-	}
-
-	buf, err := f.WriteToBuffer()
-	if err != nil {
-		return nil, fmt.Errorf("write workbook: %w", err)
-	}
-	return buf.Bytes(), nil
+	columns = append(columns,
+		reportdoc.Column{Key: "average", Label: "Rata-rata", Kind: reportdoc.ColumnNumber, Width: 10},
+		reportdoc.Column{Key: "observer_notes", Label: "Catatan Pengamat", Kind: reportdoc.ColumnText, Width: 28},
+		reportdoc.Column{Key: "teacher_response", Label: "Tanggapan Guru", Kind: reportdoc.ColumnText, Width: 28},
+		reportdoc.Column{Key: "agreed_follow_up", Label: "Tindak Lanjut", Kind: reportdoc.ColumnText, Width: 28},
+	)
+	return columns
 }
 
-// writeObservationRow writes one observation's cells: the date, each
-// criterion's score in the instrument's own order, the row average, and
-// the three free-text fields.
-func writeObservationRow(f *excelize.File, sheet string, row int, criteria []domain.Criterion, obs domain.Observation) error {
+// teacherReportRow builds one observation's row, in the same column order
+// teacherReportColumns declares.
+func teacherReportRow(criteria []domain.Criterion, obs domain.Observation) []any {
 	byKey := make(map[string]int, len(obs.Scores))
 	for _, score := range obs.Scores {
 		byKey[score.CriterionKey] = score.Score
 	}
-
-	col := 1
-	values := make([]any, 0, len(criteria)+5)
-	values = append(values, obs.ObservedAt.Format("2006-01-02"))
+	row := make([]any, 0, len(criteria)+5)
+	row = append(row, obs.ObservedAt)
 	for _, c := range criteria {
-		values = append(values, byKey[c.Key])
+		row = append(row, byKey[c.Key])
 	}
-	values = append(values, domain.Average(obs.Scores), obs.ObserverNotes, obs.TeacherResponse, obs.AgreedFollowUp)
-
-	for _, v := range values {
-		if err := setCell(f, sheet, col, row, v); err != nil {
-			return err
-		}
-		col++
-	}
-	return nil
+	row = append(row, domain.Average(obs.Scores), obs.ObserverNotes, obs.TeacherResponse, obs.AgreedFollowUp)
+	return row
 }
 
-func setCell(f *excelize.File, sheet string, col, row int, value any) error {
-	cell, err := excelize.CoordinatesToCellName(col, row)
+// lastObserverName resolves the name of whoever conducted the most recent
+// observation in the report -- the "Supervisor" signer on the formal PDF
+// report, since a cycle keeps no single supervisor of its own (each
+// observation names its own observer, and different observers may cover
+// the same teacher across a cycle).
+func (s *Service) lastObserverName(ctx context.Context, tenantID uuid.UUID, observations []domain.Observation) (string, error) {
+	if len(observations) == 0 {
+		return "", nil
+	}
+	last := observations[0]
+	for _, obs := range observations[1:] {
+		if obs.ObservedAt.After(last.ObservedAt) {
+			last = obs
+		}
+	}
+	return s.repo.TeacherName(ctx, tenantID, last.ObserverUserID)
+}
+
+// ExportTeacherReport renders a teacher's cycle report per opts (format,
+// title override, letterhead visibility, column subset/order). The PDF
+// format reads as a formal supervision report: a letterhead slot (see
+// reportdoc's package comment -- no tenant report-header reader is wired
+// into this module yet, so opts.ShowLetterhead has no visible effect
+// until one is), the observation table, and a two-signer signature block
+// for the supervisor who conducted the observations and the principal.
+func (s *Service) ExportTeacherReport(ctx context.Context, tenantID, cycleID, teacherUserID uuid.UUID, opts reportdoc.Options) ([]byte, error) {
+	report, err := s.TeacherReport(ctx, tenantID, cycleID, teacherUserID)
 	if err != nil {
-		return fmt.Errorf("cell name: %w", err)
+		return nil, err
 	}
-	if err := f.SetCellValue(sheet, cell, value); err != nil {
-		return fmt.Errorf("write cell: %w", err)
+	supervisorName, err := s.lastObserverName(ctx, tenantID, report.Observations)
+	if err != nil {
+		return nil, err
 	}
-	return nil
+
+	doc := buildTeacherReportDocument(report, supervisorName, s.clock.Now())
+	return renderReport(doc, opts)
+}
+
+// buildTeacherReportDocument assembles the reportdoc.Document
+// ExportTeacherReport renders: the observation table (one column per
+// instrument criterion, in the instrument's own order) and a two-signer
+// signature block for the supervisor who conducted the observations and
+// the principal. Kept separate from the database reads above so it can be
+// unit tested without a fixture.
+func buildTeacherReportDocument(report TeacherCycleReport, supervisorName string, now time.Time) reportdoc.Document {
+	criteria := report.Cycle.Instrument.Criteria
+	rows := make([][]any, len(report.Observations))
+	for i, obs := range report.Observations {
+		rows[i] = teacherReportRow(criteria, obs)
+	}
+
+	return reportdoc.Document{
+		Title: "Laporan Supervisi Guru",
+		Scope: []reportdoc.ScopeLine{
+			{Label: "Siklus", Value: report.Cycle.Name},
+			{Label: "Guru", Value: report.TeacherName},
+		},
+		Columns:  teacherReportColumns(criteria),
+		Sections: []reportdoc.Section{{Name: report.TeacherName, Rows: rows}},
+		Signature: &reportdoc.Signature{
+			Date: now.Format("02-01-2006"),
+			Signers: []reportdoc.Signer{
+				{RoleLabel: "Supervisor", Name: supervisorName},
+				{RoleLabel: "Kepala Sekolah"},
+			},
+		},
+	}
+}
+
+// renderReport applies opts to doc and renders it in the format opts
+// requests, defaulting to XLSX when the caller (or an old client that
+// predates this query-param contract) did not name one.
+func renderReport(doc reportdoc.Document, opts reportdoc.Options) ([]byte, error) {
+	narrowed, err := reportdoc.Apply(doc, opts)
+	if err != nil {
+		return nil, err
+	}
+	if opts.Format == reportdoc.FormatPDF {
+		return reportdoc.RenderPDF(narrowed)
+	}
+	return reportdoc.RenderXLSX(narrowed)
 }
