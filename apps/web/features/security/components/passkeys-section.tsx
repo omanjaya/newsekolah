@@ -100,7 +100,7 @@ export function PasskeysSection(): ReactElement | null {
   const items = passkeys.data ?? [];
 
   return (
-    <section className="flex flex-col gap-4 rounded-sm border border-border bg-surface p-4">
+    <section className="flex flex-col gap-4 rounded-sm border border-border bg-surface p-4 md:max-w-2xl">
       <div className="flex flex-col gap-1">
         <h2 className="text-[16px] font-medium text-fg">{t("title")}</h2>
         <p className="text-[13px] text-fg-muted">{t("description")}</p>

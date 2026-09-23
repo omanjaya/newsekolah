@@ -95,7 +95,7 @@ export function SecurityView(): ReactElement {
       <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
       <p className="text-[13px] text-fg-muted">{t("description")}</p>
 
-      <section className="flex flex-col gap-4 rounded-sm border border-border bg-surface p-4">
+      <section className="flex flex-col gap-4 rounded-sm border border-border bg-surface p-4 md:max-w-2xl">
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
             <h2 className="text-[16px] font-medium text-fg">{t("status.title")}</h2>

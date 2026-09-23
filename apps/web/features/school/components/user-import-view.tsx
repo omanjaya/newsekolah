@@ -5,7 +5,7 @@ import { Alert, Badge, Button, PageHeader, Stepper, useToast } from "@newsekolah
 import { Download, FileSpreadsheet, Upload } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import {
@@ -32,6 +32,7 @@ export function UserImportView(): ReactElement {
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
 
+  const fileInput = useRef<HTMLInputElement>(null);
   const [downloading, setDownloading] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
   const [parsing, setParsing] = useState(false);
@@ -137,10 +138,28 @@ export function UserImportView(): ReactElement {
       <section className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-4">
         <h2 className="text-[16px] font-medium text-fg">{t("step2Title")}</h2>
         <p className="text-[13px] text-fg-muted">{t("step2Body")}</p>
-        <label className="flex w-fit flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("chooseFile")}</span>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={<Upload />}
+            loading={parsing}
+            onClick={() => {
+              fileInput.current?.click();
+            }}
+          >
+            {t("chooseFile")}
+          </Button>
+          {fileName && !parsing && (
+            <span className="flex min-w-0 items-center gap-1.5 text-[13px] text-fg-muted">
+              <FileSpreadsheet className="size-4 shrink-0" aria-hidden="true" />
+              <span className="truncate">{fileName}</span>
+            </span>
+          )}
           <input
+            ref={fileInput}
             type="file"
+            hidden
             accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             aria-label={t("chooseFile")}
             onChange={(e) => {
@@ -148,9 +167,8 @@ export function UserImportView(): ReactElement {
               e.target.value = "";
               if (file) void handleFile(file);
             }}
-            className="text-[13px] text-fg file:mr-3 file:rounded-xs file:border file:border-border file:bg-bg file:px-3 file:py-1.5 file:text-[13px] file:font-medium"
           />
-        </label>
+        </div>
         {parsing && (
           <p className="flex items-center gap-2 text-[13px] text-fg-muted">
             <FileSpreadsheet className="size-4" aria-hidden="true" />

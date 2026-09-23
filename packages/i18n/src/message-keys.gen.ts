@@ -8,14 +8,21 @@ export type MessageKey =
   | "auth.changePassword.success"
   | "auth.changePassword.title"
   | "auth.login.backToPassword"
+  | "auth.login.featureAttendance"
+  | "auth.login.featureGrades"
+  | "auth.login.featureLibrary"
   | "auth.login.forgotPasswordLink"
   | "auth.login.googleButton"
   | "auth.login.orDivider"
+  | "auth.login.panelFootnote"
+  | "auth.login.panelHeadline"
+  | "auth.login.panelTagline"
   | "auth.login.passkeyButton"
   | "auth.login.passkeyUsernameRequired"
   | "auth.login.passwordLabel"
   | "auth.login.submit"
   | "auth.login.submitting"
+  | "auth.login.subtitle"
   | "auth.login.tenantLabel"
   | "auth.login.title"
   | "auth.login.usernameLabel"
@@ -254,14 +261,21 @@ export const MESSAGE_KEYS: readonly MessageKey[] = [
   "auth.changePassword.success",
   "auth.changePassword.title",
   "auth.login.backToPassword",
+  "auth.login.featureAttendance",
+  "auth.login.featureGrades",
+  "auth.login.featureLibrary",
   "auth.login.forgotPasswordLink",
   "auth.login.googleButton",
   "auth.login.orDivider",
+  "auth.login.panelFootnote",
+  "auth.login.panelHeadline",
+  "auth.login.panelTagline",
   "auth.login.passkeyButton",
   "auth.login.passkeyUsernameRequired",
   "auth.login.passwordLabel",
   "auth.login.submit",
   "auth.login.submitting",
+  "auth.login.subtitle",
   "auth.login.tenantLabel",
   "auth.login.title",
   "auth.login.usernameLabel",

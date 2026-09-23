@@ -216,6 +216,7 @@
     },
     "settings": {
       "appearance": {
+        "eyebrow": "Pengaturan",
         "title": "Tampilan",
         "description": "Atur tema terang atau gelap untuk perangkat ini.",
         "themeLabel": "Tema",
@@ -1239,9 +1240,364 @@
         "supervision": "Supervisi",
         "visitors": "Tamu & insiden",
         "scheduling": "Penjadwalan",
-        "staff_attendance": "Presensi pegawai"
+        "staff_attendance": "Presensi pegawai",
+        "general": "Umum",
+        "grading": "Nilai",
+        "reporting": "Pelaporan"
       },
-      "dutyOnlyHint": "Tidak bisa diberikan langsung ke peran guru. Berikan lewat penugasan tugas di Data Sekolah > Penugasan."
+      "dutyOnlyHint": "Tidak bisa diberikan langsung ke peran guru. Berikan lewat penugasan tugas di Data Sekolah > Penugasan.",
+      "permissions": {
+        "approve_child_leave_requests": {
+          "label": "Setujui izin anak",
+          "description": "Setujui atau tolak pengajuan izin anak"
+        },
+        "can_supervise": {
+          "label": "Pengawasan",
+          "description": "Penanda peran pengawas (kepala sekolah, wakil)"
+        },
+        "correct_attendance": {
+          "label": "Koreksi presensi",
+          "description": "Perbaiki presensi yang sudah dikirim"
+        },
+        "correct_staff_attendance": {
+          "label": "Koreksi presensi pegawai",
+          "description": "Perbaiki presensi pegawai yang sudah tercatat"
+        },
+        "create_announcements": {
+          "label": "Buat pengumuman",
+          "description": "Menulis pengumuman baru"
+        },
+        "create_users": {
+          "label": "Tambah pengguna",
+          "description": "Membuat akun pengguna"
+        },
+        "delete_announcements": {
+          "label": "Hapus pengumuman",
+          "description": "Menghapus pengumuman"
+        },
+        "delete_users": {
+          "label": "Arsipkan pengguna",
+          "description": "Mengarsipkan akun pengguna"
+        },
+        "edit_announcements": {
+          "label": "Ubah pengumuman",
+          "description": "Menyunting pengumuman"
+        },
+        "edit_users": {
+          "label": "Ubah pengguna",
+          "description": "Menyunting akun pengguna"
+        },
+        "generate_bills": {
+          "label": "Buat tagihan",
+          "description": "Terbitkan tagihan untuk satu periode"
+        },
+        "impersonate_users": {
+          "label": "Masuk sebagai pengguna lain",
+          "description": "Membuka sesi sebagai pengguna lain untuk membantu"
+        },
+        "issue_leave_letters": {
+          "label": "Terbitkan surat izin",
+          "description": "Terbitkan surat izin (tugas guru BK)"
+        },
+        "issue_scan_tokens": {
+          "label": "Buat kode QR",
+          "description": "Buat kode QR untuk masuk kelas, terlambat, dan persetujuan"
+        },
+        "issue_warning_letters": {
+          "label": "Terbitkan surat peringatan",
+          "description": "Terbitkan surat peringatan bernomor"
+        },
+        "manage_academic_years": {
+          "label": "Kelola tahun ajaran",
+          "description": "Atur tahun ajaran, semester, dan kalender sekolah"
+        },
+        "manage_achievements": {
+          "label": "Kelola prestasi",
+          "description": "Catat prestasi lomba siswa"
+        },
+        "manage_activity_events": {
+          "label": "Kelola kegiatan sekolah",
+          "description": "Buat dan ubah kegiatan sekolah"
+        },
+        "manage_attendance": {
+          "label": "Catat presensi",
+          "description": "Mencatat kehadiran siswa"
+        },
+        "manage_counseling": {
+          "label": "Kelola catatan konseling",
+          "description": "Menulis dan membaca catatan konseling"
+        },
+        "manage_discipline_catalog": {
+          "label": "Kelola katalog pelanggaran",
+          "description": "Atur jenis pelanggaran dan poinnya"
+        },
+        "manage_early_warning_rules": {
+          "label": "Kelola aturan peringatan dini",
+          "description": "Atur ambang dan bobot peringatan dini"
+        },
+        "manage_enrollments": {
+          "label": "Kelola penempatan siswa",
+          "description": "Tempatkan, pindahkan, impor, dan naikkan kelas siswa"
+        },
+        "manage_extracurriculars": {
+          "label": "Kelola ekstrakurikuler",
+          "description": "Atur daftar ekskul dan anggotanya"
+        },
+        "manage_fee_types": {
+          "label": "Kelola jenis biaya",
+          "description": "Atur jenis biaya dan potongan per siswa"
+        },
+        "manage_grades": {
+          "label": "Kelola nilai",
+          "description": "Input dan ubah nilai"
+        },
+        "manage_integrations": {
+          "label": "Kelola integrasi",
+          "description": "Buat kunci API dan atur webhook"
+        },
+        "manage_library_catalog": {
+          "label": "Kelola katalog perpustakaan",
+          "description": "Atur bibliografi dan eksemplar"
+        },
+        "manage_library_circulation": {
+          "label": "Kelola sirkulasi",
+          "description": "Layani peminjaman, pengembalian, dan perpanjangan"
+        },
+        "manage_library_members": {
+          "label": "Kelola anggota perpustakaan",
+          "description": "Atur keanggotaan perpustakaan"
+        },
+        "manage_library_settings": {
+          "label": "Kelola aturan perpustakaan",
+          "description": "Atur aturan pinjam dan pengaturan perpustakaan"
+        },
+        "manage_master_data": {
+          "label": "Kelola data induk",
+          "description": "Atur mapel, ruang, kelas, dan jam pelajaran"
+        },
+        "manage_mentor_groups": {
+          "label": "Kelola kelompok guru wali",
+          "description": "Buat kelompok, tempatkan siswa, dan atur batas anggota"
+        },
+        "manage_mentoring": {
+          "label": "Kelola catatan guru wali",
+          "description": "Tulis catatan pertemuan dan ringkasan semester"
+        },
+        "manage_notification_settings": {
+          "label": "Kelola default notifikasi",
+          "description": "Atur kanal notifikasi default sekolah"
+        },
+        "manage_permissions": {
+          "label": "Kelola peran dan izin",
+          "description": "Buat peran dan atur izinnya"
+        },
+        "manage_report_schedules": {
+          "label": "Kelola jadwal laporan",
+          "description": "Atur ekspor laporan berkala dan penerimanya"
+        },
+        "manage_schedules": {
+          "label": "Kelola jadwal",
+          "description": "Buat dan ubah jadwal mengajar"
+        },
+        "manage_settings": {
+          "label": "Kelola pengaturan sekolah",
+          "description": "Ubah pengaturan dan merek sekolah"
+        },
+        "manage_staff_attendance": {
+          "label": "Catat presensi pegawai",
+          "description": "Catat lewat pindai, input manual, atau impor mesin"
+        },
+        "manage_staff_attendance_schedules": {
+          "label": "Kelola jadwal kerja",
+          "description": "Atur jadwal kerja pegawai"
+        },
+        "manage_supervision": {
+          "label": "Kelola supervisi",
+          "description": "Atur instrumen, jadwal, dan lakukan observasi"
+        },
+        "manage_teaching_assignments": {
+          "label": "Kelola penugasan mengajar",
+          "description": "Tetapkan guru pengampu mapel di tiap kelas"
+        },
+        "manage_visitor_incidents": {
+          "label": "Kelola insiden",
+          "description": "Catat, ubah, atau tutup insiden kampus"
+        },
+        "manage_visitors": {
+          "label": "Kelola tamu",
+          "description": "Catat tamu masuk dan keluar serta daftar tamu yang ditunggu"
+        },
+        "manage_whatsapp": {
+          "label": "Kelola WhatsApp",
+          "description": "Atur gateway, template, dan log WhatsApp"
+        },
+        "manage_workflows": {
+          "label": "Kelola alur persetujuan",
+          "description": "Atur alur izin keluar, terlambat, dan pengajuan izin"
+        },
+        "platform_superadmin": {
+          "label": "Operator platform",
+          "description": "Kelola semua sekolah, modul, dan ekspor lintas sekolah"
+        },
+        "publish_announcements": {
+          "label": "Terbitkan pengumuman",
+          "description": "Terbitkan, jadwalkan, atau arsipkan pengumuman"
+        },
+        "record_extracurricular_attendance": {
+          "label": "Catat presensi ekskul",
+          "description": "Jadwalkan pertemuan ekskul dan catat kehadirannya"
+        },
+        "record_payments": {
+          "label": "Catat pembayaran",
+          "description": "Catat pembayaran tagihan dan cetak kuitansi"
+        },
+        "record_violations": {
+          "label": "Catat pelanggaran",
+          "description": "Catat atau batalkan pelanggaran siswa"
+        },
+        "respond_to_supervision": {
+          "label": "Tanggapi supervisi",
+          "description": "Guru menanggapi hasil observasi kelasnya"
+        },
+        "review_leave_requests": {
+          "label": "Tinjau pengajuan izin",
+          "description": "Tinjau pengajuan izin (tugas wali kelas)"
+        },
+        "scan_exit_permits": {
+          "label": "Pindai izin keluar",
+          "description": "Pindai kode izin keluar di gerbang (tugas satpam)"
+        },
+        "submit_leave_requests": {
+          "label": "Ajukan izin",
+          "description": "Mengajukan izin tidak masuk"
+        },
+        "view_academic_data": {
+          "label": "Lihat data akademik",
+          "description": "Lihat tahun ajaran, kelas, mapel, dan jam pelajaran"
+        },
+        "view_activities": {
+          "label": "Lihat kegiatan",
+          "description": "Lihat ekskul, anggota, kegiatan, dan prestasi"
+        },
+        "view_announcements": {
+          "label": "Lihat pengumuman",
+          "description": "Membaca pengumuman"
+        },
+        "view_attendance": {
+          "label": "Lihat presensi",
+          "description": "Lihat rekap kehadiran"
+        },
+        "view_audit_logs": {
+          "label": "Lihat jejak audit",
+          "description": "Lihat riwayat perubahan oleh pengguna"
+        },
+        "view_billing": {
+          "label": "Lihat keuangan",
+          "description": "Lihat jenis biaya, tagihan, pembayaran, dan tunggakan"
+        },
+        "view_child_attendance": {
+          "label": "Lihat presensi anak",
+          "description": "Lihat kehadiran anak"
+        },
+        "view_child_billing": {
+          "label": "Lihat tagihan anak",
+          "description": "Lihat tagihan dan riwayat bayar anak"
+        },
+        "view_child_grades": {
+          "label": "Lihat nilai anak",
+          "description": "Lihat nilai anak"
+        },
+        "view_dashboard": {
+          "label": "Lihat beranda",
+          "description": "Membuka halaman beranda"
+        },
+        "view_discipline": {
+          "label": "Lihat kesiswaan",
+          "description": "Lihat pelanggaran, poin, dan surat peringatan"
+        },
+        "view_early_warning": {
+          "label": "Lihat peringatan dini",
+          "description": "Lihat daftar siswa berisiko dan rinciannya"
+        },
+        "view_integrations": {
+          "label": "Lihat integrasi",
+          "description": "Lihat kunci API, webhook, dan log pengiriman"
+        },
+        "view_journals_all": {
+          "label": "Lihat semua jurnal",
+          "description": "Lihat jurnal mengajar seluruh kelas"
+        },
+        "view_library": {
+          "label": "Lihat katalog",
+          "description": "Menjelajah katalog perpustakaan"
+        },
+        "view_library_reports": {
+          "label": "Lihat laporan perpustakaan",
+          "description": "Membuka laporan perpustakaan"
+        },
+        "view_mentoring": {
+          "label": "Lihat guru wali",
+          "description": "Lihat kelompok, anggota, dan rincian per siswa"
+        },
+        "view_monitor_presence": {
+          "label": "Lihat koneksi monitor",
+          "description": "Lihat siapa yang sedang membuka monitor langsung"
+        },
+        "view_notifications": {
+          "label": "Lihat notifikasi",
+          "description": "Membaca notifikasi"
+        },
+        "view_own_grades": {
+          "label": "Lihat nilai sendiri",
+          "description": "Siswa melihat nilainya sendiri"
+        },
+        "view_own_library_loans": {
+          "label": "Lihat pinjaman sendiri",
+          "description": "Lihat pinjaman, reservasi, dan denda sendiri"
+        },
+        "view_reports": {
+          "label": "Lihat laporan",
+          "description": "Lihat laporan lintas modul"
+        },
+        "view_roles": {
+          "label": "Lihat peran",
+          "description": "Lihat daftar peran dan katalog izin"
+        },
+        "view_schedules": {
+          "label": "Lihat jadwal",
+          "description": "Lihat jadwal mengajar"
+        },
+        "view_staff_attendance": {
+          "label": "Lihat presensi pegawai",
+          "description": "Lihat rekap kehadiran pegawai"
+        },
+        "view_supervision": {
+          "label": "Lihat supervisi",
+          "description": "Lihat siklus, observasi, dan laporan supervisi"
+        },
+        "view_users": {
+          "label": "Lihat pengguna",
+          "description": "Melihat akun pengguna"
+        },
+        "view_visitor_incidents": {
+          "label": "Lihat insiden",
+          "description": "Membaca catatan insiden kampus"
+        },
+        "view_visitor_reports": {
+          "label": "Lihat laporan tamu",
+          "description": "Lihat dan ekspor rekap tamu harian dan bulanan"
+        },
+        "view_visitors": {
+          "label": "Lihat tamu",
+          "description": "Lihat daftar tamu, papan gerbang, dan riwayat kunjungan"
+        },
+        "void_payments": {
+          "label": "Batalkan pembayaran",
+          "description": "Membatalkan pembayaran yang tercatat"
+        }
+      },
+      "permissionCount": "{granted} dari {total} izin",
+      "unsaved": "Ada perubahan yang belum disimpan"
     }
   }
 }

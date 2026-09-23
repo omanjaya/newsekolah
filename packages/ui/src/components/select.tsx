@@ -63,7 +63,11 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select
           className,
         )}
       >
-        <SelectPrimitive.Value placeholder={placeholder} />
+        {/* Left aligned like an input: a long option that has to wrap reads
+            as text, not as a centred button label. */}
+        <span className="min-w-0 flex-1 text-left leading-tight">
+          <SelectPrimitive.Value placeholder={placeholder} />
+        </span>
         <SelectPrimitive.Icon>
           <ChevronDown className="size-4 text-fg-muted" aria-hidden="true" />
         </SelectPrimitive.Icon>

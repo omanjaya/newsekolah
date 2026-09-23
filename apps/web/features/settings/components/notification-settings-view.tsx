@@ -127,7 +127,7 @@ export function NotificationSettingsView(): ReactElement {
               return (
                 <li key={kind} className="flex flex-col gap-2 rounded-sm border border-border p-3">
                   <span className="text-[13px] font-medium text-fg">{tKinds(kind)}</span>
-                  <div className="flex flex-col gap-2">
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-4">
                     {NOTIFICATION_CHANNELS.map((channel) => (
                       <div key={channel} className="flex items-center justify-between gap-3">
                         <span className="text-[13px] text-fg-muted">

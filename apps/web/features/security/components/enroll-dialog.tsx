@@ -47,7 +47,7 @@ export function EnrollDialog({
           </div>
           <div className="flex flex-col gap-1">
             <span className="text-[13px] text-fg-muted">{t("manualEntryLabel")}</span>
-            <code className="rounded-xs bg-bg px-2 py-1 text-[13px] tracking-wide text-fg">
+            <code className="break-all rounded-xs bg-bg px-2 py-1 text-[13px] tracking-wide text-fg">
               {enrolment.secret}
             </code>
           </div>

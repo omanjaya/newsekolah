@@ -216,6 +216,7 @@
     },
     "settings": {
       "appearance": {
+        "eyebrow": "Settings",
         "title": "Appearance",
         "description": "Set the light or dark theme for this device.",
         "themeLabel": "Theme",
@@ -1239,9 +1240,364 @@
         "supervision": "Supervision",
         "visitors": "Visitors",
         "scheduling": "Scheduling",
-        "staff_attendance": "Staff attendance"
+        "staff_attendance": "Staff attendance",
+        "general": "General",
+        "grading": "Grading",
+        "reporting": "Reporting"
       },
-      "dutyOnlyHint": "Cannot be granted directly to the teacher role. Grant it through a duty assignment under School Data > Assignments."
+      "dutyOnlyHint": "Cannot be granted directly to the teacher role. Grant it through a duty assignment under School Data > Assignments.",
+      "permissions": {
+        "approve_child_leave_requests": {
+          "label": "Approve child's leave",
+          "description": "Approve or reject a linked child's leave request"
+        },
+        "can_supervise": {
+          "label": "Supervisory oversight",
+          "description": "Supervisory oversight flag"
+        },
+        "correct_attendance": {
+          "label": "Correct attendance",
+          "description": "Correct submitted attendance"
+        },
+        "correct_staff_attendance": {
+          "label": "Correct staff attendance",
+          "description": "Correct a staff attendance record"
+        },
+        "create_announcements": {
+          "label": "Create announcements",
+          "description": "Write new announcements"
+        },
+        "create_users": {
+          "label": "Create users",
+          "description": "Create user accounts"
+        },
+        "delete_announcements": {
+          "label": "Delete announcements",
+          "description": "Delete announcements"
+        },
+        "delete_users": {
+          "label": "Archive users",
+          "description": "Archive user accounts"
+        },
+        "edit_announcements": {
+          "label": "Edit announcements",
+          "description": "Edit announcements"
+        },
+        "edit_users": {
+          "label": "Edit users",
+          "description": "Edit user accounts"
+        },
+        "generate_bills": {
+          "label": "Generate bills",
+          "description": "Generate bills for a period"
+        },
+        "impersonate_users": {
+          "label": "Impersonate users",
+          "description": "Start a session as another user"
+        },
+        "issue_leave_letters": {
+          "label": "Issue leave letters",
+          "description": "Issue a leave letter (counselor duty)"
+        },
+        "issue_scan_tokens": {
+          "label": "Issue QR codes",
+          "description": "Mint QR codes for entry, late arrivals and approvals"
+        },
+        "issue_warning_letters": {
+          "label": "Issue warning letters",
+          "description": "Issue numbered warning letters"
+        },
+        "manage_academic_years": {
+          "label": "Manage academic years",
+          "description": "Create, activate and archive academic years, terms and the school calendar"
+        },
+        "manage_achievements": {
+          "label": "Manage achievements",
+          "description": "Record student competition achievements"
+        },
+        "manage_activity_events": {
+          "label": "Manage school activities",
+          "description": "Create and edit one-off school activities"
+        },
+        "manage_attendance": {
+          "label": "Record attendance",
+          "description": "Record student attendance"
+        },
+        "manage_counseling": {
+          "label": "Manage counseling",
+          "description": "Write and read counseling notes"
+        },
+        "manage_discipline_catalog": {
+          "label": "Manage violation catalog",
+          "description": "Edit violations and their points"
+        },
+        "manage_early_warning_rules": {
+          "label": "Manage early-warning rules",
+          "description": "Tune early-warning thresholds and weights"
+        },
+        "manage_enrollments": {
+          "label": "Manage enrollments",
+          "description": "Assign, move, import and promote student enrollments"
+        },
+        "manage_extracurriculars": {
+          "label": "Manage extracurriculars",
+          "description": "Edit the club catalogue and memberships"
+        },
+        "manage_fee_types": {
+          "label": "Manage fee types",
+          "description": "Edit fee types and per-student discounts"
+        },
+        "manage_grades": {
+          "label": "Manage grades",
+          "description": "Enter and edit grades"
+        },
+        "manage_integrations": {
+          "label": "Manage integrations",
+          "description": "Create API keys and manage webhooks"
+        },
+        "manage_library_catalog": {
+          "label": "Manage library catalog",
+          "description": "Manage bibliographies and items"
+        },
+        "manage_library_circulation": {
+          "label": "Manage circulation",
+          "description": "Handle loans, returns and renewals"
+        },
+        "manage_library_members": {
+          "label": "Manage library members",
+          "description": "Manage library members"
+        },
+        "manage_library_settings": {
+          "label": "Manage library settings",
+          "description": "Manage loan rules and settings"
+        },
+        "manage_master_data": {
+          "label": "Manage master data",
+          "description": "Manage subjects, rooms, classes and periods"
+        },
+        "manage_mentor_groups": {
+          "label": "Manage mentor groups",
+          "description": "Create groups, assign students and set the size limit"
+        },
+        "manage_mentoring": {
+          "label": "Manage mentoring",
+          "description": "Write meeting notes and term summaries"
+        },
+        "manage_notification_settings": {
+          "label": "Manage notification defaults",
+          "description": "Change school-wide notification channels"
+        },
+        "manage_permissions": {
+          "label": "Manage roles and permissions",
+          "description": "Create roles and assign permissions"
+        },
+        "manage_report_schedules": {
+          "label": "Manage report schedules",
+          "description": "Configure recurring report exports"
+        },
+        "manage_schedules": {
+          "label": "Manage schedules",
+          "description": "Create and edit teaching schedules"
+        },
+        "manage_settings": {
+          "label": "Manage school settings",
+          "description": "Change school settings and branding"
+        },
+        "manage_staff_attendance": {
+          "label": "Record staff attendance",
+          "description": "Record by scan, manual entry or device import"
+        },
+        "manage_staff_attendance_schedules": {
+          "label": "Manage work schedules",
+          "description": "Edit an employee's work schedule"
+        },
+        "manage_supervision": {
+          "label": "Manage supervision",
+          "description": "Define instruments, schedule and run observations"
+        },
+        "manage_teaching_assignments": {
+          "label": "Manage teaching assignments",
+          "description": "Assign teachers to teach a subject in a class"
+        },
+        "manage_visitor_incidents": {
+          "label": "Manage incidents",
+          "description": "Record, update or close a campus incident"
+        },
+        "manage_visitors": {
+          "label": "Manage visitors",
+          "description": "Sign guests in and out and manage expected guests"
+        },
+        "manage_whatsapp": {
+          "label": "Manage WhatsApp",
+          "description": "Configure the gateway, templates and log"
+        },
+        "manage_workflows": {
+          "label": "Manage approval workflows",
+          "description": "Configure approval workflows"
+        },
+        "platform_superadmin": {
+          "label": "Platform operator",
+          "description": "Manage every school, module flags and exports"
+        },
+        "publish_announcements": {
+          "label": "Publish announcements",
+          "description": "Publish, schedule or archive an announcement"
+        },
+        "record_extracurricular_attendance": {
+          "label": "Record club attendance",
+          "description": "Schedule club meetings and record attendance"
+        },
+        "record_payments": {
+          "label": "Record payments",
+          "description": "Record a payment and print its receipt"
+        },
+        "record_violations": {
+          "label": "Record violations",
+          "description": "Record or void a student's violation"
+        },
+        "respond_to_supervision": {
+          "label": "Respond to supervision",
+          "description": "Respond to an observation of one's own lesson"
+        },
+        "review_leave_requests": {
+          "label": "Review leave requests",
+          "description": "Review a leave request (homeroom duty)"
+        },
+        "scan_exit_permits": {
+          "label": "Scan exit permits",
+          "description": "Scan exit permit codes at the gate (security duty)"
+        },
+        "submit_leave_requests": {
+          "label": "Submit leave requests",
+          "description": "Submit a leave request"
+        },
+        "view_academic_data": {
+          "label": "View academic data",
+          "description": "View academic years, classes, subjects and periods"
+        },
+        "view_activities": {
+          "label": "View activities",
+          "description": "See clubs, memberships, activities and achievements"
+        },
+        "view_announcements": {
+          "label": "View announcements",
+          "description": "Read announcements"
+        },
+        "view_attendance": {
+          "label": "View attendance",
+          "description": "View attendance records"
+        },
+        "view_audit_logs": {
+          "label": "View audit log",
+          "description": "View the audit log"
+        },
+        "view_billing": {
+          "label": "View billing",
+          "description": "See fees, bills, payments and arrears"
+        },
+        "view_child_attendance": {
+          "label": "View child's attendance",
+          "description": "See a linked child's attendance"
+        },
+        "view_child_billing": {
+          "label": "View child's bills",
+          "description": "See a linked child's bills and payments"
+        },
+        "view_child_grades": {
+          "label": "View child's grades",
+          "description": "See a linked child's grades"
+        },
+        "view_dashboard": {
+          "label": "View dashboard",
+          "description": "Open the dashboard"
+        },
+        "view_discipline": {
+          "label": "View discipline",
+          "description": "See violations, points and warning letters"
+        },
+        "view_early_warning": {
+          "label": "View early warning",
+          "description": "See the early-warning list and a student's detail"
+        },
+        "view_integrations": {
+          "label": "View integrations",
+          "description": "See API keys, webhooks and delivery logs"
+        },
+        "view_journals_all": {
+          "label": "View all journals",
+          "description": "See every class journal"
+        },
+        "view_library": {
+          "label": "View catalog",
+          "description": "Browse the library catalog"
+        },
+        "view_library_reports": {
+          "label": "View library reports",
+          "description": "View library reports"
+        },
+        "view_mentoring": {
+          "label": "View mentoring",
+          "description": "See a mentor group and its students"
+        },
+        "view_monitor_presence": {
+          "label": "View monitor presence",
+          "description": "See who has the live monitor open"
+        },
+        "view_notifications": {
+          "label": "View notifications",
+          "description": "Read notifications"
+        },
+        "view_own_grades": {
+          "label": "View own grades",
+          "description": "A student sees their own grades"
+        },
+        "view_own_library_loans": {
+          "label": "View own loans",
+          "description": "See own loans, reservations and fines"
+        },
+        "view_reports": {
+          "label": "View reports",
+          "description": "View cross-module reports"
+        },
+        "view_roles": {
+          "label": "View roles",
+          "description": "View roles and the permission catalog"
+        },
+        "view_schedules": {
+          "label": "View schedules",
+          "description": "View teaching schedules"
+        },
+        "view_staff_attendance": {
+          "label": "View staff attendance",
+          "description": "View staff attendance records"
+        },
+        "view_supervision": {
+          "label": "View supervision",
+          "description": "See cycles, observations and reports"
+        },
+        "view_users": {
+          "label": "View users",
+          "description": "View user accounts"
+        },
+        "view_visitor_incidents": {
+          "label": "View incidents",
+          "description": "Read campus incident records"
+        },
+        "view_visitor_reports": {
+          "label": "View visitor reports",
+          "description": "See and export visitor recaps"
+        },
+        "view_visitors": {
+          "label": "View visitors",
+          "description": "See expected guests, the gate board and history"
+        },
+        "void_payments": {
+          "label": "Void payments",
+          "description": "Void a recorded payment"
+        }
+      },
+      "permissionCount": "{granted} of {total} permissions",
+      "unsaved": "You have unsaved changes"
     }
   }
 }
