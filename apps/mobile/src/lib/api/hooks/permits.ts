@@ -1,7 +1,7 @@
 // Scan tokens and a student's own permits: exit permits, late arrivals,
 // planned leave requests. Duty/homeroom review of these lives in
 // ./review.ts instead, since it is a different audience and permission.
-import { queryKeys } from "@newsekolah/api-client";
+import { ApiError, queryKeys } from "@newsekolah/api-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getApiClient } from "@/lib/api/client";
 import type { LeaveCategory, ScanPurpose } from "./types";
@@ -101,7 +101,16 @@ export function useScanGate() {
 export function useCurrentLateArrival(enabled: boolean) {
   return useQuery({
     queryKey: queryKeys.lateArrivalCurrent(),
-    queryFn: () => getApiClient().GET("/v1/late-arrivals/current"),
+    // 404 is the documented "no late arrival in progress" answer; resolve
+    // it to null so the query does not sit in an error state.
+    queryFn: async () => {
+      try {
+        return await getApiClient().GET("/v1/late-arrivals/current");
+      } catch (error) {
+        if (error instanceof ApiError && error.status === 404) return null;
+        throw error;
+      }
+    },
     enabled,
     retry: false,
   });

@@ -1,6 +1,6 @@
 "use client";
 
-import { queryKeys, type components } from "@newsekolah/api-client";
+import { ApiError, queryKeys, type components } from "@newsekolah/api-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { useApiClient } from "../../lib/api/client";
@@ -166,7 +166,16 @@ export function useCurrentLateArrivalQuery(enabled = true) {
   const client = useApiClient();
   return useQuery({
     queryKey: queryKeys.lateArrivalCurrent(),
-    queryFn: () => client.GET("/v1/late-arrivals/current"),
+    // 404 is the documented "no late arrival in progress" answer, not a
+    // failure; resolve it to null so the query stays in a success state.
+    queryFn: async (): Promise<LateArrivalDetail | null> => {
+      try {
+        return await client.GET("/v1/late-arrivals/current");
+      } catch (error) {
+        if (error instanceof ApiError && error.status === 404) return null;
+        throw error;
+      }
+    },
     enabled,
     retry: false,
   });
