@@ -20,6 +20,7 @@ import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
+import { QueryError } from "../../../components/query-error";
 import { useSession } from "../../../lib/session/session-provider";
 import { useRememberedViewState } from "../../../lib/view-state/view-state-provider";
 import {
@@ -43,7 +44,7 @@ export function NotificationsView(): ReactElement {
   );
   const [search, setSearch] = useRememberedViewState("notifications-search", "");
   const [kind, setKind] = useRememberedViewState<NotificationKind | "">("notifications-kind", "");
-  const { data, isLoading } = useNotificationsQuery({
+  const { data, isLoading, isError, refetch } = useNotificationsQuery({
     unreadOnly: filter === "unread",
     q: search.trim() || undefined,
     kind: kind || undefined,
@@ -116,6 +117,8 @@ export function NotificationsView(): ReactElement {
           <Skeleton className="h-16 w-full" />
           <Skeleton className="h-16 w-full" />
         </div>
+      ) : isError ? (
+        <QueryError retry={refetch} />
       ) : items.length === 0 ? (
         <EmptyState
           icon={<Bell aria-hidden="true" />}

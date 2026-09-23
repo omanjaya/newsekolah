@@ -19,6 +19,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { QueryError } from "../../../components/query-error";
 import { useCan } from "../../../lib/session/session-provider";
 import { type Incident, useIncidentsQuery } from "../api";
 
@@ -64,7 +65,7 @@ export function IncidentLogView(): ReactElement {
   const [creating, setCreating] = useState(false);
   const [openIncidentId, setOpenIncidentId] = useState<string | null>(null);
 
-  const { data, isLoading } = useIncidentsQuery(from, to, includeClosed);
+  const { data, isLoading, isError, refetch } = useIncidentsQuery(from, to, includeClosed);
   const items = data?.data ?? [];
 
   const columns = useMemo<ColumnDef<Incident>[]>(
@@ -146,7 +147,7 @@ export function IncidentLogView(): ReactElement {
         }
       />
 
-      <label className="flex items-center gap-2 text-[13px] font-medium">
+      <label className="flex min-h-11 w-fit cursor-pointer items-center gap-2 text-[13px] font-medium">
         <Checkbox
           checked={includeClosed}
           onCheckedChange={(v) => {
@@ -175,11 +176,15 @@ export function IncidentLogView(): ReactElement {
             setOpenIncidentId(item.id);
           }}
           emptyState={
-            <EmptyState
-              icon={<domainIcons.incident aria-hidden="true" />}
-              title={t("emptyTitle")}
-              description={t("emptyBody")}
-            />
+            isError ? (
+              <QueryError retry={refetch} />
+            ) : (
+              <EmptyState
+                icon={<domainIcons.incident aria-hidden="true" />}
+                title={t("emptyTitle")}
+                description={t("emptyBody")}
+              />
+            )
           }
         />
       </div>

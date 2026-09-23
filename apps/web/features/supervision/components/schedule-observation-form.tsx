@@ -8,6 +8,7 @@ import { useState } from "react";
 
 import { useActiveYear } from "../../../lib/hooks/use-active-year";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { todayInZone } from "../../../lib/tenant-date";
 import {
   useClassesQuery,
   useLookup,
@@ -18,7 +19,7 @@ import { useSchedulesQuery } from "../../schedule/api";
 import { useScheduleObservationMutation } from "../api";
 
 function today(): string {
-  return new Date().toISOString().slice(0, 10);
+  return todayInZone();
 }
 
 /** Schedules an observation against one of a teacher's own lesson blocks. */

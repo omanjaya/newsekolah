@@ -36,7 +36,6 @@
     }
   },
   "cycleDetail": {
-    "eyebrow": "Supervision",
     "columns": {
       "lessonDate": "Lesson date",
       "teacher": "Teacher"
@@ -51,7 +50,6 @@
     "completeTitle": "Complete observation"
   },
   "cycleReport": {
-    "eyebrow": "Supervision",
     "title": "Cycle report: {cycle}",
     "columns": {
       "teacher": "Teacher",
@@ -59,7 +57,8 @@
     },
     "unknownTeacher": "Unknown teacher",
     "emptyTitle": "No teacher scheduled yet",
-    "emptyBody": "Teachers scheduled for observation in this cycle will show up here."
+    "emptyBody": "Teachers scheduled for observation in this cycle will show up here.",
+    "breadcrumb": "Report"
   },
   "schedule": {
     "form": {
@@ -84,7 +83,6 @@
     "saved": "Observation saved"
   },
   "teacherReport": {
-    "eyebrow": "Cycle: {cycle}",
     "export": "Download",
     "overallAverage": "Overall average",
     "byCriterion": "Average by criterion",
@@ -93,7 +91,6 @@
     "scoreCount": "{count} scores"
   },
   "observationDetail": {
-    "eyebrow": "Cycle: {cycle}",
     "scores": "Scores",
     "observerNotes": "Observer notes",
     "teacherResponse": "Teacher response",
@@ -113,6 +110,7 @@
     "title": "My supervision",
     "cycle": "Cycle",
     "cyclePlaceholder": "Select a cycle",
-    "noCycles": "No supervision cycles yet."
+    "noCyclesTitle": "No supervision cycles yet",
+    "noCyclesBody": "You are not part of any supervision cycle yet. Contact the school admin if this looks wrong."
   }
 }

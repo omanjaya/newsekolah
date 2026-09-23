@@ -29,7 +29,7 @@ export function StaffAttendanceView(): ReactElement {
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
-      <PageHeader title={t("title")} />
+      <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="today">{t("tabs.today")}</TabsTrigger>

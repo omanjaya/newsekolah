@@ -3,7 +3,7 @@
 import type { Locale } from "@newsekolah/i18n";
 import { formatRelative } from "@newsekolah/i18n";
 import { Badge, EmptyState, SafeHtml, Skeleton, cn, domainIcons } from "@newsekolah/ui";
-import { Pin } from "lucide-react";
+import { ChevronDown, Pin } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -85,6 +85,13 @@ export function AnnouncementFeed({
                   {item.title}
                 </span>
                 {!item.is_read && <Badge variant="accent">{t("unread")}</Badge>}
+                <ChevronDown
+                  className={cn(
+                    "size-4 shrink-0 text-fg-muted transition-transform duration-[var(--duration-fast)]",
+                    expanded && "rotate-180",
+                  )}
+                  aria-hidden="true"
+                />
               </span>
               <span className="text-[12px] text-fg-muted">
                 {formatRelative(item.published_at, { locale, timeZone: me?.tenant.timezone })}

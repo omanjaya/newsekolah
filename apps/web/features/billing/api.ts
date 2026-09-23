@@ -4,6 +4,7 @@ import { type components } from "@newsekolah/api-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { useApiClient } from "../../lib/api/client";
+import { todayInZone } from "../../lib/tenant-date";
 
 export type FeeType = components["schemas"]["FeeType"];
 export type FeeTypeWrite = components["schemas"]["FeeTypeWrite"];
@@ -268,7 +269,7 @@ export function useArrearsReportQuery(enabled = true) {
 
 /** Today as `YYYY-MM-DD`, the default paid-on date on the payment form. */
 export function today(): string {
-  return new Date().toISOString().slice(0, 10);
+  return todayInZone();
 }
 
 /** The current billing period as `YYYY-MM`, the default for generation. */

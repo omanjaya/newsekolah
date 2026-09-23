@@ -3,11 +3,11 @@
 import { ApiError } from "@newsekolah/api-client";
 import type { Locale } from "@newsekolah/i18n";
 import { formatDate } from "@newsekolah/i18n";
-import { Button, PageHeader, Skeleton, useToast } from "@newsekolah/ui";
+import { Button, PageHeader, Skeleton, cn, useToast } from "@newsekolah/ui";
 import { Download } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import type { ReactElement } from "react";
+import type { ReactElement, ReactNode } from "react";
 import { useState } from "react";
 
 import { QueryError } from "../../../components/query-error";
@@ -24,13 +24,17 @@ export function TeacherSupervisionReportView({
   cycleId,
   teacherId,
   hideHeader = false,
+  toolbar,
 }: {
   cycleId: string;
   teacherId: string;
   /** Set by an embedding page (e.g. "my report") that already shows its own title. */
   hideHeader?: boolean;
+  /** With `hideHeader`, shown on the export button's row (e.g. a cycle picker). */
+  toolbar?: ReactNode;
 }): ReactElement {
   const t = useTranslations("app.supervision.teacherReport");
+  const tRoot = useTranslations("app.supervision");
   const locale = useLocale() as Locale;
   const router = useRouter();
   const toast = useToast();
@@ -42,11 +46,16 @@ export function TeacherSupervisionReportView({
   );
   const [downloading, setDownloading] = useState(false);
 
-  if (isError && !data) return <QueryError retry={() => refetch()} className="m-4" />;
+  // Embedded under another page's header, the host already pads the page.
+  const shell = cn("flex flex-col gap-6", !hideHeader && "p-4 md:p-6");
+
+  if (isError && !data) {
+    return <QueryError retry={() => refetch()} className={hideHeader ? undefined : "m-4"} />;
+  }
 
   if (isLoading || !data) {
     return (
-      <div className="flex flex-col gap-4 p-4 md:p-6" aria-busy="true">
+      <div className={shell} aria-busy="true">
         <Skeleton className="h-8 w-64" />
         <Skeleton className="h-48 w-full" />
       </div>
@@ -72,6 +81,9 @@ export function TeacherSupervisionReportView({
     }
   }
 
+  // No completed observation yet: an average of 0.00 would read as a score.
+  const hasScores = data.observations.length > 0;
+
   const exportButton = (
     <Button
       size="sm"
@@ -87,42 +99,56 @@ export function TeacherSupervisionReportView({
   );
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
+    <div className={shell}>
       {hideHeader ? (
-        <div className="flex justify-end">{exportButton}</div>
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          {toolbar ?? <span />}
+          {exportButton}
+        </div>
       ) : (
         <PageHeader
-          eyebrow={t("eyebrow", { cycle: data.cycle.name })}
+          breadcrumb={[
+            { label: tRoot("navLabelCycles"), href: "/supervision/cycles" },
+            { label: data.cycle.name, href: `/supervision/cycles/${cycleId}` },
+            {
+              label: tRoot("cycleReport.breadcrumb"),
+              href: `/supervision/cycles/${cycleId}/report`,
+            },
+          ]}
           title={data.teacher_name}
           actions={exportButton}
         />
       )}
 
-      <section className="flex flex-col gap-2">
-        <h2 className="text-[16px] font-medium">{t("overallAverage")}</h2>
-        <p className="text-[24px] font-medium tabular-nums">{data.overall_average.toFixed(2)}</p>
-      </section>
+      <div className="grid gap-4 md:grid-cols-[minmax(0,14rem)_minmax(0,1fr)]">
+        <section className="flex flex-col gap-2 rounded-sm border border-border bg-surface p-4">
+          <h2 className="text-[13px] font-medium text-fg-muted">{t("overallAverage")}</h2>
+          <p className="text-[28px] font-medium tabular-nums">
+            {hasScores ? data.overall_average.toFixed(2) : "-"}
+          </p>
+        </section>
 
-      <section className="flex flex-col gap-3">
-        <h2 className="text-[16px] font-medium">{t("byCriterion")}</h2>
-        <ul className="flex max-w-sm flex-col gap-1 text-[13px]">
-          {data.cycle.instrument.criteria.map((c) => (
-            <li key={c.key} className="flex justify-between gap-2">
-              <span className="text-fg-muted">{c.name}</span>
-              <span className="tabular-nums">
-                {(data.criterion_average[c.key] ?? 0).toFixed(2)}
-              </span>
-            </li>
-          ))}
-        </ul>
-      </section>
+        <section className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-4">
+          <h2 className="text-[13px] font-medium text-fg-muted">{t("byCriterion")}</h2>
+          <ul className="flex flex-col gap-2 text-[13px]">
+            {data.cycle.instrument.criteria.map((c) => (
+              <li key={c.key} className="flex justify-between gap-3">
+                <span>{c.name}</span>
+                <span className="shrink-0 font-medium tabular-nums">
+                  {hasScores ? (data.criterion_average[c.key] ?? 0).toFixed(2) : "-"}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      </div>
 
       <section className="flex flex-col gap-3">
         <h2 className="text-[16px] font-medium">{t("observations")}</h2>
         {data.observations.length === 0 ? (
           <p className="text-[13px] text-fg-muted">{t("noObservations")}</p>
         ) : (
-          <ul className="flex flex-col divide-y divide-border rounded-sm border border-border">
+          <ul className="flex flex-col divide-y divide-border rounded-sm border border-border bg-surface">
             {data.observations.map((observation) => (
               <li key={observation.id}>
                 <button

@@ -33,6 +33,7 @@ import { ScheduleObservationForm } from "./schedule-observation-form";
 
 export function SupervisionCycleDetailView({ cycleId }: { cycleId: string }): ReactElement {
   const t = useTranslations("app.supervision.cycleDetail");
+  const tRoot = useTranslations("app.supervision");
   const locale = useLocale() as Locale;
   const router = useRouter();
   const canManage = useCan("manage_supervision");
@@ -98,10 +99,13 @@ export function SupervisionCycleDetailView({ cycleId }: { cycleId: string }): Re
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
       <PageHeader
-        eyebrow={t("eyebrow")}
+        breadcrumb={[
+          { label: tRoot("navLabelCycles"), href: "/supervision/cycles" },
+          { label: cycle.data.name },
+        ]}
         title={cycle.data.name}
         actions={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button
               size="sm"
               variant="secondary"
@@ -141,11 +145,15 @@ export function SupervisionCycleDetailView({ cycleId }: { cycleId: string }): Re
         isLoading={scheduled.isLoading}
         getRowId={(item) => item.id}
         emptyState={
-          <EmptyState
-            icon={<domainIcons.supervision aria-hidden="true" />}
-            title={t("emptyTitle")}
-            description={t("emptyBody")}
-          />
+          scheduled.isError ? (
+            <QueryError retry={() => scheduled.refetch()} />
+          ) : (
+            <EmptyState
+              icon={<domainIcons.supervision aria-hidden="true" />}
+              title={t("emptyTitle")}
+              description={t("emptyBody")}
+            />
+          )
         }
       />
 

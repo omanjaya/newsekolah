@@ -25,6 +25,7 @@ import {
  */
 export function ObservationDetailView({ observationId }: { observationId: string }): ReactElement {
   const t = useTranslations("app.supervision.observationDetail");
+  const tRoot = useTranslations("app.supervision");
   const locale = useLocale() as Locale;
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
@@ -64,7 +65,10 @@ export function ObservationDetailView({ observationId }: { observationId: string
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
       <PageHeader
-        eyebrow={t("eyebrow", { cycle: cycle.data.name })}
+        breadcrumb={[
+          { label: tRoot("navLabelCycles"), href: "/supervision/cycles" },
+          { label: cycle.data.name, href: `/supervision/cycles/${cycle.data.id}` },
+        ]}
         title={formatDateTime(obs.observed_at, { locale })}
       />
 

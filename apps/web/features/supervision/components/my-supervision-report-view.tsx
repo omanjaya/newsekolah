@@ -1,10 +1,11 @@
 "use client";
 
-import { PageHeader, Select } from "@newsekolah/ui";
+import { EmptyState, PageHeader, Select, Skeleton, domainIcons } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
+import { QueryError } from "../../../components/query-error";
 import { useSession } from "../../../lib/session/session-provider";
 import { useSupervisionCyclesQuery } from "../api";
 
@@ -24,21 +25,39 @@ export function MySupervisionReportView(): ReactElement {
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
       <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
-      <label className="flex max-w-xs flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("cycle")}</span>
-        <Select
-          options={cycleOptions}
-          value={cycleId}
-          onValueChange={setSelectedCycleId}
-          placeholder={t("cyclePlaceholder")}
+      {cycles.isLoading ? (
+        <div className="flex flex-col gap-4" aria-busy="true">
+          <Skeleton className="h-10 w-full max-w-xs" />
+          <Skeleton className="h-48 w-full" />
+        </div>
+      ) : cycles.isError ? (
+        <QueryError retry={cycles.refetch} />
+      ) : cycleId === "" ? (
+        <EmptyState
+          icon={<domainIcons.supervision aria-hidden="true" />}
+          title={t("noCyclesTitle")}
+          description={t("noCyclesBody")}
         />
-      </label>
-
-      {cycleId === "" ? (
-        <p className="text-[13px] text-fg-muted">{t("noCycles")}</p>
-      ) : me ? (
-        <TeacherSupervisionReportView cycleId={cycleId} teacherId={me.id} hideHeader />
-      ) : null}
+      ) : (
+        me && (
+          <TeacherSupervisionReportView
+            cycleId={cycleId}
+            teacherId={me.id}
+            hideHeader
+            toolbar={
+              <label className="flex w-full max-w-xs flex-col gap-1 text-[13px]">
+                <span className="font-medium">{t("cycle")}</span>
+                <Select
+                  options={cycleOptions}
+                  value={cycleId}
+                  onValueChange={setSelectedCycleId}
+                  placeholder={t("cyclePlaceholder")}
+                />
+              </label>
+            }
+          />
+        )
+      )}
     </div>
   );
 }

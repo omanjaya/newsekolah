@@ -7,6 +7,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo } from "react";
 
+import { QueryError } from "../../../components/query-error";
 import { useClassesQuery, useDirectoryQuery, useLookup } from "../../reference/api";
 import { type ArrearsClassLine, type ArrearsStudentLine, useArrearsReportQuery } from "../api";
 
@@ -18,7 +19,7 @@ import { type ArrearsClassLine, type ArrearsStudentLine, useArrearsReportQuery }
 export function ArrearsReportView(): ReactElement {
   const t = useTranslations("app.billing.arrears");
   const locale = useLocale() as Locale;
-  const { data, isLoading } = useArrearsReportQuery();
+  const { data, isLoading, isError, refetch } = useArrearsReportQuery();
   const students = useDirectoryQuery("student");
   const studentMap = useLookup(students.data?.data);
   const classes = useClassesQuery();
@@ -85,6 +86,7 @@ export function ArrearsReportView(): ReactElement {
   );
 
   if (isLoading) return <Skeleton className="h-40 w-full" />;
+  if (isError) return <QueryError retry={refetch} />;
 
   if (byStudent.length === 0) {
     return (

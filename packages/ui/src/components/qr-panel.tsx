@@ -50,7 +50,9 @@ function Countdown({
       <div className={expired ? "opacity-30" : undefined} aria-hidden={expired}>
         <QRCodeSVG value={payload} size={220} level="M" marginSize={2} />
       </div>
-      <code className="rounded-xs bg-bg px-2 py-1 text-[13px] tracking-wide">{code}</code>
+      <code className="max-w-full break-all rounded-xs bg-bg px-2 py-1 text-center text-[13px] tracking-wide">
+        {code}
+      </code>
       <CountdownText
         expiresAt={expiresAt}
         expiredLabel={expiredLabel}

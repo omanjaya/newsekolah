@@ -22,6 +22,7 @@ import { useMemo, useState } from "react";
 import { useDateFilter } from "../../../lib/hooks/use-date-filter";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
+import { todayInZone } from "../../../lib/tenant-date";
 import { useDirectoryQuery, useLookup } from "../../reference/api";
 import { type ExpectedGuest, useCancelExpectedGuestMutation, useExpectedGuestsQuery } from "../api";
 
@@ -29,7 +30,7 @@ import { CheckInForm } from "./check-in-form";
 import { ExpectedGuestForm } from "./expected-guest-form";
 
 function today(): string {
-  return new Date().toISOString().slice(0, 10);
+  return todayInZone();
 }
 
 /** The office's ahead-of-time list, so the guard can find a name instead of typing it. */

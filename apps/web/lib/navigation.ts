@@ -8,6 +8,7 @@ import {
   Fingerprint,
   GraduationCap,
   Home,
+  LogIn,
   MonitorSmartphone,
   NotebookPen,
   Repeat,
@@ -133,6 +134,14 @@ export const navigation: NavItem[] = [
     href: "/staff-attendance",
     icon: Fingerprint,
     permission: "view_staff_attendance",
+    group: GROUP.staff,
+  },
+  {
+    key: "check-in",
+    labelKey: "app.staffAttendance.self.navLabel",
+    href: "/check-in",
+    icon: LogIn,
+    profileKinds: ["teacher", "staff"],
     group: GROUP.staff,
   },
   {
