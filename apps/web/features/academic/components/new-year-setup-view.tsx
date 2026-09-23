@@ -81,7 +81,7 @@ export function NewYearSetupView(): ReactElement {
             options={yearOptions.map((y) => ({ value: y.id, label: y.label }))}
             value={fromYearId}
             onValueChange={setFromYearId}
-            className="w-56"
+            className="w-full md:w-56"
           />
         </label>
         <label className="flex flex-col gap-1 text-[13px]">
@@ -90,7 +90,7 @@ export function NewYearSetupView(): ReactElement {
             options={yearOptions.map((y) => ({ value: y.id, label: y.label }))}
             value={toYearId}
             onValueChange={setToYearId}
-            className="w-56"
+            className="w-full md:w-56"
           />
         </label>
         <Button

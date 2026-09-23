@@ -161,7 +161,8 @@
     "legacyTitle": "Format lama",
     "legacyHint": "Lembar per mapel format lama (No / NIS / Nama / Nilai Rapor / satu kolom per kode TP yang dipetakan / Validasi), untuk alat impor yang masih memakai format ini.",
     "legacySubject": "Mapel",
-    "legacyDownload": "Unduh lembar format lama"
+    "legacyDownload": "Unduh lembar format lama",
+    "pickClass": "Kelas"
   },
   "tpMapping": {
     "pickTerm": "Pilih semester",
@@ -181,5 +182,7 @@
     "saved": "Pemetaan tersimpan.",
     "remove": "Hapus",
     "deleted": "Pemetaan dihapus."
-  }
+  },
+  "noAssignmentsTitle": "Belum ada kelas yang Anda ajar",
+  "noAssignmentsBody": "Lembar nilai terbuka setelah admin menetapkan kelas dan mapel yang Anda ajar di Penugasan mengajar."
 }

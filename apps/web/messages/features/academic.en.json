@@ -198,6 +198,7 @@
     "year": "Academic year",
     "downloadTemplate": "Download template",
     "chooseFile": "Choose an xlsx file",
+    "noFileChosen": "No file chosen",
     "moveExisting": "Move students who already have a different class this year",
     "partial": "Apply valid rows even if some rows have errors",
     "preview": "Preview",

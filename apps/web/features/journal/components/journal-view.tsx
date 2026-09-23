@@ -2,6 +2,7 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import {
+  Alert,
   Button,
   ConfirmDialog,
   DataTable,
@@ -19,7 +20,7 @@ import {
 } from "@newsekolah/ui";
 import type { ColumnDef, PaginationState } from "@tanstack/react-table";
 import { Download, MoreHorizontal, NotebookPen, Plus } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useFormatter, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
@@ -43,6 +44,8 @@ import { JournalForm } from "./journal-form";
  */
 export function JournalView(): ReactElement {
   const t = useTranslations("app.journal");
+  const tApp = useTranslations("app");
+  const format = useFormatter();
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const year = useActiveYear();
@@ -86,7 +89,20 @@ export function JournalView(): ReactElement {
 
   const columns = useMemo<ColumnDef<Journal>[]>(
     () => [
-      { accessorKey: "lesson_date", header: t("columns.date"), enableSorting: false },
+      {
+        accessorKey: "lesson_date",
+        header: t("columns.date"),
+        enableSorting: false,
+        // lesson_date is a calendar date (YYYY-MM-DD); reading it at local
+        // midnight keeps the day from shifting across time zones.
+        cell: ({ row }) =>
+          format.dateTime(new Date(`${row.original.lesson_date}T00:00:00`), {
+            weekday: "short",
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+          }),
+      },
       {
         id: "class",
         header: t("columns.class"),
@@ -134,7 +150,7 @@ export function JournalView(): ReactElement {
         ),
       },
     ],
-    [t, classMap, subjectMap],
+    [t, format, classMap, subjectMap],
   );
 
   return (
@@ -160,7 +176,7 @@ export function JournalView(): ReactElement {
       />
       <div className="flex flex-wrap items-end justify-between gap-3">
         {canViewAll && (
-          <label className="flex flex-col gap-1 text-[13px]">
+          <label className="flex w-full flex-col gap-1 text-[13px] sm:w-auto">
             <span className="font-medium text-fg">{t("filterClass")}</span>
             <Select
               options={(classes.data?.data ?? []).map((c) => ({ value: c.id, label: c.name }))}
@@ -172,7 +188,7 @@ export function JournalView(): ReactElement {
               placeholder={t("filterClassAll")}
               disabled={classes.isLoading}
               aria-label={t("filterClass")}
-              className="w-56"
+              className="w-full sm:w-56"
             />
           </label>
         )}
@@ -199,28 +215,56 @@ export function JournalView(): ReactElement {
       </div>
 
       <div className="flex flex-col md:min-h-0 md:flex-1">
-        <DataTable
-          stateKey="features/journal/components/journal-view:1"
-          mode="server"
-          data={items}
-          columns={columns}
-          rowCount={list.data?.total ?? 0}
-          pagination={pagination}
-          onPaginationChange={setPagination}
-          sorting={[]}
-          onSortingChange={() => undefined}
-          globalFilter=""
-          isLoading={list.isLoading}
-          getRowId={(item) => item.id}
-          fillHeight
-          emptyState={
-            <EmptyState
-              icon={<NotebookPen aria-hidden="true" />}
-              title={t("emptyTitle")}
-              description={t("emptyBody")}
-            />
-          }
-        />
+        {list.isError ? (
+          <Alert variant="warning" title={t("loadError")}>
+            <div className="flex flex-col items-start gap-2">
+              {list.error instanceof ApiError && <p>{apiErrorMessage(list.error.code)}</p>}
+              <Button
+                variant="secondary"
+                loading={list.isRefetching}
+                onClick={() => {
+                  void list.refetch();
+                }}
+              >
+                {tApp("offlinePage.retry")}
+              </Button>
+            </div>
+          </Alert>
+        ) : (
+          <DataTable
+            stateKey="features/journal/components/journal-view:1"
+            mode="server"
+            data={items}
+            columns={columns}
+            rowCount={list.data?.total ?? 0}
+            pagination={pagination}
+            onPaginationChange={setPagination}
+            sorting={[]}
+            onSortingChange={() => undefined}
+            globalFilter=""
+            isLoading={list.isLoading}
+            getRowId={(item) => item.id}
+            fillHeight
+            emptyState={
+              <EmptyState
+                icon={<NotebookPen aria-hidden="true" />}
+                title={t("emptyTitle")}
+                description={t("emptyBody")}
+                action={
+                  <Button
+                    size="sm"
+                    icon={<Plus />}
+                    onClick={() => {
+                      setEditing("new");
+                    }}
+                  >
+                    {t("new")}
+                  </Button>
+                }
+              />
+            }
+          />
+        )}
       </div>
 
       <Dialog

@@ -18,7 +18,10 @@ const buttonVariants = cva(
         primary: "bg-accent text-accent-fg hover:shadow-[inset_0_0_0_1px_currentColor]",
         secondary: "border border-border bg-surface text-fg hover:bg-bg",
         ghost: "text-fg hover:bg-bg",
-        danger: "bg-status-absent text-status-absent-fg hover:opacity-90",
+        // status-absent-fg is the text colour for the status on a light
+        // surface and equals the fill, so the label needs the white used
+        // on the accent fill instead.
+        danger: "bg-status-absent text-accent-fg hover:opacity-90",
       },
       size: {
         // Both sizes clear 44px on a touch screen and shrink once there is

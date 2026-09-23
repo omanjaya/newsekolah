@@ -4,12 +4,22 @@ import { ApiError } from "@newsekolah/api-client";
 import { Button, Input, Select, Textarea, useToast } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { useActiveYear } from "../../../lib/hooks/use-active-year";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { useSession } from "../../../lib/session/session-provider";
+import { useTeachingAssignmentsForTeacherQuery } from "../../academic/api-offerings";
 import { useClassesQuery, useSubjectsQuery } from "../../reference/api";
 import { useUpsertJournalMutation, type Journal } from "../api";
+
+/** Today as a calendar date (YYYY-MM-DD) in the device's own time zone. */
+function todayISO(): string {
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${now.getFullYear()}-${month}-${day}`;
+}
 
 /** Creates or replaces a journal entry: the API upserts by class/subject/date. */
 export function JournalForm({
@@ -27,17 +37,57 @@ export function JournalForm({
 
   const [classId, setClassId] = useState(initial?.class_id ?? "");
   const [subjectId, setSubjectId] = useState(initial?.subject_id ?? "");
-  const [lessonDate, setLessonDate] = useState(initial?.lesson_date ?? "");
+  // A journal is almost always written the day the lesson happened.
+  const [lessonDate, setLessonDate] = useState(initial?.lesson_date ?? todayISO());
   const [topic, setTopic] = useState(initial?.topic ?? "");
   const [activities, setActivities] = useState(initial?.activities ?? "");
   const [reflection, setReflection] = useState(initial?.reflection ?? "");
 
+  const { me } = useSession();
   const classes = useClassesQuery();
   const subjects = useSubjectsQuery();
+  // The server accepts a journal only for a class and subject the teacher
+  // is assigned to, so the pickers offer those pairs. Without any
+  // assignment (an admin, or a substitute) every class stays available.
+  const assignments = useTeachingAssignmentsForTeacherQuery(year.id, me?.id ?? "");
+  const pairs = useMemo(
+    () => (assignments.data?.data ?? []).filter((a) => a.is_active),
+    [assignments.data],
+  );
+  // An existing entry keeps its own class and subject (both are locked).
+  const scoped = pairs.length > 0 && initial === undefined;
+
+  const classOptions = useMemo(() => {
+    const all = classes.data?.data ?? [];
+    const taught = new Set(pairs.map((a) => a.class_id));
+    return all
+      .filter((c) => !scoped || taught.has(c.id))
+      .map((c) => ({ value: c.id, label: c.name }));
+  }, [classes.data, pairs, scoped]);
+
+  // With a single choice there is nothing to pick, so it is filled in.
+  const effectiveClassId =
+    classId || (classOptions.length === 1 ? (classOptions[0]?.value ?? "") : "");
+  const subjectOptions = useMemo(() => {
+    const all = subjects.data?.data ?? [];
+    const taught = new Set(
+      pairs.filter((a) => a.class_id === effectiveClassId).map((a) => a.subject_id),
+    );
+    return all
+      .filter((s) => !scoped || taught.has(s.id))
+      .map((s) => ({ value: s.id, label: s.name }));
+  }, [subjects.data, pairs, scoped, effectiveClassId]);
+
+  const effectiveSubjectId =
+    subjectId && (initial !== undefined || subjectOptions.some((o) => o.value === subjectId))
+      ? subjectId
+      : subjectOptions.length === 1
+        ? (subjectOptions[0]?.value ?? "")
+        : "";
 
   const canSubmit =
-    classId !== "" &&
-    subjectId !== "" &&
+    effectiveClassId !== "" &&
+    effectiveSubjectId !== "" &&
     lessonDate !== "" &&
     topic.trim() !== "" &&
     activities.trim() !== "";
@@ -46,8 +96,8 @@ export function JournalForm({
     upsert.mutate(
       {
         academic_year_id: year.id,
-        class_id: classId,
-        subject_id: subjectId,
+        class_id: effectiveClassId,
+        subject_id: effectiveSubjectId,
         lesson_date: lessonDate,
         topic: topic.trim(),
         activities: activities.trim(),
@@ -78,8 +128,8 @@ export function JournalForm({
       <label className="flex flex-col gap-1 text-[13px]">
         <span className="font-medium text-fg">{t("class")}</span>
         <Select
-          options={(classes.data?.data ?? []).map((c) => ({ value: c.id, label: c.name }))}
-          value={classId}
+          options={classOptions}
+          value={effectiveClassId}
           onValueChange={setClassId}
           placeholder={t("classPlaceholder")}
           disabled={classes.isLoading || initial !== undefined}
@@ -89,11 +139,11 @@ export function JournalForm({
       <label className="flex flex-col gap-1 text-[13px]">
         <span className="font-medium text-fg">{t("subject")}</span>
         <Select
-          options={(subjects.data?.data ?? []).map((s) => ({ value: s.id, label: s.name }))}
-          value={subjectId}
+          options={subjectOptions}
+          value={effectiveSubjectId}
           onValueChange={setSubjectId}
           placeholder={t("subjectPlaceholder")}
-          disabled={subjects.isLoading || initial !== undefined}
+          disabled={subjects.isLoading || effectiveClassId === "" || initial !== undefined}
           aria-label={t("subject")}
         />
       </label>
@@ -143,7 +193,7 @@ export function JournalForm({
         />
       </label>
 
-      <div className="flex justify-end gap-2 border-t border-border pt-4">
+      <div className="flex flex-col-reverse gap-2 border-t border-border pt-4 sm:flex-row sm:justify-end">
         <Button type="button" variant="secondary" onClick={onDone}>
           {t("cancel")}
         </Button>

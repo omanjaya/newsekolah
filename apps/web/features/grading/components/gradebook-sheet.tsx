@@ -53,7 +53,14 @@ export function GradebookSheet({
   const t = useTranslations("app.grading.sheet");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
-  const { data: sheet, isLoading, error } = useGradebookQuery({ classId, subjectId });
+  const tApp = useTranslations("app");
+  const {
+    data: sheet,
+    isLoading,
+    error,
+    refetch,
+    isRefetching,
+  } = useGradebookQuery({ classId, subjectId });
   const starBalancesQuery = useClassStarBalancesQuery(classId);
   const setPublication = useSetGradePublicationMutation();
 
@@ -77,7 +84,22 @@ export function GradebookSheet({
     return <Skeleton className="h-96 w-full" aria-busy="true" />;
   }
   if (error || !sheet) {
-    return <Alert variant="warning" title={t("loadError")} />;
+    return (
+      <Alert variant="warning" title={t("loadError")}>
+        <div className="flex flex-col items-start gap-2">
+          {error instanceof ApiError && <p>{apiErrorMessage(error.code)}</p>}
+          <Button
+            variant="secondary"
+            loading={isRefetching}
+            onClick={() => {
+              void refetch();
+            }}
+          >
+            {tApp("offlinePage.retry")}
+          </Button>
+        </div>
+      </Alert>
+    );
   }
 
   async function confirmPublish() {
@@ -107,7 +129,7 @@ export function GradebookSheet({
           }}
           placeholder={t("searchPlaceholder")}
           aria-label={t("searchPlaceholder")}
-          className="w-64"
+          className="w-full md:w-64"
         />
         {canManage && (
           <Button

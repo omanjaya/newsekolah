@@ -198,6 +198,7 @@
     "year": "Tahun ajaran",
     "downloadTemplate": "Unduh template",
     "chooseFile": "Pilih berkas xlsx",
+    "noFileChosen": "Belum ada berkas dipilih",
     "moveExisting": "Pindahkan siswa yang sudah punya kelas lain tahun ini",
     "partial": "Tetap terapkan baris yang valid meski ada baris bermasalah",
     "preview": "Tinjau",

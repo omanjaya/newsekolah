@@ -161,7 +161,8 @@
     "legacyTitle": "Legacy layout",
     "legacyHint": "The old per-subject sheet (No / NIS / Nama / Nilai Rapor / one column per mapped TP code / Validasi), for import tooling that still expects this shape.",
     "legacySubject": "Subject",
-    "legacyDownload": "Download legacy sheet"
+    "legacyDownload": "Download legacy sheet",
+    "pickClass": "Class"
   },
   "tpMapping": {
     "pickTerm": "Select term",
@@ -181,5 +182,7 @@
     "saved": "Mapping saved.",
     "remove": "Remove",
     "deleted": "Mapping removed."
-  }
+  },
+  "noAssignmentsTitle": "No classes assigned to you yet",
+  "noAssignmentsBody": "The gradebook opens once an admin assigns the classes and subjects you teach under Teaching assignments."
 }

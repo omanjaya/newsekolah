@@ -9,6 +9,7 @@ const query = vi.hoisted(() => vi.fn());
 vi.mock("next-intl", () => ({
   useTranslations: () => (key: string) => key,
   useLocale: () => "id",
+  useFormatter: () => ({ dateTime: (value: Date) => value.toISOString().slice(0, 10) }),
 }));
 vi.mock("../../../lib/hooks/use-active-year", () => ({ useActiveYear: () => ({ id: "year-1" }) }));
 vi.mock("../../../lib/session/session-provider", () => ({ useCan: () => true }));

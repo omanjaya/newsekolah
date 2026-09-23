@@ -2,7 +2,7 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import { Badge, Button, Checkbox, PageHeader, Select, useToast } from "@newsekolah/ui";
-import { Download, FileSpreadsheet } from "lucide-react";
+import { Download, FileSpreadsheet, FileUp } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -58,13 +58,13 @@ export function EnrollmentImportView(): ReactElement {
       <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
       <p className="text-[13px] text-fg-muted">{t("description")}</p>
 
-      <label className="flex w-fit flex-col gap-1 text-[13px]">
+      <label className="flex w-full flex-col md:w-fit gap-1 text-[13px]">
         <span className="font-medium">{t("year")}</span>
         <Select
           options={(years.data?.data ?? []).map((y) => ({ value: y.id, label: y.label }))}
           value={effectiveYearId}
           onValueChange={setYearId}
-          className="w-64"
+          className="w-full md:w-64"
         />
       </label>
 
@@ -89,9 +89,10 @@ export function EnrollmentImportView(): ReactElement {
       </div>
 
       <div className="flex flex-col gap-3 rounded-xs border border-border bg-surface p-4">
-        <label className="flex flex-col gap-1 text-[13px]">
+        <div className="flex flex-col gap-1 text-[13px]">
           <span className="font-medium">{t("chooseFile")}</span>
           <input
+            id="enrollment-import-file"
             type="file"
             accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             aria-label={t("chooseFile")}
@@ -100,11 +101,21 @@ export function EnrollmentImportView(): ReactElement {
               setRows(null);
               setCommitted(false);
             }}
-            className="text-[13px] text-fg file:mr-3 file:rounded-xs file:border file:border-border file:bg-bg file:px-3 file:py-1.5 file:text-[13px] file:font-medium"
+            className="peer sr-only"
           />
-        </label>
+          {/* The native file button cannot be sized for a thumb, so the
+              input stays for keyboard and screen readers and this label is
+              what is tapped; it shows the input's focus ring. */}
+          <label
+            htmlFor="enrollment-import-file"
+            className="flex h-11 w-fit max-w-full cursor-pointer items-center gap-2 rounded-sm border border-border px-3 text-[13px] text-fg hover:bg-bg peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-accent md:h-8"
+          >
+            <FileUp className="size-4 shrink-0" aria-hidden="true" />
+            <span className="truncate">{file ? file.name : t("noFileChosen")}</span>
+          </label>
+        </div>
 
-        <label className="flex items-center gap-2 text-[13px]">
+        <label className="flex min-h-11 items-center gap-2 text-[13px] md:min-h-0">
           <Checkbox
             checked={moveExisting}
             onCheckedChange={(v) => {
@@ -113,7 +124,7 @@ export function EnrollmentImportView(): ReactElement {
           />
           {t("moveExisting")}
         </label>
-        <label className="flex items-center gap-2 text-[13px]">
+        <label className="flex min-h-11 items-center gap-2 text-[13px] md:min-h-0">
           <Checkbox
             checked={partial}
             onCheckedChange={(v) => {

@@ -529,6 +529,7 @@
           "title": "Import from CSV",
           "body": "Paste or upload a CSV with columns class,subject,teacher,day,start_period,end_period,notes. Class, subject, teacher and period names are matched against existing data; day is the ISO weekday, 1 (Monday) to 7 (Sunday).",
           "uploadLabel": "Upload a CSV file",
+          "noFileChosen": "No file chosen",
           "textareaLabel": "Or paste the CSV content here",
           "previewTitle": "Preview",
           "previewSummary": "{valid} rows ready to import, {invalid} rows need attention",
@@ -562,7 +563,15 @@
       "byDay": "By day",
       "pickDay": "Pick a day",
       "conflictClassDetail": "{period} in {class} is already taken by {teacher} for {subject}.",
-      "conflictTeacherDetail": "{teacher} already teaches {subject} in {class} at {period}."
+      "conflictTeacherDetail": "{teacher} already teaches {subject} in {class} at {period}.",
+      "today": "Today",
+      "now": "Now",
+      "emptySlot": "Free",
+      "noLessonsOnDay": "No lessons on this day.",
+      "mine": "My schedule",
+      "loadError": "The schedule could not be loaded.",
+      "noClassTitle": "Not placed in a class yet",
+      "noClassBody": "Your timetable appears once you are placed in a class for this academic year. Contact your homeroom teacher or the school admin."
     },
     "attendance": {
       "eyebrow": "Academic",

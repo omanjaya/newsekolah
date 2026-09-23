@@ -128,14 +128,14 @@ function AssignmentsEditor({
             value={subjectId}
             onValueChange={setSubjectId}
             placeholder={t("pickSubject")}
-            className="w-56"
+            className="w-full md:w-56"
           />
           <Select
             options={classes.map((c) => ({ value: c.id, label: c.name }))}
             value={classId}
             onValueChange={setClassId}
             placeholder={t("pickClass")}
-            className="w-56"
+            className="w-full md:w-56"
           />
           <Button
             variant="secondary"
@@ -214,23 +214,23 @@ export function TeachingAssignmentsView(): ReactElement {
       <p className="text-[13px] text-fg-muted">{t("description")}</p>
 
       <div className="flex flex-wrap items-end gap-3">
-        <label className="flex flex-col gap-1 text-[13px]">
+        <label className="flex w-full flex-col gap-1 text-[13px] md:w-auto">
           <span className="font-medium">{t("year")}</span>
           <Select
             options={(years.data?.data ?? []).map((y) => ({ value: y.id, label: y.label }))}
             value={effectiveYearId}
             onValueChange={setYearId}
-            className="w-56"
+            className="w-full md:w-56"
           />
         </label>
-        <label className="flex flex-col gap-1 text-[13px]">
+        <label className="flex w-full flex-col gap-1 text-[13px] md:w-auto">
           <span className="font-medium">{t("teacher")}</span>
           <Select
             options={(teachers.data?.data ?? []).map((u) => ({ value: u.id, label: u.name }))}
             value={teacherId}
             onValueChange={setTeacherId}
             placeholder={t("pickTeacher")}
-            className="w-64"
+            className="w-full md:w-64"
           />
         </label>
       </div>

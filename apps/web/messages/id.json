@@ -529,6 +529,7 @@
           "title": "Impor dari CSV",
           "body": "Tempel atau unggah berkas CSV dengan kolom class,subject,teacher,day,start_period,end_period,notes. Nama kelas, mata pelajaran, guru, dan jam pelajaran dicocokkan dengan data yang sudah ada; hari memakai angka 1 (Senin) sampai 7 (Minggu).",
           "uploadLabel": "Unggah berkas CSV",
+          "noFileChosen": "Belum ada berkas dipilih",
           "textareaLabel": "Atau tempel isi CSV di sini",
           "previewTitle": "Pratinjau",
           "previewSummary": "{valid} baris siap diimpor, {invalid} baris bermasalah",
@@ -562,7 +563,15 @@
       "byDay": "Per hari",
       "pickDay": "Pilih hari",
       "conflictClassDetail": "{period} di kelas {class} sudah dipakai {teacher} untuk {subject}.",
-      "conflictTeacherDetail": "{teacher} sudah mengajar {subject} di kelas {class} pada {period}."
+      "conflictTeacherDetail": "{teacher} sudah mengajar {subject} di kelas {class} pada {period}.",
+      "today": "Hari ini",
+      "now": "Sekarang",
+      "emptySlot": "Kosong",
+      "noLessonsOnDay": "Tidak ada pelajaran pada hari ini.",
+      "mine": "Jadwal saya",
+      "loadError": "Jadwal gagal dimuat.",
+      "noClassTitle": "Belum terdaftar di kelas",
+      "noClassBody": "Jadwal tampil setelah Anda ditempatkan di kelas untuk tahun ajaran ini. Hubungi wali kelas atau admin sekolah."
     },
     "attendance": {
       "eyebrow": "Akademik",

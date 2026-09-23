@@ -1,6 +1,14 @@
 "use client";
 
-import { Alert, Badge, EmptyState, PageHeader, Skeleton, domainIcons } from "@newsekolah/ui";
+import {
+  Alert,
+  Badge,
+  Button,
+  EmptyState,
+  PageHeader,
+  Skeleton,
+  domainIcons,
+} from "@newsekolah/ui";
 import { Star } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -16,7 +24,8 @@ import { type MySubjectGrade, useMyGradesQuery, useMyStarsQuery } from "../api";
  */
 export function MyGradesView(): ReactElement {
   const t = useTranslations("app.grading.myGrades");
-  const { data, isLoading, error } = useMyGradesQuery();
+  const tApp = useTranslations("app");
+  const { data, isLoading, error, refetch, isRefetching } = useMyGradesQuery();
   const stars = useMyStarsQuery();
   const subjects = useSubjectsQuery();
   const subjectMap = useLookup(subjects.data?.data);
@@ -31,7 +40,21 @@ export function MyGradesView(): ReactElement {
     );
   }
   if (error || !data) {
-    return <Alert variant="warning" title={t("loadError")} className="m-6" />;
+    return (
+      <div className="p-4 md:p-6">
+        <Alert variant="warning" title={t("loadError")}>
+          <Button
+            variant="secondary"
+            loading={isRefetching}
+            onClick={() => {
+              void refetch();
+            }}
+          >
+            {tApp("offlinePage.retry")}
+          </Button>
+        </Alert>
+      </div>
+    );
   }
 
   return (

@@ -160,13 +160,13 @@ export function SubjectOfferingsView(): ReactElement {
     // md:h-full: fills the tab panel's height so only the table rows scroll.
     <div className="flex flex-col gap-4 md:h-full md:min-h-0">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <label className="flex w-fit flex-col gap-1 text-[13px]">
+        <label className="flex w-full flex-col md:w-fit gap-1 text-[13px]">
           <span className="font-medium">{t("year")}</span>
           <Select
             options={(years.data?.data ?? []).map((y) => ({ value: y.id, label: y.label }))}
             value={effectiveYearId}
             onValueChange={setYearId}
-            className="w-64"
+            className="w-full md:w-64"
           />
         </label>
         {canManage && (

@@ -1,7 +1,8 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, PageHeader, Textarea, useToast } from "@newsekolah/ui";
+import { Button, PageHeader, Textarea, cn, useToast } from "@newsekolah/ui";
+import { FileUp } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ChangeEvent, ReactElement } from "react";
 import { useMemo, useRef, useState } from "react";
@@ -35,6 +36,7 @@ export function ScheduleBulkView(): ReactElement {
   const bulkImport = useBulkImportSchedulesMutation();
 
   const [csvText, setCsvText] = useState("");
+  const [fileName, setFileName] = useState<string | null>(null);
 
   const rows = useMemo<BulkImportRow[]>(() => {
     if (csvText.trim() === "" || year.id === "") return [];
@@ -55,6 +57,7 @@ export function ScheduleBulkView(): ReactElement {
   function handleFile(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
+    setFileName(file.name);
     const reader = new FileReader();
     reader.onload = () => {
       setCsvText(typeof reader.result === "string" ? reader.result : "");
@@ -67,6 +70,7 @@ export function ScheduleBulkView(): ReactElement {
       onSuccess: (result) => {
         toast.success(t("importSection.applied", { count: result.data.length }));
         setCsvText("");
+        setFileName(null);
         if (fileInputRef.current) fileInputRef.current.value = "";
       },
       onError: (error) => {
@@ -85,17 +89,29 @@ export function ScheduleBulkView(): ReactElement {
         <h2 className="text-[16px] font-medium text-fg">{t("importSection.title")}</h2>
         <p className="text-[13px] text-fg-muted">{t("importSection.body")}</p>
 
-        <label className="flex flex-col gap-1 text-[13px]">
+        <div className="flex flex-col gap-1 text-[13px]">
           <span className="font-medium text-fg">{t("importSection.uploadLabel")}</span>
           <input
+            id="schedule-bulk-import-file"
             ref={fileInputRef}
             type="file"
             accept=".csv,text/csv"
+            aria-label={t("importSection.uploadLabel")}
             onChange={handleFile}
             disabled={!canManage}
-            className="text-[13px] text-fg-muted file:mr-3 file:rounded-xs file:border file:border-border file:bg-bg file:px-3 file:py-1.5 file:text-fg"
+            className="peer sr-only"
           />
-        </label>
+          <label
+            htmlFor="schedule-bulk-import-file"
+            className={cn(
+              "flex h-11 w-fit max-w-full items-center gap-2 rounded-sm border border-border px-3 text-[13px] text-fg peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-accent md:h-8",
+              canManage ? "cursor-pointer hover:bg-bg" : "cursor-not-allowed opacity-60",
+            )}
+          >
+            <FileUp className="size-4 shrink-0" aria-hidden="true" />
+            <span className="truncate">{fileName ?? t("importSection.noFileChosen")}</span>
+          </label>
+        </div>
 
         <label className="flex flex-col gap-1 text-[13px]">
           <span className="font-medium text-fg">{t("importSection.textareaLabel")}</span>

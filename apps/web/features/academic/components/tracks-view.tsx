@@ -81,8 +81,9 @@ export function TracksView(): ReactElement {
 
   const columns = useMemo<ColumnDef<Track>[]>(
     () => [
-      { accessorKey: "code", header: t("columns.code"), enableSorting: false },
+      // Name leads because the phone card uses the first column as its title.
       { accessorKey: "name", header: t("columns.name"), enableSorting: false },
+      { accessorKey: "code", header: t("columns.code"), enableSorting: false },
       {
         id: "actions",
         header: t("columns.actions"),
