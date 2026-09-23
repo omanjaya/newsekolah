@@ -66,6 +66,23 @@ func (r *Repository) GetTenantTimezone(ctx context.Context, tenantID uuid.UUID) 
 	return r.queries(ctx).GetTenantTimezoneForAttendance(ctx, tenantID)
 }
 
+// ListClassesByGradeLevel resolves the grade-level ("angkatan") scope for
+// a report export: every class of the academic year under gradeLevelID,
+// ordered by name, one section per class.
+func (r *Repository) ListClassesByGradeLevel(ctx context.Context, tenantID, academicYearID, gradeLevelID uuid.UUID) ([]service.ClassRef, error) {
+	rows, err := r.queries(ctx).ListClassesByGradeLevelForAttendance(ctx, db.ListClassesByGradeLevelForAttendanceParams{
+		TenantID: tenantID, AcademicYearID: academicYearID, GradeLevelID: gradeLevelID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	out := make([]service.ClassRef, len(rows))
+	for i, row := range rows {
+		out[i] = service.ClassRef{ID: row.ClassID, Name: row.ClassName}
+	}
+	return out, nil
+}
+
 func (r *Repository) ListCurrentPeriodScheduleCards(ctx context.Context, tenantID, academicYearID uuid.UUID, dayOfWeek int16, date, nowLocal time.Time) ([]service.MonitorCardRow, error) {
 	rows, err := r.queries(ctx).ListCurrentPeriodScheduleCardsForAttendance(ctx, db.ListCurrentPeriodScheduleCardsForAttendanceParams{
 		TenantID: tenantID, AcademicYearID: academicYearID, DayOfWeek: dayOfWeek, Date: pdatabase.Date(date), StartsAt: timeOfDay(nowLocal),

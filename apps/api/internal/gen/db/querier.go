@@ -907,6 +907,11 @@ type Querier interface {
 	ListBills(ctx context.Context, arg ListBillsParams) ([]Bill, error)
 	ListBillsForStudent(ctx context.Context, arg ListBillsForStudentParams) ([]Bill, error)
 	ListChildrenForParent(ctx context.Context, arg ListChildrenForParentParams) ([]ListChildrenForParentRow, error)
+	// Every non-deleted class of the academic year in grade_level_id, ordered
+	// by name -- the grade-level ("angkatan") scope for attendance report
+	// exports: one section per class, matching
+	// academic.AcademicListClassesByYearAndGradeLevel's own scoping rule.
+	ListClassesByGradeLevelForAttendance(ctx context.Context, arg ListClassesByGradeLevelForAttendanceParams) ([]ListClassesByGradeLevelForAttendanceRow, error)
 	// Every non-deleted class of the academic year that has no schedule row
 	// straddling now_time on day_of_week -- the monitor snapshot shows these
 	// as "no schedule" cards instead of silently omitting them.

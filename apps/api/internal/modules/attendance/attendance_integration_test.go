@@ -89,6 +89,12 @@ type world struct {
 	student1ID, student2ID               uuid.UUID
 	scheduleTodayID, scheduleYesterdayID uuid.UUID
 	today, yesterday                     time.Time
+	// gradeLevelID and periodID are classID's own grade level and the
+	// all-day period every schedule in this fixture uses -- exposed so a
+	// test can seed a second class in the same grade level (the
+	// grade-level report export scope) that shares the same period and
+	// day-of-week wiring.
+	gradeLevelID, periodID uuid.UUID
 }
 
 // seedWorld creates one independent tenant's worth of fixture data via raw
@@ -124,6 +130,8 @@ func seedWorld(t *testing.T, ctx context.Context, pool *pgxpool.Pool, slug strin
 		w.tenantID,
 	).Scan(&gradeLevelID))
 
+	w.gradeLevelID = gradeLevelID
+
 	class, err := q.CreateClass(ctx, db.CreateClassParams{TenantID: w.tenantID, AcademicYearID: w.yearID, GradeLevelID: gradeLevelID, Name: "X-A"})
 	require.NoError(t, err)
 	w.classID = class.ID
@@ -142,6 +150,7 @@ func seedWorld(t *testing.T, ctx context.Context, pool *pgxpool.Pool, slug strin
 		`insert into periods (tenant_id, template_id, name, sequence, starts_at, ends_at) values ($1, $2, 'P1', 1, '00:01', '23:59') returning id`,
 		w.tenantID, templateID,
 	).Scan(&periodID))
+	w.periodID = periodID
 
 	for day := int16(1); day <= 7; day++ {
 		_, err := pool.Exec(ctx,

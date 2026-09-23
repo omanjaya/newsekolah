@@ -32,6 +32,15 @@ type StudentRef struct {
 	GuardianPhone string
 }
 
+// ClassRef is a class's id and display name, the grade-level scope
+// resolution needs for report exports (one section per class).
+//
+// -- cross-module read; replace with academic reader interface after merge --
+type ClassRef struct {
+	ID   uuid.UUID
+	Name string
+}
+
 // DailySummaryRow is one attendance_daily_summary row as the service reads
 // and writes it -- the materialized result of domain.ComputeDailyStatus.
 type DailySummaryRow struct {
@@ -138,6 +147,12 @@ type Repository interface {
 	GetEnrolledClass(ctx context.Context, tenantID, academicYearID, studentUserID uuid.UUID) (classID uuid.UUID, ok bool, err error)
 	GetHomeroomClassForTeacher(ctx context.Context, tenantID, academicYearID, teacherUserID uuid.UUID) (classID uuid.UUID, ok bool, err error)
 	GetTenantTimezone(ctx context.Context, tenantID uuid.UUID) (string, error)
+	// ListClassesByGradeLevel resolves the grade-level ("angkatan") scope
+	// for a report export: every class of the academic year under
+	// gradeLevelID, ordered by name.
+	//
+	// -- cross-module read; replace with academic reader interface after merge --
+	ListClassesByGradeLevel(ctx context.Context, tenantID, academicYearID, gradeLevelID uuid.UUID) ([]ClassRef, error)
 	ListCurrentPeriodScheduleCards(ctx context.Context, tenantID, academicYearID uuid.UUID, dayOfWeek int16, date, nowLocal time.Time) ([]MonitorCardRow, error)
 	// ListClassesWithoutCurrentSchedule backs the monitor snapshot's
 	// "no schedule" cards: classes that exist but have nothing scheduled

@@ -15,6 +15,8 @@
   "daily": {
     "class": "Kelas",
     "classPlaceholder": "Pilih kelas",
+    "gradeLevel": "Angkatan",
+    "gradeLevelPlaceholder": "Pilih angkatan",
     "date": "Tanggal",
     "download": "Unduh",
     "pickClassTitle": "Pilih kelas dan tanggal",
@@ -46,9 +48,12 @@
   "monthly": {
     "class": "Kelas",
     "classPlaceholder": "Pilih kelas",
+    "gradeLevel": "Angkatan",
+    "gradeLevelPlaceholder": "Pilih angkatan",
     "student": "Siswa",
     "studentPlaceholder": "Pilih siswa",
     "month": "Bulan",
+    "downloadRecap": "Unduh rekap",
     "pickStudentTitle": "Pilih kelas dan siswa",
     "pickStudentBody": "Laporan bulanan menampilkan status kehadiran satu siswa selama satu bulan.",
     "emptyTitle": "Tidak ada hari sekolah pada bulan ini",

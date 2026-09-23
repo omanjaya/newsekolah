@@ -66,8 +66,6 @@ func (s *Service) GetMonthlySummary(ctx context.Context, tenantID, studentUserID
 // algorithm, so the two paths can never disagree. The student's class is
 // resolved once for the whole range (approximating a stable enrollment
 // within one month).
-//
-//nolint:gocyclo // TODO(attendance): split into smaller steps; kept linear for auditability of the rule order
 func (s *Service) buildCalendarDays(
 	ctx context.Context, tenantID, academicYearID, studentUserID uuid.UUID, from, to time.Time, policy domain.StatusPolicy,
 ) ([]CalendarDay, error) {
@@ -75,7 +73,20 @@ func (s *Service) buildCalendarDays(
 	if err != nil {
 		return nil, err
 	}
+	return s.calendarDaysForRange(ctx, tenantID, academicYearID, studentUserID, classID, hasClass, from, to, policy)
+}
 
+// calendarDaysForRange is buildCalendarDays' shared core, taking the
+// student's class directly rather than resolving it via GetEnrolledClass --
+// used by buildCalendarDays itself (one student, class unknown) and by a
+// class/grade-level monthly recap (every student already known to belong
+// to classID, from the same roster read that listed them), which would
+// otherwise re-resolve the same class once per student.
+//
+//nolint:gocyclo // TODO(attendance): split into smaller steps; kept linear for auditability of the rule order
+func (s *Service) calendarDaysForRange(
+	ctx context.Context, tenantID, academicYearID, studentUserID, classID uuid.UUID, hasClass bool, from, to time.Time, policy domain.StatusPolicy,
+) ([]CalendarDay, error) {
 	summaries, err := s.repo.ListDailySummaryForStudentMonth(ctx, tenantID, academicYearID, studentUserID, from, to)
 	if err != nil {
 		return nil, err

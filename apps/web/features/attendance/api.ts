@@ -166,16 +166,31 @@ export function useOwnDailyAttendanceReportQuery(date: string, enabled = true) {
   });
 }
 
+/** Either a single class or a whole grade level ("angkatan"), for a report export's scope picker. */
+export type ReportScope =
+  { kind: "class"; classId: string } | { kind: "gradeLevel"; gradeLevelId: string };
+
+function scopeQuery(scope: ReportScope): Record<string, string> {
+  return scope.kind === "class"
+    ? { class_id: scope.classId }
+    : { grade_level_id: scope.gradeLevelId };
+}
+
 /**
- * Downloads the daily report as an XLSX file. Uses a direct `fetch` rather
- * than the shared API client, same reasoning as `downloadReportExport` in
+ * Downloads a binary report export via a direct `fetch` rather than the
+ * shared API client (same reasoning as `downloadReportExport` in
  * `features/reports/api.ts`: the client always parses the response as
- * JSON, but this endpoint returns a binary workbook.
+ * JSON, but these endpoints return a binary workbook), appending
+ * `scopeQuery(scope)` to `query`.
  */
-export async function downloadDailyAttendanceReport(date: string, classId: string): Promise<void> {
+async function downloadExport(
+  path: string,
+  query: Record<string, string>,
+  filename: string,
+): Promise<void> {
   const token = getAccessToken();
-  const query = new URLSearchParams({ date, class_id: classId }).toString();
-  const response = await fetch(`${API_URL}/v1/attendance/reports/daily/export?${query}`, {
+  const params = new URLSearchParams(query).toString();
+  const response = await fetch(`${API_URL}${path}?${params}`, {
     headers: token ? { Authorization: `Bearer ${token}` } : undefined,
   });
   if (!response.ok) {
@@ -186,13 +201,45 @@ export async function downloadDailyAttendanceReport(date: string, classId: strin
   try {
     const link = document.createElement("a");
     link.href = url;
-    link.download = `attendance-daily-${classId}-${date}.xlsx`;
+    link.download = filename;
     document.body.appendChild(link);
     link.click();
     link.remove();
   } finally {
     URL.revokeObjectURL(url);
   }
+}
+
+/** Downloads the daily report as an XLSX file, for one class or a whole grade level. */
+export async function downloadDailyAttendanceReport(
+  date: string,
+  scope: ReportScope,
+): Promise<void> {
+  const scopeLabel = scope.kind === "class" ? scope.classId : `grade-${scope.gradeLevelId}`;
+  await downloadExport(
+    "/v1/attendance/reports/daily/export",
+    { date, ...scopeQuery(scope) },
+    `attendance-daily-${scopeLabel}-${date}.xlsx`,
+  );
+}
+
+/**
+ * Downloads the monthly recap as an XLSX file, for one class or a whole
+ * grade level -- one row per student (NIS, name, per-status counts,
+ * total, percentage present), one sheet per class. Unlike
+ * useMonthlyAttendanceSummaryQuery (one student's own calendar), this
+ * scopes to a class's or grade level's whole roster at once.
+ */
+export async function downloadMonthlyAttendanceReport(
+  month: string,
+  scope: ReportScope,
+): Promise<void> {
+  const scopeLabel = scope.kind === "class" ? scope.classId : `grade-${scope.gradeLevelId}`;
+  await downloadExport(
+    "/v1/attendance/reports/monthly/export",
+    { month, ...scopeQuery(scope) },
+    `attendance-monthly-${scopeLabel}-${month}.xlsx`,
+  );
 }
 
 /** "YYYY-MM-DD" in the tenant's timezone, for "today" queries. */

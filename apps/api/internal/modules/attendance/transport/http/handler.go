@@ -67,6 +67,7 @@ var (
 	errNotHomeroom              = httpx.NewError(http.StatusForbidden, "ATTENDANCE_NOT_HOMEROOM")
 	errNoActiveYear             = httpx.NewError(http.StatusBadRequest, "ATTENDANCE_NO_ACTIVE_YEAR")
 	errInvalidMonth             = httpx.NewError(http.StatusBadRequest, "ATTENDANCE_INVALID_MONTH")
+	errInvalidScope             = httpx.NewError(http.StatusBadRequest, "ATTENDANCE_INVALID_SCOPE")
 	errMonitorTokenInvalid      = httpx.NewError(http.StatusUnauthorized, "ATTENDANCE_MONITOR_TOKEN_INVALID")
 )
 
@@ -101,6 +102,8 @@ func mapAttendanceError(err error) error {
 		return errNoActiveYear
 	case errors.Is(err, domain.ErrInvalidMonth):
 		return errInvalidMonth
+	case errors.Is(err, domain.ErrInvalidScope):
+		return errInvalidScope
 	default:
 		var appErr *httpx.Error
 		if errors.As(err, &appErr) {

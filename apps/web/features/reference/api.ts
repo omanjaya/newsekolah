@@ -32,6 +32,19 @@ export function useClassesQuery(enabled = true) {
   });
 }
 
+export type GradeLevel = components["schemas"]["GradeLevel"];
+
+/** Every grade level ("angkatan"), for a report export's grade-level scope picker. */
+export function useGradeLevelsQuery(enabled = true) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: ["academic", "grade-levels"],
+    queryFn: () => client.GET("/v1/academic/grade-levels"),
+    enabled,
+    staleTime: REFERENCE_STALE_MS,
+  });
+}
+
 export function useSubjectsQuery(enabled = true) {
   const client = useApiClient();
   return useQuery({

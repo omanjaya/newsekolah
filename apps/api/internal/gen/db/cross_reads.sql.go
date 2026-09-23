@@ -323,6 +323,48 @@ func (q *Queries) ListActiveTenantsForLibrary(ctx context.Context) ([]ListActive
 	return items, nil
 }
 
+const listClassesByGradeLevelForAttendance = `-- name: ListClassesByGradeLevelForAttendance :many
+select c.id as class_id, c.name as class_name
+from classes c
+where c.tenant_id = $1 and c.academic_year_id = $2 and c.grade_level_id = $3 and c.deleted_at is null
+order by c.name
+`
+
+type ListClassesByGradeLevelForAttendanceParams struct {
+	TenantID       uuid.UUID `json:"tenant_id"`
+	AcademicYearID uuid.UUID `json:"academic_year_id"`
+	GradeLevelID   uuid.UUID `json:"grade_level_id"`
+}
+
+type ListClassesByGradeLevelForAttendanceRow struct {
+	ClassID   uuid.UUID `json:"class_id"`
+	ClassName string    `json:"class_name"`
+}
+
+// Every non-deleted class of the academic year in grade_level_id, ordered
+// by name -- the grade-level ("angkatan") scope for attendance report
+// exports: one section per class, matching
+// academic.AcademicListClassesByYearAndGradeLevel's own scoping rule.
+func (q *Queries) ListClassesByGradeLevelForAttendance(ctx context.Context, arg ListClassesByGradeLevelForAttendanceParams) ([]ListClassesByGradeLevelForAttendanceRow, error) {
+	rows, err := q.db.Query(ctx, listClassesByGradeLevelForAttendance, arg.TenantID, arg.AcademicYearID, arg.GradeLevelID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListClassesByGradeLevelForAttendanceRow{}
+	for rows.Next() {
+		var i ListClassesByGradeLevelForAttendanceRow
+		if err := rows.Scan(&i.ClassID, &i.ClassName); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listClassesWithoutCurrentPeriodScheduleForAttendance = `-- name: ListClassesWithoutCurrentPeriodScheduleForAttendance :many
 select c.id as class_id, c.name as class_name
 from classes c

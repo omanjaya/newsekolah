@@ -104,6 +104,16 @@ where c.tenant_id = $1 and c.academic_year_id = $2 and c.deleted_at is null
   )
 order by c.name;
 
+-- name: ListClassesByGradeLevelForAttendance :many
+-- Every non-deleted class of the academic year in grade_level_id, ordered
+-- by name -- the grade-level ("angkatan") scope for attendance report
+-- exports: one section per class, matching
+-- academic.AcademicListClassesByYearAndGradeLevel's own scoping rule.
+select c.id as class_id, c.name as class_name
+from classes c
+where c.tenant_id = $1 and c.academic_year_id = $2 and c.grade_level_id = $3 and c.deleted_at is null
+order by c.name;
+
 -- name: CountDailySummaryStatusesForAttendance :many
 select status_code, count(*)::bigint as total
 from attendance_daily_summary

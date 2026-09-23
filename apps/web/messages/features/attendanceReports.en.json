@@ -15,6 +15,8 @@
   "daily": {
     "class": "Class",
     "classPlaceholder": "Choose a class",
+    "gradeLevel": "Grade level",
+    "gradeLevelPlaceholder": "Choose a grade level",
     "date": "Date",
     "download": "Download",
     "pickClassTitle": "Choose a class and a date",
@@ -46,9 +48,12 @@
   "monthly": {
     "class": "Class",
     "classPlaceholder": "Choose a class",
+    "gradeLevel": "Grade level",
+    "gradeLevelPlaceholder": "Choose a grade level",
     "student": "Student",
     "studentPlaceholder": "Choose a student",
     "month": "Month",
+    "downloadRecap": "Download recap",
     "pickStudentTitle": "Choose a class and a student",
     "pickStudentBody": "The monthly report shows one student's attendance status across one month.",
     "emptyTitle": "No school days this month",

@@ -1510,7 +1510,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The daily report as an XLSX file */
+        /** The daily report as an XLSX file, for one class or every class of a grade level */
         get: operations["exportDailyAttendanceReport"];
         put?: never;
         post?: never;
@@ -1529,6 +1529,23 @@ export interface paths {
         };
         /** One student's daily statuses for one month */
         get: operations["getMonthlyAttendanceSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/attendance/reports/monthly/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The monthly recap as an XLSX file, for one class or every class of a grade level -- one row per student (NIS, name, one column per attendance status, total, percentage present), one sheet per class. */
+        get: operations["exportMonthlyAttendanceReport"];
         put?: never;
         post?: never;
         delete?: never;
@@ -15026,7 +15043,10 @@ export interface operations {
         parameters: {
             query: {
                 date: string;
-                class_id: string;
+                /** @description Exactly one of class_id or grade_level_id is required. */
+                class_id?: string;
+                /** @description Every class of the tenant's active academic year under this grade level, one sheet per class. Exactly one of class_id or grade_level_id is required. */
+                grade_level_id?: string;
             };
             header?: never;
             path?: never;
@@ -15071,6 +15091,34 @@ export interface operations {
                             [key: string]: number;
                         };
                     };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+        };
+    };
+    exportMonthlyAttendanceReport: {
+        parameters: {
+            query: {
+                /** @description YYYY-MM */
+                month: string;
+                /** @description Exactly one of class_id or grade_level_id is required. */
+                class_id?: string;
+                /** @description Every class of the tenant's active academic year under this grade level, one sheet per class. Exactly one of class_id or grade_level_id is required. */
+                grade_level_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description XLSX file */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
                 };
             };
             400: components["responses"]["BadRequest"];

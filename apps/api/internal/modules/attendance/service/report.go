@@ -173,3 +173,79 @@ func (s *Service) ExportDailyReportXLSX(ctx context.Context, tenantID, classID u
 	}
 	return buf.Bytes(), nil
 }
+
+// ExportDailyReportXLSXScoped is ExportDailyReportXLSX plus the
+// grade-level ("angkatan") scope: exactly one of classID/gradeLevelID must
+// be set. The class scope keeps ExportDailyReportXLSX's exact single-sheet
+// output (existing callers, including the mobile app, do not break); the
+// grade-level scope renders one sheet per class, ordered by class name.
+func (s *Service) ExportDailyReportXLSXScoped(ctx context.Context, tenantID uuid.UUID, classID, gradeLevelID *uuid.UUID, date time.Time) ([]byte, error) {
+	if classID != nil && gradeLevelID == nil {
+		return s.ExportDailyReportXLSX(ctx, tenantID, *classID, date)
+	}
+
+	var out []byte
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		classes, err := s.resolveReportScope(ctx, tenantID, classID, gradeLevelID)
+		if err != nil {
+			return err
+		}
+
+		reports := make([]DailyReport, len(classes))
+		for i, class := range classes {
+			report, err := s.GetDailyReport(ctx, tenantID, class.ID, date)
+			if err != nil {
+				return err
+			}
+			reports[i] = report
+		}
+		out, err = renderDailyReportsXLSX(classes, reports)
+		return err
+	})
+	return out, err
+}
+
+// renderDailyReportsXLSX is ExportDailyReportXLSX's per-class sheet body,
+// reused for both the single-class and grade-level scopes so their column
+// layout never drifts apart.
+func renderDailyReportsXLSX(classes []ClassRef, reports []DailyReport) ([]byte, error) {
+	f := excelize.NewFile()
+	defer f.Close() //nolint:errcheck // closing an in-memory workbook after WriteToBuffer cannot meaningfully fail.
+
+	headers := []string{"No", "Name", "Status", "Expected Sessions", "Submitted Sessions", "Complete"}
+	used := make(map[string]int)
+
+	for i, report := range reports {
+		sheet := sanitizeSheetName(classes[i].Name, i, used)
+		if i == 0 {
+			if err := f.SetSheetName("Sheet1", sheet); err != nil {
+				return nil, fmt.Errorf("rename sheet: %w", err)
+			}
+		} else if _, err := f.NewSheet(sheet); err != nil {
+			return nil, fmt.Errorf("add sheet: %w", err)
+		}
+
+		for col, h := range headers {
+			cell, _ := excelize.CoordinatesToCellName(col+1, 1)
+			_ = f.SetCellValue(sheet, cell, h)
+		}
+		for r, student := range report.Students {
+			row := r + 2
+			values := []any{r + 1, student.Name, student.StatusCode, student.ExpectedSessions, student.SubmittedSessions, student.Complete}
+			for col, v := range values {
+				cell, _ := excelize.CoordinatesToCellName(col+1, row)
+				_ = f.SetCellValue(sheet, cell, v)
+			}
+		}
+
+		summaryRow := len(report.Students) + 3
+		_ = f.SetCellValue(sheet, fmt.Sprintf("A%d", summaryRow), "Class expected/submitted:")
+		_ = f.SetCellValue(sheet, fmt.Sprintf("B%d", summaryRow), fmt.Sprintf("%d/%d", report.ExpectedSessions, report.SubmittedSessions))
+	}
+
+	buf, err := f.WriteToBuffer()
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}

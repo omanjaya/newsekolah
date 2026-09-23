@@ -36,11 +36,27 @@ func (h *AttendanceHandler) GetOwnDailyAttendanceReport(ctx context.Context, req
 func (h *AttendanceHandler) ExportDailyAttendanceReport(ctx context.Context, request api.ExportDailyAttendanceReportRequestObject) (api.ExportDailyAttendanceReportResponseObject, error) {
 	tenantID := tenantIDFromContext(ctx)
 
-	xlsx, err := h.service.ExportDailyReportXLSX(ctx, tenantID, request.Params.ClassId, request.Params.Date.Time)
+	xlsx, err := h.service.ExportDailyReportXLSXScoped(ctx, tenantID, request.Params.ClassId, request.Params.GradeLevelId, request.Params.Date.Time)
 	if err != nil {
 		return nil, mapAttendanceError(err)
 	}
 	return api.ExportDailyAttendanceReport200ApplicationvndOpenxmlformatsOfficedocumentSpreadsheetmlSheetResponse{
+		Body: bytes.NewReader(xlsx), ContentLength: int64(len(xlsx)),
+	}, nil
+}
+
+// ExportMonthlyAttendanceReport is the monthly recap as an XLSX file, for
+// one class or every class of a grade level -- unlike
+// GetMonthlyAttendanceSummary (one student's own calendar), this scopes to
+// a class's or grade level's whole roster at once.
+func (h *AttendanceHandler) ExportMonthlyAttendanceReport(ctx context.Context, request api.ExportMonthlyAttendanceReportRequestObject) (api.ExportMonthlyAttendanceReportResponseObject, error) {
+	tenantID := tenantIDFromContext(ctx)
+
+	xlsx, err := h.service.ExportMonthlyReportXLSX(ctx, tenantID, request.Params.ClassId, request.Params.GradeLevelId, request.Params.Month)
+	if err != nil {
+		return nil, mapAttendanceError(err)
+	}
+	return api.ExportMonthlyAttendanceReport200ApplicationvndOpenxmlformatsOfficedocumentSpreadsheetmlSheetResponse{
 		Body: bytes.NewReader(xlsx), ContentLength: int64(len(xlsx)),
 	}, nil
 }
