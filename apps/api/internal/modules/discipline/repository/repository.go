@@ -235,6 +235,55 @@ func (r *Repository) ListActivePoints(ctx context.Context, tenantID, yearID uuid
 	return out, nil
 }
 
+func (r *Repository) ListPointsPreview(ctx context.Context, tenantID, yearID uuid.UUID, studentIDs []uuid.UUID) ([]service.PointsPreviewEntry, error) {
+	rows, err := r.queries(ctx).ListPointsPreviewForStudents(ctx, db.ListPointsPreviewForStudentsParams{TenantID: tenantID, AcademicYearID: yearID, StudentIds: studentIDs})
+	if err != nil {
+		return nil, fmt.Errorf("list points preview: %w", err)
+	}
+	out := make([]service.PointsPreviewEntry, len(rows))
+	for i, row := range rows {
+		levels := make([]int, len(row.IssuedLevels))
+		for j, l := range row.IssuedLevels {
+			levels[j] = int(l)
+		}
+		out[i] = service.PointsPreviewEntry{StudentUserID: row.StudentUserID, TotalPoints: int(row.TotalPoints), IssuedLevels: levels}
+	}
+	return out, nil
+}
+
+// Violation attachments.
+
+func (r *Repository) CreateViolationAttachment(ctx context.Context, tenantID, recordID, assetID uuid.UUID) (domain.ViolationAttachment, error) {
+	row, err := r.queries(ctx).CreateViolationAttachment(ctx, db.CreateViolationAttachmentParams{TenantID: tenantID, ViolationRecordID: recordID, AssetID: assetID})
+	if err != nil {
+		return domain.ViolationAttachment{}, fmt.Errorf("create violation attachment: %w", err)
+	}
+	return toViolationAttachment(row), nil
+}
+
+func (r *Repository) ListViolationAttachments(ctx context.Context, tenantID, recordID uuid.UUID) ([]domain.ViolationAttachment, error) {
+	rows, err := r.queries(ctx).ListViolationAttachments(ctx, db.ListViolationAttachmentsParams{TenantID: tenantID, ViolationRecordID: recordID})
+	if err != nil {
+		return nil, fmt.Errorf("list violation attachments: %w", err)
+	}
+	out := make([]domain.ViolationAttachment, len(rows))
+	for i, row := range rows {
+		out[i] = toViolationAttachment(row)
+	}
+	return out, nil
+}
+
+func (r *Repository) GetViolationAttachment(ctx context.Context, tenantID, id uuid.UUID) (domain.ViolationAttachment, bool, error) {
+	row, err := r.queries(ctx).GetViolationAttachment(ctx, db.GetViolationAttachmentParams{TenantID: tenantID, ID: id})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return domain.ViolationAttachment{}, false, nil
+	}
+	if err != nil {
+		return domain.ViolationAttachment{}, false, fmt.Errorf("get violation attachment: %w", err)
+	}
+	return toViolationAttachment(row), true, nil
+}
+
 // Letters.
 
 func (r *Repository) CreateLetter(ctx context.Context, l domain.WarningLetter) (domain.WarningLetter, error) {
@@ -546,5 +595,11 @@ func toCounselings(rows []db.Counseling) []service.EncryptedCounseling {
 func toAttachment(row db.CounselingAttachment) domain.CounselingAttachment {
 	return domain.CounselingAttachment{
 		ID: row.ID, TenantID: row.TenantID, CounselingID: row.CounselingID, AssetID: row.AssetID, CreatedAt: pdatabase.TimeOrZero(row.CreatedAt),
+	}
+}
+
+func toViolationAttachment(row db.ViolationAttachment) domain.ViolationAttachment {
+	return domain.ViolationAttachment{
+		ID: row.ID, TenantID: row.TenantID, ViolationRecordID: row.ViolationRecordID, AssetID: row.AssetID, CreatedAt: pdatabase.TimeOrZero(row.CreatedAt),
 	}
 }

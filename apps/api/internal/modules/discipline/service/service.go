@@ -23,6 +23,7 @@ const (
 	policyKindSPLevels          = "discipline_levels"
 	policyKindWarningLetterTmpl = "warning_letter_template"
 	maxViolationTypesPerRecord  = 50
+	maxPointsPreviewStudents    = 50
 )
 
 type Repository interface {
@@ -42,6 +43,11 @@ type Repository interface {
 	SumActivePoints(ctx context.Context, tenantID, yearID, studentID uuid.UUID) (int, error)
 	ListPointTotals(ctx context.Context, tenantID, yearID uuid.UUID, classID uuid.NullUUID, limit int) ([]PointTotal, error)
 	ListActivePoints(ctx context.Context, tenantID, yearID uuid.UUID, classID uuid.NullUUID) ([]StudentPointRecord, error)
+	ListPointsPreview(ctx context.Context, tenantID, yearID uuid.UUID, studentIDs []uuid.UUID) ([]PointsPreviewEntry, error)
+
+	CreateViolationAttachment(ctx context.Context, tenantID, recordID, assetID uuid.UUID) (domain.ViolationAttachment, error)
+	ListViolationAttachments(ctx context.Context, tenantID, recordID uuid.UUID) ([]domain.ViolationAttachment, error)
+	GetViolationAttachment(ctx context.Context, tenantID, id uuid.UUID) (domain.ViolationAttachment, bool, error)
 
 	CreateLetter(ctx context.Context, l domain.WarningLetter) (domain.WarningLetter, error)
 	GetLetter(ctx context.Context, tenantID, id uuid.UUID) (domain.WarningLetter, bool, error)
@@ -120,6 +126,21 @@ type PointTotal struct {
 	Total          int
 	RecordCount    int
 	LastOccurredOn time.Time
+}
+
+// PointsPreviewEntry is one selected student's current standing for the
+// live points preview (feature: "pratinjau ambang SP" while a teacher is
+// still choosing violation types, before saving anything). The client
+// already knows each violation type's points from the catalog it already
+// fetched, so it adds those itself and only needs TotalPoints and
+// IssuedLevels from the server to compute the post-save total and which
+// levels would newly be due -- mirroring domain.SPPolicy.DueLevels in TS
+// the same way lib/gradebook-scores.ts's computeLiveAverage mirrors
+// WeightedAverage in Go.
+type PointsPreviewEntry struct {
+	StudentUserID uuid.UUID
+	TotalPoints   int
+	IssuedLevels  []int
 }
 
 type StudentSnapshot struct {

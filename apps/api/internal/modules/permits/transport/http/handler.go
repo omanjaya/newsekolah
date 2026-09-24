@@ -193,6 +193,21 @@ func (h *PermitsHandler) CancelExitPermit(ctx context.Context, request api.Cance
 	return api.CancelExitPermit200JSONResponse(detail), nil
 }
 
+// RecordExitPermitByStaff is the duty teacher's desk record for a student
+// who is not carrying a phone: created and completed in one call by the
+// same service method a QR chain's four stages would otherwise walk.
+func (h *PermitsHandler) RecordExitPermitByStaff(ctx context.Context, request api.RecordExitPermitByStaffRequestObject) (api.RecordExitPermitByStaffResponseObject, error) {
+	tenant := tenantID(ctx)
+	detail, err := h.service.RecordExitPermitByStaff(ctx, service.RecordExitPermitByStaffInput{
+		TenantID: tenant, StudentUserID: request.Body.StudentUserId, Destination: request.Body.Destination,
+		StartPeriodID: request.Body.StartPeriodId, EndPeriodID: request.Body.EndPeriodId, RecordedBy: userID(ctx),
+	})
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return api.RecordExitPermitByStaff201JSONResponse(toAPIExitPermit(detail.Instance, detail.Definition, detail.Permit, detail.Events)), nil
+}
+
 func (h *PermitsHandler) IssueExitPermitGateToken(ctx context.Context, request api.IssueExitPermitGateTokenRequestObject) (api.IssueExitPermitGateTokenResponseObject, error) {
 	tenant := tenantID(ctx)
 	if err := h.service.RequireSubject(ctx, tenant, request.InstanceId, userID(ctx), domain.KindExitPermit); err != nil {
@@ -231,6 +246,26 @@ func (h *PermitsHandler) OpenLateArrival(ctx context.Context, request api.OpenLa
 		return nil, mapError(err)
 	}
 	return api.OpenLateArrival201JSONResponse(toAPILateArrival(detail)), nil
+}
+
+// RecordLateArrivalByStaff is the duty teacher's gate record for a
+// student who is not carrying a phone: opened and completed in one call
+// by the same service method a QR-driven late arrival's open + review +
+// remaining stages would otherwise walk.
+func (h *PermitsHandler) RecordLateArrivalByStaff(ctx context.Context, request api.RecordLateArrivalByStaffRequestObject) (api.RecordLateArrivalByStaffResponseObject, error) {
+	homeroomReported := request.Body.HomeroomReported != nil && *request.Body.HomeroomReported
+	var violationIDs []uuid.UUID
+	if request.Body.ViolationIds != nil {
+		violationIDs = *request.Body.ViolationIds
+	}
+	detail, err := h.service.RecordLateArrivalByStaff(ctx, service.RecordLateArrivalByStaffInput{
+		TenantID: tenantID(ctx), StudentUserID: request.Body.StudentUserId, Reason: request.Body.Reason,
+		HomeroomReported: homeroomReported, ViolationIDs: violationIDs, RecordedBy: userID(ctx),
+	})
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return api.RecordLateArrivalByStaff201JSONResponse(toAPILateArrival(detail)), nil
 }
 
 func (h *PermitsHandler) GetCurrentLateArrival(ctx context.Context, _ api.GetCurrentLateArrivalRequestObject) (api.GetCurrentLateArrivalResponseObject, error) {

@@ -1708,6 +1708,14 @@ type UserRole struct {
 	AcademicYearID pgtype.UUID `json:"academic_year_id"`
 }
 
+type ViolationAttachment struct {
+	ID                uuid.UUID          `json:"id"`
+	TenantID          uuid.UUID          `json:"tenant_id"`
+	ViolationRecordID uuid.UUID          `json:"violation_record_id"`
+	AssetID           uuid.UUID          `json:"asset_id"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
+}
+
 type ViolationRecord struct {
 	ID                  uuid.UUID          `json:"id"`
 	TenantID            uuid.UUID          `json:"tenant_id"`

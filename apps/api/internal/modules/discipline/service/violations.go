@@ -2,6 +2,9 @@ package service
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"fmt"
 	"strings"
 	"time"
 
@@ -9,6 +12,7 @@ import (
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/discipline/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/audit"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/storage"
 )
 
 func (s *Service) ListViolationTypes(ctx context.Context, tenantID uuid.UUID, includeInactive bool, search string) ([]domain.ViolationType, error) {
@@ -220,6 +224,160 @@ func recordViolationCore(ctx context.Context, repo Repository, policy domain.SPP
 		}
 	}
 	return out, crossed, nil
+}
+
+// maxViolationAttachments is the "1-3 photos" cap from the feature brief:
+// photo evidence is optional context on a record a teacher already wrote,
+// not a full case file, so it stays small like counseling's evidence.
+const maxViolationAttachments = 3
+
+// RequestViolationAttachmentUpload presigns a PUT for a new photo on
+// violation record recordID, following the same presigned-PUT-then-confirm
+// shape as counseling attachments and a leave request's evidence
+// (RequestAttachmentUpload in counseling.go). Any actor who can record
+// violations may attach a photo to any record, mirroring VoidViolation's
+// own permission model (record_violations, not just the original
+// reporter) -- unlike counseling notes, violation records have no
+// per-row visibility of their own; that is enforced by the view_discipline
+// permission on every read.
+func (s *Service) RequestViolationAttachmentUpload(ctx context.Context, tenantID, recordID, actorUserID uuid.UUID) (AttachmentUploadTarget, error) {
+	if s.storage == nil {
+		return AttachmentUploadTarget{}, domain.ErrReportUnavailable
+	}
+	if err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		_, ok, err := s.repo.GetRecord(ctx, tenantID, recordID)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			return domain.ErrRecordNotFound
+		}
+		return nil
+	}); err != nil {
+		return AttachmentUploadTarget{}, err
+	}
+	key := fmt.Sprintf("tenants/%s/violations/%s/%s", tenantID, recordID, uuid.New())
+	u, err := s.storage.PresignedPutURL(ctx, key, storage.DefaultUploadURLTTL)
+	if err != nil {
+		return AttachmentUploadTarget{}, fmt.Errorf("presign violation attachment upload: %w", err)
+	}
+	return AttachmentUploadTarget{UploadURL: u.String(), ObjectKey: key, ExpiresAt: s.clock.Now().Add(storage.DefaultUploadURLTTL)}, nil
+}
+
+// ConfirmViolationAttachment validates the uploaded object (JPEG/PNG by
+// sniffing, <= Config.AttachmentMaxBytes), re-encodes it to drop EXIF
+// metadata, and records it against the record, capped at
+// maxViolationAttachments.
+func (s *Service) ConfirmViolationAttachment(ctx context.Context, tenantID, recordID, actorUserID uuid.UUID, objectKey string) (domain.ViolationAttachment, error) {
+	if s.storage == nil {
+		return domain.ViolationAttachment{}, domain.ErrReportUnavailable
+	}
+	expectedPrefix := fmt.Sprintf("tenants/%s/violations/%s/", tenantID, recordID)
+	if len(objectKey) <= len(expectedPrefix) || objectKey[:len(expectedPrefix)] != expectedPrefix {
+		return domain.ViolationAttachment{}, domain.ErrAttachmentInvalidType
+	}
+	raw, err := s.storage.GetObject(ctx, objectKey)
+	if err != nil {
+		return domain.ViolationAttachment{}, fmt.Errorf("read violation attachment: %w", err)
+	}
+	maxBytes := s.cfg.AttachmentMaxBytes
+	if maxBytes <= 0 {
+		maxBytes = DefaultConfig("").AttachmentMaxBytes
+	}
+	if int64(len(raw)) > maxBytes {
+		return domain.ViolationAttachment{}, domain.ErrAttachmentTooLarge
+	}
+	clean, mime, err := reencodeAttachmentImage(raw)
+	if err != nil {
+		return domain.ViolationAttachment{}, err
+	}
+	cleanKey := objectKey + ".clean"
+	if err := s.storage.PutObject(ctx, cleanKey, clean, mime); err != nil {
+		return domain.ViolationAttachment{}, fmt.Errorf("store violation attachment: %w", err)
+	}
+	sum := sha256.Sum256(clean)
+
+	var out domain.ViolationAttachment
+	err = s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		_, ok, err := s.repo.GetRecord(ctx, tenantID, recordID)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			return domain.ErrRecordNotFound
+		}
+		existing, err := s.repo.ListViolationAttachments(ctx, tenantID, recordID)
+		if err != nil {
+			return err
+		}
+		if len(existing) >= maxViolationAttachments {
+			return domain.ErrAttachmentLimitReached
+		}
+		assetID, err := s.repo.CreateAsset(ctx, tenantID, s.cfg.Bucket, cleanKey, mime, int64(len(clean)), hex.EncodeToString(sum[:]), "evidence", "private", actorUserID)
+		if err != nil {
+			return fmt.Errorf("create violation attachment asset: %w", err)
+		}
+		out, err = s.repo.CreateViolationAttachment(ctx, tenantID, recordID, assetID)
+		return err
+	})
+	return out, err
+}
+
+// ListViolationAttachments lists photo evidence on recordID. Visibility is
+// the same view_discipline permission that already gates seeing the
+// record itself (checked by the transport layer), so this only needs to
+// confirm the record exists in this tenant.
+func (s *Service) ListViolationAttachments(ctx context.Context, tenantID, recordID uuid.UUID) ([]domain.ViolationAttachment, error) {
+	var out []domain.ViolationAttachment
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		if _, ok, err := s.repo.GetRecord(ctx, tenantID, recordID); err != nil {
+			return err
+		} else if !ok {
+			return domain.ErrRecordNotFound
+		}
+		var err error
+		out, err = s.repo.ListViolationAttachments(ctx, tenantID, recordID)
+		return err
+	})
+	return out, err
+}
+
+func (s *Service) ViolationAttachmentURL(ctx context.Context, tenantID, recordID, attachmentID uuid.UUID) (string, error) {
+	var objectKey string
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		if _, ok, err := s.repo.GetRecord(ctx, tenantID, recordID); err != nil {
+			return err
+		} else if !ok {
+			return domain.ErrRecordNotFound
+		}
+		att, ok, err := s.repo.GetViolationAttachment(ctx, tenantID, attachmentID)
+		if err != nil {
+			return err
+		}
+		if !ok || att.ViolationRecordID != recordID {
+			return domain.ErrAttachmentNotFound
+		}
+		asset, ok, err := s.repo.GetAsset(ctx, tenantID, att.AssetID)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			return domain.ErrAttachmentNotFound
+		}
+		objectKey = asset.ObjectKey
+		return nil
+	})
+	if err != nil {
+		return "", err
+	}
+	if s.storage == nil {
+		return "", domain.ErrAttachmentNotFound
+	}
+	u, err := s.storage.PresignedGetURL(ctx, objectKey, storage.DefaultUploadURLTTL)
+	if err != nil {
+		return "", fmt.Errorf("presign violation attachment: %w", err)
+	}
+	return u.String(), nil
 }
 
 // requireEligibleStudent enforces the regression fix: a violation or
@@ -451,6 +609,74 @@ func (s *Service) PointTotals(ctx context.Context, tenantID uuid.UUID, classID u
 		return err
 	})
 	return out, err
+}
+
+// PointsPreview backs the live points preview while a teacher is still
+// choosing violation types for one or several students: one query for
+// every selected student's current active total and issued SP levels, so
+// the client can show, before saving, each student's current total, the
+// points about to be added, the new total, and whether it newly crosses a
+// warning-letter threshold. studentIDs is deduplicated and capped at
+// maxPointsPreviewStudents, matching RecordViolation's own batch limit
+// shape (maxViolationTypesPerRecord).
+func (s *Service) PointsPreview(ctx context.Context, tenantID uuid.UUID, studentIDs []uuid.UUID) ([]PointsPreviewEntry, domain.SPPolicy, error) {
+	ids, err := dedupeStudentIDs(studentIDs)
+	if err != nil {
+		return nil, domain.SPPolicy{}, err
+	}
+	var (
+		out    []PointsPreviewEntry
+		policy domain.SPPolicy
+	)
+	err = s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		yearID, err := s.activeYear(ctx, tenantID)
+		if err != nil {
+			return err
+		}
+		if policy, err = s.loadPolicy(ctx, tenantID); err != nil {
+			return err
+		}
+		rows, err := s.repo.ListPointsPreview(ctx, tenantID, yearID, ids)
+		if err != nil {
+			return err
+		}
+		byStudent := make(map[uuid.UUID]PointsPreviewEntry, len(rows))
+		for _, r := range rows {
+			byStudent[r.StudentUserID] = r
+		}
+		out = make([]PointsPreviewEntry, len(ids))
+		for i, id := range ids {
+			if entry, ok := byStudent[id]; ok {
+				out[i] = entry
+				continue
+			}
+			out[i] = PointsPreviewEntry{StudentUserID: id, IssuedLevels: []int{}}
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, domain.SPPolicy{}, err
+	}
+	return out, policy, nil
+}
+
+func dedupeStudentIDs(studentIDs []uuid.UUID) ([]uuid.UUID, error) {
+	if len(studentIDs) == 0 || len(studentIDs) > maxPointsPreviewStudents {
+		return nil, domain.ErrInvalidInput
+	}
+	seen := make(map[uuid.UUID]bool, len(studentIDs))
+	out := make([]uuid.UUID, 0, len(studentIDs))
+	for _, id := range studentIDs {
+		if id == uuid.Nil || seen[id] {
+			continue
+		}
+		seen[id] = true
+		out = append(out, id)
+	}
+	if len(out) == 0 {
+		return nil, domain.ErrInvalidInput
+	}
+	return out, nil
 }
 
 // FirstCrossedDates returns, per student, the date each SP level was

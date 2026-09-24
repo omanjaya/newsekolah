@@ -51,7 +51,6 @@
       "typeSearchPlaceholder": "Search violation type",
       "noMatch": "No matching violation type.",
       "selectedTotal": "Selected total: {points} points",
-      "pointsPerStudentHint": "{points} points will be recorded for each of {count} selected students.",
       "noTypes": "No active violation types. Add them in the catalog first.",
       "maxTypesReached": "50 violation types selected, the most allowed per record.",
       "date": "Date it happened",
@@ -59,13 +58,30 @@
       "notesPlaceholder": "Short description of what happened (optional)",
       "cancel": "Cancel",
       "submit": "Save",
-      "recorded": "{count, plural, one {Violation recorded} other {# violations recorded}}"
+      "recorded": "{count, plural, one {Violation recorded} other {# violations recorded}}",
+      "preview": {
+        "title": "Points preview (before saving)",
+        "loading": "Checking current points...",
+        "error": "Could not load current points. Points will still be recorded correctly on save.",
+        "totals": "{current} + {added} = {next}",
+        "crosses": "Reaches {level}"
+      }
     },
     "voidDialog": {
       "title": "Void violation record",
       "body": "The {points}-point record for {student} stays on file for audit but no longer counts.",
       "reason": "Reason for voiding",
       "confirm": "Void record"
+    },
+    "attachments": {
+      "title": "Photo evidence",
+      "add": "Add photo",
+      "empty": "No photos yet",
+      "uploaded": "Photo uploaded",
+      "invalidType": "Only JPEG or PNG images are accepted",
+      "tooLarge": "The file exceeds the 10 MB limit",
+      "maxReached": "3 photos added, the most allowed per record",
+      "photoAlt": "Violation evidence photo"
     }
   },
   "catalog": {
@@ -304,6 +320,7 @@
     "records": "Violation records",
     "recordsEmptyTitle": "No violation records",
     "recordsEmptyBody": "This student has no violations on file this year.",
+    "recordPoints": "{points} points",
     "counselingHistory": "Counseling history",
     "counselingHistoryEmpty": "No counseling notes for this student yet, or you don't have access to read them."
   }

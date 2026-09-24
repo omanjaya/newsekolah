@@ -18,5 +18,6 @@ var (
 	ErrAttachmentNotFound      = NewError(http.StatusNotFound, "ATTACHMENT_NOT_FOUND")
 	ErrAttachmentTooLarge      = NewError(http.StatusBadRequest, "ATTACHMENT_TOO_LARGE")
 	ErrAttachmentInvalidType   = NewError(http.StatusBadRequest, "ATTACHMENT_INVALID_TYPE")
+	ErrAttachmentLimitReached  = NewError(http.StatusConflict, "ATTACHMENT_LIMIT_REACHED")
 	ErrReportUnavailable       = NewError(http.StatusServiceUnavailable, "REPORT_UNAVAILABLE")
 )

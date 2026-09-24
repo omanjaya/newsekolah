@@ -41,6 +41,7 @@ var errorMap = map[error]*httpx.Error{
 	domain.ErrAttachmentNotFound:      httpx.ErrAttachmentNotFound,
 	domain.ErrAttachmentTooLarge:      httpx.ErrAttachmentTooLarge,
 	domain.ErrAttachmentInvalidType:   httpx.ErrAttachmentInvalidType,
+	domain.ErrAttachmentLimitReached:  httpx.ErrAttachmentLimitReached,
 	domain.ErrReportUnavailable:       httpx.ErrReportUnavailable,
 }
 
@@ -206,12 +207,73 @@ func (h *DisciplineHandler) RecordViolation(ctx context.Context, request api.Rec
 	return api.RecordViolation201JSONResponse{Record: toAPIRecord(result.Record), Records: &records, TotalPoints: result.TotalPoints, DueLevels: toAPILevels(result.DueLevels)}, nil
 }
 
+// PreviewViolationPoints backs the live points preview while a teacher is
+// still choosing violation types: the client already has each type's
+// points from the catalog it fetched, so it only needs each student's
+// current total, issued levels and the tenant's policy from here.
+func (h *DisciplineHandler) PreviewViolationPoints(ctx context.Context, request api.PreviewViolationPointsRequestObject) (api.PreviewViolationPointsResponseObject, error) {
+	studentIDs := []uuid.UUID(nil)
+	if request.Body != nil {
+		studentIDs = request.Body.StudentUserIds
+	}
+	entries, policy, err := h.service.PointsPreview(ctx, tenantID(ctx), studentIDs)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	data := make([]api.PointsPreviewEntry, len(entries))
+	for i, e := range entries {
+		levels := make([]int, len(e.IssuedLevels))
+		copy(levels, e.IssuedLevels)
+		data[i] = api.PointsPreviewEntry{StudentUserId: e.StudentUserID, TotalPoints: e.TotalPoints, IssuedLevels: levels}
+	}
+	return api.PreviewViolationPoints200JSONResponse{Data: data, Policy: toAPIPolicy(policy)}, nil
+}
+
 func (h *DisciplineHandler) VoidViolation(ctx context.Context, request api.VoidViolationRequestObject) (api.VoidViolationResponseObject, error) {
 	record, err := h.service.VoidViolation(ctx, tenantID(ctx), request.RecordId, userID(ctx), request.Body.Reason)
 	if err != nil {
 		return nil, mapError(err)
 	}
 	return api.VoidViolation200JSONResponse(toAPIRecord(record)), nil
+}
+
+// Violation photo evidence -- same presigned-PUT-then-confirm shape as
+// counseling attachments below, keyed by violation record instead of note.
+
+func (h *DisciplineHandler) ListViolationAttachments(ctx context.Context, request api.ListViolationAttachmentsRequestObject) (api.ListViolationAttachmentsResponseObject, error) {
+	attachments, err := h.service.ListViolationAttachments(ctx, tenantID(ctx), request.RecordId)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	data := make([]api.ViolationAttachment, len(attachments))
+	for i, a := range attachments {
+		data[i] = api.ViolationAttachment{Id: a.ID, RecordId: a.ViolationRecordID, CreatedAt: a.CreatedAt}
+	}
+	return api.ListViolationAttachments200JSONResponse{Data: data}, nil
+}
+
+func (h *DisciplineHandler) RequestViolationAttachmentUpload(ctx context.Context, request api.RequestViolationAttachmentUploadRequestObject) (api.RequestViolationAttachmentUploadResponseObject, error) {
+	target, err := h.service.RequestViolationAttachmentUpload(ctx, tenantID(ctx), request.RecordId, userID(ctx))
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return api.RequestViolationAttachmentUpload200JSONResponse{UploadUrl: target.UploadURL, ObjectKey: target.ObjectKey, ExpiresAt: target.ExpiresAt}, nil
+}
+
+func (h *DisciplineHandler) ConfirmViolationAttachment(ctx context.Context, request api.ConfirmViolationAttachmentRequestObject) (api.ConfirmViolationAttachmentResponseObject, error) {
+	att, err := h.service.ConfirmViolationAttachment(ctx, tenantID(ctx), request.RecordId, userID(ctx), request.Body.ObjectKey)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return api.ConfirmViolationAttachment201JSONResponse{Id: att.ID, RecordId: att.ViolationRecordID, CreatedAt: att.CreatedAt}, nil
+}
+
+func (h *DisciplineHandler) GetViolationAttachmentUrl(ctx context.Context, request api.GetViolationAttachmentUrlRequestObject) (api.GetViolationAttachmentUrlResponseObject, error) {
+	url, err := h.service.ViolationAttachmentURL(ctx, tenantID(ctx), request.RecordId, request.AttachmentId)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return api.GetViolationAttachmentUrl200JSONResponse{Url: url}, nil
 }
 
 func (h *DisciplineHandler) GetStudentDiscipline(ctx context.Context, request api.GetStudentDisciplineRequestObject) (api.GetStudentDisciplineResponseObject, error) {

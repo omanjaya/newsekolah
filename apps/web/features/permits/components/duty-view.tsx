@@ -17,6 +17,8 @@ import { useEffect } from "react";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { type ScanPurpose, encodeScanPayload, useIssueScanTokenMutation } from "../api";
 
+import { DutyManualRecordPanel } from "./duty-manual-record-panel";
+
 /**
  * The duty teacher's desk (docs/07-ui-ux.md section 4, "Guru piket"): one
  * screen with the QR per purpose, no menu diving. Each QR is a single-use
@@ -32,12 +34,16 @@ export function DutyView(): ReactElement {
         <TabsList>
           <TabsTrigger value="classroom_entry">{t("purposes.classroom_entry")}</TabsTrigger>
           <TabsTrigger value="late_arrival">{t("purposes.late_arrival")}</TabsTrigger>
+          <TabsTrigger value="manual">{t("purposes.manual")}</TabsTrigger>
         </TabsList>
         <TabsContent value="classroom_entry" className="pt-4">
           <PurposePanel purpose="classroom_entry" />
         </TabsContent>
         <TabsContent value="late_arrival" className="pt-4">
           <PurposePanel purpose="late_arrival" />
+        </TabsContent>
+        <TabsContent value="manual" className="pt-4">
+          <DutyManualRecordPanel />
         </TabsContent>
       </Tabs>
     </div>

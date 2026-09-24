@@ -12,6 +12,31 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const createViolationAttachment = `-- name: CreateViolationAttachment :one
+insert into violation_attachments (tenant_id, violation_record_id, asset_id)
+values ($1, $2, $3)
+returning id, tenant_id, violation_record_id, asset_id, created_at
+`
+
+type CreateViolationAttachmentParams struct {
+	TenantID          uuid.UUID `json:"tenant_id"`
+	ViolationRecordID uuid.UUID `json:"violation_record_id"`
+	AssetID           uuid.UUID `json:"asset_id"`
+}
+
+func (q *Queries) CreateViolationAttachment(ctx context.Context, arg CreateViolationAttachmentParams) (ViolationAttachment, error) {
+	row := q.db.QueryRow(ctx, createViolationAttachment, arg.TenantID, arg.ViolationRecordID, arg.AssetID)
+	var i ViolationAttachment
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.ViolationRecordID,
+		&i.AssetID,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const createViolationRecord = `-- name: CreateViolationRecord :one
 insert into violation_records (tenant_id, academic_year_id, student_user_id, violation_type_id, points_snapshot, occurred_on,
   attendance_session_id, workflow_instance_id, reporter_user_id, notes)
@@ -136,6 +161,28 @@ type DeleteViolationTypeParams struct {
 func (q *Queries) DeleteViolationType(ctx context.Context, arg DeleteViolationTypeParams) error {
 	_, err := q.db.Exec(ctx, deleteViolationType, arg.TenantID, arg.ID)
 	return err
+}
+
+const getViolationAttachment = `-- name: GetViolationAttachment :one
+select id, tenant_id, violation_record_id, asset_id, created_at from violation_attachments where tenant_id = $1 and id = $2
+`
+
+type GetViolationAttachmentParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	ID       uuid.UUID `json:"id"`
+}
+
+func (q *Queries) GetViolationAttachment(ctx context.Context, arg GetViolationAttachmentParams) (ViolationAttachment, error) {
+	row := q.db.QueryRow(ctx, getViolationAttachment, arg.TenantID, arg.ID)
+	var i ViolationAttachment
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.ViolationRecordID,
+		&i.AssetID,
+		&i.CreatedAt,
+	)
+	return i, err
 }
 
 const getViolationRecord = `-- name: GetViolationRecord :one
@@ -284,6 +331,56 @@ func (q *Queries) ListActivePointsByYear(ctx context.Context, arg ListActivePoin
 	return items, nil
 }
 
+const listPointsPreviewForStudents = `-- name: ListPointsPreviewForStudents :many
+select vr.student_user_id,
+  coalesce(sum(vr.points_snapshot), 0)::int as total_points,
+  coalesce(array_agg(distinct wl.level) filter (where wl.level is not null), '{}')::int[] as issued_levels
+from violation_records vr
+left join warning_letters wl on wl.tenant_id = vr.tenant_id and wl.academic_year_id = vr.academic_year_id
+  and wl.student_user_id = vr.student_user_id
+where vr.tenant_id = $1 and vr.academic_year_id = $2 and vr.voided_at is null
+  and vr.student_user_id = any($3::uuid[])
+group by vr.student_user_id
+`
+
+type ListPointsPreviewForStudentsParams struct {
+	TenantID       uuid.UUID   `json:"tenant_id"`
+	AcademicYearID uuid.UUID   `json:"academic_year_id"`
+	StudentIds     []uuid.UUID `json:"student_ids"`
+}
+
+type ListPointsPreviewForStudentsRow struct {
+	StudentUserID uuid.UUID `json:"student_user_id"`
+	TotalPoints   int32     `json:"total_points"`
+	IssuedLevels  []int32   `json:"issued_levels"`
+}
+
+// Live points preview while a teacher is still choosing violation types
+// (docs/15 "pratinjau ambang SP"): one round trip for every selected
+// student's current active total and the SP levels already issued,
+// mirroring CountEntryStatusesForStudentsInYear's one-query-per-roster
+// pattern (attendance/queries/entries.sql). A student absent from the
+// result has zero points and no issued levels.
+func (q *Queries) ListPointsPreviewForStudents(ctx context.Context, arg ListPointsPreviewForStudentsParams) ([]ListPointsPreviewForStudentsRow, error) {
+	rows, err := q.db.Query(ctx, listPointsPreviewForStudents, arg.TenantID, arg.AcademicYearID, arg.StudentIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListPointsPreviewForStudentsRow{}
+	for rows.Next() {
+		var i ListPointsPreviewForStudentsRow
+		if err := rows.Scan(&i.StudentUserID, &i.TotalPoints, &i.IssuedLevels); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listStudentPointTotals = `-- name: ListStudentPointTotals :many
 select vr.student_user_id, coalesce(sum(vr.points_snapshot), 0)::int as total, count(*)::int as record_count,
   max(vr.occurred_on)::date as last_occurred_on
@@ -331,6 +428,41 @@ func (q *Queries) ListStudentPointTotals(ctx context.Context, arg ListStudentPoi
 			&i.Total,
 			&i.RecordCount,
 			&i.LastOccurredOn,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listViolationAttachments = `-- name: ListViolationAttachments :many
+select id, tenant_id, violation_record_id, asset_id, created_at from violation_attachments where tenant_id = $1 and violation_record_id = $2 order by created_at
+`
+
+type ListViolationAttachmentsParams struct {
+	TenantID          uuid.UUID `json:"tenant_id"`
+	ViolationRecordID uuid.UUID `json:"violation_record_id"`
+}
+
+func (q *Queries) ListViolationAttachments(ctx context.Context, arg ListViolationAttachmentsParams) ([]ViolationAttachment, error) {
+	rows, err := q.db.Query(ctx, listViolationAttachments, arg.TenantID, arg.ViolationRecordID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ViolationAttachment{}
+	for rows.Next() {
+		var i ViolationAttachment
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.ViolationRecordID,
+			&i.AssetID,
+			&i.CreatedAt,
 		); err != nil {
 			return nil, err
 		}

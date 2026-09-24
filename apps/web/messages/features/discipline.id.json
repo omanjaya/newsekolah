@@ -51,7 +51,6 @@
       "typeSearchPlaceholder": "Cari jenis pelanggaran",
       "noMatch": "Tidak ada jenis pelanggaran yang cocok.",
       "selectedTotal": "Total terpilih: {points} poin",
-      "pointsPerStudentHint": "{points} poin akan dicatat untuk masing-masing {count} siswa terpilih.",
       "noTypes": "Belum ada jenis pelanggaran aktif. Tambahkan di katalog terlebih dahulu.",
       "maxTypesReached": "50 jenis pelanggaran terpilih, batas maksimum per catatan.",
       "date": "Tanggal kejadian",
@@ -59,13 +58,30 @@
       "notesPlaceholder": "Uraian singkat kejadian (opsional)",
       "cancel": "Batal",
       "submit": "Simpan",
-      "recorded": "{count, plural, other {# pelanggaran tercatat}}"
+      "recorded": "{count, plural, other {# pelanggaran tercatat}}",
+      "preview": {
+        "title": "Pratinjau poin (sebelum disimpan)",
+        "loading": "Memeriksa poin saat ini...",
+        "error": "Poin saat ini tidak dapat dimuat. Poin tetap akan tercatat dengan benar saat disimpan.",
+        "totals": "{current} + {added} = {next}",
+        "crosses": "Mencapai {level}"
+      }
     },
     "voidDialog": {
       "title": "Batalkan catatan pelanggaran",
       "body": "Catatan {points} poin untuk {student} tetap tersimpan untuk audit tetapi tidak lagi dihitung.",
       "reason": "Alasan pembatalan",
       "confirm": "Batalkan catatan"
+    },
+    "attachments": {
+      "title": "Foto bukti",
+      "add": "Tambah foto",
+      "empty": "Belum ada foto",
+      "uploaded": "Foto diunggah",
+      "invalidType": "Hanya gambar JPEG atau PNG yang diterima",
+      "tooLarge": "Ukuran berkas melebihi batas 10 MB",
+      "maxReached": "3 foto sudah ditambahkan, batas maksimum per catatan",
+      "photoAlt": "Foto bukti pelanggaran"
     }
   },
   "catalog": {
@@ -304,6 +320,7 @@
     "records": "Catatan pelanggaran",
     "recordsEmptyTitle": "Tidak ada catatan pelanggaran",
     "recordsEmptyBody": "Siswa ini tidak memiliki pelanggaran tahun ini.",
+    "recordPoints": "{points} poin",
     "counselingHistory": "Riwayat konseling",
     "counselingHistoryEmpty": "Belum ada catatan konseling untuk siswa ini, atau Anda tidak memiliki akses membacanya."
   }

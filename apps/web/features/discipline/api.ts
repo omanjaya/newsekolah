@@ -23,6 +23,7 @@ export type CounselingWrite = components["schemas"]["CounselingWrite"];
 export type Counseling = components["schemas"]["Counseling"];
 export type CounselingAttachment = components["schemas"]["CounselingAttachment"];
 export type WarningLetterTemplatePolicy = components["schemas"]["WarningLetterTemplatePolicy"];
+// Photo evidence and the live points preview: see api-violation-extras.ts (kept out of this file, which is at max-lines).
 
 /**
  * Query keys local to this feature (not added to the shared
