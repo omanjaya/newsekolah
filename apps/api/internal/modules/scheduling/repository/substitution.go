@@ -95,6 +95,35 @@ func (r *Repository) ListSubstitutionsOutgoing(ctx context.Context, tenantID, us
 	return toSubstitutions(rows), nil
 }
 
+// ListSubstitutionsIncomingWithSchedule is ListSubstitutionsIncoming, each
+// row enriched with the class/subject/period it covers -- see
+// domain.SubstitutionWithSchedule's comment.
+func (r *Repository) ListSubstitutionsIncomingWithSchedule(ctx context.Context, tenantID, userID uuid.UUID) ([]domain.SubstitutionWithSchedule, error) {
+	rows, err := r.queries(ctx).ListSubstitutionsIncomingWithSchedule(ctx, db.ListSubstitutionsIncomingWithScheduleParams{TenantID: tenantID, SubstituteUserID: userID})
+	if err != nil {
+		return nil, err
+	}
+	out := make([]domain.SubstitutionWithSchedule, len(rows))
+	for i, row := range rows {
+		out[i] = toSubstitutionWithSchedule(row)
+	}
+	return out, nil
+}
+
+// ListSubstitutionsOutgoingWithSchedule is ListSubstitutionsOutgoing's
+// enriched counterpart; see ListSubstitutionsIncomingWithSchedule.
+func (r *Repository) ListSubstitutionsOutgoingWithSchedule(ctx context.Context, tenantID, userID uuid.UUID) ([]domain.SubstitutionWithSchedule, error) {
+	rows, err := r.queries(ctx).ListSubstitutionsOutgoingWithSchedule(ctx, db.ListSubstitutionsOutgoingWithScheduleParams{TenantID: tenantID, RequesterUserID: userID})
+	if err != nil {
+		return nil, err
+	}
+	out := make([]domain.SubstitutionWithSchedule, len(rows))
+	for i, row := range rows {
+		out[i] = toOutgoingSubstitutionWithSchedule(row)
+	}
+	return out, nil
+}
+
 func (r *Repository) ListSubstitutionsAll(ctx context.Context, tenantID uuid.UUID, status *domain.SubstitutionStatus) ([]domain.Substitution, error) {
 	var statusFilter pgtype.Text
 	if status != nil {

@@ -23,21 +23,39 @@
     "topic": "Topik",
     "actions": "Aksi"
   },
-  "form": {
-    "class": "Kelas",
-    "classPlaceholder": "Pilih kelas",
-    "subject": "Mata pelajaran",
-    "subjectPlaceholder": "Pilih mata pelajaran",
-    "date": "Tanggal",
+  "fields": {
     "topic": "Topik",
     "topicPlaceholder": "Topik yang diajarkan",
     "activities": "Kegiatan",
     "activitiesPlaceholder": "Ringkasan kegiatan pembelajaran",
     "reflection": "Refleksi",
     "reflectionPlaceholder": "Catatan refleksi (opsional)",
+    "previousTopic": "Topik pertemuan sebelumnya"
+  },
+  "form": {
+    "class": "Kelas",
+    "classPlaceholder": "Pilih kelas",
+    "subject": "Mata pelajaran",
+    "subjectPlaceholder": "Pilih mata pelajaran",
+    "date": "Tanggal",
     "cancel": "Batal",
     "submit": "Simpan",
-    "saved": "Jurnal disimpan."
+    "saved": "Jurnal disimpan.",
+    "draftFoundTitle": "Draf tersimpan ditemukan",
+    "draftFoundBody": "Draf terakhir disimpan pukul {time}.",
+    "draftRestore": "Pulihkan draf",
+    "draftDismiss": "Abaikan"
+  },
+  "recent": {
+    "title": "Pelajaran terakhir",
+    "subtitle": "Ketuk pelajaran untuk mengisi jurnal dalam hitungan detik",
+    "filled": "Sudah diisi",
+    "unfilled": "Belum diisi",
+    "fillAction": "Isi jurnal",
+    "editAction": "Lihat jurnal",
+    "loadError": "Jadwal gagal dimuat.",
+    "todayLabel": "Hari ini",
+    "yesterdayLabel": "Kemarin"
   },
   "loadError": "Jurnal gagal dimuat."
 }

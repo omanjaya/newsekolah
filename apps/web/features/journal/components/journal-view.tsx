@@ -41,6 +41,7 @@ import {
 } from "../api";
 
 import { JournalForm } from "./journal-form";
+import { JournalTodayPanel } from "./journal-today-panel";
 
 /** {@link ReportExportDialog}'s availableColumns, mirroring journal_export.go's journalReportColumns exactly. */
 const JOURNAL_EXPORT_COLUMNS = [
@@ -200,6 +201,9 @@ export function JournalView(): ReactElement {
           </Button>
         }
       />
+
+      <JournalTodayPanel />
+
       <div className="flex flex-wrap items-end justify-between gap-3">
         {canViewAll && (
           <label className="flex w-full flex-col gap-1 text-[13px] sm:w-auto">

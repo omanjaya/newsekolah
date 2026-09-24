@@ -605,6 +605,13 @@ components:
         response_note: { type: string }
         responded_at: { type: string, format: date-time }
         created_at: { type: string, format: date-time }
+        # Set on the incoming/outgoing (self) list scopes, where the server
+        # already joins the covered schedule; left unset on the
+        # manage_schedules-only "all" scope, which does not.
+        class_id: { type: string, format: uuid }
+        subject_id: { type: string, format: uuid }
+        start_period_id: { type: string, format: uuid }
+        end_period_id: { type: string, format: uuid }
     SubstituteCandidate:
       type: object
       required: [user_id, name]
