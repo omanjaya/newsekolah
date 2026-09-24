@@ -36,7 +36,7 @@
     "open": "Buka data anak",
     "emptyTitle": "Belum ada anak yang tertaut",
     "emptyBody": "Hubungi tata usaha untuk menautkan akun Anda ke data siswa.",
-    "today": "Status {status} · {submitted} dari {expected} sesi tercatat",
+    "sessionsRecorded": "{submitted} dari {expected} sesi tercatat",
     "noAttendanceToday": "Belum ada presensi tercatat hari ini.",
     "loadError": "Status presensi tidak bisa dimuat.",
     "retry": "Coba lagi"

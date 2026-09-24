@@ -6,6 +6,7 @@ package http
 import (
 	"context"
 	"errors"
+	"net/http"
 
 	"github.com/google/uuid"
 	openapi_types "github.com/oapi-codegen/runtime/types"
@@ -22,9 +23,28 @@ func New(svc *service.Service) *FamilyHandler { return &FamilyHandler{service: s
 func tenantID(ctx context.Context) uuid.UUID { id, _ := httpx.TenantIDFromContext(ctx); return id }
 func userID(ctx context.Context) uuid.UUID   { id, _ := httpx.UserIDFromContext(ctx); return id }
 
+var (
+	errLeaveCategoryInvalid   = httpx.NewError(http.StatusBadRequest, "LEAVE_CATEGORY_INVALID")
+	errLeaveDateRangeInvalid  = httpx.NewError(http.StatusBadRequest, "LEAVE_DATE_RANGE_INVALID")
+	errLeaveGuardianLink      = httpx.NewError(http.StatusForbidden, "LEAVE_REQUEST_GUARDIAN_NOT_LINKED")
+	errLeaveHomeroom          = httpx.NewError(http.StatusConflict, "HOMEROOM_TEACHER_REQUIRED")
+	errLeaveAlreadyInProgress = httpx.NewError(http.StatusConflict, "WORKFLOW_ALREADY_IN_PROGRESS")
+)
+
 func mapError(err error) error {
-	if errors.Is(err, service.ErrNotLinked) {
+	switch {
+	case errors.Is(err, service.ErrNotLinked):
 		return httpx.ErrForbidden
+	case errors.Is(err, service.ErrLeaveCategoryInvalid):
+		return errLeaveCategoryInvalid
+	case errors.Is(err, service.ErrLeaveDateRangeInvalid):
+		return errLeaveDateRangeInvalid
+	case errors.Is(err, service.ErrLeaveGuardianNotApproving):
+		return errLeaveGuardianLink
+	case errors.Is(err, service.ErrLeaveHomeroomRequired):
+		return errLeaveHomeroom
+	case errors.Is(err, service.ErrLeaveAlreadyInProgress):
+		return errLeaveAlreadyInProgress
 	}
 	var appErr *httpx.Error
 	if errors.As(err, &appErr) {
@@ -82,6 +102,17 @@ func (h *FamilyHandler) GetChildDiscipline(ctx context.Context, request api.GetC
 		letters[i] = api.ChildWarningLetter{Number: l.Number, LevelLabel: l.LevelLabel, IssuedAt: parseDate(l.IssuedAt)}
 	}
 	return api.GetChildDiscipline200JSONResponse{TotalPoints: summary.TotalPoints, Records: records, Letters: letters}, nil
+}
+
+func (h *FamilyHandler) SubmitChildLeaveRequest(ctx context.Context, request api.SubmitChildLeaveRequestRequestObject) (api.SubmitChildLeaveRequestResponseObject, error) {
+	instanceID, err := h.service.SubmitChildLeaveRequest(
+		ctx, tenantID(ctx), userID(ctx), request.StudentId,
+		string(request.Body.Category), request.Body.Reason, request.Body.StartsOn.Time, request.Body.EndsOn.Time,
+	)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return api.SubmitChildLeaveRequest201JSONResponse{InstanceId: instanceID}, nil
 }
 
 func floatPtr(v *float64) *float32 {

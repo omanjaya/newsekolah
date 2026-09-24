@@ -2349,6 +2349,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/children/{studentId}/leave-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Guardian submits a planned leave request for a linked child */
+        post: operations["submitChildLeaveRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/children/{studentId}/discipline": {
         parameters: {
             query?: never;
@@ -16900,6 +16917,46 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+        };
+    };
+    submitChildLeaveRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    category: components["schemas"]["LeaveCategory"];
+                    reason: string;
+                    /** Format: date */
+                    starts_on: string;
+                    /** Format: date */
+                    ends_on: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Submitted */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        instance_id: string;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
         };
     };
     getChildDiscipline: {

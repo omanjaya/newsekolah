@@ -18,7 +18,11 @@ export function mobileNavigation(items: NavItem[], profile?: NavProfileKind): Na
           ? ["leave-requests", "counseling"]
           : ["attendance", "schedule"]
         : profile === "student"
-          ? ["schedule", "exit-permits"]
+          ? // Scanning into class happens every single lesson, several
+            // times a day; an exit permit is occasional. The daily tab bar
+            // has room for two, so classroom entry earns the slot exit
+            // permits held before (exit permits stays reachable from Menu).
+            ["schedule", "classroom-entry"]
           : ["duty", "library-desk", "school-classes", "attendance"];
   const daily = priorities
     .flatMap((key) => {

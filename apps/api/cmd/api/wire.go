@@ -362,11 +362,12 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	bg := &background{jobs: riverClient, runWorkers: cfg.WorkerInline, logger: logger}
 
 	familyModule := family.Register(family.Dependencies{
-		Links:      identityModule.Service,
-		Attendance: wiring.FamilyAttendance{Svc: attendanceModule.Service},
-		Grading:    wiring.FamilyGrading{Svc: gradingModule.Service},
-		Subjects:   wiring.FamilySubjects{Svc: academicModule.Service},
-		Discipline: wiring.FamilyDiscipline{Svc: disciplineModule.Service},
+		Links:         identityModule.Service,
+		Attendance:    wiring.FamilyAttendance{Svc: attendanceModule.Service},
+		Grading:       wiring.FamilyGrading{Svc: gradingModule.Service},
+		Subjects:      wiring.FamilySubjects{Svc: academicModule.Service},
+		Discipline:    wiring.FamilyDiscipline{Svc: disciplineModule.Service},
+		LeaveRequests: wiring.FamilyLeaveRequests{Svc: permitsModule.Service},
 	})
 
 	activitiesModule := activities.Register(activities.Dependencies{

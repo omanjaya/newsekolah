@@ -141,7 +141,12 @@
     "average": "Average {score}",
     "starsBreakdown": "Stars by subject and teacher",
     "starsBreakdownEmpty": "No stars yet.",
-    "starsBreakdownRow": "{count} from {teacher}"
+    "starsBreakdownRow": "{count} from {teacher}",
+    "trend": {
+      "up": "Up",
+      "down": "Down",
+      "flat": "Steady"
+    }
   },
   "erapor": {
     "pickTerm": "Select term",

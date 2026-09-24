@@ -12,6 +12,10 @@ vi.mock("next-intl", () => ({
 
 vi.mock("../../family/api", () => ({
   currentMonth: () => "2026-09",
+  todayInZone: (_timeZone: string) => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  },
   useMyChildrenQuery: () => queries.children,
   useChildAttendanceQuery: () => queries.attendance,
 }));
@@ -80,6 +84,6 @@ describe("ParentChildSummary", () => {
 
     expect(screen.getByText("Alya")).toBeInTheDocument();
     expect(screen.getByText("Bima")).toBeInTheDocument();
-    expect(screen.getAllByText("today")).toHaveLength(2);
+    expect(screen.getAllByText("sessionsRecorded")).toHaveLength(2);
   });
 });

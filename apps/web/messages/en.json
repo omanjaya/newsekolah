@@ -518,7 +518,9 @@
         "5": "Fri",
         "6": "Sat",
         "7": "Sun"
-      }
+      },
+      "today": "Today",
+      "yesterday": "Yesterday"
     },
     "schedule": {
       "eyebrow": "Academic",

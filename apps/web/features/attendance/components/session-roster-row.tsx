@@ -6,9 +6,9 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { memo, useState } from "react";
 
+import { formatDisplayName } from "../../../lib/text/format-name";
 import type { ViolationType } from "../../discipline/api";
 import type { RosterItem, SessionDetail } from "../api";
-import { formatDisplayName } from "../lib/format-name";
 
 import { AttendanceStatusRadioGroup } from "./attendance-status-radio-group";
 import { SessionRowActionsMenu } from "./session-row-actions-menu";

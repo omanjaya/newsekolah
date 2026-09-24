@@ -7,11 +7,24 @@ package service
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/google/uuid"
 )
 
-var ErrNotLinked = errors.New("not a guardian of this student")
+var (
+	ErrNotLinked = errors.New("not a guardian of this student")
+	// ErrLeaveCategoryInvalid, ErrLeaveDateRangeInvalid,
+	// ErrLeaveGuardianNotApproving and ErrLeaveHomeroomRequired mirror
+	// permits' own domain errors (translated by the wiring adapter, see
+	// internal/wiring's FamilyLeaveRequests) so this module never imports
+	// permits' domain package directly.
+	ErrLeaveCategoryInvalid      = errors.New("leave category is invalid")
+	ErrLeaveDateRangeInvalid     = errors.New("leave request end date must not be before start date")
+	ErrLeaveGuardianNotApproving = errors.New("guardian does not have leave-approval rights for this student")
+	ErrLeaveHomeroomRequired     = errors.New("the student's class has no active homeroom teacher to review this request")
+	ErrLeaveAlreadyInProgress    = errors.New("student already has an in-progress leave request today")
+)
 
 // LinkChecker is identity's parent-student link.
 type LinkChecker interface {
@@ -38,6 +51,16 @@ type SubjectReader interface {
 
 type DisciplineReader interface {
 	StudentDiscipline(ctx context.Context, tenantID, studentID uuid.UUID) (StudentDiscipline, error)
+}
+
+// LeaveRequestSubmitter is what family needs from permits to let a
+// guardian open a planned leave request for a linked child, reached
+// through a wiring adapter like every other cross-module reader here.
+type LeaveRequestSubmitter interface {
+	SubmitChildLeaveRequest(
+		ctx context.Context, tenantID, guardianUserID, studentUserID uuid.UUID,
+		category, reason string, startsOn, endsOn time.Time,
+	) (uuid.UUID, error)
 }
 
 // CalendarDay mirrors attendance's own day shape, flattened for transport.
@@ -82,15 +105,22 @@ type DisciplineLetter struct {
 }
 
 type Service struct {
-	links      LinkChecker
-	attendance AttendanceReader
-	grading    GradingReader
-	subjects   SubjectReader
-	discipline DisciplineReader
+	links         LinkChecker
+	attendance    AttendanceReader
+	grading       GradingReader
+	subjects      SubjectReader
+	discipline    DisciplineReader
+	leaveRequests LeaveRequestSubmitter
 }
 
-func New(links LinkChecker, attendance AttendanceReader, grading GradingReader, subjects SubjectReader, discipline DisciplineReader) *Service {
-	return &Service{links: links, attendance: attendance, grading: grading, subjects: subjects, discipline: discipline}
+func New(
+	links LinkChecker, attendance AttendanceReader, grading GradingReader, subjects SubjectReader,
+	discipline DisciplineReader, leaveRequests LeaveRequestSubmitter,
+) *Service {
+	return &Service{
+		links: links, attendance: attendance, grading: grading, subjects: subjects,
+		discipline: discipline, leaveRequests: leaveRequests,
+	}
 }
 
 func (s *Service) requireLink(ctx context.Context, tenantID, parentID, studentID uuid.UUID) error {
@@ -141,4 +171,20 @@ func (s *Service) ChildDiscipline(ctx context.Context, tenantID, parentID, stude
 		return StudentDiscipline{}, err
 	}
 	return s.discipline.StudentDiscipline(ctx, tenantID, studentID)
+}
+
+// SubmitChildLeaveRequest opens a planned leave request for a linked
+// child on the guardian's behalf. The link check here only proves the
+// caller is *a* guardian of the student (same bar as the read endpoints
+// above); the adapter's underlying permits call additionally requires the
+// stricter "approving guardian" link, since that is the same relationship
+// that will later decide this exact request.
+func (s *Service) SubmitChildLeaveRequest(
+	ctx context.Context, tenantID, parentID, studentID uuid.UUID,
+	category, reason string, startsOn, endsOn time.Time,
+) (uuid.UUID, error) {
+	if err := s.requireLink(ctx, tenantID, parentID, studentID); err != nil {
+		return uuid.Nil, err
+	}
+	return s.leaveRequests.SubmitChildLeaveRequest(ctx, tenantID, parentID, studentID, category, reason, startsOn, endsOn)
 }
