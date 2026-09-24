@@ -577,6 +577,7 @@
     "printLabels": "Cetak label"
   },
   "copiesBrowser": {
+    "navLabel": "Eksemplar",
     "eyebrow": "Perpustakaan",
     "title": "Eksemplar",
     "searchPlaceholder": "Cari barcode, nomor induk, atau RFID",

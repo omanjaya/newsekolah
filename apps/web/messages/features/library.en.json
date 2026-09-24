@@ -577,6 +577,7 @@
     "printLabels": "Print labels"
   },
   "copiesBrowser": {
+    "navLabel": "Copies",
     "eyebrow": "Library",
     "title": "Copies",
     "searchPlaceholder": "Search barcode, accession number, or RFID",
