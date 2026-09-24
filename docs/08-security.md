@@ -38,8 +38,23 @@ Server-side access cookie (middleware-managed, bukan refresh per navigasi): `app
 ## 4. Isolasi tenant
 
 - `tenant_id` di setiap tabel operasional; RLS policy `USING (tenant_id = current_setting('app.tenant_id')::uuid)`; role DB aplikasi tidak `BYPASSRLS`.
-- Resolusi tenant hanya dari host yang terdaftar (subdomain atau custom domain terverifikasi) atau dari klaim `tid` di token untuk mobile. Header bebas seperti `X-Tenant` tidak diterima tanpa token yang cocok.
+- Resolusi tenant hanya dari host yang terdaftar (subdomain atau custom domain terverifikasi) atau dari klaim `tid` di token untuk mobile. Header bebas seperti `X-Tenant` tidak diterima tanpa token yang cocok, kecuali daftar rute pra-auth di bawah.
 - Kunci cache Redis, nama objek S3, dan job River selalu diawali `tenant_id`.
+
+### Pengecualian header `X-Tenant` pra-auth
+
+`internal/platform/tenant/tenant.go` (`resolveMulti`) mencoba resolusi tenant dalam urutan: (1) host request lewat `Loader.GetByDomain` (custom domain terverifikasi), (2) slug dari subdomain `*.${BASE_DOMAIN}` lewat `Loader.GetBySlug`, lalu baru (3), hanya bila keduanya gagal dan path request diawali salah satu prefix di `headerAllowedPrefixes`, header `X-Tenant` (berisi slug) dipakai lewat `Loader.GetBySlug` juga. Di luar mode multi-tenant (mode `single`) header ini tidak pernah dibaca -- tenant tunggal di-resolve dari `Loader.GetSingle` untuk setiap request.
+
+Prefix yang diizinkan saat ini (persis seperti di kode, jangan tambah tanpa memperbarui bagian ini):
+
+| Prefix                | Alasan                                                                                                                                                                                                                                                                                                 |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `/v1/auth/login`      | Sebelum login berhasil, klien (khususnya mobile/web tanpa subdomain, mis. custom domain yang belum diarahkan atau app native yang belum tahu subdomain sekolahnya) belum punya token dengan klaim `tid`, sehingga satu-satunya cara memberi tahu API sekolah mana yang dituju adalah header eksplisit. |
+| `/v1/tenant/branding` | Layar login menampilkan logo/nama/warna sekolah sebelum otentikasi; endpoint ini publik dan hanya mengembalikan data tampilan, bukan data pengguna.                                                                                                                                                    |
+| `/v1/tenants/lookup`  | Dipakai klien untuk menerjemahkan input pengguna (mis. kode sekolah) menjadi slug/host tenant sebelum request lain dikirim; juga publik dan tanpa data pengguna.                                                                                                                                       |
+
+Ini bukan pelemahan isolasi tenant: ketiga endpoint tersebut sudah didesain publik (`x-public: true` di OpenAPI, `security: []`, lihat bagian 3) dan tidak pernah mengembalikan data milik pengguna yang sudah diotentikasi -- header hanya memilih _tenant mana_ yang dilayani operasi publik itu, ia tidak pernah dipakai untuk keputusan otorisasi atau untuk menimpa `tid` dari token yang sudah tervalidasi (baris `authenticate()` di `internal/platform/auth/middleware.go` menolak request bila `tid` token tidak sama dengan tenant yang sudah diresolusi dari host). Header ini juga hanya fallback urutan terakhir -- host dan subdomain terdaftar tetap diutamakan -- sehingga rute yang sama tetap resolve dengan benar lewat host tanpa header sama sekali begitu klien tahu subdomainnya.
+
 - Test integrasi: dua tenant di satu DB, setiap endpoint daftar dan detail dipastikan tidak bocor.
 - Ekspor dan hapus data per tenant (offboarding) sebagai fitur, bukan skrip manual.
 

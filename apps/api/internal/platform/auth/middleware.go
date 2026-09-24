@@ -158,7 +158,7 @@ func (a *Authenticator) authenticate(r *http.Request, token string) (authz.Ident
 		return authz.Identity{Err: httpx.ErrTokenInvalid}, ctx
 	}
 
-	active, found, err := a.cache.Get(ctx, sessionID)
+	active, found, err := a.cache.Get(ctx, tenantID, sessionID)
 	if err != nil {
 		return authz.Identity{Err: httpx.ErrInternal}, ctx
 	}
@@ -167,13 +167,13 @@ func (a *Authenticator) authenticate(r *http.Request, token string) (authz.Ident
 		if err != nil {
 			return authz.Identity{Err: httpx.ErrInternal}, ctx
 		}
-		_ = a.cache.SetActive(ctx, sessionID, active)
+		_ = a.cache.SetActive(ctx, tenantID, sessionID, active)
 	}
 	if !active {
 		return authz.Identity{Err: httpx.ErrSessionRevoked}, ctx
 	}
 
-	if a.cache.ShouldTouchLastSeen(ctx, sessionID) {
+	if a.cache.ShouldTouchLastSeen(ctx, tenantID, sessionID) {
 		_ = a.sessions.TouchSessionLastSeen(ctx, tenantID, sessionID)
 	}
 

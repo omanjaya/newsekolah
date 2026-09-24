@@ -28,7 +28,7 @@ type BrandingReader interface {
 // immediately on logout/revoke, instead of waiting out the TTL. It is
 // satisfied structurally by *platform/auth.SessionCache.
 type SessionCache interface {
-	Invalidate(ctx context.Context, sessionID uuid.UUID) error
+	Invalidate(ctx context.Context, tenantID, sessionID uuid.UUID) error
 }
 
 type Handler struct {

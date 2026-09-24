@@ -141,10 +141,11 @@ func (h *Handler) StopImpersonation(ctx context.Context, _ api.StopImpersonation
 	if !ok {
 		return nil, httpx.ErrNotImpersonating
 	}
-	if err := h.service.StopImpersonation(ctx, tenantIDFromContext(ctx), sessionID); err != nil {
+	tenantID := tenantIDFromContext(ctx)
+	if err := h.service.StopImpersonation(ctx, tenantID, sessionID); err != nil {
 		return nil, mapAdminError(err)
 	}
-	_ = h.sessionCache.Invalidate(ctx, sessionID)
+	_ = h.sessionCache.Invalidate(ctx, tenantID, sessionID)
 	return api.StopImpersonation204Response{}, nil
 }
 

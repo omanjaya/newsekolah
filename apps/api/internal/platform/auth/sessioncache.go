@@ -29,34 +29,40 @@ func NewSessionCache(store KVStore) *SessionCache {
 	return &SessionCache{store: store}
 }
 
-func sessionCacheKey(sessionID uuid.UUID) string {
-	return fmt.Sprintf("session:active:%s", sessionID)
+// sessionCacheKey is prefixed with tenantID per docs/08-security.md
+// section 4 ("Kunci cache Redis ... selalu diawali tenant_id"). session
+// IDs are already globally unique (uuid), so the prefix is not needed to
+// avoid collisions -- it exists so a Redis-level audit or a tenant data
+// export/delete (offboarding) can find every key belonging to one tenant
+// by prefix, same as the S3 object key convention (tenants/<id>/...).
+func sessionCacheKey(tenantID, sessionID uuid.UUID) string {
+	return fmt.Sprintf("tenant:%s:session:active:%s", tenantID, sessionID)
 }
 
 // Get returns (active, found). found is false when nothing is cached and
 // the caller must fall back to the database.
-func (c *SessionCache) Get(ctx context.Context, sessionID uuid.UUID) (active bool, found bool, err error) {
-	v, ok, err := c.store.Get(ctx, sessionCacheKey(sessionID))
+func (c *SessionCache) Get(ctx context.Context, tenantID, sessionID uuid.UUID) (active bool, found bool, err error) {
+	v, ok, err := c.store.Get(ctx, sessionCacheKey(tenantID, sessionID))
 	if err != nil || !ok {
 		return false, false, err
 	}
 	return v == "1", true, nil
 }
 
-func (c *SessionCache) SetActive(ctx context.Context, sessionID uuid.UUID, active bool) error {
+func (c *SessionCache) SetActive(ctx context.Context, tenantID, sessionID uuid.UUID, active bool) error {
 	v := "0"
 	if active {
 		v = "1"
 	}
-	return c.store.Set(ctx, sessionCacheKey(sessionID), v, sessionCacheTTL)
+	return c.store.Set(ctx, sessionCacheKey(tenantID, sessionID), v, sessionCacheTTL)
 }
 
-func (c *SessionCache) Invalidate(ctx context.Context, sessionID uuid.UUID) error {
-	return c.store.Del(ctx, sessionCacheKey(sessionID))
+func (c *SessionCache) Invalidate(ctx context.Context, tenantID, sessionID uuid.UUID) error {
+	return c.store.Del(ctx, sessionCacheKey(tenantID, sessionID))
 }
 
-func touchCacheKey(sessionID uuid.UUID) string {
-	return fmt.Sprintf("session:touch:%s", sessionID)
+func touchCacheKey(tenantID, sessionID uuid.UUID) string {
+	return fmt.Sprintf("tenant:%s:session:touch:%s", tenantID, sessionID)
 }
 
 // ShouldTouchLastSeen reports whether the caller is due to update
@@ -64,11 +70,11 @@ func touchCacheKey(sessionID uuid.UUID) string {
 // touchThrottle by marking the key it just checked, so the check works the
 // same way across every API replica (the marker lives in the shared
 // KVStore, not in process memory).
-func (c *SessionCache) ShouldTouchLastSeen(ctx context.Context, sessionID uuid.UUID) bool {
-	_, found, err := c.store.Get(ctx, touchCacheKey(sessionID))
+func (c *SessionCache) ShouldTouchLastSeen(ctx context.Context, tenantID, sessionID uuid.UUID) bool {
+	_, found, err := c.store.Get(ctx, touchCacheKey(tenantID, sessionID))
 	if err != nil || found {
 		return false
 	}
-	_ = c.store.Set(ctx, touchCacheKey(sessionID), "1", touchThrottle)
+	_ = c.store.Set(ctx, touchCacheKey(tenantID, sessionID), "1", touchThrottle)
 	return true
 }

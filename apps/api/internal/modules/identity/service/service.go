@@ -201,7 +201,7 @@ type Extras struct {
 // logout or "revoke this session" (docs/analysis/backend-inventory.md
 // section 1.1).
 type SessionInvalidator interface {
-	Invalidate(ctx context.Context, sessionID uuid.UUID) error
+	Invalidate(ctx context.Context, tenantID, sessionID uuid.UUID) error
 }
 
 // PushDeviceRevoker deletes a user's registered push devices, implemented
@@ -287,12 +287,12 @@ func (s *Service) TouchSessionLastSeen(ctx context.Context, tenantID, sessionID 
 // sessions stay accepted for up to the cache's TTL instead of being
 // rejected immediately, not a correctness break (the database row is
 // already revoked).
-func (s *Service) invalidateSessions(ctx context.Context, ids []uuid.UUID) {
+func (s *Service) invalidateSessions(ctx context.Context, tenantID uuid.UUID, ids []uuid.UUID) {
 	if s.extras.SessionCache == nil {
 		return
 	}
 	for _, id := range ids {
-		_ = s.extras.SessionCache.Invalidate(ctx, id)
+		_ = s.extras.SessionCache.Invalidate(ctx, tenantID, id)
 	}
 }
 

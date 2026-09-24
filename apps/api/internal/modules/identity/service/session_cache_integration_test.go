@@ -21,18 +21,35 @@ import (
 // test can assert the identity service evicts the authn middleware's
 // validity cache (internal/platform/auth/sessioncache.go) instead of
 // leaving a revoked session accepted for up to its TTL.
-type fakeSessionCache struct {
-	invalidated []uuid.UUID
+type invalidatedEntry struct {
+	tenantID  uuid.UUID
+	sessionID uuid.UUID
 }
 
-func (f *fakeSessionCache) Invalidate(_ context.Context, sessionID uuid.UUID) error {
-	f.invalidated = append(f.invalidated, sessionID)
+type fakeSessionCache struct {
+	invalidated []invalidatedEntry
+}
+
+func (f *fakeSessionCache) Invalidate(_ context.Context, tenantID, sessionID uuid.UUID) error {
+	f.invalidated = append(f.invalidated, invalidatedEntry{tenantID: tenantID, sessionID: sessionID})
 	return nil
 }
 
 func (f *fakeSessionCache) has(id uuid.UUID) bool {
 	for _, got := range f.invalidated {
-		if got == id {
+		if got.sessionID == id {
+			return true
+		}
+	}
+	return false
+}
+
+// hasFor reports whether Invalidate was called with exactly this
+// tenant/session pair, so a test can confirm the cache is invalidated
+// scoped to the session's own tenant rather than an arbitrary one.
+func (f *fakeSessionCache) hasFor(tenantID, sessionID uuid.UUID) bool {
+	for _, got := range f.invalidated {
+		if got.tenantID == tenantID && got.sessionID == sessionID {
 			return true
 		}
 	}
@@ -115,7 +132,7 @@ func TestLogoutInvalidatesSessionCache(t *testing.T) {
 
 	require.NoError(t, svc.Logout(ctx, tenantID, userID, sessionID))
 
-	require.True(t, cache.has(sessionID), "Logout must invalidate the session cache entry")
+	require.True(t, cache.hasFor(tenantID, sessionID), "Logout must invalidate the session cache entry scoped to the session's tenant")
 	require.NotNil(t, sessionRevokedAt(t, pg.AdminPool, sessionID), "Logout must revoke the session in the database")
 }
 
@@ -129,7 +146,7 @@ func TestRevokeSessionInvalidatesSessionCache(t *testing.T) {
 
 	require.NoError(t, svc.RevokeSession(ctx, tenantID, userID, other))
 
-	require.True(t, cache.has(other), "RevokeSession must invalidate the revoked session's cache entry")
+	require.True(t, cache.hasFor(tenantID, other), "RevokeSession must invalidate the revoked session's cache entry scoped to its tenant")
 	require.False(t, cache.has(current), "RevokeSession must not invalidate an unrelated session")
 	require.NotNil(t, sessionRevokedAt(t, pg.AdminPool, other))
 	require.Nil(t, sessionRevokedAt(t, pg.AdminPool, current))
@@ -145,7 +162,7 @@ func TestStopImpersonationInvalidatesSessionCache(t *testing.T) {
 
 	require.NoError(t, svc.StopImpersonation(ctx, tenantID, sessionID))
 
-	require.True(t, cache.has(sessionID), "StopImpersonation must invalidate the impersonation session's cache entry")
+	require.True(t, cache.hasFor(tenantID, sessionID), "StopImpersonation must invalidate the impersonation session's cache entry scoped to its tenant")
 	require.NotNil(t, sessionRevokedAt(t, pg.AdminPool, sessionID))
 }
 

@@ -140,7 +140,7 @@ func (s *Service) ConfirmPasswordReset(ctx context.Context, tenantID uuid.UUID, 
 		if err != nil {
 			return fmt.Errorf("revoke sessions: %w", err)
 		}
-		s.invalidateSessions(ctx, revokedIDs)
+		s.invalidateSessions(ctx, tenantID, revokedIDs)
 		s.revokePushDevices(ctx, tenantID, reset.UserID)
 		return audit.RecordSimple(ctx, tenantID, "password_reset.confirm", "user", reset.UserID)
 	})

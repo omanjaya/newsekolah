@@ -128,7 +128,7 @@ func (s *Service) StopImpersonation(ctx context.Context, tenantID, sessionID uui
 	// Impersonation must stop effective immediately, not wait out the
 	// cache TTL (docs/08-security.md section 2: "dapat dihentikan dan
 	// pencabutannya efektif seketika").
-	s.invalidateSessions(ctx, []uuid.UUID{sessionID})
+	s.invalidateSessions(ctx, tenantID, []uuid.UUID{sessionID})
 	return nil
 }
 
