@@ -112,6 +112,24 @@ func (q *Queries) GetEnrolledClassForAttendance(ctx context.Context, arg GetEnro
 	return class_id, err
 }
 
+const getGradeLevelNameForAttendance = `-- name: GetGradeLevelNameForAttendance :one
+select name from grade_levels where tenant_id = $1 and id = $2
+`
+
+type GetGradeLevelNameForAttendanceParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	ID       uuid.UUID `json:"id"`
+}
+
+// One grade level's display name, for the grade-level ("angkatan") scope
+// of a report export's scope line ("Angkatan: <name>").
+func (q *Queries) GetGradeLevelNameForAttendance(ctx context.Context, arg GetGradeLevelNameForAttendanceParams) (string, error) {
+	row := q.db.QueryRow(ctx, getGradeLevelNameForAttendance, arg.TenantID, arg.ID)
+	var name string
+	err := row.Scan(&name)
+	return name, err
+}
+
 const getHomeroomClassForAttendance = `-- name: GetHomeroomClassForAttendance :one
 select da.scope_class_id
 from duty_assignments da

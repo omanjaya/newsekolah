@@ -574,6 +574,9 @@ type Querier interface {
 	GetExtracurricular(ctx context.Context, arg GetExtracurricularParams) (Extracurricular, error)
 	GetFeeType(ctx context.Context, arg GetFeeTypeParams) (FeeType, error)
 	GetGoogleSSOConfig(ctx context.Context, tenantID uuid.UUID) (SsoGoogleConfig, error)
+	// One grade level's display name, for the grade-level ("angkatan") scope
+	// of a report export's scope line ("Angkatan: <name>").
+	GetGradeLevelNameForAttendance(ctx context.Context, arg GetGradeLevelNameForAttendanceParams) (string, error)
 	// The class a teacher is homeroom (wali kelas) duty holder of this
 	// academic year, if any -- duty slug "homeroom", scope_class_id per
 	// docs/analysis/backend-inventory.md section 1.9's global-corrector rule.

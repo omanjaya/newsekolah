@@ -3,6 +3,7 @@ package attendance
 import (
 	"bytes"
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -202,4 +203,78 @@ func TestReportExportGradeLevelScope(t *testing.T) {
 			"the column subset and relabel must be honoured, in the chosen order, as the table's header row",
 		)
 	})
+}
+
+// fakeLetterheadSource is a minimal reportdoc.LetterheadSource stub, for
+// verifying a report export wires in whatever the school module's
+// ReportLetterhead would have returned, without depending on that
+// module's own tenant_settings fixture.
+type fakeLetterheadSource struct {
+	letterhead *reportdoc.Letterhead
+	signature  *reportdoc.Signature
+}
+
+func (f fakeLetterheadSource) Letterhead(context.Context, uuid.UUID) (*reportdoc.Letterhead, *reportdoc.Signature, error) {
+	return f.letterhead, f.signature, nil
+}
+
+// TestReportExportIndonesianTextAndLetterhead covers the Indonesian-
+// default-locale text every migrated report export must use (never a raw
+// status code, a long Indonesian date rather than ISO, a "Kelas"/
+// "Angkatan" scope line) and that a wired LetterheadSource populates the
+// document's letterhead and signature (with the report's own date, since
+// ReportLetterhead itself never sets one).
+func TestReportExportIndonesianTextAndLetterhead(t *testing.T) {
+	pg := dbtest.Start(t)
+	ctx := context.Background()
+	svc := buildService(pg.AppPool)
+	svc.SetLetterheadSource(fakeLetterheadSource{
+		letterhead: &reportdoc.Letterhead{Lines: []string{"SMA Negeri Uji Coba"}},
+		signature: &reportdoc.Signature{
+			Place: "Denpasar",
+			Signers: []reportdoc.Signer{
+				{RoleLabel: "Wali Kelas", Name: "Ni Made Sari"},
+				{RoleLabel: "Kepala Sekolah", Name: "I Wayan Arta"},
+			},
+		},
+	})
+	w := seedWorld(t, ctx, pg.AdminPool, "id-text")
+
+	actor := service.Actor{UserID: w.teacherID}
+	session, err := svc.OpenSession(ctx, w.tenantID, actor, w.scheduleTodayID, w.today, domain.SaveModeNormal)
+	require.NoError(t, err)
+	_, err = svc.SaveEntries(ctx, w.tenantID, actor, session.Session.ID, service.SaveEntriesInput{
+		Entries: []service.SaveEntryInput{{StudentUserID: w.student1ID, StatusCode: "H"}},
+		// student2 is left out of the save: the session still submits,
+		// but produces no entry for them, so their status resolves to
+		// the pseudo-code domain.StatusMixed -- it must still render as
+		// the Indonesian "Campuran", never the raw code "MIXED".
+	})
+	require.NoError(t, err)
+
+	xlsx, err := svc.ExportDailyReport(ctx, w.tenantID, &w.classID, nil, w.today, reportdoc.Options{Format: reportdoc.FormatXLSX, ShowLetterhead: true})
+	require.NoError(t, err)
+	f, err := excelize.OpenReader(bytes.NewReader(xlsx))
+	require.NoError(t, err)
+	defer f.Close() //nolint:errcheck
+
+	sheet := f.GetSheetList()[0]
+	rows, err := f.GetRows(sheet)
+	require.NoError(t, err)
+
+	var flat []string
+	for _, row := range rows {
+		flat = append(flat, row...)
+	}
+	joined := strings.Join(flat, " | ")
+
+	require.Contains(t, joined, "Hadir", "a real status code must render its Indonesian label, not the raw code")
+	require.NotContains(t, joined, "\"H\"", "the raw status code must not appear")
+	require.Contains(t, joined, "Campuran", "a day with a submitted session but no entry (StatusMixed) must render its Indonesian label")
+	require.NotContains(t, joined, "MIXED", "the raw pseudo-status code must not appear")
+	require.Contains(t, joined, "Kelas: X-A", "the class scope line must be present, in Indonesian")
+	require.Contains(t, joined, domain.IndonesianDate(w.today), "the date scope line must be the Indonesian long date, not ISO")
+	require.Contains(t, joined, "SMA Negeri Uji Coba", "the wired letterhead must render")
+	require.Contains(t, joined, "Ni Made Sari", "the wired signature's first signer must render")
+	require.Contains(t, joined, "I Wayan Arta", "the wired signature's second signer must render")
 }

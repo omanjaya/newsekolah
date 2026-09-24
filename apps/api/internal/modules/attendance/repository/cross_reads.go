@@ -72,6 +72,12 @@ func (r *Repository) GetClassName(ctx context.Context, tenantID, classID uuid.UU
 	return r.queries(ctx).GetClassNameForAttendance(ctx, db.GetClassNameForAttendanceParams{TenantID: tenantID, ID: classID})
 }
 
+// GetGradeLevelName resolves gradeLevelID's display name, for the
+// grade-level ("angkatan") scope of a report export's scope line.
+func (r *Repository) GetGradeLevelName(ctx context.Context, tenantID, gradeLevelID uuid.UUID) (string, error) {
+	return r.queries(ctx).GetGradeLevelNameForAttendance(ctx, db.GetGradeLevelNameForAttendanceParams{TenantID: tenantID, ID: gradeLevelID})
+}
+
 // ListClassesByGradeLevel resolves the grade-level ("angkatan") scope for
 // a report export: every class of the academic year under gradeLevelID,
 // ordered by name, one section per class.

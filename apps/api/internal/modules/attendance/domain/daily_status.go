@@ -114,6 +114,31 @@ func strictMajority(counts map[string]int, total int) (string, bool) {
 	return "", false
 }
 
+// pseudoStatusLabels is StatusNone/StatusIncomplete/StatusMixed's
+// Indonesian display text -- the same wording the web's own
+// attendanceReports.id.json i18n catalog uses for these three codes, so a
+// downloaded report and the on-screen report never disagree.
+var pseudoStatusLabels = map[string]string{
+	StatusNone:       "Tidak ada jadwal",
+	StatusIncomplete: "Belum lengkap",
+	StatusMixed:      "Campuran",
+}
+
+// StatusLabel is code's human, Indonesian-default display text for a
+// report export: policy's own configured Label for a real status code
+// (e.g. "H" -> "Hadir"), pseudoStatusLabels for StatusNone/StatusIncomplete/
+// StatusMixed, or the raw code itself as a last resort (an unrecognized
+// code should still render something rather than a blank cell).
+func StatusLabel(code string, policy StatusPolicy) string {
+	if def, ok := policy.lookup(code); ok {
+		return def.Label
+	}
+	if label, ok := pseudoStatusLabels[code]; ok {
+		return label
+	}
+	return code
+}
+
 func highestPriority(counts map[string]int, policy StatusPolicy) string {
 	codes := make([]string, 0, len(counts))
 	for code := range counts {

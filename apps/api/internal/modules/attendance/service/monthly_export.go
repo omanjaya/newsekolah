@@ -196,14 +196,33 @@ func (s *Service) ExportMonthlyRecap(ctx context.Context, tenantID uuid.UUID, cl
 		}
 
 		sections := make([]reportdoc.Section, len(recaps))
+		classes := make([]ClassRef, len(recaps))
 		for i, recap := range recaps {
 			sections[i] = monthlyRecapSection(recap, policy)
+			classes[i] = ClassRef{ID: recap.ClassID, Name: recap.ClassName}
 		}
+		scopeLine, err := s.reportScopeLine(ctx, tenantID, classID, gradeLevelID, classes)
+		if err != nil {
+			return err
+		}
+
 		doc := reportdoc.Document{
 			Title:    "Rekap Presensi Bulanan",
-			Scope:    []reportdoc.ScopeLine{{Label: "Bulan", Value: month}},
+			Scope:    []reportdoc.ScopeLine{scopeLine, {Label: "Bulan", Value: domain.IndonesianMonthYear(month)}},
 			Columns:  monthlyRecapColumns(policy),
 			Sections: sections,
+		}
+		if opts.ShowLetterhead {
+			lh, sig, err := s.reportLetterhead(ctx, tenantID)
+			if err != nil {
+				return err
+			}
+			doc.Letterhead = lh
+			if sig != nil {
+				signature := *sig
+				signature.Date = domain.IndonesianMonthYear(month)
+				doc.Signature = &signature
+			}
 		}
 		out, err = renderReport(doc, opts)
 		return err

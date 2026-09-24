@@ -37,6 +37,25 @@ func (s *Service) resolveReportScope(ctx context.Context, tenantID uuid.UUID, cl
 	return classes, nil
 }
 
+// reportScopeLine is the "Kelas: X-1" / "Angkatan: <name>" scope line a
+// report export prints under its title, so a downloaded file is
+// self-describing about which scope it covers without the screen it came
+// from. classes is resolveReportScope's own result, reused here so the
+// class scope needs no second lookup.
+func (s *Service) reportScopeLine(ctx context.Context, tenantID uuid.UUID, classID, gradeLevelID *uuid.UUID, classes []ClassRef) (reportdoc.ScopeLine, error) {
+	if classID != nil && len(classes) > 0 {
+		return reportdoc.ScopeLine{Label: "Kelas", Value: classes[0].Name}, nil
+	}
+	if gradeLevelID != nil {
+		name, err := s.repo.GetGradeLevelName(ctx, tenantID, *gradeLevelID)
+		if err != nil {
+			return reportdoc.ScopeLine{}, err
+		}
+		return reportdoc.ScopeLine{Label: "Angkatan", Value: name}, nil
+	}
+	return reportdoc.ScopeLine{}, nil
+}
+
 // renderReport is every attendance report export's last step: narrow doc
 // per opts (Apply), then render it as opts.Format picks (an empty/zero
 // Format defaults to XLSX, reportdoc.Options' own documented default).

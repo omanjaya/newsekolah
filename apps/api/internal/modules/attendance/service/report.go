@@ -148,11 +148,18 @@ func dailyReportColumns() []reportdoc.Column {
 
 // dailyReportSection turns one class's DailyReport into a reportdoc
 // Section: one row per student, ordered to match dailyReportColumns, plus
-// a Footer totals row.
-func dailyReportSection(name string, report DailyReport) reportdoc.Section {
+// a Footer totals row. The status column renders policy's own Indonesian
+// label (e.g. "Hadir") or, for a day with no recorded outcome yet, the
+// Indonesian pseudo-status label (domain.StatusLabel) -- never the raw
+// code (e.g. "H" or "INCOMPLETE") a downloaded report's reader cannot be
+// expected to decode.
+func dailyReportSection(name string, report DailyReport, policy domain.StatusPolicy) reportdoc.Section {
 	rows := make([][]any, len(report.Students))
 	for i, student := range report.Students {
-		rows[i] = []any{i + 1, student.Name, student.StatusCode, student.ExpectedSessions, student.SubmittedSessions, completeRatio(student.ExpectedSessions, student.SubmittedSessions)}
+		rows[i] = []any{
+			i + 1, student.Name, domain.StatusLabel(student.StatusCode, policy),
+			student.ExpectedSessions, student.SubmittedSessions, completeRatio(student.ExpectedSessions, student.SubmittedSessions),
+		}
 	}
 	footer := [][]any{{nil, "Total", nil, report.ExpectedSessions, report.SubmittedSessions, completeRatio(report.ExpectedSessions, report.SubmittedSessions)}}
 	return reportdoc.Section{Name: name, Rows: rows, Footer: footer}
@@ -188,6 +195,14 @@ func (s *Service) ExportDailyReport(ctx context.Context, tenantID uuid.UUID, cla
 		if err != nil {
 			return err
 		}
+		scopeLine, err := s.reportScopeLine(ctx, tenantID, classID, gradeLevelID, classes)
+		if err != nil {
+			return err
+		}
+		policy, err := s.loadStatusPolicy(ctx, tenantID)
+		if err != nil {
+			return err
+		}
 
 		sections := make([]reportdoc.Section, len(classes))
 		for i, class := range classes {
@@ -195,14 +210,26 @@ func (s *Service) ExportDailyReport(ctx context.Context, tenantID uuid.UUID, cla
 			if err != nil {
 				return err
 			}
-			sections[i] = dailyReportSection(class.Name, report)
+			sections[i] = dailyReportSection(class.Name, report, policy)
 		}
 
 		doc := reportdoc.Document{
 			Title:    "Presensi Harian",
-			Scope:    []reportdoc.ScopeLine{{Label: "Tanggal", Value: date.Format("2006-01-02")}},
+			Scope:    []reportdoc.ScopeLine{scopeLine, {Label: "Tanggal", Value: domain.IndonesianDate(date)}},
 			Columns:  dailyReportColumns(),
 			Sections: sections,
+		}
+		if opts.ShowLetterhead {
+			lh, sig, err := s.reportLetterhead(ctx, tenantID)
+			if err != nil {
+				return err
+			}
+			doc.Letterhead = lh
+			if sig != nil {
+				signature := *sig
+				signature.Date = domain.IndonesianDate(date)
+				doc.Signature = &signature
+			}
 		}
 		out, err = renderReport(doc, opts)
 		return err
