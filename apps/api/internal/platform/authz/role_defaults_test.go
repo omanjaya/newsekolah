@@ -39,3 +39,51 @@ func TestSuperAdminRoleDefaultKeepsPlatformSuperadmin(t *testing.T) {
 	}
 	t.Fatal("super_admin is not in RoleDefaults()")
 }
+
+// TestPrincipalRoleDefault proves the "principal" (Kepala Sekolah) system
+// role is an overseer, not an operator: it must never carry
+// tenant/user/role administration or platform_superadmin, but it must
+// carry the supervision permissions (the principal's core job) and the
+// report/export permissions the product brief calls for.
+func TestPrincipalRoleDefault(t *testing.T) {
+	for _, rd := range RoleDefaults() {
+		if rd.Slug != RoleSlugPrincipal {
+			continue
+		}
+		for _, forbidden := range []string{
+			PermManageSettings,
+			PermManagePermissions,
+			PermPlatformSuperadmin,
+			PermManageMasterData,
+			PermViewUsers,
+			PermCreateUsers,
+			PermEditUsers,
+			PermDeleteUsers,
+			PermImpersonateUsers,
+			PermManageGrades,
+			PermManageCounseling,
+			PermVoidPayments,
+			PermRecordPayments,
+		} {
+			if containsCode(rd.Permissions, forbidden) {
+				t.Errorf("principal role default must not include %q", forbidden)
+			}
+		}
+		for _, required := range []string{
+			PermViewSupervision,
+			PermManageSupervision,
+			PermViewReports,
+			PermManageReportSchedules,
+			PermViewDiscipline,
+			PermViewAcademicData,
+			PermViewAuditLogs,
+			PermPublishAnnouncements,
+		} {
+			if !containsCode(rd.Permissions, required) {
+				t.Errorf("principal role default must include %q", required)
+			}
+		}
+		return
+	}
+	t.Fatal("principal is not in RoleDefaults()")
+}
