@@ -158,6 +158,8 @@
     "lateBy": "Terlambat {minutes} menit",
     "doneTitle": "Presensi hari ini lengkap",
     "doneBody": "Kedatangan dan kepulangan sudah tercatat. Hubungi admin bila ada yang perlu dikoreksi.",
-    "hint": "Tekan sekali saat tiba dan sekali lagi saat pulang. Jam dicatat dari server sekolah."
+    "hint": "Tekan sekali saat tiba dan sekali lagi saat pulang. Jam dicatat dari server sekolah.",
+    "thisWeek": "Minggu ini",
+    "thisWeekEmpty": "Belum ada hari untuk ditampilkan."
   }
 }

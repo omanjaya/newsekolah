@@ -88,6 +88,8 @@ export const queryKeys = {
   staffAttendanceToday: (date: string) => ["staff-attendance", "today", date] as const,
   staffAttendanceHistory: (employeeId: string, from: string, to: string) =>
     ["staff-attendance", "history", employeeId, from, to] as const,
+  staffAttendanceMyHistory: (from: string, to: string) =>
+    ["staff-attendance", "my-history", from, to] as const,
   staffAttendanceRecap: (employeeId: string, month: string) =>
     ["staff-attendance", "recap", employeeId, month] as const,
 

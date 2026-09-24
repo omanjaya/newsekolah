@@ -16452,6 +16452,46 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "403":
           $ref: "#/components/responses/Forbidden"
+  /v1/staff-attendance/me/history:
+    get:
+      tags:
+        - staff-attendance
+      operationId: getStaffAttendanceMyHistory
+      x-permission: authenticated
+      summary: The current user's own daily status across a date range (self-service, no view_staff_attendance permission
+        needed)
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: true
+          description: Exclusive end date
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: History
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/StaffAttendanceRecord"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
   /v1/staff-attendance/employees/{employeeId}/history:
     parameters:
       - name: employeeId
@@ -26583,6 +26623,18 @@ components:
         created_at:
           type: string
           format: date-time
+        class_id:
+          type: string
+          format: uuid
+        subject_id:
+          type: string
+          format: uuid
+        start_period_id:
+          type: string
+          format: uuid
+        end_period_id:
+          type: string
+          format: uuid
     SubstituteCandidate:
       type: object
       required:

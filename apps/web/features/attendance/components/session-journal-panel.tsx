@@ -1,15 +1,16 @@
 "use client";
 
-import { Input, Textarea } from "@newsekolah/ui";
-import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
+
+import { JournalFields } from "../../journal/components/journal-fields";
 
 /**
  * The teaching journal, split from the roster into its own tab
  * (docs/07-ui-ux.md: "jurnal di bawah... tidak jelas apakah tersimpan
  * bersama presensi"). It shares one submit with the roster (see
- * `session-editor.tsx`), so this panel only owns the three fields and
- * shows the previous meeting's topic as a starting suggestion.
+ * `session-editor.tsx`), so this panel is just a thin wrapper around
+ * {@link JournalFields} -- the same three fields the standalone quick-fill
+ * form on `/journal` uses, so both entry points behave identically.
  */
 export function SessionJournalPanel({
   previousTopic,
@@ -30,46 +31,18 @@ export function SessionJournalPanel({
   onActivitiesChange: (value: string) => void;
   onReflectionChange: (value: string) => void;
 }): ReactElement {
-  const t = useTranslations("app.attendance.session");
   return (
-    <section className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-4">
-      {previousTopic && (
-        <p className="text-[13px] text-fg-muted">
-          {t("previousTopic")}: {previousTopic}
-        </p>
-      )}
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("journalTopic")}</span>
-        <Input
-          value={topic}
-          onChange={(e) => {
-            onTopicChange(e.target.value);
-          }}
-          disabled={disabled}
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("journalActivities")}</span>
-        <Textarea
-          rows={3}
-          value={activities}
-          onChange={(e) => {
-            onActivitiesChange(e.target.value);
-          }}
-          disabled={disabled}
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("journalReflection")}</span>
-        <Textarea
-          rows={2}
-          value={reflection}
-          onChange={(e) => {
-            onReflectionChange(e.target.value);
-          }}
-          disabled={disabled}
-        />
-      </label>
+    <section className="rounded-sm border border-border bg-surface p-4">
+      <JournalFields
+        previousTopic={previousTopic}
+        topic={topic}
+        activities={activities}
+        reflection={reflection}
+        disabled={disabled}
+        onTopicChange={onTopicChange}
+        onActivitiesChange={onActivitiesChange}
+        onReflectionChange={onReflectionChange}
+      />
     </section>
   );
 }

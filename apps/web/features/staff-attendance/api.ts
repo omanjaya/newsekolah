@@ -74,6 +74,7 @@ export function useScanStaffAttendanceMutation() {
     mutationFn: () => client.POST("/v1/staff-attendance/scan"),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["staff-attendance", "today"] });
+      void queryClient.invalidateQueries({ queryKey: ["staff-attendance", "my-history"] });
     },
   });
 }
@@ -98,6 +99,23 @@ export function useStaffAttendanceHistoryQuery(employeeId: string, from: string,
         params: { path: { employeeId }, query: { from, to } },
       }),
     enabled: employeeId !== "" && from !== "" && to !== "",
+  });
+}
+
+/**
+ * The current user's own history -- unlike {@link useStaffAttendanceHistoryQuery},
+ * this needs no `view_staff_attendance` permission (see
+ * `GetStaffAttendanceMyHistory` on the API side), so the self check-in
+ * screen can show "this week" to a plain teacher or staff member who is
+ * not a staff-attendance manager.
+ */
+export function useStaffAttendanceMyHistoryQuery(from: string, to: string) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: queryKeys.staffAttendanceMyHistory(from, to),
+    queryFn: () =>
+      client.GET("/v1/staff-attendance/me/history", { params: { query: { from, to } } }),
+    enabled: from !== "" && to !== "",
   });
 }
 

@@ -158,6 +158,8 @@
     "lateBy": "{minutes} minutes late",
     "doneTitle": "Today's attendance is complete",
     "doneBody": "Arrival and departure are both recorded. Contact the admin if anything needs correcting.",
-    "hint": "Tap once when you arrive and once more when you leave. The time comes from the school server."
+    "hint": "Tap once when you arrive and once more when you leave. The time comes from the school server.",
+    "thisWeek": "This week",
+    "thisWeekEmpty": "No days to show yet."
   }
 }

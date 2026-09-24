@@ -273,6 +273,18 @@ func toAPISubstitution(s domain.Substitution) api.Substitution {
 	return out
 }
 
+// toAPISubstitutionWithSchedule is toAPISubstitution plus the class/subject/
+// period the enriched incoming/outgoing list scopes join in (see
+// domain.SubstitutionWithSchedule).
+func toAPISubstitutionWithSchedule(s domain.SubstitutionWithSchedule) api.Substitution {
+	out := toAPISubstitution(s.Substitution)
+	out.ClassId = &s.ClassID
+	out.SubjectId = &s.SubjectID
+	out.StartPeriodId = &s.StartPeriodID
+	out.EndPeriodId = &s.EndPeriodID
+	return out
+}
+
 func toAPIJournal(j domain.Journal) api.Journal {
 	out := api.Journal{
 		Id:              j.ID,

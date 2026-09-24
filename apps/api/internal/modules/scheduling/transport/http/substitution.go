@@ -12,12 +12,11 @@ func (h *SchedulingHandler) ListSubstitutions(ctx context.Context, request api.L
 	tenantID := tenantIDFromContext(ctx)
 	userID, _ := httpx.UserIDFromContext(ctx)
 
-	var (
-		subs []domain.Substitution
-		err  error
-	)
-	switch request.Params.Direction {
-	case api.ListSubstitutionsParamsDirectionAll:
+	// The "all" (manage_schedules-only) scope lists tenant-wide, so joining
+	// each row's schedule is not worth the extra cost there; the two
+	// self scopes below (incoming/outgoing) are what the web substitutions
+	// page renders as a session-card list, so those are enriched.
+	if request.Params.Direction == api.ListSubstitutionsParamsDirectionAll {
 		actor, aerr := h.actorFor(ctx, tenantID, userID)
 		if aerr != nil {
 			return nil, aerr
@@ -30,11 +29,25 @@ func (h *SchedulingHandler) ListSubstitutions(ctx context.Context, request api.L
 			s := domain.SubstitutionStatus(*request.Params.Status)
 			status = &s
 		}
-		subs, err = h.service.ListSubstitutionsAll(ctx, tenantID, status)
-	case api.ListSubstitutionsParamsDirectionOutgoing:
-		subs, err = h.service.ListSubstitutionsOutgoing(ctx, tenantID, userID)
-	default:
-		subs, err = h.service.ListSubstitutionsIncoming(ctx, tenantID, userID)
+		subs, err := h.service.ListSubstitutionsAll(ctx, tenantID, status)
+		if err != nil {
+			return nil, mapSubstitutionError(err)
+		}
+		data := make([]api.Substitution, len(subs))
+		for i, s := range subs {
+			data[i] = toAPISubstitution(s)
+		}
+		return api.ListSubstitutions200JSONResponse{Data: data}, nil
+	}
+
+	var (
+		subs []domain.SubstitutionWithSchedule
+		err  error
+	)
+	if request.Params.Direction == api.ListSubstitutionsParamsDirectionOutgoing {
+		subs, err = h.service.ListSubstitutionsOutgoingWithSchedule(ctx, tenantID, userID)
+	} else {
+		subs, err = h.service.ListSubstitutionsIncomingWithSchedule(ctx, tenantID, userID)
 	}
 	if err != nil {
 		return nil, mapSubstitutionError(err)
@@ -42,7 +55,7 @@ func (h *SchedulingHandler) ListSubstitutions(ctx context.Context, request api.L
 
 	data := make([]api.Substitution, len(subs))
 	for i, s := range subs {
-		data[i] = toAPISubstitution(s)
+		data[i] = toAPISubstitutionWithSchedule(s)
 	}
 	return api.ListSubstitutions200JSONResponse{Data: data}, nil
 }

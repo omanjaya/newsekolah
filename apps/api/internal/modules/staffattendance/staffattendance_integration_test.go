@@ -6,12 +6,16 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	openapi_types "github.com/oapi-codegen/runtime/types"
 	"github.com/stretchr/testify/require"
 
+	"github.com/omanjaya/newsekolah/apps/api/internal/gen/api"
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/db"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/staffattendance/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/dbtest"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
+	tenantctx "github.com/omanjaya/newsekolah/apps/api/internal/platform/tenant"
 )
 
 // stubYears always answers "no active academic year", so
@@ -141,4 +145,42 @@ func TestGetAllEmployeesMonthlyRecap(t *testing.T) {
 	withoutHeader, err := mod.Service.ExportMonthlyRecapReport(ctx, tenant.ID, employeeA, "2025-02", reportdoc.LocaleID, reportdoc.Options{Format: reportdoc.FormatXLSX, ShowLetterhead: false})
 	require.NoError(t, err)
 	require.Greater(t, len(withHeader), len(withoutHeader), "the letterhead line must add real content to the workbook")
+
+	// An employee without view_staff_attendance can still read their own
+	// history through /v1/staff-attendance/me/history (the check-in
+	// screen's "this week" panel): the handler resolves the acting user
+	// from the request context, the same way ScanStaffAttendance does,
+	// rather than trusting a path parameter -- so it never needs the
+	// manager permission GetStaffAttendanceHistory requires.
+	t.Run("self-service history resolves the current user from context, not a path parameter", func(t *testing.T) {
+		actorCtx := httpx.WithUserID(tenantctx.WithTenant(ctx, tenantctx.Tenant{ID: tenant.ID}), employeeA)
+		response, err := mod.Handler.GetStaffAttendanceMyHistory(actorCtx, api.GetStaffAttendanceMyHistoryRequestObject{
+			Params: api.GetStaffAttendanceMyHistoryParams{
+				From: openapi_types.Date{Time: time.Date(2025, 2, 3, 0, 0, 0, 0, time.UTC)},
+				To:   openapi_types.Date{Time: time.Date(2025, 2, 5, 0, 0, 0, 0, time.UTC)},
+			},
+		})
+		require.NoError(t, err)
+		saved, ok := response.(api.GetStaffAttendanceMyHistory200JSONResponse)
+		require.True(t, ok)
+		require.Len(t, saved.Data, 2, "2025-02-03 and 2025-02-04, [from, to) is exclusive of the end date")
+		require.Equal(t, "present", string(saved.Data[0].StatusCode), "employeeA's recorded 2025-02-03 arrival must come back as present")
+		require.Equal(t, "absent", string(saved.Data[1].StatusCode), "2025-02-04 has no record, so it resolves to absent like every other unrecorded day above")
+
+		// employeeB never recorded anything, but the endpoint still resolves
+		// them (computed, not stored) -- it must never leak employeeA's data.
+		otherCtx := httpx.WithUserID(tenantctx.WithTenant(ctx, tenantctx.Tenant{ID: tenant.ID}), employeeB)
+		otherResponse, err := mod.Handler.GetStaffAttendanceMyHistory(otherCtx, api.GetStaffAttendanceMyHistoryRequestObject{
+			Params: api.GetStaffAttendanceMyHistoryParams{
+				From: openapi_types.Date{Time: time.Date(2025, 2, 3, 0, 0, 0, 0, time.UTC)},
+				To:   openapi_types.Date{Time: time.Date(2025, 2, 5, 0, 0, 0, 0, time.UTC)},
+			},
+		})
+		require.NoError(t, err)
+		otherSaved, ok := otherResponse.(api.GetStaffAttendanceMyHistory200JSONResponse)
+		require.True(t, ok)
+		require.Len(t, otherSaved.Data, 2)
+		require.Equal(t, "absent", string(otherSaved.Data[0].StatusCode))
+		require.Equal(t, "Citra", otherSaved.Data[0].EmployeeName)
+	})
 }
