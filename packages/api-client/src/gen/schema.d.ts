@@ -18030,7 +18030,6 @@ export interface operations {
             query: {
                 class_id: string;
                 term_id?: string;
-                /** @default xlsx */
                 format?: components["schemas"]["EraporFormat"];
             };
             header?: never;
@@ -26753,7 +26752,7 @@ export interface operations {
                 content: {
                     "application/json": {
                         data: components["schemas"]["Journal"][];
-                        /** @description Total journals matching the filter */
+                        /** @description Total journals matching the filter, ignoring limit/offset. */
                         total: number;
                     };
                 };
