@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Checkbox, Input, Select, Textarea, useToast } from "@newsekolah/ui";
+import { Avatar, Badge, Button, Checkbox, Input, Textarea, useToast } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
@@ -15,15 +15,24 @@ import {
 } from "../api";
 
 const MAX_TYPES = 50;
+const MAX_STUDENTS = 50;
 
 function today(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+/**
+ * Records one or several violation types for one or several students in a
+ * single submission. The API only accepts one student per call
+ * (`useRecordViolationMutation`'s `student_user_id`), so a multi-student
+ * submission loops the same mutation once per selected student and
+ * collects every `ViolationRecordResult` -- the caller shows a per-student
+ * summary (points and any warning-letter level newly due) from that list.
+ */
 export function ViolationRecordForm({
   onDone,
 }: {
-  onDone: (result?: ViolationRecordResult) => void;
+  onDone: (results?: ViolationRecordResult[]) => void;
 }): ReactElement {
   const t = useTranslations("app.discipline.violations.form");
   const toast = useToast();
@@ -32,23 +41,47 @@ export function ViolationRecordForm({
   const types = useViolationTypesQuery();
   const record = useRecordViolationMutation();
 
-  const [studentId, setStudentId] = useState("");
+  const [studentSearch, setStudentSearch] = useState("");
+  const [studentIds, setStudentIds] = useState<string[]>([]);
+  const [typeSearch, setTypeSearch] = useState("");
   const [typeIds, setTypeIds] = useState<string[]>([]);
   const [occurredOn, setOccurredOn] = useState(today());
   const [notes, setNotes] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  const studentOptions = (students.data?.data ?? []).map((s) => ({
-    value: s.id,
-    label: s.name,
-  }));
-  const activeTypes = (types.data?.data ?? []).filter((type) => type.is_active);
-  const selectedTotal = useMemo(
+  const allStudents = useMemo(() => students.data?.data ?? [], [students.data]);
+  const studentMap = useMemo(() => new Map(allStudents.map((s) => [s.id, s])), [allStudents]);
+  const visibleStudents = useMemo(() => {
+    const query = studentSearch.trim().toLowerCase();
+    if (!query) return allStudents.slice(0, 30);
+    return allStudents.filter((s) => s.name.toLowerCase().includes(query)).slice(0, 30);
+  }, [allStudents, studentSearch]);
+
+  const activeTypes = useMemo(
+    () => (types.data?.data ?? []).filter((type) => type.is_active),
+    [types.data],
+  );
+  const visibleTypes = useMemo(() => {
+    const query = typeSearch.trim().toLowerCase();
+    if (!query) return activeTypes;
+    return activeTypes.filter((type) => type.name.toLowerCase().includes(query));
+  }, [activeTypes, typeSearch]);
+
+  const pointsPerStudent = useMemo(
     () =>
       activeTypes
         .filter((type) => typeIds.includes(type.id))
         .reduce((sum, type) => sum + type.points, 0),
     [activeTypes, typeIds],
   );
+
+  function toggleStudent(id: string) {
+    setStudentIds((current) => {
+      if (current.includes(id)) return current.filter((v) => v !== id);
+      if (current.length >= MAX_STUDENTS) return current;
+      return [...current, id];
+    });
+  }
 
   function toggleType(id: string) {
     setTypeIds((current) => {
@@ -58,81 +91,166 @@ export function ViolationRecordForm({
     });
   }
 
+  async function submit() {
+    if (studentIds.length === 0 || typeIds.length === 0) return;
+    setSubmitting(true);
+    try {
+      const results: ViolationRecordResult[] = [];
+      // Sequential, not Promise.all: each call still hits the same
+      // student-points invalidation, and a school piling on 50 selections
+      // does not need to open 50 connections at once.
+      for (const studentId of studentIds) {
+        const result = await record.mutateAsync({
+          student_user_id: studentId,
+          violation_type_ids: typeIds,
+          occurred_on: occurredOn,
+          notes: notes.trim() || undefined,
+        });
+        results.push(result);
+      }
+      toast.success(t("recorded", { count: studentIds.length }));
+      onDone(results);
+    } catch (error) {
+      toast.error(
+        error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   return (
     <form
       className="flex flex-col gap-4"
       onSubmit={(e) => {
         e.preventDefault();
-        if (!studentId || typeIds.length === 0) return;
-        record.mutate(
-          {
-            student_user_id: studentId,
-            violation_type_ids: typeIds,
-            occurred_on: occurredOn,
-            notes: notes.trim() || undefined,
-          },
-          {
-            onSuccess: (result) => {
-              toast.success(t("recorded", { count: typeIds.length }));
-              onDone(result);
-            },
-            onError: (error) => {
-              toast.error(
-                error instanceof ApiError
-                  ? apiErrorMessage(error.code)
-                  : apiErrorMessage("UNKNOWN"),
-              );
-            },
-          },
-        );
+        void submit();
       }}
     >
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("student")}</span>
-        <Select
-          options={studentOptions}
-          value={studentId}
-          onValueChange={setStudentId}
-          placeholder={t("studentPlaceholder")}
-        />
-      </label>
       <div className="flex flex-col gap-1 text-[13px]">
         <div className="flex items-center justify-between">
-          <span className="font-medium">{t("type")}</span>
-          {typeIds.length > 0 && (
-            <span className="text-fg-muted">{t("selectedTotal", { points: selectedTotal })}</span>
+          <span className="font-medium">{t("student")}</span>
+          {studentIds.length > 0 && (
+            <span className="text-fg-muted">
+              {t("studentsSelected", { count: studentIds.length })}
+            </span>
           )}
         </div>
-        {activeTypes.length === 0 ? (
-          <p className="text-fg-muted">{t("noTypes")}</p>
-        ) : (
-          <div className="flex max-h-56 flex-col gap-0.5 overflow-y-auto rounded-sm border border-border p-2">
-            {activeTypes.map((type) => {
-              const checked = typeIds.includes(type.id);
-              const disabled = !checked && typeIds.length >= MAX_TYPES;
+        {studentIds.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {studentIds.map((id) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => {
+                  toggleStudent(id);
+                }}
+                className="flex min-h-7 items-center gap-1 rounded-full border border-accent bg-accent/10 px-2.5 text-[12px] font-medium text-accent"
+              >
+                {studentMap.get(id)?.name ?? t("unknownStudent")}
+                <span aria-hidden="true">×</span>
+              </button>
+            ))}
+          </div>
+        )}
+        <Input
+          value={studentSearch}
+          onChange={(e) => {
+            setStudentSearch(e.target.value);
+          }}
+          placeholder={t("studentSearchPlaceholder")}
+          aria-label={t("studentSearchPlaceholder")}
+        />
+        <div className="flex max-h-48 flex-col gap-0.5 overflow-y-auto rounded-sm border border-border p-1">
+          {visibleStudents.length === 0 ? (
+            <p className="px-2 py-2 text-fg-muted">{t("noStudents")}</p>
+          ) : (
+            visibleStudents.map((student) => {
+              const checked = studentIds.includes(student.id);
+              const disabled = !checked && studentIds.length >= MAX_STUDENTS;
               return (
                 <label
-                  key={type.id}
-                  className="flex min-h-9 items-center gap-2 rounded-xs px-1.5 py-1 hover:bg-bg"
+                  key={student.id}
+                  className="flex min-h-10 items-center gap-2 rounded-xs px-1.5 py-1 hover:bg-bg"
                 >
                   <Checkbox
                     checked={checked}
                     disabled={disabled}
                     onCheckedChange={() => {
-                      toggleType(type.id);
+                      toggleStudent(student.id);
                     }}
                   />
-                  <span className="flex-1 text-fg">{type.name}</span>
-                  <span className="text-fg-muted [font-variant-numeric:tabular-nums]">
-                    {type.points}
-                  </span>
+                  <Avatar size="sm" name={student.name} />
+                  <span className="flex-1 truncate text-fg">{student.name}</span>
                 </label>
               );
-            })}
-          </div>
+            })
+          )}
+        </div>
+        {studentIds.length >= MAX_STUDENTS && (
+          <p className="text-fg-muted">{t("maxStudentsReached")}</p>
+        )}
+      </div>
+
+      <div className="flex flex-col gap-1 text-[13px]">
+        <div className="flex items-center justify-between">
+          <span className="font-medium">{t("type")}</span>
+          {typeIds.length > 0 && (
+            <span className="text-fg-muted">
+              {t("selectedTotal", { points: pointsPerStudent })}
+            </span>
+          )}
+        </div>
+        {activeTypes.length === 0 ? (
+          <p className="text-fg-muted">{t("noTypes")}</p>
+        ) : (
+          <>
+            <Input
+              value={typeSearch}
+              onChange={(e) => {
+                setTypeSearch(e.target.value);
+              }}
+              placeholder={t("typeSearchPlaceholder")}
+              aria-label={t("typeSearchPlaceholder")}
+            />
+            <div className="flex max-h-56 flex-col gap-0.5 overflow-y-auto rounded-sm border border-border p-2">
+              {visibleTypes.length === 0 ? (
+                <p className="px-1.5 py-2 text-fg-muted">{t("noMatch")}</p>
+              ) : (
+                visibleTypes.map((type) => {
+                  const checked = typeIds.includes(type.id);
+                  const disabled = !checked && typeIds.length >= MAX_TYPES;
+                  return (
+                    <label
+                      key={type.id}
+                      className="flex min-h-9 items-center gap-2 rounded-xs px-1.5 py-1 hover:bg-bg"
+                    >
+                      <Checkbox
+                        checked={checked}
+                        disabled={disabled}
+                        onCheckedChange={() => {
+                          toggleType(type.id);
+                        }}
+                      />
+                      <span className="flex-1 text-fg">{type.name}</span>
+                      <span className="text-fg-muted [font-variant-numeric:tabular-nums]">
+                        {type.points}
+                      </span>
+                    </label>
+                  );
+                })
+              )}
+            </div>
+          </>
         )}
         {typeIds.length >= MAX_TYPES && <p className="text-fg-muted">{t("maxTypesReached")}</p>}
+        {studentIds.length > 1 && typeIds.length > 0 && (
+          <p className="text-fg-muted">
+            {t("pointsPerStudentHint", { points: pointsPerStudent, count: studentIds.length })}
+          </p>
+        )}
       </div>
+
       <label className="flex flex-col gap-1 text-[13px]">
         <span className="font-medium">{t("date")}</span>
         <Input
@@ -169,10 +287,11 @@ export function ViolationRecordForm({
         </Button>
         <Button
           type="submit"
-          loading={record.isPending}
-          disabled={!studentId || typeIds.length === 0}
+          loading={submitting}
+          disabled={studentIds.length === 0 || typeIds.length === 0}
         >
           {t("submit")}
+          {studentIds.length > 1 && <Badge variant="neutral">{studentIds.length}</Badge>}
         </Button>
       </div>
     </form>

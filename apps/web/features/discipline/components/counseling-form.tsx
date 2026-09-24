@@ -1,12 +1,15 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Input, Select, Textarea, useToast } from "@newsekolah/ui";
-import { useTranslations } from "next-intl";
+import type { Locale } from "@newsekolah/i18n";
+import { formatTime } from "@newsekolah/i18n";
+import { Alert, Button, Input, Select, Textarea, useToast } from "@newsekolah/ui";
+import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { useSession } from "../../../lib/session/session-provider";
 import { useDirectoryQuery } from "../../reference/api";
 import {
   type Counseling,
@@ -16,6 +19,11 @@ import {
   useCreateCounselingMutation,
   useUpdateCounselingMutation,
 } from "../api";
+import {
+  clearCounselingDraft,
+  loadCounselingDraft,
+  saveCounselingDraft,
+} from "../lib/counseling-draft";
 
 const KINDS: CounselingKind[] = ["individual", "group", "parent", "referral"];
 const TOPICS: CounselingTopic[] = ["career", "problem", "personal", "learning", "social", "other"];
@@ -38,9 +46,13 @@ export function CounselingForm({
   const t = useTranslations("app.discipline.counseling.form");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
+  const locale = useLocale() as Locale;
+  const { me } = useSession();
   const students = useDirectoryQuery("student");
   const create = useCreateCounselingMutation();
   const update = useUpdateCounselingMutation();
+
+  const draftId = initial?.id ?? "new";
 
   const [studentId, setStudentId] = useState(initial?.student_user_id ?? "");
   const [sessionAt, setSessionAt] = useState(
@@ -56,6 +68,50 @@ export function CounselingForm({
   const [visibility, setVisibility] = useState<CounselingVisibility>(
     initial?.visibility ?? "counselor",
   );
+  const [draftOffer, setDraftOffer] = useState<{ savedAt: string } | null>(null);
+
+  // Offer to restore an in-progress draft the browser still has from
+  // before a reload or an accidental tab close, once per mount -- see
+  // `lib/counseling-draft.ts`. Reads `window.localStorage`, so this cannot
+  // move into a lazy `useState` initializer the way a server-safe value
+  // could.
+  useEffect(() => {
+    const draft = loadCounselingDraft(draftId);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- see the comment above.
+    if (draft) setDraftOffer({ savedAt: draft.savedAt });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- check once per mount, keyed by the stable draftId
+  }, []);
+
+  const isDirty =
+    title.trim() !== (initial?.title ?? "") ||
+    content.trim() !== (initial?.content ?? "") ||
+    followUpPlan.trim() !== (initial?.follow_up_plan ?? "") ||
+    careerGoals.trim() !== (initial?.career_goals ?? "") ||
+    problemDescription.trim() !== (initial?.problem_description ?? "");
+
+  // Mirrors every edit to localStorage (try/catch inside the helper) so a
+  // dropped connection or an accidental reload does not throw away a
+  // counselor's notes; cleared the moment a save succeeds.
+  useEffect(() => {
+    if (!isDirty) return;
+    saveCounselingDraft(draftId, { title, content, followUpPlan, careerGoals, problemDescription });
+  }, [draftId, title, content, followUpPlan, careerGoals, problemDescription, isDirty]);
+
+  function restoreDraft() {
+    const draft = loadCounselingDraft(draftId);
+    if (!draft) return;
+    setTitle(draft.title);
+    setContent(draft.content);
+    setFollowUpPlan(draft.followUpPlan);
+    setCareerGoals(draft.careerGoals);
+    setProblemDescription(draft.problemDescription);
+    setDraftOffer(null);
+  }
+
+  function dismissDraft() {
+    clearCounselingDraft(draftId);
+    setDraftOffer(null);
+  }
 
   const studentOptions = (students.data?.data ?? []).map((s) => ({ value: s.id, label: s.name }));
   const pending = create.isPending || update.isPending;
@@ -81,6 +137,7 @@ export function CounselingForm({
         };
         const onSuccess = () => {
           toast.success(t("saved"));
+          clearCounselingDraft(draftId);
           onDone();
         };
         const onError = (error: unknown) => {
@@ -95,6 +152,23 @@ export function CounselingForm({
         }
       }}
     >
+      {draftOffer && (
+        <Alert variant="warning" title={t("draftFoundTitle")}>
+          <p>
+            {t("draftFoundBody", {
+              time: formatTime(draftOffer.savedAt, { locale, timeZone: me?.tenant.timezone }),
+            })}
+          </p>
+          <div className="mt-2 flex gap-2">
+            <Button type="button" size="sm" onClick={restoreDraft}>
+              {t("draftRestore")}
+            </Button>
+            <Button type="button" size="sm" variant="secondary" onClick={dismissDraft}>
+              {t("draftDismiss")}
+            </Button>
+          </div>
+        </Alert>
+      )}
       <label className="flex flex-col gap-1 text-[13px]">
         <span className="font-medium">{t("student")}</span>
         <Select

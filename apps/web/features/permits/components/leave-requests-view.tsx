@@ -25,14 +25,12 @@ import { useState } from "react";
 import { QueryError } from "../../../components/query-error";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useCan, useSession } from "../../../lib/session/session-provider";
-import {
-  type LeaveRequestSummary,
-  useGuardianLeaveQueueQuery,
-  useLeaveReviewQueueQuery,
-  useMyLeaveRequestsQuery,
-} from "../api";
+import { useMyLeaveRequestsQuery } from "../api";
 
-import { LeaveRequestDetail, SubmitForm } from "./leave-request-detail";
+import { GuardianQueue } from "./leave-guardian-queue";
+import { LeaveRequestDetail } from "./leave-request-detail";
+import { SubmitForm } from "./leave-request-submit-form";
+import { ReviewQueue } from "./leave-review-queue";
 import { WorkflowStatusBadge } from "./workflow-stepper";
 
 export function LeaveRequestsView(): ReactElement {
@@ -99,49 +97,10 @@ export function LeaveRequestsView(): ReactElement {
   );
 }
 
-function SummaryRow({
-  item,
-  onOpen,
-  nameFirst,
-}: {
-  item: LeaveRequestSummary;
-  onOpen: () => void;
-  nameFirst: boolean;
-}): ReactElement {
+function MyLeaveRequests(): ReactElement {
   const t = useTranslations("app.permits.leave");
   const locale = useLocale() as Locale;
   const { me } = useSession();
-  const range = `${formatDate(item.starts_on, { locale, timeZone: me?.tenant.timezone })} - ${formatDate(item.ends_on, { locale, timeZone: me?.tenant.timezone })}`;
-  return (
-    <li>
-      <button
-        type="button"
-        onClick={onOpen}
-        className="flex w-full items-center justify-between gap-3 rounded-sm border border-border bg-surface px-4 py-3 text-left hover:bg-bg"
-      >
-        <div className="flex flex-col gap-0.5">
-          <span className="text-[14px] font-medium text-fg">
-            {nameFirst
-              ? `${item.student_name} (${item.class_name})`
-              : t(`categories.${item.category}`)}
-          </span>
-          <span className="text-[13px] text-fg-muted">
-            {nameFirst ? `${t(`categories.${item.category}`)} · ${range}` : range}
-          </span>
-          {item.letter_number && (
-            <span className="text-[12px] text-fg-muted">
-              {t("letterNumber")}: {item.letter_number}
-            </span>
-          )}
-        </div>
-        <WorkflowStatusBadge status={item.status} />
-      </button>
-    </li>
-  );
-}
-
-function MyLeaveRequests(): ReactElement {
-  const t = useTranslations("app.permits.leave");
   const { data, isLoading, isError, refetch } = useMyLeaveRequestsQuery();
   const [creating, setCreating] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
@@ -172,16 +131,33 @@ function MyLeaveRequests(): ReactElement {
         />
       ) : (
         <ul className="flex flex-col gap-2">
-          {items.map((item) => (
-            <SummaryRow
-              key={item.instance_id}
-              item={item}
-              nameFirst={false}
-              onOpen={() => {
-                setOpenId(item.instance_id);
-              }}
-            />
-          ))}
+          {items.map((item) => {
+            const range = `${formatDate(item.starts_on, { locale, timeZone: me?.tenant.timezone })} - ${formatDate(item.ends_on, { locale, timeZone: me?.tenant.timezone })}`;
+            return (
+              <li key={item.instance_id}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpenId(item.instance_id);
+                  }}
+                  className="flex w-full items-center justify-between gap-3 rounded-sm border border-border bg-surface px-4 py-3 text-left hover:bg-bg"
+                >
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-[14px] font-medium text-fg">
+                      {t(`categories.${item.category}`)}
+                    </span>
+                    <span className="text-[13px] text-fg-muted">{range}</span>
+                    {item.letter_number && (
+                      <span className="text-[12px] text-fg-muted">
+                        {t("letterNumber")}: {item.letter_number}
+                      </span>
+                    )}
+                  </div>
+                  <WorkflowStatusBadge status={item.status} />
+                </button>
+              </li>
+            );
+          })}
         </ul>
       )}
       <Dialog open={creating} onOpenChange={setCreating}>
@@ -230,96 +206,5 @@ function IssuerQueueUnavailable(): ReactElement {
         {t("openNotifications")}
       </Link>
     </Alert>
-  );
-}
-
-function ReviewQueue(): ReactElement {
-  const t = useTranslations("app.permits.leave");
-  const { data, isLoading, isError, refetch } = useLeaveReviewQueueQuery();
-  const [openId, setOpenId] = useState<string | null>(null);
-  const items = data?.data ?? [];
-  return (
-    <div className="flex flex-col gap-4">
-      {isLoading ? (
-        <Skeleton className="h-40 w-full" aria-busy="true" />
-      ) : isError && !data ? (
-        <QueryError retry={() => refetch()} />
-      ) : items.length === 0 ? (
-        <EmptyState
-          icon={<domainIcons.exitPermit aria-hidden="true" />}
-          title={t("queueEmptyTitle")}
-          description={t("queueEmptyBody")}
-        />
-      ) : (
-        <ul className="flex flex-col gap-2">
-          {items.map((item) => (
-            <SummaryRow
-              key={item.instance_id}
-              item={item}
-              nameFirst
-              onOpen={() => {
-                setOpenId(item.instance_id);
-              }}
-            />
-          ))}
-        </ul>
-      )}
-      <Dialog
-        open={openId !== null}
-        onOpenChange={(open) => {
-          if (!open) setOpenId(null);
-        }}
-      >
-        <DialogContent title={t("detailTitle")} className="max-w-xl">
-          {openId && <LeaveRequestDetail id={openId} />}
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-}
-
-/** A guardian's queue: their children's requests awaiting their decision. */
-function GuardianQueue(): ReactElement {
-  const t = useTranslations("app.permits.leave");
-  const { data, isLoading, isError, refetch } = useGuardianLeaveQueueQuery();
-  const [openId, setOpenId] = useState<string | null>(null);
-  const items = data?.data ?? [];
-  return (
-    <div className="flex flex-col gap-4">
-      {isLoading ? (
-        <Skeleton className="h-40 w-full" aria-busy="true" />
-      ) : isError && !data ? (
-        <QueryError retry={() => refetch()} />
-      ) : items.length === 0 ? (
-        <EmptyState
-          icon={<domainIcons.exitPermit aria-hidden="true" />}
-          title={t("guardian.queueEmptyTitle")}
-          description={t("guardian.queueEmptyBody")}
-        />
-      ) : (
-        <ul className="flex flex-col gap-2">
-          {items.map((item) => (
-            <SummaryRow
-              key={item.instance_id}
-              item={item}
-              nameFirst
-              onOpen={() => {
-                setOpenId(item.instance_id);
-              }}
-            />
-          ))}
-        </ul>
-      )}
-      <Dialog
-        open={openId !== null}
-        onOpenChange={(open) => {
-          if (!open) setOpenId(null);
-        }}
-      >
-        <DialogContent title={t("detailTitle")} className="max-w-xl">
-          {openId && <LeaveRequestDetail id={openId} />}
-        </DialogContent>
-      </Dialog>
-    </div>
   );
 }

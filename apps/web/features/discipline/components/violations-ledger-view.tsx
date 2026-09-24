@@ -60,7 +60,7 @@ export function ViolationsLedgerView(): ReactElement {
   const [includeVoided, setIncludeVoided] = useState(false);
   const [recording, setRecording] = useState(false);
   const [voiding, setVoiding] = useState<ViolationRecord | null>(null);
-  const [saveSummary, setSaveSummary] = useState<SaveSummary | null>(null);
+  const [saveSummaries, setSaveSummaries] = useState<SaveSummary[]>([]);
 
   const classes = useClassesQuery();
   const students = useDirectoryQuery("student");
@@ -149,68 +149,92 @@ export function ViolationsLedgerView(): ReactElement {
 
   return (
     <div className="flex flex-col gap-4 md:h-full md:min-h-0">
-      {saveSummary && (
+      {saveSummaries.length > 0 && (
         <Alert
-          variant={saveSummary.dueLevels.length > 0 ? "warning" : "info"}
-          title={t("saveSummaryTitle", {
-            student: saveSummary.studentName,
-            points: saveSummary.totalPoints,
-          })}
+          variant={saveSummaries.some((s) => s.dueLevels.length > 0) ? "warning" : "info"}
+          title={
+            saveSummaries.length === 1
+              ? t("saveSummaryTitle", {
+                  student: saveSummaries[0]?.studentName ?? "",
+                  points: saveSummaries[0]?.totalPoints ?? 0,
+                })
+              : t("saveSummaryTitleMulti", { count: saveSummaries.length })
+          }
         >
-          <div className="flex flex-col gap-2">
-            {saveSummary.dueLevels[0] && (
-              <p>
-                {t("dueLevelBody", {
-                  student: saveSummary.studentName,
-                  level: saveSummary.dueLevels[0].label,
-                  points: saveSummary.dueLevels[0].min_points,
-                })}
-              </p>
-            )}
-            {saveSummary.dueLevels.length > 1 && (
-              <p>
-                {t("dueLevelMore", {
-                  levels: saveSummary.dueLevels
-                    .slice(1)
-                    .map((l) => l.label)
-                    .join(", "),
-                })}
-              </p>
-            )}
-            <div className="flex gap-2">
-              {saveSummary.dueLevels[0] && (
-                <Button
-                  size="sm"
-                  loading={issueLetter.isPending}
-                  onClick={() => {
-                    const nextDue = saveSummary.dueLevels[0];
-                    if (!nextDue) return;
-                    issueLetter.mutate(
-                      { student_user_id: saveSummary.studentId, level: nextDue.level },
-                      {
-                        onSuccess: () => {
-                          toast.success(t("issueNow"));
-                          setSaveSummary(null);
-                        },
-                        onError: (error) => {
-                          toast.error(
-                            error instanceof ApiError
-                              ? apiErrorMessage(error.code)
-                              : apiErrorMessage("UNKNOWN"),
-                          );
-                        },
-                      },
-                    );
-                  }}
+          <div className="flex flex-col gap-3">
+            {saveSummaries.map((summary) => {
+              const nextDue = summary.dueLevels[0];
+              return (
+                <div
+                  key={summary.studentId}
+                  className="flex flex-col gap-1 border-b border-border/60 pb-2 last:border-0 last:pb-0"
                 >
-                  {t("issueNow")}
-                </Button>
-              )}
+                  {saveSummaries.length > 1 && (
+                    <p className="text-[13px] font-medium text-fg">
+                      {t("saveSummaryStudentPoints", {
+                        student: summary.studentName,
+                        points: summary.totalPoints,
+                      })}
+                    </p>
+                  )}
+                  {nextDue && (
+                    <p>
+                      {t("dueLevelBody", {
+                        student: summary.studentName,
+                        level: nextDue.label,
+                        points: nextDue.min_points,
+                      })}
+                    </p>
+                  )}
+                  {summary.dueLevels.length > 1 && (
+                    <p>
+                      {t("dueLevelMore", {
+                        levels: summary.dueLevels
+                          .slice(1)
+                          .map((l) => l.label)
+                          .join(", "),
+                      })}
+                    </p>
+                  )}
+                  {nextDue && (
+                    <div>
+                      <Button
+                        size="sm"
+                        loading={issueLetter.isPending}
+                        onClick={() => {
+                          issueLetter.mutate(
+                            { student_user_id: summary.studentId, level: nextDue.level },
+                            {
+                              onSuccess: () => {
+                                toast.success(t("issueNow"));
+                                setSaveSummaries((prev) =>
+                                  prev.filter((s) => s.studentId !== summary.studentId),
+                                );
+                              },
+                              onError: (error) => {
+                                toast.error(
+                                  error instanceof ApiError
+                                    ? apiErrorMessage(error.code)
+                                    : apiErrorMessage("UNKNOWN"),
+                                );
+                              },
+                            },
+                          );
+                        }}
+                      >
+                        {t("issueNow")}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            <div>
               <Button
                 size="sm"
                 variant="secondary"
                 onClick={() => {
-                  setSaveSummary(null);
+                  setSaveSummaries([]);
                 }}
               >
                 {t("dismiss")}
@@ -314,16 +338,20 @@ export function ViolationsLedgerView(): ReactElement {
         <DialogContent title={t("form.title")}>
           {recording && (
             <ViolationRecordForm
-              onDone={(result) => {
+              onDone={(results) => {
                 setRecording(false);
-                if (result) {
-                  const student = studentMap.get(result.record.student_user_id);
-                  setSaveSummary({
-                    studentId: result.record.student_user_id,
-                    studentName: student?.name ?? t("unknownStudent"),
-                    totalPoints: result.total_points,
-                    dueLevels: [...result.due_levels].sort((a, b) => a.level - b.level),
-                  });
+                if (results && results.length > 0) {
+                  setSaveSummaries(
+                    results.map((result) => {
+                      const student = studentMap.get(result.record.student_user_id);
+                      return {
+                        studentId: result.record.student_user_id,
+                        studentName: student?.name ?? t("unknownStudent"),
+                        totalPoints: result.total_points,
+                        dueLevels: [...result.due_levels].sort((a, b) => a.level - b.level),
+                      };
+                    }),
+                  );
                 }
               }}
             />

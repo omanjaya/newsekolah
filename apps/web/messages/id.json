@@ -818,7 +818,8 @@
       },
       "scan": {
         "placeholder": "Tempel atau ketik kode di bawah QR",
-        "submit": "Kirim kode"
+        "submit": "Kirim kode",
+        "cameraLabel": "Pindai dengan kamera"
       },
       "classroomEntry": {
         "navLabel": "Pindai masuk kelas",
@@ -886,11 +887,15 @@
           "payloadLabel": "Kode QR gerbang",
           "needPayload": "Kode gerbang harus berasal dari QR siswa.",
           "passed": "Siswa diizinkan keluar",
-          "lastTitle": "Terakhir keluar"
+          "lastTitle": "Terakhir keluar",
+          "todayListTitle": "Baru saja keluar",
+          "undoLast": "Sembunyikan dari daftar ini"
         },
         "queue": {
           "emptyTitle": "Belum ada yang menunggu",
           "emptyBody": "Izin keluar yang menunggu persetujuan atau pindai gerbang Anda akan muncul di sini.",
+          "searchPlaceholder": "Cari nama siswa",
+          "noMatch": "Tidak ada siswa yang cocok.",
           "unknownStudent": "Siswa tidak diketahui",
           "process": "Proses",
           "awaitingGate": "Menunggu pindai gerbang",
@@ -920,6 +925,8 @@
         "waitManual": "Menunggu {stage} meninjau.",
         "queueEmptyTitle": "Tidak ada keterlambatan menunggu",
         "queueEmptyBody": "Siswa yang memindai QR terlambat Anda akan masuk ke antrean ini.",
+        "searchPlaceholder": "Cari nama siswa",
+        "noMatch": "Tidak ada siswa yang cocok.",
         "unknownStudent": "Siswa",
         "review": "Tinjau",
         "reviewTitle": "Tinjau keterlambatan",
@@ -970,6 +977,14 @@
         "issuedBody": "Presensi pada tanggal izin diisi otomatis. Surat bisa diunduh di atas.",
         "queueEmptyTitle": "Tidak ada pengajuan menunggu",
         "queueEmptyBody": "Pengajuan dari kelas binaan Anda, atau yang menunggu penerbitan surat, tampil di sini.",
+        "cancel": "Batal",
+        "selectRow": "Pilih pengajuan {student}",
+        "bulkSelected": "{count, plural, other {# pengajuan terpilih}}",
+        "bulkApprove": "Setujui terpilih",
+        "bulkClear": "Batalkan pilihan",
+        "bulkApproveHint": "Aksi massal ini menyetujui tanpa catatan. Pengajuan yang perlu ditolak atau diberi catatan, proses satu per satu.",
+        "bulkApproved": "{count, plural, other {# pengajuan disetujui}}",
+        "bulkApprovedPartial": "{count} pengajuan disetujui, {failed} gagal. Coba lagi untuk sisanya.",
         "guardian": {
           "reviewNote": "Alasan (wajib diisi jika menolak)",
           "reject": "Tolak",
@@ -985,7 +1000,11 @@
           "startsOn": "Mulai",
           "endsOn": "Sampai",
           "reason": "Keterangan",
-          "evidenceHint": "Bukti (surat dokter, undangan) bisa diunggah setelah pengajuan dibuat.",
+          "evidence": "Bukti (opsional)",
+          "evidenceAdd": "Ambil atau unggah foto bukti",
+          "evidenceRemove": "Hapus bukti terpilih",
+          "evidenceHint": "Surat dokter, undangan, atau bukti lain. Bisa juga dilampirkan nanti dari halaman detail.",
+          "evidenceUploadFailed": "Pengajuan terkirim, tetapi bukti gagal diunggah. Coba lagi dari halaman detail.",
           "requiredError": "Tanggal dan keterangan wajib diisi.",
           "rangeError": "Tanggal selesai tidak boleh sebelum tanggal mulai.",
           "submitted": "Pengajuan terkirim ke wali kelas",
