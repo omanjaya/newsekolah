@@ -55,6 +55,8 @@ export function UserImportPreviewTable({
             const result = resultByRow.get(rowNumber);
             const errors = result?.errors ?? [];
             const hasError = errors.length > 0;
+            const action = result?.action;
+            const changedFields = result?.changed_fields ?? [];
             return (
               <tr key={rowNumber} className="border-t border-border align-top">
                 <td className="px-3 py-2 text-fg-muted">{rowNumber}</td>
@@ -78,7 +80,16 @@ export function UserImportPreviewTable({
                       </ul>
                     </div>
                   ) : (
-                    <Badge variant="neutral">{t("table.valid")}</Badge>
+                    <div className="flex flex-col gap-1">
+                      <Badge variant="neutral">
+                        {action ? t(`table.action.${action}`) : t("table.valid")}
+                      </Badge>
+                      {action === "update" && changedFields.length > 0 && (
+                        <span className="text-[12px] text-fg-muted">
+                          {t("table.changedFields", { fields: changedFields.join(", ") })}
+                        </span>
+                      )}
+                    </div>
                   )}
                 </td>
               </tr>

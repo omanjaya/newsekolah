@@ -185,11 +185,16 @@ func (s *Service) evaluateImportRows(ctx context.Context, tenantID, actorID uuid
 	}
 
 	if opts.Mode == domain.ImportModeUpsert && opts.UpdateRoles {
-		principal, err := s.loadPrincipal(ctx, tenantID, actorID)
+		// A role-only check, not the full loadPrincipal (which also folds
+		// in active-duty permissions scoped to the current academic year):
+		// manage_permissions is always role-granted, never duty-granted,
+		// and this runs for every import regardless of whether the school
+		// module wired an AcademicYearReader into this Service at all.
+		allowed, err := s.actorHasPermission(ctx, tenantID, actorID, authz.PermManagePermissions)
 		if err != nil {
 			return nil, err
 		}
-		if !principal.Effective().Has(authz.PermManagePermissions) {
+		if !allowed {
 			return nil, domain.ErrImportRoleUpdateForbidden
 		}
 	}
@@ -202,6 +207,33 @@ func (s *Service) evaluateImportRows(ctx context.Context, tenantID, actorID uuid
 		out[i] = s.evaluateImportRow(ctx, tenantID, actorIsSuper, opts, row, i+1, seenUsernames, seenEmails)
 	}
 	return out, nil
+}
+
+// actorHasPermission reports whether actorID currently holds code through
+// one of their roles in tenantID. Deliberately role-only (see its one call
+// site in evaluateImportRows): unlike loadPrincipal, it never touches
+// AcademicYearReader, so it works even when a Service is constructed
+// without one wired in (every non-school-aware test, and any deployment
+// mode where identity runs standalone).
+func (s *Service) actorHasPermission(ctx context.Context, tenantID, actorID uuid.UUID, code string) (bool, error) {
+	roles, err := s.repo.ListRolesForUser(ctx, tenantID, actorID)
+	if err != nil {
+		return false, fmt.Errorf("list roles for %s: %w", actorID, err)
+	}
+	roleIDs := make([]uuid.UUID, len(roles))
+	for i, r := range roles {
+		roleIDs[i] = r.ID
+	}
+	perms, err := s.repo.ListPermissionCodesForRoles(ctx, roleIDs)
+	if err != nil {
+		return false, fmt.Errorf("list permission codes for %s: %w", actorID, err)
+	}
+	for _, p := range perms {
+		if p == code {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 // matchExistingUser looks up username in tenantID when mode is upsert,

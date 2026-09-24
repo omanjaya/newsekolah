@@ -1,7 +1,16 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Alert, Badge, Button, PageHeader, Stepper, useToast } from "@newsekolah/ui";
+import {
+  Alert,
+  Badge,
+  Button,
+  PageHeader,
+  Select,
+  Stepper,
+  Switch,
+  useToast,
+} from "@newsekolah/ui";
 import { Download, FileSpreadsheet, Upload } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -9,6 +18,7 @@ import { useRef, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import {
+  type UserImportMode,
   type UserImportRow,
   type UserImportRowResult,
   useCommitImportMutation,
@@ -41,6 +51,8 @@ export function UserImportView(): ReactElement {
   const [results, setResults] = useState<UserImportRowResult[] | null>(null);
   const [stage, setStage] = useState<Stage>("upload");
   const [commitError, setCommitError] = useState<string | null>(null);
+  const [mode, setMode] = useState<UserImportMode>("create");
+  const [updateRoles, setUpdateRoles] = useState(false);
 
   const preview = usePreviewImportMutation();
   const commit = useCommitImportMutation();
@@ -51,6 +63,9 @@ export function UserImportView(): ReactElement {
     );
 
   const errorCount = (results ?? []).filter((r) => r.errors.length > 0).length;
+  const createCount = (results ?? []).filter((r) => r.action === "create").length;
+  const updateCount = (results ?? []).filter((r) => r.action === "update").length;
+  const unchangedCount = (results ?? []).filter((r) => r.action === "unchanged").length;
   const rowCount = rows?.length ?? 0;
 
   function reset() {
@@ -60,6 +75,20 @@ export function UserImportView(): ReactElement {
     setResults(null);
     setStage("upload");
     setCommitError(null);
+  }
+
+  async function runPreview(
+    fileRows: UserImportRow[],
+    nextMode: UserImportMode,
+    nextUpdateRoles: boolean,
+  ) {
+    const response = await preview.mutateAsync({
+      rows: fileRows,
+      mode: nextMode,
+      updateRoles: nextMode === "upsert" && nextUpdateRoles,
+    });
+    setResults(response.data);
+    setStage("preview");
   }
 
   async function handleFile(file: File) {
@@ -73,9 +102,7 @@ export function UserImportView(): ReactElement {
         return;
       }
       setRows(parsed.rows);
-      const response = await preview.mutateAsync(parsed.rows);
-      setResults(response.data);
-      setStage("preview");
+      await runPreview(parsed.rows, mode, updateRoles);
     } catch (error) {
       fail(error);
     } finally {
@@ -83,11 +110,28 @@ export function UserImportView(): ReactElement {
     }
   }
 
+  /** Mode/update-roles only take effect on the next preview: changing them
+   * after a file was already parsed re-runs preview against the same
+   * parsed rows, rather than silently leaving stale results on screen. */
+  function handleModeChange(next: UserImportMode) {
+    setMode(next);
+    if (rows && stage === "preview") void runPreview(rows, next, updateRoles).catch(fail);
+  }
+  function handleUpdateRolesChange(next: boolean) {
+    setUpdateRoles(next);
+    if (rows && stage === "preview" && mode === "upsert")
+      void runPreview(rows, mode, next).catch(fail);
+  }
+
   async function handleCommit() {
     if (!rows) return;
     setCommitError(null);
     try {
-      const response = await commit.mutateAsync(rows);
+      const response = await commit.mutateAsync({
+        rows,
+        mode,
+        updateRoles: mode === "upsert" && updateRoles,
+      });
       setResults(response.data);
       setStage("done");
       toast.success(t("committed", { n: rows.length }));
@@ -138,6 +182,40 @@ export function UserImportView(): ReactElement {
       <section className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-4">
         <h2 className="text-[16px] font-medium text-fg">{t("step2Title")}</h2>
         <p className="text-[13px] text-fg-muted">{t("step2Body")}</p>
+
+        <div className="flex flex-col gap-1.5">
+          <span className="text-[13px] font-medium text-fg">{t("mode.label")}</span>
+          <Select
+            aria-label={t("mode.label")}
+            className="max-w-xs"
+            value={mode}
+            onValueChange={(v) => {
+              handleModeChange(v as UserImportMode);
+            }}
+            options={[
+              { value: "create", label: t("mode.create") },
+              { value: "upsert", label: t("mode.upsert") },
+            ]}
+          />
+          <p className="text-[12px] text-fg-muted">
+            {mode === "upsert" ? t("mode.upsertBody") : t("mode.createBody")}
+          </p>
+        </div>
+
+        {mode === "upsert" && (
+          <div className="flex items-start gap-3 text-[13px]">
+            <Switch
+              checked={updateRoles}
+              aria-label={t("mode.updateRolesLabel")}
+              onCheckedChange={handleUpdateRolesChange}
+            />
+            <span className="flex flex-col gap-0.5">
+              <span className="font-medium text-fg">{t("mode.updateRolesLabel")}</span>
+              <span className="text-[12px] text-fg-muted">{t("mode.updateRolesBody")}</span>
+            </span>
+          </div>
+        )}
+
         <div className="flex flex-wrap items-center gap-3">
           <Button
             variant="secondary"
@@ -188,6 +266,15 @@ export function UserImportView(): ReactElement {
             <h2 className="text-[16px] font-medium text-fg">{t("step3Title")}</h2>
             <div className="flex flex-wrap gap-2 text-[13px]">
               <Badge variant="neutral">{t("rowCount", { n: rowCount })}</Badge>
+              {mode === "upsert" && createCount > 0 && (
+                <Badge variant="neutral">{t("createCount", { n: createCount })}</Badge>
+              )}
+              {mode === "upsert" && updateCount > 0 && (
+                <Badge variant="neutral">{t("updateCount", { n: updateCount })}</Badge>
+              )}
+              {mode === "upsert" && unchangedCount > 0 && (
+                <Badge variant="neutral">{t("unchangedCount", { n: unchangedCount })}</Badge>
+              )}
               {errorCount > 0 && (
                 <Badge variant="accent">{t("invalidCount", { n: errorCount })}</Badge>
               )}
@@ -200,11 +287,27 @@ export function UserImportView(): ReactElement {
                 {t("blockedBody")}
               </Alert>
             ) : (
-              <Alert title={t("readyTitle")}>{t("readyBody", { n: rowCount })}</Alert>
+              <Alert title={t("readyTitle")}>
+                {mode === "upsert"
+                  ? t("readyBodyUpsert", {
+                      created: createCount,
+                      updated: updateCount,
+                      unchanged: unchangedCount,
+                    })
+                  : t("readyBody", { n: rowCount })}
+              </Alert>
             ))}
 
           {stage === "done" && (
-            <Alert title={t("doneTitle")}>{t("doneBody", { n: rowCount })}</Alert>
+            <Alert title={t("doneTitle")}>
+              {mode === "upsert"
+                ? t("doneBodyUpsert", {
+                    created: createCount,
+                    updated: updateCount,
+                    unchanged: unchangedCount,
+                  })
+                : t("doneBody", { n: rowCount })}
+            </Alert>
           )}
 
           {commitError && (
