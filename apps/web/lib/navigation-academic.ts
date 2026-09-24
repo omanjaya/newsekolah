@@ -15,6 +15,10 @@ export const academicNavItems: NavItem[] = [
     href: "/academic/years",
     icon: CalendarRange,
     permission: "view_academic_data",
+    // Same reasoning as "school-classes" in navigation.ts: view_academic_data
+    // is also a student's own permission, but year/term setup is a
+    // master-data screen for staff.
+    excludeProfileKinds: ["student", "parent"],
     group: NAV_GROUP.masterData,
   },
   {

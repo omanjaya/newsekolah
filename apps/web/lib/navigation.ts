@@ -46,6 +46,18 @@ export interface NavItem {
   /** Permission code required to see this item; omitted means "any signed-in user". */
   permission?: string;
   /**
+   * Alternative permission codes that also unlock this item, checked with
+   * OR semantics (in addition to `permission`, if both are set): visible
+   * once the reader holds any one of these. Used for a screen several
+   * duties reach through different actions rather than one shared
+   * permission code (e.g. leave requests: a student submitter, a
+   * homeroom/leadership reviewer, a counselor/leadership issuer, and a
+   * parent guardian-approver all use `/leave-requests`, each unlocking a
+   * different tab of it -- see features/permits/components/
+   * leave-requests-view.tsx).
+   */
+  anyPermission?: string[];
+  /**
    * Permission needed to open the route when it is looser than the one
    * gating the menu entry (a page with a self-scoped tab for users who do
    * not get the entry). Defaults to `permission`.
@@ -58,6 +70,17 @@ export interface NavItem {
    * call). Omitted means "any profile kind with the permission".
    */
   profileKinds?: NavProfileKind[];
+  /**
+   * Profile kinds excluded from this item even though they pass its
+   * permission check -- the opposite of `profileKinds`, for a permission
+   * that is intentionally broad (e.g. `view_academic_data`, granted to a
+   * student for their own schedule) on a screen meant for staff, not the
+   * student account itself. A reader with no profile row at all (e.g. the
+   * bootstrap super admin, created before any `user_profiles` row exists)
+   * is never excluded by this list, so it never takes a screen away from
+   * an account the permission alone would still let through.
+   */
+  excludeProfileKinds?: NavProfileKind[];
   /** Shown in the mobile bottom tab bar in addition to the sidebar. */
   showInTabBar?: boolean;
   /**
@@ -234,6 +257,18 @@ export const navigation: NavItem[] = [
     tabLabelKey: "nav.compact.permits",
     href: "/leave-requests",
     icon: ClipboardList,
+    // features/permits/components/leave-requests-view.tsx renders whichever
+    // of these four action permissions the reader holds -- a student
+    // submitter, a parent guardian-approver, a homeroom/leadership duty
+    // reviewer, or a counselor/leadership duty letter-issuer -- and shows
+    // its own "no access" empty state to anyone with none of them, so a
+    // role without any of the four never gets a real screen here.
+    anyPermission: [
+      "submit_leave_requests",
+      "review_leave_requests",
+      "issue_leave_letters",
+      "approve_child_leave_requests",
+    ],
     group: GROUP.students,
     showInTabBar: true,
   },
@@ -242,6 +277,13 @@ export const navigation: NavItem[] = [
     labelKey: "nav.permits.items.exitPermit",
     href: "/exit-permits",
     icon: domainIcons.exitPermit,
+    // Mirrors features/permits/components/exit-permits-view.tsx's own
+    // three gates: a student submitter, a teacher/staff approver
+    // (issue_scan_tokens -- already a role default for both), and a
+    // security-duty gate scanner. Nothing in that view branches on
+    // profile kind, so parents and librarians (who hold none of the
+    // three by default) correctly see neither the item nor a real tab.
+    anyPermission: ["submit_leave_requests", "issue_scan_tokens", "scan_exit_permits"],
     group: GROUP.students,
   },
   {
@@ -249,6 +291,19 @@ export const navigation: NavItem[] = [
     labelKey: "nav.permits.items.late",
     href: "/late-arrivals",
     icon: domainIcons.late,
+    // features/permits/components/late-arrivals-view.tsx deliberately
+    // offers the review queue to every teacher/staff account rather than
+    // gating it on a picket-only permission (reviewing is scoped
+    // server-side to the duty teacher who opened the instance, or a
+    // manage_attendance admin/super admin), and gives everyone else --
+    // students, who scan the duty teacher's QR to self-report -- the
+    // "mine" flow instead. `profileKinds` would be the natural fit, but
+    // an allow-list would also hide this from an admin/super admin
+    // created with no profile row at all (e.g. cmd/bootstrap's account,
+    // which has full manage_attendance and can genuinely use the review
+    // queue); exclude the one profile kind with no use for either flow
+    // instead.
+    excludeProfileKinds: ["parent"],
     group: GROUP.students,
   },
   {
@@ -288,6 +343,13 @@ export const navigation: NavItem[] = [
     href: "/school/classes",
     icon: domainIcons.users,
     permission: "view_academic_data",
+    // view_academic_data is also a student's own permission (it covers
+    // their schedule and grading context), but this class/student roster
+    // is a master-data screen for staff, not a student one -- exclude the
+    // account kinds it is not for instead of narrowing the permission,
+    // which would take the roster away from teachers and staff who need
+    // it too.
+    excludeProfileKinds: ["student", "parent"],
     group: GROUP.masterData,
   },
   {
@@ -344,7 +406,11 @@ export function filterNavigation(
 ): NavItem[] {
   return items.filter((item) => {
     if (item.permission && !can(item.permission)) return false;
+    if (item.anyPermission && !item.anyPermission.some((code) => can(code))) return false;
     if (item.profileKinds && (!profileKind || !item.profileKinds.includes(profileKind))) {
+      return false;
+    }
+    if (item.excludeProfileKinds && profileKind && item.excludeProfileKinds.includes(profileKind)) {
       return false;
     }
     return true;

@@ -39,13 +39,19 @@ describe("mobile daily destinations", () => {
   });
   it("gives a counselor duty (guru BK) the leave and counseling queues instead of an empty teaching schedule", () => {
     // A counselor is seeded with the "teacher" profile kind and the base
-    // teacher role's manage_attendance/view_schedules, same as any teacher
+    // teacher role's manage_attendance/view_schedules, same as any teacher,
+    // plus their counselor duty's issue_leave_letters and manage_counseling
     // (apps/api's authz.DutyTypeDefaults), but usually holds no teaching
     // assignment, so attendance/schedule stay empty for them all day.
     const permitted = filterNavigation(
       navigation,
       (permission) =>
-        ["manage_attendance", "view_schedules", "manage_counseling"].includes(permission),
+        [
+          "manage_attendance",
+          "view_schedules",
+          "manage_counseling",
+          "issue_leave_letters",
+        ].includes(permission),
       "teacher",
     );
     const keys = mobileNavigation(permitted, "teacher").map((item) => item.key);
