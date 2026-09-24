@@ -137,7 +137,10 @@
         "S": "Sick",
         "I": "Excused",
         "D": "Dispensation",
-        "A": "Absent"
+        "A": "Absent",
+        "INCOMPLETE": "Incomplete",
+        "MIXED": "Mixed",
+        "NONE": "No schedule"
       }
     },
     "discipline": {

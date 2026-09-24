@@ -137,7 +137,10 @@
         "S": "Sakit",
         "I": "Izin",
         "D": "Dispensasi",
-        "A": "Alpha"
+        "A": "Alpha",
+        "INCOMPLETE": "Belum lengkap",
+        "MIXED": "Campuran",
+        "NONE": "Tidak ada jadwal"
       }
     },
     "discipline": {

@@ -113,12 +113,13 @@ export function MentorStudentView({
           <div className="flex flex-wrap gap-x-6 gap-y-3 rounded-sm border border-border bg-surface p-4">
             {attendanceEntries.map(([code, count]) => {
               const token = statusToken(code);
+              const label = tCodes.has(code) ? tCodes(code) : code;
               return (
                 <div key={code} className="flex items-center gap-2">
                   {token ? (
-                    <StatusBadge status={token} label={tCodes(code)} />
+                    <StatusBadge status={token} label={label} />
                   ) : (
-                    <Badge variant="neutral">{code}</Badge>
+                    <Badge variant="neutral">{label}</Badge>
                   )}
                   <span className="text-[16px] font-medium tabular-nums text-fg">{count}</span>
                 </div>
