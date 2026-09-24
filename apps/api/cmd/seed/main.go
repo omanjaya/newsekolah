@@ -52,6 +52,7 @@ var systemUsers = []userSeed{
 	{"admin", "Admin Contoh", "admin"},
 	{"guru", "Guru Contoh", "teacher"},
 	{"gurubk", "Guru BK Contoh", "teacher"},
+	{"kepsek", "Kepala Sekolah Contoh", "principal"},
 	{"siswa", "Siswa Contoh", "student"},
 	{"ortu", "Orang Tua Contoh", "parent"},
 }
@@ -270,6 +271,13 @@ func seedUsers(ctx context.Context, q *db.Queries, tenantID uuid.UUID, roleIDs m
 
 	profileKindByRole := map[string]string{
 		"admin": "staff", "teacher": "teacher", "student": "student", "parent": "parent",
+		// A "Kepala Sekolah" is drawn from the teaching staff (Indonesian
+		// regulation requires a principal to hold a teaching
+		// certification), matching the "leadership" duty type's usual
+		// holder (Wakil Kepala Sekolah, also a teacher). This is what
+		// makes profileKinds: ["teacher", "staff"] nav items (journal,
+		// check-in, the class/student roster) visible to the principal.
+		"principal": "teacher",
 	}
 
 	users := make(map[string]db.User, len(systemUsers))
@@ -321,7 +329,7 @@ func seedDetailedProfiles(ctx context.Context, q *db.Queries, tenantID uuid.UUID
 	text := func(s string) pgtype.Text { return pgtype.Text{String: s, Valid: true} }
 	year := pgtype.Int2{Int16: 2020, Valid: true}
 
-	teachers := map[string]string{"guru": "Matematika", "gurubk": "Bimbingan Konseling"}
+	teachers := map[string]string{"guru": "Matematika", "gurubk": "Bimbingan Konseling", "kepsek": "Kepemimpinan Sekolah"}
 	for username, specialization := range teachers {
 		u, ok := users[username]
 		if !ok {
