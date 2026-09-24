@@ -24,6 +24,15 @@ const (
 	// DefaultUploadURLTTL matches docs/08-security.md section 6: signed
 	// URLs are short-lived.
 	DefaultUploadURLTTL = 5 * time.Minute
+
+	// DefaultRegion is used whenever Config.Region is empty. minio-go calls
+	// GetBucketLocation against the target endpoint to discover the region
+	// when none is configured; setting one explicitly avoids that extra
+	// network round trip on every presign (and avoids it ever needing to
+	// reach the *public* endpoint, which a server process may not be able
+	// to resolve or route to at all). "us-east-1" is also MinIO's own
+	// default bucket region, so this matches what EnsureBucket creates.
+	DefaultRegion = "us-east-1"
 )
 
 type Config struct {
@@ -34,22 +43,95 @@ type Config struct {
 	// UseSSL should be true for any endpoint that is not the local dev
 	// MinIO container.
 	UseSSL bool
+	// PublicEndpoint, when set, is the absolute URL (scheme + host, e.g.
+	// "https://sion.nouma.id") that presigned URLs handed to browsers are
+	// signed against, instead of Endpoint. Every other operation (stat,
+	// get, put, delete, bucket checks) keeps using Endpoint -- only
+	// PresignedPutURL, PresignedGetURL and PresignedGetURLAsAttachment are
+	// affected. This exists because Endpoint is typically a
+	// Docker-internal host (e.g. "minio:9000") that only the api/worker
+	// containers can reach, while a presigned URL must be reachable by the
+	// browser that receives it. Left empty, behaviour is unchanged: both
+	// server-side operations and presigning use Endpoint, exactly as
+	// before this field existed.
+	PublicEndpoint string
+	// Region avoids minio-go's implicit GetBucketLocation call (which,
+	// absent an explicit region, one of the clients would otherwise make
+	// against PublicEndpoint -- an origin fronted by a reverse proxy that
+	// may not implement that call the way a bare MinIO endpoint does).
+	// Defaults to DefaultRegion when empty.
+	Region string
 }
 
 type Client struct {
-	mc     *minio.Client
-	bucket string
+	// mc performs every operation except presigning: stat, get, put,
+	// delete, bucket existence/creation. Always built from Endpoint.
+	mc *minio.Client
+	// presignMC is used only by PresignedPutURL, PresignedGetURL and
+	// PresignedGetURLAsAttachment. It is the same client as mc when
+	// PublicEndpoint is empty, and a second client built from
+	// PublicEndpoint otherwise -- see Config.PublicEndpoint.
+	presignMC *minio.Client
+	bucket    string
 }
 
 func NewClient(cfg Config) (*Client, error) {
+	region := cfg.Region
+	if region == "" {
+		region = DefaultRegion
+	}
+
 	mc, err := minio.New(cfg.Endpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(cfg.AccessKey, cfg.SecretKey, ""),
 		Secure: cfg.UseSSL,
+		Region: region,
+		// Path-style ("host/bucket/key") rather than virtual-hosted-style
+		// ("bucket.host/key"): Endpoint is a bare MinIO host, never
+		// AWS S3, and a virtual-hosted URL would require DNS for
+		// "<bucket>.<host>", which nothing provisions here.
+		BucketLookup: minio.BucketLookupPath,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("create minio client: %w", err)
 	}
-	return &Client{mc: mc, bucket: cfg.Bucket}, nil
+
+	presignMC := mc
+	if cfg.PublicEndpoint != "" {
+		publicHost, publicSecure, parseErr := parsePublicEndpoint(cfg.PublicEndpoint)
+		if parseErr != nil {
+			return nil, fmt.Errorf("public endpoint: %w", parseErr)
+		}
+		presignMC, err = minio.New(publicHost, &minio.Options{
+			Creds:  credentials.NewStaticV4(cfg.AccessKey, cfg.SecretKey, ""),
+			Secure: publicSecure,
+			Region: region,
+			// Path-style so the signed URL looks like
+			// https://<public-host>/<bucket>/<key>?X-Amz-... -- the shared
+			// system Caddy in front of the public endpoint routes exactly
+			// that path prefix to MinIO (infra/README.md "Shared system
+			// Caddy (VPS)"), and SigV4 signs this path into the request,
+			// so it must match what the browser actually sends.
+			BucketLookup: minio.BucketLookupPath,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("create public presign client: %w", err)
+		}
+	}
+
+	return &Client{mc: mc, presignMC: presignMC, bucket: cfg.Bucket}, nil
+}
+
+// parsePublicEndpoint splits an absolute URL like "https://sion.nouma.id"
+// into the host[:port] minio.New expects and whether it is TLS.
+func parsePublicEndpoint(raw string) (host string, secure bool, err error) {
+	u, err := url.Parse(raw)
+	if err != nil {
+		return "", false, fmt.Errorf("parse %q: %w", raw, err)
+	}
+	if u.Scheme == "" || u.Host == "" {
+		return "", false, fmt.Errorf("%q must be an absolute URL (scheme and host), e.g. https://sion.nouma.id", raw)
+	}
+	return u.Host, u.Scheme == "https", nil
 }
 
 // Bucket returns the configured bucket name, for callers that need to
@@ -75,7 +157,7 @@ func (c *Client) EnsureBucket(ctx context.Context) error {
 // PresignedPutURL returns a short-lived URL a client can PUT the object
 // directly to, so uploads never pass through the API process.
 func (c *Client) PresignedPutURL(ctx context.Context, objectKey string, ttl time.Duration) (*url.URL, error) {
-	u, err := c.mc.PresignedPutObject(ctx, c.bucket, objectKey, ttl)
+	u, err := c.presignMC.PresignedPutObject(ctx, c.bucket, objectKey, ttl)
 	if err != nil {
 		return nil, fmt.Errorf("presign put %s: %w", objectKey, err)
 	}
@@ -85,7 +167,7 @@ func (c *Client) PresignedPutURL(ctx context.Context, objectKey string, ttl time
 // PresignedGetURL returns a short-lived URL to read a private object,
 // issued only after the caller has checked authorization.
 func (c *Client) PresignedGetURL(ctx context.Context, objectKey string, ttl time.Duration) (*url.URL, error) {
-	u, err := c.mc.PresignedGetObject(ctx, c.bucket, objectKey, ttl, nil)
+	u, err := c.presignMC.PresignedGetObject(ctx, c.bucket, objectKey, ttl, nil)
 	if err != nil {
 		return nil, fmt.Errorf("presign get %s: %w", objectKey, err)
 	}
@@ -106,7 +188,7 @@ func (c *Client) PresignedGetURLAsAttachment(ctx context.Context, objectKey stri
 	reqParams := url.Values{}
 	reqParams.Set("response-content-type", contentType)
 	reqParams.Set("response-content-disposition", fmt.Sprintf("attachment; filename=%q", filename))
-	u, err := c.mc.PresignedGetObject(ctx, c.bucket, objectKey, ttl, reqParams)
+	u, err := c.presignMC.PresignedGetObject(ctx, c.bucket, objectKey, ttl, reqParams)
 	if err != nil {
 		return nil, fmt.Errorf("presign get %s: %w", objectKey, err)
 	}

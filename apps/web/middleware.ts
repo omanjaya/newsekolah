@@ -38,6 +38,25 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     // NEXT_PUBLIC_API_URL missing or invalid: connect-src falls back to 'self' only.
   }
 
+  // Origin presigned S3/MinIO URLs are signed against (api's
+  // S3_PUBLIC_ENDPOINT, docs/08-security.md section 6 and
+  // apps/api/internal/platform/storage.Config.PublicEndpoint), only needed
+  // here when it differs from this app's own origin: a same-origin
+  // deployment (the VPS setup, both behind https://sion.nouma.id) is
+  // already covered by 'self' below, and img-src already allows any
+  // https: origin, so this only ever widens connect-src (browser-side PUT
+  // uploads to the presigned URL). Read from a NEXT_PUBLIC_* var, passed
+  // through at runtime as well as build time (infra/docker/Dockerfile,
+  // docker-compose.prod.yml), the same way NEXT_PUBLIC_API_URL already is
+  // above.
+  const s3PublicUrl = process.env.NEXT_PUBLIC_S3_PUBLIC_ORIGIN ?? "";
+  let s3PublicOrigin = "";
+  try {
+    if (s3PublicUrl) s3PublicOrigin = new URL(s3PublicUrl).origin;
+  } catch {
+    // NEXT_PUBLIC_S3_PUBLIC_ORIGIN missing or invalid: connect-src omits it.
+  }
+
   const csp = [
     "default-src 'self'",
     // Next's dev runtime evaluates source-mapped chunks with eval; production
@@ -50,7 +69,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: https:",
     "font-src 'self' data:",
-    `connect-src 'self' https://accounts.google.com ${apiOrigin} ${wsOrigin}`.trim(),
+    `connect-src ${["'self'", "https://accounts.google.com", apiOrigin, wsOrigin, s3PublicOrigin].filter(Boolean).join(" ")}`,
     "frame-src https://accounts.google.com",
     "frame-ancestors 'none'",
     "base-uri 'self'",

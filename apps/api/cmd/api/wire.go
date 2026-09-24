@@ -514,6 +514,7 @@ func storageClientFor(cfg config.Config, logger *slog.Logger) permitsservice.Sto
 	}
 	client, err := storage.NewClient(storage.Config{
 		Endpoint: cfg.S3Endpoint, Bucket: cfg.S3Bucket, AccessKey: cfg.S3AccessKey, SecretKey: cfg.S3SecretKey, UseSSL: cfg.S3UseSSL,
+		PublicEndpoint: cfg.S3PublicEndpoint, Region: cfg.S3Region,
 	})
 	if err != nil {
 		logger.Warn("S3 client init failed; uploads disabled", "error", err)

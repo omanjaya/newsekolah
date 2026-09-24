@@ -122,6 +122,20 @@ services:
       # start in production if it ever finds itself connected as a
       # superuser or BYPASSRLS role anyway.
       DATABASE_URL: postgresql://app_rw:${APP_DB_PASSWORD}@postgres:5432/${POSTGRES_DB:-newsekolah}?sslmode=disable
+      # Absolute URL presigned URLs are signed against instead of
+      # S3_ENDPOINT, for a browser to actually be able to reach them (e.g.
+      # behind a shared system Caddy that never publishes MinIO's port
+      # publicly -- infra/README.md "Shared system Caddy (VPS)"). Empty by
+      # default: the bundled Caddy setup needs no public MinIO endpoint,
+      # since it terminates TLS and could in principle route to MinIO
+      # itself, but nothing in this stack does that today, so uploads on
+      # the bundled setup remain server-mediated only where a module
+      # supports it.
+      S3_PUBLIC_ENDPOINT: ${S3_PUBLIC_ENDPOINT:-}
+      # Avoids a GetBucketLocation network round trip when presigning (see
+      # apps/api/internal/platform/storage.DefaultRegion); "us-east-1" also
+      # matches what EnsureBucket creates by default.
+      S3_REGION: ${S3_REGION:-us-east-1}
     command: ["/api"]
     depends_on:
       migrate:
@@ -153,6 +167,10 @@ services:
       # See the api service above: connect as app_rw, not the migrate
       # service's superuser DATABASE_URL.
       DATABASE_URL: postgresql://app_rw:${APP_DB_PASSWORD}@postgres:5432/${POSTGRES_DB:-newsekolah}?sslmode=disable
+      # See the api service above: presigned URLs the worker issues (e.g.
+      # rendered documents) need the same public endpoint and region.
+      S3_PUBLIC_ENDPOINT: ${S3_PUBLIC_ENDPOINT:-}
+      S3_REGION: ${S3_REGION:-us-east-1}
     command: ["/worker"]
     depends_on:
       migrate:
@@ -171,12 +189,25 @@ services:
         # Baked into the client bundle at build time like every
         # NEXT_PUBLIC_* var; must match VAPID_PUBLIC_KEY the api reads.
         NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${NEXT_PUBLIC_VAPID_PUBLIC_KEY:-}
+        # Reuses the api's S3_PUBLIC_ENDPOINT value (see the api service
+        # above) so middleware.ts's CSP can allow it in connect-src. A
+        # same-origin deployment (the common VPS case: S3_PUBLIC_ENDPOINT
+        # is this site's own domain) is already covered by "connect-src
+        # 'self'" and does not strictly need this, but passing it through
+        # unconditionally means a future deployment where the two origins
+        # differ works without an extra wiring step.
+        NEXT_PUBLIC_S3_PUBLIC_ORIGIN: ${S3_PUBLIC_ENDPOINT:-}
     image: ${WEB_IMAGE:-newsekolah-web:local}
     restart: unless-stopped
     env_file: .env
     environment:
       NODE_ENV: production
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+      # See the build arg above: middleware.ts reads this at request time
+      # (self-hosted Next.js runs the middleware in the same Node process
+      # as the rest of the app, not a separate edge deployment), so it is
+      # passed at runtime too, not only baked in at build.
+      NEXT_PUBLIC_S3_PUBLIC_ORIGIN: ${S3_PUBLIC_ENDPOINT:-}
     depends_on:
       api:
         condition: service_healthy

@@ -15,7 +15,7 @@ func clearEnv(t *testing.T) {
 		"DATABASE_URL", "REDIS_URL", "JWT_SIGNING_KEY", "JWT_SIGNING_KEY_FILE",
 		"DOCUMENT_SIGNING_KEY", "DOCUMENT_SIGNING_KEY_FILE",
 		"ACCESS_TOKEN_TTL", "REFRESH_TOKEN_TTL", "TRUSTED_PROXIES", "BODY_LIMIT_BYTES",
-		"S3_ENDPOINT", "S3_BUCKET", "S3_ACCESS_KEY", "S3_SECRET_KEY", "SMTP_URL",
+		"S3_ENDPOINT", "S3_BUCKET", "S3_ACCESS_KEY", "S3_SECRET_KEY", "S3_PUBLIC_ENDPOINT", "S3_REGION", "SMTP_URL",
 		"WHATSAPP_PROVIDER", "WHATSAPP_TOKEN", "WHATSAPP_PHONE_ID",
 		"OTEL_EXPORTER_OTLP_ENDPOINT", "SEED_PASSWORD",
 	}
@@ -122,5 +122,55 @@ func TestLoad_RejectsShortDocumentSigningKey(t *testing.T) {
 
 	if _, err := Load(); err == nil {
 		t.Fatal("expected Load to reject a DOCUMENT_SIGNING_KEY shorter than 32 characters")
+	}
+}
+
+func TestLoad_S3PublicEndpointAndRegionDefaults(t *testing.T) {
+	clearEnv(t)
+	t.Setenv("DATABASE_URL", "postgres://localhost/test")
+	t.Setenv("JWT_SIGNING_KEY", "base64key")
+	t.Setenv("DOCUMENT_SIGNING_KEY", "a-test-document-signing-key-32-chars-long")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if cfg.S3PublicEndpoint != "" {
+		t.Errorf("expected S3PublicEndpoint to default empty, got %q", cfg.S3PublicEndpoint)
+	}
+	if cfg.S3Region != "us-east-1" {
+		t.Errorf("expected S3Region to default to us-east-1, got %q", cfg.S3Region)
+	}
+}
+
+func TestLoad_S3PublicEndpointOverridesAndValidates(t *testing.T) {
+	clearEnv(t)
+	t.Setenv("DATABASE_URL", "postgres://localhost/test")
+	t.Setenv("JWT_SIGNING_KEY", "base64key")
+	t.Setenv("DOCUMENT_SIGNING_KEY", "a-test-document-signing-key-32-chars-long")
+	t.Setenv("S3_PUBLIC_ENDPOINT", "https://sion.nouma.id")
+	t.Setenv("S3_REGION", "ap-southeast-1")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if cfg.S3PublicEndpoint != "https://sion.nouma.id" {
+		t.Errorf("expected S3PublicEndpoint to be set, got %q", cfg.S3PublicEndpoint)
+	}
+	if cfg.S3Region != "ap-southeast-1" {
+		t.Errorf("expected S3Region override, got %q", cfg.S3Region)
+	}
+}
+
+func TestLoad_RejectsInvalidS3PublicEndpoint(t *testing.T) {
+	clearEnv(t)
+	t.Setenv("DATABASE_URL", "postgres://localhost/test")
+	t.Setenv("JWT_SIGNING_KEY", "base64key")
+	t.Setenv("DOCUMENT_SIGNING_KEY", "a-test-document-signing-key-32-chars-long")
+	t.Setenv("S3_PUBLIC_ENDPOINT", "minio:9000")
+
+	if _, err := Load(); err == nil {
+		t.Fatal("expected Load to reject an S3_PUBLIC_ENDPOINT without a scheme")
 	}
 }

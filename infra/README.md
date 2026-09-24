@@ -174,6 +174,75 @@ Set `TRUSTED_PROXIES=127.0.0.1/32` in `.env` so the api trusts `X-Forwarded-*` h
 system Caddy (client IP, scheme) — it connects over loopback, so that CIDR is exact, not just a
 convenience default.
 
+### Object storage through the shared Caddy
+
+MinIO has no published port in this setup (`expose`-only in `docker-compose.prod.yml`), which is
+fine for server-side object operations — `api`/`worker` reach it directly over the compose network
+— but not for a presigned URL: those are handed to the _browser_, which cannot resolve the
+Docker-internal host `minio:9000` at all, and even if it could, the shared system Caddy owns
+80/443 on this host, not MinIO. Every browser-facing presigned PUT/GET (branding logo/favicon,
+avatar, leave evidence, counseling and violation attachments, issued letter PDF downloads —
+anything using `storage.Client.PresignedPutURL`/`PresignedGetURL`/`PresignedGetURLAsAttachment`)
+would otherwise point at an unreachable URL in production.
+
+Fix: set `S3_PUBLIC_ENDPOINT` to this site's own domain, publish MinIO on a loopback port the
+same way `api`/`web` already are (`compose.vps.yml` does this, default `127.0.0.1:9011:9000` —
+pick any free loopback port and keep the Caddy route below in sync with it), and route a bucket
+path prefix to that port from the same system Caddy vhost as the one above. The bucket name is
+`S3_BUCKET` (`newsekolah` by default); this path lives at the vhost root, so add it _before_ the
+web catch-all in the same site block:
+
+```
+sekolah-anda.sch.id {
+    @api path /v1/* /health /ws/*
+    reverse_proxy @api 127.0.0.1:8081
+
+    handle /newsekolah/* {
+        reverse_proxy 127.0.0.1:9011
+    }
+
+    reverse_proxy 127.0.0.1:3011
+}
+```
+
+Why this works, and what to check before relying on it:
+
+- **Host header.** SigV4 signs the request's `Host` header into the signature. Caddy's
+  `reverse_proxy` preserves the client's original `Host` by default (it does not rewrite it to the
+  upstream address unless told to), and `S3_PUBLIC_ENDPOINT=https://sekolah-anda.sch.id` signs
+  URLs expecting exactly that `Host` — so no extra Caddy directive is needed for this to line up,
+  but it does mean this silently breaks if a future edit to the vhost adds a header rewrite.
+- **No route collision.** `apps/web/app` has no route starting with a bucket-name segment
+  (`(app)`, `(auth)`, `(public)`, `api`, `branding-icon` are the only top-level segments), so
+  `/<S3_BUCKET>/*` cannot shadow a real page as long as the bucket is never renamed to collide
+  with one of those — re-check with `find apps/web/app -maxdepth 1 -type d` after any bucket
+  rename.
+- **Path style, not virtual-hosted.** Presigned URLs look like
+  `https://sekolah-anda.sch.id/newsekolah/<key>?X-Amz-...`, not
+  `https://newsekolah.sekolah-anda.sch.id/...` — nothing needs to provision DNS for a
+  `<bucket>.<domain>` subdomain.
+- **Request body size.** `handle /newsekolah/*` forwards PUT uploads straight to MinIO, not
+  through the api process, so `BODY_LIMIT_BYTES` (the api's own limit) does not apply to them —
+  MinIO enforces its own (very large) default. The actual ceiling for a given upload is instead
+  the presigned URL's TTL (`storage.DefaultUploadURLTTL`, 5 minutes) and whatever size check the
+  module's confirm step performs after the fact (docs/08-security.md section 6: avatar 2 MB,
+  evidence 6 MB, import 10 MB) — a client can technically PUT more than that limit to MinIO
+  itself, but the confirm step then rejects and deletes it rather than recording it as valid.
+  System Caddy's own default request body handling applies no additional cap beyond that.
+
+`.env` lines to add for this setup (see `infra/docker/.env.prod.example`):
+
+```
+S3_PUBLIC_ENDPOINT=https://sekolah-anda.sch.id
+S3_REGION=us-east-1
+```
+
+`docker-compose.prod.yml` reads `S3_PUBLIC_ENDPOINT` straight through to `api`/`worker`, and reuses
+the same value as `NEXT_PUBLIC_S3_PUBLIC_ORIGIN` for the `web` build/runtime so
+`apps/web/middleware.ts`'s CSP allows it in `connect-src` — a no-op here since it is the same
+origin as the site itself (already covered by `'self'`), but required if `S3_PUBLIC_ENDPOINT` is
+ever a different origin than the web app.
+
 ## Development
 
 Hot-reload stack for day-to-day work: see [docker/README.dev.md](docker/README.dev.md).
