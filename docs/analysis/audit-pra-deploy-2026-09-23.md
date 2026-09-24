@@ -149,3 +149,14 @@ Verifikasi dengan API yang berjalan sebagai `app_rw` terhadap Postgres berisi da
 Semua temuan Kritis dan Tinggi di tabel atas sudah diperbaiki di branch `fix/schedule-grid-alignment`, kecuali wajib TOTP untuk admin (butuh keputusan produk). Validasi skema OpenAPI di middleware dan `Idempotency-Key` di handler POST juga belum dikerjakan. Verifikasi akhir: `go test ./...` penuh dengan Postgres sungguhan (47 paket, integrasi sebagai `app_rw`), `pnpm typecheck && pnpm lint && pnpm test` (14 task), migrate up, rollback lima langkah, up lagi, dan seed di database kosong.
 
 Langkah manual di VPS sebelum deploy: isi `APP_DB_PASSWORD`, `DATA_ENCRYPTION_KEY` terpisah dari `DOCUMENT_SIGNING_KEY`, dan `TRUSTED_PROXIES=127.0.0.1/32` di `infra/docker/.env`; jalankan `update.sh` dengan `COMPOSE_EXTRA_FILES=infra/docker/compose.vps.yml`; pastikan log migrate menampilkan "app_rw password set from APP_DB_PASSWORD". Isi `BACKUP_AGE_RECIPIENT` sebelum mengaktifkan profile backup.
+
+## Penyempurnaan 25 September
+
+- Migrasi 0116: policy `violation_attachments` dari 0115 masih memakai cast lama; diperbaiki, dan test `dbtest` kini gagal bila ada policy yang membaca `app.tenant_id` tanpa `nullif`.
+- `Idempotency-Key` aktif di 11 POST (pembayaran dan void, pengajuan izin, izin keluar, terlambat, simpan presensi, pinjam, kembali, pinjam massal, check-in tamu). Sekalian memperbaiki bug client: retry setelah refresh 401 gagal untuk semua request bertubuh.
+- Validasi request terhadap OpenAPI (`OPENAPI_VALIDATION`, bawaan `log` di produksi, `enforce` di dev dan test). Dua kesalahan spec ikut diperbaiki.
+- Batas per IP untuk semua endpoint publik; limiter reset password ternyata belum pernah tersambung dan kini aktif. Kunci cache sesi diprefiks tenant. `restore.sh` melakukan smoke check setelah restore.
+- Sidebar: izin, izin keluar, terlambat, serta kelas dan tahun ajaran hanya tampil untuk peran yang memakainya.
+- Izin keluar ganda di hari yang sama kini selalu 409, bukan 500, termasuk di jendela ketika tanggal lokal sudah berganti tetapi tanggal UTC belum. Sisa kasus tepi: izin pukul 23.00 lalu 07.30 keesokan harinya masih ditolak karena index memakai tanggal UTC.
+
+Masih menunggu keputusan: wajib TOTP untuk admin, cakupan peran kepala sekolah, dan aturan urutan migrasi di CI.
