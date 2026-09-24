@@ -323,6 +323,34 @@
           "uploading": "Uploading... {percent}%",
           "updated": "Favicon updated"
         }
+      },
+      "reportHeader": {
+        "navLabel": "Report Header",
+        "eyebrow": "Settings",
+        "title": "Report Header",
+        "showLogoLabel": "Show school logo",
+        "showLogoHint": "Uses the same logo as School Branding.",
+        "linesLabel": "Header lines",
+        "firstLinePlaceholder": "School name",
+        "linePlaceholder": "Header line",
+        "lineLabel": "Header line {index}",
+        "removeLine": "Remove header line {index}",
+        "addLine": "Add line",
+        "linesRequiredError": "Enter at least one header line.",
+        "placeLabel": "Place",
+        "placePlaceholder": "e.g. Denpasar",
+        "signersLabel": "Default signers",
+        "signerRoleLabel": "Role",
+        "signerNameLabel": "Name",
+        "signerIdLabel": "ID label",
+        "signerIdNumberLabel": "ID number",
+        "removeSigner": "Remove signer {index}",
+        "addSigner": "Add signer",
+        "save": "Save changes",
+        "saved": "Report header saved",
+        "previewTitle": "Preview",
+        "previewOpen": "View preview",
+        "previewError": "The preview could not be loaded."
       }
     },
     "forbidden": {

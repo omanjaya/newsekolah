@@ -7,6 +7,8 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"net/url"
+	"strings"
 
 	"github.com/google/uuid"
 
@@ -14,6 +16,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/reports/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/authz"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 )
 
 // PermissionChecker resolves the caller's effective permissions.
@@ -40,6 +43,10 @@ func mapError(err error) error {
 		return httpx.ErrNotFound
 	case errors.Is(err, service.ErrMissingArgument):
 		return httpx.ErrValidation
+	}
+	var unknownColumn *reportdoc.UnknownColumnError
+	if errors.As(err, &unknownColumn) {
+		return httpx.ErrValidation.WithDetails(httpx.ErrorDetail{Field: "columns", Code: "UNKNOWN_COLUMN"})
 	}
 	var appErr *httpx.Error
 	if errors.As(err, &appErr) {
@@ -90,6 +97,9 @@ func (h *ReportsHandler) ExportReport(ctx context.Context, request api.ExportRep
 	if request.Params.ClassId != nil {
 		args.ClassID = uuid.NullUUID{UUID: *request.Params.ClassId, Valid: true}
 	}
+	if request.Params.GradeLevelId != nil {
+		args.GradeLevelID = uuid.NullUUID{UUID: *request.Params.GradeLevelId, Valid: true}
+	}
 	if request.Params.SubjectId != nil {
 		args.SubjectID = uuid.NullUUID{UUID: *request.Params.SubjectId, Valid: true}
 	}
@@ -100,11 +110,48 @@ func (h *ReportsHandler) ExportReport(ctx context.Context, request api.ExportRep
 		date := request.Params.Date.Time
 		args.Date = &date
 	}
-	xlsx, err := h.service.Run(ctx, tenantID(ctx), kind, args)
+
+	opts := exportOptionsFromParams(request.Params)
+	out, contentType, err := h.service.RunDocument(ctx, tenantID(ctx), kind, args, opts)
 	if err != nil {
 		return nil, mapError(err)
 	}
+	if contentType == service.PDFContentType {
+		return api.ExportReport200ApplicationpdfResponse{Body: bytes.NewReader(out), ContentLength: int64(len(out))}, nil
+	}
 	return api.ExportReport200ApplicationvndOpenxmlformatsOfficedocumentSpreadsheetmlSheetResponse{
-		Body: bytes.NewReader(xlsx), ContentLength: int64(len(xlsx)),
+		Body: bytes.NewReader(out), ContentLength: int64(len(out)),
 	}, nil
+}
+
+// exportOptionsFromParams decodes format/title/letterhead/columns into
+// reportdoc.Options. letterhead defaults to true (a report a school
+// downloads is normally meant to be printed/filed with its kop laporan);
+// columns is a comma list of `key` or `key:Label`, the label URL-decoded
+// -- see openapi/modules/reports.yaml's exportReport description.
+func exportOptionsFromParams(params api.ExportReportParams) reportdoc.Options {
+	opts := reportdoc.Options{Format: reportdoc.FormatXLSX, ShowLetterhead: true}
+	if params.Format != nil && reportdoc.Format(*params.Format).Valid() {
+		opts.Format = reportdoc.Format(*params.Format)
+	}
+	if params.Title != nil {
+		opts.Title = *params.Title
+	}
+	if params.Letterhead != nil {
+		opts.ShowLetterhead = *params.Letterhead
+	}
+	if params.Columns != nil && *params.Columns != "" {
+		for _, part := range strings.Split(*params.Columns, ",") {
+			part = strings.TrimSpace(part)
+			if part == "" {
+				continue
+			}
+			key, label, _ := strings.Cut(part, ":")
+			if decoded, err := url.QueryUnescape(label); err == nil {
+				label = decoded
+			}
+			opts.Columns = append(opts.Columns, reportdoc.ColumnChoice{Key: key, Label: label})
+		}
+	}
+	return opts
 }

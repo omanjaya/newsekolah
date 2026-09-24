@@ -228,6 +228,10 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		Emails:     identityModule.Service,
 		Storage:    sharedStorage,
 		Clock:      clock.Real{},
+		// attendance.daily's reportdoc export: grade-level class
+		// resolution and the tenant's kop laporan.
+		Academic:   wiring.AcademicReports{Academic: academicModule.Service, School: schoolModule.Service},
+		Letterhead: wiring.ReportHeaderReports{Svc: schoolModule.Service},
 	})
 
 	// Background jobs: every module registers its workers on one River

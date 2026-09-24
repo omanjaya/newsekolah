@@ -21,18 +21,38 @@ paths:
       tags: [reports]
       operationId: exportReport
       x-permission: authenticated
-      summary: Run one report and download it as XLSX
+      summary: Run one report and download it as XLSX or PDF
+      description: >
+        format/title/letterhead/columns customise the downloaded file (see
+        docs/05-shared-components.md, "Laporan dan ekspor"); every report
+        kind accepts them, but only attendance.daily builds a fully
+        reportdoc-backed document today -- other kinds still ignore
+        letterhead/columns and always return XLSX. grade_level_id is an
+        additional scope: attendance.daily accepts it in place of
+        class_id to export one section per class in the grade level.
       parameters:
         - { name: reportKind, in: path, required: true, schema: { type: string } }
         - { name: class_id, in: query, schema: { type: string, format: uuid } }
+        - { name: grade_level_id, in: query, schema: { type: string, format: uuid } }
         - { name: subject_id, in: query, schema: { type: string, format: uuid } }
         - { name: term_id, in: query, schema: { type: string, format: uuid } }
         - { name: date, in: query, schema: { type: string, format: date } }
+        - { name: format, in: query, schema: { type: string, enum: [xlsx, pdf], default: xlsx } }
+        - { name: title, in: query, schema: { type: string, maxLength: 200 } }
+        - { name: letterhead, in: query, schema: { type: boolean, default: true } }
+        - {
+            name: columns,
+            in: query,
+            schema: { type: string },
+            description: "Comma-separated column keys, each optionally `key:Label` (URL-encoded); empty/absent keeps every column.",
+          }
       responses:
         "200":
-          description: Workbook
+          description: Workbook or PDF, depending on format
           content:
             application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: { type: string, format: binary }
+            application/pdf:
               schema: { type: string, format: binary }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
@@ -166,7 +186,7 @@ components:
   schemas:
     ReportArgumentKind:
       type: string
-      enum: [class, subject, date, term]
+      enum: [class, grade_level, subject, date, term]
     ReportArgument:
       type: object
       required: [name, kind, required]

@@ -1,0 +1,17 @@
+{
+  "title": "Download report",
+  "description": "Set the letterhead and the columns to show before downloading.",
+  "formatLabel": "File format",
+  "formatExcel": "Excel",
+  "formatPdf": "PDF",
+  "titleLabel": "Report title",
+  "showLetterheadLabel": "Show letterhead",
+  "columnsLabel": "Columns ({count} selected)",
+  "includeColumn": "Include the {column} column",
+  "columnLabel": "Label for the {column} column",
+  "moveUp": "Move the {column} column up",
+  "moveDown": "Move the {column} column down",
+  "restoreDefaults": "Restore defaults",
+  "export": "Download",
+  "error": "The report could not be downloaded. Try again."
+}
