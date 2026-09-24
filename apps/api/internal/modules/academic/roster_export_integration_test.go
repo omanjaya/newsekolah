@@ -3,6 +3,7 @@ package academic
 import (
 	"bytes"
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -131,14 +132,14 @@ func TestExportClassRosterGradeLevelScope(t *testing.T) {
 	defaultOpts := reportdoc.Options{Format: reportdoc.FormatXLSX, ShowLetterhead: true}
 
 	t.Run("exactly one of class_id/grade_level_id is required", func(t *testing.T) {
-		_, err := svc.ExportClassRoster(ctx, fx.tenantID, service.RosterExportQuery{ClassID: &classA, GradeLevelID: &gradeLevel}, defaultOpts)
+		_, err := svc.ExportClassRoster(ctx, fx.tenantID, service.RosterExportQuery{ClassID: &classA, GradeLevelID: &gradeLevel}, reportdoc.LocaleID, defaultOpts)
 		require.ErrorIs(t, err, domain.ErrInvalidScope)
-		_, err = svc.ExportClassRoster(ctx, fx.tenantID, service.RosterExportQuery{}, defaultOpts)
+		_, err = svc.ExportClassRoster(ctx, fx.tenantID, service.RosterExportQuery{}, reportdoc.LocaleID, defaultOpts)
 		require.ErrorIs(t, err, domain.ErrInvalidScope)
 	})
 
 	t.Run("class scope renders one section with NIS, gender and guardian", func(t *testing.T) {
-		xlsx, err := svc.ExportClassRoster(ctx, fx.tenantID, service.RosterExportQuery{ClassID: &classA}, defaultOpts)
+		xlsx, err := svc.ExportClassRoster(ctx, fx.tenantID, service.RosterExportQuery{ClassID: &classA}, reportdoc.LocaleID, defaultOpts)
 		require.NoError(t, err)
 		f, err := excelize.OpenReader(bytes.NewReader(xlsx))
 		require.NoError(t, err)
@@ -157,13 +158,13 @@ func TestExportClassRosterGradeLevelScope(t *testing.T) {
 		require.Contains(t, flat, "Bapak Satu")
 		require.Contains(t, flat, "Denpasar")
 
-		pdf, err := svc.ExportClassRoster(ctx, fx.tenantID, service.RosterExportQuery{ClassID: &classA}, reportdoc.Options{Format: reportdoc.FormatPDF})
+		pdf, err := svc.ExportClassRoster(ctx, fx.tenantID, service.RosterExportQuery{ClassID: &classA}, reportdoc.LocaleID, reportdoc.Options{Format: reportdoc.FormatPDF})
 		require.NoError(t, err)
 		require.True(t, bytes.HasPrefix(pdf, []byte("%PDF")))
 	})
 
 	t.Run("grade-level scope covers both classes, one section each", func(t *testing.T) {
-		xlsx, err := svc.ExportClassRoster(ctx, fx.tenantID, service.RosterExportQuery{GradeLevelID: &gradeLevel}, defaultOpts)
+		xlsx, err := svc.ExportClassRoster(ctx, fx.tenantID, service.RosterExportQuery{GradeLevelID: &gradeLevel}, reportdoc.LocaleID, defaultOpts)
 		require.NoError(t, err)
 		f, err := excelize.OpenReader(bytes.NewReader(xlsx))
 		require.NoError(t, err)
@@ -181,7 +182,7 @@ func TestExportClassRosterGradeLevelScope(t *testing.T) {
 	})
 
 	t.Run("a caller-chosen column subset is honoured", func(t *testing.T) {
-		narrowed, err := svc.ExportClassRoster(ctx, fx.tenantID, service.RosterExportQuery{ClassID: &classA}, reportdoc.Options{
+		narrowed, err := svc.ExportClassRoster(ctx, fx.tenantID, service.RosterExportQuery{ClassID: &classA}, reportdoc.LocaleID, reportdoc.Options{
 			Format: reportdoc.FormatXLSX,
 			Columns: []reportdoc.ColumnChoice{
 				{Key: "name", Label: "Nama"},
@@ -196,4 +197,80 @@ func TestExportClassRosterGradeLevelScope(t *testing.T) {
 		require.NoError(t, err)
 		require.Contains(t, rows, []string{"Nama", "NIS"})
 	})
+}
+
+// fakeLetterheadSource is a minimal reportdoc.LetterheadSource stub, for
+// verifying a report export wires in whatever the school module's
+// ReportLetterhead would have returned, without depending on that
+// module's own tenant_settings fixture.
+type fakeLetterheadSource struct {
+	letterhead *reportdoc.Letterhead
+	signature  *reportdoc.Signature
+}
+
+func (f fakeLetterheadSource) Letterhead(context.Context, uuid.UUID) (*reportdoc.Letterhead, *reportdoc.Signature, error) {
+	return f.letterhead, f.signature, nil
+}
+
+// TestExportClassRosterHomeroomTeacherSigner covers the class roster
+// export's two-signer signature block: a class with a currently assigned
+// homeroom teacher (classes.homeroom_teacher_id) gets that teacher
+// prepended as "Wali Kelas", ahead of the tenant's own default signer.
+// The grade-level scope (many classes, one shared Signature) keeps the
+// tenant's plain default, since there is no single class to attribute a
+// homeroom teacher to.
+func TestExportClassRosterHomeroomTeacherSigner(t *testing.T) {
+	pg := dbtest.Start(t)
+	fx := seedRosterFixture(t, pg.AdminPool)
+	ctx := context.Background()
+
+	academicModule := Register(pg.AppPool, clock.Real{})
+	academicModule.Service.SetLetterheadSource(fakeLetterheadSource{
+		signature: &reportdoc.Signature{
+			Place:   "Denpasar",
+			Signers: []reportdoc.Signer{{RoleLabel: "Kepala Sekolah", Name: "I Wayan Arta"}},
+		},
+	})
+	svc := academicModule.Service
+
+	homeroom, err := db.New(pg.AdminPool).CreateUser(ctx, db.CreateUserParams{
+		TenantID: fx.tenantID, Username: "wali-" + uuid.NewString(), PasswordHash: "x", Name: "Bu Kartika", Status: "active", Locale: "id",
+	})
+	require.NoError(t, err)
+	_, err = pg.AdminPool.Exec(ctx, `update classes set homeroom_teacher_id = $1 where tenant_id = $2 and id = $3`, homeroom.ID, fx.tenantID, fx.classAID)
+	require.NoError(t, err)
+
+	xlsx, err := svc.ExportClassRoster(ctx, fx.tenantID, service.RosterExportQuery{ClassID: &fx.classAID}, reportdoc.LocaleID, reportdoc.Options{Format: reportdoc.FormatXLSX, ShowLetterhead: true})
+	require.NoError(t, err)
+	f, err := excelize.OpenReader(bytes.NewReader(xlsx))
+	require.NoError(t, err)
+	defer f.Close() //nolint:errcheck
+	rows, err := f.GetRows(f.GetSheetList()[0])
+	require.NoError(t, err)
+	var flat []string
+	for _, row := range rows {
+		flat = append(flat, row...)
+	}
+	joined := strings.Join(flat, " | ")
+	require.Contains(t, joined, "Wali Kelas")
+	require.Contains(t, joined, "Bu Kartika")
+	require.Contains(t, joined, "Kepala Sekolah")
+	require.Contains(t, joined, "I Wayan Arta")
+
+	gradeXlsx, err := svc.ExportClassRoster(ctx, fx.tenantID, service.RosterExportQuery{GradeLevelID: &fx.gradeLevelID}, reportdoc.LocaleID, reportdoc.Options{Format: reportdoc.FormatXLSX, ShowLetterhead: true})
+	require.NoError(t, err)
+	gf, err := excelize.OpenReader(bytes.NewReader(gradeXlsx))
+	require.NoError(t, err)
+	defer gf.Close() //nolint:errcheck
+	var gflat []string
+	for _, sheet := range gf.GetSheetList() {
+		rows, err := gf.GetRows(sheet)
+		require.NoError(t, err)
+		for _, row := range rows {
+			gflat = append(gflat, row...)
+		}
+	}
+	gjoined := strings.Join(gflat, " | ")
+	require.NotContains(t, gjoined, "Bu Kartika", "a grade-level export covers many classes, so no single homeroom teacher is attributed")
+	require.Contains(t, gjoined, "Kepala Sekolah")
 }

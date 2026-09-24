@@ -102,6 +102,10 @@ type Repository interface {
 
 	// -- cross-module read; replace with academic reader interface after merge --
 	GetClassRef(ctx context.Context, tenantID, classID uuid.UUID) (ClassRef, error)
+	// GetClassHomeroomTeacher resolves one class's currently assigned
+	// homeroom teacher, if any, for the journal export's "Wali Kelas"
+	// signer.
+	GetClassHomeroomTeacher(ctx context.Context, tenantID, classID uuid.UUID) (teacherUserID uuid.UUID, ok bool, err error)
 	GetSubjectRef(ctx context.Context, tenantID, subjectID uuid.UUID) (SubjectRef, error)
 	GetUserRef(ctx context.Context, tenantID, userID uuid.UUID) (UserRef, error)
 	GetPeriodRef(ctx context.Context, tenantID, periodID uuid.UUID) (PeriodRef, error)

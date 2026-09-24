@@ -5,7 +5,6 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 )
 
@@ -31,14 +30,42 @@ func journalReportColumns() []reportdoc.Column {
 	}
 }
 
+// journalSignature builds the journal export's Signature block: the
+// tenant's configured default (reportLetterhead's own result), with the
+// filter's class's currently assigned homeroom teacher prepended as
+// "Wali Kelas" when the export is scoped to one class -- reportdoc
+// renders multiple Signers side by side, left to right, so the homeroom
+// teacher lands on the left and the tenant's own default signer(s) on
+// the right. An unscoped ("my own journals" or "every class") export or
+// a class with no homeroom teacher assigned keeps base unchanged.
+func (s *Service) journalSignature(ctx context.Context, tenantID uuid.UUID, filter JournalFilter, base *reportdoc.Signature) *reportdoc.Signature {
+	if !filter.ClassID.Valid || base == nil {
+		return base
+	}
+	teacherID, ok, err := s.repo.GetClassHomeroomTeacher(ctx, tenantID, filter.ClassID.UUID)
+	if err != nil || !ok {
+		return base
+	}
+	name, err := s.repo.GetUserName(ctx, tenantID, teacherID)
+	if err != nil || name == "" {
+		return base
+	}
+	signature := *base
+	signature.Signers = append([]reportdoc.Signer{{RoleLabel: "Wali Kelas", Name: name}}, base.Signers...)
+	return &signature
+}
+
 // ExportJournalsReport renders every journal matching filter (ignoring
 // filter.Limit/Offset) as a reportdoc file (XLSX or PDF per opts.Format),
 // with resolved class/subject/teacher/writer names, replacing the old
 // export's raw IDs (docs/analysis/backend-inventory.md section 1.12).
-// Called with a zero reportdoc.Options, this keeps every existing
-// caller's request working: xlsx, every column, the report's own default
-// title.
-func (s *Service) ExportJournalsReport(ctx context.Context, tenantID, academicYearID uuid.UUID, filter JournalFilter, opts reportdoc.Options) ([]byte, error) {
+// locale (reportdoc.LocaleID/LocaleEN) drives every reportdoc-provided
+// piece of text (dates, the PDF page-number footer, the "no rows"
+// label); report-specific text (title, scope labels, column labels)
+// stays Indonesian, this module's own default. Called with a zero
+// reportdoc.Options, this keeps every existing caller's request working:
+// xlsx, every column, the report's own default title.
+func (s *Service) ExportJournalsReport(ctx context.Context, tenantID, academicYearID uuid.UUID, filter JournalFilter, locale string, opts reportdoc.Options) ([]byte, error) {
 	var out []byte
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		filter.Limit, filter.Offset = journalExportRowLimit, 0
@@ -61,17 +88,19 @@ func (s *Service) ExportJournalsReport(ctx context.Context, tenantID, academicYe
 			scope = append(scope, reportdoc.ScopeLine{Label: "Kelas", Value: names.class(filter.ClassID.UUID)})
 		}
 		if filter.DateFrom != nil {
-			scope = append(scope, reportdoc.ScopeLine{Label: "Dari Tanggal", Value: domain.IndonesianDate(*filter.DateFrom)})
+			scope = append(scope, reportdoc.ScopeLine{Label: "Dari Tanggal", Value: reportdoc.FormatDate(locale, *filter.DateFrom)})
 		}
 		if filter.DateTo != nil {
-			scope = append(scope, reportdoc.ScopeLine{Label: "Sampai Tanggal", Value: domain.IndonesianDate(*filter.DateTo)})
+			scope = append(scope, reportdoc.ScopeLine{Label: "Sampai Tanggal", Value: reportdoc.FormatDate(locale, *filter.DateTo)})
 		}
 
 		doc := reportdoc.Document{
-			Title:    "Jurnal Mengajar",
-			Scope:    scope,
-			Columns:  journalReportColumns(),
-			Sections: []reportdoc.Section{{Rows: rows}},
+			Title:           "Jurnal Mengajar",
+			Scope:           scope,
+			Columns:         journalReportColumns(),
+			Sections:        []reportdoc.Section{{Rows: rows}},
+			PageLabelFormat: reportdoc.PageLabel(locale),
+			EmptyRowsLabel:  reportdoc.EmptyRowsLabelFor(locale),
 		}
 		if opts.ShowLetterhead {
 			lh, sig, err := s.reportLetterhead(ctx, tenantID)
@@ -79,7 +108,7 @@ func (s *Service) ExportJournalsReport(ctx context.Context, tenantID, academicYe
 				return err
 			}
 			doc.Letterhead = lh
-			doc.Signature = sig
+			doc.Signature = s.journalSignature(ctx, tenantID, filter, sig)
 		}
 
 		applied, err := reportdoc.Apply(doc, opts)

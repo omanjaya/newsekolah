@@ -38,7 +38,7 @@ func (h *AttendanceHandler) ExportDailyAttendanceReport(ctx context.Context, req
 	tenantID := tenantIDFromContext(ctx)
 
 	opts := reportdocOptions((*string)(request.Params.Format), request.Params.Title, request.Params.Letterhead, request.Params.Columns)
-	file, err := h.service.ExportDailyReport(ctx, tenantID, request.Params.ClassId, request.Params.GradeLevelId, request.Params.Date.Time, opts)
+	file, err := h.service.ExportDailyReport(ctx, tenantID, request.Params.ClassId, request.Params.GradeLevelId, request.Params.Date.Time, tenantLocale(ctx), opts)
 	if err != nil {
 		return nil, mapAttendanceError(err)
 	}
@@ -60,7 +60,7 @@ func (h *AttendanceHandler) ExportMonthlyAttendanceReport(ctx context.Context, r
 	tenantID := tenantIDFromContext(ctx)
 
 	opts := reportdocOptions((*string)(request.Params.Format), request.Params.Title, request.Params.Letterhead, request.Params.Columns)
-	file, err := h.service.ExportMonthlyRecap(ctx, tenantID, request.Params.ClassId, request.Params.GradeLevelId, request.Params.Month, opts)
+	file, err := h.service.ExportMonthlyRecap(ctx, tenantID, request.Params.ClassId, request.Params.GradeLevelId, request.Params.Month, tenantLocale(ctx), opts)
 	if err != nil {
 		return nil, mapAttendanceError(err)
 	}

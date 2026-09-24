@@ -89,3 +89,16 @@ order by name;
 -- cross-module read: subjects is owned by the academic module. The
 -- gradebook export's scope line needs the subject's own name.
 select name from subjects where tenant_id = $1 and id = $2;
+
+-- name: GradingGetClassHomeroomTeacher :one
+-- cross-module read: classes is owned by the academic module. The
+-- gradebook export's per-class signature block prepends the class's
+-- homeroom teacher ("Wali Kelas") ahead of the tenant's own default
+-- signer, same as attendance/scheduling's exports.
+select homeroom_teacher_id from classes where tenant_id = $1 and id = $2;
+
+-- name: GradingGetUserName :one
+-- cross-module read: users is owned by the identity module. Resolves the
+-- homeroom teacher's display name for the gradebook export's signature
+-- block.
+select name from users where tenant_id = $1 and id = $2 and deleted_at is null;

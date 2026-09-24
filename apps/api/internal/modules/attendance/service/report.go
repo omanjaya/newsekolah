@@ -148,16 +148,16 @@ func dailyReportColumns() []reportdoc.Column {
 
 // dailyReportSection turns one class's DailyReport into a reportdoc
 // Section: one row per student, ordered to match dailyReportColumns, plus
-// a Footer totals row. The status column renders policy's own Indonesian
-// label (e.g. "Hadir") or, for a day with no recorded outcome yet, the
-// Indonesian pseudo-status label (domain.StatusLabel) -- never the raw
-// code (e.g. "H" or "INCOMPLETE") a downloaded report's reader cannot be
-// expected to decode.
-func dailyReportSection(name string, report DailyReport, policy domain.StatusPolicy) reportdoc.Section {
+// a Footer totals row. The status column renders policy's own configured
+// label (e.g. "Hadir", tenant content, never translated by locale) or,
+// for a day with no recorded outcome yet, the locale's pseudo-status
+// label (domain.StatusLabel) -- never the raw code (e.g. "H" or
+// "INCOMPLETE") a downloaded report's reader cannot be expected to decode.
+func dailyReportSection(name string, report DailyReport, locale string, policy domain.StatusPolicy) reportdoc.Section {
 	rows := make([][]any, len(report.Students))
 	for i, student := range report.Students {
 		rows[i] = []any{
-			i + 1, student.Name, domain.StatusLabel(student.StatusCode, policy),
+			i + 1, student.Name, domain.StatusLabel(student.StatusCode, locale, policy),
 			student.ExpectedSessions, student.SubmittedSessions, completeRatio(student.ExpectedSessions, student.SubmittedSessions),
 		}
 	}
@@ -184,11 +184,15 @@ func completeRatio(expected, submitted int) float64 {
 // ExportDailyReport renders GetDailyReport as a reportdoc file (XLSX or
 // PDF per opts.Format), for one class or every class of a grade level
 // ("angkatan") -- one section per class, in resolveReportScope's order.
-// Exactly one of classID/gradeLevelID must be set. Called with a zero
-// reportdoc.Options (no format/title/letterhead/columns query params),
-// this keeps every existing caller's request working: xlsx, every
-// column, the report's own default title.
-func (s *Service) ExportDailyReport(ctx context.Context, tenantID uuid.UUID, classID, gradeLevelID *uuid.UUID, date time.Time, opts reportdoc.Options) ([]byte, error) {
+// Exactly one of classID/gradeLevelID must be set. locale (reportdoc.
+// LocaleID/LocaleEN) drives every reportdoc-provided piece of text
+// (dates, the PDF page-number footer, the "no rows" label); report-
+// specific text (title, scope labels, column labels) stays Indonesian,
+// this module's own default. Called with a zero reportdoc.Options (no
+// format/title/letterhead/columns query params), this keeps every
+// existing caller's request working: xlsx, every column, the report's
+// own default title.
+func (s *Service) ExportDailyReport(ctx context.Context, tenantID uuid.UUID, classID, gradeLevelID *uuid.UUID, date time.Time, locale string, opts reportdoc.Options) ([]byte, error) {
 	var out []byte
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		classes, err := s.resolveReportScope(ctx, tenantID, classID, gradeLevelID)
@@ -210,14 +214,16 @@ func (s *Service) ExportDailyReport(ctx context.Context, tenantID uuid.UUID, cla
 			if err != nil {
 				return err
 			}
-			sections[i] = dailyReportSection(class.Name, report, policy)
+			sections[i] = dailyReportSection(class.Name, report, locale, policy)
 		}
 
 		doc := reportdoc.Document{
-			Title:    "Presensi Harian",
-			Scope:    []reportdoc.ScopeLine{scopeLine, {Label: "Tanggal", Value: domain.IndonesianDate(date)}},
-			Columns:  dailyReportColumns(),
-			Sections: sections,
+			Title:           "Presensi Harian",
+			Scope:           []reportdoc.ScopeLine{scopeLine, {Label: "Tanggal", Value: reportdoc.FormatDate(locale, date)}},
+			Columns:         dailyReportColumns(),
+			Sections:        sections,
+			PageLabelFormat: reportdoc.PageLabel(locale),
+			EmptyRowsLabel:  reportdoc.EmptyRowsLabelFor(locale),
 		}
 		if opts.ShowLetterhead {
 			lh, sig, err := s.reportLetterhead(ctx, tenantID)
@@ -227,8 +233,8 @@ func (s *Service) ExportDailyReport(ctx context.Context, tenantID uuid.UUID, cla
 			doc.Letterhead = lh
 			if sig != nil {
 				signature := *sig
-				signature.Date = domain.IndonesianDate(date)
-				doc.Signature = &signature
+				signature.Date = reportdoc.FormatDate(locale, date)
+				doc.Signature = s.classSignature(ctx, tenantID, classID, &signature)
 			}
 		}
 		out, err = renderReport(doc, opts)

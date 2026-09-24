@@ -104,6 +104,12 @@ where c.tenant_id = $1 and c.academic_year_id = $2 and c.deleted_at is null
   )
 order by c.name;
 
+-- name: GetClassHomeroomTeacherForAttendance :one
+-- classes.homeroom_teacher_id, kept in sync with the "homeroom" duty
+-- assignment by the academic module (homeroom_sync.sql) -- the class
+-- scope of a report export's signature block ("Wali Kelas" signer).
+select homeroom_teacher_id from classes where tenant_id = $1 and id = $2;
+
 -- name: GetGradeLevelNameForAttendance :one
 -- One grade level's display name, for the grade-level ("angkatan") scope
 -- of a report export's scope line ("Angkatan: <name>").

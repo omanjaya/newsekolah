@@ -3,6 +3,11 @@
 -- additive, read-only, scoped to exactly what the class roster export
 -- needs (NIS, NISN, name, gender, birth place/date, guardian).
 
+-- name: AcademicGetUserNameForExport :one
+-- One user's display name, for the class roster export's "Wali Kelas"
+-- signer (classes.homeroom_teacher_id).
+select name from users where tenant_id = $1 and id = $2 and deleted_at is null;
+
 -- name: AcademicListClassRosterForExport :many
 -- Every actively enrolled student of a class, with the full set of fields
 -- a printed "daftar siswa" needs, ordered by name.

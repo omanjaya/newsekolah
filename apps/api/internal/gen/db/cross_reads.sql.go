@@ -70,6 +70,25 @@ func (q *Queries) GetActiveClassNameForStudent(ctx context.Context, arg GetActiv
 	return name, err
 }
 
+const getClassHomeroomTeacherForAttendance = `-- name: GetClassHomeroomTeacherForAttendance :one
+select homeroom_teacher_id from classes where tenant_id = $1 and id = $2
+`
+
+type GetClassHomeroomTeacherForAttendanceParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	ID       uuid.UUID `json:"id"`
+}
+
+// classes.homeroom_teacher_id, kept in sync with the "homeroom" duty
+// assignment by the academic module (homeroom_sync.sql) -- the class
+// scope of a report export's signature block ("Wali Kelas" signer).
+func (q *Queries) GetClassHomeroomTeacherForAttendance(ctx context.Context, arg GetClassHomeroomTeacherForAttendanceParams) (pgtype.UUID, error) {
+	row := q.db.QueryRow(ctx, getClassHomeroomTeacherForAttendance, arg.TenantID, arg.ID)
+	var homeroom_teacher_id pgtype.UUID
+	err := row.Scan(&homeroom_teacher_id)
+	return homeroom_teacher_id, err
+}
+
 const getClassNameForAttendance = `-- name: GetClassNameForAttendance :one
 select name from classes where tenant_id = $1 and id = $2
 `

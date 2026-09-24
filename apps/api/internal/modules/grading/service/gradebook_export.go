@@ -110,14 +110,42 @@ func floatOrNil(v *float64) any {
 	return *v
 }
 
+// gradebookSignature builds the gradebook export's Signature block: the
+// tenant's configured default (reportLetterhead's own result), with the
+// scoped class's currently assigned homeroom teacher prepended as "Wali
+// Kelas" -- only when the export is scoped to exactly one class, since
+// reportdoc.Document.Signature is one shared block per document, not per
+// Section, so a grade-level export spanning multiple classes cannot
+// attribute one class's homeroom teacher. Mirrors attendance/academic/
+// scheduling's identically named helpers.
+func (s *Service) gradebookSignature(ctx context.Context, tenantID uuid.UUID, classes []ClassRef, base *reportdoc.Signature) *reportdoc.Signature {
+	if len(classes) != 1 || base == nil {
+		return base
+	}
+	teacherID, ok, err := s.repo.GetClassHomeroomTeacher(ctx, tenantID, classes[0].ID)
+	if err != nil || !ok {
+		return base
+	}
+	name, err := s.repo.GetUserName(ctx, tenantID, teacherID)
+	if err != nil || name == "" {
+		return base
+	}
+	signature := *base
+	signature.Signers = append([]reportdoc.Signer{{RoleLabel: "Wali Kelas", Name: name}}, base.Signers...)
+	return &signature
+}
+
 // ExportGradebook renders one or more classes' Gradebook (per
 // GradebookExportQuery's class or grade-level scope) as a reportdoc file
 // (XLSX or PDF per opts.Format), using the exact same data
 // Service.Gradebook assembles for the on-screen sheet -- one section per
-// class. Called with a zero reportdoc.Options, this keeps every existing
-// caller's request working: xlsx, every column, the report's own default
-// title.
-func (s *Service) ExportGradebook(ctx context.Context, tenantID, actorID uuid.UUID, canManageAny bool, q GradebookExportQuery, opts reportdoc.Options) ([]byte, error) {
+// class. locale (reportdoc.LocaleID/LocaleEN) drives every
+// reportdoc-provided piece of text (the PDF page-number footer, the "no
+// rows" label); report-specific text (title, scope labels, column
+// labels) stays Indonesian, this module's own default. Called with a
+// zero reportdoc.Options, this keeps every existing caller's request
+// working: xlsx, every column, the report's own default title.
+func (s *Service) ExportGradebook(ctx context.Context, tenantID, actorID uuid.UUID, canManageAny bool, q GradebookExportQuery, locale string, opts reportdoc.Options) ([]byte, error) {
 	if err := s.requireEnabled(ctx, tenantID); err != nil {
 		return nil, err
 	}
@@ -181,8 +209,10 @@ func (s *Service) ExportGradebook(ctx context.Context, tenantID, actorID uuid.UU
 				{Label: "Mata Pelajaran", Value: subjectName},
 				{Label: "Semester", Value: term.Name},
 			},
-			Columns:  columns,
-			Sections: sections,
+			Columns:         columns,
+			Sections:        sections,
+			PageLabelFormat: reportdoc.PageLabel(locale),
+			EmptyRowsLabel:  reportdoc.EmptyRowsLabelFor(locale),
 		}
 		if opts.ShowLetterhead {
 			lh, sig, err := s.reportLetterhead(ctx, tenantID)
@@ -190,7 +220,7 @@ func (s *Service) ExportGradebook(ctx context.Context, tenantID, actorID uuid.UU
 				return err
 			}
 			doc.Letterhead = lh
-			doc.Signature = sig
+			doc.Signature = s.gradebookSignature(ctx, tenantID, classes, sig)
 		}
 
 		applied, err := reportdoc.Apply(doc, opts)

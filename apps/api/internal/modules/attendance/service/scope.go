@@ -56,6 +56,30 @@ func (s *Service) reportScopeLine(ctx context.Context, tenantID uuid.UUID, class
 	return reportdoc.ScopeLine{}, nil
 }
 
+// classSignature builds a report's Signature block: the tenant's
+// configured default (reportLetterhead's own result), with a class-scoped
+// export's currently assigned homeroom teacher prepended as "Wali Kelas"
+// -- reportdoc renders multiple Signers side by side, left to right, so
+// the homeroom teacher lands on the left and the tenant's own default
+// signer(s) on the right. A grade-level export (classID nil) or a class
+// with no homeroom teacher assigned keeps base unchanged.
+func (s *Service) classSignature(ctx context.Context, tenantID uuid.UUID, classID *uuid.UUID, base *reportdoc.Signature) *reportdoc.Signature {
+	if classID == nil || base == nil {
+		return base
+	}
+	teacherID, ok, err := s.repo.GetClassHomeroomTeacher(ctx, tenantID, *classID)
+	if err != nil || !ok {
+		return base
+	}
+	name, err := s.repo.GetUserName(ctx, tenantID, teacherID)
+	if err != nil || name == "" {
+		return base
+	}
+	signature := *base
+	signature.Signers = append([]reportdoc.Signer{{RoleLabel: "Wali Kelas", Name: name}}, base.Signers...)
+	return &signature
+}
+
 // renderReport is every attendance report export's last step: narrow doc
 // per opts (Apply), then render it as opts.Format picks (an empty/zero
 // Format defaults to XLSX, reportdoc.Options' own documented default).

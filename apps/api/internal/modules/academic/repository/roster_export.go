@@ -10,6 +10,12 @@ import (
 	pdatabase "github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
 )
 
+// GetUserName resolves userID's display name, for the class roster
+// export's "Wali Kelas" signer.
+func (r *Repository) GetUserName(ctx context.Context, tenantID, userID uuid.UUID) (string, error) {
+	return r.queries(ctx).AcademicGetUserNameForExport(ctx, db.AcademicGetUserNameForExportParams{TenantID: tenantID, ID: userID})
+}
+
 // ListClassRosterForExport resolves classID's actively enrolled students
 // for the class roster export, in AcademicListClassRosterForExport's own
 // order (by name).

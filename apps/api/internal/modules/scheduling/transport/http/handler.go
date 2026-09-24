@@ -18,6 +18,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/authz"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/i18n"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/tenant"
 )
@@ -37,6 +38,19 @@ func tenantIDFromContext(ctx context.Context) uuid.UUID {
 		return t.ID
 	}
 	return uuid.UUID{}
+}
+
+// tenantLocale resolves the current request's tenant to a locale
+// reportdoc's FormatDate/PageLabel/EmptyRowsLabelFor understand ("id" or
+// "en"), mirroring reports/transport/http's identically named helper: a
+// report export renders in the tenant's own configured locale
+// (tenants.locale), not the requester's Accept-Language header.
+func tenantLocale(ctx context.Context) string {
+	t, ok := tenant.FromContext(ctx)
+	if !ok {
+		return i18n.DefaultLocale
+	}
+	return i18n.FromTenantLocale(t.Locale)
 }
 
 // actorFor resolves the caller's effective permissions into a

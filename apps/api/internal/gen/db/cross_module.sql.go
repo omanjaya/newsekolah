@@ -758,6 +758,26 @@ func (q *Queries) GradingCreatePolicy(ctx context.Context, arg GradingCreatePoli
 	return err
 }
 
+const gradingGetClassHomeroomTeacher = `-- name: GradingGetClassHomeroomTeacher :one
+select homeroom_teacher_id from classes where tenant_id = $1 and id = $2
+`
+
+type GradingGetClassHomeroomTeacherParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	ID       uuid.UUID `json:"id"`
+}
+
+// cross-module read: classes is owned by the academic module. The
+// gradebook export's per-class signature block prepends the class's
+// homeroom teacher ("Wali Kelas") ahead of the tenant's own default
+// signer, same as attendance/scheduling's exports.
+func (q *Queries) GradingGetClassHomeroomTeacher(ctx context.Context, arg GradingGetClassHomeroomTeacherParams) (pgtype.UUID, error) {
+	row := q.db.QueryRow(ctx, gradingGetClassHomeroomTeacher, arg.TenantID, arg.ID)
+	var homeroom_teacher_id pgtype.UUID
+	err := row.Scan(&homeroom_teacher_id)
+	return homeroom_teacher_id, err
+}
+
 const gradingGetClassName = `-- name: GradingGetClassName :one
 select name from classes where tenant_id = $1 and id = $2
 `
@@ -860,6 +880,25 @@ func (q *Queries) GradingGetTerm(ctx context.Context, arg GradingGetTermParams) 
 		&i.Sequence,
 	)
 	return i, err
+}
+
+const gradingGetUserName = `-- name: GradingGetUserName :one
+select name from users where tenant_id = $1 and id = $2 and deleted_at is null
+`
+
+type GradingGetUserNameParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	ID       uuid.UUID `json:"id"`
+}
+
+// cross-module read: users is owned by the identity module. Resolves the
+// homeroom teacher's display name for the gradebook export's signature
+// block.
+func (q *Queries) GradingGetUserName(ctx context.Context, arg GradingGetUserNameParams) (string, error) {
+	row := q.db.QueryRow(ctx, gradingGetUserName, arg.TenantID, arg.ID)
+	var name string
+	err := row.Scan(&name)
+	return name, err
 }
 
 const gradingListClassesByGradeLevel = `-- name: GradingListClassesByGradeLevel :many

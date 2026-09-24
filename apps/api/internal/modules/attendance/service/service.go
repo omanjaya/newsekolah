@@ -153,6 +153,11 @@ type Repository interface {
 	//
 	// -- cross-module read; replace with academic reader interface after merge --
 	GetClassName(ctx context.Context, tenantID, classID uuid.UUID) (string, error)
+	// GetClassHomeroomTeacher resolves one class's currently assigned
+	// homeroom teacher, if any, for a report export's "Wali Kelas" signer.
+	//
+	// -- cross-module read; replace with academic reader interface after merge --
+	GetClassHomeroomTeacher(ctx context.Context, tenantID, classID uuid.UUID) (teacherUserID uuid.UUID, ok bool, err error)
 	// GetGradeLevelName resolves one grade level's display name, for the
 	// grade-level scope of a report export's scope line.
 	//

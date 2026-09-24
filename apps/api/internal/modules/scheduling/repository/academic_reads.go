@@ -25,6 +25,19 @@ func (r *Repository) GetClassRef(ctx context.Context, tenantID, classID uuid.UUI
 	return service.ClassRef{ID: row.ID, Name: row.Name}, nil
 }
 
+// GetClassHomeroomTeacher resolves classID's currently assigned homeroom
+// teacher user id, if any, for the journal export's "Wali Kelas" signer.
+func (r *Repository) GetClassHomeroomTeacher(ctx context.Context, tenantID, classID uuid.UUID) (uuid.UUID, bool, error) {
+	row, err := r.queries(ctx).GetClassRefForSchedule(ctx, db.GetClassRefForScheduleParams{TenantID: tenantID, ID: classID})
+	if err != nil {
+		return uuid.UUID{}, false, err
+	}
+	if !row.HomeroomTeacherID.Valid {
+		return uuid.UUID{}, false, nil
+	}
+	return row.HomeroomTeacherID.Bytes, true, nil
+}
+
 func (r *Repository) GetSubjectRef(ctx context.Context, tenantID, subjectID uuid.UUID) (service.SubjectRef, error) {
 	row, err := r.queries(ctx).GetSubjectRefForSchedule(ctx, db.GetSubjectRefForScheduleParams{TenantID: tenantID, ID: subjectID})
 	if err != nil {

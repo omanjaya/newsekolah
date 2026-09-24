@@ -149,7 +149,7 @@ func (h *SchedulingHandler) ExportJournals(ctx context.Context, request api.Expo
 	}
 
 	opts := reportdocOptions(params.Format == api.ExportJournalsParamsFormatPdf, params.Title, params.Letterhead, params.Columns)
-	file, err := h.service.ExportJournalsReport(ctx, tenantID, params.AcademicYearId, f, opts)
+	file, err := h.service.ExportJournalsReport(ctx, tenantID, params.AcademicYearId, f, tenantLocale(ctx), opts)
 	if err != nil {
 		return nil, mapJournalError(err)
 	}

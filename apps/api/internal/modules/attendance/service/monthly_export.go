@@ -176,9 +176,13 @@ func monthlyRecapSection(recap ClassMonthlyRecap, policy domain.StatusPolicy) re
 
 // ExportMonthlyRecap renders GetMonthlyRecap as a reportdoc file (XLSX or
 // PDF per opts.Format): one section per class, one row per student.
-// Exactly one of classID/gradeLevelID must be set. Called with a zero
-// reportdoc.Options, this keeps every existing caller's request working.
-func (s *Service) ExportMonthlyRecap(ctx context.Context, tenantID uuid.UUID, classID, gradeLevelID *uuid.UUID, month string, opts reportdoc.Options) ([]byte, error) {
+// Exactly one of classID/gradeLevelID must be set. locale drives every
+// reportdoc-provided piece of text (dates, the PDF page-number footer,
+// the "no rows" label); report-specific text (title, scope labels,
+// column labels) stays Indonesian, this module's own default. Called
+// with a zero reportdoc.Options, this keeps every existing caller's
+// request working.
+func (s *Service) ExportMonthlyRecap(ctx context.Context, tenantID uuid.UUID, classID, gradeLevelID *uuid.UUID, month, locale string, opts reportdoc.Options) ([]byte, error) {
 	var out []byte
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		// GetMonthlyRecap opens its own s.withTx, which joins this
@@ -207,10 +211,12 @@ func (s *Service) ExportMonthlyRecap(ctx context.Context, tenantID uuid.UUID, cl
 		}
 
 		doc := reportdoc.Document{
-			Title:    "Rekap Presensi Bulanan",
-			Scope:    []reportdoc.ScopeLine{scopeLine, {Label: "Bulan", Value: domain.IndonesianMonthYear(month)}},
-			Columns:  monthlyRecapColumns(policy),
-			Sections: sections,
+			Title:           "Rekap Presensi Bulanan",
+			Scope:           []reportdoc.ScopeLine{scopeLine, {Label: "Bulan", Value: domain.MonthYear(locale, month)}},
+			Columns:         monthlyRecapColumns(policy),
+			Sections:        sections,
+			PageLabelFormat: reportdoc.PageLabel(locale),
+			EmptyRowsLabel:  reportdoc.EmptyRowsLabelFor(locale),
 		}
 		if opts.ShowLetterhead {
 			lh, sig, err := s.reportLetterhead(ctx, tenantID)
@@ -220,8 +226,8 @@ func (s *Service) ExportMonthlyRecap(ctx context.Context, tenantID uuid.UUID, cl
 			doc.Letterhead = lh
 			if sig != nil {
 				signature := *sig
-				signature.Date = domain.IndonesianMonthYear(month)
-				doc.Signature = &signature
+				signature.Date = domain.MonthYear(locale, month)
+				doc.Signature = s.classSignature(ctx, tenantID, classID, &signature)
 			}
 		}
 		out, err = renderReport(doc, opts)

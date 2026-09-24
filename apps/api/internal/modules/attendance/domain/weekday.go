@@ -30,29 +30,34 @@ func IndonesianWeekdayName(t time.Time) string {
 	return indonesianWeekdayNames[t.Weekday()]
 }
 
-// indonesianMonthNames is indexed by time.Month - 1 (January=0..December=11).
-var indonesianMonthNames = [...]string{
-	"Januari", "Februari", "Maret", "April", "Mei", "Juni",
-	"Juli", "Agustus", "September", "Oktober", "November", "Desember",
+// monthNames is indexed by [locale][time.Month - 1]. reportdoc.FormatDate
+// covers a full day/month/year date; a month-year-only scope line ("Bulan:
+// September 2026", no day) is this package's own report-specific text,
+// same reasoning as pseudoStatusLabels in daily_status.go.
+var monthNames = map[string][12]string{
+	"id": {
+		"Januari", "Februari", "Maret", "April", "Mei", "Juni",
+		"Juli", "Agustus", "September", "Oktober", "November", "Desember",
+	},
+	"en": {
+		"January", "February", "March", "April", "May", "June",
+		"July", "August", "September", "October", "November", "December",
+	},
 }
 
-// IndonesianDate is t formatted "2 Januari 2006" (day, Indonesian month
-// name, year) -- the tenant-default-locale long date a report export's
-// scope line shows (CLAUDE.md: default Bahasa Indonesia), rather than an
-// ISO date meant for a machine.
-func IndonesianDate(t time.Time) string {
-	return fmt.Sprintf("%d %s %d", t.Day(), indonesianMonthNames[t.Month()-1], t.Year())
-}
-
-// IndonesianMonthYear formats a "YYYY-MM" month string (the query param
-// every monthly report/export takes) as "Januari 2026", or returns raw
-// unchanged if it is not that shape -- a report export's own scope line
-// should never fail to render over a malformed month it did not itself
-// validate.
-func IndonesianMonthYear(raw string) string {
+// MonthYear formats a "YYYY-MM" month string (the query param every
+// monthly report/export takes) as "September 2026" in locale (falling
+// back to "id" for an unrecognized locale), or returns raw unchanged if
+// it is not that shape -- a report export's own scope line should never
+// fail to render over a malformed month it did not itself validate.
+func MonthYear(locale, raw string) string {
 	t, err := time.Parse("2006-01", raw)
 	if err != nil {
 		return raw
 	}
-	return fmt.Sprintf("%s %d", indonesianMonthNames[t.Month()-1], t.Year())
+	names, ok := monthNames[locale]
+	if !ok {
+		names = monthNames["id"]
+	}
+	return fmt.Sprintf("%s %d", names[t.Month()-1], t.Year())
 }

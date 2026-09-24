@@ -12,8 +12,30 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const academicListClassRosterForExport = `-- name: AcademicListClassRosterForExport :many
+const academicGetUserNameForExport = `-- name: AcademicGetUserNameForExport :one
 
+select name from users where tenant_id = $1 and id = $2 and deleted_at is null
+`
+
+type AcademicGetUserNameForExportParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	ID       uuid.UUID `json:"id"`
+}
+
+// Read-only lookups against tables owned by the identity module (users,
+// user_profiles, student_profiles), same convention as students_lookup.sql:
+// additive, read-only, scoped to exactly what the class roster export
+// needs (NIS, NISN, name, gender, birth place/date, guardian).
+// One user's display name, for the class roster export's "Wali Kelas"
+// signer (classes.homeroom_teacher_id).
+func (q *Queries) AcademicGetUserNameForExport(ctx context.Context, arg AcademicGetUserNameForExportParams) (string, error) {
+	row := q.db.QueryRow(ctx, academicGetUserNameForExport, arg.TenantID, arg.ID)
+	var name string
+	err := row.Scan(&name)
+	return name, err
+}
+
+const academicListClassRosterForExport = `-- name: AcademicListClassRosterForExport :many
 select
   u.id as student_user_id,
   u.name,
@@ -47,10 +69,6 @@ type AcademicListClassRosterForExportRow struct {
 	GuardianName  string      `json:"guardian_name"`
 }
 
-// Read-only lookups against tables owned by the identity module (users,
-// user_profiles, student_profiles), same convention as students_lookup.sql:
-// additive, read-only, scoped to exactly what the class roster export
-// needs (NIS, NISN, name, gender, birth place/date, guardian).
 // Every actively enrolled student of a class, with the full set of fields
 // a printed "daftar siswa" needs, ordered by name.
 func (q *Queries) AcademicListClassRosterForExport(ctx context.Context, arg AcademicListClassRosterForExportParams) ([]AcademicListClassRosterForExportRow, error) {

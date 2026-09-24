@@ -1,8 +1,7 @@
 package http
 
 import (
-	"strings"
-
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 )
 
@@ -11,11 +10,13 @@ import (
 // columns -- openapi/modules/_shared.yaml's ReportTitleParam et al. --
 // plus format, which this endpoint declares locally since it also
 // accepts "docx", not one of reportdoc.Format's two values) into
-// reportdoc.Options. Every parameter is optional; leaving all of them out
-// (an unmigrated caller, including the mobile app) produces the zero
-// Options that keeps a report's old default rendering: xlsx, every
-// column, letterhead on. Mirrors attendance/transport/http's identically
-// named helper (duplicated, not shared, per docs/03-layered-
+// reportdoc.Options, using httpx.ParseReportColumns for the "columns"
+// param (shared across every reportdoc-backed export, per that
+// function's own doc comment). Every parameter is optional; leaving all
+// of them out (an unmigrated caller, including the mobile app) produces
+// the zero Options that keeps a report's old default rendering: xlsx,
+// every column, letterhead on. Mirrors attendance/academic/grading's
+// identically named helpers (duplicated, not shared, per docs/03-layered-
 // architecture.md section 1: transport packages own their own request
 // parsing).
 func reportdocOptions(pdf bool, title *string, letterhead *bool, columns *string) reportdoc.Options {
@@ -29,24 +30,10 @@ func reportdocOptions(pdf bool, title *string, letterhead *bool, columns *string
 	if letterhead != nil {
 		opts.ShowLetterhead = *letterhead
 	}
-	if columns != nil && *columns != "" {
-		opts.Columns = parseColumnChoices(*columns)
+	if columns != nil {
+		for _, choice := range httpx.ParseReportColumns(*columns) {
+			opts.Columns = append(opts.Columns, reportdoc.ColumnChoice{Key: choice.Key, Label: choice.Label})
+		}
 	}
 	return opts
-}
-
-// parseColumnChoices splits "columns" into its comma-separated entries,
-// each either a bare column key or "key:label" to rename that column.
-func parseColumnChoices(raw string) []reportdoc.ColumnChoice {
-	parts := strings.Split(raw, ",")
-	choices := make([]reportdoc.ColumnChoice, 0, len(parts))
-	for _, part := range parts {
-		part = strings.TrimSpace(part)
-		if part == "" {
-			continue
-		}
-		key, label, _ := strings.Cut(part, ":")
-		choices = append(choices, reportdoc.ColumnChoice{Key: strings.TrimSpace(key), Label: strings.TrimSpace(label)})
-	}
-	return choices
 }

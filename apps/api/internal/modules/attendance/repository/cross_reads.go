@@ -72,6 +72,19 @@ func (r *Repository) GetClassName(ctx context.Context, tenantID, classID uuid.UU
 	return r.queries(ctx).GetClassNameForAttendance(ctx, db.GetClassNameForAttendanceParams{TenantID: tenantID, ID: classID})
 }
 
+// GetClassHomeroomTeacher resolves classID's homeroom teacher user id, if
+// any is currently assigned, for a report export's "Wali Kelas" signer.
+func (r *Repository) GetClassHomeroomTeacher(ctx context.Context, tenantID, classID uuid.UUID) (uuid.UUID, bool, error) {
+	id, err := r.queries(ctx).GetClassHomeroomTeacherForAttendance(ctx, db.GetClassHomeroomTeacherForAttendanceParams{TenantID: tenantID, ID: classID})
+	if err != nil {
+		return uuid.UUID{}, false, err
+	}
+	if !id.Valid {
+		return uuid.UUID{}, false, nil
+	}
+	return id.Bytes, true, nil
+}
+
 // GetGradeLevelName resolves gradeLevelID's display name, for the
 // grade-level ("angkatan") scope of a report export's scope line.
 func (r *Repository) GetGradeLevelName(ctx context.Context, tenantID, gradeLevelID uuid.UUID) (string, error) {

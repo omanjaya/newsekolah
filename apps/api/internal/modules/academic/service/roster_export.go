@@ -32,6 +32,9 @@ type RosterStudent struct {
 // same convention as studentLookupRepository.
 type rosterExportRepository interface {
 	ListClassRosterForExport(ctx context.Context, tenantID, classID uuid.UUID) ([]RosterStudent, error)
+	// GetUserName resolves a display name for the class roster export's
+	// "Wali Kelas" signer (classes.homeroom_teacher_id).
+	GetUserName(ctx context.Context, tenantID, userID uuid.UUID) (string, error)
 }
 
 // RosterExportQuery is ExportClassRoster's scope: exactly one of
@@ -129,13 +132,38 @@ func rosterReportSection(name string, students []RosterStudent) reportdoc.Sectio
 	return reportdoc.Section{Name: name, Rows: rows}
 }
 
+// classSignature builds the roster export's Signature block: the
+// tenant's configured default (reportLetterhead's own result), with the
+// class's currently assigned homeroom teacher prepended as "Wali Kelas"
+// -- reportdoc renders multiple Signers side by side, left to right, so
+// the homeroom teacher lands on the left and the tenant's own default
+// signer(s) on the right. A grade-level export (many classes, one shared
+// Signature) or a class with no homeroom teacher assigned keeps base
+// unchanged.
+func (s *Service) classSignature(ctx context.Context, tenantID uuid.UUID, classes []domain.Class, base *reportdoc.Signature) *reportdoc.Signature {
+	if len(classes) != 1 || base == nil || classes[0].HomeroomTeacherID == nil {
+		return base
+	}
+	name, err := s.repo.GetUserName(ctx, tenantID, *classes[0].HomeroomTeacherID)
+	if err != nil || name == "" {
+		return base
+	}
+	signature := *base
+	signature.Signers = append([]reportdoc.Signer{{RoleLabel: "Wali Kelas", Name: name}}, base.Signers...)
+	return &signature
+}
+
 // ExportClassRoster renders the actively enrolled students of one class
 // or every class of a grade level ("angkatan") as a reportdoc file (XLSX
 // or PDF per opts.Format) -- one section per class, a classic "daftar
-// siswa per kelas/per angkatan" printout. Called with a zero
-// reportdoc.Options, this keeps every existing caller's request working:
-// xlsx, every column, the report's own default title.
-func (s *Service) ExportClassRoster(ctx context.Context, tenantID uuid.UUID, q RosterExportQuery, opts reportdoc.Options) ([]byte, error) {
+// siswa per kelas/per angkatan" printout. locale (reportdoc.LocaleID/
+// LocaleEN) drives every reportdoc-provided piece of text (the PDF
+// page-number footer, the "no rows" label); report-specific text
+// (title, scope labels, column labels) stays Indonesian, this module's
+// own default. Called with a zero reportdoc.Options, this keeps every
+// existing caller's request working: xlsx, every column, the report's
+// own default title.
+func (s *Service) ExportClassRoster(ctx context.Context, tenantID uuid.UUID, q RosterExportQuery, locale string, opts reportdoc.Options) ([]byte, error) {
 	var out []byte
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		classes, err := s.resolveRosterScope(ctx, tenantID, q.ClassID, q.GradeLevelID)
@@ -157,10 +185,12 @@ func (s *Service) ExportClassRoster(ctx context.Context, tenantID uuid.UUID, q R
 		}
 
 		doc := reportdoc.Document{
-			Title:    "Daftar Siswa",
-			Scope:    []reportdoc.ScopeLine{scopeLine},
-			Columns:  rosterReportColumns(),
-			Sections: sections,
+			Title:           "Daftar Siswa",
+			Scope:           []reportdoc.ScopeLine{scopeLine},
+			Columns:         rosterReportColumns(),
+			Sections:        sections,
+			PageLabelFormat: reportdoc.PageLabel(locale),
+			EmptyRowsLabel:  reportdoc.EmptyRowsLabelFor(locale),
 		}
 		if opts.ShowLetterhead {
 			lh, sig, err := s.reportLetterhead(ctx, tenantID)
@@ -168,7 +198,7 @@ func (s *Service) ExportClassRoster(ctx context.Context, tenantID uuid.UUID, q R
 				return err
 			}
 			doc.Letterhead = lh
-			doc.Signature = sig
+			doc.Signature = s.classSignature(ctx, tenantID, classes, sig)
 		}
 
 		applied, err := reportdoc.Apply(doc, opts)

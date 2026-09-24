@@ -21,7 +21,7 @@ func (h *AcademicHandler) ExportClassRoster(ctx context.Context, request api.Exp
 	opts := reportdocOptions(request.Params.Format, request.Params.Title, request.Params.Letterhead, request.Params.Columns)
 	file, err := h.service.ExportClassRoster(ctx, tenantID, service.RosterExportQuery{
 		ClassID: request.Params.ClassId, GradeLevelID: request.Params.GradeLevelId,
-	}, opts)
+	}, tenantLocale(ctx), opts)
 	if err != nil {
 		return nil, mapDomainError(err)
 	}

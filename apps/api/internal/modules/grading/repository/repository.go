@@ -492,6 +492,26 @@ func (r *Repository) ListClassesByGradeLevel(ctx context.Context, tenantID, year
 	return out, nil
 }
 
+// GetClassHomeroomTeacher resolves classID's homeroom teacher user id, if
+// any is currently assigned, for the gradebook export's "Wali Kelas"
+// signer.
+func (r *Repository) GetClassHomeroomTeacher(ctx context.Context, tenantID, classID uuid.UUID) (uuid.UUID, bool, error) {
+	id, err := r.queries(ctx).GradingGetClassHomeroomTeacher(ctx, db.GradingGetClassHomeroomTeacherParams{TenantID: tenantID, ID: classID})
+	if err != nil {
+		return uuid.UUID{}, false, err
+	}
+	if !id.Valid {
+		return uuid.UUID{}, false, nil
+	}
+	return id.Bytes, true, nil
+}
+
+// GetUserName resolves userID's display name, for the gradebook export's
+// homeroom-teacher signer.
+func (r *Repository) GetUserName(ctx context.Context, tenantID, userID uuid.UUID) (string, error) {
+	return r.queries(ctx).GradingGetUserName(ctx, db.GradingGetUserNameParams{TenantID: tenantID, ID: userID})
+}
+
 func (r *Repository) StudentClassID(ctx context.Context, tenantID, yearID, studentID uuid.UUID) (uuid.NullUUID, error) {
 	id, err := r.queries(ctx).GradingStudentClassID(ctx, db.GradingStudentClassIDParams{TenantID: tenantID, AcademicYearID: yearID, StudentUserID: studentID})
 	if errors.Is(err, pgx.ErrNoRows) {

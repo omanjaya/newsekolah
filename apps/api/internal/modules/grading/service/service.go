@@ -94,6 +94,8 @@ type Repository interface {
 	GetGradeLevelName(ctx context.Context, tenantID, gradeLevelID uuid.UUID) (string, error)
 	GetSubjectName(ctx context.Context, tenantID, subjectID uuid.UUID) (string, error)
 	ListClassesByGradeLevel(ctx context.Context, tenantID, yearID, gradeLevelID uuid.UUID) ([]ClassRef, error)
+	GetClassHomeroomTeacher(ctx context.Context, tenantID, classID uuid.UUID) (uuid.UUID, bool, error)
+	GetUserName(ctx context.Context, tenantID, userID uuid.UUID) (string, error)
 }
 
 // ClassRef is a class's id and display name, the grade-level scope

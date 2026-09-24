@@ -91,6 +91,13 @@ type Querier interface {
 	AcademicGetTeachingAssignmentByID(ctx context.Context, arg AcademicGetTeachingAssignmentByIDParams) (TeachingAssignment, error)
 	AcademicGetTermByID(ctx context.Context, arg AcademicGetTermByIDParams) (Term, error)
 	AcademicGetTrackByID(ctx context.Context, arg AcademicGetTrackByIDParams) (Track, error)
+	// Read-only lookups against tables owned by the identity module (users,
+	// user_profiles, student_profiles), same convention as students_lookup.sql:
+	// additive, read-only, scoped to exactly what the class roster export
+	// needs (NIS, NISN, name, gender, birth place/date, guardian).
+	// One user's display name, for the class roster export's "Wali Kelas"
+	// signer (classes.homeroom_teacher_id).
+	AcademicGetUserNameForExport(ctx context.Context, arg AcademicGetUserNameForExportParams) (string, error)
 	AcademicGetWeekdayAssignment(ctx context.Context, arg AcademicGetWeekdayAssignmentParams) (PeriodDayAssignment, error)
 	AcademicGetYearByID(ctx context.Context, arg AcademicGetYearByIDParams) (AcademicYear, error)
 	AcademicIsActiveStudent(ctx context.Context, arg AcademicIsActiveStudentParams) (bool, error)
@@ -105,10 +112,6 @@ type Querier interface {
 	// whose [date, end_date] range covers the given date, for
 	// domain.IsSchoolDay to evaluate against a grade level.
 	AcademicListCalendarEventsForDate(ctx context.Context, arg AcademicListCalendarEventsForDateParams) ([]AcademicCalendarEvent, error)
-	// Read-only lookups against tables owned by the identity module (users,
-	// user_profiles, student_profiles), same convention as students_lookup.sql:
-	// additive, read-only, scoped to exactly what the class roster export
-	// needs (NIS, NISN, name, gender, birth place/date, guardian).
 	// Every actively enrolled student of a class, with the full set of fields
 	// a printed "daftar siswa" needs, ordered by name.
 	AcademicListClassRosterForExport(ctx context.Context, arg AcademicListClassRosterForExportParams) ([]AcademicListClassRosterForExportRow, error)
@@ -534,6 +537,10 @@ type Querier interface {
 	GetAttendanceSessionByID(ctx context.Context, arg GetAttendanceSessionByIDParams) (AttendanceSession, error)
 	GetAttendanceSessionBySchedule(ctx context.Context, arg GetAttendanceSessionByScheduleParams) (AttendanceSession, error)
 	GetBill(ctx context.Context, arg GetBillParams) (Bill, error)
+	// classes.homeroom_teacher_id, kept in sync with the "homeroom" duty
+	// assignment by the academic module (homeroom_sync.sql) -- the class
+	// scope of a report export's signature block ("Wali Kelas" signer).
+	GetClassHomeroomTeacherForAttendance(ctx context.Context, arg GetClassHomeroomTeacherForAttendanceParams) (pgtype.UUID, error)
 	GetClassName(ctx context.Context, arg GetClassNameParams) (string, error)
 	// One class's display name, for the class scope of a report export (the
 	// grade-level scope already gets every class's name from
@@ -739,6 +746,11 @@ type Querier interface {
 	GradingClassSubjects(ctx context.Context, arg GradingClassSubjectsParams) ([]GradingClassSubjectsRow, error)
 	GradingCreatePolicy(ctx context.Context, arg GradingCreatePolicyParams) error
 	// cross-module read: classes is owned by the academic module. The
+	// gradebook export's per-class signature block prepends the class's
+	// homeroom teacher ("Wali Kelas") ahead of the tenant's own default
+	// signer, same as attendance/scheduling's exports.
+	GradingGetClassHomeroomTeacher(ctx context.Context, arg GradingGetClassHomeroomTeacherParams) (pgtype.UUID, error)
+	// cross-module read: classes is owned by the academic module. The
 	// gradebook export's class scope needs a name for its section/sheet.
 	GradingGetClassName(ctx context.Context, arg GradingGetClassNameParams) (string, error)
 	// cross-module read: grade_levels is owned by the academic module. The
@@ -750,6 +762,10 @@ type Querier interface {
 	// gradebook export's scope line needs the subject's own name.
 	GradingGetSubjectName(ctx context.Context, arg GradingGetSubjectNameParams) (string, error)
 	GradingGetTerm(ctx context.Context, arg GradingGetTermParams) (GradingGetTermRow, error)
+	// cross-module read: users is owned by the identity module. Resolves the
+	// homeroom teacher's display name for the gradebook export's signature
+	// block.
+	GradingGetUserName(ctx context.Context, arg GradingGetUserNameParams) (string, error)
 	// cross-module read: classes is owned by the academic module. Every
 	// non-deleted class of the academic year under a grade level, ordered by
 	// name -- the gradebook export's grade-level scope: one section per class.

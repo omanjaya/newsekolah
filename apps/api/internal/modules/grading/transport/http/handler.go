@@ -15,7 +15,9 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/grading/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/authz"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/i18n"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/tenant"
 )
 
 // PermissionChecker tells the handler whether the caller may write grades
@@ -35,6 +37,19 @@ func New(svc *service.Service, perms PermissionChecker) *GradingHandler {
 
 func tenantID(ctx context.Context) uuid.UUID { id, _ := httpx.TenantIDFromContext(ctx); return id }
 func userID(ctx context.Context) uuid.UUID   { id, _ := httpx.UserIDFromContext(ctx); return id }
+
+// tenantLocale resolves the current request's tenant to a locale
+// reportdoc's FormatDate/PageLabel/EmptyRowsLabelFor understand ("id" or
+// "en"), mirroring attendance/academic/scheduling's identically named
+// helpers: the gradebook export renders in the tenant's own configured
+// locale (tenants.locale), not the requester's Accept-Language header.
+func tenantLocale(ctx context.Context) string {
+	t, ok := tenant.FromContext(ctx)
+	if !ok {
+		return i18n.DefaultLocale
+	}
+	return i18n.FromTenantLocale(t.Locale)
+}
 
 // canManageAny is true for callers holding manage_master_data, the
 // permission schools give curriculum staff who maintain other teachers'
@@ -186,7 +201,7 @@ func (h *GradingHandler) ExportGradebook(ctx context.Context, request api.Export
 	file, err := h.service.ExportGradebook(ctx, tenantID(ctx), userID(ctx), h.canManageAny(ctx), service.GradebookExportQuery{
 		ClassID: request.Params.ClassId, GradeLevelID: request.Params.GradeLevelId,
 		SubjectID: request.Params.SubjectId, TermID: nullUUID(request.Params.TermId),
-	}, opts)
+	}, tenantLocale(ctx), opts)
 	if err != nil {
 		return nil, mapError(err)
 	}

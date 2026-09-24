@@ -95,32 +95,32 @@ func TestReportExportGradeLevelScope(t *testing.T) {
 	defaultOpts := reportdoc.Options{Format: reportdoc.FormatXLSX, ShowLetterhead: true}
 
 	t.Run("exactly one of class_id/grade_level_id is required", func(t *testing.T) {
-		_, err := svc.ExportDailyReport(ctx, w.tenantID, &w.classID, &w.gradeLevelID, w.today, defaultOpts)
+		_, err := svc.ExportDailyReport(ctx, w.tenantID, &w.classID, &w.gradeLevelID, w.today, reportdoc.LocaleID, defaultOpts)
 		require.ErrorIs(t, err, domain.ErrInvalidScope)
-		_, err = svc.ExportDailyReport(ctx, w.tenantID, nil, nil, w.today, defaultOpts)
+		_, err = svc.ExportDailyReport(ctx, w.tenantID, nil, nil, w.today, reportdoc.LocaleID, defaultOpts)
 		require.ErrorIs(t, err, domain.ErrInvalidScope)
 
-		_, err = svc.ExportMonthlyRecap(ctx, w.tenantID, &w.classID, &w.gradeLevelID, month, defaultOpts)
+		_, err = svc.ExportMonthlyRecap(ctx, w.tenantID, &w.classID, &w.gradeLevelID, month, reportdoc.LocaleID, defaultOpts)
 		require.ErrorIs(t, err, domain.ErrInvalidScope)
-		_, err = svc.ExportMonthlyRecap(ctx, w.tenantID, nil, nil, month, defaultOpts)
+		_, err = svc.ExportMonthlyRecap(ctx, w.tenantID, nil, nil, month, reportdoc.LocaleID, defaultOpts)
 		require.ErrorIs(t, err, domain.ErrInvalidScope)
 	})
 
 	t.Run("class scope daily export renders one sheet named after the class", func(t *testing.T) {
-		xlsx, err := svc.ExportDailyReport(ctx, w.tenantID, &w.classID, nil, w.today, defaultOpts)
+		xlsx, err := svc.ExportDailyReport(ctx, w.tenantID, &w.classID, nil, w.today, reportdoc.LocaleID, defaultOpts)
 		require.NoError(t, err)
 		f, err := excelize.OpenReader(bytes.NewReader(xlsx))
 		require.NoError(t, err)
 		defer f.Close() //nolint:errcheck
 		require.Equal(t, []string{"X-A"}, f.GetSheetList())
 
-		pdf, err := svc.ExportDailyReport(ctx, w.tenantID, &w.classID, nil, w.today, reportdoc.Options{Format: reportdoc.FormatPDF})
+		pdf, err := svc.ExportDailyReport(ctx, w.tenantID, &w.classID, nil, w.today, reportdoc.LocaleID, reportdoc.Options{Format: reportdoc.FormatPDF})
 		require.NoError(t, err)
 		require.True(t, bytes.HasPrefix(pdf, []byte("%PDF")), "PDF format must render a PDF file")
 	})
 
 	t.Run("grade-level daily export covers every class, one sheet each named after its class", func(t *testing.T) {
-		xlsx, err := svc.ExportDailyReport(ctx, w.tenantID, nil, &w.gradeLevelID, w.today, defaultOpts)
+		xlsx, err := svc.ExportDailyReport(ctx, w.tenantID, nil, &w.gradeLevelID, w.today, reportdoc.LocaleID, defaultOpts)
 		require.NoError(t, err)
 		f, err := excelize.OpenReader(bytes.NewReader(xlsx))
 		require.NoError(t, err)
@@ -129,7 +129,7 @@ func TestReportExportGradeLevelScope(t *testing.T) {
 	})
 
 	t.Run("an unknown column choice is rejected", func(t *testing.T) {
-		_, err := svc.ExportDailyReport(ctx, w.tenantID, &w.classID, nil, w.today, reportdoc.Options{
+		_, err := svc.ExportDailyReport(ctx, w.tenantID, &w.classID, nil, w.today, reportdoc.LocaleID, reportdoc.Options{
 			Format: reportdoc.FormatXLSX, Columns: []reportdoc.ColumnChoice{{Key: "does_not_exist"}},
 		})
 		require.ErrorIs(t, err, reportdoc.ErrUnknownColumn)
@@ -164,27 +164,27 @@ func TestReportExportGradeLevelScope(t *testing.T) {
 		require.Equal(t, 1, classBRecap.Rows[0].Counts["A"])
 		require.InDelta(t, 0.0, classBRecap.Rows[0].PercentPresent, 0.01)
 
-		xlsx, err := svc.ExportMonthlyRecap(ctx, w.tenantID, nil, &w.gradeLevelID, month, defaultOpts)
+		xlsx, err := svc.ExportMonthlyRecap(ctx, w.tenantID, nil, &w.gradeLevelID, month, reportdoc.LocaleID, defaultOpts)
 		require.NoError(t, err)
 		f, err := excelize.OpenReader(bytes.NewReader(xlsx))
 		require.NoError(t, err)
 		defer f.Close() //nolint:errcheck
 		require.ElementsMatch(t, []string{"X-A", "X-B"}, f.GetSheetList())
 
-		pdf, err := svc.ExportMonthlyRecap(ctx, w.tenantID, nil, &w.gradeLevelID, month, reportdoc.Options{Format: reportdoc.FormatPDF})
+		pdf, err := svc.ExportMonthlyRecap(ctx, w.tenantID, nil, &w.gradeLevelID, month, reportdoc.LocaleID, reportdoc.Options{Format: reportdoc.FormatPDF})
 		require.NoError(t, err)
 		require.True(t, bytes.HasPrefix(pdf, []byte("%PDF")), "PDF format must render a PDF file")
 	})
 
 	t.Run("class scope monthly export renders a single sheet, and a caller-chosen column subset is honoured", func(t *testing.T) {
-		xlsx, err := svc.ExportMonthlyRecap(ctx, w.tenantID, &w.classID, nil, month, defaultOpts)
+		xlsx, err := svc.ExportMonthlyRecap(ctx, w.tenantID, &w.classID, nil, month, reportdoc.LocaleID, defaultOpts)
 		require.NoError(t, err)
 		f, err := excelize.OpenReader(bytes.NewReader(xlsx))
 		require.NoError(t, err)
 		defer f.Close() //nolint:errcheck
 		require.Len(t, f.GetSheetList(), 1)
 
-		narrowed, err := svc.ExportMonthlyRecap(ctx, w.tenantID, &w.classID, nil, month, reportdoc.Options{
+		narrowed, err := svc.ExportMonthlyRecap(ctx, w.tenantID, &w.classID, nil, month, reportdoc.LocaleID, reportdoc.Options{
 			Format: reportdoc.FormatXLSX,
 			Columns: []reportdoc.ColumnChoice{
 				{Key: "name", Label: "Nama"},
@@ -252,7 +252,7 @@ func TestReportExportIndonesianTextAndLetterhead(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	xlsx, err := svc.ExportDailyReport(ctx, w.tenantID, &w.classID, nil, w.today, reportdoc.Options{Format: reportdoc.FormatXLSX, ShowLetterhead: true})
+	xlsx, err := svc.ExportDailyReport(ctx, w.tenantID, &w.classID, nil, w.today, reportdoc.LocaleID, reportdoc.Options{Format: reportdoc.FormatXLSX, ShowLetterhead: true})
 	require.NoError(t, err)
 	f, err := excelize.OpenReader(bytes.NewReader(xlsx))
 	require.NoError(t, err)
@@ -273,8 +273,66 @@ func TestReportExportIndonesianTextAndLetterhead(t *testing.T) {
 	require.Contains(t, joined, "Campuran", "a day with a submitted session but no entry (StatusMixed) must render its Indonesian label")
 	require.NotContains(t, joined, "MIXED", "the raw pseudo-status code must not appear")
 	require.Contains(t, joined, "Kelas: X-A", "the class scope line must be present, in Indonesian")
-	require.Contains(t, joined, domain.IndonesianDate(w.today), "the date scope line must be the Indonesian long date, not ISO")
+	require.Contains(t, joined, reportdoc.FormatDate(reportdoc.LocaleID, w.today), "the date scope line must be the Indonesian long date, not ISO")
 	require.Contains(t, joined, "SMA Negeri Uji Coba", "the wired letterhead must render")
 	require.Contains(t, joined, "Ni Made Sari", "the wired signature's first signer must render")
 	require.Contains(t, joined, "I Wayan Arta", "the wired signature's second signer must render")
+}
+
+// TestReportExportClassSignatureAddsHomeroomTeacher covers the class
+// scope's two-signer signature block: a class with a currently assigned
+// homeroom teacher gets that teacher prepended as "Wali Kelas", ahead of
+// the tenant's own default signer(s) -- reportdoc renders Signers left to
+// right, so the homeroom teacher lands on the left. A grade-level export
+// (many classes, one shared Signature) keeps the tenant's plain default
+// unchanged, since there is no single class to attribute a homeroom
+// teacher to.
+func TestReportExportClassSignatureAddsHomeroomTeacher(t *testing.T) {
+	pg := dbtest.Start(t)
+	ctx := context.Background()
+	svc := buildService(pg.AppPool)
+	svc.SetLetterheadSource(fakeLetterheadSource{
+		signature: &reportdoc.Signature{
+			Place:   "Denpasar",
+			Signers: []reportdoc.Signer{{RoleLabel: "Kepala Sekolah", Name: "I Wayan Arta"}},
+		},
+	})
+	w := seedWorld(t, ctx, pg.AdminPool, "homeroom-signer")
+	class2 := seedSecondClass(t, ctx, pg.AdminPool, w, "homeroom-signer")
+
+	_, err := pg.AdminPool.Exec(ctx, `update classes set homeroom_teacher_id = $1 where tenant_id = $2 and id = $3`, w.teacherID, w.tenantID, w.classID)
+	require.NoError(t, err)
+
+	xlsx, err := svc.ExportDailyReport(ctx, w.tenantID, &w.classID, nil, w.today, reportdoc.LocaleID, reportdoc.Options{Format: reportdoc.FormatXLSX, ShowLetterhead: true})
+	require.NoError(t, err)
+	f, err := excelize.OpenReader(bytes.NewReader(xlsx))
+	require.NoError(t, err)
+	defer f.Close() //nolint:errcheck
+	rows, err := f.GetRows(f.GetSheetList()[0])
+	require.NoError(t, err)
+	var flat []string
+	for _, row := range rows {
+		flat = append(flat, row...)
+	}
+	joined := strings.Join(flat, " | ")
+	require.Contains(t, joined, "Wali Kelas", "the homeroom teacher's role label must render")
+	require.Contains(t, joined, "Teacher", "the homeroom teacher's own name (w.teacherID, seedWorld's \"Teacher\") must render")
+	require.Contains(t, joined, "Kepala Sekolah", "the tenant's own default signer must still render alongside it")
+	require.Contains(t, joined, "I Wayan Arta")
+
+	// class2 has no homeroom teacher assigned: the tenant default renders alone.
+	xlsx2, err := svc.ExportDailyReport(ctx, w.tenantID, &class2.classID, nil, w.today, reportdoc.LocaleID, reportdoc.Options{Format: reportdoc.FormatXLSX, ShowLetterhead: true})
+	require.NoError(t, err)
+	f2, err := excelize.OpenReader(bytes.NewReader(xlsx2))
+	require.NoError(t, err)
+	defer f2.Close() //nolint:errcheck
+	rows2, err := f2.GetRows(f2.GetSheetList()[0])
+	require.NoError(t, err)
+	var flat2 []string
+	for _, row := range rows2 {
+		flat2 = append(flat2, row...)
+	}
+	joined2 := strings.Join(flat2, " | ")
+	require.NotContains(t, joined2, "Wali Kelas", "a class with no homeroom teacher assigned gets no extra signer")
+	require.Contains(t, joined2, "Kepala Sekolah")
 }

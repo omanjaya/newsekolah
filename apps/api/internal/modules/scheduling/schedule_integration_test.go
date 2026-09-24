@@ -23,6 +23,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/dbtest"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 	tenantctx "github.com/omanjaya/newsekolah/apps/api/internal/platform/tenant"
 )
 
@@ -246,6 +247,58 @@ func TestScheduleBlockMutationsPreserveHistory(t *testing.T) {
 		_, err = handler.ExportJournals(actorCtx, badRequest)
 		require.Error(t, err)
 	})
+
+	t.Run("journal export scoped to one class gets a two-signer signature block: homeroom teacher left, tenant default right", func(t *testing.T) {
+		exec(`update classes set homeroom_teacher_id = $1 where tenant_id = $2 and id = $3`, substitute, tenant, class)
+		readerSvc := service.New(pool, repository.New(pool))
+		readerSvc.SetLetterheadSource(fakeJournalLetterheadSource{
+			signature: &reportdoc.Signature{
+				Place:   "Denpasar",
+				Signers: []reportdoc.Signer{{RoleLabel: "Kepala Sekolah", Name: "Kepala Sekolah Uji"}},
+			},
+		})
+
+		classScoped, err := readerSvc.ExportJournalsReport(ctx, tenant, year, service.JournalFilter{ClassID: uuid.NullUUID{UUID: class, Valid: true}}, reportdoc.LocaleID, reportdoc.Options{Format: reportdoc.FormatXLSX, ShowLetterhead: true})
+		require.NoError(t, err)
+		f, err := excelize.OpenReader(bytes.NewReader(classScoped))
+		require.NoError(t, err)
+		defer f.Close() //nolint:errcheck
+		rows, err := f.GetRows(f.GetSheetList()[0])
+		require.NoError(t, err)
+		var flat []string
+		for _, row := range rows {
+			flat = append(flat, row...)
+		}
+		joined := strings.Join(flat, " | ")
+		require.Contains(t, joined, "Wali Kelas")
+		require.Contains(t, joined, "Substitute", "the class's homeroom teacher (substitute) must be resolved and rendered")
+		require.Contains(t, joined, "Kepala Sekolah Uji")
+
+		unscoped, err := readerSvc.ExportJournalsReport(ctx, tenant, year, service.JournalFilter{TeacherUserID: uuid.NullUUID{UUID: teacher, Valid: true}}, reportdoc.LocaleID, reportdoc.Options{Format: reportdoc.FormatXLSX, ShowLetterhead: true})
+		require.NoError(t, err)
+		uf, err := excelize.OpenReader(bytes.NewReader(unscoped))
+		require.NoError(t, err)
+		defer uf.Close() //nolint:errcheck
+		urows, err := uf.GetRows(uf.GetSheetList()[0])
+		require.NoError(t, err)
+		var uflat []string
+		for _, row := range urows {
+			uflat = append(uflat, row...)
+		}
+		require.NotContains(t, strings.Join(uflat, " | "), "Wali Kelas", "an unscoped ('own journals') export has no single class to attribute a homeroom teacher to")
+	})
+}
+
+// fakeJournalLetterheadSource is a minimal reportdoc.LetterheadSource
+// stub, for verifying the journal export wires in whatever the school
+// module's ReportLetterhead would have returned, without depending on
+// that module's own tenant_settings fixture.
+type fakeJournalLetterheadSource struct {
+	signature *reportdoc.Signature
+}
+
+func (f fakeJournalLetterheadSource) Letterhead(context.Context, uuid.UUID) (*reportdoc.Letterhead, *reportdoc.Signature, error) {
+	return nil, f.signature, nil
 }
 
 type journalExportPermissions struct{ all bool }
