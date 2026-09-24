@@ -3,6 +3,7 @@
 import type { ReactElement } from "react";
 
 import type { ScheduleBlock } from "../api";
+import { blockCrossesBreak } from "../break-warning";
 
 import {
   BREAK_ROW,
@@ -110,6 +111,8 @@ export function ScheduleDayGrid({
                     subject={subjectMap.get(block.subject_id)?.name ?? t("unknownSubject")}
                     detail={teacherMap.get(block.teacher_user_id)?.name ?? t("unknownTeacher")}
                     canManage={canManage}
+                    crossesBreak={blockCrossesBreak(block, lessonPeriods)}
+                    breakWarningLabel={t("crossesBreakWarning")}
                     onCopy={onCopy}
                     onEdit={onEdit}
                     onDelete={onDelete}

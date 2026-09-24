@@ -8,7 +8,6 @@ import {
   Dialog,
   DialogContent,
   EmptyState,
-  IconButton,
   Input,
   Select,
   SearchInput,
@@ -16,7 +15,7 @@ import {
   domainIcons,
   useToast,
 } from "@newsekolah/ui";
-import { ArrowRightLeft, Plus, UserMinus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
@@ -32,6 +31,8 @@ import {
   useEnrollmentsQuery,
   useUnassignedStudentsQuery,
 } from "../api";
+
+import { EnrollmentRowActionsMenu } from "./enrollment-row-actions-menu";
 export function EnrollmentPanel({
   classId,
   canManage,
@@ -163,19 +164,16 @@ export function EnrollmentPanel({
                   )}
                 </div>
                 {canChangeEnrollment && (
-                  <div className="flex shrink-0 items-center gap-1 md:opacity-0 md:transition-opacity md:group-hover:opacity-100 md:focus-within:opacity-100">
-                    <IconButton
-                      icon={<ArrowRightLeft />}
-                      aria-label={t("moveStudent")}
-                      onClick={() => {
+                  <div className="shrink-0 md:opacity-0 md:transition-opacity md:group-hover:opacity-100 md:focus-within:opacity-100">
+                    <EnrollmentRowActionsMenu
+                      menuLabel={t("rowActionsMenu", { name })}
+                      moveLabel={t("moveStudent")}
+                      leaveLabel={t("leaveStudent")}
+                      onMove={() => {
                         setMoving(e);
                         setToClassId("");
                       }}
-                    />
-                    <IconButton
-                      icon={<UserMinus />}
-                      aria-label={t("leaveStudent")}
-                      onClick={() => {
+                      onLeave={() => {
                         setLeaving(e);
                         setLeftOn(todayInZone(timeZone));
                       }}

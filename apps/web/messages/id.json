@@ -573,6 +573,7 @@
           "statusValid": "Siap",
           "statusInvalid": "Perlu diperbaiki: {columns}",
           "apply": "Impor {count} jadwal",
+          "applyErrorTitle": "Tidak ada jadwal yang disimpan; impor bersifat sekali jalan untuk semua baris.",
           "applied": "{count} jadwal berhasil diimpor",
           "empty": "Belum ada data untuk dipratinjau."
         },
@@ -594,6 +595,7 @@
       "cancelCopy": "Batal salin",
       "pasted": "Jadwal ditempel.",
       "pasteNoRoom": "Tidak cukup jam pelajaran di slot ini.",
+      "crossesBreakWarning": "Jam ini melewati waktu istirahat; periksa kembali jam pelajarannya.",
       "copyingHint": "Menyalin {subject} kelas {class}. Klik slot kosong untuk menempel.",
       "byDay": "Per hari",
       "pickDay": "Pilih hari",
@@ -1176,6 +1178,7 @@
         "assignStudents": "Tempatkan siswa",
         "noStudents": "Belum ada siswa di kelas ini.",
         "searchStudent": "Cari nama siswa",
+        "rowActionsMenu": "Aksi lain untuk {name}",
         "noUnassigned": "Semua siswa sudah punya kelas.",
         "assigned": "{n} siswa ditempatkan",
         "assignCount": "Tempatkan ({n})",

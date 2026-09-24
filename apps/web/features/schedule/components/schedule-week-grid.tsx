@@ -4,6 +4,7 @@ import { cn } from "@newsekolah/ui";
 import type { ReactElement } from "react";
 
 import type { ScheduleBlock } from "../api";
+import { blockCrossesBreak } from "../break-warning";
 
 import {
   BREAK_ROW,
@@ -143,6 +144,8 @@ export function ScheduleWeekGrid({
                         : (classMap.get(block.class_id)?.name ?? t("unknownClass"))
                     }
                     canManage={canManage}
+                    crossesBreak={blockCrossesBreak(block, lessonPeriods)}
+                    breakWarningLabel={t("crossesBreakWarning")}
                     onCopy={onCopy}
                     onEdit={onEdit}
                     onDelete={onDelete}

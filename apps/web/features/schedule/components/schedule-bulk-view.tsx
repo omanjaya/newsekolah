@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, PageHeader, Textarea, cn, useToast } from "@newsekolah/ui";
+import { Alert, Button, PageHeader, Textarea, cn, useToast } from "@newsekolah/ui";
 import { FileUp } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ChangeEvent, ReactElement } from "react";
@@ -12,17 +12,23 @@ import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import {
   useClassesQuery,
+  useLookup,
   usePeriodsQuery,
   useSubjectsQuery,
   useTeachersQuery,
 } from "../../reference/api";
 import { useBulkImportSchedulesMutation } from "../api";
+import { conflictMessage } from "../conflict-message";
 import { parseBulkImportCsv, type BulkImportRow } from "../csv-import";
 
 import { ClearSchedulesSection } from "./clear-schedules-section";
 
 export function ScheduleBulkView(): ReactElement {
   const t = useTranslations("app.schedule.bulk");
+  // Conflict messages ("period X in class Y is already taken by...") are
+  // shared copy from the parent schedule namespace, the same sentence the
+  // grid and the single-block form use.
+  const tSchedule = useTranslations("app.schedule");
   const canManage = useCan("manage_schedules");
   const year = useActiveYear();
   const toast = useToast();
@@ -34,9 +40,18 @@ export function ScheduleBulkView(): ReactElement {
   const teachers = useTeachersQuery();
   const periods = usePeriodsQuery();
   const bulkImport = useBulkImportSchedulesMutation();
+  const classMap = useLookup(classes.data?.data);
+  const subjectMap = useLookup(subjects.data?.data);
+  const teacherMap = useLookup(teachers.data?.data);
 
   const [csvText, setCsvText] = useState("");
   const [fileName, setFileName] = useState<string | null>(null);
+  // Kept separate from the toast: a bulk import is atomic (see
+  // ClearSchedulesSection's note and useBulkImportSchedulesMutation), so a
+  // conflict here means every row in this batch was rolled back, not just
+  // one -- worth a sentence the operator can actually read and act on
+  // rather than a toast that is gone before the row it names is found.
+  const [importError, setImportError] = useState<string | null>(null);
 
   const rows = useMemo<BulkImportRow[]>(() => {
     if (csvText.trim() === "" || year.id === "") return [];
@@ -58,6 +73,7 @@ export function ScheduleBulkView(): ReactElement {
     const file = event.target.files?.[0];
     if (!file) return;
     setFileName(file.name);
+    setImportError(null);
     const reader = new FileReader();
     reader.onload = () => {
       setCsvText(typeof reader.result === "string" ? reader.result : "");
@@ -66,6 +82,7 @@ export function ScheduleBulkView(): ReactElement {
   }
 
   function handleApply() {
+    setImportError(null);
     bulkImport.mutate(resolvedRows, {
       onSuccess: (result) => {
         toast.success(t("importSection.applied", { count: result.data.length }));
@@ -74,8 +91,14 @@ export function ScheduleBulkView(): ReactElement {
         if (fileInputRef.current) fileInputRef.current.value = "";
       },
       onError: (error) => {
-        toast.error(
-          error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
+        const named = conflictMessage(
+          error,
+          { classMap, subjectMap, teacherMap, periods: periods.data?.data ?? [] },
+          tSchedule,
+        );
+        setImportError(
+          named ??
+            (error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN")),
         );
       },
     });
@@ -119,6 +142,7 @@ export function ScheduleBulkView(): ReactElement {
             value={csvText}
             onChange={(e) => {
               setCsvText(e.target.value);
+              setImportError(null);
             }}
             rows={8}
             disabled={!canManage}
@@ -168,6 +192,11 @@ export function ScheduleBulkView(): ReactElement {
                   </tbody>
                 </table>
               </div>
+              {importError && (
+                <Alert variant="warning" title={t("importSection.applyErrorTitle")}>
+                  <p>{importError}</p>
+                </Alert>
+              )}
               {canManage && (
                 <Button
                   size="sm"

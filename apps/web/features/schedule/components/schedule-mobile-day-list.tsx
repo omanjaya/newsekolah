@@ -1,10 +1,11 @@
 "use client";
 
 import { cn } from "@newsekolah/ui";
-import { Copy, Pencil, Plus, Trash2 } from "lucide-react";
+import { AlertTriangle, Copy, Pencil, Plus, Trash2 } from "lucide-react";
 import type { ReactElement } from "react";
 
 import type { ScheduleBlock } from "../api";
+import { blockCrossesBreak } from "../break-warning";
 
 interface Named {
   id: string;
@@ -89,8 +90,20 @@ export function ScheduleMobileDayList({
                   </div>
                   {block ? (
                     <>
-                      <span className="font-medium text-fg">
-                        {subjectMap.get(block.subject_id)?.name ?? t("unknownSubject")}
+                      <span className="flex items-center gap-1.5 font-medium text-fg">
+                        <span className="truncate">
+                          {subjectMap.get(block.subject_id)?.name ?? t("unknownSubject")}
+                        </span>
+                        {blockCrossesBreak(block, lessonPeriods) && (
+                          <span
+                            role="img"
+                            aria-label={t("crossesBreakWarning")}
+                            title={t("crossesBreakWarning")}
+                            className="inline-flex shrink-0 text-status-late"
+                          >
+                            <AlertTriangle className="size-3.5" aria-hidden="true" />
+                          </span>
+                        )}
                       </span>
                       <span className="text-[12px] text-fg-muted">
                         {teacherMap.get(block.teacher_user_id)?.name ?? t("unknownTeacher")}

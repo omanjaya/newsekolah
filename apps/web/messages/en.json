@@ -573,6 +573,7 @@
           "statusValid": "Ready",
           "statusInvalid": "Needs fixing: {columns}",
           "apply": "Import {count} schedules",
+          "applyErrorTitle": "Nothing was saved; the whole batch is applied together or not at all.",
           "applied": "{count} schedules imported",
           "empty": "Nothing to preview yet."
         },
@@ -594,6 +595,7 @@
       "cancelCopy": "Cancel copy",
       "pasted": "Lesson pasted.",
       "pasteNoRoom": "Not enough periods left in this slot.",
+      "crossesBreakWarning": "This lesson runs across a break period; double check its periods.",
       "copyingHint": "Copying {subject} for {class}. Click an empty slot to paste.",
       "byDay": "By day",
       "pickDay": "Pick a day",
@@ -1176,6 +1178,7 @@
         "assignStudents": "Place students",
         "noStudents": "No students in this class yet.",
         "searchStudent": "Search student",
+        "rowActionsMenu": "More actions for {name}",
         "noUnassigned": "Every student already has a class.",
         "assigned": "{n} students placed",
         "assignCount": "Place ({n})",

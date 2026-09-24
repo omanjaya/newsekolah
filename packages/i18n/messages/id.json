@@ -222,6 +222,8 @@
   },
   "errors": {
     "SCHEDULE_HAS_HISTORY": "Jadwal ini sudah memiliki riwayat presensi atau guru pengganti. Perubahan jadwal dan penghapusan diblokir agar riwayat tetap tersimpan.",
+    "SCHEDULE_CONFLICT_CLASS": "Jam ini sudah dipakai kelas tersebut untuk mata pelajaran lain. Pilih jam atau kelas yang berbeda.",
+    "SCHEDULE_CONFLICT_TEACHER": "Guru ini sudah mengajar kelas lain pada jam yang sama. Pilih jam atau guru yang berbeda.",
     "AUTH_INVALID_CREDENTIALS": "Nama pengguna atau kata sandi salah",
     "AUTH_TOKEN_EXPIRED": "Sesi berakhir, silakan masuk kembali",
     "TENANT_NOT_FOUND": "Sekolah tidak ditemukan",

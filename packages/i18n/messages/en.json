@@ -222,6 +222,8 @@
   },
   "errors": {
     "SCHEDULE_HAS_HISTORY": "This schedule has attendance or substitution history. Schedule changes and deletion are blocked to preserve the records.",
+    "SCHEDULE_CONFLICT_CLASS": "This period is already taken by that class for another subject. Pick a different period or class.",
+    "SCHEDULE_CONFLICT_TEACHER": "This teacher is already teaching another class at the same period. Pick a different period or teacher.",
     "AUTH_INVALID_CREDENTIALS": "Incorrect username or password",
     "AUTH_TOKEN_EXPIRED": "Your session expired, please sign in again",
     "TENANT_NOT_FOUND": "School not found",

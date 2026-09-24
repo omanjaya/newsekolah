@@ -3,6 +3,8 @@ import { useTranslations } from "next-intl";
 /** Every `ApiError.code` the API contract documents (openapi.yaml `Error.code`). */
 const KNOWN_ERROR_CODES = new Set([
   "SCHEDULE_HAS_HISTORY",
+  "SCHEDULE_CONFLICT_CLASS",
+  "SCHEDULE_CONFLICT_TEACHER",
   "ANALYTICS_NOT_HOMEROOM_TEACHER",
   "AUTH_INVALID_CREDENTIALS",
   "AUTH_TOKEN_EXPIRED",

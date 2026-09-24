@@ -9,6 +9,7 @@ import { useState } from "react";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import {
   useClassesQuery,
+  useLookup,
   usePeriodsQuery,
   useSubjectsQuery,
   useTeachersQuery,
@@ -18,6 +19,7 @@ import {
   useCreateScheduleMutation,
   useReplaceScheduleBlockMutation,
 } from "../api";
+import { conflictMessage } from "../conflict-message";
 
 export function ScheduleForm({
   yearId,
@@ -38,6 +40,11 @@ export function ScheduleForm({
   onDone: () => void;
 }): ReactElement {
   const t = useTranslations("app.schedule.form");
+  // Conflict messages ("period X in class Y is already taken by...") are
+  // shared copy from the parent schedule namespace, the same strings the
+  // grid's copy/paste uses -- one clash sentence for the whole feature
+  // instead of the form silently falling back to a generic error code.
+  const tSchedule = useTranslations("app.schedule");
   const tDays = useTranslations("app.common.weekdays");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
@@ -47,6 +54,9 @@ export function ScheduleForm({
   const periods = usePeriodsQuery();
   const create = useCreateScheduleMutation();
   const replace = useReplaceScheduleBlockMutation();
+  const classMap = useLookup(classes.data?.data);
+  const subjectMap = useLookup(subjects.data?.data);
+  const teacherMap = useLookup(teachers.data?.data);
 
   const lessons = (periods.data?.data ?? []).filter((p) => !p.is_break);
   const startDefault =
@@ -100,7 +110,14 @@ export function ScheduleForm({
       }
       onDone();
     } catch (err) {
-      setError(err instanceof ApiError ? apiErrorMessage(err.code) : apiErrorMessage("UNKNOWN"));
+      const named = conflictMessage(
+        err,
+        { classMap, subjectMap, teacherMap, periods: periods.data?.data ?? [] },
+        tSchedule,
+      );
+      setError(
+        named ?? (err instanceof ApiError ? apiErrorMessage(err.code) : apiErrorMessage("UNKNOWN")),
+      );
     }
   }
 
