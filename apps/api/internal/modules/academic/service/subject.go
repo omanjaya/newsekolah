@@ -31,6 +31,19 @@ type subjectRepository interface {
 	CountClassesForRoom(ctx context.Context, tenantID, id uuid.UUID) (int64, error)
 }
 
+// GetSubject resolves one subject by id, for callers (the reports
+// module's grading export) that need its name for a scope line rather
+// than the whole paginated list.
+func (s *Service) GetSubject(ctx context.Context, tenantID, id uuid.UUID) (domain.Subject, error) {
+	var subject domain.Subject
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		subject, err = s.repo.GetSubjectByID(ctx, tenantID, id)
+		return mapNotFound(err, domain.ErrSubjectNotFound)
+	})
+	return subject, err
+}
+
 func (s *Service) ListSubjects(ctx context.Context, tenantID uuid.UUID, search string, page Page) ([]domain.Subject, int64, error) {
 	page = normalizePage(page)
 	var (
@@ -105,6 +118,29 @@ func (s *Service) ListSubjectOfferings(ctx context.Context, tenantID, yearID uui
 		return err
 	})
 	return offerings, err
+}
+
+// SubjectOfferedAtGradeLevel reports whether subjectID is taught at
+// gradeLevelID in yearID -- either through an offering scoped to that
+// exact grade level, or one with no grade level at all (offered to every
+// level). Callers that scope a report to a whole grade level (the
+// reports module's grading.report_scores export) use this to refuse a
+// subject nobody there actually teaches, rather than silently returning
+// empty sections for classes it does not apply to.
+func (s *Service) SubjectOfferedAtGradeLevel(ctx context.Context, tenantID, yearID, subjectID, gradeLevelID uuid.UUID) (bool, error) {
+	offerings, err := s.ListSubjectOfferings(ctx, tenantID, yearID)
+	if err != nil {
+		return false, err
+	}
+	for _, o := range offerings {
+		if o.SubjectID != subjectID {
+			continue
+		}
+		if o.GradeLevelID == nil || *o.GradeLevelID == gradeLevelID {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func (s *Service) CreateSubjectOffering(ctx context.Context, o domain.SubjectOffering) (domain.SubjectOffering, error) {

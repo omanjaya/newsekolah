@@ -16,6 +16,7 @@ export type Term = components["schemas"]["Term"];
 export type ReportSchedule = components["schemas"]["ReportSchedule"];
 export type ReportScheduleWrite = components["schemas"]["ReportScheduleWrite"];
 export type ReportScheduleCadence = components["schemas"]["ReportScheduleCadence"];
+export type ReportScheduleFormat = components["schemas"]["ReportScheduleFormat"];
 export type ReportScheduleRun = components["schemas"]["ReportScheduleRun"];
 
 /**
@@ -50,13 +51,20 @@ export function useReportTermsQuery(enabled: boolean) {
 
 export interface ReportExportArgs {
   class_id?: string;
+  grade_level_id?: string;
   subject_id?: string;
   term_id?: string;
   date?: string;
 }
 
 /** Order the file name lists its parts in; kept stable so file names are predictable. */
-const FILE_NAME_ORDER: (keyof ReportExportArgs)[] = ["date", "term_id", "class_id", "subject_id"];
+const FILE_NAME_ORDER: (keyof ReportExportArgs)[] = [
+  "date",
+  "term_id",
+  "class_id",
+  "grade_level_id",
+  "subject_id",
+];
 
 /** Names the download after the report kind and the arguments actually supplied. */
 export function buildReportFileName(reportKind: string, args: ReportExportArgs): string {
@@ -66,7 +74,13 @@ export function buildReportFileName(reportKind: string, args: ReportExportArgs):
   return parts.length > 0 ? `${reportKind}-${parts.join("-")}.xlsx` : `${reportKind}.xlsx`;
 }
 
-const EXPORT_ARG_KEYS: (keyof ReportExportArgs)[] = ["class_id", "subject_id", "term_id", "date"];
+const EXPORT_ARG_KEYS: (keyof ReportExportArgs)[] = [
+  "class_id",
+  "grade_level_id",
+  "subject_id",
+  "term_id",
+  "date",
+];
 
 function buildExportQuery(args: ReportExportArgs): string {
   const params = new URLSearchParams();

@@ -23,6 +23,10 @@ type Dependencies struct {
 	Discipline service.DisciplineReader
 	Grading    service.GradingReader
 	Permits    service.PermitsReader
+	// Letterhead resolves a tenant's kop laporan and default signature
+	// block for every rendered export; nil omits it from every document
+	// (Run degrades gracefully, see LetterheadReader's doc comment).
+	Letterhead service.LetterheadReader
 	Perms      transporthttp.PermissionChecker
 	// Emails validates that a schedule's recipients are tenant users; nil
 	// disables that check (only wired this way in tests).
@@ -40,7 +44,7 @@ type Module struct {
 }
 
 func Register(deps Dependencies) *Module {
-	svc := service.New(deps.Attendance, deps.Discipline, deps.Grading, deps.Permits)
+	svc := service.New(deps.Attendance, deps.Discipline, deps.Grading, deps.Permits, deps.Letterhead)
 
 	clk := deps.Clock
 	if clk == nil {

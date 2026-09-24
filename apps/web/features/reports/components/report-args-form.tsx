@@ -8,6 +8,7 @@ import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { useGradeLevelsQuery } from "../../academic/api-master-data";
 import { useClassesQuery, useSubjectsQuery } from "../../reference/api";
 import {
   downloadReportExport,
@@ -36,24 +37,34 @@ export function ReportArgsForm({ report }: ReportArgsFormProps): ReactElement {
   const needsTerm = report.arguments.some((a) => a.kind === "term");
   const requiredKinds = new Set(report.arguments.filter((a) => a.required).map((a) => a.kind));
 
+  // A report scoped to "class" can run against one class or a whole grade
+  // level (one section per class in it) -- class_id and grade_level_id are
+  // mutually exclusive, so only one control is shown at a time.
+  const [scopeType, setScopeType] = useState<"class" | "gradeLevel">("class");
   const [classId, setClassId] = useState("");
+  const [gradeLevelId, setGradeLevelId] = useState("");
   const [subjectId, setSubjectId] = useState("");
   const [date, setDate] = useState("");
   const [termId, setTermId] = useState("");
   const [downloading, setDownloading] = useState(false);
 
-  const classes = useClassesQuery(needsClass);
+  const classes = useClassesQuery(needsClass && scopeType === "class");
+  const gradeLevels = useGradeLevelsQuery();
   const subjects = useSubjectsQuery(needsSubject);
   const terms = useReportTermsQuery(needsTerm);
 
+  const scopeFilled = scopeType === "class" ? classId !== "" : gradeLevelId !== "";
   const canDownload =
-    (!requiredKinds.has("class") || classId !== "") &&
+    (!requiredKinds.has("class") || scopeFilled) &&
     (!requiredKinds.has("subject") || subjectId !== "") &&
     (!requiredKinds.has("date") || date !== "") &&
     (!requiredKinds.has("term") || termId !== "");
 
   const args: ReportExportArgs = {
-    ...(needsClass && classId ? { class_id: classId } : {}),
+    ...(needsClass && scopeType === "class" && classId ? { class_id: classId } : {}),
+    ...(needsClass && scopeType === "gradeLevel" && gradeLevelId
+      ? { grade_level_id: gradeLevelId }
+      : {}),
     ...(needsSubject && subjectId ? { subject_id: subjectId } : {}),
     ...(needsDate && date ? { date } : {}),
     ...(needsTerm && termId ? { term_id: termId } : {}),
@@ -76,21 +87,56 @@ export function ReportArgsForm({ report }: ReportArgsFormProps): ReactElement {
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-end gap-3">
         {needsClass && (
-          <label className="flex flex-col gap-1 text-[13px]">
-            <span className="font-medium text-fg">{t("arguments.class")}</span>
-            <Select
-              options={(classes.data?.data ?? []).map((item) => ({
-                value: item.id,
-                label: item.name,
-              }))}
-              value={classId}
-              onValueChange={setClassId}
-              placeholder={t("arguments.classPlaceholder")}
-              disabled={classes.isLoading}
-              aria-label={t("arguments.class")}
-              className="w-56"
-            />
-          </label>
+          <>
+            <label className="flex flex-col gap-1 text-[13px]">
+              <span className="font-medium text-fg">{t("arguments.scopeType")}</span>
+              <Select
+                options={[
+                  { value: "class", label: t("arguments.scopeTypeClass") },
+                  { value: "gradeLevel", label: t("arguments.scopeTypeGradeLevel") },
+                ]}
+                value={scopeType}
+                onValueChange={(v) => {
+                  setScopeType(v as "class" | "gradeLevel");
+                }}
+                aria-label={t("arguments.scopeType")}
+                className="w-40"
+              />
+            </label>
+            {scopeType === "class" ? (
+              <label className="flex flex-col gap-1 text-[13px]">
+                <span className="font-medium text-fg">{t("arguments.class")}</span>
+                <Select
+                  options={(classes.data?.data ?? []).map((item) => ({
+                    value: item.id,
+                    label: item.name,
+                  }))}
+                  value={classId}
+                  onValueChange={setClassId}
+                  placeholder={t("arguments.classPlaceholder")}
+                  disabled={classes.isLoading}
+                  aria-label={t("arguments.class")}
+                  className="w-56"
+                />
+              </label>
+            ) : (
+              <label className="flex flex-col gap-1 text-[13px]">
+                <span className="font-medium text-fg">{t("arguments.gradeLevel")}</span>
+                <Select
+                  options={(gradeLevels.data?.data ?? []).map((item) => ({
+                    value: item.id,
+                    label: item.name,
+                  }))}
+                  value={gradeLevelId}
+                  onValueChange={setGradeLevelId}
+                  placeholder={t("arguments.gradeLevelPlaceholder")}
+                  disabled={gradeLevels.isLoading}
+                  aria-label={t("arguments.gradeLevel")}
+                  className="w-56"
+                />
+              </label>
+            )}
+          </>
         )}
         {needsSubject && (
           <label className="flex flex-col gap-1 text-[13px]">

@@ -1239,6 +1239,7 @@ type ReportSchedule struct {
 	CreatedBy  uuid.UUID          `json:"created_by"`
 	CreatedAt  pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
+	Format     string             `json:"format"`
 }
 
 type ReportScheduleRun struct {

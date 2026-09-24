@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/reports/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 )
 
 // RunDueSchedules loops every active tenant looking for schedules due at
@@ -89,16 +90,21 @@ func (s *ScheduleService) runOne(ctx context.Context, tenantID uuid.UUID, sched 
 	}
 
 	today := time.Date(local.Year(), local.Month(), local.Day(), 0, 0, 0, 0, time.UTC)
-	args := RunArgs{ClassID: sched.Params.ClassID, SubjectID: sched.Params.SubjectID, TermID: sched.Params.TermID, Date: &today}
+	args := RunArgs{
+		ClassID: sched.Params.ClassID, GradeLevelID: sched.Params.GradeLevelID,
+		SubjectID: sched.Params.SubjectID, TermID: sched.Params.TermID, Date: &today,
+	}
+	format := sched.Format.WithDefault()
+	opts := reportdoc.Options{Format: reportdoc.Format(format), ShowLetterhead: true}
 
-	workbook, err := s.reports.Run(ctx, tenantID, Kind(sched.ReportKind), args)
+	rendered, contentType, err := s.reports.Run(ctx, tenantID, Kind(sched.ReportKind), args, opts)
 	if err != nil {
 		s.failRun(ctx, tenantID, run.ID, fmt.Sprintf("render: %v", err))
 		return PendingNotification{}, false, nil
 	}
 
-	objectKey := fmt.Sprintf("reports/schedules/%s/%s/%d.xlsx", tenantID, sched.ID, dueAt.Unix())
-	if err := s.storage.PutObject(ctx, objectKey, workbook, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"); err != nil {
+	objectKey := fmt.Sprintf("reports/schedules/%s/%s/%d.%s", tenantID, sched.ID, dueAt.Unix(), format)
+	if err := s.storage.PutObject(ctx, objectKey, rendered, contentType); err != nil {
 		s.failRun(ctx, tenantID, run.ID, fmt.Sprintf("upload: %v", err))
 		return PendingNotification{}, false, nil
 	}

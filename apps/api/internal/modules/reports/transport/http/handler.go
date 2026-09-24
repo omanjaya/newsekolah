@@ -7,13 +7,18 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"strings"
 
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/api"
+	academicdomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/academic/domain"
+	disciplinedomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/discipline/domain"
+	gradingdomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/grading/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/reports/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/authz"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 )
 
 // PermissionChecker resolves the caller's effective permissions.
@@ -38,14 +43,46 @@ func mapError(err error) error {
 	switch {
 	case errors.Is(err, service.ErrReportNotFound):
 		return httpx.ErrNotFound
-	case errors.Is(err, service.ErrMissingArgument):
+	case errors.Is(err, service.ErrMissingArgument),
+		errors.Is(err, service.ErrScopeConflict),
+		errors.Is(err, service.ErrSubjectNotOffered),
+		errors.Is(err, service.ErrNoActiveAcademicYear),
+		errors.Is(err, disciplinedomain.ErrNoActiveAcademicYear),
+		errors.Is(err, gradingdomain.ErrNoActiveAcademicYear),
+		errors.Is(err, reportdoc.ErrUnknownColumn):
 		return httpx.ErrValidation
+	case errors.Is(err, academicdomain.ErrClassNotFound),
+		errors.Is(err, academicdomain.ErrGradeLevelNotFound),
+		errors.Is(err, academicdomain.ErrSubjectNotFound):
+		return httpx.ErrNotFound
 	}
 	var appErr *httpx.Error
 	if errors.As(err, &appErr) {
 		return appErr
 	}
 	return httpx.Internal(err)
+}
+
+// parseColumns turns the export endpoint's "columns" query parameter --
+// a comma-separated list of column keys, each optionally renamed as
+// key:label -- into reportdoc's ColumnChoice slice. An empty string
+// (the parameter omitted) returns nil, which reportdoc.Apply treats as
+// "keep every column in its default order".
+func parseColumns(raw string) []reportdoc.ColumnChoice {
+	if raw == "" {
+		return nil
+	}
+	parts := strings.Split(raw, ",")
+	choices := make([]reportdoc.ColumnChoice, 0, len(parts))
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		key, label, _ := strings.Cut(part, ":")
+		choices = append(choices, reportdoc.ColumnChoice{Key: key, Label: label})
+	}
+	return choices
 }
 
 func (h *ReportsHandler) permissions(ctx context.Context) authz.Set {
@@ -90,6 +127,9 @@ func (h *ReportsHandler) ExportReport(ctx context.Context, request api.ExportRep
 	if request.Params.ClassId != nil {
 		args.ClassID = uuid.NullUUID{UUID: *request.Params.ClassId, Valid: true}
 	}
+	if request.Params.GradeLevelId != nil {
+		args.GradeLevelID = uuid.NullUUID{UUID: *request.Params.GradeLevelId, Valid: true}
+	}
 	if request.Params.SubjectId != nil {
 		args.SubjectID = uuid.NullUUID{UUID: *request.Params.SubjectId, Valid: true}
 	}
@@ -100,11 +140,37 @@ func (h *ReportsHandler) ExportReport(ctx context.Context, request api.ExportRep
 		date := request.Params.Date.Time
 		args.Date = &date
 	}
-	xlsx, err := h.service.Run(ctx, tenantID(ctx), kind, args)
+
+	opts := reportdoc.Options{
+		Format: reportdoc.FormatXLSX,
+		// Letterhead defaults on: an existing caller (the mobile app)
+		// that never sends this parameter keeps getting one when the
+		// tenant has configured it, matching the pre-migration behaviour.
+		ShowLetterhead: true,
+	}
+	if request.Params.Format != nil {
+		opts.Format = reportdoc.Format(*request.Params.Format)
+	}
+	if request.Params.Title != nil {
+		opts.Title = *request.Params.Title
+	}
+	if request.Params.Letterhead != nil {
+		opts.ShowLetterhead = *request.Params.Letterhead
+	}
+	if request.Params.Columns != nil {
+		opts.Columns = parseColumns(*request.Params.Columns)
+	}
+
+	rendered, contentType, err := h.service.Run(ctx, tenantID(ctx), kind, args, opts)
 	if err != nil {
 		return nil, mapError(err)
 	}
+	if contentType == "application/pdf" {
+		return api.ExportReport200ApplicationpdfResponse{
+			Body: bytes.NewReader(rendered), ContentLength: int64(len(rendered)),
+		}, nil
+	}
 	return api.ExportReport200ApplicationvndOpenxmlformatsOfficedocumentSpreadsheetmlSheetResponse{
-		Body: bytes.NewReader(xlsx), ContentLength: int64(len(xlsx)),
+		Body: bytes.NewReader(rendered), ContentLength: int64(len(rendered)),
 	}, nil
 }

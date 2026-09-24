@@ -221,13 +221,20 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	reportsModule := reports.Register(reports.Dependencies{
 		Pool:       pool,
 		Attendance: wiring.AttendanceReports{Svc: attendanceModule.Service},
-		Discipline: wiring.DisciplineReports{Svc: disciplineModule.Service, Directory: wiring.IdentityNames{Svc: identityModule.Service}},
-		Grading:    wiring.GradingReports{Svc: gradingModule.Service},
-		Permits:    wiring.PermitsReports{Svc: permitsModule.Service},
-		Perms:      identityModule.Service,
-		Emails:     identityModule.Service,
-		Storage:    sharedStorage,
-		Clock:      clock.Real{},
+		Discipline: wiring.DisciplineReports{
+			Svc: disciplineModule.Service, Directory: wiring.IdentityNames{Svc: identityModule.Service},
+			Academic: academicModule.Service, Years: schoolModule.Service,
+		},
+		Grading: wiring.GradingReports{Svc: gradingModule.Service, Academic: academicModule.Service, Years: schoolModule.Service},
+		Permits: wiring.PermitsReports{Svc: permitsModule.Service, Academic: academicModule.Service, Years: schoolModule.Service},
+		Perms:   identityModule.Service,
+		Emails:  identityModule.Service,
+		Storage: sharedStorage,
+		Clock:   clock.Real{},
+		// Letterhead is left unwired until the tenant "report header"
+		// setting (kop laporan + default signers) lands; see this
+		// branch's final report for what that piece needs to satisfy
+		// (service.LetterheadReader).
 	})
 
 	// Background jobs: every module registers its workers on one River

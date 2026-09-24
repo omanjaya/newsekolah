@@ -11046,6 +11046,8 @@ export interface components {
         };
         /** @enum {string} */
         ReportScheduleCadence: "daily" | "weekly" | "monthly";
+        /** @enum {string} */
+        ReportScheduleFormat: "xlsx" | "pdf";
         ReportScheduleParams: {
             /** Format: uuid */
             class_id?: string;
@@ -11058,6 +11060,8 @@ export interface components {
             report_kind: string;
             params?: components["schemas"]["ReportScheduleParams"];
             cadence: components["schemas"]["ReportScheduleCadence"];
+            /** @description File type to render; defaults to xlsx when omitted */
+            format?: components["schemas"]["ReportScheduleFormat"];
             /** @description Required when cadence is weekly (0 = Sunday .. 6 = Saturday) */
             weekday?: number;
             /** @description Required when cadence is monthly; clamped to the last day of shorter months */

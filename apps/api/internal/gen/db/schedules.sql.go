@@ -100,9 +100,9 @@ func (q *Queries) CountSchedulesForClassDay(ctx context.Context, arg CountSchedu
 }
 
 const createReportSchedule = `-- name: CreateReportSchedule :one
-insert into report_schedules (tenant_id, report_kind, params, cadence, weekday, day_of_month, hour, recipients, enabled, created_by)
-values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-returning id, tenant_id, report_kind, params, cadence, weekday, day_of_month, hour, recipients, enabled, created_by, created_at, updated_at
+insert into report_schedules (tenant_id, report_kind, params, cadence, weekday, day_of_month, hour, recipients, enabled, created_by, format)
+values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+returning id, tenant_id, report_kind, params, cadence, weekday, day_of_month, hour, recipients, enabled, created_by, created_at, updated_at, format
 `
 
 type CreateReportScheduleParams struct {
@@ -116,6 +116,7 @@ type CreateReportScheduleParams struct {
 	Recipients []string    `json:"recipients"`
 	Enabled    bool        `json:"enabled"`
 	CreatedBy  uuid.UUID   `json:"created_by"`
+	Format     string      `json:"format"`
 }
 
 func (q *Queries) CreateReportSchedule(ctx context.Context, arg CreateReportScheduleParams) (ReportSchedule, error) {
@@ -130,6 +131,7 @@ func (q *Queries) CreateReportSchedule(ctx context.Context, arg CreateReportSche
 		arg.Recipients,
 		arg.Enabled,
 		arg.CreatedBy,
+		arg.Format,
 	)
 	var i ReportSchedule
 	err := row.Scan(
@@ -146,6 +148,7 @@ func (q *Queries) CreateReportSchedule(ctx context.Context, arg CreateReportSche
 		&i.CreatedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Format,
 	)
 	return i, err
 }
@@ -265,7 +268,7 @@ func (q *Queries) DeleteSchedulesByAcademicYear(ctx context.Context, arg DeleteS
 }
 
 const getReportSchedule = `-- name: GetReportSchedule :one
-select id, tenant_id, report_kind, params, cadence, weekday, day_of_month, hour, recipients, enabled, created_by, created_at, updated_at from report_schedules where tenant_id = $1 and id = $2
+select id, tenant_id, report_kind, params, cadence, weekday, day_of_month, hour, recipients, enabled, created_by, created_at, updated_at, format from report_schedules where tenant_id = $1 and id = $2
 `
 
 type GetReportScheduleParams struct {
@@ -290,6 +293,7 @@ func (q *Queries) GetReportSchedule(ctx context.Context, arg GetReportSchedulePa
 		&i.CreatedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Format,
 	)
 	return i, err
 }
@@ -332,7 +336,7 @@ func (q *Queries) GetScheduleByID(ctx context.Context, arg GetScheduleByIDParams
 }
 
 const listEnabledReportSchedulesForHour = `-- name: ListEnabledReportSchedulesForHour :many
-select id, tenant_id, report_kind, params, cadence, weekday, day_of_month, hour, recipients, enabled, created_by, created_at, updated_at from report_schedules where tenant_id = $1 and enabled and hour = $2
+select id, tenant_id, report_kind, params, cadence, weekday, day_of_month, hour, recipients, enabled, created_by, created_at, updated_at, format from report_schedules where tenant_id = $1 and enabled and hour = $2
 `
 
 type ListEnabledReportSchedulesForHourParams struct {
@@ -367,6 +371,7 @@ func (q *Queries) ListEnabledReportSchedulesForHour(ctx context.Context, arg Lis
 			&i.CreatedBy,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.Format,
 		); err != nil {
 			return nil, err
 		}
@@ -422,7 +427,7 @@ func (q *Queries) ListReportScheduleRuns(ctx context.Context, arg ListReportSche
 }
 
 const listReportSchedules = `-- name: ListReportSchedules :many
-select id, tenant_id, report_kind, params, cadence, weekday, day_of_month, hour, recipients, enabled, created_by, created_at, updated_at from report_schedules where tenant_id = $1 order by created_at desc
+select id, tenant_id, report_kind, params, cadence, weekday, day_of_month, hour, recipients, enabled, created_by, created_at, updated_at, format from report_schedules where tenant_id = $1 order by created_at desc
 `
 
 func (q *Queries) ListReportSchedules(ctx context.Context, tenantID uuid.UUID) ([]ReportSchedule, error) {
@@ -448,6 +453,7 @@ func (q *Queries) ListReportSchedules(ctx context.Context, tenantID uuid.UUID) (
 			&i.CreatedBy,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.Format,
 		); err != nil {
 			return nil, err
 		}
@@ -750,7 +756,7 @@ func (q *Queries) ListStaffAttendanceScheduleDays(ctx context.Context, arg ListS
 }
 
 const setReportScheduleEnabled = `-- name: SetReportScheduleEnabled :one
-update report_schedules set enabled = $3 where tenant_id = $1 and id = $2 returning id, tenant_id, report_kind, params, cadence, weekday, day_of_month, hour, recipients, enabled, created_by, created_at, updated_at
+update report_schedules set enabled = $3 where tenant_id = $1 and id = $2 returning id, tenant_id, report_kind, params, cadence, weekday, day_of_month, hour, recipients, enabled, created_by, created_at, updated_at, format
 `
 
 type SetReportScheduleEnabledParams struct {
@@ -776,15 +782,16 @@ func (q *Queries) SetReportScheduleEnabled(ctx context.Context, arg SetReportSch
 		&i.CreatedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Format,
 	)
 	return i, err
 }
 
 const updateReportSchedule = `-- name: UpdateReportSchedule :one
 update report_schedules
-set report_kind = $3, params = $4, cadence = $5, weekday = $6, day_of_month = $7, hour = $8, recipients = $9
+set report_kind = $3, params = $4, cadence = $5, weekday = $6, day_of_month = $7, hour = $8, recipients = $9, format = $10
 where tenant_id = $1 and id = $2
-returning id, tenant_id, report_kind, params, cadence, weekday, day_of_month, hour, recipients, enabled, created_by, created_at, updated_at
+returning id, tenant_id, report_kind, params, cadence, weekday, day_of_month, hour, recipients, enabled, created_by, created_at, updated_at, format
 `
 
 type UpdateReportScheduleParams struct {
@@ -797,6 +804,7 @@ type UpdateReportScheduleParams struct {
 	DayOfMonth pgtype.Int2 `json:"day_of_month"`
 	Hour       int16       `json:"hour"`
 	Recipients []string    `json:"recipients"`
+	Format     string      `json:"format"`
 }
 
 func (q *Queries) UpdateReportSchedule(ctx context.Context, arg UpdateReportScheduleParams) (ReportSchedule, error) {
@@ -810,6 +818,7 @@ func (q *Queries) UpdateReportSchedule(ctx context.Context, arg UpdateReportSche
 		arg.DayOfMonth,
 		arg.Hour,
 		arg.Recipients,
+		arg.Format,
 	)
 	var i ReportSchedule
 	err := row.Scan(
@@ -826,6 +835,7 @@ func (q *Queries) UpdateReportSchedule(ctx context.Context, arg UpdateReportSche
 		&i.CreatedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Format,
 	)
 	return i, err
 }

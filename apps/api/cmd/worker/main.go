@@ -26,6 +26,7 @@ import (
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/rivertype"
 
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/academic"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/announcements"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/discipline"
@@ -113,6 +114,10 @@ func run(logger *slog.Logger) error {
 	// left nil since this process never serves those flows, only the
 	// hourly scheduled-export job.
 	schedulingModule := scheduling.Register(pool, eventBus, identityModule.Service)
+	// academicModule backs the grade-level scope of reports' Discipline/
+	// Grading/Permits export adapters below (resolving a grade level's
+	// classes); this process never serves academic's own CRUD endpoints.
+	academicModule := academic.Register(pool, clock.Real{})
 	attendanceModule := attendance.Register(attendance.Dependencies{
 		Pool: pool, Bus: eventBus, Years: schoolModule.Service,
 		Schedules: schedulingModule.ScheduleReader, Access: schedulingModule.AccessChecker, Journals: schedulingModule.JournalService,
@@ -141,13 +146,16 @@ func run(logger *slog.Logger) error {
 	reportsModule := reports.Register(reports.Dependencies{
 		Pool:       pool,
 		Attendance: wiring.AttendanceReports{Svc: attendanceModule.Service},
-		Discipline: wiring.DisciplineReports{Svc: disciplineModule.Service, Directory: wiring.IdentityNames{Svc: identityModule.Service}},
-		Grading:    wiring.GradingReports{Svc: gradingModule.Service},
-		Permits:    wiring.PermitsReports{Svc: permitsModule.Service},
-		Perms:      identityModule.Service,
-		Emails:     identityModule.Service,
-		Storage:    sharedStorage,
-		Clock:      clock.Real{},
+		Discipline: wiring.DisciplineReports{
+			Svc: disciplineModule.Service, Directory: wiring.IdentityNames{Svc: identityModule.Service},
+			Academic: academicModule.Service, Years: schoolModule.Service,
+		},
+		Grading: wiring.GradingReports{Svc: gradingModule.Service, Academic: academicModule.Service, Years: schoolModule.Service},
+		Permits: wiring.PermitsReports{Svc: permitsModule.Service, Academic: academicModule.Service, Years: schoolModule.Service},
+		Perms:   identityModule.Service,
+		Emails:  identityModule.Service,
+		Storage: sharedStorage,
+		Clock:   clock.Real{},
 	})
 
 	senders := wiring.SendersFromConfig(cfg, logger)

@@ -46,6 +46,7 @@ func (r *ScheduleRepository) CreateSchedule(ctx context.Context, s domain.Schedu
 		TenantID: s.TenantID, ReportKind: s.ReportKind, Params: params, Cadence: string(s.Cadence),
 		Weekday: int2FromPtr(s.Weekday), DayOfMonth: int2FromPtr(s.DayOfMonth),
 		Hour: int16(s.Hour), Recipients: s.Recipients, Enabled: s.Enabled, CreatedBy: s.CreatedBy, //nolint:gosec // validated 0-23
+		Format: string(s.Format.WithDefault()),
 	})
 	if err != nil {
 		return domain.Schedule{}, fmt.Errorf("create report schedule: %w", err)
@@ -62,6 +63,7 @@ func (r *ScheduleRepository) UpdateSchedule(ctx context.Context, s domain.Schedu
 		TenantID: s.TenantID, ID: s.ID, ReportKind: s.ReportKind, Params: params, Cadence: string(s.Cadence),
 		Weekday: int2FromPtr(s.Weekday), DayOfMonth: int2FromPtr(s.DayOfMonth),
 		Hour: int16(s.Hour), Recipients: s.Recipients, //nolint:gosec // validated 0-23
+		Format: string(s.Format.WithDefault()),
 	})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return domain.Schedule{}, domain.ErrScheduleNotFound
@@ -223,7 +225,7 @@ func toSchedule(row db.ReportSchedule) domain.Schedule {
 	return domain.Schedule{
 		ID: row.ID, TenantID: row.TenantID, ReportKind: row.ReportKind, Params: unmarshalParams(row.Params),
 		Cadence: domain.Cadence(row.Cadence), Weekday: ptrFromInt2(row.Weekday), DayOfMonth: ptrFromInt2(row.DayOfMonth),
-		Hour: int(row.Hour), Recipients: row.Recipients, Enabled: row.Enabled, CreatedBy: row.CreatedBy,
+		Hour: int(row.Hour), Recipients: row.Recipients, Format: domain.Format(row.Format), Enabled: row.Enabled, CreatedBy: row.CreatedBy,
 		CreatedAt: row.CreatedAt.Time, UpdatedAt: row.UpdatedAt.Time,
 	}
 }

@@ -81,6 +81,7 @@ type ScheduleInput struct {
 	DayOfMonth *int
 	Hour       int
 	Recipients []string
+	Format     domain.Format
 }
 
 // PendingNotification is one due, successfully rendered and uploaded
@@ -172,7 +173,7 @@ func (s *ScheduleService) CreateSchedule(ctx context.Context, tenantID, requeste
 	sched := domain.Schedule{
 		TenantID: tenantID, ReportKind: in.ReportKind, Params: in.Params, Cadence: in.Cadence,
 		Weekday: in.Weekday, DayOfMonth: in.DayOfMonth, Hour: in.Hour, Recipients: in.Recipients,
-		Enabled: true, CreatedBy: requestedBy,
+		Format: in.Format.WithDefault(), Enabled: true, CreatedBy: requestedBy,
 	}
 	if err := sched.Validate(); err != nil {
 		return domain.Schedule{}, err
@@ -200,6 +201,7 @@ func (s *ScheduleService) UpdateSchedule(ctx context.Context, tenantID, requeste
 	sched := domain.Schedule{
 		ID: id, TenantID: tenantID, ReportKind: in.ReportKind, Params: in.Params, Cadence: in.Cadence,
 		Weekday: in.Weekday, DayOfMonth: in.DayOfMonth, Hour: in.Hour, Recipients: in.Recipients,
+		Format: in.Format.WithDefault(),
 	}
 	if err := sched.Validate(); err != nil {
 		return domain.Schedule{}, err

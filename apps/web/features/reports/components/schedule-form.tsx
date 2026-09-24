@@ -15,6 +15,7 @@ import {
   useUpdateReportScheduleMutation,
   type ReportSchedule,
   type ReportScheduleCadence,
+  type ReportScheduleFormat,
 } from "../api";
 
 import { ScheduleRecipientsInput } from "./schedule-recipients-input";
@@ -41,6 +42,7 @@ export function ScheduleForm({
   const [classId, setClassId] = useState(initial?.params?.class_id ?? "");
   const [subjectId, setSubjectId] = useState(initial?.params?.subject_id ?? "");
   const [termId, setTermId] = useState(initial?.params?.term_id ?? "");
+  const [format, setFormat] = useState<ReportScheduleFormat>(initial?.format ?? "xlsx");
   const [cadence, setCadence] = useState<ReportScheduleCadence>(initial?.cadence ?? "daily");
   const [weekday, setWeekday] = useState(String(initial?.weekday ?? 1));
   const [dayOfMonth, setDayOfMonth] = useState(String(initial?.day_of_month ?? 1));
@@ -72,6 +74,7 @@ export function ScheduleForm({
         ...(needsTerm && termId ? { term_id: termId } : {}),
       },
       cadence,
+      format,
       ...(cadence === "weekly" ? { weekday: Number(weekday) } : {}),
       ...(cadence === "monthly" ? { day_of_month: Number(dayOfMonth) } : {}),
       hour: Number(hour),
@@ -158,6 +161,21 @@ export function ScheduleForm({
           />
         </label>
       )}
+
+      <label className="flex flex-col gap-1 text-[13px]">
+        <span className="font-medium">{t("format")}</span>
+        <Select
+          options={[
+            { value: "xlsx", label: t("formatXlsx") },
+            { value: "pdf", label: t("formatPdf") },
+          ]}
+          value={format}
+          onValueChange={(v) => {
+            setFormat(v as ReportScheduleFormat);
+          }}
+          aria-label={t("format")}
+        />
+      </label>
 
       <label className="flex flex-col gap-1 text-[13px]">
         <span className="font-medium">{t("cadence")}</span>

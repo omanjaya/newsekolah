@@ -1,8 +1,8 @@
 // Package service is the report centre (docs/11-feature-recommendations.md
 // item 10): one catalogue of every export the school can run, one place
-// that renders them as XLSX. Each report delegates to the module that owns
-// the data through a narrow reader interface, so reports never queries
-// another module's tables.
+// that renders them as XLSX or PDF through the shared reportdoc package.
+// Each report delegates to the module that owns the data through a narrow
+// reader interface, so reports never queries another module's tables.
 package service
 
 import (
@@ -13,11 +13,26 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/xuri/excelize/v2"
+
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 )
 
 var (
 	ErrReportNotFound  = errors.New("report not found")
 	ErrMissingArgument = errors.New("report argument missing or invalid")
+	// ErrScopeConflict is returned when a caller supplies both class_id
+	// and grade_level_id: a report scoped to a class runs against exactly
+	// one class or every class of one grade level, never both at once.
+	ErrScopeConflict = errors.New("class_id and grade_level_id are mutually exclusive")
+	// ErrSubjectNotOffered is returned by grading.report_scores when the
+	// requested grade-level scope has no subject offering for the
+	// requested subject -- running the export would otherwise silently
+	// produce empty sections for every class in it.
+	ErrSubjectNotOffered = errors.New("subject is not taught at this grade level")
+	// ErrNoActiveAcademicYear is returned by the class/grade-level-scoped
+	// readers (wiring/reports.go's resolveScope) when the tenant has no
+	// active academic year to resolve a grade level's classes against.
+	ErrNoActiveAcademicYear = errors.New("no active academic year")
 )
 
 // Kind identifies one report in the catalogue.
@@ -32,7 +47,10 @@ const (
 	KindExitPermitsYearly Kind = "permits.exit_permits_yearly"
 )
 
-// ArgumentKind tells the UI which control to render for a parameter.
+// ArgumentKind tells the UI which control to render for a parameter. A
+// "class" argument accepts either a class_id or a grade_level_id (the web
+// form offers both as one "Kelas atau Angkatan" scope picker); the two
+// are mutually exclusive, enforced by Run.
 type ArgumentKind string
 
 const (
@@ -77,7 +95,11 @@ func Find(kind Kind) (Definition, bool) {
 	return Definition{}, false
 }
 
-// Row is one line of a rendered report; Sheet is the whole thing.
+// Sheet is attendance.daily's legacy rendered shape: one line of a
+// workbook plus its header row. The other catalogue kinds render through
+// reportdoc.Document instead (see the Discipline/Grading/Permits reader
+// interfaces below); Sheet stays only until attendance.daily migrates the
+// same way.
 type Sheet struct {
 	Title   string
 	Headers []string
@@ -89,18 +111,35 @@ type AttendanceReader interface {
 	DailyReportRows(ctx context.Context, tenantID, classID uuid.UUID, date time.Time) (Sheet, error)
 }
 
+// DisciplineReader, GradingReader and PermitsReader each build a complete
+// reportdoc.Document (letterhead is filled in by Run, not by the reader):
+// title, scope lines, columns and one Section per class when scoped to a
+// class or a whole grade level, or a single unnamed section when scoped
+// to neither (points/warning letters/leave requests scoped to nothing
+// means "every class"). classID and gradeLevelID are mutually exclusive;
+// Run guarantees that before either reader is called.
 type DisciplineReader interface {
-	PointTotalRows(ctx context.Context, tenantID uuid.UUID, classID uuid.NullUUID) (Sheet, error)
-	WarningLetterRows(ctx context.Context, tenantID uuid.UUID, classID uuid.NullUUID) (Sheet, error)
+	PointTotalRows(ctx context.Context, tenantID uuid.UUID, classID, gradeLevelID uuid.NullUUID) (reportdoc.Document, error)
+	WarningLetterRows(ctx context.Context, tenantID uuid.UUID, classID, gradeLevelID uuid.NullUUID) (reportdoc.Document, error)
 }
 
 type GradingReader interface {
-	ReportScoreRows(ctx context.Context, tenantID, classID, subjectID uuid.UUID, termID uuid.NullUUID) (Sheet, error)
+	ReportScoreRows(ctx context.Context, tenantID uuid.UUID, classID, gradeLevelID uuid.NullUUID, subjectID uuid.UUID, termID uuid.NullUUID) (reportdoc.Document, error)
 }
 
 type PermitsReader interface {
-	LeaveRequestRows(ctx context.Context, tenantID uuid.UUID, classID uuid.NullUUID) (Sheet, error)
-	ExitPermitYearlyRows(ctx context.Context, tenantID uuid.UUID) (Sheet, error)
+	LeaveRequestRows(ctx context.Context, tenantID uuid.UUID, classID, gradeLevelID uuid.NullUUID) (reportdoc.Document, error)
+	ExitPermitYearlyRows(ctx context.Context, tenantID uuid.UUID) (reportdoc.Document, error)
+}
+
+// LetterheadReader resolves a tenant's configured kop laporan (letterhead
+// image/text lines) and default signature block, so every exported
+// document -- interactive or scheduled -- looks the same regardless of
+// which report kind produced it. Nil (or an implementation returning no
+// letterhead) simply omits it: Apply already treats a nil
+// Document.Letterhead as "print none".
+type LetterheadReader interface {
+	TenantLetterhead(ctx context.Context, tenantID uuid.UUID) (*reportdoc.Letterhead, *reportdoc.Signature, error)
 }
 
 type Service struct {
@@ -108,35 +147,95 @@ type Service struct {
 	discipline DisciplineReader
 	grading    GradingReader
 	permits    PermitsReader
+	letterhead LetterheadReader
 }
 
-func New(attendance AttendanceReader, discipline DisciplineReader, grading GradingReader, permits PermitsReader) *Service {
-	return &Service{attendance: attendance, discipline: discipline, grading: grading, permits: permits}
+func New(attendance AttendanceReader, discipline DisciplineReader, grading GradingReader, permits PermitsReader, letterhead LetterheadReader) *Service {
+	return &Service{attendance: attendance, discipline: discipline, grading: grading, permits: permits, letterhead: letterhead}
 }
 
 // RunArgs carries whatever the caller supplied; the service checks that
-// the report's required arguments are present.
+// the report's required arguments are present. ClassID and GradeLevelID
+// are mutually exclusive (checked by Run before dispatch).
 type RunArgs struct {
-	ClassID   uuid.NullUUID
-	SubjectID uuid.NullUUID
-	TermID    uuid.NullUUID
-	Date      *time.Time
+	ClassID      uuid.NullUUID
+	GradeLevelID uuid.NullUUID
+	SubjectID    uuid.NullUUID
+	TermID       uuid.NullUUID
+	Date         *time.Time
 }
 
-// Run renders one report as an XLSX workbook.
-func (s *Service) Run(ctx context.Context, tenantID uuid.UUID, kind Kind, args RunArgs) ([]byte, error) {
+// Run renders one report per opts (format, title override, letterhead
+// visibility, column subset) and returns the bytes plus the MIME type the
+// transport layer should serve them as.
+func (s *Service) Run(ctx context.Context, tenantID uuid.UUID, kind Kind, args RunArgs, opts reportdoc.Options) ([]byte, string, error) {
 	def, ok := Find(kind)
 	if !ok {
-		return nil, ErrReportNotFound
+		return nil, "", ErrReportNotFound
+	}
+	if args.ClassID.Valid && args.GradeLevelID.Valid {
+		return nil, "", ErrScopeConflict
 	}
 	if err := requireArgs(def, args); err != nil {
-		return nil, err
+		return nil, "", err
 	}
-	sheet, err := s.sheet(ctx, tenantID, kind, args)
+
+	if kind == KindAttendanceDaily {
+		if args.GradeLevelID.Valid {
+			// Grade-level scope for attendance.daily migrates alongside
+			// its own reportdoc integration; until then a grade-level-only
+			// request has no class_id to run against.
+			return nil, "", fmt.Errorf("%w: grade_level scope for attendance.daily is not available yet", ErrMissingArgument)
+		}
+		sheet, err := s.sheet(ctx, tenantID, kind, args)
+		if err != nil {
+			return nil, "", err
+		}
+		xlsx, err := renderXLSX(sheet)
+		if err != nil {
+			return nil, "", err
+		}
+		return xlsx, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", nil
+	}
+
+	doc, err := s.document(ctx, tenantID, kind, args)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
-	return renderXLSX(sheet)
+	doc.Letterhead, doc.Signature = s.letterheadFor(ctx, tenantID, opts)
+	narrowed, err := reportdoc.Apply(doc, opts)
+	if err != nil {
+		return nil, "", err
+	}
+	switch opts.Format {
+	case reportdoc.FormatPDF:
+		pdf, err := reportdoc.RenderPDF(narrowed)
+		if err != nil {
+			return nil, "", err
+		}
+		return pdf, "application/pdf", nil
+	default:
+		xlsx, err := reportdoc.RenderXLSX(narrowed)
+		if err != nil {
+			return nil, "", err
+		}
+		return xlsx, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", nil
+	}
+}
+
+// letterheadFor resolves the tenant's letterhead when opts asked to show
+// one and a reader is wired; either condition failing means no
+// letterhead, never an error -- a report with no configured letterhead
+// still downloads.
+func (s *Service) letterheadFor(ctx context.Context, tenantID uuid.UUID, opts reportdoc.Options) (*reportdoc.Letterhead, *reportdoc.Signature) {
+	if !opts.ShowLetterhead || s.letterhead == nil {
+		return nil, nil
+	}
+	lh, sig, err := s.letterhead.TenantLetterhead(ctx, tenantID)
+	if err != nil {
+		return nil, nil
+	}
+	return lh, sig
 }
 
 func (s *Service) sheet(ctx context.Context, tenantID uuid.UUID, kind Kind, args RunArgs) (Sheet, error) {
@@ -146,33 +245,42 @@ func (s *Service) sheet(ctx context.Context, tenantID uuid.UUID, kind Kind, args
 			return Sheet{}, ErrReportNotFound
 		}
 		return s.attendance.DailyReportRows(ctx, tenantID, args.ClassID.UUID, *args.Date)
+	default:
+		return Sheet{}, ErrReportNotFound
+	}
+}
+
+// document dispatches to the owning module's reader for every kind
+// except attendance.daily (still Sheet-based, see sheet above).
+func (s *Service) document(ctx context.Context, tenantID uuid.UUID, kind Kind, args RunArgs) (reportdoc.Document, error) {
+	switch kind {
 	case KindDisciplinePoints:
 		if s.discipline == nil {
-			return Sheet{}, ErrReportNotFound
+			return reportdoc.Document{}, ErrReportNotFound
 		}
-		return s.discipline.PointTotalRows(ctx, tenantID, args.ClassID)
+		return s.discipline.PointTotalRows(ctx, tenantID, args.ClassID, args.GradeLevelID)
 	case KindWarningLetters:
 		if s.discipline == nil {
-			return Sheet{}, ErrReportNotFound
+			return reportdoc.Document{}, ErrReportNotFound
 		}
-		return s.discipline.WarningLetterRows(ctx, tenantID, args.ClassID)
+		return s.discipline.WarningLetterRows(ctx, tenantID, args.ClassID, args.GradeLevelID)
 	case KindGradingReport:
 		if s.grading == nil {
-			return Sheet{}, ErrReportNotFound
+			return reportdoc.Document{}, ErrReportNotFound
 		}
-		return s.grading.ReportScoreRows(ctx, tenantID, args.ClassID.UUID, args.SubjectID.UUID, args.TermID)
+		return s.grading.ReportScoreRows(ctx, tenantID, args.ClassID, args.GradeLevelID, args.SubjectID.UUID, args.TermID)
 	case KindLeaveRequests:
 		if s.permits == nil {
-			return Sheet{}, ErrReportNotFound
+			return reportdoc.Document{}, ErrReportNotFound
 		}
-		return s.permits.LeaveRequestRows(ctx, tenantID, args.ClassID)
+		return s.permits.LeaveRequestRows(ctx, tenantID, args.ClassID, args.GradeLevelID)
 	case KindExitPermitsYearly:
 		if s.permits == nil {
-			return Sheet{}, ErrReportNotFound
+			return reportdoc.Document{}, ErrReportNotFound
 		}
 		return s.permits.ExitPermitYearlyRows(ctx, tenantID)
 	default:
-		return Sheet{}, ErrReportNotFound
+		return reportdoc.Document{}, ErrReportNotFound
 	}
 }
 
@@ -183,7 +291,7 @@ func requireArgs(def Definition, args RunArgs) error {
 		}
 		switch arg.Kind {
 		case ArgClass:
-			if !args.ClassID.Valid {
+			if !args.ClassID.Valid && !args.GradeLevelID.Valid {
 				return fmt.Errorf("%w: %s", ErrMissingArgument, arg.Name)
 			}
 		case ArgSubject:
@@ -203,7 +311,8 @@ func requireArgs(def Definition, args RunArgs) error {
 	return nil
 }
 
-// renderXLSX writes one sheet with a header row and the data below it.
+// renderXLSX writes one sheet with a header row and the data below it --
+// attendance.daily's legacy path (see Sheet's doc comment).
 func renderXLSX(sheet Sheet) ([]byte, error) {
 	f := excelize.NewFile()
 	defer f.Close() //nolint:errcheck // an in-memory workbook cannot fail to close after WriteToBuffer

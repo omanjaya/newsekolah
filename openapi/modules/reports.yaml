@@ -25,14 +25,46 @@ paths:
       parameters:
         - { name: reportKind, in: path, required: true, schema: { type: string } }
         - { name: class_id, in: query, schema: { type: string, format: uuid } }
+        - {
+            name: grade_level_id,
+            in: query,
+            description: "Every class of this grade level, one section per class; mutually exclusive with class_id",
+            schema: { type: string, format: uuid },
+          }
         - { name: subject_id, in: query, schema: { type: string, format: uuid } }
         - { name: term_id, in: query, schema: { type: string, format: uuid } }
         - { name: date, in: query, schema: { type: string, format: date } }
+        - {
+            name: format,
+            in: query,
+            description: "File type to render; defaults to xlsx when omitted",
+            schema: { type: string, enum: [xlsx, pdf] },
+          }
+        - {
+            name: title,
+            in: query,
+            description: "Overrides the report's default title",
+            schema: { type: string },
+          }
+        - {
+            name: letterhead,
+            in: query,
+            description: "Print the tenant's configured kop laporan; defaults to true (shown when the tenant has one configured)",
+            schema: { type: boolean },
+          }
+        - {
+            name: columns,
+            in: query,
+            description: "Comma-separated column keys, each optionally renamed as key:label (URL-encoded); omitted keeps every column in its default order",
+            schema: { type: string },
+          }
       responses:
         "200":
-          description: Workbook
+          description: Rendered report
           content:
             application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: { type: string, format: binary }
+            application/pdf:
               schema: { type: string, format: binary }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
@@ -185,10 +217,14 @@ components:
     ReportScheduleCadence:
       type: string
       enum: [daily, weekly, monthly]
+    ReportScheduleFormat:
+      type: string
+      enum: [xlsx, pdf]
     ReportScheduleParams:
       type: object
       properties:
         class_id: { type: string, format: uuid }
+        grade_level_id: { type: string, format: uuid }
         subject_id: { type: string, format: uuid }
         term_id: { type: string, format: uuid }
     ReportScheduleWrite:
@@ -198,6 +234,9 @@ components:
         report_kind: { type: string }
         params: { $ref: "#/components/schemas/ReportScheduleParams" }
         cadence: { $ref: "#/components/schemas/ReportScheduleCadence" }
+        format:
+          allOf: [{ $ref: "#/components/schemas/ReportScheduleFormat" }]
+          description: File type to render; defaults to xlsx when omitted
         weekday:
           type: integer
           minimum: 0
