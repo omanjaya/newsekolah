@@ -141,7 +141,7 @@ export function BarcodeScannerField({
       >
         {submitLabel}
       </Button>
-      {isCameraDetectionSupported() && (
+      {isCameraSupported() && (
         <Button
           type="button"
           variant="secondary"
@@ -172,14 +172,21 @@ export function BarcodeScannerField({
   );
 }
 
-function isCameraDetectionSupported(): boolean {
+/**
+ * Whether the camera button should render at all -- only needs
+ * `getUserMedia`, not `BarcodeDetector`: iOS Safari has the former but not
+ * the latter, and `CameraScanner` below falls back to a JS decoder there.
+ */
+function isCameraSupported(): boolean {
   return (
-    typeof window !== "undefined" &&
-    "BarcodeDetector" in window &&
     typeof navigator !== "undefined" &&
     Boolean(navigator.mediaDevices) &&
     typeof navigator.mediaDevices.getUserMedia === "function"
   );
+}
+
+function hasNativeBarcodeDetector(): boolean {
+  return typeof window !== "undefined" && "BarcodeDetector" in window;
 }
 
 interface BarcodeDetectorResult {
@@ -200,6 +207,14 @@ interface CameraScannerProps {
  * scanner. It closes itself as soon as one code is read, or when the
  * reader dismisses it; the video stream is always stopped on unmount so a
  * background tab never keeps the camera light on.
+ *
+ * Detection prefers the native `BarcodeDetector` API (zero extra bytes,
+ * fastest) where the browser has it. iOS Safari never has it, so there the
+ * effect lazily imports `@zxing/browser` -- a maintained wrapper around the
+ * ZXing multi-format decoder (QR plus the Code 128/EAN barcodes the library
+ * desk scans) -- the same "load only the screen that needs it" pattern as
+ * `exceljs` in `apps/web/features/library/import-lib.ts`, so pages that
+ * never open the camera never pay for the decoder.
  */
 function CameraScanner({ onDetect, onClose }: CameraScannerProps): ReactElement {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -208,27 +223,47 @@ function CameraScanner({ onDetect, onClose }: CameraScannerProps): ReactElement 
     let stream: MediaStream | null = null;
     let frame = 0;
     let stopped = false;
+    let fallbackControls: { stop: () => void } | null = null;
 
-    const DetectorCtor = (window as unknown as { BarcodeDetector: new () => BarcodeDetectorLike })
-      .BarcodeDetector;
-    const detector = new DetectorCtor();
+    const runNativeDetector = () => {
+      const DetectorCtor = (window as unknown as { BarcodeDetector: new () => BarcodeDetectorLike })
+        .BarcodeDetector;
+      const detector = new DetectorCtor();
 
-    const tick = () => {
+      const tick = () => {
+        if (stopped || !videoRef.current) return;
+        detector
+          .detect(videoRef.current)
+          .then((results) => {
+            const [first] = results;
+            if (first && !stopped) {
+              stopped = true;
+              onDetect(first.rawValue);
+              return;
+            }
+            frame = requestAnimationFrame(tick);
+          })
+          .catch(() => {
+            frame = requestAnimationFrame(tick);
+          });
+      };
+      frame = requestAnimationFrame(tick);
+    };
+
+    const runFallbackDecoder = async (mediaStream: MediaStream) => {
+      const { BrowserMultiFormatReader } = await import(
+        /* webpackChunkName: "zxing-browser" */ "@zxing/browser"
+      );
       if (stopped || !videoRef.current) return;
-      detector
-        .detect(videoRef.current)
-        .then((results) => {
-          const [first] = results;
-          if (first && !stopped) {
-            stopped = true;
-            onDetect(first.rawValue);
-            return;
-          }
-          frame = requestAnimationFrame(tick);
-        })
-        .catch(() => {
-          frame = requestAnimationFrame(tick);
-        });
+      const reader = new BrowserMultiFormatReader();
+      // decodeFromStream binds mediaStream to the video element itself and
+      // keeps calling back until controls.stop() -- no rAF loop of our own.
+      fallbackControls = await reader.decodeFromStream(mediaStream, videoRef.current, (result) => {
+        if (result && !stopped) {
+          stopped = true;
+          onDetect(result.getText());
+        }
+      });
     };
 
     navigator.mediaDevices
@@ -241,11 +276,15 @@ function CameraScanner({ onDetect, onClose }: CameraScannerProps): ReactElement 
           return;
         }
         stream = mediaStream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = mediaStream;
-          void videoRef.current.play();
+        if (hasNativeBarcodeDetector()) {
+          if (videoRef.current) {
+            videoRef.current.srcObject = mediaStream;
+            void videoRef.current.play();
+          }
+          runNativeDetector();
+        } else {
+          void runFallbackDecoder(mediaStream);
         }
-        frame = requestAnimationFrame(tick);
       })
       .catch(() => {
         stopped = true;
@@ -255,6 +294,7 @@ function CameraScanner({ onDetect, onClose }: CameraScannerProps): ReactElement 
     return () => {
       stopped = true;
       cancelAnimationFrame(frame);
+      fallbackControls?.stop();
       stream?.getTracks().forEach((track) => {
         track.stop();
       });
