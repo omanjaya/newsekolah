@@ -14,6 +14,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/supervision/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/supervision/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 )
 
 type SupervisionHandler struct{ service *service.Service }
@@ -238,16 +239,37 @@ func (h *SupervisionHandler) GetTeacherSupervisionReport(ctx context.Context, re
 }
 
 func (h *SupervisionHandler) ExportTeacherSupervisionReport(ctx context.Context, request api.ExportTeacherSupervisionReportRequestObject) (api.ExportTeacherSupervisionReportResponseObject, error) {
-	report, err := h.service.TeacherReport(ctx, tenantID(ctx), request.CycleId, request.TeacherId)
+	p := request.Params
+	opts := reportdoc.Options{Format: reportdoc.FormatXLSX, ShowLetterhead: true}
+	if p.Format != nil {
+		opts.Format = reportdoc.Format(*p.Format)
+	}
+	if p.Title != nil {
+		opts.Title = *p.Title
+	}
+	if p.Letterhead != nil {
+		opts.ShowLetterhead = *p.Letterhead
+	}
+	if p.Columns != nil {
+		for _, c := range httpx.ParseReportColumns(*p.Columns) {
+			opts.Columns = append(opts.Columns, reportdoc.ColumnChoice{Key: c.Key, Label: c.Label})
+		}
+	}
+
+	body, err := h.service.ExportTeacherReport(ctx, tenantID(ctx), request.CycleId, request.TeacherId, opts)
 	if err != nil {
+		if errors.Is(err, reportdoc.ErrUnknownColumn) {
+			return nil, httpx.ErrValidation
+		}
 		return nil, mapError(err)
 	}
-	xlsx, err := service.ExportTeacherReportXLSX(report)
-	if err != nil {
-		return nil, httpx.Internal(err)
+	if opts.Format == reportdoc.FormatPDF {
+		return api.ExportTeacherSupervisionReport200ApplicationpdfResponse{
+			Body: bytes.NewReader(body), ContentLength: int64(len(body)),
+		}, nil
 	}
 	return api.ExportTeacherSupervisionReport200ApplicationvndOpenxmlformatsOfficedocumentSpreadsheetmlSheetResponse{
-		Body: bytes.NewReader(xlsx), ContentLength: int64(len(xlsx)),
+		Body: bytes.NewReader(body), ContentLength: int64(len(body)),
 	}, nil
 }
 

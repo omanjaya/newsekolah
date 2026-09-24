@@ -13,6 +13,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/visitors/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 )
 
 // Repository is the sqlc-backed data boundary this service depends on.
@@ -88,20 +89,23 @@ type AuditRecorder interface {
 }
 
 type Service struct {
-	pool  *pgxpool.Pool
-	repo  Repository
-	years AcademicYearReader
-	docs  DocumentIssuer
-	flags FlagReader
-	audit AuditRecorder
-	clock clock.Clock
+	pool       *pgxpool.Pool
+	repo       Repository
+	years      AcademicYearReader
+	docs       DocumentIssuer
+	flags      FlagReader
+	audit      AuditRecorder
+	letterhead reportdoc.LetterheadSource
+	clock      clock.Clock
 }
 
-func New(pool *pgxpool.Pool, repo Repository, years AcademicYearReader, docs DocumentIssuer, flags FlagReader, auditor AuditRecorder, clk clock.Clock) *Service {
+// New wires a Service. letterhead may be nil (a tenant's kop laporan
+// simply never shows on the recap exports then).
+func New(pool *pgxpool.Pool, repo Repository, years AcademicYearReader, docs DocumentIssuer, flags FlagReader, auditor AuditRecorder, letterhead reportdoc.LetterheadSource, clk clock.Clock) *Service {
 	if clk == nil {
 		clk = clock.Real{}
 	}
-	return &Service{pool: pool, repo: repo, years: years, docs: docs, flags: flags, audit: auditor, clock: clk}
+	return &Service{pool: pool, repo: repo, years: years, docs: docs, flags: flags, audit: auditor, letterhead: letterhead, clock: clk}
 }
 
 func (s *Service) withTx(ctx context.Context, tenantID uuid.UUID, fn func(ctx context.Context) error) error {

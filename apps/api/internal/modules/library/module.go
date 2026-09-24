@@ -12,6 +12,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/library/service"
 	transporthttp "github.com/omanjaya/newsekolah/apps/api/internal/modules/library/transport/http"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 )
 
 type Dependencies struct {
@@ -24,7 +25,11 @@ type Dependencies struct {
 	ScanTokens  service.ScanTokens // nil: kiosk token endpoints return an error
 	Storage     service.Storage    // nil: downloading a cover from an external URL is disabled
 	Bucket      string             // object storage bucket a downloaded cover is written to
-	Clock       clock.Clock
+	// Letterhead loads a tenant's configured kop laporan for the report
+	// exports built on reportdoc; nil is fine (those exports just never
+	// show one).
+	Letterhead reportdoc.LetterheadSource
+	Clock      clock.Clock
 }
 
 type Module struct {
@@ -35,7 +40,7 @@ type Module struct {
 func Register(deps Dependencies) *Module {
 	svc := service.New(deps.Pool, repository.New(deps.Pool), deps.Members, deps.Settings, deps.Clock, service.Deps{
 		Flags: deps.Flags, Permissions: deps.Permissions, Events: deps.Events, ScanTokens: deps.ScanTokens,
-		Storage: deps.Storage, StorageBucket: deps.Bucket,
+		Storage: deps.Storage, StorageBucket: deps.Bucket, Letterhead: deps.Letterhead,
 	})
 	return &Module{Service: svc, Handler: transporthttp.New(svc)}
 }

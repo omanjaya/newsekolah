@@ -305,14 +305,20 @@ paths:
       tags: [visitors]
       operationId: exportDailyVisitorRecap
       x-permission: view_visitor_reports
-      summary: The daily recap as a workbook
+      summary: The daily recap as a workbook or PDF
       parameters:
         - { name: date, in: query, required: true, schema: { type: string, format: date } }
+        - $ref: "#/components/parameters/ReportFormat"
+        - $ref: "#/components/parameters/ReportTitle"
+        - $ref: "#/components/parameters/ReportLetterhead"
+        - $ref: "#/components/parameters/ReportColumns"
       responses:
         "200":
-          description: Workbook
+          description: File
           content:
             application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: { type: string, format: binary }
+            application/pdf:
               schema: { type: string, format: binary }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
@@ -345,7 +351,7 @@ paths:
       tags: [visitors]
       operationId: exportMonthlyVisitorRecap
       x-permission: view_visitor_reports
-      summary: The monthly recap as a workbook
+      summary: The monthly recap as a workbook or PDF
       parameters:
         - {
             name: month,
@@ -354,11 +360,17 @@ paths:
             schema: { type: string, format: date },
             description: Any date within the target month,
           }
+        - $ref: "#/components/parameters/ReportFormat"
+        - $ref: "#/components/parameters/ReportTitle"
+        - $ref: "#/components/parameters/ReportLetterhead"
+        - $ref: "#/components/parameters/ReportColumns"
       responses:
         "200":
-          description: Workbook
+          description: File
           content:
             application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: { type: string, format: binary }
+            application/pdf:
               schema: { type: string, format: binary }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
