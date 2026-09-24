@@ -67,6 +67,7 @@
     "emptyTitle": "Belum ada judul di katalog",
     "emptyBody": "Judul yang ditambahkan akan muncul di sini.",
     "viewCopies": "Lihat eksemplar",
+    "rowActions": "Aksi untuk {title}",
     "form": {
       "title": "Judul",
       "subtitle": "Subjudul",
@@ -111,6 +112,7 @@
     "addCopy": "Tambah eksemplar",
     "addCopiesBatch": "Tambah beberapa eksemplar",
     "viewDetail": "Detail",
+    "rowActions": "Aksi untuk {barcode}",
     "columns": {
       "barcode": "Barcode",
       "condition": "Kondisi",
@@ -363,6 +365,7 @@
     "searchPlaceholder": "Cari nama atau nomor anggota",
     "unknownUser": "Pengguna tidak dikenali",
     "viewDetail": "Lihat detail",
+    "rowActions": "Aksi untuk {member}",
     "noMatchTitle": "Tidak ada anggota yang cocok",
     "noMatchBody": "Coba ubah filter atau kata kunci pencarian.",
     "emptyTitle": "Belum ada anggota terdaftar",
@@ -437,8 +440,8 @@
     "renewalValue": "{count}x, tambah {days} hari",
     "fineNone": "Tanpa denda",
     "fineValue": {
-      "constant": "Rp{amount} per hari",
-      "per_tenor": "Rp{amount} per {tenor} hari"
+      "constant": "{amount} per hari",
+      "per_tenor": "{amount} per {tenor} hari"
     },
     "form": {
       "name": "Nama jenis anggota",
@@ -459,7 +462,8 @@
       "defaultForRoleNone": "Tidak ada",
       "cancel": "Batal",
       "save": "Simpan"
-    }
+    },
+    "rowActions": "Aksi untuk {name}"
   },
   "memberDetail": {
     "eyebrow": "Perpustakaan",
@@ -489,12 +493,16 @@
     "eyebrow": "Perpustakaan",
     "title": "Pelanggaran dan denda",
     "record": "Catat pelanggaran",
-    "settleAction": "Selesaikan",
+    "rowActions": "Aksi untuk {member}",
     "settle": {
-      "title": "Selesaikan pelanggaran",
-      "description": "Menyelesaikan sebagai lunas atau dibebaskan. Anggota yang sedang ditangguhkan akan aktif kembali begitu semua pelanggarannya selesai.",
       "waive": "Bebaskan",
       "markPaid": "Tandai lunas",
+      "confirmPaidTitle": "Tandai lunas?",
+      "confirmPaidBodyAmount": "{member} membayar {amount} untuk pelanggaran {kind}. Anggota yang sedang ditangguhkan akan aktif kembali begitu semua pelanggarannya selesai.",
+      "confirmPaidBody": "Pelanggaran {kind} milik {member} akan ditandai lunas. Anggota yang sedang ditangguhkan akan aktif kembali begitu semua pelanggarannya selesai.",
+      "confirmWaivedTitle": "Bebaskan pelanggaran?",
+      "confirmWaivedBodyAmount": "Denda {amount} untuk pelanggaran {kind} milik {member} akan dibebaskan dan tidak bisa ditagih lagi. Anggota yang sedang ditangguhkan akan aktif kembali begitu semua pelanggarannya selesai.",
+      "confirmWaivedBody": "Pelanggaran {kind} milik {member} akan dibebaskan. Anggota yang sedang ditangguhkan akan aktif kembali begitu semua pelanggarannya selesai.",
       "settledPaid": "Pelanggaran ditandai lunas",
       "settledWaived": "Pelanggaran dibebaskan"
     },
@@ -503,7 +511,6 @@
     "noMatchBody": "Coba ubah filter jenis atau status.",
     "emptyTitle": "Belum ada pelanggaran tercatat",
     "emptyBody": "Pelanggaran otomatis dari pengembalian terlambat, atau catat manual untuk kerusakan dan kasus lain.",
-    "amountValue": "Rp{amount}",
     "suspendDaysValue": "{days} hari",
     "columns": {
       "member": "Anggota",
@@ -777,7 +784,11 @@
       "label": "Barcode",
       "placeholder": "Pindai atau ketik barcode",
       "submit": "Catat",
-      "thisDevice": "{count, plural, =0 {Belum ada barcode yang dipindai dari perangkat ini.} other {# barcode dipindai dari perangkat ini.}}"
+      "thisDevice": "{count, plural, =0 {Belum ada barcode yang dipindai dari perangkat ini.} other {# barcode dipindai dari perangkat ini.}}",
+      "recent": {
+        "found": "Ditemukan",
+        "rejected": "Kode tidak dikenali"
+      }
     },
     "close": "Tutup sesi",
     "result": {
@@ -836,7 +847,8 @@
         "isActive": "Aktif",
         "cancel": "Batal",
         "save": "Simpan"
-      }
+      },
+      "rowActions": "Aksi untuk {name}"
     },
     "acquisitionSources": {
       "add": "Tambah sumber",
@@ -865,7 +877,8 @@
         "cancel": "Batal",
         "save": "Simpan"
       },
-      "saved": "Sumber perolehan disimpan"
+      "saved": "Sumber perolehan disimpan",
+      "rowActions": "Aksi untuk {name}"
     },
     "partners": {
       "add": "Tambah mitra",
@@ -897,7 +910,8 @@
         "isActive": "Aktif",
         "cancel": "Batal",
         "save": "Simpan"
-      }
+      },
+      "rowActions": "Aksi untuk {name}"
     },
     "collectionCategories": {
       "add": "Tambah kategori",
@@ -926,7 +940,8 @@
         "cancel": "Batal",
         "save": "Simpan"
       },
-      "saved": "Kategori koleksi disimpan"
+      "saved": "Kategori koleksi disimpan",
+      "rowActions": "Aksi untuk {name}"
     },
     "locations": {
       "add": "Tambah lokasi",
@@ -955,7 +970,8 @@
         "cancel": "Batal",
         "save": "Simpan"
       },
-      "saved": "Lokasi rak disimpan"
+      "saved": "Lokasi rak disimpan",
+      "rowActions": "Aksi untuk {name}"
     },
     "ddcClasses": {
       "columns": {

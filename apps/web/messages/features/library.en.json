@@ -67,6 +67,7 @@
     "emptyTitle": "No titles in the catalogue yet",
     "emptyBody": "Titles you add will show up here.",
     "viewCopies": "View copies",
+    "rowActions": "Actions for {title}",
     "form": {
       "title": "Title",
       "subtitle": "Subtitle",
@@ -111,6 +112,7 @@
     "addCopy": "Add copy",
     "addCopiesBatch": "Add several copies",
     "viewDetail": "Detail",
+    "rowActions": "Actions for {barcode}",
     "columns": {
       "barcode": "Barcode",
       "condition": "Condition",
@@ -363,6 +365,7 @@
     "searchPlaceholder": "Search by name or member number",
     "unknownUser": "Unknown user",
     "viewDetail": "View detail",
+    "rowActions": "Actions for {member}",
     "noMatchTitle": "No matching members",
     "noMatchBody": "Try a different filter or search term.",
     "emptyTitle": "No members registered yet",
@@ -437,8 +440,8 @@
     "renewalValue": "{count}x, +{days} days",
     "fineNone": "No fine",
     "fineValue": {
-      "constant": "Rp{amount} per day",
-      "per_tenor": "Rp{amount} per {tenor} days"
+      "constant": "{amount} per day",
+      "per_tenor": "{amount} per {tenor} days"
     },
     "form": {
       "name": "Member type name",
@@ -459,7 +462,8 @@
       "defaultForRoleNone": "None",
       "cancel": "Cancel",
       "save": "Save"
-    }
+    },
+    "rowActions": "Actions for {name}"
   },
   "memberDetail": {
     "eyebrow": "Library",
@@ -489,12 +493,16 @@
     "eyebrow": "Library",
     "title": "Violations and fines",
     "record": "Record violation",
-    "settleAction": "Settle",
+    "rowActions": "Actions for {member}",
     "settle": {
-      "title": "Settle violation",
-      "description": "Settle as paid or waived. A suspended member reactivates once every violation is clear.",
       "waive": "Waive",
       "markPaid": "Mark paid",
+      "confirmPaidTitle": "Mark as paid?",
+      "confirmPaidBodyAmount": "{member} pays {amount} for the {kind} violation. A suspended member reactivates once every violation is clear.",
+      "confirmPaidBody": "The {kind} violation for {member} will be marked paid. A suspended member reactivates once every violation is clear.",
+      "confirmWaivedTitle": "Waive this violation?",
+      "confirmWaivedBodyAmount": "The {amount} fine for {member}'s {kind} violation will be waived and can no longer be collected. A suspended member reactivates once every violation is clear.",
+      "confirmWaivedBody": "The {kind} violation for {member} will be waived. A suspended member reactivates once every violation is clear.",
       "settledPaid": "Violation marked paid",
       "settledWaived": "Violation waived"
     },
@@ -503,7 +511,6 @@
     "noMatchBody": "Try a different type or status filter.",
     "emptyTitle": "No violations recorded yet",
     "emptyBody": "Violations are recorded automatically from late returns, or manually for damage and other cases.",
-    "amountValue": "Rp{amount}",
     "suspendDaysValue": "{days} days",
     "columns": {
       "member": "Member",
@@ -777,7 +784,11 @@
       "label": "Barcode",
       "placeholder": "Scan or type a barcode",
       "submit": "Record",
-      "thisDevice": "{count, plural, =0 {No barcodes scanned from this device yet.} one {# barcode scanned from this device.} other {# barcodes scanned from this device.}}"
+      "thisDevice": "{count, plural, =0 {No barcodes scanned from this device yet.} one {# barcode scanned from this device.} other {# barcodes scanned from this device.}}",
+      "recent": {
+        "found": "Found",
+        "rejected": "Code not recognized"
+      }
     },
     "close": "Close session",
     "result": {
@@ -836,7 +847,8 @@
         "isActive": "Active",
         "cancel": "Cancel",
         "save": "Save"
-      }
+      },
+      "rowActions": "Actions for {name}"
     },
     "acquisitionSources": {
       "add": "Add source",
@@ -865,7 +877,8 @@
         "cancel": "Cancel",
         "save": "Save"
       },
-      "saved": "Acquisition source saved"
+      "saved": "Acquisition source saved",
+      "rowActions": "Actions for {name}"
     },
     "partners": {
       "add": "Add partner",
@@ -897,7 +910,8 @@
         "isActive": "Active",
         "cancel": "Cancel",
         "save": "Save"
-      }
+      },
+      "rowActions": "Actions for {name}"
     },
     "collectionCategories": {
       "add": "Add category",
@@ -926,7 +940,8 @@
         "cancel": "Cancel",
         "save": "Save"
       },
-      "saved": "Collection category saved"
+      "saved": "Collection category saved",
+      "rowActions": "Actions for {name}"
     },
     "locations": {
       "add": "Add location",
@@ -955,7 +970,8 @@
         "cancel": "Cancel",
         "save": "Save"
       },
-      "saved": "Shelf location saved"
+      "saved": "Shelf location saved",
+      "rowActions": "Actions for {name}"
     },
     "ddcClasses": {
       "columns": {

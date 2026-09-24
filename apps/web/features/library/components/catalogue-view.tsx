@@ -1,14 +1,15 @@
 "use client";
 
 import {
+  Badge,
   Button,
   ConfirmDialog,
   DataTable,
   Dialog,
   DialogContent,
   EmptyState,
-  IconButton,
   PageHeader,
+  RowActionsMenu,
   domainIcons,
   useToast,
 } from "@newsekolah/ui";
@@ -58,11 +59,19 @@ export function CatalogueView(): ReactElement {
         id: "copies",
         header: t("columns.copies"),
         enableSorting: false,
-        cell: ({ row }) =>
-          t("copiesAvailable", {
-            available: row.original.available_copies,
-            total: row.original.total_copies,
-          }),
+        cell: ({ row }) => (
+          <Badge
+            variant={row.original.available_copies > 0 ? "accent" : "neutral"}
+            className={
+              row.original.available_copies === 0 ? "border-status-late/40 text-status-late" : ""
+            }
+          >
+            {t("copiesAvailable", {
+              available: row.original.available_copies,
+              total: row.original.total_copies,
+            })}
+          </Badge>
+        ),
       },
       {
         id: "actions",
@@ -70,27 +79,19 @@ export function CatalogueView(): ReactElement {
         enableSorting: false,
         cell: ({ row }) => (
           <div className="flex items-center gap-1">
-            <Link
-              href={`/library/catalogue/${row.original.id}`}
-              aria-label={t("viewCopies")}
-              className="inline-flex size-11 items-center justify-center rounded-sm text-fg transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)] hover:bg-bg md:size-8 [&>svg]:size-5"
-            >
-              <BookOpen aria-hidden="true" />
-            </Link>
+            <Button asChild size="sm" variant="secondary">
+              <Link href={`/library/catalogue/${row.original.id}`}>
+                <BookOpen aria-hidden="true" />
+                {t("viewCopies")}
+              </Link>
+            </Button>
             {canManage && (
-              <IconButton
-                icon={<Pencil />}
-                aria-label={t("editTitle")}
-                onClick={() => {
+              <TitleRowActionsMenu
+                title={row.original.title}
+                onEdit={() => {
                   setEditing(row.original);
                 }}
-              />
-            )}
-            {canManage && (
-              <IconButton
-                icon={<Trash2 />}
-                aria-label={t("deleteTitle")}
-                onClick={() => {
+                onDelete={() => {
                   setDeleting(row.original);
                 }}
               />
@@ -209,5 +210,41 @@ export function CatalogueView(): ReactElement {
         }}
       />
     </div>
+  );
+}
+
+/**
+ * A title row's edit/delete collapsed behind one "..." button instead of
+ * two bare icon buttons next to "Lihat eksemplar" (docs/07-ui-ux.md:
+ * secondary actions in a labelled "..." menu, never bare icons).
+ */
+function TitleRowActionsMenu({
+  title,
+  onEdit,
+  onDelete,
+}: {
+  title: string;
+  onEdit: () => void;
+  onDelete: () => void;
+}): ReactElement {
+  const t = useTranslations("app.library.catalogue");
+
+  return (
+    <RowActionsMenu
+      ariaLabel={t("rowActions", { title })}
+      items={[
+        {
+          label: t("editTitle"),
+          icon: <Pencil className="size-4" aria-hidden="true" />,
+          onClick: onEdit,
+        },
+        {
+          label: t("deleteTitle"),
+          icon: <Trash2 className="size-4" aria-hidden="true" />,
+          tone: "danger",
+          onClick: onDelete,
+        },
+      ]}
+    />
   );
 }

@@ -108,8 +108,13 @@ describe("library editors", () => {
   it("updates a title while preserving metadata and its hidden OPAC status", async () => {
     const user = userEvent.setup();
     render(<CatalogueView />);
-    const editButton = screen.getAllByRole("button", { name: "editTitle" })[0];
-    if (!editButton) throw new Error("Missing title edit action");
+    // Edit/delete sit behind the row's "..." menu (docs/07-ui-ux.md: never
+    // bare icons), so the menu has to open before its "editTitle" item
+    // becomes visible.
+    const rowMenuButton = screen.getAllByRole("button", { name: "rowActions" })[0];
+    if (!rowMenuButton) throw new Error("Missing title row actions menu");
+    await user.click(rowMenuButton);
+    const editButton = await screen.findByRole("button", { name: "editTitle" });
     await user.click(editButton);
     const titleInput = screen.getByRole("textbox", { name: "title" });
     await user.clear(titleInput);
