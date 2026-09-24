@@ -17,6 +17,22 @@ export interface ScheduleFilter {
   dayOfWeek?: number;
 }
 
+/**
+ * A single schedule row's full detail, including `notes` and
+ * `mutation_policy` -- fields the grid's merged-block list
+ * (`ScheduleBlock`, from `useSchedulesQuery`) never carries. Used to
+ * prefill the edit form so saving a block doesn't silently drop an
+ * existing note.
+ */
+export function useScheduleQuery(scheduleId: string, enabled = true) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: ["schedules", "detail", scheduleId] as const,
+    queryFn: () => client.GET("/v1/schedules/{scheduleId}", { params: { path: { scheduleId } } }),
+    enabled: enabled && scheduleId !== "",
+  });
+}
+
 export function useSchedulesQuery(filter: ScheduleFilter) {
   const client = useApiClient();
   // A day view asks for every class at once, so a day alone is enough to

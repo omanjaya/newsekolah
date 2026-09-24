@@ -586,7 +586,10 @@
         "created": "Jadwal ditambahkan",
         "cancel": "Batal",
         "save": "Simpan",
-        "updated": "Jadwal diperbarui."
+        "updated": "Jadwal diperbarui.",
+        "notes": "Catatan",
+        "notesPlaceholder": "Catatan opsional, mis. alasan perubahan jadwal",
+        "notesLoadError": "Catatan yang tersimpan gagal dimuat. Simpan tidak tersedia dulu, supaya catatan yang ada tidak terhapus."
       },
       "bulk": {
         "navLink": "Operasi massal",
