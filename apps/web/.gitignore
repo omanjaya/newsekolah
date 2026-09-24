@@ -15,9 +15,14 @@ node_modules/
 # Testing
 /coverage
 /playwright-report
+/smoke-report
 /test-results
 /blob-report
 /playwright/.cache
+
+# Smoke suite (apps/web/e2e/smoke): saved storageState holds real session
+# cookies for the seeded demo accounts -- never commit it.
+/e2e/smoke/.auth
 
 # Misc
 .DS_Store
