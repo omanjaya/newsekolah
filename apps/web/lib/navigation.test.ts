@@ -226,4 +226,104 @@ describe("navigation registry: per-role audiences", () => {
     const keys = filterNavigation(navigation, can, "teacher").map((item) => item.key);
     expect(keys).toContain("leave-requests");
   });
+
+  it("gives the principal (Kepala Sekolah) oversight of every module but no settings, grading, counseling or user-management screen", () => {
+    // authz.RoleDefaults()'s principal (role_defaults.go); profile kind
+    // "teacher" per cmd/seed's profileKindByRole["principal"].
+    const can = has(
+      "view_dashboard",
+      "view_announcements",
+      "publish_announcements",
+      "view_audit_logs",
+      "view_schedules",
+      "view_journals_all",
+      "view_attendance",
+      "view_staff_attendance",
+      "view_notifications",
+      "view_reports",
+      "manage_report_schedules",
+      "view_library",
+      "view_library_reports",
+      "view_own_library_loans",
+      "view_academic_data",
+      "view_activities",
+      "view_early_warning",
+      "view_billing",
+      "view_discipline",
+      "view_mentoring",
+      "view_supervision",
+      "manage_supervision",
+      "view_visitors",
+      "view_visitor_incidents",
+      "view_visitor_reports",
+    );
+    const keys = filterNavigation(navigation, can, "teacher").map((item) => item.key);
+
+    // Sees everything the school runs: attendance, staff attendance,
+    // discipline, reports, library, billing, visitors, supervision,
+    // academic structure, journals -- and the late-arrivals queue every
+    // non-parent account reaches regardless of permission.
+    for (const key of [
+      "schedule",
+      "attendance",
+      "attendance-reports",
+      "staff-attendance",
+      "journal",
+      "violations",
+      "warning-letters",
+      "analytics",
+      "late-arrivals",
+      "school-classes",
+      "school-calendar",
+      "library-dashboard",
+      "library-reports",
+      "visitors-board",
+      "visitors-recap",
+      "activities-clubs",
+      "billing",
+      "mentoring-groups",
+      "supervision-cycles",
+      "supervision-my-report",
+      "settings-audit",
+      "reports",
+    ]) {
+      expect(keys).toContain(key);
+    }
+
+    // Never an operator/administrator: no settings, master data, grading,
+    // counseling, user management, workflow or permits-actor screen.
+    for (const key of [
+      "settings-roles",
+      "school-users",
+      "school-learning",
+      "school-assignments",
+      "school-structure",
+      "academic-enrollment-import",
+      "academic-new-year-setup",
+      "school-promotion",
+      "setup",
+      "settings-session",
+      "settings-branding",
+      "settings-report-header",
+      "settings-sso",
+      "settings-integrations",
+      "settings-notification-defaults",
+      "settings-document-templates",
+      "settings-workflows",
+      "settings-whatsapp",
+      "platform-tenants",
+      "grading",
+      "my-grades",
+      "counseling",
+      "substitutions",
+      "leave-requests",
+      "exit-permits",
+      "duty",
+      "library-desk",
+      "library-members",
+      "library-loan-rules",
+    ]) {
+      expect(keys).not.toContain(key);
+    }
+  });
 });

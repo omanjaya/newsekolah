@@ -31,7 +31,9 @@ export function AdminDashboardPanel({
 }): ReactElement | null {
   const t = useTranslations("app.dashboard.admin");
   const format = useFormatter();
-  const isAdmin = roles.some((role) => role.slug === "admin" || role.slug === "super_admin");
+  const isAdmin = roles.some(
+    (role) => role.slug === "admin" || role.slug === "super_admin" || role.slug === "principal",
+  );
   const { data, isLoading, isError, refetch } = useAdminDashboardQuery(isAdmin);
   if (!isAdmin) return null;
 

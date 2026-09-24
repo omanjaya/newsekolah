@@ -37,20 +37,22 @@ Satu temuan dari pemeriksaan RBAC dibuang setelah verifikasi: halaman `/settings
 
 ## Sidebar per peran
 
-Tujuh peran sistem di-seed per tenant (`super_admin`, `admin`, `teacher`, `staff`, `student`, `parent`, `librarian`) dan enam duty (`homeroom`, `counselor`, `picket`, `leadership`, `security`, `librarian`) yang izinnya digabung ke izin efektif pengguna. Peran bisa dikustomisasi penuh per tenant di `/settings/roles`, jadi matriks di bawah adalah kondisi bawaan. Angka adalah item yang terlihat dari total item grup, tidak menghitung item `sidebarPlacement: "hidden"` (profil, notifikasi, keamanan, tampilan -- dijangkau dari menu akun, bukan daftar sidebar).
+Delapan peran sistem di-seed per tenant (`super_admin`, `admin`, `principal`, `teacher`, `staff`, `student`, `parent`, `librarian`, sejak 25 September 2026) dan enam duty (`homeroom`, `counselor`, `picket`, `leadership`, `security`, `librarian`) yang izinnya digabung ke izin efektif pengguna. Peran bisa dikustomisasi penuh per tenant di `/settings/roles`, jadi matriks di bawah adalah kondisi bawaan. Angka adalah item yang terlihat dari total item grup, tidak menghitung item `sidebarPlacement: "hidden"` (profil, notifikasi, keamanan, tampilan -- dijangkau dari menu akun, bukan daftar sidebar).
 
 **Diperbarui 25 September 2026** setelah sesi navigasi (`apps/web/lib/navigation.ts`, `navigation-academic.ts`) memberi `leave-requests`, `exit-permits`, `late-arrivals`, `school-classes`, dan `academic-years` izin yang mencerminkan layar sungguhan di baliknya (lihat commit "fix(web): scope permission-free sidebar items to the roles that use them"). Angka Akademik, Kepegawaian, dan Perpustakaan juga bergeser dari versi 23 September karena modul lain (kehadiran staf, ekstrakurikuler, mentoring) menambah item sejak itu -- pergeseran itu bukan bagian dari sesi ini.
 
-| Grup                        | Super admin | Admin                                        | Guru | Wali kelas | Guru BK | Pustakawan | Staf | Satpam | Orang tua | Siswa |
-| --------------------------- | ----------- | -------------------------------------------- | ---- | ---------- | ------- | ---------- | ---- | ------ | --------- | ----- |
-| Akademik (13)               | 12          | 12                                           | 7    | 7          | 8       | 0          | 2    | 2      | 1         | 5     |
-| Siswa dan kedisiplinan (15) | 13          | 13                                           | 6    | 7          | 8       | 1          | 6    | 6      | 1         | 5     |
-| Kepegawaian (4)             | 3           | 3                                            | 1    | 1          | 1       | 1          | 1    | 1      | 0         | 0     |
-| Perpustakaan (17)           | 17          | 17                                           | 5    | 5          | 5       | 17         | 5    | 5      | 1         | 1     |
-| Tamu dan keuangan (5)       | 5           | 5                                            | 0    | 0          | 0       | 0          | 5    | 5      | 0         | 0     |
-| Data sekolah (7)            | 7           | 7                                            | 2    | 2          | 2       | 0          | 2    | 2      | 0         | 0     |
-| Pengaturan (12)             | 12          | 12                                           | 0    | 0          | 0       | 0          | 0    | 0      | 0         | 0     |
-| Platform (1)                | 1           | 1 (salah, lihat temuan RBAC "Admin Sekolah") | 0    | 0          | 0       | 0          | 0    | 0      | 0         | 0     |
+| Grup                        | Super admin | Admin                                        | Kepala Sekolah | Guru | Wali kelas | Guru BK | Pustakawan | Staf | Satpam | Orang tua | Siswa |
+| --------------------------- | ----------- | -------------------------------------------- | -------------- | ---- | ---------- | ------- | ---------- | ---- | ------ | --------- | ----- |
+| Akademik (13)               | 12          | 12                                           | 6              | 7    | 7          | 8       | 0          | 2    | 2      | 1         | 5     |
+| Siswa dan kedisiplinan (15) | 13          | 13                                           | 9              | 6    | 7          | 8       | 1          | 6    | 6      | 1         | 5     |
+| Kepegawaian (4)             | 3           | 3                                            | 4              | 1    | 1          | 1       | 1          | 1    | 1      | 0         | 0     |
+| Perpustakaan (17)           | 17          | 17                                           | 6              | 5    | 5          | 5       | 17         | 5    | 5      | 1         | 1     |
+| Tamu dan keuangan (5)       | 5           | 5                                            | 5              | 0    | 0          | 0       | 0          | 5    | 5      | 0         | 0     |
+| Data sekolah (7)            | 7           | 7                                            | 2              | 2    | 2          | 2       | 0          | 2    | 2      | 0         | 0     |
+| Pengaturan (12)             | 12          | 12                                           | 1              | 0    | 0          | 0       | 0          | 0    | 0      | 0         | 0     |
+| Platform (1)                | 1           | 1 (salah, lihat temuan RBAC "Admin Sekolah") | 0              | 0    | 0          | 0       | 0          | 0    | 0      | 0         | 0     |
+
+Kolom "Kepala Sekolah" ditambahkan 25 September 2026 setelah peran sistem baru `principal` (`authz.RoleDefaults()`, migrasi `0117_principal_role`): sebuah peran pengawas ("sees everything, does not operate") yang mendapat hampir semua izin `view_*` lintas modul plus izin laporan/ekspor dan supervisi guru (`view_supervision` + `manage_supervision`, tugas inti kepala sekolah), tetapi tidak pernah `manage_settings`, `manage_permissions`, `manage_master_data`, `platform_superadmin`, atau layar manajemen pengguna (`view_users`/`view_roles`). Profil kepala sekolah adalah `teacher` (seperti duty `leadership`/Wakil Kepala Sekolah yang sudah ada), jadi item bertanda `profileKinds: ["teacher", "staff"]` (jurnal, presensi mandiri) ikut tampil. Perpustakaan (6, bukan 17) dan Kepegawaian (4, penuh) tampak rendah/tinggi dibanding admin karena kepala sekolah hanya melihat katalog/laporan perpustakaan (bukan sirkulasi/anggota/aturan pinjam) tetapi melihat seluruh grup Kepegawaian (presensi staf, check-in mandiri, dan kedua item supervisi). Dua celah izin yang disengaja, dicatat di komentar `role_defaults.go`: (1) tidak ada izin baca-saja untuk nilai (`manage_grades` menggabungkan lihat dan edit, jadi kepala sekolah tidak melihat gradebook/rapor sama sekali lewat sidebar -- 0 di grup Akademik untuk `grading`/`my-grades`); (2) catatan konseling BK dan konseling wali (mentoring) tidak terbuka lewat API untuk kepala sekolah karena `manage_counseling`/`manage_mentoring` juga menggabungkan baca dan tulis (menulis catatan atas nama BK/wali adalah hak istimewa yang tidak boleh diberikan) -- `docs/08-security.md` mengizinkan kepala sekolah membaca catatan konseling "bila diaktifkan" (visibility `leadership`), tapi katalog izin belum punya pemisahnya; disarankan menambah `view_counseling`/`view_mentoring_notes` baca-saja sebagai tindak lanjut.
 
 Catatan yang perlu diputuskan pemilik produk:
 
@@ -71,6 +73,7 @@ Catatan yang perlu diputuskan pemilik produk:
 | Peran                    | Akun seed (hanya lokal)                   | Di VPS                                        |
 | ------------------------ | ----------------------------------------- | --------------------------------------------- |
 | Admin                    | `admin`                                   | Dari bootstrap                                |
+| Kepala Sekolah           | `kepsek` (peran principal, profil guru)   | Buat manual, peran principal                  |
 | Guru dan wali kelas X-A  | `guru`                                    | Buat manual, tugaskan duty wali kelas         |
 | Guru BK                  | `gurubk` (peran guru plus duty counselor) | Buat manual, tugaskan duty counselor          |
 | Siswa                    | `siswa`                                   | Buat manual atau impor                        |

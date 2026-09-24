@@ -128,7 +128,8 @@
           "staff": "Staff",
           "student": "Student",
           "parent": "Parent",
-          "librarian": "Librarian"
+          "librarian": "Librarian",
+          "principal": "Principal"
         },
         "loginHistogramTitle": "Sign-in activity",
         "loginHistogramNote": "Summed per hour over the last seven days",
