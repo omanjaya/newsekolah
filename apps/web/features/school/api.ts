@@ -401,3 +401,21 @@ export function useDeleteTeachingAssignmentMutation() {
     onSuccess: invalidate,
   });
 }
+
+/**
+ * Toggles `is_active` instead of deleting the row, so a temporary change
+ * (a teacher's leave, a mid-year reshuffle) keeps its history -- unlike
+ * `useDeleteTeachingAssignmentMutation`, which removes the record outright.
+ */
+export function useUpdateTeachingAssignmentMutation() {
+  const client = useApiClient();
+  const invalidate = useInvalidate(["academic", "teaching-assignments"]);
+  return useMutation({
+    mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
+      client.PUT("/v1/academic/teaching-assignments/{assignmentId}", {
+        params: { path: { assignmentId: id } },
+        body: { is_active: isActive },
+      }),
+    onSuccess: invalidate,
+  });
+}

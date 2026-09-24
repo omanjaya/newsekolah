@@ -587,7 +587,10 @@
         "created": "Jadwal ditambahkan",
         "cancel": "Batal",
         "save": "Simpan",
-        "updated": "Jadwal diperbarui."
+        "updated": "Jadwal diperbarui.",
+        "notes": "Catatan",
+        "notesPlaceholder": "Catatan opsional, mis. alasan perubahan jadwal",
+        "notesLoadError": "Catatan yang tersimpan gagal dimuat. Simpan tidak tersedia dulu, supaya catatan yang ada tidak terhapus."
       },
       "bulk": {
         "navLink": "Operasi massal",
@@ -1219,6 +1222,13 @@
         "removeTeaching": "Hapus",
         "addTeaching": "Tambah",
         "teachingAdded": "Guru pengampu ditambahkan",
+        "deactivateTeaching": "Nonaktifkan",
+        "reactivateTeaching": "Aktifkan kembali",
+        "teachingDeactivated": "Penugasan mengajar dinonaktifkan",
+        "teachingReactivated": "Penugasan mengajar diaktifkan kembali",
+        "teachingInactive": "Nonaktif",
+        "showInactiveTeaching": "Tampilkan penugasan nonaktif ({n})",
+        "hideInactiveTeaching": "Sembunyikan penugasan nonaktif",
         "pickSubject": "Mapel",
         "pickTeacher": "Guru",
         "moveStudent": "Pindahkan siswa",

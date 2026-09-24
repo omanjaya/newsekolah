@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, Select, useToast } from "@newsekolah/ui";
+import { Button, Select, Skeleton, Textarea, useToast } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -18,6 +18,7 @@ import {
   type ScheduleBlock,
   useCreateScheduleMutation,
   useReplaceScheduleBlockMutation,
+  useScheduleQuery,
 } from "../api";
 import { conflictMessage } from "../conflict-message";
 
@@ -46,6 +47,7 @@ export function ScheduleForm({
   // instead of the form silently falling back to a generic error code.
   const tSchedule = useTranslations("app.schedule");
   const tDays = useTranslations("app.common.weekdays");
+  const tCommon = useTranslations("app.offlinePage");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const classes = useClassesQuery();
@@ -57,6 +59,10 @@ export function ScheduleForm({
   const classMap = useLookup(classes.data?.data);
   const subjectMap = useLookup(subjects.data?.data);
   const teacherMap = useLookup(teachers.data?.data);
+  // ScheduleBlock (the merged-block row the grid renders) never carries
+  // `notes`, so editing a block from that shape alone would silently drop
+  // any existing note on save; fetch the full Schedule once to prefill it.
+  const detail = useScheduleQuery(editing?.schedule_ids[0] ?? "", Boolean(editing));
 
   const lessons = (periods.data?.data ?? []).filter((p) => !p.is_break);
   const startDefault =
@@ -71,7 +77,20 @@ export function ScheduleForm({
   const [day, setDay] = useState(String(editing?.day_of_week ?? initialDay));
   const [startId, setStartId] = useState(startDefault?.id ?? "");
   const [endId, setEndId] = useState(endDefault?.id ?? "");
+  const [notes, setNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
+
+  // `detail` (the full Schedule, with `notes`) resolves after this form's
+  // first render for an edit, since it's an async fetch keyed off
+  // `editing.schedule_ids[0]`. Seeding `notes` from it belongs in the
+  // render body, not an effect: it runs once, the moment the data first
+  // arrives, and React folds the resulting re-render into the same commit
+  // (see "You Might Not Need an Effect" in the React docs).
+  const [notesSeeded, setNotesSeeded] = useState(false);
+  if (detail.data && !notesSeeded) {
+    setNotesSeeded(true);
+    setNotes(detail.data.notes ?? "");
+  }
 
   const periodOptions = lessons.map((p) => ({
     value: p.id,
@@ -99,6 +118,7 @@ export function ScheduleForm({
       start_period_id: startId,
       end_period_id: endId,
       source: "admin" as const,
+      ...(notes.trim() ? { notes: notes.trim() } : {}),
     };
     try {
       if (editing) {
@@ -186,6 +206,29 @@ export function ScheduleForm({
         )}
         {field(t("end"), <Select options={periodOptions} value={endId} onValueChange={setEndId} />)}
       </div>
+      {editing && detail.isLoading ? (
+        <Skeleton className="h-20 w-full" aria-busy="true" />
+      ) : editing && detail.isError ? (
+        <div className="flex flex-col gap-2 rounded-xs border border-status-late/40 px-3 py-2 text-[13px]">
+          <p role="alert">{t("notesLoadError")}</p>
+          <Button type="button" variant="secondary" size="sm" onClick={() => void detail.refetch()}>
+            {tCommon("retry")}
+          </Button>
+        </div>
+      ) : (
+        field(
+          t("notes"),
+          <Textarea
+            aria-label={t("notes")}
+            value={notes}
+            maxLength={500}
+            placeholder={t("notesPlaceholder")}
+            onChange={(e) => {
+              setNotes(e.target.value);
+            }}
+          />,
+        )
+      )}
       <div className="flex justify-end gap-2 border-t border-border pt-4">
         <Button
           type="button"
@@ -195,7 +238,11 @@ export function ScheduleForm({
         >
           {t("cancel")}
         </Button>
-        <Button type="submit" loading={create.isPending || replace.isPending}>
+        <Button
+          type="submit"
+          loading={create.isPending || replace.isPending}
+          disabled={Boolean(editing) && (detail.isLoading || detail.isError)}
+        >
           {t("save")}
         </Button>
       </div>

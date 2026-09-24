@@ -587,7 +587,10 @@
         "created": "Schedule added",
         "cancel": "Cancel",
         "save": "Save",
-        "updated": "Schedule updated."
+        "updated": "Schedule updated.",
+        "notes": "Notes",
+        "notesPlaceholder": "Optional note, e.g. the reason for this change",
+        "notesLoadError": "The saved note failed to load. Save is disabled for now so the existing note isn't overwritten."
       },
       "bulk": {
         "navLink": "Bulk operations",
@@ -1219,6 +1222,13 @@
         "removeTeaching": "Remove",
         "addTeaching": "Add",
         "teachingAdded": "Subject teacher added",
+        "deactivateTeaching": "Deactivate",
+        "reactivateTeaching": "Reactivate",
+        "teachingDeactivated": "Teaching assignment deactivated",
+        "teachingReactivated": "Teaching assignment reactivated",
+        "teachingInactive": "Inactive",
+        "showInactiveTeaching": "Show inactive assignments ({n})",
+        "hideInactiveTeaching": "Hide inactive assignments",
         "pickSubject": "Subject",
         "pickTeacher": "Teacher",
         "moveStudent": "Move student",
