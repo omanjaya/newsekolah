@@ -33,6 +33,19 @@ type Substitution struct {
 	CreatedAt        time.Time
 }
 
+// SubstitutionWithSchedule is one Substitution enriched with the class,
+// subject, and period it covers (a join on its schedule, always safe: see
+// ListSubstitutionsIncomingWithSchedule's comment) -- the shape the web
+// substitutions page needs to render a session-card without a second
+// round trip per row.
+type SubstitutionWithSchedule struct {
+	Substitution
+	ClassID       uuid.UUID
+	SubjectID     uuid.UUID
+	StartPeriodID uuid.UUID
+	EndPeriodID   uuid.UUID
+}
+
 // ValidateNewSubstitution checks the request-time rules that do not need a
 // database round trip: the substitute cannot be the requester, and the
 // requested date must actually fall on the schedule's day of week

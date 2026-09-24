@@ -382,6 +382,69 @@ func (q *Queries) ListSubstitutionsIncoming(ctx context.Context, arg ListSubstit
 	return items, nil
 }
 
+const listSubstitutionsIncomingWithSchedule = `-- name: ListSubstitutionsIncomingWithSchedule :many
+select sr.id, sr.tenant_id, sr.academic_year_id, sr.schedule_id, sr.date, sr.requester_user_id, sr.substitute_user_id, sr.status, sr.requester_note, sr.response_note, sr.responded_at, sr.created_at, s.class_id, s.subject_id, s.start_period_id, s.end_period_id
+from substitution_requests sr
+join schedules s on s.id = sr.schedule_id
+where sr.tenant_id = $1 and sr.substitute_user_id = $2
+order by sr.date desc, sr.created_at desc
+`
+
+type ListSubstitutionsIncomingWithScheduleParams struct {
+	TenantID         uuid.UUID `json:"tenant_id"`
+	SubstituteUserID uuid.UUID `json:"substitute_user_id"`
+}
+
+type ListSubstitutionsIncomingWithScheduleRow struct {
+	SubstitutionRequest SubstitutionRequest `json:"substitution_request"`
+	ClassID             uuid.UUID           `json:"class_id"`
+	SubjectID           uuid.UUID           `json:"subject_id"`
+	StartPeriodID       uuid.UUID           `json:"start_period_id"`
+	EndPeriodID         uuid.UUID           `json:"end_period_id"`
+}
+
+// Same rows as ListSubstitutionsIncoming, joined with the covered
+// schedule's class/subject/period so the web substitutions page can render
+// a session-card without a second round trip per row. The join is always
+// safe: substitution_requests.schedule_id cascades on schedule delete, so
+// the referenced schedule row always exists for as long as this row does.
+func (q *Queries) ListSubstitutionsIncomingWithSchedule(ctx context.Context, arg ListSubstitutionsIncomingWithScheduleParams) ([]ListSubstitutionsIncomingWithScheduleRow, error) {
+	rows, err := q.db.Query(ctx, listSubstitutionsIncomingWithSchedule, arg.TenantID, arg.SubstituteUserID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListSubstitutionsIncomingWithScheduleRow{}
+	for rows.Next() {
+		var i ListSubstitutionsIncomingWithScheduleRow
+		if err := rows.Scan(
+			&i.SubstitutionRequest.ID,
+			&i.SubstitutionRequest.TenantID,
+			&i.SubstitutionRequest.AcademicYearID,
+			&i.SubstitutionRequest.ScheduleID,
+			&i.SubstitutionRequest.Date,
+			&i.SubstitutionRequest.RequesterUserID,
+			&i.SubstitutionRequest.SubstituteUserID,
+			&i.SubstitutionRequest.Status,
+			&i.SubstitutionRequest.RequesterNote,
+			&i.SubstitutionRequest.ResponseNote,
+			&i.SubstitutionRequest.RespondedAt,
+			&i.SubstitutionRequest.CreatedAt,
+			&i.ClassID,
+			&i.SubjectID,
+			&i.StartPeriodID,
+			&i.EndPeriodID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listSubstitutionsOutgoing = `-- name: ListSubstitutionsOutgoing :many
 select id, tenant_id, academic_year_id, schedule_id, date, requester_user_id, substitute_user_id, status, requester_note, response_note, responded_at, created_at from substitution_requests
 where tenant_id = $1 and requester_user_id = $2
@@ -415,6 +478,64 @@ func (q *Queries) ListSubstitutionsOutgoing(ctx context.Context, arg ListSubstit
 			&i.ResponseNote,
 			&i.RespondedAt,
 			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listSubstitutionsOutgoingWithSchedule = `-- name: ListSubstitutionsOutgoingWithSchedule :many
+select sr.id, sr.tenant_id, sr.academic_year_id, sr.schedule_id, sr.date, sr.requester_user_id, sr.substitute_user_id, sr.status, sr.requester_note, sr.response_note, sr.responded_at, sr.created_at, s.class_id, s.subject_id, s.start_period_id, s.end_period_id
+from substitution_requests sr
+join schedules s on s.id = sr.schedule_id
+where sr.tenant_id = $1 and sr.requester_user_id = $2
+order by sr.date desc, sr.created_at desc
+`
+
+type ListSubstitutionsOutgoingWithScheduleParams struct {
+	TenantID        uuid.UUID `json:"tenant_id"`
+	RequesterUserID uuid.UUID `json:"requester_user_id"`
+}
+
+type ListSubstitutionsOutgoingWithScheduleRow struct {
+	SubstitutionRequest SubstitutionRequest `json:"substitution_request"`
+	ClassID             uuid.UUID           `json:"class_id"`
+	SubjectID           uuid.UUID           `json:"subject_id"`
+	StartPeriodID       uuid.UUID           `json:"start_period_id"`
+	EndPeriodID         uuid.UUID           `json:"end_period_id"`
+}
+
+func (q *Queries) ListSubstitutionsOutgoingWithSchedule(ctx context.Context, arg ListSubstitutionsOutgoingWithScheduleParams) ([]ListSubstitutionsOutgoingWithScheduleRow, error) {
+	rows, err := q.db.Query(ctx, listSubstitutionsOutgoingWithSchedule, arg.TenantID, arg.RequesterUserID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListSubstitutionsOutgoingWithScheduleRow{}
+	for rows.Next() {
+		var i ListSubstitutionsOutgoingWithScheduleRow
+		if err := rows.Scan(
+			&i.SubstitutionRequest.ID,
+			&i.SubstitutionRequest.TenantID,
+			&i.SubstitutionRequest.AcademicYearID,
+			&i.SubstitutionRequest.ScheduleID,
+			&i.SubstitutionRequest.Date,
+			&i.SubstitutionRequest.RequesterUserID,
+			&i.SubstitutionRequest.SubstituteUserID,
+			&i.SubstitutionRequest.Status,
+			&i.SubstitutionRequest.RequesterNote,
+			&i.SubstitutionRequest.ResponseNote,
+			&i.SubstitutionRequest.RespondedAt,
+			&i.SubstitutionRequest.CreatedAt,
+			&i.ClassID,
+			&i.SubjectID,
+			&i.StartPeriodID,
+			&i.EndPeriodID,
 		); err != nil {
 			return nil, err
 		}

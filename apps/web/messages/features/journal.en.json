@@ -1,12 +1,12 @@
 {
   "navLabel": "Teaching journal",
-  "eyebrow": "Academics",
+  "eyebrow": "Academic",
   "title": "Teaching journal",
-  "new": "New entry",
-  "edit": "Edit entry",
+  "new": "New journal",
+  "edit": "Edit journal",
   "delete": "Delete",
-  "deleted": "Journal entry deleted.",
-  "deleteTitle": "Delete this entry?",
+  "deleted": "Journal deleted.",
+  "deleteTitle": "Delete this journal entry?",
   "deleteBody": "\"{topic}\" will be permanently deleted. This cannot be undone.",
   "filterClass": "Class",
   "filterClassAll": "All classes",
@@ -14,7 +14,7 @@
   "exportReportTitle": "Teaching Journal",
   "exportDocx": "Download Word",
   "emptyTitle": "No journal entries yet",
-  "emptyBody": "Log the topic and activities each time a lesson is taught.",
+  "emptyBody": "Note the topic and activities every time you finish teaching.",
   "unknown": "-",
   "columns": {
     "date": "Date",
@@ -23,21 +23,39 @@
     "topic": "Topic",
     "actions": "Actions"
   },
-  "form": {
-    "class": "Class",
-    "classPlaceholder": "Choose a class",
-    "subject": "Subject",
-    "subjectPlaceholder": "Choose a subject",
-    "date": "Date",
+  "fields": {
     "topic": "Topic",
-    "topicPlaceholder": "What was taught",
+    "topicPlaceholder": "Topic taught",
     "activities": "Activities",
-    "activitiesPlaceholder": "Summary of the lesson's activities",
+    "activitiesPlaceholder": "Summary of the learning activities",
     "reflection": "Reflection",
     "reflectionPlaceholder": "Reflection notes (optional)",
+    "previousTopic": "Previous meeting's topic"
+  },
+  "form": {
+    "class": "Class",
+    "classPlaceholder": "Select a class",
+    "subject": "Subject",
+    "subjectPlaceholder": "Select a subject",
+    "date": "Date",
     "cancel": "Cancel",
     "submit": "Save",
-    "saved": "Journal entry saved."
+    "saved": "Journal saved.",
+    "draftFoundTitle": "A saved draft was found",
+    "draftFoundBody": "The draft was last saved at {time}.",
+    "draftRestore": "Restore draft",
+    "draftDismiss": "Dismiss"
   },
-  "loadError": "Journals could not be loaded."
+  "recent": {
+    "title": "Recent lessons",
+    "subtitle": "Tap a lesson to fill in its journal in seconds",
+    "filled": "Filled in",
+    "unfilled": "Not filled in",
+    "fillAction": "Fill in journal",
+    "editAction": "View journal",
+    "loadError": "Schedule failed to load.",
+    "todayLabel": "Today",
+    "yesterdayLabel": "Yesterday"
+  },
+  "loadError": "Journal failed to load."
 }
