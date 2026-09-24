@@ -112,7 +112,7 @@ func (s *Service) login(ctx context.Context, in LoginInput) (AuthResult, error) 
 		if err != nil {
 			return AuthResult{}, err
 		}
-		s.invalidateSessions(ctx, revokedIDs)
+		s.invalidateSessions(ctx, in.TenantID, revokedIDs)
 		s.revokePushDevices(ctx, in.TenantID, user.ID)
 	}
 
@@ -165,7 +165,7 @@ func (s *Service) refresh(ctx context.Context, tenantID uuid.UUID, refreshToken 
 			revokedIDs, err = s.repo.RevokeSessionFamily(ctx, tenantID, familyID, "reuse_detected")
 			return err
 		})
-		s.invalidateSessions(ctx, revokedIDs)
+		s.invalidateSessions(ctx, tenantID, revokedIDs)
 		return AuthResult{}, domain.ErrRefreshReuseDetected
 	case domain.RefreshExpired:
 		return AuthResult{}, domain.ErrSessionExpired
@@ -274,7 +274,7 @@ func (s *Service) Logout(ctx context.Context, tenantID, userID, sessionID uuid.U
 	if err != nil {
 		return err
 	}
-	s.invalidateSessions(ctx, []uuid.UUID{sessionID})
+	s.invalidateSessions(ctx, tenantID, []uuid.UUID{sessionID})
 	s.revokePushDevices(ctx, tenantID, userID)
 	return nil
 }
@@ -313,7 +313,7 @@ func (s *Service) RevokeSession(ctx context.Context, tenantID, userID, sessionID
 	if err != nil {
 		return err
 	}
-	s.invalidateSessions(ctx, []uuid.UUID{sessionID})
+	s.invalidateSessions(ctx, tenantID, []uuid.UUID{sessionID})
 	return nil
 }
 
@@ -344,7 +344,7 @@ func (s *Service) ChangePassword(ctx context.Context, tenantID, userID, currentS
 		if err != nil {
 			return err
 		}
-		s.invalidateSessions(ctx, revokedIDs)
+		s.invalidateSessions(ctx, tenantID, revokedIDs)
 		s.revokePushDevices(ctx, tenantID, userID)
 		return nil
 	})

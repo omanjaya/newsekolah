@@ -96,7 +96,7 @@ func (h *Handler) Logout(ctx context.Context, _ api.LogoutRequestObject) (api.Lo
 	if err := h.service.Logout(ctx, tenantID, userID, sessionID); err != nil {
 		return nil, mapAuthError(err)
 	}
-	_ = h.sessionCache.Invalidate(ctx, sessionID)
+	_ = h.sessionCache.Invalidate(ctx, tenantID, sessionID)
 
 	cookie := httpx.ExpiredRefreshCookie(h.isProduction)
 	return api.Logout204Response{Headers: api.Logout204ResponseHeaders{SetCookie: &cookie}}, nil
@@ -148,7 +148,7 @@ func (h *Handler) RevokeSession(ctx context.Context, request api.RevokeSessionRe
 		}
 		return nil, mapAuthError(err)
 	}
-	_ = h.sessionCache.Invalidate(ctx, request.SessionId)
+	_ = h.sessionCache.Invalidate(ctx, tenantID, request.SessionId)
 
 	return api.RevokeSession204Response{}, nil
 }
