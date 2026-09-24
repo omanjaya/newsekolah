@@ -613,6 +613,8 @@ paths:
       operationId: borrowLibraryLoan
       x-permission: manage_library_circulation
       summary: Borrow a copy by scanning its barcode at the loan desk
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKeyHeader"
       requestBody:
         required: true
         content:
@@ -644,6 +646,7 @@ paths:
       summary: Return a copy, computing any overdue fine
       parameters:
         - { name: loanId, in: path, required: true, schema: { type: string, format: uuid } }
+        - $ref: "#/components/parameters/IdempotencyKeyHeader"
       requestBody:
         content:
           application/json:

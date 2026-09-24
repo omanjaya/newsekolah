@@ -308,6 +308,8 @@ paths:
       operationId: recordPayment
       x-permission: record_payments
       summary: Record a payment against a bill and issue its receipt
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKeyHeader"
       requestBody:
         required: true
         content:
@@ -332,6 +334,7 @@ paths:
       summary: Void a recorded payment (kept, never deleted)
       parameters:
         - { name: paymentId, in: path, required: true, schema: { type: string, format: uuid } }
+        - $ref: "#/components/parameters/IdempotencyKeyHeader"
       requestBody:
         required: true
         content:

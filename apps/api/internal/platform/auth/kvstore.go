@@ -21,6 +21,11 @@ type KVStore interface {
 	Get(ctx context.Context, key string) (string, bool, error)
 	Set(ctx context.Context, key, value string, ttl time.Duration) error
 	Del(ctx context.Context, key string) error
+	// SetNX sets key to value and expires it after ttl, but only when key
+	// does not already exist; it reports whether this call won that race.
+	// httpx.Idempotent uses it as the distributed lock that keeps two
+	// concurrent retries of the same Idempotency-Key from both running fn.
+	SetNX(ctx context.Context, key, value string, ttl time.Duration) (bool, error)
 }
 
 type RedisStore struct {
@@ -58,6 +63,10 @@ func (s *RedisStore) Set(ctx context.Context, key, value string, ttl time.Durati
 
 func (s *RedisStore) Del(ctx context.Context, key string) error {
 	return s.client.Del(ctx, key).Err()
+}
+
+func (s *RedisStore) SetNX(ctx context.Context, key, value string, ttl time.Duration) (bool, error) {
+	return s.client.SetNX(ctx, key, value, ttl).Result()
 }
 
 // MemoryStore is an in-process KVStore for single-instance deployments
@@ -118,4 +127,16 @@ func (s *MemoryStore) Del(_ context.Context, key string) error {
 
 	delete(s.entries, key)
 	return nil
+}
+
+func (s *MemoryStore) SetNX(_ context.Context, key, value string, ttl time.Duration) (bool, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	now := (clock.Real{}).Now()
+	if e, ok := s.entries[key]; ok && now.Before(e.expires) {
+		return false, nil
+	}
+	s.entries[key] = memEntry{value: value, expires: now.Add(ttl)}
+	return true, nil
 }

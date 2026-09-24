@@ -417,11 +417,13 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 
 	strict := api.NewStrictHandlerWithOptions(
 		server,
-		// authz runs first (innermost middleware in the slice = wraps the
-		// handler directly), then publicIPRateLimit wraps that and so runs
-		// before it, rejecting an over-budget anonymous caller before any
-		// permission check does work.
+		// The last middleware in the slice is the outermost. The IP rate
+		// limit runs first so an over-budget anonymous caller is rejected
+		// before any other work; authz runs next; idempotency is innermost
+		// so an unauthorized retry never claims or consumes an
+		// Idempotency-Key.
 		[]api.StrictMiddlewareFunc{
+			idempotencyStrictMiddleware(store),
 			authzStrictMiddleware(ops, identityModule.Service),
 			publicIPRateLimitStrictMiddleware(store),
 		},
