@@ -3,12 +3,15 @@ package http
 import (
 	"bytes"
 	"context"
+	"errors"
 	"time"
 
 	openapi_types "github.com/oapi-codegen/runtime/types"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/api"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/library/service"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 )
 
 // reportPeriod extracts an optional from/to date pair, the shape every
@@ -22,6 +25,40 @@ func reportPeriod(from, to *openapi_types.Date) (*time.Time, *time.Time) {
 		t = &to.Time
 	}
 	return f, t
+}
+
+// libraryReportOptions decodes the shared format/title/letterhead/columns
+// query contract into reportdoc.Options, defaulting to XLSX with every
+// column and the letterhead shown -- the behaviour every one of these
+// exports kept before this query-param contract existed, so a caller
+// that predates it never breaks.
+func libraryReportOptions[T ~string](format *T, title *string, letterhead *bool, columns *string) reportdoc.Options {
+	opts := reportdoc.Options{Format: reportdoc.FormatXLSX, ShowLetterhead: true}
+	if format != nil {
+		opts.Format = reportdoc.Format(*format)
+	}
+	if title != nil {
+		opts.Title = *title
+	}
+	if letterhead != nil {
+		opts.ShowLetterhead = *letterhead
+	}
+	if columns != nil {
+		for _, c := range httpx.ParseReportColumns(*columns) {
+			opts.Columns = append(opts.Columns, reportdoc.ColumnChoice{Key: c.Key, Label: c.Label})
+		}
+	}
+	return opts
+}
+
+// mapReportError extends mapError with reportdoc's own sentinel: an
+// unrecognised column key in the caller's selection is the caller's
+// mistake (400), not a server error.
+func mapReportError(err error) error {
+	if errors.Is(err, reportdoc.ErrUnknownColumn) {
+		return httpx.ErrValidation
+	}
+	return mapError(err)
 }
 
 func (h *LibraryHandler) GetLibraryLoansReport(ctx context.Context, request api.GetLibraryLoansReportRequestObject) (api.GetLibraryLoansReportResponseObject, error) {
@@ -39,12 +76,19 @@ func (h *LibraryHandler) GetLibraryLoansReport(ctx context.Context, request api.
 
 func (h *LibraryHandler) GetLibraryLoansReportXlsx(ctx context.Context, request api.GetLibraryLoansReportXlsxRequestObject) (api.GetLibraryLoansReportXlsxResponseObject, error) {
 	from, to := reportPeriod(request.Params.From, request.Params.To)
-	xlsx, err := h.service.LoansReportXLSX(ctx, tenantID(ctx), from, to)
+	p := request.Params
+	opts := libraryReportOptions(p.Format, p.Title, p.Letterhead, p.Columns)
+	body, err := h.service.ExportLoansReport(ctx, tenantID(ctx), from, to, opts)
 	if err != nil {
-		return nil, mapError(err)
+		return nil, mapReportError(err)
+	}
+	if opts.Format == reportdoc.FormatPDF {
+		return api.GetLibraryLoansReportXlsx200ApplicationpdfResponse{
+			Body: bytes.NewReader(body), ContentLength: int64(len(body)),
+		}, nil
 	}
 	return api.GetLibraryLoansReportXlsx200ApplicationvndOpenxmlformatsOfficedocumentSpreadsheetmlSheetResponse{
-		Body: bytes.NewReader(xlsx), ContentLength: int64(len(xlsx)),
+		Body: bytes.NewReader(body), ContentLength: int64(len(body)),
 	}, nil
 }
 
@@ -60,13 +104,20 @@ func (h *LibraryHandler) GetLibraryOverdueMembersReport(ctx context.Context, _ a
 	return api.GetLibraryOverdueMembersReport200JSONResponse{Data: data}, nil
 }
 
-func (h *LibraryHandler) GetLibraryOverdueMembersReportXlsx(ctx context.Context, _ api.GetLibraryOverdueMembersReportXlsxRequestObject) (api.GetLibraryOverdueMembersReportXlsxResponseObject, error) {
-	xlsx, err := h.service.OverdueMembersReportXLSX(ctx, tenantID(ctx))
+func (h *LibraryHandler) GetLibraryOverdueMembersReportXlsx(ctx context.Context, request api.GetLibraryOverdueMembersReportXlsxRequestObject) (api.GetLibraryOverdueMembersReportXlsxResponseObject, error) {
+	p := request.Params
+	opts := libraryReportOptions(p.Format, p.Title, p.Letterhead, p.Columns)
+	body, err := h.service.ExportOverdueMembersReport(ctx, tenantID(ctx), opts)
 	if err != nil {
-		return nil, mapError(err)
+		return nil, mapReportError(err)
+	}
+	if opts.Format == reportdoc.FormatPDF {
+		return api.GetLibraryOverdueMembersReportXlsx200ApplicationpdfResponse{
+			Body: bytes.NewReader(body), ContentLength: int64(len(body)),
+		}, nil
 	}
 	return api.GetLibraryOverdueMembersReportXlsx200ApplicationvndOpenxmlformatsOfficedocumentSpreadsheetmlSheetResponse{
-		Body: bytes.NewReader(xlsx), ContentLength: int64(len(xlsx)),
+		Body: bytes.NewReader(body), ContentLength: int64(len(body)),
 	}, nil
 }
 
@@ -83,12 +134,19 @@ func (h *LibraryHandler) GetLibraryMostBorrowedReport(ctx context.Context, reque
 
 func (h *LibraryHandler) GetLibraryMostBorrowedReportXlsx(ctx context.Context, request api.GetLibraryMostBorrowedReportXlsxRequestObject) (api.GetLibraryMostBorrowedReportXlsxResponseObject, error) {
 	from, to := reportPeriod(request.Params.From, request.Params.To)
-	xlsx, err := h.service.MostBorrowedReportXLSX(ctx, tenantID(ctx), from, to, intOr(request.Params.Limit, 20))
+	p := request.Params
+	opts := libraryReportOptions(p.Format, p.Title, p.Letterhead, p.Columns)
+	body, err := h.service.ExportMostBorrowedReport(ctx, tenantID(ctx), from, to, intOr(p.Limit, 20), opts)
 	if err != nil {
-		return nil, mapError(err)
+		return nil, mapReportError(err)
+	}
+	if opts.Format == reportdoc.FormatPDF {
+		return api.GetLibraryMostBorrowedReportXlsx200ApplicationpdfResponse{
+			Body: bytes.NewReader(body), ContentLength: int64(len(body)),
+		}, nil
 	}
 	return api.GetLibraryMostBorrowedReportXlsx200ApplicationvndOpenxmlformatsOfficedocumentSpreadsheetmlSheetResponse{
-		Body: bytes.NewReader(xlsx), ContentLength: int64(len(xlsx)),
+		Body: bytes.NewReader(body), ContentLength: int64(len(body)),
 	}, nil
 }
 
@@ -123,12 +181,19 @@ func (h *LibraryHandler) GetLibraryVisitsReport(ctx context.Context, request api
 
 func (h *LibraryHandler) GetLibraryVisitsReportXlsx(ctx context.Context, request api.GetLibraryVisitsReportXlsxRequestObject) (api.GetLibraryVisitsReportXlsxResponseObject, error) {
 	from, to := reportPeriod(request.Params.From, request.Params.To)
-	xlsx, err := h.service.VisitsReportXLSX(ctx, tenantID(ctx), from, to)
+	p := request.Params
+	opts := libraryReportOptions(p.Format, p.Title, p.Letterhead, p.Columns)
+	body, err := h.service.ExportVisitsReport(ctx, tenantID(ctx), from, to, opts)
 	if err != nil {
-		return nil, mapError(err)
+		return nil, mapReportError(err)
+	}
+	if opts.Format == reportdoc.FormatPDF {
+		return api.GetLibraryVisitsReportXlsx200ApplicationpdfResponse{
+			Body: bytes.NewReader(body), ContentLength: int64(len(body)),
+		}, nil
 	}
 	return api.GetLibraryVisitsReportXlsx200ApplicationvndOpenxmlformatsOfficedocumentSpreadsheetmlSheetResponse{
-		Body: bytes.NewReader(xlsx), ContentLength: int64(len(xlsx)),
+		Body: bytes.NewReader(body), ContentLength: int64(len(body)),
 	}, nil
 }
 
@@ -140,13 +205,20 @@ func (h *LibraryHandler) GetLibraryMembersReport(ctx context.Context, _ api.GetL
 	return api.GetLibraryMembersReport200JSONResponse(toAPIMembersReport(report)), nil
 }
 
-func (h *LibraryHandler) GetLibraryMembersReportXlsx(ctx context.Context, _ api.GetLibraryMembersReportXlsxRequestObject) (api.GetLibraryMembersReportXlsxResponseObject, error) {
-	xlsx, err := h.service.MembersReportXLSX(ctx, tenantID(ctx))
+func (h *LibraryHandler) GetLibraryMembersReportXlsx(ctx context.Context, request api.GetLibraryMembersReportXlsxRequestObject) (api.GetLibraryMembersReportXlsxResponseObject, error) {
+	p := request.Params
+	opts := libraryReportOptions(p.Format, p.Title, p.Letterhead, p.Columns)
+	body, err := h.service.ExportMembersReport(ctx, tenantID(ctx), opts)
 	if err != nil {
-		return nil, mapError(err)
+		return nil, mapReportError(err)
+	}
+	if opts.Format == reportdoc.FormatPDF {
+		return api.GetLibraryMembersReportXlsx200ApplicationpdfResponse{
+			Body: bytes.NewReader(body), ContentLength: int64(len(body)),
+		}, nil
 	}
 	return api.GetLibraryMembersReportXlsx200ApplicationvndOpenxmlformatsOfficedocumentSpreadsheetmlSheetResponse{
-		Body: bytes.NewReader(xlsx), ContentLength: int64(len(xlsx)),
+		Body: bytes.NewReader(body), ContentLength: int64(len(body)),
 	}, nil
 }
 
@@ -179,12 +251,19 @@ func (h *LibraryHandler) GetLibraryAccessionRegisterReport(ctx context.Context, 
 
 func (h *LibraryHandler) GetLibraryAccessionRegisterReportXlsx(ctx context.Context, request api.GetLibraryAccessionRegisterReportXlsxRequestObject) (api.GetLibraryAccessionRegisterReportXlsxResponseObject, error) {
 	from, to := reportPeriod(request.Params.From, request.Params.To)
-	xlsx, err := h.service.AccessionRegisterXLSX(ctx, tenantID(ctx), from, to)
+	p := request.Params
+	opts := libraryReportOptions(p.Format, p.Title, p.Letterhead, p.Columns)
+	body, err := h.service.ExportAccessionRegisterReport(ctx, tenantID(ctx), from, to, opts)
 	if err != nil {
-		return nil, mapError(err)
+		return nil, mapReportError(err)
+	}
+	if opts.Format == reportdoc.FormatPDF {
+		return api.GetLibraryAccessionRegisterReportXlsx200ApplicationpdfResponse{
+			Body: bytes.NewReader(body), ContentLength: int64(len(body)),
+		}, nil
 	}
 	return api.GetLibraryAccessionRegisterReportXlsx200ApplicationvndOpenxmlformatsOfficedocumentSpreadsheetmlSheetResponse{
-		Body: bytes.NewReader(xlsx), ContentLength: int64(len(xlsx)),
+		Body: bytes.NewReader(body), ContentLength: int64(len(body)),
 	}, nil
 }
 

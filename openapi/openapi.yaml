@@ -9067,7 +9067,7 @@ paths:
         - library
       operationId: getLibraryVisitsReportXlsx
       x-permission: view_library_reports
-      summary: Visits report as XLSX
+      summary: Visits report as XLSX or PDF
       parameters:
         - name: from
           in: query
@@ -9079,11 +9079,19 @@ paths:
           schema:
             type: string
             format: date
+        - $ref: "#/components/parameters/ReportFormat"
+        - $ref: "#/components/parameters/ReportTitle"
+        - $ref: "#/components/parameters/ReportLetterhead"
+        - $ref: "#/components/parameters/ReportColumns"
       responses:
         "200":
-          description: XLSX
+          description: File
           content:
             application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+            application/pdf:
               schema:
                 type: string
                 format: binary
@@ -9117,12 +9125,21 @@ paths:
         - library
       operationId: getLibraryMembersReportXlsx
       x-permission: view_library_reports
-      summary: Members report as XLSX
+      summary: Members report as XLSX or PDF
+      parameters:
+        - $ref: "#/components/parameters/ReportFormat"
+        - $ref: "#/components/parameters/ReportTitle"
+        - $ref: "#/components/parameters/ReportLetterhead"
+        - $ref: "#/components/parameters/ReportColumns"
       responses:
         "200":
-          description: XLSX
+          description: File
           content:
             application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+            application/pdf:
               schema:
                 type: string
                 format: binary
@@ -9202,7 +9219,7 @@ paths:
         - library
       operationId: getLibraryAccessionRegisterReportXlsx
       x-permission: view_library_reports
-      summary: Accession register as XLSX
+      summary: Accession register as XLSX or PDF
       parameters:
         - name: from
           in: query
@@ -9214,11 +9231,19 @@ paths:
           schema:
             type: string
             format: date
+        - $ref: "#/components/parameters/ReportFormat"
+        - $ref: "#/components/parameters/ReportTitle"
+        - $ref: "#/components/parameters/ReportLetterhead"
+        - $ref: "#/components/parameters/ReportColumns"
       responses:
         "200":
-          description: XLSX
+          description: File
           content:
             application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+            application/pdf:
               schema:
                 type: string
                 format: binary
@@ -12117,7 +12142,7 @@ paths:
         - library
       operationId: getLibraryLoansReportXlsx
       x-permission: view_library_reports
-      summary: Loans report as XLSX
+      summary: Loans report as XLSX or PDF
       parameters:
         - name: from
           in: query
@@ -12129,11 +12154,19 @@ paths:
           schema:
             type: string
             format: date
+        - $ref: "#/components/parameters/ReportFormat"
+        - $ref: "#/components/parameters/ReportTitle"
+        - $ref: "#/components/parameters/ReportLetterhead"
+        - $ref: "#/components/parameters/ReportColumns"
       responses:
         "200":
-          description: XLSX
+          description: File
           content:
             application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+            application/pdf:
               schema:
                 type: string
                 format: binary
@@ -12174,12 +12207,21 @@ paths:
         - library
       operationId: getLibraryOverdueMembersReportXlsx
       x-permission: view_library_reports
-      summary: Overdue-members report as XLSX
+      summary: Overdue-members report as XLSX or PDF
+      parameters:
+        - $ref: "#/components/parameters/ReportFormat"
+        - $ref: "#/components/parameters/ReportTitle"
+        - $ref: "#/components/parameters/ReportLetterhead"
+        - $ref: "#/components/parameters/ReportColumns"
       responses:
         "200":
-          description: XLSX
+          description: File
           content:
             application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+            application/pdf:
               schema:
                 type: string
                 format: binary
@@ -12243,7 +12285,7 @@ paths:
         - library
       operationId: getLibraryMostBorrowedReportXlsx
       x-permission: view_library_reports
-      summary: Most-borrowed titles and top borrowers as XLSX
+      summary: Most-borrowed titles and top borrowers as XLSX or PDF
       parameters:
         - name: from
           in: query
@@ -12262,11 +12304,19 @@ paths:
             minimum: 1
             maximum: 100
             default: 20
+        - $ref: "#/components/parameters/ReportFormat"
+        - $ref: "#/components/parameters/ReportTitle"
+        - $ref: "#/components/parameters/ReportLetterhead"
+        - $ref: "#/components/parameters/ReportColumns"
       responses:
         "200":
-          description: XLSX
+          description: File
           content:
             application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+            application/pdf:
               schema:
                 type: string
                 format: binary
