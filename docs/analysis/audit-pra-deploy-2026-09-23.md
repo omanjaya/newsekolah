@@ -159,4 +159,4 @@ Langkah manual di VPS sebelum deploy: isi `APP_DB_PASSWORD`, `DATA_ENCRYPTION_KE
 - Sidebar: izin, izin keluar, terlambat, serta kelas dan tahun ajaran hanya tampil untuk peran yang memakainya.
 - Izin keluar ganda di hari yang sama kini selalu 409, bukan 500, termasuk di jendela ketika tanggal lokal sudah berganti tetapi tanggal UTC belum. Sisa kasus tepi: izin pukul 23.00 lalu 07.30 keesokan harinya masih ditolak karena index memakai tanggal UTC.
 
-Masih menunggu keputusan: wajib TOTP untuk admin, cakupan peran kepala sekolah, dan aturan urutan migrasi di CI.
+Keputusan 25 September: TOTP admin tetap opsional (pemilik produk menguji dulu di live), kepala sekolah mendapat peran `principal` sendiri sebagai pengawas, dan celah nomor migrasi diisi placeholder no-op.
