@@ -828,7 +828,8 @@
       },
       "scan": {
         "placeholder": "Paste or type the code under the QR",
-        "submit": "Submit code"
+        "submit": "Submit code",
+        "cameraLabel": "Scan with camera"
       },
       "classroomEntry": {
         "navLabel": "Scan classroom entry",
@@ -896,11 +897,15 @@
           "payloadLabel": "Gate QR code",
           "needPayload": "The gate code must come from the student's QR.",
           "passed": "Student cleared to leave",
-          "lastTitle": "Last exit"
+          "lastTitle": "Last exit",
+          "todayListTitle": "Just cleared the gate",
+          "undoLast": "Hide from this list"
         },
         "queue": {
           "emptyTitle": "Nothing waiting right now",
           "emptyBody": "Exit permits waiting for your approval or gate scan will appear here.",
+          "searchPlaceholder": "Search student name",
+          "noMatch": "No matching student.",
           "unknownStudent": "Unknown student",
           "process": "Process",
           "awaitingGate": "Awaiting gate scan",
@@ -930,6 +935,8 @@
         "waitManual": "Waiting for {stage} to review.",
         "queueEmptyTitle": "No late arrivals waiting",
         "queueEmptyBody": "Students who scan your late-arrival QR appear in this queue.",
+        "searchPlaceholder": "Search student name",
+        "noMatch": "No matching student.",
         "unknownStudent": "Student",
         "review": "Review",
         "reviewTitle": "Review late arrival",
@@ -980,6 +987,14 @@
         "issuedBody": "Attendance for the leave dates is filled automatically. The letter can be downloaded above.",
         "queueEmptyTitle": "No requests waiting",
         "queueEmptyBody": "Requests from your homeroom class, or awaiting letter issuance, show up here.",
+        "cancel": "Cancel",
+        "selectRow": "Select {student}'s request",
+        "bulkSelected": "{count, plural, one {# request selected} other {# requests selected}}",
+        "bulkApprove": "Approve selected",
+        "bulkClear": "Clear selection",
+        "bulkApproveHint": "This bulk action approves without a note. Requests that need a rejection or a note go one at a time.",
+        "bulkApproved": "{count, plural, one {# request approved} other {# requests approved}}",
+        "bulkApprovedPartial": "{count} requests approved, {failed} failed. Try again for the rest.",
         "guardian": {
           "reviewNote": "Reason (required when rejecting)",
           "reject": "Reject",
@@ -995,7 +1010,11 @@
           "startsOn": "From",
           "endsOn": "To",
           "reason": "Details",
-          "evidenceHint": "Evidence (doctor's note, invitation) can be uploaded after the request is created.",
+          "evidence": "Evidence (optional)",
+          "evidenceAdd": "Take or upload an evidence photo",
+          "evidenceRemove": "Remove selected evidence",
+          "evidenceHint": "Doctor's note, invitation, or other evidence. Can also be attached later from the detail screen.",
+          "evidenceUploadFailed": "Request sent, but the evidence upload failed. Try again from the detail screen.",
           "requiredError": "Dates and details are required.",
           "rangeError": "End date cannot be before the start date.",
           "submitted": "Request sent to the homeroom teacher",

@@ -20,9 +20,9 @@ import { useMemo, useState } from "react";
 
 import { useDateFilter } from "../../../lib/hooks/use-date-filter";
 import { useSession } from "../../../lib/session/session-provider";
+import { formatDisplayName } from "../../../lib/text/format-name";
 import { useRememberedViewState } from "../../../lib/view-state/view-state-provider";
 import { todayInZone, useHomeroomAttendanceQuery } from "../../attendance/api";
-import { formatDisplayName } from "../../attendance/lib/format-name";
 import { statusToken } from "../../attendance/lib/status-tokens";
 import { useLeaveReviewQueueQuery } from "../../permits/api";
 

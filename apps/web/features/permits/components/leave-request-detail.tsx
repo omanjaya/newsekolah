@@ -3,17 +3,7 @@
 import { ApiError } from "@newsekolah/api-client";
 import type { Locale } from "@newsekolah/i18n";
 import { formatDate } from "@newsekolah/i18n";
-import {
-  Alert,
-  Button,
-  EmptyState,
-  Input,
-  Select,
-  Skeleton,
-  Textarea,
-  domainIcons,
-  useToast,
-} from "@newsekolah/ui";
+import { Alert, Button, EmptyState, Input, Skeleton, domainIcons, useToast } from "@newsekolah/ui";
 import { Download, Upload } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -23,121 +13,15 @@ import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan, useSession } from "../../../lib/session/session-provider";
 import {
-  type LeaveCategory,
   useIssueLeaveLetterMutation,
   useLeaveDocumentUrlMutation,
   useLeaveRequestQuery,
   useReviewLeaveRequestAsGuardianMutation,
   useReviewLeaveRequestMutation,
-  useSubmitLeaveRequestMutation,
   useUploadEvidenceMutation,
 } from "../api";
 
 import { WorkflowStepper } from "./workflow-stepper";
-
-const CATEGORIES: LeaveCategory[] = ["sick", "religious_ceremony", "dispensation", "other"];
-
-export function SubmitForm({ onDone }: { onDone: (id: string) => void }): ReactElement {
-  const t = useTranslations("app.permits.leave");
-  const toast = useToast();
-  const apiErrorMessage = useApiErrorMessage();
-  const submit = useSubmitLeaveRequestMutation();
-  const [category, setCategory] = useState<LeaveCategory>("sick");
-  const [reason, setReason] = useState("");
-  const [startsOn, setStartsOn] = useState("");
-  const [endsOn, setEndsOn] = useState("");
-  const [error, setError] = useState<string | null>(null);
-
-  async function send() {
-    setError(null);
-    if (!reason.trim() || !startsOn || !endsOn) {
-      setError(t("form.requiredError"));
-      return;
-    }
-    if (endsOn < startsOn) {
-      setError(t("form.rangeError"));
-      return;
-    }
-    try {
-      const detail = await submit.mutateAsync({
-        category,
-        reason: reason.trim(),
-        starts_on: startsOn,
-        ends_on: endsOn,
-      });
-      toast.success(t("form.submitted"));
-      onDone(detail.instance.id);
-    } catch (err) {
-      setError(err instanceof ApiError ? apiErrorMessage(err.code) : apiErrorMessage("UNKNOWN"));
-    }
-  }
-
-  return (
-    <form
-      className="flex flex-col gap-4"
-      onSubmit={(e) => {
-        e.preventDefault();
-        void send();
-      }}
-    >
-      {error && (
-        <p role="alert" className="rounded-xs border border-status-late/40 px-3 py-2 text-[13px]">
-          {error}
-        </p>
-      )}
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("form.category")}</span>
-        <Select
-          options={CATEGORIES.map((c) => ({ value: c, label: t(`categories.${c}`) }))}
-          value={category}
-          onValueChange={(v) => {
-            setCategory(v as LeaveCategory);
-          }}
-        />
-      </label>
-      <div className="grid gap-4 md:grid-cols-2">
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("form.startsOn")}</span>
-          <Input
-            type="date"
-            value={startsOn}
-            onChange={(e) => {
-              setStartsOn(e.target.value);
-              if (!endsOn) setEndsOn(e.target.value);
-            }}
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-[13px]">
-          <span className="font-medium">{t("form.endsOn")}</span>
-          <Input
-            type="date"
-            value={endsOn}
-            onChange={(e) => {
-              setEndsOn(e.target.value);
-            }}
-          />
-        </label>
-      </div>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("form.reason")}</span>
-        <Textarea
-          rows={3}
-          value={reason}
-          maxLength={500}
-          onChange={(e) => {
-            setReason(e.target.value);
-          }}
-        />
-      </label>
-      <p className="text-[13px] text-fg-muted">{t("form.evidenceHint")}</p>
-      <div className="flex justify-end border-t border-border pt-4">
-        <Button type="submit" loading={submit.isPending}>
-          {t("form.send")}
-        </Button>
-      </div>
-    </form>
-  );
-}
 
 export function LeaveRequestDetail({ id }: { id: string }): ReactElement {
   const t = useTranslations("app.permits.leave");

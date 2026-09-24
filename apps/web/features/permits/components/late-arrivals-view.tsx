@@ -5,6 +5,8 @@ import type { Locale } from "@newsekolah/i18n";
 import { formatDateTime } from "@newsekolah/i18n";
 import {
   Alert,
+  type BarcodeScanEvent,
+  BarcodeScannerField,
   Button,
   Checkbox,
   Dialog,
@@ -23,11 +25,12 @@ import {
 } from "@newsekolah/ui";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan, useSession } from "../../../lib/session/session-provider";
+import { formatDisplayName } from "../../../lib/text/format-name";
 import { useDirectoryQuery, useLookup } from "../../reference/api";
 import {
   type LateArrivalSummary,
@@ -40,7 +43,6 @@ import {
   useScanLateArrivalStageMutation,
 } from "../api";
 
-import { ScanTokenInput } from "./scan-token-input";
 import { WorkflowStatusBadge, WorkflowStepper } from "./workflow-stepper";
 
 export function LateArrivalsView(): ReactElement {
@@ -87,6 +89,7 @@ export function LateArrivalsView(): ReactElement {
 
 function MyLateArrival(): ReactElement {
   const t = useTranslations("app.permits.late");
+  const tScan = useTranslations("app.permits.scan");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const current = useCurrentLateArrivalQuery();
@@ -119,13 +122,17 @@ function MyLateArrival(): ReactElement {
             maxLength={500}
           />
         </label>
-        <ScanTokenInput
+        <BarcodeScannerField
           label={t("scanDutyLabel")}
-          pending={open.isPending}
-          onSubmit={(raw) => {
+          submitLabel={tScan("submit")}
+          cameraLabel={tScan("cameraLabel")}
+          disabled={open.isPending}
+          stretch
+          size="large"
+          onScan={(event: BarcodeScanEvent) => {
             open.mutate(
               {
-                token: decodeScanPayload(raw).token,
+                token: decodeScanPayload(event.code).token,
                 ...(reason.trim() ? { reason: reason.trim() } : {}),
               },
               {
@@ -154,12 +161,16 @@ function MyLateArrival(): ReactElement {
       </dl>
       <WorkflowStepper instance={inst} />
       {inst.status === "in_progress" && inst.current_stage?.verification === "qr_scan" && (
-        <ScanTokenInput
+        <BarcodeScannerField
           label={t("scanStageLabel", { stage: inst.current_stage.label })}
-          pending={scan.isPending}
-          onSubmit={(raw) => {
+          submitLabel={tScan("submit")}
+          cameraLabel={tScan("cameraLabel")}
+          disabled={scan.isPending}
+          stretch
+          size="large"
+          onScan={(event: BarcodeScanEvent) => {
             scan.mutate(
-              { id: inst.id, token: decodeScanPayload(raw).token },
+              { id: inst.id, token: decodeScanPayload(event.code).token },
               {
                 onError: fail,
                 onSuccess: () => {
@@ -187,10 +198,29 @@ function ReviewQueue(): ReactElement {
   const students = useDirectoryQuery("student");
   const studentMap = useLookup(students.data?.data);
   const [reviewing, setReviewing] = useState<LateArrivalSummary | null>(null);
-  const items = queue.data?.data ?? [];
+  const [search, setSearch] = useState("");
+  const items = useMemo(() => queue.data?.data ?? [], [queue.data]);
+  const visibleItems = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return items;
+    return items.filter((item) =>
+      (studentMap.get(item.student_user_id)?.name ?? "").toLowerCase().includes(query),
+    );
+  }, [items, search, studentMap]);
 
   return (
     <div className="flex flex-col gap-4">
+      {items.length > 0 && (
+        <Input
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+          }}
+          placeholder={t("searchPlaceholder")}
+          aria-label={t("searchPlaceholder")}
+          className="w-full sm:w-64"
+        />
+      )}
       {queue.isLoading ? (
         <Skeleton className="h-40 w-full" aria-busy="true" />
       ) : items.length === 0 ? (
@@ -199,36 +229,41 @@ function ReviewQueue(): ReactElement {
           title={t("queueEmptyTitle")}
           description={t("queueEmptyBody")}
         />
+      ) : visibleItems.length === 0 ? (
+        <p className="px-1 py-6 text-center text-[13px] text-fg-muted">{t("noMatch")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
-          {items.map((item) => (
-            <li
-              key={item.instance_id}
-              className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-4 md:flex-row md:items-center md:justify-between"
-            >
-              <div className="flex flex-col gap-0.5">
-                <span className="text-[15px] font-medium text-fg">
-                  {studentMap.get(item.student_user_id)?.name ?? t("unknownStudent")}
-                </span>
-                <span className="text-[13px] text-fg-muted">
-                  {formatDateTime(item.opened_at, { locale, timeZone: me?.tenant.timezone })} ·{" "}
-                  {t("occurrenceValue", { n: item.occurrence_number })}
-                </span>
-                {item.reason && <span className="text-[13px]">{item.reason}</span>}
-              </div>
-              <div className="flex items-center gap-3">
-                <WorkflowStatusBadge status={item.status} />
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    setReviewing(item);
-                  }}
-                >
-                  {t("review")}
-                </Button>
-              </div>
-            </li>
-          ))}
+          {visibleItems.map((item) => {
+            const studentName = studentMap.get(item.student_user_id)?.name;
+            return (
+              <li
+                key={item.instance_id}
+                className="flex flex-col gap-1.5 rounded-sm border border-border bg-surface px-4 py-2.5 md:flex-row md:items-center md:justify-between"
+              >
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[14px] font-medium text-fg">
+                    {studentName ? formatDisplayName(studentName) : t("unknownStudent")}
+                  </span>
+                  <span className="text-[13px] text-fg-muted">
+                    {formatDateTime(item.opened_at, { locale, timeZone: me?.tenant.timezone })} ·{" "}
+                    {t("occurrenceValue", { n: item.occurrence_number })}
+                  </span>
+                  {item.reason && <span className="text-[13px]">{item.reason}</span>}
+                </div>
+                <div className="flex items-center gap-3">
+                  <WorkflowStatusBadge status={item.status} />
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      setReviewing(item);
+                    }}
+                  >
+                    {t("review")}
+                  </Button>
+                </div>
+              </li>
+            );
+          })}
         </ul>
       )}
       <Dialog

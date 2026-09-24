@@ -9,7 +9,7 @@ import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
-import { formatDisplayName } from "../../attendance/lib/format-name";
+import { formatDisplayName } from "../../../lib/text/format-name";
 import { statusToken } from "../../attendance/lib/status-tokens";
 import { telHref, whatsAppHref } from "../lib/guardian-contact";
 

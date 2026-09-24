@@ -1,7 +1,17 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Alert, Button, Input, QrPanel, Select, Skeleton, useToast } from "@newsekolah/ui";
+import {
+  Alert,
+  type BarcodeScanEvent,
+  BarcodeScannerField,
+  Button,
+  Input,
+  QrPanel,
+  Select,
+  Skeleton,
+  useToast,
+} from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -19,7 +29,6 @@ import {
   useScanExitPermitStageMutation,
 } from "../api";
 
-import { ScanTokenInput } from "./scan-token-input";
 import { WorkflowStepper } from "./workflow-stepper";
 
 export function CreateForm({ onDone }: { onDone: (id: string) => void }): ReactElement {
@@ -117,6 +126,7 @@ export function CreateForm({ onDone }: { onDone: (id: string) => void }): ReactE
 export function ExitPermitDetail({ id }: { id: string }): ReactElement {
   const t = useTranslations("app.permits.exit");
   const tQr = useTranslations("app.permits.qr");
+  const tScan = useTranslations("app.permits.scan");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const { data, isLoading, error, refetch } = useExitPermitQuery(id);
@@ -150,12 +160,16 @@ export function ExitPermitDetail({ id }: { id: string }): ReactElement {
       <WorkflowStepper instance={inst} />
 
       {inst.status === "in_progress" && inst.current_stage?.verification === "qr_scan" && (
-        <ScanTokenInput
+        <BarcodeScannerField
           label={t("scanStageLabel", { stage: inst.current_stage.label })}
-          pending={scan.isPending}
-          onSubmit={(raw) => {
+          submitLabel={tScan("submit")}
+          cameraLabel={tScan("cameraLabel")}
+          disabled={scan.isPending}
+          stretch
+          size="large"
+          onScan={(event: BarcodeScanEvent) => {
             scan.mutate(
-              { id, token: decodeScanPayload(raw).token },
+              { id, token: decodeScanPayload(event.code).token },
               {
                 onError: fail,
                 onSuccess: () => {
