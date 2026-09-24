@@ -44,6 +44,11 @@ type ScheduleRepository interface {
 type TenantRef struct {
 	ID       uuid.UUID
 	Timezone string
+	// Locale is the tenant's raw tenants.locale value ("id", "en", or
+	// empty on an old/never-set row); pass it through
+	// platform/i18n.FromTenantLocale before handing it to RunDocument,
+	// the same normalization the interactive export endpoint applies.
+	Locale string
 }
 
 // SchedulePermissionChecker resolves a user's effective permissions, so
@@ -81,6 +86,7 @@ type ScheduleInput struct {
 	DayOfMonth *int
 	Hour       int
 	Recipients []string
+	Format     domain.Format
 }
 
 // PendingNotification is one due, successfully rendered and uploaded
@@ -172,7 +178,7 @@ func (s *ScheduleService) CreateSchedule(ctx context.Context, tenantID, requeste
 	sched := domain.Schedule{
 		TenantID: tenantID, ReportKind: in.ReportKind, Params: in.Params, Cadence: in.Cadence,
 		Weekday: in.Weekday, DayOfMonth: in.DayOfMonth, Hour: in.Hour, Recipients: in.Recipients,
-		Enabled: true, CreatedBy: requestedBy,
+		Format: in.Format.WithDefault(), Enabled: true, CreatedBy: requestedBy,
 	}
 	if err := sched.Validate(); err != nil {
 		return domain.Schedule{}, err
@@ -200,6 +206,7 @@ func (s *ScheduleService) UpdateSchedule(ctx context.Context, tenantID, requeste
 	sched := domain.Schedule{
 		ID: id, TenantID: tenantID, ReportKind: in.ReportKind, Params: in.Params, Cadence: in.Cadence,
 		Weekday: in.Weekday, DayOfMonth: in.DayOfMonth, Hour: in.Hour, Recipients: in.Recipients,
+		Format: in.Format.WithDefault(),
 	}
 	if err := sched.Validate(); err != nil {
 		return domain.Schedule{}, err

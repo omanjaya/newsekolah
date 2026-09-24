@@ -32,10 +32,12 @@ type Dependencies struct {
 	// periodic job's RegisterJobs registration entirely.
 	Storage service.ScheduleStorage
 	Clock   clock.Clock
-	// Academic resolves grade-level scope for attendance.daily's
-	// reportdoc export; nil makes a grade_level_id export 404. Letterhead
-	// loads the tenant's kop laporan for that same export; nil renders
-	// without one even when the caller asked for it.
+	// Academic resolves grade-level scope for every class-scoped report's
+	// reportdoc export (one section per class in a grade level); nil
+	// makes a grade_level_id export fail with ErrReportNotFound.
+	// Letterhead loads the tenant's kop laporan and default signature for
+	// every rendered export; nil renders without one even when the
+	// caller asked for it.
 	Academic   service.AcademicReader
 	Letterhead reportdoc.LetterheadSource
 }

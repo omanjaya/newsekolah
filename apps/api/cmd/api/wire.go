@@ -222,15 +222,26 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	reportsModule := reports.Register(reports.Dependencies{
 		Pool:       pool,
 		Attendance: wiring.AttendanceReports{Svc: attendanceModule.Service},
-		Discipline: wiring.DisciplineReports{Svc: disciplineModule.Service, Directory: wiring.IdentityNames{Svc: identityModule.Service}},
-		Grading:    wiring.GradingReports{Svc: gradingModule.Service},
-		Permits:    wiring.PermitsReports{Svc: permitsModule.Service},
-		Perms:      identityModule.Service,
-		Emails:     identityModule.Service,
-		Storage:    sharedStorage,
-		Clock:      clock.Real{},
+		Discipline: wiring.DisciplineReports{
+			Svc: disciplineModule.Service, Directory: wiring.IdentityNames{Svc: identityModule.Service},
+			Academic: academicModule.Service, Years: schoolModule.Service,
+		},
+		Grading: wiring.GradingReports{
+			Svc: gradingModule.Service, Academic: academicModule.Service, Years: schoolModule.Service,
+			Directory: wiring.IdentityNames{Svc: identityModule.Service},
+		},
+		Permits: wiring.PermitsReports{
+			Svc: permitsModule.Service, Academic: academicModule.Service, Years: schoolModule.Service,
+			Directory: wiring.IdentityNames{Svc: identityModule.Service},
+		},
+		Perms:   identityModule.Service,
+		Emails:  identityModule.Service,
+		Storage: sharedStorage,
+		Clock:   clock.Real{},
 		// attendance.daily's reportdoc export: grade-level class
-		// resolution and the tenant's kop laporan.
+		// resolution and the tenant's kop laporan. The same source now
+		// backs every migrated report kind's document, not just
+		// attendance.daily.
 		Academic:   wiring.AcademicReports{Academic: academicModule.Service, School: schoolModule.Service},
 		Letterhead: wiring.ReportHeaderReports{Svc: schoolModule.Service},
 	})

@@ -45,6 +45,14 @@
       "subjectPlaceholder": "Select a subject",
       "term": "Term",
       "termPlaceholder": "Select a term",
+      "scopeType": "Scope",
+      "scopeTypeClass": "Class",
+      "scopeTypeGradeLevel": "Grade level",
+      "gradeLevel": "Grade level",
+      "gradeLevelPlaceholder": "Select a grade level",
+      "format": "File format",
+      "formatXlsx": "Excel (.xlsx)",
+      "formatPdf": "PDF",
       "cadence": "Cadence",
       "cadenceDaily": "Daily",
       "cadenceWeekly": "Weekly",
@@ -88,16 +96,56 @@
   "arguments": {
     "class": "Class",
     "classPlaceholder": "Select a class",
-    "subject": "Subject",
-    "subjectPlaceholder": "Select a subject",
-    "date": "Date",
-    "term": "Term",
-    "termPlaceholder": "Select a term",
+    "scopeType": "Scope",
+    "scopeTypeAll": "Every class",
+    "scopeTypeClass": "Class",
+    "scopeTypeGradeLevel": "Grade level",
     "scope": "Scope",
     "scopeClass": "Class",
     "scopeGradeLevel": "Grade level",
     "gradeLevel": "Grade level",
-    "gradeLevelPlaceholder": "Select a grade level"
+    "gradeLevelPlaceholder": "Select a grade level",
+    "subject": "Subject",
+    "subjectPlaceholder": "Select a subject",
+    "date": "Date",
+    "term": "Term",
+    "termPlaceholder": "Select a term"
+  },
+  "disciplineWarningLetters": {
+    "defaultTitle": "Warning Letters",
+    "columns": {
+      "no": "No",
+      "letter_number": "Letter Number",
+      "student_name": "Student Name",
+      "level": "Level",
+      "total_points": "Total Points",
+      "issued_at": "Issued At"
+    }
+  },
+  "permitsLeaveRequests": {
+    "defaultTitle": "Leave Requests Summary",
+    "columns": {
+      "no": "No",
+      "student_name": "Student Name",
+      "class_name": "Class",
+      "category": "Category",
+      "starts_on": "Starts",
+      "ends_on": "Ends",
+      "letter_number": "Letter Number",
+      "status": "Status"
+    }
+  },
+  "permitsExitPermitsYearly": {
+    "defaultTitle": "Yearly Exit Permits Summary",
+    "columns": {
+      "no": "No",
+      "student_name": "Student Name",
+      "class_name": "Class",
+      "destination": "Destination",
+      "opened_at": "Opened At",
+      "status": "Status",
+      "exited_at": "Exited At"
+    }
   },
   "attendanceDaily": {
     "defaultTitle": "Daily Attendance",
@@ -109,6 +157,12 @@
       "submitted_sessions": "Submitted Sessions",
       "complete": "Complete"
     }
+  },
+  "disciplinePoints": {
+    "defaultTitle": "Discipline Points Summary"
+  },
+  "gradingReportScores": {
+    "defaultTitle": "Report Card Scores"
   },
   "kinds": {
     "attendance_daily": {

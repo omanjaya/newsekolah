@@ -210,12 +210,13 @@ func (q *Queries) ListActiveTenantsForMaintenance(ctx context.Context) ([]ListAc
 }
 
 const listActiveTenantsForReportSchedules = `-- name: ListActiveTenantsForReportSchedules :many
-select id, timezone from tenants where status = 'active'
+select id, timezone, locale from tenants where status = 'active'
 `
 
 type ListActiveTenantsForReportSchedulesRow struct {
 	ID       uuid.UUID `json:"id"`
 	Timezone string    `json:"timezone"`
+	Locale   string    `json:"locale"`
 }
 
 // cross-module read: tenants is the platform-wide registry owned by the
@@ -232,7 +233,7 @@ func (q *Queries) ListActiveTenantsForReportSchedules(ctx context.Context) ([]Li
 	items := []ListActiveTenantsForReportSchedulesRow{}
 	for rows.Next() {
 		var i ListActiveTenantsForReportSchedulesRow
-		if err := rows.Scan(&i.ID, &i.Timezone); err != nil {
+		if err := rows.Scan(&i.ID, &i.Timezone, &i.Locale); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

@@ -24,10 +24,6 @@ type fakeAttendance struct {
 	err    error
 }
 
-func (f fakeAttendance) DailyReportRows(context.Context, uuid.UUID, uuid.UUID, time.Time) (service.Sheet, error) {
-	return service.Sheet{}, errors.New("not used by these tests")
-}
-
 func (f fakeAttendance) DailyReportTypedRows(_ context.Context, _ uuid.UUID, classID uuid.UUID, _ time.Time) ([][]any, error) {
 	if f.err != nil {
 		return nil, f.err
@@ -170,17 +166,26 @@ func TestRunDocumentUnknownReportNotFound(t *testing.T) {
 	assert.ErrorIs(t, err, service.ErrReportNotFound)
 }
 
-// TestRunDocumentOtherKindsUnaffected proves a non-attendance.daily kind
-// still returns plain XLSX via the legacy Run path regardless of
-// opts.Format, so migrating attendance.daily onto reportdoc never changes
-// another report's behaviour.
-func TestRunDocumentOtherKindsUnaffected(t *testing.T) {
+// TestRunDocumentOtherKindsHonourFormat proves every catalogue kind, not
+// only attendance.daily, renders through reportdoc and honours
+// opts.Format -- permits.exit_permits_yearly here, picked because it
+// takes no scope arguments at all.
+func TestRunDocumentOtherKindsHonourFormat(t *testing.T) {
 	permits := fakePermits{}
 	svc := service.New(nil, nil, nil, permits)
 	out, contentType, err := svc.RunDocument(context.Background(), uuid.New(), service.KindExitPermitsYearly, service.RunArgs{}, reportdoc.Options{Format: reportdoc.FormatPDF}, reportdoc.LocaleID)
 	require.NoError(t, err)
-	assert.Equal(t, service.XLSXContentType, contentType, "unmigrated kinds ignore opts.Format and always return XLSX")
-	assert.Equal(t, "PK", string(out[:2]))
+	assert.Equal(t, service.PDFContentType, contentType)
+	assert.Equal(t, "%PDF", string(out[:4]))
+}
+
+func TestRunDocumentScopeConflict(t *testing.T) {
+	svc, classA, _, gradeLevel := newFixture(t)
+	date := time.Now()
+	_, _, err := svc.RunDocument(context.Background(), uuid.New(), service.KindAttendanceDaily, service.RunArgs{
+		ClassID: uuid.NullUUID{UUID: classA, Valid: true}, GradeLevelID: uuid.NullUUID{UUID: gradeLevel, Valid: true}, Date: &date,
+	}, reportdoc.Options{}, reportdoc.LocaleID)
+	assert.ErrorIs(t, err, service.ErrScopeConflict)
 }
 
 // TestRunDocumentLocalizesLabelsAndValues is the regression test for the
@@ -275,10 +280,14 @@ func TestRunDocumentEnglishLocale(t *testing.T) {
 
 type fakePermits struct{}
 
-func (fakePermits) LeaveRequestRows(context.Context, uuid.UUID, uuid.NullUUID) (service.Sheet, error) {
-	return service.Sheet{}, nil
+func (fakePermits) LeaveRequestRows(context.Context, uuid.UUID, uuid.NullUUID, uuid.NullUUID, string) (reportdoc.Document, error) {
+	return reportdoc.Document{}, nil
 }
 
-func (fakePermits) ExitPermitYearlyRows(context.Context, uuid.UUID) (service.Sheet, error) {
-	return service.Sheet{Title: "Exit Permits", Headers: []string{"No"}}, nil
+func (fakePermits) ExitPermitYearlyRows(context.Context, uuid.UUID, string) (reportdoc.Document, error) {
+	return reportdoc.Document{
+		Title:    "Exit Permits",
+		Columns:  []reportdoc.Column{{Key: "no", Label: "No", Kind: reportdoc.ColumnNumber}},
+		Sections: []reportdoc.Section{{Rows: [][]any{{1}}}},
+	}, nil
 }
