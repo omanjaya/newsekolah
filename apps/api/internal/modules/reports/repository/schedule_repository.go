@@ -176,7 +176,7 @@ func (r *ScheduleRepository) ListActiveTenants(ctx context.Context) ([]service.T
 	}
 	out := make([]service.TenantRef, len(rows))
 	for i, row := range rows {
-		out[i] = service.TenantRef{ID: row.ID, Timezone: row.Timezone}
+		out[i] = service.TenantRef{ID: row.ID, Timezone: row.Timezone, Locale: row.Locale}
 	}
 	return out, nil
 }

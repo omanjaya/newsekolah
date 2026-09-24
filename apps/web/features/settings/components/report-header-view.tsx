@@ -65,6 +65,10 @@ function ReportHeaderForm({ initial }: { initial: ReportHeaderSettings }): React
 
   const [showLogo, setShowLogo] = useState(initial.show_logo);
   const [lines, setLines] = useState<string[]>(initial.lines.length > 0 ? initial.lines : [""]);
+  // undefined means "automatic" (reportdoc/school domain's EmphasisAuto):
+  // the server picks the line matching the tenant name, else the
+  // second-to-last line.
+  const [emphasis, setEmphasis] = useState<number | undefined>(initial.emphasis);
   const [place, setPlace] = useState(initial.place);
   const [signers, setSigners] = useState<ReportHeaderSigner[]>(initial.signers);
   const [error, setError] = useState<string | null>(null);
@@ -72,6 +76,7 @@ function ReportHeaderForm({ initial }: { initial: ReportHeaderSettings }): React
   const dirty =
     showLogo !== initial.show_logo ||
     JSON.stringify(lines) !== JSON.stringify(initial.lines) ||
+    emphasis !== initial.emphasis ||
     place !== initial.place ||
     JSON.stringify(signers) !== JSON.stringify(initial.signers);
 
@@ -85,6 +90,15 @@ function ReportHeaderForm({ initial }: { initial: ReportHeaderSettings }): React
 
   function removeLine(index: number) {
     setLines((current) => (current.length <= 1 ? current : current.filter((_, i) => i !== index)));
+    // Keep the emphasis selection pointing at the same logical line: drop
+    // it back to automatic if the removed line was the chosen one, shift
+    // it down if a line before it was removed, leave it alone otherwise.
+    setEmphasis((current) => {
+      if (current === undefined) return current;
+      if (current === index) return undefined;
+      if (current > index) return current - 1;
+      return current;
+    });
   }
 
   function updateSigner(index: number, patch: Partial<ReportHeaderSigner>) {
@@ -106,9 +120,15 @@ function ReportHeaderForm({ initial }: { initial: ReportHeaderSettings }): React
       setError(t("linesRequiredError"));
       return;
     }
+    // A trimmed-out blank line shifts every later index, so an
+    // in-range emphasis is remapped against the original (untrimmed)
+    // lines array rather than sent as-is.
+    const emphasisLine = emphasis !== undefined ? lines[emphasis]?.trim() : undefined;
+    const emphasisValue = emphasisLine ? cleanLines.indexOf(emphasisLine) : undefined;
     const body: ReportHeaderSettings = {
       show_logo: showLogo,
       lines: cleanLines,
+      ...(emphasisValue !== undefined && emphasisValue >= 0 ? { emphasis: emphasisValue } : {}),
       place: place.trim(),
       signers: signers
         .map((s) => ({
@@ -191,6 +211,43 @@ function ReportHeaderForm({ initial }: { initial: ReportHeaderSettings }): React
             <Plus className="size-4" aria-hidden="true" />
             {t("addLine")}
           </Button>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <span className="flex flex-col gap-0.5">
+            <span className="text-[13px] font-medium text-fg">{t("emphasisLabel")}</span>
+            <span className="text-[13px] text-fg-muted">{t("emphasisHint")}</span>
+          </span>
+          <div role="radiogroup" aria-label={t("emphasisLabel")} className="flex flex-col gap-1">
+            <label className="flex min-h-11 items-center gap-2 text-[13px]">
+              <input
+                type="radio"
+                name="report-header-emphasis"
+                checked={emphasis === undefined}
+                onChange={() => {
+                  setEmphasis(undefined);
+                }}
+                className="size-4"
+              />
+              {t("emphasisAuto")}
+            </label>
+            {lines.map((line, index) =>
+              line.trim() === "" ? null : (
+                <label key={index} className="flex min-h-11 items-center gap-2 text-[13px]">
+                  <input
+                    type="radio"
+                    name="report-header-emphasis"
+                    checked={emphasis === index}
+                    onChange={() => {
+                      setEmphasis(index);
+                    }}
+                    className="size-4"
+                  />
+                  {t("emphasisLineOption", { index: index + 1, text: line })}
+                </label>
+              ),
+            )}
+          </div>
         </div>
 
         <label className="flex flex-col gap-1 text-[13px]">

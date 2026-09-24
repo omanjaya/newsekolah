@@ -44,6 +44,11 @@ type ScheduleRepository interface {
 type TenantRef struct {
 	ID       uuid.UUID
 	Timezone string
+	// Locale is the tenant's raw tenants.locale value ("id", "en", or
+	// empty on an old/never-set row); pass it through
+	// platform/i18n.FromTenantLocale before handing it to RunDocument,
+	// the same normalization the interactive export endpoint applies.
+	Locale string
 }
 
 // SchedulePermissionChecker resolves a user's effective permissions, so

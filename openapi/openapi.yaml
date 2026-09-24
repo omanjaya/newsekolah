@@ -15123,6 +15123,72 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
+  /v1/reports/{reportKind}/columns:
+    get:
+      tags:
+        - reports
+      operationId: listReportColumns
+      x-permission: authenticated
+      summary: Columns one report scope would render, without the row data
+      description: >
+        Computes the same columns exportReport would use for this exact scope (same query parameters, minus
+        format/title/letterhead/ columns), so the export dialog can offer a report whose columns are not fully static --
+        discipline.points' one column per tenant-configured SP level, grading.report_scores' one column per assessment
+        component -- instead of only a fixed list. Every other kind answers too (its own static columns), rather than
+        404ing.
+      parameters:
+        - name: reportKind
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: class_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: grade_level_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: subject_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: term_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: date
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Columns
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ReportColumn"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /v1/reports/schedules:
     get:
       tags:
@@ -25895,6 +25961,16 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ReportArgument"
+    ReportColumn:
+      type: object
+      required:
+        - key
+        - label
+      properties:
+        key:
+          type: string
+        label:
+          type: string
     ReportScheduleCadence:
       type: string
       enum:
@@ -26948,7 +27024,12 @@ components:
           items:
             type: string
             maxLength: 200
-          description: First line is conventionally the school name and renders bold.
+          description: Kop laporan text lines, e.g. foundation name, school name, address, phone.
+        emphasis:
+          type: integer
+          minimum: 0
+          description: Index into lines that is the school name (rendered bold and larger). Omit for automatic selection (matches
+            the tenant name, else the second-to-last line).
         place:
           type: string
           maxLength: 80

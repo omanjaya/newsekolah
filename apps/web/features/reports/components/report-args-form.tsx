@@ -17,6 +17,7 @@ import {
   type ReportExportArgs,
 } from "../api";
 
+import { DynamicColumnsExportForm } from "./report-export-dynamic-columns-form";
 import {
   AttendanceDailyExportForm,
   ClassScopedExportForm,
@@ -35,29 +36,45 @@ interface ReportArgsFormProps {
  * this component on `report.kind`, so switching reports remounts it and
  * clears any values left over from the previous selection.
  *
- * A kind whose columns are fully known ahead of time (independent of the
- * tenant's own configuration) renders one of the dedicated `*ExportForm`
- * components in ./report-export-forms, so it can offer the customisable
- * ReportExportDialog (format, letterhead, columns) alongside its "Kelas
- * atau Angkatan" scope picker. discipline.points and grading.report_scores
- * are deliberately excluded: their column set includes one column per
- * tenant-configured SP level / per assessment component, which the dialog
- * has no way to discover ahead of time -- customising columns for either
- * would silently drop those dynamic ones (reportdoc.Apply narrows to
- * exactly the columns the dialog sends). Both keep the plain "download
- * everything" button via {@link GenericReportArgsForm} until the dialog
- * can preview a report's columns instead of listing them statically.
+ * Every kind renders one of the dedicated `*ExportForm` components below,
+ * offering the customisable ReportExportDialog (format, letterhead,
+ * columns) alongside its "Kelas atau Angkatan" scope picker.
+ * discipline.points and grading.report_scores go through
+ * {@link DynamicColumnsExportForm} instead of a static column list: their
+ * column set includes one column per tenant-configured SP level / per
+ * assessment component, fetched from GET /v1/reports/{reportKind}/columns
+ * for the chosen scope right before the dialog opens.
  */
 export function ReportArgsForm({ report }: ReportArgsFormProps): ReactElement {
   switch (report.kind) {
     case "attendance.daily":
       return <AttendanceDailyExportForm report={report} />;
+    case "discipline.points":
+      return (
+        <DynamicColumnsExportForm
+          report={report}
+          messageNamespace="disciplinePoints"
+          allowsNoScope
+          needsSubject={false}
+          needsTerm={false}
+        />
+      );
     case "discipline.warning_letters":
       return (
         <ClassScopedExportForm
           report={report}
           messageNamespace="disciplineWarningLetters"
           columnKeys={DISCIPLINE_WARNING_LETTERS_COLUMN_KEYS}
+        />
+      );
+    case "grading.report_scores":
+      return (
+        <DynamicColumnsExportForm
+          report={report}
+          messageNamespace="gradingReportScores"
+          allowsNoScope={false}
+          needsSubject
+          needsTerm
         />
       );
     case "permits.leave_requests":

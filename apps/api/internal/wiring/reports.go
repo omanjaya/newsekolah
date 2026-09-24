@@ -31,7 +31,12 @@ import (
 type AttendanceReports struct{ Svc *attendanceservice.Service }
 
 // DailyReportTypedRows is attendance.daily's rows, natively typed for
-// reportdoc.Section.Rows.
+// reportdoc.Section.Rows. Each row's status is still the raw tenant/
+// policy code (e.g. "H", or the special "INCOMPLETE"/"NONE"/"MIXED") and
+// complete is a native bool, not translated to any locale --
+// reports/service.RunDocument resolves the status label (via
+// StatusLabels) and the complete text itself, since it is the layer that
+// knows the export's locale; this port stays locale-agnostic.
 func (a AttendanceReports) DailyReportTypedRows(ctx context.Context, tenantID, classID uuid.UUID, date time.Time) ([][]any, error) {
 	report, err := a.Svc.GetDailyReport(ctx, tenantID, classID, date)
 	if err != nil {
@@ -39,16 +44,23 @@ func (a AttendanceReports) DailyReportTypedRows(ctx context.Context, tenantID, c
 	}
 	rows := make([][]any, len(report.Students))
 	for i, s := range report.Students {
-		rows[i] = []any{i + 1, s.Name, s.StatusCode, s.ExpectedSessions, s.SubmittedSessions, completeLabel(s.Complete)}
+		rows[i] = []any{i + 1, s.Name, s.StatusCode, s.ExpectedSessions, s.SubmittedSessions, s.Complete}
 	}
 	return rows, nil
 }
 
-func completeLabel(complete bool) string {
-	if complete {
-		return "Yes"
+// StatusLabels adapts attendance's exported StatusPolicy to the reports
+// module's narrow code -> label port (reportsservice.AttendanceReader).
+func (a AttendanceReports) StatusLabels(ctx context.Context, tenantID uuid.UUID) (map[string]string, error) {
+	policy, err := a.Svc.StatusPolicy(ctx, tenantID)
+	if err != nil {
+		return nil, err
 	}
-	return "No"
+	out := make(map[string]string, len(policy.Statuses))
+	for _, def := range policy.Statuses {
+		out[def.Code] = def.Label
+	}
+	return out, nil
 }
 
 // AcademicReports resolves the class(es) attendance.daily's grade-level
@@ -99,6 +111,17 @@ func (a AcademicReports) ClassesInGradeLevel(ctx context.Context, tenantID, grad
 	return out, nil
 }
 
+// GradeLevelName resolves gradeLevelID's own name (e.g. "Kelas X"), for
+// a grade-level-scoped export's scope line ("Angkatan: Kelas X"), via
+// academic.Service.GetGradeLevel (a single-row lookup, not a scan).
+func (a AcademicReports) GradeLevelName(ctx context.Context, tenantID, gradeLevelID uuid.UUID) (string, error) {
+	level, err := a.Academic.GetGradeLevel(ctx, tenantID, gradeLevelID)
+	if err != nil {
+		return "", err
+	}
+	return level.Name, nil
+}
+
 // ReportHeaderReports loads a tenant's configured kop laporan and default
 // signature for reportdoc's LetterheadSource port (see
 // reportdoc.LetterheadSource's doc comment).
@@ -136,10 +159,39 @@ type NameLookup interface {
 	Names(ctx context.Context, tenantID uuid.UUID, ids []uuid.UUID) (map[uuid.UUID]string, error)
 }
 
+// reportVocabulary is a small id/en lookup table for one report kind's
+// own words (title, scope labels, column labels, enum values) -- the
+// same pattern reports/service.go's attendanceDailyVocabulary uses for
+// attendance.daily. reportdoc itself stays free of this vocabulary (see
+// its package doc comment); every migrated kind gets its own table.
+type reportVocabulary map[string]map[string]string
+
+func (v reportVocabulary) text(locale, key string) string {
+	if m, ok := v[locale]; ok {
+		if s, ok := m[key]; ok {
+			return s
+		}
+	}
+	return v[reportdoc.LocaleEN][key]
+}
+
+// scopeVocabulary is the id/en wording resolveScope and classSignature
+// use, shared by every report kind scoped through them.
+var scopeVocabulary = reportVocabulary{
+	reportdoc.LocaleID: {
+		"academicYear": "Tahun Ajaran", "class": "Kelas", "gradeLevel": "Angkatan",
+		"scope": "Cakupan", "allClasses": "Seluruh kelas", "homeroomTeacher": "Wali Kelas",
+	},
+	reportdoc.LocaleEN: {
+		"academicYear": "Academic Year", "class": "Class", "gradeLevel": "Grade Level",
+		"scope": "Scope", "allClasses": "All classes", "homeroomTeacher": "Homeroom Teacher",
+	},
+}
+
 // reportScope is one class/grade-level report argument, already
 // resolved: which classes to build one section per (empty for a report
 // scoped to neither, which prints one unnamed section covering every
-// class), plus the scope lines that describe the selection.
+// class), plus the scope lines that describe the selection, in locale.
 type reportScope struct {
 	YearID  uuid.UUID
 	Lines   []reportdoc.ScopeLine
@@ -150,7 +202,7 @@ type reportScope struct {
 // mutually exclusive by reports/service.RunDocument) into a reportScope:
 // the active year's classes for a grade level, or the single named class,
 // or -- for the reports whose class argument is optional -- neither.
-func resolveScope(ctx context.Context, academic ReportsAcademic, years ReportsYears, tenantID uuid.UUID, classID, gradeLevelID uuid.NullUUID) (reportScope, error) {
+func resolveScope(ctx context.Context, academic ReportsAcademic, years ReportsYears, tenantID uuid.UUID, classID, gradeLevelID uuid.NullUUID, locale string) (reportScope, error) {
 	year, ok, err := years.GetActiveAcademicYear(ctx, tenantID)
 	if err != nil {
 		return reportScope{}, err
@@ -160,7 +212,7 @@ func resolveScope(ctx context.Context, academic ReportsAcademic, years ReportsYe
 	}
 	var lines []reportdoc.ScopeLine
 	if year.Label != "" {
-		lines = append(lines, reportdoc.ScopeLine{Label: "Tahun Ajaran", Value: year.Label})
+		lines = append(lines, reportdoc.ScopeLine{Label: scopeVocabulary.text(locale, "academicYear"), Value: year.Label})
 	}
 
 	switch {
@@ -169,7 +221,7 @@ func resolveScope(ctx context.Context, academic ReportsAcademic, years ReportsYe
 		if err != nil {
 			return reportScope{}, err
 		}
-		lines = append(lines, reportdoc.ScopeLine{Label: "Kelas", Value: class.Name})
+		lines = append(lines, reportdoc.ScopeLine{Label: scopeVocabulary.text(locale, "class"), Value: class.Name})
 		return reportScope{YearID: year.ID, Lines: lines, Classes: []academicdomain.Class{class}}, nil
 	case gradeLevelID.Valid:
 		level, err := academic.GetGradeLevel(ctx, tenantID, gradeLevelID.UUID)
@@ -180,12 +232,40 @@ func resolveScope(ctx context.Context, academic ReportsAcademic, years ReportsYe
 		if err != nil {
 			return reportScope{}, err
 		}
-		lines = append(lines, reportdoc.ScopeLine{Label: "Angkatan", Value: level.Name})
+		lines = append(lines, reportdoc.ScopeLine{Label: scopeVocabulary.text(locale, "gradeLevel"), Value: level.Name})
 		return reportScope{YearID: year.ID, Lines: lines, Classes: classes}, nil
 	default:
-		lines = append(lines, reportdoc.ScopeLine{Label: "Cakupan", Value: "Seluruh kelas"})
+		lines = append(lines, reportdoc.ScopeLine{Label: scopeVocabulary.text(locale, "scope"), Value: scopeVocabulary.text(locale, "allClasses")})
 		return reportScope{YearID: year.ID, Lines: lines}, nil
 	}
+}
+
+// classSignature builds a partial Signature carrying only the class's own
+// Wali Kelas (homeroom teacher) as its one signer, for a report scoped to
+// exactly one class; reports/service.Service.attachLetterhead appends the
+// tenant's own default signer after it, giving a two-signer block (the
+// class's homeroom teacher on the left, the tenant default -- typically
+// Kepala Sekolah -- on the right). Grade-level and whole-school scope
+// have no single homeroom teacher to name, so they get no partial
+// signature at all: attachLetterhead then applies only the tenant
+// default, never a signature with an empty signer.
+func classSignature(ctx context.Context, directory NameLookup, tenantID uuid.UUID, classes []academicdomain.Class, locale string) *reportdoc.Signature {
+	if len(classes) != 1 || directory == nil {
+		return nil
+	}
+	class := classes[0]
+	if class.HomeroomTeacherID == nil {
+		return nil
+	}
+	names, err := directory.Names(ctx, tenantID, []uuid.UUID{*class.HomeroomTeacherID})
+	if err != nil {
+		return nil
+	}
+	name := names[*class.HomeroomTeacherID]
+	if name == "" {
+		return nil
+	}
+	return &reportdoc.Signature{Signers: []reportdoc.Signer{{RoleLabel: scopeVocabulary.text(locale, "homeroomTeacher"), Name: name}}}
 }
 
 // dateOrNil turns a possibly-zero time.Time into the reportdoc-friendly
@@ -205,39 +285,84 @@ func floatPtrOrNil(v *float64) any {
 	return *v
 }
 
-// permitsCategoryLabels and permitsStatusLabels mirror the exact
-// Indonesian wording apps/web/messages/id.json already uses for these
-// same enum values (leave request category and workflow status), so a
-// downloaded report reads the same as the screen it came from rather
-// than a raw storage code like "religious_ceremony".
-var permitsCategoryLabels = map[permitsdomain.Category]string{
-	permitsdomain.CategorySick:              "Sakit",
-	permitsdomain.CategoryReligiousCeremony: "Upacara keagamaan",
-	permitsdomain.CategoryDispensation:      "Dispensasi",
-	permitsdomain.CategoryOther:             "Lainnya",
+// permitsVocabulary mirrors the exact wording apps/web/messages/{id,en}.json
+// already use for these same enum values (leave request category and
+// workflow status), so a downloaded report reads the same as the screen
+// it came from rather than a raw storage code like "religious_ceremony".
+var permitsVocabulary = reportVocabulary{
+	reportdoc.LocaleID: {
+		"leaveTitle": "Rekap Pengajuan Izin", "exitTitle": "Rekap Izin Keluar Tahunan Siswa",
+		"colNo": "No", "colStudentName": "Nama Siswa", "colClassName": "Kelas",
+		"colCategory": "Kategori", "colStartsOn": "Mulai", "colEndsOn": "Selesai",
+		"colLetterNumber": "Nomor Surat", "colStatus": "Status",
+		"colDestination": "Tujuan", "colOpenedAt": "Dibuka", "colExitedAt": "Keluar Pada",
+		"categorySick": "Sakit", "categoryReligious": "Upacara keagamaan",
+		"categoryDispensation": "Dispensasi", "categoryOther": "Lainnya",
+		"statusInProgress": "Berjalan", "statusApproved": "Disetujui", "statusCompleted": "Selesai",
+		"statusRejected": "Ditolak", "statusCancelled": "Dibatalkan", "statusExpired": "Kedaluwarsa",
+	},
+	reportdoc.LocaleEN: {
+		"leaveTitle": "Leave Requests Summary", "exitTitle": "Yearly Exit Permits Summary",
+		"colNo": "No", "colStudentName": "Student Name", "colClassName": "Class",
+		"colCategory": "Category", "colStartsOn": "Starts", "colEndsOn": "Ends",
+		"colLetterNumber": "Letter Number", "colStatus": "Status",
+		"colDestination": "Destination", "colOpenedAt": "Opened", "colExitedAt": "Exited At",
+		"categorySick": "Sick", "categoryReligious": "Religious Ceremony",
+		"categoryDispensation": "Dispensation", "categoryOther": "Other",
+		"statusInProgress": "In Progress", "statusApproved": "Approved", "statusCompleted": "Completed",
+		"statusRejected": "Rejected", "statusCancelled": "Cancelled", "statusExpired": "Expired",
+	},
 }
 
-func permitsCategoryLabel(c permitsdomain.Category) string {
-	if label, ok := permitsCategoryLabels[c]; ok {
-		return label
+var permitsCategoryKeys = map[permitsdomain.Category]string{
+	permitsdomain.CategorySick:              "categorySick",
+	permitsdomain.CategoryReligiousCeremony: "categoryReligious",
+	permitsdomain.CategoryDispensation:      "categoryDispensation",
+	permitsdomain.CategoryOther:             "categoryOther",
+}
+
+func permitsCategoryLabel(locale string, c permitsdomain.Category) string {
+	key, ok := permitsCategoryKeys[c]
+	if !ok {
+		return string(c)
 	}
-	return string(c)
+	return permitsVocabulary.text(locale, key)
 }
 
-var permitsStatusLabels = map[permitsdomain.Status]string{
-	permitsdomain.StatusInProgress: "Berjalan",
-	permitsdomain.StatusApproved:   "Disetujui",
-	permitsdomain.StatusCompleted:  "Selesai",
-	permitsdomain.StatusRejected:   "Ditolak",
-	permitsdomain.StatusCancelled:  "Dibatalkan",
-	permitsdomain.StatusExpired:    "Kedaluwarsa",
+var permitsStatusKeys = map[permitsdomain.Status]string{
+	permitsdomain.StatusInProgress: "statusInProgress",
+	permitsdomain.StatusApproved:   "statusApproved",
+	permitsdomain.StatusCompleted:  "statusCompleted",
+	permitsdomain.StatusRejected:   "statusRejected",
+	permitsdomain.StatusCancelled:  "statusCancelled",
+	permitsdomain.StatusExpired:    "statusExpired",
 }
 
-func permitsStatusLabel(s permitsdomain.Status) string {
-	if label, ok := permitsStatusLabels[s]; ok {
-		return label
+func permitsStatusLabel(locale string, s permitsdomain.Status) string {
+	key, ok := permitsStatusKeys[s]
+	if !ok {
+		return string(s)
 	}
-	return string(s)
+	return permitsVocabulary.text(locale, key)
+}
+
+// disciplineVocabulary is discipline.points/discipline.warning_letters'
+// own id/en words.
+var disciplineVocabulary = reportVocabulary{
+	reportdoc.LocaleID: {
+		"pointsTitle": "Rekap Poin Pelanggaran", "lettersTitle": "Surat Peringatan",
+		"colNo": "No", "colStudentName": "Nama Siswa", "colTotalPoints": "Total Poin",
+		"colRecordCount": "Jumlah Catatan", "colLastViolation": "Pelanggaran Terakhir",
+		"levelDateSuffix": " Tanggal",
+		"colLetterNumber": "Nomor Surat", "colLevel": "Tingkat", "colIssuedAt": "Tanggal Terbit",
+	},
+	reportdoc.LocaleEN: {
+		"pointsTitle": "Discipline Points Summary", "lettersTitle": "Warning Letters",
+		"colNo": "No", "colStudentName": "Student Name", "colTotalPoints": "Total Points",
+		"colRecordCount": "Record Count", "colLastViolation": "Last Violation",
+		"levelDateSuffix": " Date",
+		"colLetterNumber": "Letter Number", "colLevel": "Level", "colIssuedAt": "Issued Date",
+	},
 }
 
 type DisciplineReports struct {
@@ -253,9 +378,11 @@ type DisciplineReports struct {
 // (violation_reports.go:152-169), lost when the point recap moved to
 // this generic exporter. classID/gradeLevelID pick one class, every
 // class of a grade level (one section per class), or neither (one
-// section covering the whole school).
-func (d DisciplineReports) PointTotalRows(ctx context.Context, tenantID uuid.UUID, classID, gradeLevelID uuid.NullUUID) (reportdoc.Document, error) {
-	scope, err := resolveScope(ctx, d.Academic, d.Years, tenantID, classID, gradeLevelID)
+// section covering the whole school). SP level labels are the tenant's
+// own configured policy text (e.g. "SP 1"), never translated by locale;
+// only the " Tanggal"/" Date" suffix and everything else is.
+func (d DisciplineReports) PointTotalRows(ctx context.Context, tenantID uuid.UUID, classID, gradeLevelID uuid.NullUUID, locale string) (reportdoc.Document, error) {
+	scope, err := resolveScope(ctx, d.Academic, d.Years, tenantID, classID, gradeLevelID, locale)
 	if err != nil {
 		return reportdoc.Document{}, err
 	}
@@ -263,25 +390,27 @@ func (d DisciplineReports) PointTotalRows(ctx context.Context, tenantID uuid.UUI
 	if err != nil {
 		return reportdoc.Document{}, err
 	}
-	columns := disciplinePointColumns(policy)
+	columns := disciplinePointColumns(locale, policy)
 	sections, err := d.pointSections(ctx, tenantID, scope, policy)
 	if err != nil {
 		return reportdoc.Document{}, err
 	}
-	return reportdoc.Document{Title: "Rekap Poin Pelanggaran", Scope: scope.Lines, Columns: columns, Sections: sections}, nil
+	doc := reportdoc.Document{Title: disciplineVocabulary.text(locale, "pointsTitle"), Scope: scope.Lines, Columns: columns, Sections: sections}
+	doc.Signature = classSignature(ctx, d.Directory, tenantID, scope.Classes, locale)
+	return doc, nil
 }
 
-func disciplinePointColumns(policy disciplinedomain.SPPolicy) []reportdoc.Column {
+func disciplinePointColumns(locale string, policy disciplinedomain.SPPolicy) []reportdoc.Column {
 	columns := []reportdoc.Column{
-		{Key: "no", Label: "No", Kind: reportdoc.ColumnNumber, Width: 6},
-		{Key: "student_name", Label: "Nama Siswa", Kind: reportdoc.ColumnText, Width: 28},
-		{Key: "total_points", Label: "Total Poin", Kind: reportdoc.ColumnNumber, Width: 12},
-		{Key: "record_count", Label: "Jumlah Catatan", Kind: reportdoc.ColumnNumber, Width: 14},
-		{Key: "last_violation", Label: "Pelanggaran Terakhir", Kind: reportdoc.ColumnDate, Width: 16},
+		{Key: "no", Label: disciplineVocabulary.text(locale, "colNo"), Kind: reportdoc.ColumnNumber, Width: 6},
+		{Key: "student_name", Label: disciplineVocabulary.text(locale, "colStudentName"), Kind: reportdoc.ColumnText, Width: 28},
+		{Key: "total_points", Label: disciplineVocabulary.text(locale, "colTotalPoints"), Kind: reportdoc.ColumnNumber, Width: 12},
+		{Key: "record_count", Label: disciplineVocabulary.text(locale, "colRecordCount"), Kind: reportdoc.ColumnNumber, Width: 14},
+		{Key: "last_violation", Label: disciplineVocabulary.text(locale, "colLastViolation"), Kind: reportdoc.ColumnDate, Width: 16},
 	}
 	for _, lvl := range policy.Levels {
 		columns = append(columns, reportdoc.Column{
-			Key: fmt.Sprintf("sp_level_%d_date", lvl.Level), Label: lvl.Label + " Tanggal", Kind: reportdoc.ColumnDate, Width: 14,
+			Key: fmt.Sprintf("sp_level_%d_date", lvl.Level), Label: lvl.Label + disciplineVocabulary.text(locale, "levelDateSuffix"), Kind: reportdoc.ColumnDate, Width: 14,
 		})
 	}
 	return columns
@@ -338,24 +467,26 @@ func (d DisciplineReports) pointSection(ctx context.Context, tenantID uuid.UUID,
 	return reportdoc.Section{Name: name, Rows: rows}, nil
 }
 
-func (d DisciplineReports) WarningLetterRows(ctx context.Context, tenantID uuid.UUID, classID, gradeLevelID uuid.NullUUID) (reportdoc.Document, error) {
-	scope, err := resolveScope(ctx, d.Academic, d.Years, tenantID, classID, gradeLevelID)
+func (d DisciplineReports) WarningLetterRows(ctx context.Context, tenantID uuid.UUID, classID, gradeLevelID uuid.NullUUID, locale string) (reportdoc.Document, error) {
+	scope, err := resolveScope(ctx, d.Academic, d.Years, tenantID, classID, gradeLevelID, locale)
 	if err != nil {
 		return reportdoc.Document{}, err
 	}
 	columns := []reportdoc.Column{
-		{Key: "no", Label: "No", Kind: reportdoc.ColumnNumber, Width: 6},
-		{Key: "letter_number", Label: "Nomor Surat", Kind: reportdoc.ColumnText, Width: 20},
-		{Key: "student_name", Label: "Nama Siswa", Kind: reportdoc.ColumnText, Width: 28},
-		{Key: "level", Label: "Tingkat", Kind: reportdoc.ColumnText, Width: 12},
-		{Key: "total_points", Label: "Total Poin", Kind: reportdoc.ColumnNumber, Width: 12},
-		{Key: "issued_at", Label: "Tanggal Terbit", Kind: reportdoc.ColumnDate, Width: 16},
+		{Key: "no", Label: disciplineVocabulary.text(locale, "colNo"), Kind: reportdoc.ColumnNumber, Width: 6},
+		{Key: "letter_number", Label: disciplineVocabulary.text(locale, "colLetterNumber"), Kind: reportdoc.ColumnText, Width: 20},
+		{Key: "student_name", Label: disciplineVocabulary.text(locale, "colStudentName"), Kind: reportdoc.ColumnText, Width: 28},
+		{Key: "level", Label: disciplineVocabulary.text(locale, "colLevel"), Kind: reportdoc.ColumnText, Width: 12},
+		{Key: "total_points", Label: disciplineVocabulary.text(locale, "colTotalPoints"), Kind: reportdoc.ColumnNumber, Width: 12},
+		{Key: "issued_at", Label: disciplineVocabulary.text(locale, "colIssuedAt"), Kind: reportdoc.ColumnDate, Width: 16},
 	}
 	sections, err := d.warningSections(ctx, tenantID, scope)
 	if err != nil {
 		return reportdoc.Document{}, err
 	}
-	return reportdoc.Document{Title: "Surat Peringatan", Scope: scope.Lines, Columns: columns, Sections: sections}, nil
+	doc := reportdoc.Document{Title: disciplineVocabulary.text(locale, "lettersTitle"), Scope: scope.Lines, Columns: columns, Sections: sections}
+	doc.Signature = classSignature(ctx, d.Directory, tenantID, scope.Classes, locale)
+	return doc, nil
 }
 
 func (d DisciplineReports) warningSections(ctx context.Context, tenantID uuid.UUID, scope reportScope) ([]reportdoc.Section, error) {
@@ -404,10 +535,27 @@ func (d DisciplineReports) names(ctx context.Context, tenantID uuid.UUID, ids []
 	return d.Directory.Names(ctx, tenantID, ids)
 }
 
+// gradingVocabulary is grading.report_scores' own id/en words. Component
+// codes stay tenant content (never translated by locale), same as SP
+// level labels.
+var gradingVocabulary = reportVocabulary{
+	reportdoc.LocaleID: {
+		"title": "Nilai Rapor", "colNo": "No", "colStudentName": "Nama Siswa",
+		"colAverage": "Rata-rata", "colReportScore": "Nilai Rapor",
+		"scopeSubject": "Mata Pelajaran", "scopeTerm": "Semester",
+	},
+	reportdoc.LocaleEN: {
+		"title": "Report Card Scores", "colNo": "No", "colStudentName": "Student Name",
+		"colAverage": "Average", "colReportScore": "Report Score",
+		"scopeSubject": "Subject", "scopeTerm": "Term",
+	},
+}
+
 type GradingReports struct {
-	Svc      *gradingservice.Service
-	Academic ReportsAcademic
-	Years    ReportsYears
+	Svc       *gradingservice.Service
+	Academic  ReportsAcademic
+	Years     ReportsYears
+	Directory NameLookup
 }
 
 // ReportScoreRows renders the report-score recap for one class or every
@@ -418,75 +566,11 @@ type GradingReports struct {
 // classes normally share the same components for one subject/grade
 // level, but a class missing one simply prints a blank rather than
 // losing that component's column for every other class.
-func (g GradingReports) ReportScoreRows(ctx context.Context, tenantID uuid.UUID, classID, gradeLevelID uuid.NullUUID, subjectID uuid.UUID, termID uuid.NullUUID) (reportdoc.Document, error) {
-	scope, err := resolveScope(ctx, g.Academic, g.Years, tenantID, classID, gradeLevelID)
+func (g GradingReports) ReportScoreRows(ctx context.Context, tenantID uuid.UUID, classID, gradeLevelID uuid.NullUUID, subjectID uuid.UUID, termID uuid.NullUUID, locale string) (reportdoc.Document, error) {
+	scope, columns, books, componentOrder, err := g.scopeAndColumns(ctx, tenantID, classID, gradeLevelID, subjectID, termID, locale)
 	if err != nil {
 		return reportdoc.Document{}, err
 	}
-	if len(scope.Classes) == 0 {
-		// grading.report_scores' class argument is required (Catalog);
-		// RunDocument's requireArgs already refuses a call that reaches
-		// here with neither class_id nor grade_level_id set.
-		return reportdoc.Document{}, reportsservice.ErrMissingArgument
-	}
-	if gradeLevelID.Valid {
-		offered, err := g.Academic.SubjectOfferedAtGradeLevel(ctx, tenantID, scope.YearID, subjectID, gradeLevelID.UUID)
-		if err != nil {
-			return reportdoc.Document{}, err
-		}
-		if !offered {
-			return reportdoc.Document{}, reportsservice.ErrSubjectNotOffered
-		}
-	}
-	subject, err := g.Academic.GetSubject(ctx, tenantID, subjectID)
-	if err != nil {
-		return reportdoc.Document{}, err
-	}
-	scope.Lines = append(scope.Lines, reportdoc.ScopeLine{Label: "Mata Pelajaran", Value: subject.Name})
-
-	// Scheduled/manual report exports run without a per-request teacher
-	// actor, so this reads with the same admin bypass the grading
-	// handler grants manage_master_data -- true here is not "some
-	// teacher", it is "this is the reports module's own trusted read".
-	books := make([]gradingservice.Gradebook, len(scope.Classes))
-	var termLabel string
-	var componentOrder []uuid.UUID
-	componentCode := map[uuid.UUID]string{}
-	seenComponent := map[uuid.UUID]bool{}
-	for i, class := range scope.Classes {
-		book, err := g.Svc.Gradebook(ctx, tenantID, uuid.Nil, true, gradingservice.GradebookQuery{ClassID: class.ID, SubjectID: subjectID, TermID: termID})
-		if err != nil {
-			return reportdoc.Document{}, err
-		}
-		books[i] = book
-		if termLabel == "" {
-			termLabel = book.Term.Name
-		}
-		for _, c := range book.Components {
-			if seenComponent[c.ID] {
-				continue
-			}
-			seenComponent[c.ID] = true
-			componentOrder = append(componentOrder, c.ID)
-			componentCode[c.ID] = c.Code
-		}
-	}
-	if termLabel != "" {
-		scope.Lines = append(scope.Lines, reportdoc.ScopeLine{Label: "Semester", Value: termLabel})
-	}
-
-	columns := []reportdoc.Column{
-		{Key: "no", Label: "No", Kind: reportdoc.ColumnNumber, Width: 6},
-		{Key: "student_name", Label: "Nama Siswa", Kind: reportdoc.ColumnText, Width: 28},
-	}
-	for _, id := range componentOrder {
-		code := componentCode[id]
-		columns = append(columns, reportdoc.Column{Key: "component_" + code, Label: code, Kind: reportdoc.ColumnNumber, Width: 10})
-	}
-	columns = append(columns,
-		reportdoc.Column{Key: "average", Label: "Rata-rata", Kind: reportdoc.ColumnNumber, Width: 10},
-		reportdoc.Column{Key: "report_score", Label: "Nilai Rapor", Kind: reportdoc.ColumnNumber, Width: 10},
-	)
 
 	sections := make([]reportdoc.Section, len(scope.Classes))
 	for i, class := range scope.Classes {
@@ -508,13 +592,105 @@ func (g GradingReports) ReportScoreRows(ctx context.Context, tenantID uuid.UUID,
 		sections[i] = reportdoc.Section{Name: class.Name, Rows: rows}
 	}
 
-	return reportdoc.Document{Title: "Nilai Rapor", Scope: scope.Lines, Columns: columns, Sections: sections}, nil
+	doc := reportdoc.Document{Title: gradingVocabulary.text(locale, "title"), Scope: scope.Lines, Columns: columns, Sections: sections}
+	doc.Signature = classSignature(ctx, g.Directory, tenantID, scope.Classes, locale)
+	return doc, nil
+}
+
+// ReportScoreColumns is ReportScoreRows' columns alone, for GET
+// /v1/reports/grading.report_scores/columns: the export dialog's way of
+// discovering this kind's per-component columns for the scope/subject/
+// term the caller chose, without paying for (or displaying) every row.
+func (g GradingReports) ReportScoreColumns(ctx context.Context, tenantID uuid.UUID, classID, gradeLevelID uuid.NullUUID, subjectID uuid.UUID, termID uuid.NullUUID, locale string) ([]reportdoc.Column, error) {
+	_, columns, _, _, err := g.scopeAndColumns(ctx, tenantID, classID, gradeLevelID, subjectID, termID, locale)
+	return columns, err
+}
+
+// scopeAndColumns is ReportScoreRows/ReportScoreColumns' shared work:
+// resolve scope, validate the subject is offered when scoped to a grade
+// level, fetch every class's Gradebook (rows are only used by
+// ReportScoreRows, but the Gradebook call itself is the cheapest way to
+// learn a class's components -- there is no separate components-only
+// query), and build the column set from every component seen.
+func (g GradingReports) scopeAndColumns(
+	ctx context.Context, tenantID uuid.UUID, classID, gradeLevelID uuid.NullUUID, subjectID uuid.UUID, termID uuid.NullUUID, locale string,
+) (reportScope, []reportdoc.Column, []gradingservice.Gradebook, []uuid.UUID, error) {
+	scope, err := resolveScope(ctx, g.Academic, g.Years, tenantID, classID, gradeLevelID, locale)
+	if err != nil {
+		return reportScope{}, nil, nil, nil, err
+	}
+	if len(scope.Classes) == 0 {
+		// grading.report_scores' class argument is required (Catalog);
+		// RunDocument's requireArgs already refuses a call that reaches
+		// here with neither class_id nor grade_level_id set.
+		return reportScope{}, nil, nil, nil, reportsservice.ErrMissingArgument
+	}
+	if gradeLevelID.Valid {
+		offered, err := g.Academic.SubjectOfferedAtGradeLevel(ctx, tenantID, scope.YearID, subjectID, gradeLevelID.UUID)
+		if err != nil {
+			return reportScope{}, nil, nil, nil, err
+		}
+		if !offered {
+			return reportScope{}, nil, nil, nil, reportsservice.ErrSubjectNotOffered
+		}
+	}
+	subject, err := g.Academic.GetSubject(ctx, tenantID, subjectID)
+	if err != nil {
+		return reportScope{}, nil, nil, nil, err
+	}
+	scope.Lines = append(scope.Lines, reportdoc.ScopeLine{Label: gradingVocabulary.text(locale, "scopeSubject"), Value: subject.Name})
+
+	// Scheduled/manual report exports run without a per-request teacher
+	// actor, so this reads with the same admin bypass the grading
+	// handler grants manage_master_data -- true here is not "some
+	// teacher", it is "this is the reports module's own trusted read".
+	books := make([]gradingservice.Gradebook, len(scope.Classes))
+	var termLabel string
+	var componentOrder []uuid.UUID
+	componentCode := map[uuid.UUID]string{}
+	seenComponent := map[uuid.UUID]bool{}
+	for i, class := range scope.Classes {
+		book, err := g.Svc.Gradebook(ctx, tenantID, uuid.Nil, true, gradingservice.GradebookQuery{ClassID: class.ID, SubjectID: subjectID, TermID: termID})
+		if err != nil {
+			return reportScope{}, nil, nil, nil, err
+		}
+		books[i] = book
+		if termLabel == "" {
+			termLabel = book.Term.Name
+		}
+		for _, c := range book.Components {
+			if seenComponent[c.ID] {
+				continue
+			}
+			seenComponent[c.ID] = true
+			componentOrder = append(componentOrder, c.ID)
+			componentCode[c.ID] = c.Code
+		}
+	}
+	if termLabel != "" {
+		scope.Lines = append(scope.Lines, reportdoc.ScopeLine{Label: gradingVocabulary.text(locale, "scopeTerm"), Value: termLabel})
+	}
+
+	columns := []reportdoc.Column{
+		{Key: "no", Label: gradingVocabulary.text(locale, "colNo"), Kind: reportdoc.ColumnNumber, Width: 6},
+		{Key: "student_name", Label: gradingVocabulary.text(locale, "colStudentName"), Kind: reportdoc.ColumnText, Width: 28},
+	}
+	for _, id := range componentOrder {
+		code := componentCode[id]
+		columns = append(columns, reportdoc.Column{Key: "component_" + code, Label: code, Kind: reportdoc.ColumnNumber, Width: 10})
+	}
+	columns = append(columns,
+		reportdoc.Column{Key: "average", Label: gradingVocabulary.text(locale, "colAverage"), Kind: reportdoc.ColumnNumber, Width: 10},
+		reportdoc.Column{Key: "report_score", Label: gradingVocabulary.text(locale, "colReportScore"), Kind: reportdoc.ColumnNumber, Width: 10},
+	)
+	return scope, columns, books, componentOrder, nil
 }
 
 type PermitsReports struct {
-	Svc      *permitsservice.Service
-	Academic ReportsAcademic
-	Years    ReportsYears
+	Svc       *permitsservice.Service
+	Academic  ReportsAcademic
+	Years     ReportsYears
+	Directory NameLookup
 }
 
 // LeaveRequestRows renders the leave-request recap for one class, every
@@ -522,31 +698,33 @@ type PermitsReports struct {
 // neither -- one section covering every class. The review queue is
 // scoped to the caller's duties, so the export mirrors exactly what that
 // person may see on screen.
-func (p PermitsReports) LeaveRequestRows(ctx context.Context, tenantID uuid.UUID, classID, gradeLevelID uuid.NullUUID) (reportdoc.Document, error) {
-	scope, err := resolveScope(ctx, p.Academic, p.Years, tenantID, classID, gradeLevelID)
+func (p PermitsReports) LeaveRequestRows(ctx context.Context, tenantID uuid.UUID, classID, gradeLevelID uuid.NullUUID, locale string) (reportdoc.Document, error) {
+	scope, err := resolveScope(ctx, p.Academic, p.Years, tenantID, classID, gradeLevelID, locale)
 	if err != nil {
 		return reportdoc.Document{}, err
 	}
 	columns := []reportdoc.Column{
-		{Key: "no", Label: "No", Kind: reportdoc.ColumnNumber, Width: 6},
-		{Key: "student_name", Label: "Nama Siswa", Kind: reportdoc.ColumnText, Width: 28},
-		{Key: "class_name", Label: "Kelas", Kind: reportdoc.ColumnText, Width: 12},
-		{Key: "category", Label: "Kategori", Kind: reportdoc.ColumnText, Width: 16},
-		{Key: "starts_on", Label: "Mulai", Kind: reportdoc.ColumnDate, Width: 14},
-		{Key: "ends_on", Label: "Selesai", Kind: reportdoc.ColumnDate, Width: 14},
-		{Key: "letter_number", Label: "Nomor Surat", Kind: reportdoc.ColumnText, Width: 18},
-		{Key: "status", Label: "Status", Kind: reportdoc.ColumnText, Width: 14},
+		{Key: "no", Label: permitsVocabulary.text(locale, "colNo"), Kind: reportdoc.ColumnNumber, Width: 6},
+		{Key: "student_name", Label: permitsVocabulary.text(locale, "colStudentName"), Kind: reportdoc.ColumnText, Width: 28},
+		{Key: "class_name", Label: permitsVocabulary.text(locale, "colClassName"), Kind: reportdoc.ColumnText, Width: 12},
+		{Key: "category", Label: permitsVocabulary.text(locale, "colCategory"), Kind: reportdoc.ColumnText, Width: 16},
+		{Key: "starts_on", Label: permitsVocabulary.text(locale, "colStartsOn"), Kind: reportdoc.ColumnDate, Width: 14},
+		{Key: "ends_on", Label: permitsVocabulary.text(locale, "colEndsOn"), Kind: reportdoc.ColumnDate, Width: 14},
+		{Key: "letter_number", Label: permitsVocabulary.text(locale, "colLetterNumber"), Kind: reportdoc.ColumnText, Width: 18},
+		{Key: "status", Label: permitsVocabulary.text(locale, "colStatus"), Kind: reportdoc.ColumnText, Width: 14},
 	}
-	sections, err := p.leaveSections(ctx, tenantID, scope)
+	sections, err := p.leaveSections(ctx, tenantID, scope, locale)
 	if err != nil {
 		return reportdoc.Document{}, err
 	}
-	return reportdoc.Document{Title: "Rekap Pengajuan Izin", Scope: scope.Lines, Columns: columns, Sections: sections}, nil
+	doc := reportdoc.Document{Title: permitsVocabulary.text(locale, "leaveTitle"), Scope: scope.Lines, Columns: columns, Sections: sections}
+	doc.Signature = classSignature(ctx, p.Directory, tenantID, scope.Classes, locale)
+	return doc, nil
 }
 
-func (p PermitsReports) leaveSections(ctx context.Context, tenantID uuid.UUID, scope reportScope) ([]reportdoc.Section, error) {
+func (p PermitsReports) leaveSections(ctx context.Context, tenantID uuid.UUID, scope reportScope, locale string) ([]reportdoc.Section, error) {
 	if len(scope.Classes) == 0 {
-		sec, err := p.leaveSection(ctx, tenantID, uuid.NullUUID{}, "")
+		sec, err := p.leaveSection(ctx, tenantID, uuid.NullUUID{}, "", locale)
 		if err != nil {
 			return nil, err
 		}
@@ -554,7 +732,7 @@ func (p PermitsReports) leaveSections(ctx context.Context, tenantID uuid.UUID, s
 	}
 	sections := make([]reportdoc.Section, 0, len(scope.Classes))
 	for _, class := range scope.Classes {
-		sec, err := p.leaveSection(ctx, tenantID, uuid.NullUUID{UUID: class.ID, Valid: true}, class.Name)
+		sec, err := p.leaveSection(ctx, tenantID, uuid.NullUUID{UUID: class.ID, Valid: true}, class.Name, locale)
 		if err != nil {
 			return nil, err
 		}
@@ -563,7 +741,7 @@ func (p PermitsReports) leaveSections(ctx context.Context, tenantID uuid.UUID, s
 	return sections, nil
 }
 
-func (p PermitsReports) leaveSection(ctx context.Context, tenantID uuid.UUID, classID uuid.NullUUID, name string) (reportdoc.Section, error) {
+func (p PermitsReports) leaveSection(ctx context.Context, tenantID uuid.UUID, classID uuid.NullUUID, name, locale string) (reportdoc.Section, error) {
 	items, err := p.Svc.ListLeaveRequestsForReview(ctx, tenantID, uuid.Nil, classID)
 	if err != nil {
 		return reportdoc.Section{}, err
@@ -571,8 +749,8 @@ func (p PermitsReports) leaveSection(ctx context.Context, tenantID uuid.UUID, cl
 	rows := make([][]any, len(items))
 	for i, item := range items {
 		rows[i] = []any{
-			i + 1, item.StudentNameSnapshot, item.ClassNameSnapshot, permitsCategoryLabel(item.Category),
-			dateOrNil(item.StartsOn), dateOrNil(item.EndsOn), item.LetterNumber, permitsStatusLabel(item.Status),
+			i + 1, item.StudentNameSnapshot, item.ClassNameSnapshot, permitsCategoryLabel(locale, item.Category),
+			dateOrNil(item.StartsOn), dateOrNil(item.EndsOn), item.LetterNumber, permitsStatusLabel(locale, item.Status),
 		}
 	}
 	return reportdoc.Section{Name: name, Rows: rows}, nil
@@ -582,24 +760,24 @@ func (p PermitsReports) leaveSection(ctx context.Context, tenantID uuid.UUID, cl
 // docs/analysis/backend-inventory.md 1.15): every exit permit opened this
 // academic year, regardless of status. It has no class/grade-level scope
 // of its own (the catalog declares no arguments for it), so it is always
-// a single unnamed section.
-func (p PermitsReports) ExitPermitYearlyRows(ctx context.Context, tenantID uuid.UUID) (reportdoc.Document, error) {
+// a single unnamed section with no class-specific signer.
+func (p PermitsReports) ExitPermitYearlyRows(ctx context.Context, tenantID uuid.UUID, locale string) (reportdoc.Document, error) {
 	var lines []reportdoc.ScopeLine
 	if year, ok, err := p.Years.GetActiveAcademicYear(ctx, tenantID); err == nil && ok && year.Label != "" {
-		lines = append(lines, reportdoc.ScopeLine{Label: "Tahun Ajaran", Value: year.Label})
+		lines = append(lines, reportdoc.ScopeLine{Label: scopeVocabulary.text(locale, "academicYear"), Value: year.Label})
 	}
 	rows, err := p.Svc.ExitPermitYearlyReportRows(ctx, tenantID)
 	if err != nil {
 		return reportdoc.Document{}, err
 	}
 	columns := []reportdoc.Column{
-		{Key: "no", Label: "No", Kind: reportdoc.ColumnNumber, Width: 6},
-		{Key: "student_name", Label: "Nama Siswa", Kind: reportdoc.ColumnText, Width: 28},
-		{Key: "class_name", Label: "Kelas", Kind: reportdoc.ColumnText, Width: 12},
-		{Key: "destination", Label: "Tujuan", Kind: reportdoc.ColumnText, Width: 24},
-		{Key: "opened_at", Label: "Dibuka", Kind: reportdoc.ColumnDate, Width: 16},
-		{Key: "status", Label: "Status", Kind: reportdoc.ColumnText, Width: 14},
-		{Key: "exited_at", Label: "Keluar Pada", Kind: reportdoc.ColumnDate, Width: 16},
+		{Key: "no", Label: permitsVocabulary.text(locale, "colNo"), Kind: reportdoc.ColumnNumber, Width: 6},
+		{Key: "student_name", Label: permitsVocabulary.text(locale, "colStudentName"), Kind: reportdoc.ColumnText, Width: 28},
+		{Key: "class_name", Label: permitsVocabulary.text(locale, "colClassName"), Kind: reportdoc.ColumnText, Width: 12},
+		{Key: "destination", Label: permitsVocabulary.text(locale, "colDestination"), Kind: reportdoc.ColumnText, Width: 24},
+		{Key: "opened_at", Label: permitsVocabulary.text(locale, "colOpenedAt"), Kind: reportdoc.ColumnDate, Width: 16},
+		{Key: "status", Label: permitsVocabulary.text(locale, "colStatus"), Kind: reportdoc.ColumnText, Width: 14},
+		{Key: "exited_at", Label: permitsVocabulary.text(locale, "colExitedAt"), Kind: reportdoc.ColumnDate, Width: 16},
 	}
 	sectionRows := make([][]any, len(rows))
 	for i, row := range rows {
@@ -609,11 +787,11 @@ func (p PermitsReports) ExitPermitYearlyRows(ctx context.Context, tenantID uuid.
 		}
 		sectionRows[i] = []any{
 			i + 1, row.StudentNameSnapshot, row.ClassNameSnapshot, row.Destination,
-			dateOrNil(row.OpenedAt), permitsStatusLabel(row.Status), exitedAt,
+			dateOrNil(row.OpenedAt), permitsStatusLabel(locale, row.Status), exitedAt,
 		}
 	}
 	return reportdoc.Document{
-		Title: "Rekap Izin Keluar Tahunan Siswa", Scope: lines, Columns: columns,
+		Title: permitsVocabulary.text(locale, "exitTitle"), Scope: lines, Columns: columns,
 		Sections: []reportdoc.Section{{Rows: sectionRows}},
 	}, nil
 }

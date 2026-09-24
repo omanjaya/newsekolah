@@ -70,8 +70,14 @@ func RenderXLSX(doc Document) ([]byte, error) {
 }
 
 type xlsxStyles struct {
-	header, title, schoolName, footer int
-	data                              dataStyles
+	header, title, footer int
+	// schoolName/letterheadPlain style a kop surat line normally; the
+	// *Rule variants add the double bottom border that closes the
+	// letterhead block, used only on that block's last line.
+	schoolName, schoolNameRule                         int
+	letterheadPlain, letterheadPlainRule               int
+	signaturePlaceDate, signatureCenter, signatureName int
+	data                                               dataStyles
 }
 
 // dataStyles holds one cell style per ColumnKind, reused across every row
@@ -91,13 +97,38 @@ func newXLSXStyles(f *excelize.File) (xlsxStyles, error) {
 	if err != nil {
 		return xlsxStyles{}, fmt.Errorf("reportdoc: header style: %w", err)
 	}
-	title, err := f.NewStyle(&excelize.Style{Font: &excelize.Font{Bold: true, Size: 14}})
+	title, err := f.NewStyle(&excelize.Style{Font: &excelize.Font{Bold: true, Size: 14}, Alignment: &excelize.Alignment{Horizontal: "center"}})
 	if err != nil {
 		return xlsxStyles{}, fmt.Errorf("reportdoc: title style: %w", err)
 	}
-	schoolName, err := f.NewStyle(&excelize.Style{Font: &excelize.Font{Bold: true, Size: 12}})
+	// schoolName is the letterhead's emphasised line: bold, visibly
+	// larger than the other kop surat lines, centered. schoolNameRule is
+	// the same, plus the double bottom border that closes the letterhead
+	// block (RenderXLSX's equivalent of RenderPDF's double rule line),
+	// used when the emphasised line is also the block's last line.
+	schoolNameFont := &excelize.Font{Bold: true, Size: 14}
+	schoolNameAlign := &excelize.Alignment{Horizontal: "center"}
+	schoolName, err := f.NewStyle(&excelize.Style{Font: schoolNameFont, Alignment: schoolNameAlign})
 	if err != nil {
-		return xlsxStyles{}, fmt.Errorf("reportdoc: letterhead style: %w", err)
+		return xlsxStyles{}, fmt.Errorf("reportdoc: letterhead emphasis style: %w", err)
+	}
+	schoolNameRule, err := f.NewStyle(&excelize.Style{
+		Font: schoolNameFont, Alignment: schoolNameAlign, Border: doubleBottomBorder(),
+	})
+	if err != nil {
+		return xlsxStyles{}, fmt.Errorf("reportdoc: letterhead emphasis+rule style: %w", err)
+	}
+	plainFont := &excelize.Font{Size: 10}
+	plainAlign := &excelize.Alignment{Horizontal: "center"}
+	letterheadPlain, err := f.NewStyle(&excelize.Style{Font: plainFont, Alignment: plainAlign})
+	if err != nil {
+		return xlsxStyles{}, fmt.Errorf("reportdoc: letterhead plain style: %w", err)
+	}
+	letterheadPlainRule, err := f.NewStyle(&excelize.Style{
+		Font: plainFont, Alignment: plainAlign, Border: doubleBottomBorder(),
+	})
+	if err != nil {
+		return xlsxStyles{}, fmt.Errorf("reportdoc: letterhead plain+rule style: %w", err)
 	}
 	footer, err := f.NewStyle(&excelize.Style{
 		Font: &excelize.Font{Bold: true}, Border: thinBorder(),
@@ -106,11 +137,37 @@ func newXLSXStyles(f *excelize.File) (xlsxStyles, error) {
 	if err != nil {
 		return xlsxStyles{}, fmt.Errorf("reportdoc: footer style: %w", err)
 	}
+	signaturePlaceDate, err := f.NewStyle(&excelize.Style{Alignment: &excelize.Alignment{Horizontal: "right"}})
+	if err != nil {
+		return xlsxStyles{}, fmt.Errorf("reportdoc: signature place/date style: %w", err)
+	}
+	signatureCenter, err := f.NewStyle(&excelize.Style{Alignment: &excelize.Alignment{Horizontal: "center"}})
+	if err != nil {
+		return xlsxStyles{}, fmt.Errorf("reportdoc: signature style: %w", err)
+	}
+	signatureName, err := f.NewStyle(&excelize.Style{
+		Font: &excelize.Font{Bold: true, Underline: "single"}, Alignment: &excelize.Alignment{Horizontal: "center"},
+	})
+	if err != nil {
+		return xlsxStyles{}, fmt.Errorf("reportdoc: signature name style: %w", err)
+	}
 	data, err := newDataStyles(f)
 	if err != nil {
 		return xlsxStyles{}, err
 	}
-	return xlsxStyles{header: header, title: title, schoolName: schoolName, footer: footer, data: data}, nil
+	return xlsxStyles{
+		header: header, title: title,
+		schoolName: schoolName, schoolNameRule: schoolNameRule,
+		letterheadPlain: letterheadPlain, letterheadPlainRule: letterheadPlainRule,
+		signaturePlaceDate: signaturePlaceDate, signatureCenter: signatureCenter, signatureName: signatureName,
+		footer: footer, data: data,
+	}, nil
+}
+
+// doubleBottomBorder is Excel border style 6 (double line), the closing
+// rule under a kop surat's letterhead block.
+func doubleBottomBorder() []excelize.Border {
+	return []excelize.Border{{Type: "bottom", Color: "1F2937", Style: 6}}
 }
 
 func newDataStyles(f *excelize.File) (dataStyles, error) {
@@ -204,6 +261,7 @@ func writeXLSXSheet(f *excelize.File, sheet string, doc Document, section Sectio
 	}
 
 	headerRow := row
+	maxHeaderLines := 1
 	for col, c := range doc.Columns {
 		cell, err := excelize.CoordinatesToCellName(col+1, headerRow)
 		if err != nil {
@@ -212,13 +270,33 @@ func writeXLSXSheet(f *excelize.File, sheet string, doc Document, section Sectio
 		if err := f.SetCellValue(sheet, cell, c.Label); err != nil {
 			return err
 		}
+		width := c.Width
+		if width <= 0 {
+			width = defaultColWidth
+		}
+		if n := wrapLineCount(c.Label, width-2); n > maxHeaderLines {
+			maxHeaderLines = n
+		}
 	}
 	headerRange := fmt.Sprintf("A%d:%s%d", headerRow, lastColName, headerRow)
 	if err := f.SetCellStyle(sheet, fmt.Sprintf("A%d", headerRow), fmt.Sprintf("%s%d", lastColName, headerRow), styles.header); err != nil {
 		return err
 	}
+	// WrapText alone auto-fits row height in Excel/LibreOffice once
+	// opened, but an explicit height is a safety net for renderers that
+	// do not recompute it (a straight XLSX->PDF/image conversion, for
+	// instance), matching RenderPDF's own wrap-aware header height.
+	if err := f.SetRowHeight(sheet, headerRow, float64(maxHeaderLines)*15); err != nil {
+		return fmt.Errorf("header row height: %w", err)
+	}
 
 	dataRow := headerRow + 1
+	if len(section.Rows) == 0 && len(section.Footer) == 0 && doc.EmptyRowsLabel != "" {
+		if err := writeMergedLine(f, sheet, dataRow, lastColName, doc.EmptyRowsLabel, styles.data.text); err != nil {
+			return err
+		}
+		dataRow++
+	}
 	for _, values := range section.Rows {
 		if err := writeTypedRow(f, sheet, dataRow, doc.Columns, values, 0, styles); err != nil {
 			return err
@@ -266,7 +344,7 @@ func writeXLSXSheet(f *excelize.File, sheet string, doc Document, section Sectio
 
 	if doc.Signature != nil {
 		dataRow += 2
-		if err := writeSignature(f, sheet, doc.Signature, dataRow, lastCol); err != nil {
+		if err := writeSignature(f, sheet, doc.Signature, dataRow, lastCol, styles); err != nil {
 			return err
 		}
 	}
@@ -381,6 +459,11 @@ func writeLetterhead(f *excelize.File, sheet string, lh *Letterhead, lastCol int
 		}
 	}
 
+	emphasis := lh.Emphasis
+	if emphasis < 0 || emphasis >= len(lh.Lines) {
+		emphasis = 0
+	}
+	lastLine := len(lh.Lines) - 1
 	for i, line := range lh.Lines {
 		r := i + 1
 		startCell := fmt.Sprintf("%s%d", textCol, r)
@@ -392,13 +475,49 @@ func writeLetterhead(f *excelize.File, sheet string, lh *Letterhead, lastCol int
 		if err := f.SetCellValue(sheet, startCell, line); err != nil {
 			return 0, err
 		}
-		if i == 0 {
-			if err := f.SetCellStyle(sheet, startCell, startCell, styles.schoolName); err != nil {
-				return 0, err
-			}
+		style := styles.letterheadPlain
+		switch {
+		case i == emphasis && i == lastLine:
+			style = styles.schoolNameRule
+		case i == emphasis:
+			style = styles.schoolName
+		case i == lastLine:
+			style = styles.letterheadPlainRule
+		}
+		if err := f.SetCellStyle(sheet, startCell, startCell, style); err != nil {
+			return 0, err
 		}
 	}
 	return blockRows, nil
+}
+
+// wrapLineCount approximates how many lines text wraps to at
+// charsPerLine, greedily packing whole words the way a spreadsheet's own
+// WrapText does -- not pixel-accurate, but exactly the same estimate
+// used to size the header row's explicit height.
+func wrapLineCount(text string, charsPerLine float64) int {
+	if charsPerLine < 1 {
+		charsPerLine = 1
+	}
+	words := strings.Fields(text)
+	if len(words) == 0 {
+		return 1
+	}
+	lines := 1
+	lineLen := 0.0
+	for _, w := range words {
+		wl := float64(len(w))
+		switch {
+		case lineLen == 0:
+			lineLen = wl
+		case lineLen+1+wl > charsPerLine:
+			lines++
+			lineLen = wl
+		default:
+			lineLen += 1 + wl
+		}
+	}
+	return lines
 }
 
 func maxInt(a, b int) int {
@@ -444,32 +563,64 @@ func imageExtension(data []byte) (string, error) {
 
 // writeSignature prints the place/date line, then one role/name/id column
 // per signer, side by side, starting at row.
-func writeSignature(f *excelize.File, sheet string, sig *Signature, row, lastCol int) error {
+// writeSignature prints the place/date line right-aligned across the full
+// width, then one block per signer -- centered within its own column
+// range, side by side (two signers split the width in half, e.g. Wali
+// Kelas left / Kepala Sekolah right, the standard Indonesian layout) --
+// each with a bold, underlined name line and an optional identifier line.
+func writeSignature(f *excelize.File, sheet string, sig *Signature, row, lastCol int, styles xlsxStyles) error {
+	lastColName, err := excelize.ColumnNumberToName(lastCol)
+	if err != nil {
+		return err
+	}
 	if sig.Place != "" || sig.Date != "" {
 		line := strings.TrimSpace(strings.Join(nonEmpty(sig.Place, sig.Date), ", "))
-		if err := f.SetCellValue(sheet, fmt.Sprintf("A%d", row), line); err != nil {
+		if err := writeMergedLine(f, sheet, row, lastColName, line, styles.signaturePlaceDate); err != nil {
 			return err
 		}
-		row++
+		row += 2
 	}
 	if len(sig.Signers) == 0 {
 		return nil
 	}
-	colsPerSigner := maxInt(2, lastCol/maxInt(len(sig.Signers), 1))
-	roleRow, nameRow, idRow := row, row+2, row+3
+
+	n := len(sig.Signers)
+	blockCols := maxInt(1, lastCol/n)
+	roleRow, nameRow, idRow := row, row+3, row+4
 	for i, signer := range sig.Signers {
-		startColName, err := excelize.ColumnNumberToName(i*colsPerSigner + 1)
+		startCol := i*blockCols + 1
+		endCol := startCol + blockCols - 1
+		if i == n-1 {
+			endCol = lastCol // last block absorbs any remainder column
+		}
+		startColName, err := excelize.ColumnNumberToName(startCol)
 		if err != nil {
 			return err
 		}
-		if err := f.SetCellValue(sheet, fmt.Sprintf("%s%d", startColName, roleRow), signer.RoleLabel+","); err != nil {
+		endColName, err := excelize.ColumnNumberToName(endCol)
+		if err != nil {
 			return err
 		}
-		if err := f.SetCellValue(sheet, fmt.Sprintf("%s%d", startColName, nameRow), signer.Name); err != nil {
+		writeCell := func(r int, value string, style int) error {
+			cell := fmt.Sprintf("%s%d", startColName, r)
+			if endCol > startCol {
+				if err := f.MergeCell(sheet, cell, fmt.Sprintf("%s%d", endColName, r)); err != nil {
+					return err
+				}
+			}
+			if err := f.SetCellValue(sheet, cell, value); err != nil {
+				return err
+			}
+			return f.SetCellStyle(sheet, cell, cell, style)
+		}
+		if err := writeCell(roleRow, signer.RoleLabel+",", styles.signatureCenter); err != nil {
+			return err
+		}
+		if err := writeCell(nameRow, signer.Name, styles.signatureName); err != nil {
 			return err
 		}
 		if signer.IDLabel != "" {
-			if err := f.SetCellValue(sheet, fmt.Sprintf("%s%d", startColName, idRow), fmt.Sprintf("%s. %s", signer.IDLabel, signer.IDNumber)); err != nil {
+			if err := writeCell(idRow, fmt.Sprintf("%s. %s", signer.IDLabel, signer.IDNumber), styles.signatureCenter); err != nil {
 				return err
 			}
 		}

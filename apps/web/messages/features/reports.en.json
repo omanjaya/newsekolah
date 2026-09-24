@@ -158,6 +158,12 @@
       "complete": "Complete"
     }
   },
+  "disciplinePoints": {
+    "defaultTitle": "Discipline Points Summary"
+  },
+  "gradingReportScores": {
+    "defaultTitle": "Report Card Scores"
+  },
   "kinds": {
     "attendance_daily": {
       "label": "Daily attendance",

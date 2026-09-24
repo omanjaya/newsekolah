@@ -150,12 +150,23 @@ func run(logger *slog.Logger) error {
 			Svc: disciplineModule.Service, Directory: wiring.IdentityNames{Svc: identityModule.Service},
 			Academic: academicModule.Service, Years: schoolModule.Service,
 		},
-		Grading: wiring.GradingReports{Svc: gradingModule.Service, Academic: academicModule.Service, Years: schoolModule.Service},
-		Permits: wiring.PermitsReports{Svc: permitsModule.Service, Academic: academicModule.Service, Years: schoolModule.Service},
+		Grading: wiring.GradingReports{
+			Svc: gradingModule.Service, Academic: academicModule.Service, Years: schoolModule.Service,
+			Directory: wiring.IdentityNames{Svc: identityModule.Service},
+		},
+		Permits: wiring.PermitsReports{
+			Svc: permitsModule.Service, Academic: academicModule.Service, Years: schoolModule.Service,
+			Directory: wiring.IdentityNames{Svc: identityModule.Service},
+		},
 		Perms:   identityModule.Service,
 		Emails:  identityModule.Service,
 		Storage: sharedStorage,
 		Clock:   clock.Real{},
+		// Scheduled runs (RunDueSchedules) render through the same
+		// RunDocument path as an interactive export, so they need the
+		// same grade-level class resolution and tenant kop laporan.
+		Academic:   wiring.AcademicReports{Academic: academicModule.Service, School: schoolModule.Service},
+		Letterhead: wiring.ReportHeaderReports{Svc: schoolModule.Service},
 	})
 
 	senders := wiring.SendersFromConfig(cfg, logger)

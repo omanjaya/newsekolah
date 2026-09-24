@@ -111,10 +111,18 @@ func Find(kind Kind) (Definition, bool) {
 }
 
 // AttendanceReader supplies attendance.daily's rows, natively typed
-// (int/string/time.Time, not stringified) for RunDocument's
-// reportdoc.Document.
+// (int/string/bool, not stringified) for RunDocument's reportdoc.Document.
 type AttendanceReader interface {
+	// DailyReportTypedRows' status cell is the raw tenant/policy code (or
+	// the special "NONE"/"INCOMPLETE"/"MIXED"), and complete is a native
+	// bool -- RunDocument resolves both to the export's own locale via
+	// StatusLabels, since this port itself has no locale.
 	DailyReportTypedRows(ctx context.Context, tenantID, classID uuid.UUID, date time.Time) ([][]any, error)
+	// StatusLabels returns the tenant's configured attendance status
+	// policy as code -> display label (e.g. "H" -> "Hadir"), already in
+	// whatever language the tenant chose when configuring it (tenant
+	// content, not translated per report locale).
+	StatusLabels(ctx context.Context, tenantID uuid.UUID) (map[string]string, error)
 }
 
 // ClassRef is the handful of class fields a report needs to label a
@@ -128,34 +136,45 @@ type ClassRef struct {
 
 // AcademicReader resolves the class(es) attendance.daily's scope refers
 // to: one class by id, or every class in a grade level (angkatan) for a
-// grade-level-scoped export. The other catalogue kinds resolve their own
-// scope internally (see wiring/reports.go's resolveScope) since their
-// column sets vary by scope in ways this generic shape does not capture
-// (e.g. grading.report_scores' per-component columns).
+// grade-level-scoped export, plus the grade level's own display name for
+// its scope line. The other catalogue kinds resolve their own scope
+// internally (see wiring/reports.go's resolveScope) since their column
+// sets vary by scope in ways this generic shape does not capture (e.g.
+// grading.report_scores' per-component columns).
 type AcademicReader interface {
 	ClassByID(ctx context.Context, tenantID, classID uuid.UUID) (ClassRef, error)
 	ClassesInGradeLevel(ctx context.Context, tenantID, gradeLevelID uuid.UUID) ([]ClassRef, error)
+	// GradeLevelName resolves a grade level's own name (e.g. "Kelas X"),
+	// for a grade-level export's "Angkatan: Kelas X" scope line.
+	GradeLevelName(ctx context.Context, tenantID, gradeLevelID uuid.UUID) (string, error)
 }
 
 // DisciplineReader, GradingReader and PermitsReader each build a complete
-// reportdoc.Document (letterhead is filled in by RunDocument, not by the
-// reader): title, scope lines, columns and one Section per class when
-// scoped to a class or a whole grade level, or a single unnamed section
-// when scoped to neither (points/warning letters/leave requests scoped to
-// nothing means "every class"). classID and gradeLevelID are mutually
-// exclusive; RunDocument guarantees that before either reader is called.
+// reportdoc.Document in locale (letterhead is filled in by RunDocument,
+// not by the reader): title, scope lines, columns and one Section per
+// class when scoped to a class or a whole grade level, or a single
+// unnamed section when scoped to neither (points/warning letters/leave
+// requests scoped to nothing means "every class"). classID and
+// gradeLevelID are mutually exclusive; RunDocument guarantees that before
+// either reader is called.
 type DisciplineReader interface {
-	PointTotalRows(ctx context.Context, tenantID uuid.UUID, classID, gradeLevelID uuid.NullUUID) (reportdoc.Document, error)
-	WarningLetterRows(ctx context.Context, tenantID uuid.UUID, classID, gradeLevelID uuid.NullUUID) (reportdoc.Document, error)
+	PointTotalRows(ctx context.Context, tenantID uuid.UUID, classID, gradeLevelID uuid.NullUUID, locale string) (reportdoc.Document, error)
+	WarningLetterRows(ctx context.Context, tenantID uuid.UUID, classID, gradeLevelID uuid.NullUUID, locale string) (reportdoc.Document, error)
 }
 
 type GradingReader interface {
-	ReportScoreRows(ctx context.Context, tenantID uuid.UUID, classID, gradeLevelID uuid.NullUUID, subjectID uuid.UUID, termID uuid.NullUUID) (reportdoc.Document, error)
+	ReportScoreRows(ctx context.Context, tenantID uuid.UUID, classID, gradeLevelID uuid.NullUUID, subjectID uuid.UUID, termID uuid.NullUUID, locale string) (reportdoc.Document, error)
+	// ReportScoreColumns returns the same columns ReportScoreRows would
+	// render for this exact scope/subject/term, without the row data --
+	// GET /v1/reports/grading.report_scores/columns' backing call, so the
+	// web export dialog can offer per-component columns (dynamic per
+	// tenant/selection) instead of only a static list.
+	ReportScoreColumns(ctx context.Context, tenantID uuid.UUID, classID, gradeLevelID uuid.NullUUID, subjectID uuid.UUID, termID uuid.NullUUID, locale string) ([]reportdoc.Column, error)
 }
 
 type PermitsReader interface {
-	LeaveRequestRows(ctx context.Context, tenantID uuid.UUID, classID, gradeLevelID uuid.NullUUID) (reportdoc.Document, error)
-	ExitPermitYearlyRows(ctx context.Context, tenantID uuid.UUID) (reportdoc.Document, error)
+	LeaveRequestRows(ctx context.Context, tenantID uuid.UUID, classID, gradeLevelID uuid.NullUUID, locale string) (reportdoc.Document, error)
+	ExitPermitYearlyRows(ctx context.Context, tenantID uuid.UUID, locale string) (reportdoc.Document, error)
 }
 
 type Service struct {
@@ -194,10 +213,13 @@ type RunArgs struct {
 }
 
 // RunDocument renders kind per opts (format, title override, letterhead
-// visibility, column subset/order/labels) and returns the bytes plus the
-// MIME type the transport layer should serve them as. Every catalogue
-// kind renders through reportdoc.Document.
-func (s *Service) RunDocument(ctx context.Context, tenantID uuid.UUID, kind Kind, args RunArgs, opts reportdoc.Options) ([]byte, string, error) {
+// visibility, column subset/order/labels) in locale (a platform/i18n-style
+// "id"/"en" code -- the tenant's own configured locale, resolved by the
+// caller, since a generated document follows the school's language, not
+// the requester's Accept-Language) and returns the bytes plus the MIME
+// type the transport layer should serve them as. Every catalogue kind
+// renders through reportdoc.Document.
+func (s *Service) RunDocument(ctx context.Context, tenantID uuid.UUID, kind Kind, args RunArgs, opts reportdoc.Options, locale string) ([]byte, string, error) {
 	def, ok := Find(kind)
 	if !ok {
 		return nil, "", ErrReportNotFound
@@ -209,16 +231,22 @@ func (s *Service) RunDocument(ctx context.Context, tenantID uuid.UUID, kind Kind
 		return nil, "", err
 	}
 
-	doc, err := s.document(ctx, tenantID, kind, args)
+	doc, err := s.document(ctx, tenantID, kind, args, locale)
 	if err != nil {
 		return nil, "", err
 	}
-	if s.letterhead != nil {
-		if lh, sig, err := s.letterhead.Letterhead(ctx, tenantID); err == nil {
-			doc.Letterhead = lh
-			doc.Signature = sig
-		}
+	// attendance.daily's own builder already sets these (its own report
+	// date drives PageLabelFormat/EmptyRowsLabel text choices no other
+	// kind needs); every other kind gets the same locale-correct default
+	// here instead of repeating it in each reader.
+	if doc.PageLabelFormat == "" {
+		doc.PageLabelFormat = reportdoc.PageLabel(locale)
 	}
+	if doc.EmptyRowsLabel == "" {
+		doc.EmptyRowsLabel = reportdoc.EmptyRowsLabelFor(locale)
+	}
+	s.attachLetterhead(ctx, tenantID, args, locale, &doc)
+
 	narrowed, err := reportdoc.Apply(doc, opts)
 	if err != nil {
 		return nil, "", err
@@ -237,56 +265,125 @@ func (s *Service) RunDocument(ctx context.Context, tenantID uuid.UUID, kind Kind
 	return xlsx, XLSXContentType, nil
 }
 
+// attachLetterhead fetches the tenant's configured kop laporan/default
+// signature and applies it to doc. When doc already carries a partial
+// Signature (a per-class reader set one signer of its own -- the class's
+// Wali Kelas -- before returning; see wiring/reports.go's
+// classSignature), the tenant's own signer is appended after it instead
+// of replacing it, giving a two-signer block: the class's own signer on
+// the left, the tenant's default (typically Kepala Sekolah) on the
+// right. Signature.Date defaults to today, or the report's own Date
+// argument when it has one (attendance.daily).
+func (s *Service) attachLetterhead(ctx context.Context, tenantID uuid.UUID, args RunArgs, locale string, doc *reportdoc.Document) {
+	if s.letterhead == nil {
+		return
+	}
+	lh, sig, err := s.letterhead.Letterhead(ctx, tenantID)
+	if err != nil {
+		return
+	}
+	doc.Letterhead = lh
+	if sig == nil {
+		return
+	}
+	when := time.Now()
+	if args.Date != nil {
+		when = *args.Date
+	}
+	sig.Date = reportdoc.FormatDate(locale, when)
+	if doc.Signature != nil && len(doc.Signature.Signers) > 0 {
+		doc.Signature.Place = sig.Place
+		doc.Signature.Date = sig.Date
+		doc.Signature.Signers = append(doc.Signature.Signers, sig.Signers...)
+		return
+	}
+	doc.Signature = sig
+}
+
 // document dispatches to the owning module's reader and assembles the
-// reportdoc.Document for kind (letterhead/signature are attached by
-// RunDocument, not here, so every kind gets them the same way).
-func (s *Service) document(ctx context.Context, tenantID uuid.UUID, kind Kind, args RunArgs) (reportdoc.Document, error) {
+// reportdoc.Document for kind in locale.
+func (s *Service) document(ctx context.Context, tenantID uuid.UUID, kind Kind, args RunArgs, locale string) (reportdoc.Document, error) {
 	switch kind {
 	case KindAttendanceDaily:
 		if s.attendance == nil {
 			return reportdoc.Document{}, ErrReportNotFound
 		}
-		return s.attendanceDocument(ctx, tenantID, args)
+		return s.attendanceDocument(ctx, tenantID, args, locale)
 	case KindDisciplinePoints:
 		if s.discipline == nil {
 			return reportdoc.Document{}, ErrReportNotFound
 		}
-		return s.discipline.PointTotalRows(ctx, tenantID, args.ClassID, args.GradeLevelID)
+		return s.discipline.PointTotalRows(ctx, tenantID, args.ClassID, args.GradeLevelID, locale)
 	case KindWarningLetters:
 		if s.discipline == nil {
 			return reportdoc.Document{}, ErrReportNotFound
 		}
-		return s.discipline.WarningLetterRows(ctx, tenantID, args.ClassID, args.GradeLevelID)
+		return s.discipline.WarningLetterRows(ctx, tenantID, args.ClassID, args.GradeLevelID, locale)
 	case KindGradingReport:
 		if s.grading == nil {
 			return reportdoc.Document{}, ErrReportNotFound
 		}
-		return s.grading.ReportScoreRows(ctx, tenantID, args.ClassID, args.GradeLevelID, args.SubjectID.UUID, args.TermID)
+		return s.grading.ReportScoreRows(ctx, tenantID, args.ClassID, args.GradeLevelID, args.SubjectID.UUID, args.TermID, locale)
 	case KindLeaveRequests:
 		if s.permits == nil {
 			return reportdoc.Document{}, ErrReportNotFound
 		}
-		return s.permits.LeaveRequestRows(ctx, tenantID, args.ClassID, args.GradeLevelID)
+		return s.permits.LeaveRequestRows(ctx, tenantID, args.ClassID, args.GradeLevelID, locale)
 	case KindExitPermitsYearly:
 		if s.permits == nil {
 			return reportdoc.Document{}, ErrReportNotFound
 		}
-		return s.permits.ExitPermitYearlyRows(ctx, tenantID)
+		return s.permits.ExitPermitYearlyRows(ctx, tenantID, locale)
 	default:
 		return reportdoc.Document{}, ErrReportNotFound
 	}
 }
 
+// Columns returns the columns kind would render for this exact
+// scope/subject/term without rendering any rows -- the backing call for
+// GET /v1/reports/{reportKind}/columns, used by the web export dialog for
+// a report whose columns are not fully static (grading.report_scores'
+// per-component columns, discipline.points' per-SP-level columns).
+// Static-column kinds never need this endpoint; it still answers for them
+// (RunDocument's own reader, minus the row loop) rather than 404ing.
+func (s *Service) Columns(ctx context.Context, tenantID uuid.UUID, kind Kind, args RunArgs, locale string) ([]reportdoc.Column, error) {
+	def, ok := Find(kind)
+	if !ok {
+		return nil, ErrReportNotFound
+	}
+	if args.ClassID.Valid && args.GradeLevelID.Valid {
+		return nil, ErrScopeConflict
+	}
+	if err := requireArgs(def, args); err != nil {
+		return nil, err
+	}
+	if kind == KindGradingReport {
+		if s.grading == nil {
+			return nil, ErrReportNotFound
+		}
+		return s.grading.ReportScoreColumns(ctx, tenantID, args.ClassID, args.GradeLevelID, args.SubjectID.UUID, args.TermID, locale)
+	}
+	doc, err := s.document(ctx, tenantID, kind, args, locale)
+	if err != nil {
+		return nil, err
+	}
+	return doc.Columns, nil
+}
+
 // attendanceDocument resolves attendance.daily's class(es) (one by id, or
 // every class of a grade level via s.academic) and builds one Section per
-// class from AttendanceReader.DailyReportTypedRows.
-func (s *Service) attendanceDocument(ctx context.Context, tenantID uuid.UUID, args RunArgs) (reportdoc.Document, error) {
+// class from AttendanceReader.DailyReportTypedRows, translated to locale.
+func (s *Service) attendanceDocument(ctx context.Context, tenantID uuid.UUID, args RunArgs, locale string) (reportdoc.Document, error) {
 	if !args.ClassID.Valid && !args.GradeLevelID.Valid {
 		return reportdoc.Document{}, fmt.Errorf("%w: class_id or grade_level_id", ErrMissingArgument)
 	}
 	classes, err := s.resolveClasses(ctx, tenantID, args)
 	if err != nil {
 		return reportdoc.Document{}, err
+	}
+	statusLabels, err := s.attendance.StatusLabels(ctx, tenantID)
+	if err != nil {
+		statusLabels = nil // degrade to the special-code fallback text rather than failing the export
 	}
 
 	sections := make([]reportdoc.Section, 0, len(classes))
@@ -295,20 +392,22 @@ func (s *Service) attendanceDocument(ctx context.Context, tenantID uuid.UUID, ar
 		if err != nil {
 			return reportdoc.Document{}, err
 		}
-		sections = append(sections, reportdoc.Section{Name: c.Name, Rows: rows})
+		sections = append(sections, reportdoc.Section{Name: c.Name, Rows: translateAttendanceDailyRows(rows, locale, statusLabels)})
 	}
 
-	doc := reportdoc.Document{
-		Title:           "Attendance Daily Report",
-		Scope:           attendanceDailyScope(args, classes),
-		Columns:         attendanceDailyColumns(),
+	gradeLevelName := ""
+	if args.GradeLevelID.Valid && s.academic != nil {
+		gradeLevelName, _ = s.academic.GradeLevelName(ctx, tenantID, args.GradeLevelID.UUID)
+	}
+
+	return reportdoc.Document{
+		Title:           attendanceDailyText(locale, "title"),
+		Scope:           attendanceDailyScope(locale, args, classes, gradeLevelName),
+		Columns:         attendanceDailyColumns(locale),
 		Sections:        sections,
-		PageLabelFormat: "Page {page} of {pages}",
-	}
-	if doc.Signature != nil && args.Date != nil {
-		doc.Signature.Date = args.Date.Format("2006-01-02")
-	}
-	return doc, nil
+		PageLabelFormat: reportdoc.PageLabel(locale),
+		EmptyRowsLabel:  reportdoc.EmptyRowsLabelFor(locale),
+	}, nil
 }
 
 // resolveClasses turns args' class_id/grade_level_id scope into the
@@ -336,33 +435,126 @@ func (s *Service) resolveClasses(ctx context.Context, tenantID uuid.UUID, args R
 	return []ClassRef{{ID: args.ClassID.UUID, Name: name}}, nil
 }
 
-// attendanceDailyScope builds the "Class: X-1" / "Grade Level: X" /
-// "Date: 2026-09-01" lines describing what this export covers.
-func attendanceDailyScope(args RunArgs, classes []ClassRef) []reportdoc.ScopeLine {
+// attendanceDailyScope builds the "Kelas: X-1" / "Angkatan: Kelas X" /
+// "Tanggal: 2 September 2026" lines describing what this export covers,
+// in locale. gradeLevelName is "" when it could not be resolved (no
+// AcademicReader wired, or the lookup failed); the scope line then falls
+// back to a class count rather than silently disappearing.
+func attendanceDailyScope(locale string, args RunArgs, classes []ClassRef, gradeLevelName string) []reportdoc.ScopeLine {
 	var scope []reportdoc.ScopeLine
 	switch {
 	case args.GradeLevelID.Valid:
-		scope = append(scope, reportdoc.ScopeLine{Label: "Grade Level", Value: fmt.Sprintf("%d classes", len(classes))})
+		value := gradeLevelName
+		if value == "" {
+			value = fmt.Sprintf("%d %s", len(classes), attendanceDailyText(locale, "classesUnit"))
+		}
+		scope = append(scope, reportdoc.ScopeLine{Label: attendanceDailyText(locale, "scopeGradeLevel"), Value: value})
 	case len(classes) == 1:
-		scope = append(scope, reportdoc.ScopeLine{Label: "Class", Value: classes[0].Name})
+		scope = append(scope, reportdoc.ScopeLine{Label: attendanceDailyText(locale, "scopeClass"), Value: classes[0].Name})
 	}
 	if args.Date != nil {
-		scope = append(scope, reportdoc.ScopeLine{Label: "Date", Value: args.Date.Format("2006-01-02")})
+		scope = append(scope, reportdoc.ScopeLine{Label: attendanceDailyText(locale, "scopeDate"), Value: reportdoc.FormatDate(locale, *args.Date)})
 	}
 	return scope
 }
 
 // attendanceDailyColumns is attendance.daily's full column set -- the
 // same six fields the pre-reportdoc flat export had, now with a stable
-// Key and a Kind for reportdoc's typed cells.
-func attendanceDailyColumns() []reportdoc.Column {
+// Key, a Kind for reportdoc's typed cells, and a locale-correct Label.
+// The Key never changes with locale: Options.Columns (and any saved
+// column preference) refers to it.
+func attendanceDailyColumns(locale string) []reportdoc.Column {
 	return []reportdoc.Column{
-		{Key: "no", Label: "No", Kind: reportdoc.ColumnNumber, Width: 5},
-		{Key: "name", Label: "Name", Kind: reportdoc.ColumnText, Width: 28},
-		{Key: "status", Label: "Status", Kind: reportdoc.ColumnText, Width: 12},
-		{Key: "expected_sessions", Label: "Expected Sessions", Kind: reportdoc.ColumnNumber, Width: 14},
-		{Key: "submitted_sessions", Label: "Submitted Sessions", Kind: reportdoc.ColumnNumber, Width: 14},
-		{Key: "complete", Label: "Complete", Kind: reportdoc.ColumnText, Width: 10},
+		{Key: "no", Label: attendanceDailyText(locale, "colNo"), Kind: reportdoc.ColumnNumber, Width: 5},
+		{Key: "name", Label: attendanceDailyText(locale, "colName"), Kind: reportdoc.ColumnText, Width: 28},
+		{Key: "status", Label: attendanceDailyText(locale, "colStatus"), Kind: reportdoc.ColumnText, Width: 12},
+		{Key: "expected_sessions", Label: attendanceDailyText(locale, "colExpected"), Kind: reportdoc.ColumnNumber, Width: 14},
+		{Key: "submitted_sessions", Label: attendanceDailyText(locale, "colSubmitted"), Kind: reportdoc.ColumnNumber, Width: 14},
+		{Key: "complete", Label: attendanceDailyText(locale, "colComplete"), Kind: reportdoc.ColumnText, Width: 10},
+	}
+}
+
+// attendanceDailyVocabulary is attendance.daily's own small id/en
+// vocabulary: the title, scope labels, column labels, and the words for
+// "yes"/"no" and the special status codes DailyReportTypedRows can
+// return (NONE/INCOMPLETE/MIXED are not tenant content -- a tenant's own
+// status codes are translated via StatusLabels instead, see
+// translateAttendanceDailyRows). Other migrated report kinds get their
+// own such table in wiring/reports.go; reportdoc itself stays free of
+// this vocabulary (see its package doc comment).
+var attendanceDailyVocabulary = map[string]map[string]string{
+	reportdoc.LocaleID: {
+		"title":           "Presensi Harian",
+		"scopeGradeLevel": "Angkatan", "scopeClass": "Kelas", "scopeDate": "Tanggal", "classesUnit": "kelas",
+		"colNo": "No", "colName": "Nama", "colStatus": "Status",
+		"colExpected": "Jumlah Sesi Diharapkan", "colSubmitted": "Jumlah Sesi Terisi", "colComplete": "Lengkap",
+		"yes": "Ya", "no": "Tidak",
+		"statusNone": "-", "statusIncomplete": "Belum Lengkap", "statusMixed": "Campuran",
+	},
+	reportdoc.LocaleEN: {
+		"title":           "Attendance Daily Report",
+		"scopeGradeLevel": "Grade Level", "scopeClass": "Class", "scopeDate": "Date", "classesUnit": "classes",
+		"colNo": "No", "colName": "Name", "colStatus": "Status",
+		"colExpected": "Expected Sessions", "colSubmitted": "Submitted Sessions", "colComplete": "Complete",
+		"yes": "Yes", "no": "No",
+		"statusNone": "-", "statusIncomplete": "Incomplete", "statusMixed": "Mixed",
+	},
+}
+
+func attendanceDailyText(locale, key string) string {
+	if m, ok := attendanceDailyVocabulary[locale]; ok {
+		if v, ok := m[key]; ok {
+			return v
+		}
+	}
+	return attendanceDailyVocabulary[reportdoc.LocaleEN][key]
+}
+
+// translateAttendanceDailyRows resolves DailyReportTypedRows' raw status
+// code (column index 2) and native bool complete (column index 5) to
+// locale-correct display text: a tenant's own status code goes through
+// statusLabels (its own configured label, e.g. "H" -> "Hadir", tenant
+// content that is never translated by locale); the special codes
+// NONE/INCOMPLETE/MIXED and the complete bool go through
+// attendanceDailyVocabulary since those are this package's own words.
+// rows itself is never mutated; a new slice of new rows is returned.
+func translateAttendanceDailyRows(rows [][]any, locale string, statusLabels map[string]string) [][]any {
+	const statusCol, completeCol = 2, 5
+	out := make([][]any, len(rows))
+	for i, row := range rows {
+		translated := append([]any(nil), row...)
+		if statusCol < len(translated) {
+			if code, ok := translated[statusCol].(string); ok {
+				translated[statusCol] = attendanceStatusText(locale, code, statusLabels)
+			}
+		}
+		if completeCol < len(translated) {
+			if complete, ok := translated[completeCol].(bool); ok {
+				key := "no"
+				if complete {
+					key = "yes"
+				}
+				translated[completeCol] = attendanceDailyText(locale, key)
+			}
+		}
+		out[i] = translated
+	}
+	return out
+}
+
+func attendanceStatusText(locale, code string, statusLabels map[string]string) string {
+	if label, ok := statusLabels[code]; ok && label != "" {
+		return label
+	}
+	switch code {
+	case "NONE":
+		return attendanceDailyText(locale, "statusNone")
+	case "INCOMPLETE":
+		return attendanceDailyText(locale, "statusIncomplete")
+	case "MIXED":
+		return attendanceDailyText(locale, "statusMixed")
+	default:
+		return code
 	}
 }
 

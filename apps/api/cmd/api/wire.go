@@ -226,8 +226,14 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 			Svc: disciplineModule.Service, Directory: wiring.IdentityNames{Svc: identityModule.Service},
 			Academic: academicModule.Service, Years: schoolModule.Service,
 		},
-		Grading: wiring.GradingReports{Svc: gradingModule.Service, Academic: academicModule.Service, Years: schoolModule.Service},
-		Permits: wiring.PermitsReports{Svc: permitsModule.Service, Academic: academicModule.Service, Years: schoolModule.Service},
+		Grading: wiring.GradingReports{
+			Svc: gradingModule.Service, Academic: academicModule.Service, Years: schoolModule.Service,
+			Directory: wiring.IdentityNames{Svc: identityModule.Service},
+		},
+		Permits: wiring.PermitsReports{
+			Svc: permitsModule.Service, Academic: academicModule.Service, Years: schoolModule.Service,
+			Directory: wiring.IdentityNames{Svc: identityModule.Service},
+		},
 		Perms:   identityModule.Service,
 		Emails:  identityModule.Service,
 		Storage: sharedStorage,

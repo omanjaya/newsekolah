@@ -84,15 +84,21 @@ type Section struct {
 }
 
 // Letterhead is a school's kop laporan: an optional logo image and one to
-// five text lines (school name, address, contact) printed above the
-// title. Logo, when non-empty, must be PNG, JPEG or GIF; the format is
-// sniffed from content, matching platform/documents.
+// five text lines (foundation, school name, address, contact) printed as
+// a centered block above the title, matching an Indonesian kop surat.
+// Logo, when non-empty, must be PNG, JPEG or GIF; the format is sniffed
+// from content, matching platform/documents.
 type Letterhead struct {
 	Logo []byte
-	// Lines is one to five text lines; by convention the first is the
-	// school name and is rendered bold/larger, the rest print plain
-	// (address, phone, accreditation, ...).
+	// Lines is one to five text lines, e.g. {"Yayasan ...", "SMA Negeri
+	// 1 Denpasar", "Jl. Merdeka No. 1", "Telp. ..."}.
 	Lines []string
+	// Emphasis is the index into Lines that is the school name: rendered
+	// bold and larger than every other line, the way a kop surat makes
+	// the school's own name visually dominant. Out of range (including
+	// the zero value when Lines is non-empty and index 0 is not
+	// intended) falls back to index 0.
+	Emphasis int
 }
 
 // Signer is one line of a signature block: a role ("Kepala Sekolah"), a
@@ -132,4 +138,10 @@ type Document struct {
 	// user-facing text goes through the caller's own i18n, never
 	// hardcoded in a platform package).
 	PageLabelFormat string
+	// EmptyRowsLabel is printed as a single row (spanning every column)
+	// in place of a section with zero Rows, e.g. the Indonesian "Tidak
+	// ada data" -- caller-supplied text, same reasoning as
+	// PageLabelFormat. Empty means a section with no rows renders no
+	// rows at all (just its header).
+	EmptyRowsLabel string
 }

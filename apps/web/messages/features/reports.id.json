@@ -122,6 +122,12 @@
       "complete": "Lengkap"
     }
   },
+  "disciplinePoints": {
+    "defaultTitle": "Rekap Poin Pelanggaran"
+  },
+  "gradingReportScores": {
+    "defaultTitle": "Nilai Rapor"
+  },
   "disciplineWarningLetters": {
     "defaultTitle": "Surat Peringatan",
     "columns": {

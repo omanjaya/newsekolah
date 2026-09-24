@@ -50,6 +50,26 @@ export function useReportTermsQuery(enabled: boolean) {
   });
 }
 
+export type ReportColumn = components["schemas"]["ReportColumn"];
+
+/**
+ * Fetches the columns `reportKind` would render for this exact scope,
+ * without any row data -- {@link ReportExportDialog}'s way of offering a
+ * report whose columns are not fully static (discipline.points' one
+ * column per tenant-configured SP level, grading.report_scores' one per
+ * assessment component) the same column customisation a static-column
+ * report gets.
+ */
+export function useReportColumns() {
+  const client = useApiClient();
+  return async (reportKind: string, args: ReportExportArgs): Promise<ReportColumn[]> => {
+    const response = await client.GET("/v1/reports/{reportKind}/columns", {
+      params: { path: { reportKind }, query: args },
+    });
+    return response.data;
+  };
+}
+
 export interface ReportExportArgs {
   class_id?: string;
   /** All classes of one grade level in a single export, one section per class. Mutually exclusive with class_id. */

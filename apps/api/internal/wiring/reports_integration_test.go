@@ -166,7 +166,7 @@ func TestDisciplinePointTotalRowsGradeLevelScope(t *testing.T) {
 	fx := seedGradeLevelFixture(t, pg.AdminPool)
 	disciplineReports, _, _ := buildReportsAdapters(pg.AppPool)
 
-	doc, err := disciplineReports.PointTotalRows(context.Background(), fx.tenantID, uuid.NullUUID{}, uuid.NullUUID{UUID: fx.gradeLevelID, Valid: true})
+	doc, err := disciplineReports.PointTotalRows(context.Background(), fx.tenantID, uuid.NullUUID{}, uuid.NullUUID{UUID: fx.gradeLevelID, Valid: true}, reportdoc.LocaleID)
 	require.NoError(t, err)
 	require.Equal(t, "Rekap Poin Pelanggaran", doc.Title)
 	require.Len(t, doc.Sections, 2, "one section per class in the grade level")
@@ -207,7 +207,7 @@ func TestGradingReportScoreRowsGradeLevelScope(t *testing.T) {
 
 	doc, err := gradingReports.ReportScoreRows(
 		ctx, fx.tenantID, uuid.NullUUID{}, uuid.NullUUID{UUID: fx.gradeLevelID, Valid: true},
-		fx.offeredSubject, uuid.NullUUID{},
+		fx.offeredSubject, uuid.NullUUID{}, reportdoc.LocaleID,
 	)
 	require.NoError(t, err, "the subject is offered at this grade level")
 	require.Equal(t, "Nilai Rapor", doc.Title)
@@ -229,7 +229,7 @@ func TestGradingReportScoreRowsGradeLevelScope(t *testing.T) {
 
 	_, err = gradingReports.ReportScoreRows(
 		ctx, fx.tenantID, uuid.NullUUID{}, uuid.NullUUID{UUID: fx.gradeLevelID, Valid: true},
-		fx.otherSubject, uuid.NullUUID{},
+		fx.otherSubject, uuid.NullUUID{}, reportdoc.LocaleID,
 	)
 	require.ErrorIs(t, err, reportsservice.ErrSubjectNotOffered, "a subject with no offering at this grade level must be refused")
 }
@@ -242,7 +242,7 @@ func TestPermitsLeaveRequestRowsClassScope(t *testing.T) {
 	fx := seedGradeLevelFixture(t, pg.AdminPool)
 	_, _, permitsReports := buildReportsAdapters(pg.AppPool)
 
-	doc, err := permitsReports.LeaveRequestRows(context.Background(), fx.tenantID, uuid.NullUUID{UUID: fx.classAID, Valid: true}, uuid.NullUUID{})
+	doc, err := permitsReports.LeaveRequestRows(context.Background(), fx.tenantID, uuid.NullUUID{UUID: fx.classAID, Valid: true}, uuid.NullUUID{}, reportdoc.LocaleID)
 	require.NoError(t, err)
 	require.Equal(t, "Rekap Pengajuan Izin", doc.Title)
 	require.Len(t, doc.Sections, 1)
@@ -262,7 +262,7 @@ func TestDisciplineWarningLetterRowsGradeLevelScope(t *testing.T) {
 	fx := seedGradeLevelFixture(t, pg.AdminPool)
 	disciplineReports, _, _ := buildReportsAdapters(pg.AppPool)
 
-	doc, err := disciplineReports.WarningLetterRows(context.Background(), fx.tenantID, uuid.NullUUID{}, uuid.NullUUID{UUID: fx.gradeLevelID, Valid: true})
+	doc, err := disciplineReports.WarningLetterRows(context.Background(), fx.tenantID, uuid.NullUUID{}, uuid.NullUUID{UUID: fx.gradeLevelID, Valid: true}, reportdoc.LocaleID)
 	require.NoError(t, err)
 	require.Equal(t, "Surat Peringatan", doc.Title)
 	require.Len(t, doc.Sections, 2)
@@ -286,7 +286,7 @@ func TestPermitsExitPermitYearlyRowsRenders(t *testing.T) {
 	fx := seedGradeLevelFixture(t, pg.AdminPool)
 	_, _, permitsReports := buildReportsAdapters(pg.AppPool)
 
-	doc, err := permitsReports.ExitPermitYearlyRows(context.Background(), fx.tenantID)
+	doc, err := permitsReports.ExitPermitYearlyRows(context.Background(), fx.tenantID, reportdoc.LocaleID)
 	require.NoError(t, err)
 	require.Equal(t, "Rekap Izin Keluar Tahunan Siswa", doc.Title)
 	require.Len(t, doc.Sections, 1)

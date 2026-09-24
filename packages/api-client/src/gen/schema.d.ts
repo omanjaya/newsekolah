@@ -6596,6 +6596,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/reports/{reportKind}/columns": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Columns one report scope would render, without the row data
+         * @description Computes the same columns exportReport would use for this exact scope (same query parameters, minus format/title/letterhead/ columns), so the export dialog can offer a report whose columns are not fully static -- discipline.points' one column per tenant-configured SP level, grading.report_scores' one column per assessment component -- instead of only a fixed list. Every other kind answers too (its own static columns), rather than 404ing.
+         */
+        get: operations["listReportColumns"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/reports/schedules": {
         parameters: {
             query?: never;
@@ -11099,6 +11119,10 @@ export interface components {
             permission: string;
             arguments: components["schemas"]["ReportArgument"][];
         };
+        ReportColumn: {
+            key: string;
+            label: string;
+        };
         /** @enum {string} */
         ReportScheduleCadence: "daily" | "weekly" | "monthly";
         /** @enum {string} */
@@ -11539,8 +11563,10 @@ export interface components {
         ReportHeaderWrite: {
             /** @description Print the tenant's branding logo above the letterhead lines (PNG/JPEG only; other formats are skipped). */
             show_logo: boolean;
-            /** @description First line is conventionally the school name and renders bold. */
+            /** @description Kop laporan text lines, e.g. foundation name, school name, address, phone. */
             lines: string[];
+            /** @description Index into lines that is the school name (rendered bold and larger). Omit for automatic selection (matches the tenant name, else the second-to-last line). */
+            emphasis?: number;
             place: string;
             signers: components["schemas"]["ReportHeaderSigner"][];
         };
@@ -25366,6 +25392,40 @@ export interface operations {
                 content: {
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
                     "application/pdf": string;
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listReportColumns: {
+        parameters: {
+            query?: {
+                class_id?: string;
+                grade_level_id?: string;
+                subject_id?: string;
+                term_id?: string;
+                date?: string;
+            };
+            header?: never;
+            path: {
+                reportKind: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Columns */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ReportColumn"][];
+                    };
                 };
             };
             400: components["responses"]["BadRequest"];

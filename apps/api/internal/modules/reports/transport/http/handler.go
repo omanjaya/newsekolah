@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
+	openapi_types "github.com/oapi-codegen/runtime/types"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/api"
 	academicdomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/academic/domain"
@@ -19,7 +20,9 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/reports/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/authz"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/i18n"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/tenant"
 )
 
 // PermissionChecker resolves the caller's effective permissions.
@@ -39,6 +42,18 @@ func New(svc *service.Service, schedules *service.ScheduleService, perms Permiss
 
 func tenantID(ctx context.Context) uuid.UUID { id, _ := httpx.TenantIDFromContext(ctx); return id }
 func userID(ctx context.Context) uuid.UUID   { id, _ := httpx.UserIDFromContext(ctx); return id }
+
+// tenantLocale resolves the current request's tenant to a locale
+// RunDocument understands, defaulting to Indonesian. A generated report
+// is the school's own document, so it follows the tenant's configured
+// locale (tenants.locale), not the requester's Accept-Language header.
+func tenantLocale(ctx context.Context) string {
+	t, ok := tenant.FromContext(ctx)
+	if !ok {
+		return i18n.DefaultLocale
+	}
+	return i18n.FromTenantLocale(t.Locale)
+}
 
 func mapError(err error) error {
 	switch {
@@ -96,6 +111,30 @@ func (h *ReportsHandler) ListReports(ctx context.Context, _ api.ListReportsReque
 	return api.ListReports200JSONResponse{Data: data}, nil
 }
 
+// scopeArgs builds RunArgs' scope/date fields shared by both
+// ExportReport and ListReportColumns (a report's columns are computed the
+// same way its export is, minus the row data).
+func scopeArgs(classID, gradeLevelID, subjectID, termID *uuid.UUID, date *openapi_types.Date) service.RunArgs {
+	args := service.RunArgs{}
+	if classID != nil {
+		args.ClassID = uuid.NullUUID{UUID: *classID, Valid: true}
+	}
+	if gradeLevelID != nil {
+		args.GradeLevelID = uuid.NullUUID{UUID: *gradeLevelID, Valid: true}
+	}
+	if subjectID != nil {
+		args.SubjectID = uuid.NullUUID{UUID: *subjectID, Valid: true}
+	}
+	if termID != nil {
+		args.TermID = uuid.NullUUID{UUID: *termID, Valid: true}
+	}
+	if date != nil {
+		d := date.Time
+		args.Date = &d
+	}
+	return args
+}
+
 func (h *ReportsHandler) ExportReport(ctx context.Context, request api.ExportReportRequestObject) (api.ExportReportResponseObject, error) {
 	kind := service.Kind(request.ReportKind)
 	def, ok := service.Find(kind)
@@ -105,26 +144,10 @@ func (h *ReportsHandler) ExportReport(ctx context.Context, request api.ExportRep
 	if !h.permissions(ctx).Has(def.Permission) {
 		return nil, httpx.ErrForbidden
 	}
-	args := service.RunArgs{}
-	if request.Params.ClassId != nil {
-		args.ClassID = uuid.NullUUID{UUID: *request.Params.ClassId, Valid: true}
-	}
-	if request.Params.GradeLevelId != nil {
-		args.GradeLevelID = uuid.NullUUID{UUID: *request.Params.GradeLevelId, Valid: true}
-	}
-	if request.Params.SubjectId != nil {
-		args.SubjectID = uuid.NullUUID{UUID: *request.Params.SubjectId, Valid: true}
-	}
-	if request.Params.TermId != nil {
-		args.TermID = uuid.NullUUID{UUID: *request.Params.TermId, Valid: true}
-	}
-	if request.Params.Date != nil {
-		date := request.Params.Date.Time
-		args.Date = &date
-	}
+	args := scopeArgs(request.Params.ClassId, request.Params.GradeLevelId, request.Params.SubjectId, request.Params.TermId, request.Params.Date)
 
 	opts := exportOptionsFromParams(request.Params)
-	out, contentType, err := h.service.RunDocument(ctx, tenantID(ctx), kind, args, opts)
+	out, contentType, err := h.service.RunDocument(ctx, tenantID(ctx), kind, args, opts, tenantLocale(ctx))
 	if err != nil {
 		return nil, mapError(err)
 	}
@@ -134,6 +157,33 @@ func (h *ReportsHandler) ExportReport(ctx context.Context, request api.ExportRep
 	return api.ExportReport200ApplicationvndOpenxmlformatsOfficedocumentSpreadsheetmlSheetResponse{
 		Body: bytes.NewReader(out), ContentLength: int64(len(out)),
 	}, nil
+}
+
+// ListReportColumns answers GET /v1/reports/{reportKind}/columns: the
+// same columns ExportReport would render for this exact scope, without
+// the row data, for the web export dialog's dynamic-column kinds
+// (discipline.points' per-SP-level columns, grading.report_scores'
+// per-component columns) to discover ahead of time.
+func (h *ReportsHandler) ListReportColumns(ctx context.Context, request api.ListReportColumnsRequestObject) (api.ListReportColumnsResponseObject, error) {
+	kind := service.Kind(request.ReportKind)
+	def, ok := service.Find(kind)
+	if !ok {
+		return nil, httpx.ErrNotFound
+	}
+	if !h.permissions(ctx).Has(def.Permission) {
+		return nil, httpx.ErrForbidden
+	}
+	args := scopeArgs(request.Params.ClassId, request.Params.GradeLevelId, request.Params.SubjectId, request.Params.TermId, request.Params.Date)
+
+	columns, err := h.service.Columns(ctx, tenantID(ctx), kind, args, tenantLocale(ctx))
+	if err != nil {
+		return nil, mapError(err)
+	}
+	data := make([]api.ReportColumn, len(columns))
+	for i, c := range columns {
+		data[i] = api.ReportColumn{Key: c.Key, Label: c.Label}
+	}
+	return api.ListReportColumns200JSONResponse{Data: data}, nil
 }
 
 // exportOptionsFromParams decodes format/title/letterhead/columns into

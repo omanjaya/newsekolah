@@ -126,6 +126,83 @@ func TestRenderXLSXUniqueSheetNames(t *testing.T) {
 	}
 }
 
+func TestRenderXLSXLetterheadEmphasisIsBoldAndCentered(t *testing.T) {
+	doc := sampleDocument()
+	doc.Letterhead.Lines = []string{"Yayasan Dharma Praja", "SMA Negeri 1 Denpasar", "Jl. Merdeka"}
+	doc.Letterhead.Emphasis = 1 // the school name, not the foundation line
+
+	out, err := RenderXLSX(doc)
+	require.NoError(t, err)
+	f, err := excelize.OpenReader(bytes.NewReader(out))
+	require.NoError(t, err)
+	defer f.Close()
+	sheet := f.GetSheetList()[0]
+
+	emphasisStyleID, err := f.GetCellStyle(sheet, "A2")
+	require.NoError(t, err)
+	plainStyleID, err := f.GetCellStyle(sheet, "A1")
+	require.NoError(t, err)
+	assert.NotEqual(t, plainStyleID, emphasisStyleID, "the emphasised line must use a different (bold/larger) style than a plain line")
+
+	emphasisStyle, err := f.GetStyle(emphasisStyleID)
+	require.NoError(t, err)
+	require.NotNil(t, emphasisStyle.Font)
+	assert.True(t, emphasisStyle.Font.Bold)
+
+	plainStyle, err := f.GetStyle(plainStyleID)
+	require.NoError(t, err)
+	require.NotNil(t, plainStyle.Font)
+	assert.False(t, plainStyle.Font.Bold)
+
+	// The last line (Jl. Merdeka, row 3) must carry the closing double
+	// rule -- a bottom border of style 6 -- even though it is not the
+	// emphasised line.
+	lastLineStyleID, err := f.GetCellStyle(sheet, "A3")
+	require.NoError(t, err)
+	lastLineStyle, err := f.GetStyle(lastLineStyleID)
+	require.NoError(t, err)
+	require.Len(t, lastLineStyle.Border, 1)
+	assert.Equal(t, "bottom", lastLineStyle.Border[0].Type)
+	assert.Equal(t, 6, lastLineStyle.Border[0].Style)
+}
+
+func TestRenderXLSXEmptySectionRendersEmptyLabel(t *testing.T) {
+	doc := sampleDocument()
+	doc.Sections = []Section{{Name: "X-1"}} // no rows
+	doc.EmptyRowsLabel = "Tidak ada data"
+
+	out, err := RenderXLSX(doc)
+	require.NoError(t, err)
+	f, err := excelize.OpenReader(bytes.NewReader(out))
+	require.NoError(t, err)
+	defer f.Close()
+	sheet := f.GetSheetList()[0]
+
+	// Header row is row 7 for this fixture (2 letterhead lines + title +
+	// section name + 1 scope line + 1 blank separator), so the
+	// empty-label row is row 8 -- see TestRenderXLSXBasicLayout's
+	// identical layout trace.
+	v, err := f.GetCellValue(sheet, "A8")
+	require.NoError(t, err)
+	assert.Equal(t, "Tidak ada data", v)
+}
+
+func TestRenderXLSXHeaderRowHeightGrowsForLongLabels(t *testing.T) {
+	doc := sampleDocument()
+	doc.Columns[1] = Column{Key: "name", Label: "A very long column label that should wrap across several lines", Kind: ColumnText, Width: 10}
+
+	out, err := RenderXLSX(doc)
+	require.NoError(t, err)
+	f, err := excelize.OpenReader(bytes.NewReader(out))
+	require.NoError(t, err)
+	defer f.Close()
+	sheet := f.GetSheetList()[0]
+
+	height, err := f.GetRowHeight(sheet, 7) // header row for this fixture
+	require.NoError(t, err)
+	assert.Greater(t, height, 20.0, "a long wrapped header label needs a taller header row than the default single line")
+}
+
 func TestRenderXLSXNoSections(t *testing.T) {
 	doc := Document{Title: "Kosong", Columns: []Column{{Key: "a", Label: "A", Kind: ColumnText}}}
 	out, err := RenderXLSX(doc)
