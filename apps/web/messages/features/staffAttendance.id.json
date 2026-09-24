@@ -14,7 +14,8 @@
     "absent": "Tidak hadir",
     "on_leave": "Cuti atau izin",
     "holiday": "Libur",
-    "incomplete": "Belum lengkap"
+    "incomplete": "Belum lengkap",
+    "unscheduled": "Jadwal belum diatur"
   },
   "sources": {
     "qr": "Pindai QR",
@@ -160,6 +161,9 @@
     "doneBody": "Kedatangan dan kepulangan sudah tercatat. Hubungi admin bila ada yang perlu dikoreksi.",
     "hint": "Tekan sekali saat tiba dan sekali lagi saat pulang. Jam dicatat dari server sekolah.",
     "thisWeek": "Minggu ini",
-    "thisWeekEmpty": "Belum ada hari untuk ditampilkan."
+    "thisWeekEmpty": "Belum ada hari untuk ditampilkan.",
+    "holidayWithName": "Libur - {name}",
+    "holidayHint": "Hari ini libur. Anda tetap bisa mencatat kehadiran bila diperlukan.",
+    "unscheduledHint": "Jadwal kerja Anda belum diatur. Hubungi admin untuk mengaturnya."
   }
 }

@@ -11489,7 +11489,7 @@ export interface components {
             days: components["schemas"]["StaffAttendanceScheduleDay"][];
         };
         /** @enum {string} */
-        StaffAttendanceStatusCode: "present" | "late" | "absent" | "on_leave" | "holiday" | "incomplete";
+        StaffAttendanceStatusCode: "present" | "late" | "absent" | "on_leave" | "holiday" | "incomplete" | "unscheduled";
         /** @enum {string} */
         StaffAttendanceSource: "qr" | "manual" | "import";
         StaffAttendanceRecord: {
@@ -11509,6 +11509,7 @@ export interface components {
             early_leave_minutes: number;
             source: components["schemas"]["StaffAttendanceSource"];
             notes?: string;
+            holiday_name?: string;
         };
         StaffAttendanceManualEntry: {
             /** Format: uuid */

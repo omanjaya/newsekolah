@@ -361,7 +361,10 @@ components:
           items: { $ref: "#/components/schemas/StaffAttendanceScheduleDay" }
     StaffAttendanceStatusCode:
       type: string
-      enum: [present, late, absent, on_leave, holiday, incomplete]
+      # unscheduled: no weekly schedule row at all for this weekday (a
+      # configuration gap), distinct from holiday (a genuine day off, by
+      # the calendar or by the employee's own configured schedule).
+      enum: [present, late, absent, on_leave, holiday, incomplete, unscheduled]
     StaffAttendanceSource:
       type: string
       enum: [qr, manual, import]
@@ -389,6 +392,10 @@ components:
         early_leave_minutes: { type: integer }
         source: { $ref: "#/components/schemas/StaffAttendanceSource" }
         notes: { type: string }
+        # Set only when status_code is holiday and the calendar (not the
+        # employee's own schedule) is what made it one, with a matching
+        # named event on record.
+        holiday_name: { type: string }
     StaffAttendanceManualEntry:
       type: object
       required: [employee_user_id, date]

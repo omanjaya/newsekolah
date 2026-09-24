@@ -52,6 +52,23 @@ func IsSchoolDay(date time.Time, weeklyActive bool, events []CalendarEvent, grad
 	return true
 }
 
+// NonTeachingEventName is IsSchoolDay's counterpart for display: the name
+// of the first non-teaching calendar event (holiday, no-school day,
+// semester break) covering date and targeting gradeLevelID, if any. Used
+// where a caller already knows the day is not a working day and wants to
+// show why (e.g. staff attendance's check-in screen naming the holiday
+// instead of a bare "Libur"). weeklyActive is not consulted here -- an
+// ordinary weekend has no event to name, and that is a legitimate "no
+// name available" rather than an error.
+func NonTeachingEventName(date time.Time, events []CalendarEvent, gradeLevelID *uuid.UUID) (string, bool) {
+	for _, e := range events {
+		if nonTeachingKinds[e.Kind] && eventCoversDate(e, date) && eventTargets(e, gradeLevelID) {
+			return e.Name, true
+		}
+	}
+	return "", false
+}
+
 func eventCoversDate(e CalendarEvent, date time.Time) bool {
 	d := truncateToDay(date)
 	start := truncateToDay(e.Date)

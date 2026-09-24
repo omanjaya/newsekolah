@@ -52,6 +52,10 @@ type Repository interface {
 // docs/03-layered-architecture.md section 1.
 type CalendarReader interface {
 	IsSchoolDay(ctx context.Context, tenantID, academicYearID uuid.UUID, date time.Time) (bool, error)
+	// HolidayName names the calendar event making date a non-working day,
+	// if any is on record; found is false for an ordinary weekend/no-school
+	// weekday with no named event.
+	HolidayName(ctx context.Context, tenantID, academicYearID uuid.UUID, date time.Time) (name string, found bool, err error)
 }
 
 // AcademicYearReader resolves the tenant's currently active academic year,
@@ -111,16 +115,18 @@ func (s *Service) today(loc *time.Location) time.Time {
 	return time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, loc)
 }
 
+// activeAcademicYear resolves the tenant's active academic year, or
+// uuid.Nil with ok=false when the tenant has not set one up yet.
+func (s *Service) activeAcademicYear(ctx context.Context, tenantID uuid.UUID) (uuid.UUID, bool, error) {
+	return s.years.GetActiveAcademicYearID(ctx, tenantID)
+}
+
 // isWorkingDay resolves the academic calendar's answer for date, treating
 // "no active academic year" as "every weekday counts": staff attendance
 // must keep working even before a school has set up its first academic
 // year, unlike student-facing modules that hard-require one.
-func (s *Service) isWorkingDay(ctx context.Context, tenantID uuid.UUID, date time.Time) (bool, error) {
-	yearID, ok, err := s.years.GetActiveAcademicYearID(ctx, tenantID)
-	if err != nil {
-		return false, err
-	}
-	if !ok {
+func (s *Service) isWorkingDay(ctx context.Context, tenantID, yearID uuid.UUID, hasYear bool, date time.Time) (bool, error) {
+	if !hasYear {
 		return true, nil
 	}
 	return s.calendar.IsSchoolDay(ctx, tenantID, yearID, date)
@@ -130,12 +136,17 @@ func (s *Service) isWorkingDay(ctx context.Context, tenantID uuid.UUID, date tim
 // arrival/departure pair itself -- the employee's schedule for date's
 // weekday, whether the calendar counts date as a working day, and whether
 // permits has an approved leave covering date -- and runs the pure rule.
+// The second return value names the calendar event behind a Holiday
+// result, when the calendar (rather than the employee's own schedule) is
+// what made it a holiday and a matching event is on record; it is empty
+// otherwise, including for StatusUnscheduled (a configuration gap has no
+// event to name).
 func (s *Service) computeStatus(
 	ctx context.Context, tenantID, employeeUserID uuid.UUID, date time.Time, arrival, departure *time.Time,
-) (domain.LatenessResult, error) {
+) (domain.LatenessResult, string, error) {
 	days, err := s.repo.ListScheduleDays(ctx, tenantID, employeeUserID)
 	if err != nil {
-		return domain.LatenessResult{}, err
+		return domain.LatenessResult{}, "", err
 	}
 	weekday := domain.IsoWeekday(date)
 	var schedule *domain.ScheduleDay
@@ -147,19 +158,37 @@ func (s *Service) computeStatus(
 		}
 	}
 
-	isWorking, err := s.isWorkingDay(ctx, tenantID, date)
+	yearID, hasYear, err := s.activeAcademicYear(ctx, tenantID)
 	if err != nil {
-		return domain.LatenessResult{}, err
+		return domain.LatenessResult{}, "", err
+	}
+	isWorking, err := s.isWorkingDay(ctx, tenantID, yearID, hasYear, date)
+	if err != nil {
+		return domain.LatenessResult{}, "", err
 	}
 	onLeave, err := s.leave.OnApprovedLeave(ctx, tenantID, employeeUserID, date)
 	if err != nil {
-		return domain.LatenessResult{}, err
+		return domain.LatenessResult{}, "", err
 	}
 
-	return domain.ComputeLateness(domain.LatenessInput{
+	result := domain.ComputeLateness(domain.LatenessInput{
 		Date: date, Schedule: schedule, IsWorkingDay: isWorking, OnLeave: onLeave,
 		ArrivalAt: arrival, DepartureAt: departure,
-	}), nil
+	})
+
+	holidayName := ""
+	// Only worth asking the calendar when it is the one that made this a
+	// holiday: an employee's own schedule saying "not a working day" has
+	// no calendar event behind it.
+	if result.StatusCode == domain.StatusHoliday && !isWorking && hasYear {
+		if name, found, err := s.calendar.HolidayName(ctx, tenantID, yearID, date); err != nil {
+			return domain.LatenessResult{}, "", err
+		} else if found {
+			holidayName = name
+		}
+	}
+
+	return result, holidayName, nil
 }
 
 func toRecordView(rec domain.Record, employeeName string) RecordView {

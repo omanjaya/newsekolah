@@ -66,3 +66,48 @@ func TestIsSchoolDay(t *testing.T) {
 		require.True(t, domain.IsSchoolDay(date("2026-01-05"), true, events, nil))
 	})
 }
+
+func TestNonTeachingEventName(t *testing.T) {
+	gradeX := uuid.New()
+
+	t.Run("names a school-wide holiday", func(t *testing.T) {
+		events := []domain.CalendarEvent{
+			{Kind: domain.CalendarEventHoliday, Name: "Hari Kemerdekaan", Date: date("2026-08-17"), EndDate: date("2026-08-17")},
+		}
+		name, found := domain.NonTeachingEventName(date("2026-08-17"), events, nil)
+		require.True(t, found)
+		require.Equal(t, "Hari Kemerdekaan", name)
+	})
+
+	t.Run("finds nothing for an ordinary school day", func(t *testing.T) {
+		_, found := domain.NonTeachingEventName(date("2026-08-18"), nil, nil)
+		require.False(t, found)
+	})
+
+	t.Run("finds nothing for a plain weekend with no named event", func(t *testing.T) {
+		_, found := domain.NonTeachingEventName(date("2026-01-04"), nil, nil)
+		require.False(t, found)
+	})
+
+	t.Run("an exam is not a non-teaching event", func(t *testing.T) {
+		events := []domain.CalendarEvent{
+			{Kind: domain.CalendarEventExam, Name: "Ujian Tengah Semester", Date: date("2026-01-05"), EndDate: date("2026-01-05")},
+		}
+		_, found := domain.NonTeachingEventName(date("2026-01-05"), events, nil)
+		require.False(t, found)
+	})
+
+	t.Run("a grade-scoped event names only for that grade", func(t *testing.T) {
+		events := []domain.CalendarEvent{
+			{
+				Kind: domain.CalendarEventNoSchool, Name: "Retreat Kelas X", Date: date("2026-01-05"), EndDate: date("2026-01-05"),
+				GradeLevelIDs: []uuid.UUID{gradeX},
+			},
+		}
+		name, found := domain.NonTeachingEventName(date("2026-01-05"), events, &gradeX)
+		require.True(t, found)
+		require.Equal(t, "Retreat Kelas X", name)
+		_, found = domain.NonTeachingEventName(date("2026-01-05"), events, nil)
+		require.False(t, found)
+	})
+}

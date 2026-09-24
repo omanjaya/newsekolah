@@ -43,6 +43,12 @@ type PeriodReader interface {
 // directly.
 type CalendarReader interface {
 	IsSchoolDay(ctx context.Context, tenantID, academicYearID uuid.UUID, date time.Time, gradeLevelID *uuid.UUID) (bool, error)
+	// NonTeachingEventName names the holiday/no-school-day/semester-break
+	// event covering date, if any -- for a caller that already knows the
+	// day is not a working day and wants to show why, rather than a bare
+	// "not a school day". found is false for an ordinary weekend/no-school
+	// weekday with no named event, which is not an error.
+	NonTeachingEventName(ctx context.Context, tenantID, academicYearID uuid.UUID, date time.Time, gradeLevelID *uuid.UUID) (name string, found bool, err error)
 }
 
 // TeachingReader is the narrow read surface a module needs to check

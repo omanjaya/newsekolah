@@ -351,6 +351,26 @@ func (s *Service) IsSchoolDay(ctx context.Context, tenantID, yearID uuid.UUID, d
 	return result, err
 }
 
+// NonTeachingEventName is IsSchoolDay's counterpart for display: names the
+// holiday/no-school-day/semester-break event covering date, if any -- see
+// domain.NonTeachingEventName. The CalendarReader interface (readers.go)
+// exposes this to other modules the same way IsSchoolDay is exposed.
+func (s *Service) NonTeachingEventName(ctx context.Context, tenantID, yearID uuid.UUID, date time.Time, gradeLevelID *uuid.UUID) (string, bool, error) {
+	var (
+		name  string
+		found bool
+	)
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		events, err := s.repo.ListCalendarEventsForDate(ctx, tenantID, yearID, date)
+		if err != nil {
+			return err
+		}
+		name, found = domain.NonTeachingEventName(date, events, gradeLevelID)
+		return nil
+	})
+	return name, found, err
+}
+
 func (s *Service) DeleteCalendarEvent(ctx context.Context, tenantID, id uuid.UUID) error {
 	return s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		return s.repo.DeleteCalendarEvent(ctx, tenantID, id)

@@ -14,7 +14,10 @@ type LatenessInput struct {
 	// (year/month/day) and location matter.
 	Date time.Time
 	// Schedule is the employee's expected hours for Date's weekday, or nil
-	// if no schedule row exists for that weekday at all.
+	// if no schedule row exists for that weekday at all -- resolves to
+	// StatusUnscheduled, never StatusHoliday: the two look the same to an
+	// employee ("nothing recorded"), but mean very different things (no
+	// setup done yet, vs. a genuine day off) and must not be conflated.
 	Schedule *ScheduleDay
 	// IsWorkingDay is the academic calendar's answer for Date (a holiday
 	// or a no-school day removes the expectation regardless of Schedule).
@@ -42,12 +45,17 @@ type LatenessResult struct {
 //
 // Resolution order:
 //  1. OnLeave always wins: a day off is a day off, whatever the schedule.
-//  2. No working expectation (the calendar says it is not a working day,
-//     or the employee has no working schedule for this weekday) -> Holiday.
-//  3. Neither arrival nor departure recorded -> Absent.
-//  4. A departure recorded without an arrival -> Incomplete: there is no
+//  2. No schedule row at all for this weekday -> Unscheduled: nobody has
+//     told the system when this employee is expected to work, which is a
+//     configuration gap, not a day off. Must not be reported as a holiday
+//     (see this type's Schedule field doc).
+//  3. The calendar says it is not a working day, or the employee's own
+//     schedule row says this weekday is not one they work -> Holiday: a
+//     genuine, intentional "nothing to do today".
+//  4. Neither arrival nor departure recorded -> Absent.
+//  5. A departure recorded without an arrival -> Incomplete: there is no
 //     basis to compute lateness, and this shape signals bad data to review.
-//  5. Otherwise, lateness is minutes after the grace period following the
+//  6. Otherwise, lateness is minutes after the grace period following the
 //     expected start; early leave is minutes before the expected end. A
 //     shift whose EndMinute <= StartMinute is treated as crossing into the
 //     next calendar day, so a night shift's early-morning end is compared
@@ -56,7 +64,10 @@ func ComputeLateness(in LatenessInput) LatenessResult {
 	if in.OnLeave {
 		return LatenessResult{StatusCode: StatusOnLeave}
 	}
-	if !in.IsWorkingDay || in.Schedule == nil || !in.Schedule.IsWorkingDay {
+	if in.Schedule == nil {
+		return LatenessResult{StatusCode: StatusUnscheduled}
+	}
+	if !in.IsWorkingDay || !in.Schedule.IsWorkingDay {
 		return LatenessResult{StatusCode: StatusHoliday}
 	}
 	if in.ArrivalAt == nil && in.DepartureAt == nil {

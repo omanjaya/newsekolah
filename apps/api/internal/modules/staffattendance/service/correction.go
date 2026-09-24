@@ -52,7 +52,7 @@ func (s *Service) CorrectRecord(ctx context.Context, tenantID, recordID, actorID
 			notes = *in.Notes
 		}
 
-		result, err := s.computeStatus(ctx, tenantID, existing.EmployeeUserID, existing.Date, arrival, departure)
+		result, _, err := s.computeStatus(ctx, tenantID, existing.EmployeeUserID, existing.Date, arrival, departure)
 		if err != nil {
 			return err
 		}

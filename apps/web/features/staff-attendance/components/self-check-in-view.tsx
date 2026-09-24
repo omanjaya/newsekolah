@@ -83,6 +83,19 @@ export function SelfCheckInView(): ReactElement {
   const time = (iso: string | null | undefined) =>
     iso ? formatTime(iso, { locale, timeZone }) : "-";
   const statusToken = record ? STATUS_TOKEN[record.status_code] : undefined;
+  // "unscheduled" (no weekly schedule configured at all) and "holiday" (a
+  // genuine day off, named when the calendar says why) look the same --
+  // "nothing recorded" -- but must never be presented the same way: one is
+  // a setup gap the person should not be blocked by, the other is a real
+  // day off the primary action is de-emphasised for. See
+  // ComputeLateness's doc comment (apps/api) for why the two are kept
+  // distinct all the way from the domain layer up to here.
+  const statusLabel =
+    record?.status_code === "holiday" && record.holiday_name
+      ? t("holidayWithName", { name: record.holiday_name })
+      : record
+        ? tStatus(record.status_code)
+        : "";
 
   function handleScan() {
     scan.mutate(undefined, {
@@ -128,14 +141,21 @@ export function SelfCheckInView(): ReactElement {
         {record && (
           <div className="flex flex-wrap items-center gap-2 text-[13px]">
             {statusToken ? (
-              <StatusBadge status={statusToken} label={tStatus(record.status_code)} />
+              <StatusBadge status={statusToken} label={statusLabel} />
             ) : (
-              <span className="text-fg-muted">{tStatus(record.status_code)}</span>
+              <span className="text-fg-muted">{statusLabel}</span>
             )}
             {record.late_minutes > 0 && (
               <span className="text-fg-muted">{t("lateBy", { minutes: record.late_minutes })}</span>
             )}
           </div>
+        )}
+
+        {record?.status_code === "unscheduled" && (
+          <p className="text-[13px] text-fg-muted">{t("unscheduledHint")}</p>
+        )}
+        {record?.status_code === "holiday" && (
+          <p className="text-[13px] text-fg-muted">{t("holidayHint")}</p>
         )}
 
         {done ? (
@@ -148,6 +168,7 @@ export function SelfCheckInView(): ReactElement {
         ) : (
           <Button
             className="h-16 w-full text-[16px] font-semibold"
+            variant={record?.status_code === "holiday" ? "secondary" : "primary"}
             icon={hasArrival ? <LogOut /> : <LogIn />}
             loading={scan.isPending}
             onClick={handleScan}
@@ -170,6 +191,10 @@ export function SelfCheckInView(): ReactElement {
             {weekDays.map((day) => {
               const token = STATUS_TOKEN[day.status_code];
               const isToday = day.date === today;
+              const dayLabel =
+                day.status_code === "holiday" && day.holiday_name
+                  ? t("holidayWithName", { name: day.holiday_name })
+                  : tStatus(day.status_code);
               return (
                 <li
                   key={day.date}
@@ -190,9 +215,9 @@ export function SelfCheckInView(): ReactElement {
                     </span>
                   </div>
                   {token ? (
-                    <StatusBadge status={token} label={tStatus(day.status_code)} />
+                    <StatusBadge status={token} label={dayLabel} />
                   ) : (
-                    <span className="text-fg-muted">{tStatus(day.status_code)}</span>
+                    <span className="text-fg-muted">{dayLabel}</span>
                   )}
                 </li>
               );
