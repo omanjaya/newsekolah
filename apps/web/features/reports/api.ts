@@ -17,6 +17,7 @@ export type Term = components["schemas"]["Term"];
 export type ReportSchedule = components["schemas"]["ReportSchedule"];
 export type ReportScheduleWrite = components["schemas"]["ReportScheduleWrite"];
 export type ReportScheduleCadence = components["schemas"]["ReportScheduleCadence"];
+export type ReportScheduleFormat = components["schemas"]["ReportScheduleFormat"];
 export type ReportScheduleRun = components["schemas"]["ReportScheduleRun"];
 
 /**
@@ -49,17 +50,43 @@ export function useReportTermsQuery(enabled: boolean) {
   });
 }
 
+export type ReportColumn = components["schemas"]["ReportColumn"];
+
+/**
+ * Fetches the columns `reportKind` would render for this exact scope,
+ * without any row data -- {@link ReportExportDialog}'s way of offering a
+ * report whose columns are not fully static (discipline.points' one
+ * column per tenant-configured SP level, grading.report_scores' one per
+ * assessment component) the same column customisation a static-column
+ * report gets.
+ */
+export function useReportColumns() {
+  const client = useApiClient();
+  return async (reportKind: string, args: ReportExportArgs): Promise<ReportColumn[]> => {
+    const response = await client.GET("/v1/reports/{reportKind}/columns", {
+      params: { path: { reportKind }, query: args },
+    });
+    return response.data;
+  };
+}
+
 export interface ReportExportArgs {
   class_id?: string;
+  /** All classes of one grade level in a single export, one section per class. Mutually exclusive with class_id. */
+  grade_level_id?: string;
   subject_id?: string;
   term_id?: string;
   date?: string;
-  /** All classes of one grade level in a single export, one section per class (attendance.daily only, for now). */
-  grade_level_id?: string;
 }
 
 /** Order the file name lists its parts in; kept stable so file names are predictable. */
-const FILE_NAME_ORDER: (keyof ReportExportArgs)[] = ["date", "term_id", "class_id", "subject_id"];
+const FILE_NAME_ORDER: (keyof ReportExportArgs)[] = [
+  "date",
+  "term_id",
+  "class_id",
+  "grade_level_id",
+  "subject_id",
+];
 
 /** Names the download after the report kind and the arguments actually supplied. */
 export function buildReportFileName(reportKind: string, args: ReportExportArgs): string {
@@ -71,10 +98,10 @@ export function buildReportFileName(reportKind: string, args: ReportExportArgs):
 
 const EXPORT_ARG_KEYS: (keyof ReportExportArgs)[] = [
   "class_id",
+  "grade_level_id",
   "subject_id",
   "term_id",
   "date",
-  "grade_level_id",
 ];
 
 function buildExportQuery(args: ReportExportArgs): string {

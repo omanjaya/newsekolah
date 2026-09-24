@@ -48,6 +48,19 @@ func (s *Service) CreateGradeLevel(ctx context.Context, tenantID uuid.UUID, code
 	return level, err
 }
 
+// GetGradeLevel resolves one grade level by id, for callers (the reports
+// module's grade-level report scope) that need its name for a scope line
+// rather than the whole list.
+func (s *Service) GetGradeLevel(ctx context.Context, tenantID, id uuid.UUID) (domain.GradeLevel, error) {
+	var level domain.GradeLevel
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		level, err = s.repo.GetGradeLevelByID(ctx, tenantID, id)
+		return mapNotFound(err, domain.ErrGradeLevelNotFound)
+	})
+	return level, err
+}
+
 func (s *Service) UpdateGradeLevel(ctx context.Context, tenantID, id uuid.UUID, code, name string, sequence int16) (domain.GradeLevel, error) {
 	if err := validateGradeLevelFields(code, name); err != nil {
 		return domain.GradeLevel{}, err

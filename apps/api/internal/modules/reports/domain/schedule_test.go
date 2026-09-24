@@ -156,6 +156,7 @@ func TestScheduleValidate(t *testing.T) {
 		wantErr error
 	}{
 		{"invalid cadence", func(s *domain.Schedule) { s.Cadence = "yearly" }, domain.ErrInvalidCadence},
+		{"invalid format", func(s *domain.Schedule) { s.Cadence = domain.CadenceDaily; s.Format = "docx" }, domain.ErrInvalidFormat},
 		{"invalid hour", func(s *domain.Schedule) { s.Cadence = domain.CadenceDaily; s.Hour = 24 }, domain.ErrInvalidHour},
 		{"weekly missing weekday", func(s *domain.Schedule) { s.Cadence = domain.CadenceWeekly }, domain.ErrInvalidWeekday},
 		{"monthly missing day", func(s *domain.Schedule) { s.Cadence = domain.CadenceMonthly }, domain.ErrInvalidDayOfMonth},
@@ -179,5 +180,17 @@ func TestScheduleValidate(t *testing.T) {
 				t.Fatalf("expected %v, got %v", tc.wantErr, err)
 			}
 		})
+	}
+}
+
+// TestFormatWithDefault proves a schedule created before the format
+// column existed (or a write that omits it) keeps rendering XLSX, its
+// only format until the field was added.
+func TestFormatWithDefault(t *testing.T) {
+	if got := domain.Format("").WithDefault(); got != domain.FormatXLSX {
+		t.Fatalf("expected %v, got %v", domain.FormatXLSX, got)
+	}
+	if got := domain.FormatPDF.WithDefault(); got != domain.FormatPDF {
+		t.Fatalf("expected %v, got %v", domain.FormatPDF, got)
 	}
 }

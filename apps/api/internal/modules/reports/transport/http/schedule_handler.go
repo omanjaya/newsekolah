@@ -21,6 +21,7 @@ func mapScheduleError(err error) error {
 		return httpx.ErrForbidden
 	case errors.Is(err, domain.ErrReportKindNotFound),
 		errors.Is(err, domain.ErrInvalidCadence),
+		errors.Is(err, domain.ErrInvalidFormat),
 		errors.Is(err, domain.ErrInvalidHour),
 		errors.Is(err, domain.ErrInvalidWeekday),
 		errors.Is(err, domain.ErrInvalidDayOfMonth),
@@ -38,11 +39,13 @@ func mapScheduleError(err error) error {
 }
 
 func toAPISchedule(v service.ScheduleView) api.ReportSchedule {
+	format := api.ReportScheduleFormat(v.Format.WithDefault())
 	return api.ReportSchedule{
 		Id:         v.ID,
 		ReportKind: v.ReportKind,
 		Params:     toAPIParams(v.Params),
 		Cadence:    api.ReportScheduleCadence(v.Cadence),
+		Format:     &format,
 		Weekday:    v.Weekday,
 		DayOfMonth: v.DayOfMonth,
 		Hour:       v.Hour,
@@ -102,10 +105,15 @@ func fromWrite(body api.ReportScheduleWrite) service.ScheduleInput {
 	for i, r := range body.Recipients {
 		recipients[i] = string(r)
 	}
+	var format domain.Format
+	if body.Format != nil {
+		format = domain.Format(*body.Format)
+	}
 	return service.ScheduleInput{
 		ReportKind: body.ReportKind,
 		Params:     fromDomainParams(body.Params),
 		Cadence:    domain.Cadence(body.Cadence),
+		Format:     format,
 		Weekday:    body.Weekday,
 		DayOfMonth: body.DayOfMonth,
 		Hour:       body.Hour,

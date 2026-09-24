@@ -118,6 +118,22 @@ func (s *Service) GetClass(ctx context.Context, tenantID, id uuid.UUID) (domain.
 	return class, err
 }
 
+// ListClassesByYearAndGradeLevel returns every class of one grade level in
+// one academic year, ordered by name, unpaginated. Callers that need to
+// build one section per class for a grade-level report scope (the reports
+// module's grade_level argument) use this instead of ListClasses, which
+// exists for the paginated admin class list and would otherwise force
+// those callers to guess a page size large enough to cover every class.
+func (s *Service) ListClassesByYearAndGradeLevel(ctx context.Context, tenantID, yearID, gradeLevelID uuid.UUID) ([]domain.Class, error) {
+	var classes []domain.Class
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		classes, err = s.repo.ListClassesByYearAndGradeLevel(ctx, tenantID, yearID, gradeLevelID)
+		return err
+	})
+	return classes, err
+}
+
 func (s *Service) ListClasses(ctx context.Context, tenantID, yearID uuid.UUID, search string, gradeLevelID *uuid.UUID, page Page) ([]domain.Class, int64, error) {
 	page = normalizePage(page)
 	var (

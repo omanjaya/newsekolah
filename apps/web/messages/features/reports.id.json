@@ -45,6 +45,14 @@
       "subjectPlaceholder": "Pilih mata pelajaran",
       "term": "Semester",
       "termPlaceholder": "Pilih semester",
+      "scopeType": "Cakupan",
+      "scopeTypeClass": "Kelas",
+      "scopeTypeGradeLevel": "Angkatan",
+      "gradeLevel": "Angkatan",
+      "gradeLevelPlaceholder": "Pilih angkatan",
+      "format": "Format berkas",
+      "formatXlsx": "Excel (.xlsx)",
+      "formatPdf": "PDF",
       "cadence": "Frekuensi",
       "cadenceDaily": "Harian",
       "cadenceWeekly": "Mingguan",
@@ -88,16 +96,20 @@
   "arguments": {
     "class": "Kelas",
     "classPlaceholder": "Pilih kelas",
+    "scopeType": "Cakupan",
+    "scopeTypeAll": "Seluruh kelas",
+    "scopeTypeClass": "Kelas",
+    "scopeTypeGradeLevel": "Angkatan",
+    "scope": "Cakupan",
+    "scopeClass": "Kelas",
+    "scopeGradeLevel": "Angkatan",
+    "gradeLevel": "Angkatan",
+    "gradeLevelPlaceholder": "Pilih angkatan",
     "subject": "Mata pelajaran",
     "subjectPlaceholder": "Pilih mata pelajaran",
     "date": "Tanggal",
     "term": "Semester",
-    "termPlaceholder": "Pilih semester",
-    "scope": "Cakupan",
-    "scopeClass": "Kelas",
-    "scopeGradeLevel": "Tingkat (angkatan)",
-    "gradeLevel": "Tingkat",
-    "gradeLevelPlaceholder": "Pilih tingkat"
+    "termPlaceholder": "Pilih semester"
   },
   "attendanceDaily": {
     "defaultTitle": "Presensi Harian",
@@ -108,6 +120,48 @@
       "expected_sessions": "Sesi Wajib",
       "submitted_sessions": "Sesi Terkirim",
       "complete": "Lengkap"
+    }
+  },
+  "disciplinePoints": {
+    "defaultTitle": "Rekap Poin Pelanggaran"
+  },
+  "gradingReportScores": {
+    "defaultTitle": "Nilai Rapor"
+  },
+  "disciplineWarningLetters": {
+    "defaultTitle": "Surat Peringatan",
+    "columns": {
+      "no": "No",
+      "letter_number": "Nomor Surat",
+      "student_name": "Nama Siswa",
+      "level": "Tingkat",
+      "total_points": "Total Poin",
+      "issued_at": "Tanggal Terbit"
+    }
+  },
+  "permitsLeaveRequests": {
+    "defaultTitle": "Rekap Pengajuan Izin",
+    "columns": {
+      "no": "No",
+      "student_name": "Nama Siswa",
+      "class_name": "Kelas",
+      "category": "Kategori",
+      "starts_on": "Mulai",
+      "ends_on": "Selesai",
+      "letter_number": "Nomor Surat",
+      "status": "Status"
+    }
+  },
+  "permitsExitPermitsYearly": {
+    "defaultTitle": "Rekap Izin Keluar Tahunan Siswa",
+    "columns": {
+      "no": "No",
+      "student_name": "Nama Siswa",
+      "class_name": "Kelas",
+      "destination": "Tujuan",
+      "opened_at": "Dibuka",
+      "status": "Status",
+      "exited_at": "Keluar Pada"
     }
   },
   "kinds": {

@@ -1,11 +1,11 @@
 -- name: CreateReportSchedule :one
-insert into report_schedules (tenant_id, report_kind, params, cadence, weekday, day_of_month, hour, recipients, enabled, created_by)
-values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+insert into report_schedules (tenant_id, report_kind, params, cadence, weekday, day_of_month, hour, recipients, enabled, created_by, format)
+values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 returning *;
 
 -- name: UpdateReportSchedule :one
 update report_schedules
-set report_kind = $3, params = $4, cadence = $5, weekday = $6, day_of_month = $7, hour = $8, recipients = $9
+set report_kind = $3, params = $4, cadence = $5, weekday = $6, day_of_month = $7, hour = $8, recipients = $9, format = $10
 where tenant_id = $1 and id = $2
 returning *;
 

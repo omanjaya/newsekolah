@@ -23,6 +23,8 @@ var (
 	ErrRecipientNotTenantUser = errors.New("recipient is not a user of this tenant")
 	ErrReportKindNotAllowed   = errors.New("requesting user may not run this report kind")
 	ErrReportKindNotFound     = errors.New("unknown report kind")
+	ErrInvalidFormat          = errors.New("format must be xlsx or pdf")
+	ErrScopeConflict          = errors.New("class_id and grade_level_id are mutually exclusive")
 )
 
 // MaxRecipients caps how many mailboxes one schedule can fan out to; this
@@ -47,6 +49,34 @@ func (c Cadence) Valid() bool {
 	}
 }
 
+// Format is the file type a schedule renders, the same choice an
+// interactive export's ReportExportDialog offers.
+type Format string
+
+const (
+	FormatXLSX Format = "xlsx"
+	FormatPDF  Format = "pdf"
+)
+
+func (f Format) Valid() bool {
+	switch f {
+	case FormatXLSX, FormatPDF:
+		return true
+	default:
+		return false
+	}
+}
+
+// WithDefault returns f, or FormatXLSX when f is empty -- every schedule
+// created before this field existed (and any input that omits it) keeps
+// rendering XLSX, its only format until now.
+func (f Format) WithDefault() Format {
+	if f == "" {
+		return FormatXLSX
+	}
+	return f
+}
+
 // RunStatus is the outcome of one due slot's attempt.
 type RunStatus string
 
@@ -59,9 +89,14 @@ const (
 // Params are the same run arguments the report catalogue's RunArgs
 // accepts, stored so a scheduled run can render without a live requester.
 type Params struct {
-	ClassID   uuid.NullUUID `json:"class_id,omitempty"`
-	SubjectID uuid.NullUUID `json:"subject_id,omitempty"`
-	TermID    uuid.NullUUID `json:"term_id,omitempty"`
+	ClassID uuid.NullUUID `json:"class_id,omitempty"`
+	// GradeLevelID scopes the run to every class of one grade level
+	// instead of a single class; mutually exclusive with ClassID, the
+	// same rule an interactive export's class_id/grade_level_id query
+	// parameters follow.
+	GradeLevelID uuid.NullUUID `json:"grade_level_id,omitempty"`
+	SubjectID    uuid.NullUUID `json:"subject_id,omitempty"`
+	TermID       uuid.NullUUID `json:"term_id,omitempty"`
 }
 
 // Schedule is one recurring export: a report kind, its parameters, when
@@ -76,6 +111,7 @@ type Schedule struct {
 	DayOfMonth *int // 1..31; set only when Cadence == monthly, clamped to the month's last day
 	Hour       int  // 0..23, in the tenant's own timezone
 	Recipients []string
+	Format     Format
 	Enabled    bool
 	CreatedBy  uuid.UUID
 	CreatedAt  time.Time
@@ -88,6 +124,12 @@ type Schedule struct {
 func (s Schedule) Validate() error {
 	if !s.Cadence.Valid() {
 		return ErrInvalidCadence
+	}
+	if !s.Format.WithDefault().Valid() {
+		return ErrInvalidFormat
+	}
+	if s.Params.ClassID.Valid && s.Params.GradeLevelID.Valid {
+		return ErrScopeConflict
 	}
 	if s.Hour < 0 || s.Hour > 23 {
 		return ErrInvalidHour
