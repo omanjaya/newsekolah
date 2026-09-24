@@ -343,44 +343,56 @@ function DaySessions(): ReactElement {
           />
         )
       ) : (
-        <section className="grid grid-cols-1 gap-4 md:grid-cols-[minmax(0,1fr)_16rem]">
-          <ul className="flex flex-col gap-2">
-            {sortedItems.map((session) => {
-              const start = periodMap.get(session.start_period_id);
-              const end = periodMap.get(session.end_period_id);
-              const fillStatus = deriveFillStatus(
-                session.submitted_at,
-                session.date || date,
-                today,
-              );
-              const timing: "ongoing" | "next" | null =
-                session.schedule_id === ongoingScheduleId
-                  ? "ongoing"
-                  : session.schedule_id === nextScheduleId
-                    ? "next"
-                    : null;
-              return (
-                <AttendanceSessionCard
-                  key={session.schedule_id}
-                  session={session}
-                  className={classMap.get(session.class_id)?.name ?? t("unknownClass")}
-                  subjectName={subjectMap.get(session.subject_id)?.name ?? t("unknownSubject")}
-                  start={start}
-                  end={end}
-                  fillStatus={fillStatus}
-                  timing={timing}
-                  submitting={open.isPending && open.variables.schedule_id === session.schedule_id}
-                  timeZone={me?.tenant.timezone}
-                  onOpen={() => void openSession(session)}
-                />
-              );
-            })}
-          </ul>
+        <section className="flex flex-col gap-4">
           <AttendanceDaySummary
+            compact
+            className="md:hidden"
             total={sortedItems.length}
             saved={sortedItems.filter((s) => Boolean(s.submitted_at)).length}
             pending={sortedItems.filter((s) => !s.submitted_at).length}
           />
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-[minmax(0,1fr)_16rem]">
+            <ul className="flex flex-col gap-2">
+              {sortedItems.map((session) => {
+                const start = periodMap.get(session.start_period_id);
+                const end = periodMap.get(session.end_period_id);
+                const fillStatus = deriveFillStatus(
+                  session.submitted_at,
+                  session.date || date,
+                  today,
+                );
+                const timing: "ongoing" | "next" | null =
+                  session.schedule_id === ongoingScheduleId
+                    ? "ongoing"
+                    : session.schedule_id === nextScheduleId
+                      ? "next"
+                      : null;
+                return (
+                  <AttendanceSessionCard
+                    key={session.schedule_id}
+                    session={session}
+                    className={classMap.get(session.class_id)?.name ?? t("unknownClass")}
+                    subjectName={subjectMap.get(session.subject_id)?.name ?? t("unknownSubject")}
+                    start={start}
+                    end={end}
+                    fillStatus={fillStatus}
+                    timing={timing}
+                    submitting={
+                      open.isPending && open.variables.schedule_id === session.schedule_id
+                    }
+                    timeZone={me?.tenant.timezone}
+                    onOpen={() => void openSession(session)}
+                  />
+                );
+              })}
+            </ul>
+            <AttendanceDaySummary
+              className="hidden md:block"
+              total={sortedItems.length}
+              saved={sortedItems.filter((s) => Boolean(s.submitted_at)).length}
+              pending={sortedItems.filter((s) => !s.submitted_at).length}
+            />
+          </div>
         </section>
       )}
     </div>

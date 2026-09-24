@@ -676,6 +676,7 @@
         "eyebrow": "Meeting {meeting}",
         "title": "Attendance",
         "back": "Attendance",
+        "backToList": "Back to attendance list",
         "correctionMode": "Correction mode",
         "searchPlaceholder": "Search student",
         "filterByStatus": "Filter by status",
@@ -683,8 +684,10 @@
         "noMatch": "No matching students.",
         "notePlaceholder": "Note",
         "noteFor": "Note for {name}",
-        "noteShow": "Add a note for {name}",
-        "noteHide": "Hide the note for {name}",
+        "noteMenuAdd": "Add note",
+        "noteMenuHide": "Hide note",
+        "moreActions": "More actions for {name}",
+        "menuBack": "Back",
         "rowChanged": "This row changed since it was last saved",
         "markAllPresent": "Mark everyone present",
         "markAllPresentHint": "Sick, excused, and dispensation statuses are not overwritten.",
@@ -715,7 +718,7 @@
         "draftRestore": "Restore",
         "draftDismiss": "Dismiss",
         "violations": {
-          "button": "Violations for {name}",
+          "menuLabel": "Record a violation",
           "title": "Violations",
           "empty": "No violation types."
         }

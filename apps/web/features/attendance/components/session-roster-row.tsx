@@ -1,17 +1,18 @@
 "use client";
 
-import { Avatar, IconButton, Input } from "@newsekolah/ui";
-import { Lock, StickyNote } from "lucide-react";
+import { Avatar, Input } from "@newsekolah/ui";
+import { Lock } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { memo, useState } from "react";
 
 import type { ViolationType } from "../../discipline/api";
 import type { RosterItem, SessionDetail } from "../api";
+import { formatDisplayName } from "../lib/format-name";
 
 import { AttendanceStatusRadioGroup } from "./attendance-status-radio-group";
+import { SessionRowActionsMenu } from "./session-row-actions-menu";
 import { StudentYearRecap } from "./student-year-recap";
-import { ViolationPicker } from "./violation-picker";
 
 type AttendanceStatus = SessionDetail["statuses"][number];
 
@@ -22,6 +23,12 @@ type AttendanceStatus = SessionDetail["statuses"][number];
  * `memo` is what bails an unaffected row out of a re-render (the React
  * Compiler lint rules run in this repo, but the compiler itself is not
  * part of the build, so the bailout must be explicit).
+ *
+ * Two lines by design (docs/07-ui-ux.md's row-height target, ~96px on a
+ * 390px phone): identity (avatar, name, NIS, recap) on one line, the five
+ * status buttons plus a single "..." actions button on the next -- a note
+ * and a violation icon used to each claim their own 44px target and push
+ * a third line onto every one of 36+ rows.
  */
 export const SessionRosterRow = memo(function SessionRosterRow({
   item,
@@ -67,73 +74,76 @@ export const SessionRosterRow = memo(function SessionRosterRow({
   const previousStatusNote =
     previousStatusDef && !previousStatusDef.counts_as_present ? previousStatusDef.label : null;
   // A not-present status always needs its note visible; a present student
-  // keeps the field collapsed behind the note button until tapped, so 36
-  // rows of "Hadir" do not each carry an empty text box.
+  // keeps the field collapsed behind the actions menu until asked for, so
+  // 36 rows of "Hadir" do not each carry an empty text box.
   const [noteExpanded, setNoteExpanded] = useState(!isPresent || note !== "");
   const noteVisible = !isPresent || noteExpanded;
 
   return (
-    <li
-      className="flex flex-col gap-2 px-4 py-3 md:flex-row md:items-center md:justify-between"
-      data-changed={changed || undefined}
-    >
-      <div className="flex min-w-0 items-center gap-3">
-        <Avatar name={item.name} size="sm" />
-        <div className="flex min-w-0 flex-col">
-          <span className="flex items-center gap-1.5 truncate text-[14px] text-fg">
-            {item.name}
-            {changed && (
-              <span
-                className="size-1.5 shrink-0 rounded-full bg-accent"
-                aria-label={t("rowChanged")}
-                title={t("rowChanged")}
-              />
+    <li className="flex flex-col gap-1.5 px-4 py-2.5" data-changed={changed || undefined}>
+      <div className="flex flex-col gap-1.5 md:flex-row md:items-center md:justify-between">
+        <div className="flex min-w-0 items-center gap-3">
+          <Avatar name={item.name} size="sm" />
+          <div className="flex min-w-0 flex-col">
+            <span className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[14px] text-fg">
+              <span className="truncate">{formatDisplayName(item.name)}</span>
+              {item.nis && <span className="text-[12px] text-fg-muted">{item.nis}</span>}
+              <StudentYearRecap statuses={statuses} yearCounts={item.year_counts} />
+              {changed && (
+                <span
+                  className="size-1.5 shrink-0 rounded-full bg-accent"
+                  aria-label={t("rowChanged")}
+                  title={t("rowChanged")}
+                />
+              )}
+            </span>
+            {previousStatusNote && (
+              <span className="text-[12px] text-fg-muted">
+                {t("previousStatus", { status: previousStatusNote })}
+              </span>
             )}
-          </span>
-          {item.nis && <span className="text-[12px] text-fg-muted">{item.nis}</span>}
-          <StudentYearRecap statuses={statuses} yearCounts={item.year_counts} />
-          {previousStatusNote && (
-            <span className="text-[12px] text-fg-muted">
-              {t("previousStatus", { status: previousStatusNote })}
-            </span>
-          )}
-          {item.blocked && (
-            <span className="flex items-center gap-1 text-[12px] text-fg-muted">
-              <Lock className="size-3" aria-hidden="true" />
-              {item.blocked_reason ?? t("blocked")}
-            </span>
-          )}
-          {!item.blocked && item.source && item.source !== "teacher" && (
-            <span className="text-[12px] text-fg-muted">{t(`source.${item.source}`)}</span>
+            {item.blocked && (
+              <span className="flex items-center gap-1 text-[12px] text-fg-muted">
+                <Lock className="size-3" aria-hidden="true" />
+                {item.blocked_reason ?? t("blocked")}
+              </span>
+            )}
+            {!item.blocked && item.source && item.source !== "teacher" && (
+              <span className="text-[12px] text-fg-muted">{t(`source.${item.source}`)}</span>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <AttendanceStatusRadioGroup
+            statuses={statuses}
+            value={currentStatus}
+            label={item.name}
+            disabled={Boolean(item.blocked) || disabled}
+            onChange={(statusCode) => {
+              onStatusChange(item.student_user_id, statusCode);
+            }}
+          />
+          {!item.blocked && (
+            <SessionRowActionsMenu
+              studentName={item.name}
+              noteActive={noteVisible}
+              noteToggleDisabled={!isPresent}
+              onToggleNote={() => {
+                setNoteExpanded((prev) => !prev);
+              }}
+              violationIds={violationIds}
+              violationTypes={violationTypes}
+              violationTypesLoading={violationTypesLoading}
+              disabled={disabled}
+              onToggleViolation={(violationTypeId) => {
+                onToggleViolation(item.student_user_id, violationTypeId);
+              }}
+            />
           )}
         </div>
       </div>
-      <div className="flex flex-wrap items-center gap-2">
-        <AttendanceStatusRadioGroup
-          statuses={statuses}
-          value={currentStatus}
-          label={item.name}
-          disabled={Boolean(item.blocked) || disabled}
-          onChange={(statusCode) => {
-            onStatusChange(item.student_user_id, statusCode);
-          }}
-        />
-        {!item.blocked && (
-          <IconButton
-            icon={<StickyNote />}
-            aria-label={
-              noteVisible ? t("noteHide", { name: item.name }) : t("noteShow", { name: item.name })
-            }
-            aria-pressed={noteVisible}
-            variant="outline"
-            className={draftNote ? "border-accent text-accent" : undefined}
-            disabled={disabled || !isPresent}
-            onClick={() => {
-              setNoteExpanded((prev) => !prev);
-            }}
-          />
-        )}
-        {!item.blocked && noteVisible && (
+      {!item.blocked && noteVisible && (
+        <div className="md:pl-11">
           <Input
             value={draftNote}
             onChange={(e) => {
@@ -142,23 +152,11 @@ export const SessionRosterRow = memo(function SessionRosterRow({
             }}
             placeholder={t("notePlaceholder")}
             aria-label={t("noteFor", { name: item.name })}
-            className="w-40"
+            className="w-full md:w-64"
             disabled={disabled}
           />
-        )}
-        {!item.blocked && (
-          <ViolationPicker
-            studentName={item.name}
-            selected={violationIds}
-            types={violationTypes}
-            loading={violationTypesLoading}
-            disabled={disabled}
-            onToggle={(violationTypeId) => {
-              onToggleViolation(item.student_user_id, violationTypeId);
-            }}
-          />
-        )}
-      </div>
+        </div>
+      )}
     </li>
   );
 });

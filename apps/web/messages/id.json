@@ -676,6 +676,7 @@
         "eyebrow": "Pertemuan ke-{meeting}",
         "title": "Presensi",
         "back": "Presensi",
+        "backToList": "Kembali ke daftar presensi",
         "correctionMode": "Mode koreksi",
         "searchPlaceholder": "Cari nama siswa",
         "filterByStatus": "Filter berdasarkan status",
@@ -683,8 +684,10 @@
         "noMatch": "Tidak ada siswa yang cocok.",
         "notePlaceholder": "Catatan",
         "noteFor": "Catatan untuk {name}",
-        "noteShow": "Tambah catatan untuk {name}",
-        "noteHide": "Sembunyikan catatan untuk {name}",
+        "noteMenuAdd": "Tambah catatan",
+        "noteMenuHide": "Sembunyikan catatan",
+        "moreActions": "Aksi lain untuk {name}",
+        "menuBack": "Kembali",
         "rowChanged": "Baris ini berubah sejak tersimpan terakhir",
         "markAllPresent": "Tandai semua hadir",
         "markAllPresentHint": "Status Sakit, Izin, dan Dispensasi tidak ditimpa.",
@@ -715,7 +718,7 @@
         "draftRestore": "Pulihkan",
         "draftDismiss": "Abaikan",
         "violations": {
-          "button": "Pelanggaran untuk {name}",
+          "menuLabel": "Catat pelanggaran",
           "title": "Pelanggaran",
           "empty": "Tidak ada jenis pelanggaran."
         }

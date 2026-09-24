@@ -24,6 +24,12 @@ const DOT_CLASS: Record<StatusName, string> = {
  * pattern (a student often sick, or accumulating unexplained absences)
  * without leaving the roster. Present itself is left out: a recap of how
  * often someone showed up is not the point of this chip row.
+ *
+ * Renders nothing when every exception count is zero: a clean-slate
+ * student on an ordinary day should not carry a row of "S0 I0 D0 A0" the
+ * way a genuinely-flagged one carries real numbers -- and it keeps the
+ * common row's height down, since most students most days have nothing
+ * to recap.
  */
 export function StudentYearRecap({
   statuses,
@@ -34,6 +40,8 @@ export function StudentYearRecap({
 }): ReactElement | null {
   const exceptions = statuses.filter((s) => !s.counts_as_present);
   if (exceptions.length === 0) return null;
+  const hasAnyCount = exceptions.some((s) => (yearCounts?.[s.code] ?? 0) > 0);
+  if (!hasAnyCount) return null;
 
   const summary = exceptions.map((s) => `${s.label} ${yearCounts?.[s.code] ?? 0}`).join(", ");
 
