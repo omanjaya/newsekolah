@@ -680,6 +680,11 @@ type Querier interface {
 	GetStudentActiveClassRef(ctx context.Context, arg GetStudentActiveClassRefParams) (uuid.UUID, error)
 	GetStudentGuardianName(ctx context.Context, arg GetStudentGuardianNameParams) (string, error)
 	// The leave-letter template's {{nis}} and {{address}} placeholders.
+	// address lives on user_profiles (the generic per-user profile table),
+	// not on users itself or on student_profiles (which only carries
+	// student-specific columns like nis) -- both are left-joined so a student
+	// missing either row still resolves, with empty placeholders instead of
+	// failing the whole issuance.
 	GetStudentNISAndAddress(ctx context.Context, arg GetStudentNISAndAddressParams) (GetStudentNISAndAddressRow, error)
 	GetStudentProfile(ctx context.Context, arg GetStudentProfileParams) (StudentProfile, error)
 	GetSubjectRefForSchedule(ctx context.Context, arg GetSubjectRefForScheduleParams) (GetSubjectRefForScheduleRow, error)
