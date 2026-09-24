@@ -128,7 +128,8 @@
           "staff": "Pegawai",
           "student": "Siswa",
           "parent": "Orang Tua",
-          "librarian": "Pustakawan"
+          "librarian": "Pustakawan",
+          "principal": "Kepala Sekolah"
         },
         "loginHistogramTitle": "Aktivitas login",
         "loginHistogramNote": "Dijumlahkan per jam dari tujuh hari terakhir",
