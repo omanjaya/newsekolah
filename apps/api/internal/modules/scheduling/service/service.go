@@ -15,6 +15,7 @@ import (
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 )
 
 // PeriodRef is a period read from the academic module's tables (owned by
@@ -122,6 +123,12 @@ type Service struct {
 	pool  *pgxpool.Pool
 	repo  Repository
 	clock clock.Clock
+	// letterheads is optional (set via SetLetterheadSource after
+	// construction, mirroring attendance/service.Service's identically
+	// named setter): nil means every report export renders without a
+	// tenant letterhead, same as before reportdoc.LetterheadSource
+	// existed.
+	letterheads reportdoc.LetterheadSource
 }
 
 func New(pool *pgxpool.Pool, repo Repository) *Service {
@@ -136,4 +143,23 @@ func (s *Service) WithClock(c clock.Clock) *Service {
 
 func (s *Service) withTx(ctx context.Context, tenantID uuid.UUID, fn func(ctx context.Context) error) error {
 	return database.WithTenantTx(ctx, s.pool, tenantID, fn)
+}
+
+// SetLetterheadSource wires the school module's tenant letterhead/default
+// signature reader in after construction (cmd/api/wire.go, once the
+// school module it depends on has itself been registered), for the
+// journal export's Document.Letterhead/Signature.
+func (s *Service) SetLetterheadSource(source reportdoc.LetterheadSource) {
+	s.letterheads = source
+}
+
+// reportLetterhead loads tenantID's configured kop laporan and default
+// signature, if any -- (nil, nil) when no letterheads source is wired or
+// the tenant has not configured one, so a report renders without one
+// rather than failing.
+func (s *Service) reportLetterhead(ctx context.Context, tenantID uuid.UUID) (*reportdoc.Letterhead, *reportdoc.Signature, error) {
+	if s.letterheads == nil {
+		return nil, nil, nil
+	}
+	return s.letterheads.Letterhead(ctx, tenantID)
 }

@@ -24,18 +24,35 @@ import { useFormatter, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import {
+  ReportExportDialog,
+  type ReportExportOptions,
+} from "../../../components/report-export-dialog";
 import { useActiveYear } from "../../../lib/hooks/use-active-year";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import { useClassesQuery, useLookup, useSubjectsQuery } from "../../reference/api";
 import {
   downloadJournalExport,
+  downloadJournalExportReport,
   useDeleteJournalMutation,
   useJournalsQuery,
   type Journal,
 } from "../api";
 
 import { JournalForm } from "./journal-form";
+
+/** {@link ReportExportDialog}'s availableColumns, mirroring journal_export.go's journalReportColumns exactly. */
+const JOURNAL_EXPORT_COLUMNS = [
+  { key: "date", label: "Tanggal" },
+  { key: "class", label: "Kelas" },
+  { key: "subject", label: "Mata Pelajaran" },
+  { key: "teacher", label: "Guru" },
+  { key: "author", label: "Ditulis Oleh" },
+  { key: "topic", label: "Topik" },
+  { key: "activities", label: "Kegiatan" },
+  { key: "reflection", label: "Refleksi" },
+];
 
 /**
  * A teacher's own class journals on the web, mirroring apps/mobile's
@@ -55,7 +72,8 @@ export function JournalView(): ReactElement {
   const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 50 });
   const [editing, setEditing] = useState<Journal | "new" | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Journal | null>(null);
-  const [downloading, setDownloading] = useState<"xlsx" | "docx" | null>(null);
+  const [downloadingDocx, setDownloadingDocx] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
 
   const classes = useClassesQuery();
   const subjects = useSubjectsQuery();
@@ -74,17 +92,25 @@ export function JournalView(): ReactElement {
     [list.data],
   );
 
-  async function handleExport(format: "xlsx" | "docx") {
-    setDownloading(format);
+  async function handleDocxExport() {
+    setDownloadingDocx(true);
     try {
-      await downloadJournalExport(year.id, canViewAll && classId ? classId : undefined, format);
+      await downloadJournalExport(year.id, canViewAll && classId ? classId : undefined, "docx");
     } catch (error) {
       toast.error(
         error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
       );
     } finally {
-      setDownloading(null);
+      setDownloadingDocx(false);
     }
+  }
+
+  async function handleReportExport(options: ReportExportOptions) {
+    await downloadJournalExportReport(
+      year.id,
+      canViewAll && classId ? classId : undefined,
+      options,
+    );
   }
 
   const columns = useMemo<ColumnDef<Journal>[]>(
@@ -196,8 +222,9 @@ export function JournalView(): ReactElement {
           <Button
             size="sm"
             variant="secondary"
-            loading={downloading === "xlsx"}
-            onClick={() => void handleExport("xlsx")}
+            onClick={() => {
+              setExportOpen(true);
+            }}
           >
             <Download className="size-4" aria-hidden="true" />
             {t("exportXlsx")}
@@ -205,14 +232,23 @@ export function JournalView(): ReactElement {
           <Button
             size="sm"
             variant="secondary"
-            loading={downloading === "docx"}
-            onClick={() => void handleExport("docx")}
+            loading={downloadingDocx}
+            onClick={() => void handleDocxExport()}
           >
             <Download className="size-4" aria-hidden="true" />
             {t("exportDocx")}
           </Button>
         </div>
       </div>
+
+      <ReportExportDialog
+        open={exportOpen}
+        onOpenChange={setExportOpen}
+        reportKey="journal"
+        defaultTitle={t("exportReportTitle")}
+        availableColumns={JOURNAL_EXPORT_COLUMNS}
+        onExport={handleReportExport}
+      />
 
       <div className="flex flex-col md:min-h-0 md:flex-1">
         {list.isError ? (

@@ -7,10 +7,12 @@ import (
 	"io"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
+	"github.com/xuri/excelize/v2"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/api"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling/domain"
@@ -186,6 +188,64 @@ func TestScheduleBlockMutationsPreserveHistory(t *testing.T) {
 		require.NotContains(t, journalDocumentXML(t, payload), "Teacher topic")
 	})
 
+	t.Run("journal XLSX/PDF export renders through reportdoc, with an Indonesian scope line and a caller-chosen column subset", func(t *testing.T) {
+		exec(`insert into class_journals (tenant_id,academic_year_id,teacher_user_id,written_by_user_id,class_id,subject_id,lesson_date,topic,activities) values ($1,$2,$3,$3,$4,$5,'2026-09-16','XLSX topic','Discussion')`, tenant, year, teacher, class, subject)
+		readerSvc := service.New(pool, repository.New(pool))
+		handler := schedulehttp.New(readerSvc, journalExportPermissions{}, nil)
+		actorCtx := httpx.WithUserID(tenantctx.WithTenant(ctx, tenantctx.Tenant{ID: tenant}), teacher)
+
+		xlsxRequest := api.ExportJournalsRequestObject{Params: api.ExportJournalsParams{AcademicYearId: year, Format: api.ExportJournalsParamsFormatXlsx}}
+		response, err := handler.ExportJournals(actorCtx, xlsxRequest)
+		require.NoError(t, err)
+		recorder := httptest.NewRecorder()
+		require.NoError(t, response.VisitExportJournalsResponse(recorder))
+		require.Equal(t, 200, recorder.Code)
+		require.Equal(t, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", recorder.Header().Get("Content-Type"))
+		f, err := excelize.OpenReader(bytes.NewReader(recorder.Body.Bytes()))
+		require.NoError(t, err)
+		defer f.Close() //nolint:errcheck
+		sheet := f.GetSheetList()[0]
+		rows, err := f.GetRows(sheet)
+		require.NoError(t, err)
+		var flat []string
+		for _, row := range rows {
+			flat = append(flat, row...)
+		}
+		joined := strings.Join(flat, " | ")
+		require.Contains(t, joined, "XLSX topic")
+		require.Contains(t, joined, "Jurnal Mengajar", "the report's own default Indonesian title must render")
+		require.Contains(t, joined, "16/09/2026", "reportdoc's own ColumnDate formatting for the date column")
+
+		pdfRequest := api.ExportJournalsRequestObject{Params: api.ExportJournalsParams{AcademicYearId: year, Format: api.ExportJournalsParamsFormatPdf}}
+		response, err = handler.ExportJournals(actorCtx, pdfRequest)
+		require.NoError(t, err)
+		recorder = httptest.NewRecorder()
+		require.NoError(t, response.VisitExportJournalsResponse(recorder))
+		require.Equal(t, "application/pdf", recorder.Header().Get("Content-Type"))
+		require.True(t, bytes.HasPrefix(recorder.Body.Bytes(), []byte("%PDF")))
+
+		narrowTitle, narrowLetterhead := "Jurnal Kelas X-A", false
+		narrowColumns := "topic:Topik,class"
+		narrowRequest := api.ExportJournalsRequestObject{Params: api.ExportJournalsParams{
+			AcademicYearId: year, Format: api.ExportJournalsParamsFormatXlsx,
+			Title: &narrowTitle, Letterhead: &narrowLetterhead, Columns: &narrowColumns,
+		}}
+		response, err = handler.ExportJournals(actorCtx, narrowRequest)
+		require.NoError(t, err)
+		recorder = httptest.NewRecorder()
+		require.NoError(t, response.VisitExportJournalsResponse(recorder))
+		nf, err := excelize.OpenReader(bytes.NewReader(recorder.Body.Bytes()))
+		require.NoError(t, err)
+		defer nf.Close() //nolint:errcheck
+		nrows, err := nf.GetRows(nf.GetSheetList()[0])
+		require.NoError(t, err)
+		require.Contains(t, nrows, []string{"Topik", "Kelas"}, "the chosen column subset/relabel/order must be honoured")
+
+		badColumns := "does_not_exist"
+		badRequest := api.ExportJournalsRequestObject{Params: api.ExportJournalsParams{AcademicYearId: year, Format: api.ExportJournalsParamsFormatXlsx, Columns: &badColumns}}
+		_, err = handler.ExportJournals(actorCtx, badRequest)
+		require.Error(t, err)
+	})
 }
 
 type journalExportPermissions struct{ all bool }

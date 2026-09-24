@@ -6871,7 +6871,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Export journals as XLSX or DOCX */
+        /** Export journals as XLSX, PDF, or DOCX */
         get: operations["exportJournals"];
         put?: never;
         post?: never;
@@ -25955,7 +25955,14 @@ export interface operations {
                 date_from?: string;
                 date_to?: string;
                 search?: string;
-                format: "xlsx" | "docx";
+                /** @description docx keeps its own fixed layout (no title/letterhead/columns customisation); xlsx and pdf go through reportdoc and honour the params below. */
+                format: "xlsx" | "pdf" | "docx";
+                /** @description Overrides the report's own default title. */
+                title?: components["parameters"]["ReportTitleParam"];
+                /** @description Show the tenant's configured letterhead (kop laporan). Defaults to true. */
+                letterhead?: components["parameters"]["ReportLetterheadParam"];
+                /** @description Comma-separated column selection and order, each entry either a bare column key or "key:label" to rename it. Omitted or empty keeps every column, in the report's own default order and labels. */
+                columns?: components["parameters"]["ReportColumnsParam"];
             };
             header?: never;
             path?: never;
@@ -25970,6 +25977,7 @@ export interface operations {
                 };
                 content: {
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
+                    "application/pdf": string;
                     "application/vnd.openxmlformats-officedocument.wordprocessingml.document": string;
                 };
             };

@@ -18,6 +18,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/authz"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/tenant"
 )
 
@@ -68,6 +69,7 @@ var (
 	errScheduleConflictTeacher = httpx.NewError(http.StatusConflict, "SCHEDULE_CONFLICT_TEACHER")
 	errSubstitutionConflict    = httpx.NewError(http.StatusConflict, "SUBSTITUTION_CONFLICT")
 	errJournalConflict         = httpx.NewError(http.StatusConflict, "JOURNAL_CONFLICT")
+	errJournalReportColumn     = httpx.NewError(http.StatusBadRequest, "JOURNAL_REPORT_UNKNOWN_COLUMN")
 )
 
 // mapScheduleError translates a scheduling/domain sentinel error into the
@@ -159,6 +161,8 @@ func mapJournalError(err error) error {
 		return errJournalConflict
 	case errors.Is(err, domain.ErrJournalMissingTopic), errors.Is(err, domain.ErrJournalMissingActivity), errors.Is(err, domain.ErrTeacherNotAssigned):
 		return httpx.ErrValidation
+	case errors.Is(err, reportdoc.ErrUnknownColumn):
+		return errJournalReportColumn
 	default:
 		var appErr *httpx.Error
 		if errors.As(err, &appErr) {

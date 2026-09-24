@@ -4,7 +4,9 @@ import (
 	"context"
 
 	"github.com/google/uuid"
-	"github.com/xuri/excelize/v2"
+
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 )
 
 // journalExportRowLimit caps a single export: large enough for any one
@@ -12,48 +14,93 @@ import (
 // rather than paging through an unbounded ListJournals result.
 const journalExportRowLimit = 5000
 
-// ExportJournalsXLSX renders every journal matching filter (ignoring
-// filter.Limit/Offset) as a single-sheet workbook with resolved
-// class/subject/teacher/writer names, replacing the old export's raw IDs
-// (docs/analysis/backend-inventory.md section 1.12) with the names a
-// school office actually needs to read the file.
-func (s *Service) ExportJournalsXLSX(ctx context.Context, tenantID, academicYearID uuid.UUID, filter JournalFilter) ([]byte, error) {
-	rows, err := s.journalExportRows(ctx, tenantID, academicYearID, filter)
-	if err != nil {
-		return nil, err
+// journalReportColumns are the journal export's stable column keys and
+// default Indonesian labels, shared by the XLSX and PDF renderers
+// (reportdoc.Apply's Options.Columns refers to these keys, never the
+// label).
+func journalReportColumns() []reportdoc.Column {
+	return []reportdoc.Column{
+		{Key: "date", Label: "Tanggal", Kind: reportdoc.ColumnDate, Width: 14},
+		{Key: "class", Label: "Kelas", Kind: reportdoc.ColumnText, Width: 14},
+		{Key: "subject", Label: "Mata Pelajaran", Kind: reportdoc.ColumnText, Width: 18},
+		{Key: "teacher", Label: "Guru", Kind: reportdoc.ColumnText, Width: 20},
+		{Key: "author", Label: "Ditulis Oleh", Kind: reportdoc.ColumnText, Width: 20},
+		{Key: "topic", Label: "Topik", Kind: reportdoc.ColumnText, Width: 28},
+		{Key: "activities", Label: "Kegiatan", Kind: reportdoc.ColumnText, Width: 32},
+		{Key: "reflection", Label: "Refleksi", Kind: reportdoc.ColumnText, Width: 32},
 	}
+}
 
-	f := excelize.NewFile()
-	defer func() { _ = f.Close() }()
-
-	const sheet = "Journals"
-	if err := f.SetSheetName("Sheet1", sheet); err != nil {
-		return nil, err
-	}
-
-	headers := []string{"Lesson Date", "Class", "Subject", "Teacher", "Written By", "Topic", "Activities", "Reflection"}
-	for col, h := range headers {
-		cell, _ := excelize.CoordinatesToCellName(col+1, 1)
-		_ = f.SetCellValue(sheet, cell, h)
-	}
-
-	for i, values := range rows {
-		row := i + 2
-		for col, v := range values {
-			cell, _ := excelize.CoordinatesToCellName(col+1, row)
-			_ = f.SetCellValue(sheet, cell, v)
+// ExportJournalsReport renders every journal matching filter (ignoring
+// filter.Limit/Offset) as a reportdoc file (XLSX or PDF per opts.Format),
+// with resolved class/subject/teacher/writer names, replacing the old
+// export's raw IDs (docs/analysis/backend-inventory.md section 1.12).
+// Called with a zero reportdoc.Options, this keeps every existing
+// caller's request working: xlsx, every column, the report's own default
+// title.
+func (s *Service) ExportJournalsReport(ctx context.Context, tenantID, academicYearID uuid.UUID, filter JournalFilter, opts reportdoc.Options) ([]byte, error) {
+	var out []byte
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		filter.Limit, filter.Offset = journalExportRowLimit, 0
+		journals, err := s.repo.ListJournalsFiltered(ctx, tenantID, academicYearID, filter)
+		if err != nil {
+			return err
 		}
-	}
+		names := journalNameResolver{ctx: ctx, tenantID: tenantID, repo: s.repo, classes: map[uuid.UUID]string{}, subjects: map[uuid.UUID]string{}, users: map[uuid.UUID]string{}}
 
-	buf, err := f.WriteToBuffer()
-	if err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
+		rows := make([][]any, len(journals))
+		for i, j := range journals {
+			rows[i] = []any{
+				j.LessonDate, names.class(j.ClassID), names.subject(j.SubjectID), names.user(j.TeacherUserID), names.user(j.WrittenByUserID),
+				j.Topic, j.Activities, j.Reflection,
+			}
+		}
+
+		var scope []reportdoc.ScopeLine
+		if filter.ClassID.Valid {
+			scope = append(scope, reportdoc.ScopeLine{Label: "Kelas", Value: names.class(filter.ClassID.UUID)})
+		}
+		if filter.DateFrom != nil {
+			scope = append(scope, reportdoc.ScopeLine{Label: "Dari Tanggal", Value: domain.IndonesianDate(*filter.DateFrom)})
+		}
+		if filter.DateTo != nil {
+			scope = append(scope, reportdoc.ScopeLine{Label: "Sampai Tanggal", Value: domain.IndonesianDate(*filter.DateTo)})
+		}
+
+		doc := reportdoc.Document{
+			Title:    "Jurnal Mengajar",
+			Scope:    scope,
+			Columns:  journalReportColumns(),
+			Sections: []reportdoc.Section{{Rows: rows}},
+		}
+		if opts.ShowLetterhead {
+			lh, sig, err := s.reportLetterhead(ctx, tenantID)
+			if err != nil {
+				return err
+			}
+			doc.Letterhead = lh
+			doc.Signature = sig
+		}
+
+		applied, err := reportdoc.Apply(doc, opts)
+		if err != nil {
+			return err
+		}
+		if opts.Format == reportdoc.FormatPDF {
+			out, err = reportdoc.RenderPDF(applied)
+		} else {
+			out, err = reportdoc.RenderXLSX(applied)
+		}
+		return err
+	})
+	return out, err
 }
 
 // journalExportRows resolves names inside the tenant transaction so RLS also
 // applies to class, subject and user lookups rather than returning raw IDs.
+// Used by ExportJournalsDOCX only -- reportdoc's XLSX/PDF path uses
+// journalReportRows instead (typed rows, an Indonesian long date rather
+// than ISO).
 func (s *Service) journalExportRows(ctx context.Context, tenantID, academicYearID uuid.UUID, filter JournalFilter) ([][]string, error) {
 	filter.Limit, filter.Offset = journalExportRowLimit, 0
 	var rows [][]string

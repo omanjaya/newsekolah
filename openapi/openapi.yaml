@@ -15872,7 +15872,7 @@ paths:
         - journals
       operationId: exportJournals
       x-permission: authenticated
-      summary: Export journals as XLSX or DOCX
+      summary: Export journals as XLSX, PDF, or DOCX
       parameters:
         - name: academic_year_id
           in: query
@@ -15902,16 +15902,26 @@ paths:
         - name: format
           in: query
           required: true
+          description: docx keeps its own fixed layout (no title/letterhead/columns customisation); xlsx and pdf go through
+            reportdoc and honour the params below.
           schema:
             type: string
             enum:
               - xlsx
+              - pdf
               - docx
+        - $ref: "#/components/parameters/ReportTitleParam"
+        - $ref: "#/components/parameters/ReportLetterheadParam"
+        - $ref: "#/components/parameters/ReportColumnsParam"
       responses:
         "200":
           description: File
           content:
             application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+            application/pdf:
               schema:
                 type: string
                 format: binary
