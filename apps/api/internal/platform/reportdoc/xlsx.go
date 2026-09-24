@@ -220,7 +220,8 @@ func intPtr(i int) *int       { return &i }
 // section's typed data rows, an optional totals block, the signature
 // block, and print setup.
 func writeXLSXSheet(f *excelize.File, sheet string, doc Document, section Section, styles xlsxStyles) error {
-	lastCol := len(doc.Columns)
+	cols := section.columns(doc)
+	lastCol := len(cols)
 	if lastCol == 0 {
 		lastCol = 1
 	}
@@ -262,7 +263,7 @@ func writeXLSXSheet(f *excelize.File, sheet string, doc Document, section Sectio
 
 	headerRow := row
 	maxHeaderLines := 1
-	for col, c := range doc.Columns {
+	for col, c := range cols {
 		cell, err := excelize.CoordinatesToCellName(col+1, headerRow)
 		if err != nil {
 			return err
@@ -298,19 +299,19 @@ func writeXLSXSheet(f *excelize.File, sheet string, doc Document, section Sectio
 		dataRow++
 	}
 	for _, values := range section.Rows {
-		if err := writeTypedRow(f, sheet, dataRow, doc.Columns, values, 0, styles); err != nil {
+		if err := writeTypedRow(f, sheet, dataRow, cols, values, 0, styles); err != nil {
 			return err
 		}
 		dataRow++
 	}
 	for _, values := range section.Footer {
-		if err := writeTypedRow(f, sheet, dataRow, doc.Columns, values, styles.footer, styles); err != nil {
+		if err := writeTypedRow(f, sheet, dataRow, cols, values, styles.footer, styles); err != nil {
 			return err
 		}
 		dataRow++
 	}
 
-	for col, c := range doc.Columns {
+	for col, c := range cols {
 		colName, err := excelize.ColumnNumberToName(col + 1)
 		if err != nil {
 			return err
@@ -330,7 +331,7 @@ func writeXLSXSheet(f *excelize.File, sheet string, doc Document, section Sectio
 	}); err != nil {
 		return fmt.Errorf("freeze panes: %w", err)
 	}
-	if len(doc.Columns) > 0 {
+	if len(cols) > 0 {
 		if err := f.AutoFilter(sheet, headerRange, []excelize.AutoFilterOptions{}); err != nil {
 			return fmt.Errorf("autofilter: %w", err)
 		}

@@ -203,6 +203,72 @@ func TestRenderXLSXHeaderRowHeightGrowsForLongLabels(t *testing.T) {
 	assert.Greater(t, height, 20.0, "a long wrapped header label needs a taller header row than the default single line")
 }
 
+func TestRenderXLSXSectionColumnsOverridesDocumentColumns(t *testing.T) {
+	// Mirrors the library catalogue accreditation summary: one sheet of
+	// key/value indicators (2 columns), one sheet breaking titles down by
+	// Dewey class (3 columns) -- Document.Columns stays empty since no
+	// section shares a single column set.
+	doc := Document{
+		Title: "Ringkasan Katalog",
+		Sections: []Section{
+			{
+				Name: "Ringkasan",
+				Columns: []Column{
+					{Key: "indicator", Label: "Indikator", Kind: ColumnText, Width: 30},
+					{Key: "value", Label: "Nilai", Kind: ColumnText, Width: 16},
+				},
+				Rows: [][]any{{"Total Judul Aktif", "120"}},
+			},
+			{
+				Name: "Judul per DDC",
+				Columns: []Column{
+					{Key: "code", Label: "Kelas DDC", Kind: ColumnText, Width: 12},
+					{Key: "name", Label: "Nama", Kind: ColumnText, Width: 30},
+					{Key: "count", Label: "Jumlah Judul", Kind: ColumnNumber, Width: 14},
+				},
+				Rows: [][]any{{"000", "Karya Umum", 5}},
+			},
+		},
+	}
+
+	out, err := RenderXLSX(doc)
+	require.NoError(t, err)
+	f, err := excelize.OpenReader(bytes.NewReader(out))
+	require.NoError(t, err)
+	defer f.Close()
+
+	sheets := f.GetSheetList()
+	require.Len(t, sheets, 2)
+
+	// Title (row 1) + section name, distinct from the title (row 2) +
+	// blank separator (row 3) -> header row 4, two columns.
+	v, err := f.GetCellValue(sheets[0], "A4")
+	require.NoError(t, err)
+	assert.Equal(t, "Indikator", v)
+	v, err = f.GetCellValue(sheets[0], "B4")
+	require.NoError(t, err)
+	assert.Equal(t, "Nilai", v)
+	v, err = f.GetCellValue(sheets[0], "A5")
+	require.NoError(t, err)
+	assert.Equal(t, "Total Judul Aktif", v)
+	// A third column must not exist on this sheet's header row.
+	v, err = f.GetCellValue(sheets[0], "C4")
+	require.NoError(t, err)
+	assert.Empty(t, v)
+
+	// Sheet 2 has its own, different three-column header, independent of
+	// sheet 1's.
+	v, err = f.GetCellValue(sheets[1], "A4")
+	require.NoError(t, err)
+	assert.Equal(t, "Kelas DDC", v)
+	v, err = f.GetCellValue(sheets[1], "C4")
+	require.NoError(t, err)
+	assert.Equal(t, "Jumlah Judul", v)
+	v, err = f.GetCellValue(sheets[1], "C5")
+	require.NoError(t, err)
+	assert.Equal(t, "5", v)
+}
+
 func TestRenderXLSXNoSections(t *testing.T) {
 	doc := Document{Title: "Kosong", Columns: []Column{{Key: "a", Label: "A", Kind: ColumnText}}}
 	out, err := RenderXLSX(doc)

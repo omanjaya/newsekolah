@@ -50,7 +50,15 @@ var (
 // from the columns' total width; a page-number footer is printed when
 // Document.PageLabelFormat is set.
 func RenderPDF(doc Document) ([]byte, error) {
-	orientation, widths := pdfColumnWidths(doc.Columns)
+	sections := doc.Sections
+	if len(sections) == 0 {
+		sections = []Section{{}}
+	}
+	sectionColumns := make([][]Column, len(sections))
+	for i, section := range sections {
+		sectionColumns[i] = section.columns(doc)
+	}
+	orientation, available := pdfDocumentOrientation(sectionColumns)
 
 	pdf := fpdf.New(orientation, "mm", "A4", "")
 	pdf.SetMargins(pdfMarginMM, pdfMarginMM, pdfMarginMM)
@@ -74,19 +82,17 @@ func RenderPDF(doc Document) ([]byte, error) {
 	writePDFLetterhead(pdf, doc.Letterhead)
 	writePDFTitleScope(pdf, doc.Title, doc.Scope)
 
-	sections := doc.Sections
-	if len(sections) == 0 {
-		sections = []Section{{}}
-	}
 	for i, section := range sections {
 		if i > 0 {
 			pdf.AddPage()
 		}
-		writePDFSection(pdf, doc.Columns, widths, section, doc.EmptyRowsLabel)
+		cols := sectionColumns[i]
+		widths := pdfFitColumnWidths(pdfNaturalColumnWidths(cols), available)
+		writePDFSection(pdf, cols, widths, section, doc.EmptyRowsLabel)
 	}
 
 	if doc.Signature != nil {
-		writePDFSignature(pdf, doc.Signature, widths)
+		writePDFSignature(pdf, doc.Signature)
 	}
 
 	if err := pdf.Error(); err != nil {
@@ -99,47 +105,73 @@ func RenderPDF(doc Document) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// pdfColumnWidths converts each Column.Width hint to millimetres and
-// picks portrait or landscape from the total: landscape when the columns
-// do not fit a portrait page's printable width. If they do not fit even
-// landscape, every column is scaled down proportionally so the table
-// always spans exactly the page's printable width.
-func pdfColumnWidths(columns []Column) (string, []float64) {
+// pdfNaturalColumnWidths converts each Column.Width hint to millimetres,
+// before either the document's orientation is chosen or the final
+// stretch/scale-to-fit is applied. Used both to decide orientation (see
+// pdfDocumentOrientation, which sums these) and, once an available width
+// is known, to fit a section's own columns to it (see
+// pdfFitColumnWidths).
+func pdfNaturalColumnWidths(columns []Column) []float64 {
 	widths := make([]float64, len(columns))
-	total := 0.0
 	for i, c := range columns {
 		w := c.Width
 		if w <= 0 {
 			w = defaultColWidth
 		}
-		mm := math.Max(w*pdfMMPerWidthUnit, pdfMinColWidthMM)
-		widths[i] = mm
-		total += mm
+		widths[i] = math.Max(w*pdfMMPerWidthUnit, pdfMinColWidthMM)
 	}
-	if len(widths) == 0 {
-		return "P", widths
-	}
+	return widths
+}
 
-	orientation := "P"
-	available := pdfPortraitContentMM
-	if total > pdfPortraitContentMM {
-		orientation = "L"
-		available = pdfLandscapeContentMM
+func sumFloat64(values []float64) float64 {
+	total := 0.0
+	for _, v := range values {
+		total += v
 	}
+	return total
+}
+
+// pdfFitColumnWidths scales natural widths (from pdfNaturalColumnWidths)
+// to span exactly available millimetres: scaled down proportionally if
+// they overflow it, stretched evenly to fill any leftover space
+// otherwise, so a section's table never leaves a ragged right edge.
+func pdfFitColumnWidths(natural []float64, available float64) []float64 {
+	if len(natural) == 0 {
+		return natural
+	}
+	total := sumFloat64(natural)
+	widths := make([]float64, len(natural))
+	copy(widths, natural)
 	if total > available {
 		scale := available / total
 		for i := range widths {
 			widths[i] *= scale
 		}
 	} else {
-		// Stretch columns to fill the printable width evenly rather than
-		// leaving a ragged right edge.
 		extra := (available - total) / float64(len(widths))
 		for i := range widths {
 			widths[i] += extra
 		}
 	}
-	return orientation, widths
+	return widths
+}
+
+// pdfDocumentOrientation picks portrait or landscape for the whole PDF
+// from every section's own effective column set: fpdf fixes a document's
+// page size/orientation at creation, so one section needing landscape
+// (its natural column widths do not fit a portrait page) puts the entire
+// document in landscape, not just that section's pages. Returns the
+// chosen orientation and the printable width available at it, in
+// millimetres, for pdfFitColumnWidths.
+func pdfDocumentOrientation(columnSets [][]Column) (string, float64) {
+	orientation, available := "P", pdfPortraitContentMM
+	for _, cols := range columnSets {
+		if sumFloat64(pdfNaturalColumnWidths(cols)) > pdfPortraitContentMM {
+			orientation, available = "L", pdfLandscapeContentMM
+			break
+		}
+	}
+	return orientation, available
 }
 
 // pdfEmphasisSize/pdfPlainLineSize are the letterhead's two font sizes:
@@ -149,6 +181,30 @@ const (
 	pdfEmphasisSize  = 14.0
 	pdfPlainLineSize = 10.0
 )
+
+// DrawLetterhead renders lh (a kop laporan: logo plus text lines) onto
+// pdf at its current position, exactly like RenderPDF's own letterhead
+// block -- for a caller that builds its own fpdf.Fpdf document with a
+// layout RenderPDF cannot express (e.g. the library module's monthly
+// report, a fixed indicator grid and three tables with different column
+// counts) but still wants the tenant's configured letterhead rendered
+// the same way every other reportdoc-backed document does. A nil lh
+// draws nothing, so a caller can pass the result of
+// LetterheadSource.Letterhead unchecked.
+func DrawLetterhead(pdf *fpdf.Fpdf, lh *Letterhead) {
+	writePDFLetterhead(pdf, lh)
+}
+
+// DrawSignature renders sig (the place/date line plus one column per
+// signer) onto pdf at its current position, exactly like RenderPDF's own
+// signature block -- see DrawLetterhead for why a caller outside this
+// package would reach for it. A nil sig draws nothing.
+func DrawSignature(pdf *fpdf.Fpdf, sig *Signature) {
+	if sig == nil {
+		return
+	}
+	writePDFSignature(pdf, sig)
+}
 
 // writePDFLetterhead draws the logo (scaled to a fixed height, natural
 // aspect ratio, natural width) pinned to the left margin and the text
@@ -473,8 +529,10 @@ func toFloat64(v any) (float64, bool) {
 
 // writePDFSignature prints the place/date line and one signer column per
 // Signer, kept together on one page: if the block does not fit above the
-// bottom margin, it starts on a new page rather than splitting across two.
-func writePDFSignature(pdf *fpdf.Fpdf, sig *Signature, widths []float64) {
+// bottom margin, it starts on a new page rather than splitting across
+// two. Sized off the page's own printable width, not any section's
+// column widths -- the signature block always spans the full page.
+func writePDFSignature(pdf *fpdf.Fpdf, sig *Signature) {
 	left, _, right, _ := pdf.GetMargins()
 	pageW, pageH := pdf.GetPageSize()
 

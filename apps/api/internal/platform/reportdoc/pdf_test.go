@@ -119,6 +119,52 @@ func TestRenderPDFSingleSignerRightAligned(t *testing.T) {
 	assert.Equal(t, "%PDF", string(out[:4]))
 }
 
+// TestDrawLetterheadAndSignatureOnACustomLayout is the migration test for
+// a caller like library's monthly report: its own fpdf.Fpdf document,
+// not built through Document/RenderPDF at all, still rendering the
+// tenant's letterhead and signature the same way every other
+// reportdoc-backed document does.
+func TestDrawLetterheadAndSignatureOnACustomLayout(t *testing.T) {
+	pdf := fpdf.New("P", "mm", "A4", "")
+	pdf.AddPage()
+
+	DrawLetterhead(pdf, &Letterhead{
+		Lines:    []string{"Yayasan Dharma Praja", "SMA Negeri 1 Denpasar"},
+		Emphasis: 1,
+	})
+	pdf.SetFont("Helvetica", "B", 12)
+	pdf.CellFormat(0, 7, "Laporan Bulanan Perpustakaan", "", 1, "C", false, 0, "")
+
+	DrawSignature(pdf, &Signature{
+		Place: "Denpasar", Date: "1 September 2026",
+		Signers: []Signer{{RoleLabel: "Pustakawan", Name: "Ni Made Sari"}},
+	})
+
+	require.NoError(t, pdf.Error())
+	var buf bytes.Buffer
+	require.NoError(t, pdf.Output(&buf))
+	out := buf.Bytes()
+	assert.Equal(t, "%PDF", string(out[:4]))
+}
+
+func TestDrawLetterheadNilDrawsNothing(t *testing.T) {
+	pdf := fpdf.New("P", "mm", "A4", "")
+	pdf.AddPage()
+	before := pdf.GetY()
+	DrawLetterhead(pdf, nil)
+	assert.Equal(t, before, pdf.GetY(), "a nil letterhead must not move the cursor or draw anything")
+	require.NoError(t, pdf.Error())
+}
+
+func TestDrawSignatureNilDrawsNothing(t *testing.T) {
+	pdf := fpdf.New("P", "mm", "A4", "")
+	pdf.AddPage()
+	before := pdf.GetY()
+	DrawSignature(pdf, nil)
+	assert.Equal(t, before, pdf.GetY(), "a nil signature must not move the cursor or draw anything")
+	require.NoError(t, pdf.Error())
+}
+
 func TestWritePDFLetterheadEmphasisOutOfRangeFallsBackToZero(t *testing.T) {
 	pdf := fpdf.New("P", "mm", "A4", "")
 	pdf.AddPage()
@@ -153,6 +199,65 @@ func TestEnsurePDFRowSpaceReservesRoomForFooter(t *testing.T) {
 	brokeForFooter := false
 	ensurePDFRowSpace(pdf, columns, []float64{40}, []any{"x"}, pdfRowStyle{}, func() { brokeForFooter = true })
 	assert.True(t, brokeForFooter, "a row that would land inside the footer's reserved zone must trigger a page break")
+}
+
+func TestRenderPDFSectionColumnsOverridesDocumentColumns(t *testing.T) {
+	// Mirrors the library catalogue accreditation summary: a 2-column
+	// indicator section and a 3-column breakdown section in one
+	// Document, Document.Columns left empty.
+	doc := Document{
+		Title: "Ringkasan Katalog",
+		Sections: []Section{
+			{
+				Name: "Ringkasan",
+				Columns: []Column{
+					{Key: "indicator", Label: "Indikator", Kind: ColumnText, Width: 30},
+					{Key: "value", Label: "Nilai", Kind: ColumnText, Width: 16},
+				},
+				Rows: [][]any{{"Total Judul Aktif", "120"}},
+			},
+			{
+				Name: "Judul per DDC",
+				Columns: []Column{
+					{Key: "code", Label: "Kelas DDC", Kind: ColumnText, Width: 12},
+					{Key: "name", Label: "Nama", Kind: ColumnText, Width: 30},
+					{Key: "count", Label: "Jumlah Judul", Kind: ColumnNumber, Width: 14},
+				},
+				Rows: [][]any{{"000", "Karya Umum", 5}},
+			},
+		},
+	}
+
+	out, err := RenderPDF(doc)
+	require.NoError(t, err)
+	assert.Equal(t, "%PDF", string(out[:4]))
+	// One page object per section (content streams are FlateDecode
+	// compressed, so this checks structure rather than the label text
+	// itself -- the equivalent XLSX test asserts the actual header text).
+	count := bytes.Count(out, []byte("/Type /Page\n"))
+	assert.GreaterOrEqual(t, count, 2, "expected one page per section")
+}
+
+func TestRenderPDFSectionColumnsWideSectionForcesDocumentLandscape(t *testing.T) {
+	// fpdf fixes orientation for the whole document at creation, so a
+	// narrow first section followed by a section too wide for portrait
+	// must still render the whole PDF in landscape, not just that page.
+	narrow := Section{
+		Columns: []Column{{Key: "a", Label: "A", Kind: ColumnText, Width: 20}},
+		Rows:    [][]any{{"x"}},
+	}
+	wideCols := make([]Column, 12)
+	wideRow := make([]any, 12)
+	for i := range wideCols {
+		wideCols[i] = Column{Key: fmt.Sprintf("c%d", i), Label: fmt.Sprintf("Column %d", i), Kind: ColumnText, Width: 20}
+		wideRow[i] = "x"
+	}
+	wide := Section{Columns: wideCols, Rows: [][]any{wideRow}}
+	doc := Document{Title: "Campuran", Sections: []Section{narrow, wide}}
+
+	out, err := RenderPDF(doc)
+	require.NoError(t, err)
+	assert.Contains(t, string(out), "841.89 595.28", "one wide section should put the whole document in landscape")
 }
 
 func TestRenderPDFWideTableGoesLandscape(t *testing.T) {
