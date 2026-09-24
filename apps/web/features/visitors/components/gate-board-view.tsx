@@ -10,13 +10,14 @@ import {
   DialogContent,
   EmptyState,
   PageHeader,
+  SearchInput,
   domainIcons,
   useToast,
 } from "@newsekolah/ui";
 import { Plus } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { type BoardEntry, useCheckOutVisitMutation, useVisitorBoardQuery } from "../api";
@@ -88,13 +89,24 @@ export function GateBoardView(): ReactElement {
   const t = useTranslations("app.visitors.board");
   const board = useVisitorBoardQuery();
   const [checkingIn, setCheckingIn] = useState(false);
+  const [search, setSearch] = useState("");
 
   const entries = board.data?.data ?? [];
+  const query = search.trim().toLowerCase();
+  const visibleEntries = useMemo(() => {
+    if (query === "") return entries;
+    return entries.filter(
+      (entry) =>
+        entry.visit.full_name.toLowerCase().includes(query) ||
+        entry.visit.organization.toLowerCase().includes(query),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `entries` is a fresh array each render; `query` alone decides when this needs to rerun.
+  }, [query, board.data]);
 
   return (
     <div className="flex flex-col gap-4 p-4 md:p-6">
       <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-[13px] text-fg-muted">{t("count", { count: entries.length })}</p>
         <Button
           icon={<Plus />}
@@ -107,15 +119,33 @@ export function GateBoardView(): ReactElement {
         </Button>
       </div>
 
+      {entries.length > 3 && (
+        <SearchInput
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+          }}
+          placeholder={t("searchPlaceholder")}
+          aria-label={t("searchPlaceholder")}
+          className="max-w-sm"
+        />
+      )}
+
       {entries.length === 0 ? (
         <EmptyState
           icon={<domainIcons.visitor aria-hidden="true" />}
           title={t("emptyTitle")}
           description={t("emptyBody")}
         />
+      ) : visibleEntries.length === 0 ? (
+        <EmptyState
+          icon={<domainIcons.visitor aria-hidden="true" />}
+          title={t("searchEmptyTitle")}
+          description={t("searchEmptyBody", { query: search.trim() })}
+        />
       ) : (
         <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {entries.map((entry) => (
+          {visibleEntries.map((entry) => (
             <BoardCard key={entry.visit.id} entry={entry} />
           ))}
         </ul>

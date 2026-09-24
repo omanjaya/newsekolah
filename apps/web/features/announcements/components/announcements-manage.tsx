@@ -1,6 +1,6 @@
 "use client";
 
-import { ApiError, type components } from "@newsekolah/api-client";
+import { ApiError } from "@newsekolah/api-client";
 import type { Locale } from "@newsekolah/i18n";
 import { formatDateTime } from "@newsekolah/i18n";
 import {
@@ -35,10 +35,9 @@ import {
   useAnnouncementsQuery,
   useDeleteAnnouncementMutation,
 } from "../api";
+import { describeAudience } from "../lib/describe-audience";
 
 import { AnnouncementForm } from "./announcement-form";
-
-type Audience = components["schemas"]["Audience"];
 
 const STATUS_VARIANT: Record<AnnouncementStatus, "neutral" | "accent"> = {
   draft: "neutral",
@@ -87,19 +86,6 @@ export function AnnouncementsManage(): ReactElement {
     }
   }
 
-  function describeAudience(audience: Audience): string {
-    switch (audience.type) {
-      case "all":
-        return t("form.audienceAll");
-      case "roles":
-        return (audience.role_slugs ?? []).map((slug) => t(`roles.${slug}`)).join(", ");
-      case "classes":
-        return t("audienceClassCount", { count: audience.class_ids?.length ?? 0 });
-      case "users":
-        return t("audienceUserCount", { count: audience.user_ids?.length ?? 0 });
-    }
-  }
-
   const columns = useMemo<ColumnDef<Announcement>[]>(
     () => [
       {
@@ -110,7 +96,7 @@ export function AnnouncementsManage(): ReactElement {
           <div className="flex flex-col">
             <span className="font-medium text-fg">{row.original.title}</span>
             <span className="text-[12px] text-fg-muted">
-              {describeAudience(row.original.audience)}
+              {describeAudience(row.original.audience, t)}
             </span>
           </div>
         ),
@@ -322,7 +308,7 @@ export function AnnouncementsManage(): ReactElement {
           pendingPublish
             ? t("actions.publishConfirmBody", {
                 title: pendingPublish.title,
-                audience: describeAudience(pendingPublish.audience),
+                audience: describeAudience(pendingPublish.audience, t),
               })
             : ""
         }

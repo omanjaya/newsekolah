@@ -108,9 +108,11 @@
   },
   "paymentDesk": {
     "pickStudent": "Siswa",
-    "pickStudentPlaceholder": "Cari nama siswa",
+    "pickStudentPlaceholder": "Pilih siswa",
+    "pickStudentSearchPlaceholder": "Ketik nama siswa",
+    "pickStudentEmpty": "Tidak ada siswa yang cocok",
     "pickStudentTitle": "Pilih siswa",
-    "pickStudentBody": "Pilih siswa untuk melihat riwayat tagihan dan pembayarannya.",
+    "pickStudentBody": "Cari dan pilih siswa untuk melihat riwayat tagihan dan pembayarannya.",
     "emptyTitle": "Belum ada tagihan",
     "emptyBody": "Siswa ini belum memiliki tagihan tahun ajaran ini.",
     "dueDate": "jatuh tempo {date}",
@@ -121,8 +123,13 @@
     "status": {
       "unpaid": "Belum dibayar",
       "partial": "Dibayar sebagian",
-      "paid": "Lunas"
+      "paid": "Lunas",
+      "overdue": "Jatuh tempo"
     },
+    "totalOutstanding": "Total tunggakan",
+    "billCount": "Jumlah tagihan",
+    "overdueCount": "Jatuh tempo",
+    "shareReceipt": "Bagikan kwitansi",
     "method": {
       "cash": "Tunai",
       "bankTransfer": "Transfer bank",
@@ -175,7 +182,8 @@
       "label": "Status",
       "unpaid": "Belum dibayar",
       "partial": "Dibayar sebagian",
-      "paid": "Lunas"
+      "paid": "Lunas",
+      "overdue": "Jatuh tempo"
     },
     "detailTitle": "Detail tagihan",
     "originalAmount": "Jumlah awal",

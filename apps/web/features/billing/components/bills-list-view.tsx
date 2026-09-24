@@ -1,7 +1,7 @@
 "use client";
 
 import { type Locale, formatCurrency, formatDate } from "@newsekolah/i18n";
-import { Badge, Button, DataTable, EmptyState, Input, Select, domainIcons } from "@newsekolah/ui";
+import { Button, DataTable, EmptyState, Input, Select, domainIcons } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -12,6 +12,7 @@ import { useClassesQuery, useDirectoryQuery, useLookup } from "../../reference/a
 import { type Bill, type BillStatus, useBillsQuery } from "../api";
 
 import { BillDetailSheet } from "./bill-detail-sheet";
+import { BillStatusBadge } from "./bill-status-badge";
 
 const STATUS_VALUES: BillStatus[] = ["unpaid", "partial", "paid"];
 const ALL = "all";
@@ -90,11 +91,7 @@ export function BillsListView(): ReactElement {
         id: "status",
         header: t("columns.status"),
         enableSorting: false,
-        cell: ({ row }) => (
-          <Badge variant={row.original.status === "paid" ? "accent" : "neutral"}>
-            {t(`status.${row.original.status}`)}
-          </Badge>
-        ),
+        cell: ({ row }) => <BillStatusBadge bill={row.original} />,
       },
     ],
     [t, locale, studentMap],

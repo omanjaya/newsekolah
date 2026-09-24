@@ -466,6 +466,8 @@
       "form": {
         "createTitle": "Pengumuman baru",
         "editTitle": "Ubah pengumuman",
+        "tabCompose": "Tulis",
+        "tabPreview": "Pratinjau",
         "title": "Judul",
         "body": "Isi",
         "bodyHint": "Pisahkan paragraf dengan baris kosong.",
@@ -483,7 +485,13 @@
         "created": "Draf tersimpan",
         "updated": "Perubahan tersimpan",
         "requiredError": "Judul dan isi wajib diisi.",
-        "audienceError": "Pilih minimal satu penerima."
+        "audienceError": "Pilih minimal satu penerima.",
+        "previewAudienceLabel": "Ditujukan untuk",
+        "previewScheduleImmediate": "Tampil segera setelah diterbitkan",
+        "previewScheduleAt": "Tampil mulai {date}",
+        "previewUntitled": "(Tanpa judul)",
+        "previewEmptyBody": "(Isi belum ditulis)",
+        "previewHint": "Begini tampilan pengumuman ini bagi penerimanya."
       }
     },
     "duty": {

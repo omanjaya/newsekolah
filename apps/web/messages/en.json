@@ -466,6 +466,8 @@
       "form": {
         "createTitle": "New announcement",
         "editTitle": "Edit announcement",
+        "tabCompose": "Compose",
+        "tabPreview": "Preview",
         "title": "Title",
         "body": "Body",
         "bodyHint": "Separate paragraphs with a blank line.",
@@ -483,7 +485,13 @@
         "created": "Draft saved",
         "updated": "Changes saved",
         "requiredError": "Title and body are required.",
-        "audienceError": "Pick at least one recipient."
+        "audienceError": "Pick at least one recipient.",
+        "previewAudienceLabel": "Sent to",
+        "previewScheduleImmediate": "Appears right after publishing",
+        "previewScheduleAt": "Appears starting {date}",
+        "previewUntitled": "(No title)",
+        "previewEmptyBody": "(Body not written yet)",
+        "previewHint": "This is how this announcement will look to its recipients."
       }
     },
     "duty": {

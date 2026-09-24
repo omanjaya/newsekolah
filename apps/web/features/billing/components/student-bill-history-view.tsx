@@ -3,21 +3,24 @@
 import { ApiError } from "@newsekolah/api-client";
 import { type Locale, formatCurrency, formatDate } from "@newsekolah/i18n";
 import {
-  Badge,
   Button,
   Dialog,
   DialogContent,
   EmptyState,
   Skeleton,
+  Stat,
+  StatGrid,
   domainIcons,
   useToast,
 } from "@newsekolah/ui";
+import { Share2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
+import { todayInZone } from "../../../lib/tenant-date";
 import {
   type Bill,
   type Payment,
@@ -25,7 +28,10 @@ import {
   usePaymentReceiptUrlMutation,
   useStudentBillHistoryQuery,
 } from "../api";
+import { billDisplayStatus } from "../lib/bill-status";
+import { openOrShareReceipt } from "../lib/receipt";
 
+import { BillStatusBadge } from "./bill-status-badge";
 import { PaymentForm } from "./payment-form";
 import { VoidPaymentDialog } from "./void-payment-dialog";
 
@@ -35,16 +41,34 @@ const METHOD_KEY: Record<Payment["method"], string> = {
   other: "other",
 };
 
+/** Urgent bills (overdue, then partial, then not-yet-due unpaid) float above paid ones, most urgent first. */
+const DISPLAY_ORDER: Record<ReturnType<typeof billDisplayStatus>, number> = {
+  overdue: 0,
+  partial: 1,
+  unpaid: 2,
+  paid: 3,
+};
+
 /**
  * One student's full billing picture: every bill this year with its
  * payments, a "Pay" action per outstanding bill, and a "Void" action per
  * payment -- the front desk's own view, reached by picking a student in
- * `PaymentDeskView`.
+ * `PaymentDeskView`. A summary up top answers "how much does this family
+ * still owe" in one glance before scrolling the bill list, and the list
+ * itself sorts the bills that need attention (overdue, then partial) above
+ * ones that are already settled.
  */
-export function StudentBillHistoryView({ studentId }: { studentId: string }): ReactElement {
+export function StudentBillHistoryView({
+  studentId,
+  studentName,
+}: {
+  studentId: string;
+  studentName: string;
+}): ReactElement {
   const t = useTranslations("app.billing.paymentDesk");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
+  const locale = useLocale() as Locale;
   const canRecord = useCan("record_payments");
   const canVoid = useCan("void_payments");
   const { data, isLoading } = useStudentBillHistoryQuery(studentId);
@@ -53,12 +77,32 @@ export function StudentBillHistoryView({ studentId }: { studentId: string }): Re
   const [paying, setPaying] = useState<Bill | null>(null);
   const [voiding, setVoiding] = useState<{ payment: Payment; currency: string } | null>(null);
 
-  const entries = data?.data ?? [];
+  const today = todayInZone();
+  const entries = useMemo(() => {
+    const list = data?.data ?? [];
+    return [...list].sort(
+      (a, b) =>
+        DISPLAY_ORDER[billDisplayStatus(a.bill, today)] -
+        DISPLAY_ORDER[billDisplayStatus(b.bill, today)],
+    );
+  }, [data, today]);
+
+  const summary = useMemo(() => {
+    let outstanding = 0;
+    let overdueCount = 0;
+    let currency = "IDR";
+    for (const entry of data?.data ?? []) {
+      currency = entry.bill.currency;
+      outstanding += entry.bill.amount_minor - entry.bill.paid_amount_minor;
+      if (billDisplayStatus(entry.bill, today) === "overdue") overdueCount += 1;
+    }
+    return { outstanding, overdueCount, currency };
+  }, [data, today]);
 
   function downloadReceipt(paymentId: string) {
     receiptUrl.mutate(paymentId, {
       onSuccess: (result) => {
-        window.open(result.url, "_blank", "noopener,noreferrer");
+        void openOrShareReceipt(result.url, t("paymentForm.title"));
       },
       onError: (error) => {
         toast.error(
@@ -81,22 +125,35 @@ export function StudentBillHistoryView({ studentId }: { studentId: string }): Re
   }
 
   return (
-    <div className="flex flex-col gap-3">
-      {entries.map((entry) => (
-        <BillCard
-          key={entry.bill.id}
-          entry={entry}
-          canRecord={canRecord}
-          canVoid={canVoid}
-          onPay={() => {
-            setPaying(entry.bill);
-          }}
-          onVoid={(payment) => {
-            setVoiding({ payment, currency: entry.bill.currency });
-          }}
-          onDownloadReceipt={downloadReceipt}
-        />
-      ))}
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-2">
+        <h3 className="text-[15px] font-medium text-fg">{studentName}</h3>
+        <StatGrid className="rounded-sm border border-border bg-surface p-4 sm:grid-cols-2">
+          <Stat
+            label={t("totalOutstanding")}
+            value={formatCurrency(summary.outstanding, summary.currency, { locale })}
+          />
+          <Stat label={t("billCount")} value={entries.length} />
+        </StatGrid>
+      </div>
+
+      <div className="flex flex-col gap-3">
+        {entries.map((entry) => (
+          <BillCard
+            key={entry.bill.id}
+            entry={entry}
+            canRecord={canRecord}
+            canVoid={canVoid}
+            onPay={() => {
+              setPaying(entry.bill);
+            }}
+            onVoid={(payment) => {
+              setVoiding({ payment, currency: entry.bill.currency });
+            }}
+            onDownloadReceipt={downloadReceipt}
+          />
+        ))}
+      </div>
 
       <Dialog
         open={paying !== null}
@@ -160,11 +217,9 @@ function BillCard({
           <span className="text-[13px] text-fg [font-variant-numeric:tabular-nums]">
             {formatCurrency(bill.amount_minor, bill.currency, { locale })}
           </span>
-          <Badge variant={bill.status === "paid" ? "accent" : "neutral"}>
-            {t(`status.${bill.status}`)}
-          </Badge>
+          <BillStatusBadge bill={bill} namespace="app.billing.paymentDesk" />
           {canRecord && outstanding > 0 && (
-            <Button size="sm" onClick={onPay}>
+            <Button size="sm" className="min-h-11 md:min-h-9" onClick={onPay}>
               {t("pay")}
             </Button>
           )}
@@ -192,6 +247,8 @@ function BillCard({
                       <Button
                         size="sm"
                         variant="secondary"
+                        icon={<Share2 />}
+                        className="min-h-11 md:min-h-9"
                         onClick={() => {
                           onDownloadReceipt(payment.id);
                         }}
@@ -203,6 +260,7 @@ function BillCard({
                       <Button
                         size="sm"
                         variant="secondary"
+                        className="min-h-11 md:min-h-9"
                         onClick={() => {
                           onVoid(payment);
                         }}
