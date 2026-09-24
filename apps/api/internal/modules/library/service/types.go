@@ -14,6 +14,15 @@ type MemberListFilter struct {
 	Search       string
 }
 
+// MemberCardListFilter narrows Repository.ListMembersForCardPrint to the
+// member-type/class selection mode of bulk card printing (the explicit
+// member-ids mode goes through GetMembersByIDs instead, same as copy
+// labels' GetCopiesByIDs). At least one field is set by the caller.
+type MemberCardListFilter struct {
+	MemberTypeID uuid.NullUUID
+	ClassID      uuid.NullUUID
+}
+
 // ClearanceCounts is what domain.EligibleForClearance needs: the member's
 // active loans and unpaid violations right now.
 type ClearanceCounts struct {

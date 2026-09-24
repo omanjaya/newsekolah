@@ -167,6 +167,29 @@ func (r *Repository) ListMembers(ctx context.Context, tenantID uuid.UUID, filter
 	return toMembers(rows), nil
 }
 
+func (r *Repository) GetMembersByIDs(ctx context.Context, tenantID uuid.UUID, ids []uuid.UUID) ([]domain.Member, error) {
+	rows, err := r.queries(ctx).GetMembersByIDs(ctx, db.GetMembersByIDsParams{TenantID: tenantID, Ids: ids})
+	if err != nil {
+		return nil, fmt.Errorf("get members by ids: %w", err)
+	}
+	return toMembers(rows), nil
+}
+
+func (r *Repository) ListMembersForCardPrint(ctx context.Context, tenantID uuid.UUID, filter service.MemberCardListFilter, limit int) ([]domain.Member, error) {
+	params := db.ListMembersForCardPrintParams{TenantID: tenantID, Limit: int32(limit)} //nolint:gosec // clamped
+	if filter.MemberTypeID.Valid {
+		params.MemberTypeID = pdatabase.NullUUID(filter.MemberTypeID)
+	}
+	if filter.ClassID.Valid {
+		params.ClassID = pdatabase.NullUUID(filter.ClassID)
+	}
+	rows, err := r.queries(ctx).ListMembersForCardPrint(ctx, params)
+	if err != nil {
+		return nil, fmt.Errorf("list members for card print: %w", err)
+	}
+	return toMembers(rows), nil
+}
+
 func (r *Repository) UpdateMemberStatus(ctx context.Context, tenantID, userID uuid.UUID, status domain.MemberStatus, suspendedUntil *pgtype.Date) (domain.Member, bool, error) {
 	params := db.UpdateMemberStatusParams{TenantID: tenantID, UserID: userID, Status: string(status)}
 	if suspendedUntil != nil {

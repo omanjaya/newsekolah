@@ -641,6 +641,9 @@ type Querier interface {
 	GetMemberByNo(ctx context.Context, arg GetMemberByNoParams) (LibraryMember, error)
 	GetMemberType(ctx context.Context, arg GetMemberTypeParams) (LibraryMemberType, error)
 	GetMemberTypeByRole(ctx context.Context, arg GetMemberTypeByRoleParams) (LibraryMemberType, error)
+	// Bulk card printing's explicit member-ids mode (order is applied by the
+	// caller, same as GetCopiesByIDs for copy labels).
+	GetMembersByIDs(ctx context.Context, arg GetMembersByIDsParams) ([]LibraryMember, error)
 	GetMembership(ctx context.Context, arg GetMembershipParams) (ExtracurricularMembership, error)
 	GetMfaTotp(ctx context.Context, arg GetMfaTotpParams) (MfaTotp, error)
 	GetNotificationByID(ctx context.Context, arg GetNotificationByIDParams) (Notification, error)
@@ -1101,6 +1104,10 @@ type Querier interface {
 	ListMeetingsForClub(ctx context.Context, arg ListMeetingsForClubParams) ([]ExtracurricularMeeting, error)
 	ListMemberTypes(ctx context.Context, tenantID uuid.UUID) ([]LibraryMemberType, error)
 	ListMembers(ctx context.Context, arg ListMembersParams) ([]LibraryMember, error)
+	// Bulk card printing's member-type/class mode: members of one type
+	// and/or currently enrolled (active) in one class, up to limit rows,
+	// ordered by name.
+	ListMembersForCardPrint(ctx context.Context, arg ListMembersForCardPrintParams) ([]LibraryMember, error)
 	ListMembershipsForClub(ctx context.Context, arg ListMembershipsForClubParams) ([]ExtracurricularMembership, error)
 	ListMembershipsForStudent(ctx context.Context, arg ListMembershipsForStudentParams) ([]ListMembershipsForStudentRow, error)
 	ListNotificationPreferencesForUser(ctx context.Context, arg ListNotificationPreferencesForUserParams) ([]NotificationPreference, error)

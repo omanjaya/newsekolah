@@ -586,6 +586,42 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
 
+  /v1/library/members/cards:
+    post:
+      tags: [library]
+      operationId: printLibraryMemberCards
+      x-permission: manage_library_members
+      summary: >-
+        Printable membership cards for many members in one A4 PDF, 2 columns x 5
+        rows of 85.6x54mm cards per page -- by an explicit list of member (user)
+        ids, by member type, or by class (current active enrollment), up to 500
+        cards per print. Exactly one of member_ids or (member_type_id and/or
+        class_id) must be given.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                member_ids:
+                  type: array
+                  minItems: 1
+                  maxItems: 500
+                  items: { type: string, format: uuid }
+                member_type_id: { type: string, format: uuid }
+                class_id: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Cards PDF
+          content:
+            application/pdf:
+              schema: { type: string, format: binary }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
   /v1/library/titles/{titleId}/reservations:
     get:
       tags: [library]

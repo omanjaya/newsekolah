@@ -50,6 +50,29 @@ where m.tenant_id = $1
 order by u.name
 limit $2 offset $3;
 
+-- name: GetMembersByIDs :many
+-- Bulk card printing's explicit member-ids mode (order is applied by the
+-- caller, same as GetCopiesByIDs for copy labels).
+select * from library_members where tenant_id = $1 and user_id = any(sqlc.arg(ids)::uuid[]);
+
+-- name: ListMembersForCardPrint :many
+-- Bulk card printing's member-type/class mode: members of one type
+-- and/or currently enrolled (active) in one class, up to limit rows,
+-- ordered by name.
+select m.* from library_members m
+join users u on u.id = m.user_id
+where m.tenant_id = $1
+  and (sqlc.narg(member_type_id)::uuid is null or m.member_type_id = sqlc.narg(member_type_id)::uuid)
+  and (
+    sqlc.narg(class_id)::uuid is null
+    or exists (
+      select 1 from enrollments e
+      where e.tenant_id = m.tenant_id and e.student_user_id = m.user_id and e.status = 'active' and e.class_id = sqlc.narg(class_id)::uuid
+    )
+  )
+order by u.name
+limit $2;
+
 -- name: UpdateMemberStatus :one
 update library_members set status = $3, suspended_until = $4 where tenant_id = $1 and user_id = $2 returning *;
 
