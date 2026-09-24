@@ -36,7 +36,7 @@ func (s *Service) ScheduleObservation(ctx context.Context, tenantID uuid.UUID, i
 			return domain.ErrLessonNotResolved
 		}
 		scheduled := domain.ScheduledObservation{
-			CycleID: in.CycleID, ScheduleID: in.ScheduleID, LessonDate: in.LessonDate,
+			TenantID: tenantID, CycleID: in.CycleID, ScheduleID: in.ScheduleID, LessonDate: in.LessonDate,
 			TeacherUserID: lesson.TeacherUserID, ObserverUserID: in.ObserverUserID,
 		}
 		if err := scheduled.Validate(); err != nil {
