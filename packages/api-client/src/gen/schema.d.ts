@@ -6585,7 +6585,7 @@ export interface paths {
         };
         /**
          * Run one report and download it as XLSX or PDF
-         * @description format/title/letterhead/columns customise the downloaded file (see docs/05-shared-components.md, "Laporan dan ekspor"); every report kind accepts them, but only attendance.daily builds a fully reportdoc-backed document today -- other kinds still ignore letterhead/columns and always return XLSX. grade_level_id is an additional scope: attendance.daily accepts it in place of class_id to export one section per class in the grade level.
+         * @description format/title/letterhead/columns customise the downloaded file (see docs/05-shared-components.md, "Laporan dan ekspor"); every report kind accepts them. grade_level_id is an additional scope every class-scoped kind accepts in place of class_id, to export one section per class in the grade level; the two are mutually exclusive.
          */
         get: operations["exportReport"];
         put?: never;
@@ -11106,6 +11106,8 @@ export interface components {
         ReportScheduleParams: {
             /** Format: uuid */
             class_id?: string;
+            /** Format: uuid */
+            grade_level_id?: string;
             /** Format: uuid */
             subject_id?: string;
             /** Format: uuid */
@@ -25337,6 +25339,7 @@ export interface operations {
         parameters: {
             query?: {
                 class_id?: string;
+                /** @description Every class of this grade level, one section per class; mutually exclusive with class_id */
                 grade_level_id?: string;
                 subject_id?: string;
                 term_id?: string;
