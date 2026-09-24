@@ -8,38 +8,104 @@ import (
 	"github.com/google/uuid"
 
 	academicdomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/academic/domain"
+	academicservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/academic/service"
 	attendanceservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance/service"
 	disciplinedomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/discipline/domain"
 	disciplineservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/discipline/service"
 	familyservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/family/service"
 	gradingservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/grading/service"
 	identityservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/identity/service"
+	permitsdomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/domain"
 	permitsservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/service"
 	reportsservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/reports/service"
 	schooldomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/school/domain"
+	schoolservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/school/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 )
 
-// Report readers turn each module's own view types into the flat sheet the
-// report centre renders. Column headers stay English here: the workbook is
-// a data export, and the UI labels the report itself.
+// Report readers turn each module's own view types into the reportdoc.
+// Document the report centre renders (attendance.daily also keeps a
+// typed-rows path -- see DailyReportTypedRows -- for its reportdoc
+// migration; every other kind below builds its Document directly).
 
 type AttendanceReports struct{ Svc *attendanceservice.Service }
 
-func (a AttendanceReports) DailyReportRows(ctx context.Context, tenantID, classID uuid.UUID, date time.Time) (reportsservice.Sheet, error) {
+// DailyReportTypedRows is attendance.daily's rows, natively typed for
+// reportdoc.Section.Rows.
+func (a AttendanceReports) DailyReportTypedRows(ctx context.Context, tenantID, classID uuid.UUID, date time.Time) ([][]any, error) {
 	report, err := a.Svc.GetDailyReport(ctx, tenantID, classID, date)
 	if err != nil {
-		return reportsservice.Sheet{}, err
+		return nil, err
 	}
-	sheet := reportsservice.Sheet{
-		Title:   "Attendance",
-		Headers: []string{"No", "Name", "Status", "Expected Sessions", "Submitted Sessions", "Complete"},
-		Rows:    make([][]any, len(report.Students)),
-	}
+	rows := make([][]any, len(report.Students))
 	for i, s := range report.Students {
-		sheet.Rows[i] = []any{i + 1, s.Name, s.StatusCode, s.ExpectedSessions, s.SubmittedSessions, s.Complete}
+		rows[i] = []any{i + 1, s.Name, s.StatusCode, s.ExpectedSessions, s.SubmittedSessions, completeLabel(s.Complete)}
 	}
-	return sheet, nil
+	return rows, nil
+}
+
+func completeLabel(complete bool) string {
+	if complete {
+		return "Yes"
+	}
+	return "No"
+}
+
+// AcademicReports resolves the class(es) attendance.daily's grade-level
+// (angkatan) scope needs: School gives the active academic year,
+// Academic lists that year's classes for a grade level or a single class
+// by id. The other report kinds below resolve their own scope through
+// ReportsAcademic/ReportsYears instead (their column sets vary by scope
+// in ways reports.ClassRef does not capture, e.g. grading.report_scores'
+// per-component columns).
+type AcademicReports struct {
+	Academic *academicservice.Service
+	School   *schoolservice.Service
+}
+
+func (a AcademicReports) ClassByID(ctx context.Context, tenantID, classID uuid.UUID) (reportsservice.ClassRef, error) {
+	c, err := a.Academic.GetClass(ctx, tenantID, classID)
+	if err != nil {
+		return reportsservice.ClassRef{}, err
+	}
+	return reportsservice.ClassRef{ID: c.ID, Name: c.Name}, nil
+}
+
+// ClassesInGradeLevel resolves the active academic year through
+// School.GetActiveAcademicYear rather than the GetActiveAcademicYearID +
+// ActiveAcademicYearLabel pair: that pair is documented (school/service/
+// academic_year.go) as reusing an *already open* tenant transaction,
+// which this method -- called directly from reports/service.Service,
+// with no transaction of its own -- does not have. Calling it without one
+// silently returns "no active academic year" under RLS instead of the
+// row that is actually there. GetActiveAcademicYear opens its own
+// transaction, so it works from any caller.
+func (a AcademicReports) ClassesInGradeLevel(ctx context.Context, tenantID, gradeLevelID uuid.UUID) ([]reportsservice.ClassRef, error) {
+	year, ok, err := a.School.GetActiveAcademicYear(ctx, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
+		return nil, reportsservice.ErrNoActiveAcademicYear
+	}
+	classes, err := a.Academic.ListClassesByYearAndGradeLevel(ctx, tenantID, year.ID, gradeLevelID)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]reportsservice.ClassRef, len(classes))
+	for i, c := range classes {
+		out[i] = reportsservice.ClassRef{ID: c.ID, Name: c.Name}
+	}
+	return out, nil
+}
+
+// ReportHeaderReports loads a tenant's configured kop laporan and default
+// signature for reportdoc's LetterheadSource port (see
+// reportdoc.LetterheadSource's doc comment).
+type ReportHeaderReports struct{ Svc *schoolservice.Service }
+
+func (r ReportHeaderReports) Letterhead(ctx context.Context, tenantID uuid.UUID) (*reportdoc.Letterhead, *reportdoc.Signature, error) {
+	return r.Svc.ReportLetterhead(ctx, tenantID)
 }
 
 // ReportsAcademic is the reports module's narrow view of the academic
@@ -59,11 +125,8 @@ type ReportsAcademic interface {
 // ReportsYears resolves the active academic year, for a report's "Tahun
 // Ajaran" scope line. Implemented structurally by *school/service.Service.
 // GetActiveAcademicYear (not the two-call GetActiveAcademicYearID +
-// ActiveAcademicYearLabel pair other modules use) is deliberate: that
-// pair is documented as reusing an *already open* tenant transaction
-// (school/service/academic_year.go), which none of these readers have --
-// each owning module's own methods open their own. GetActiveAcademicYear
-// opens its own, and returns the Label alongside the ID in one call.
+// ActiveAcademicYearLabel pair other modules use) is deliberate: see
+// AcademicReports.ClassesInGradeLevel's doc comment for why.
 type ReportsYears interface {
 	GetActiveAcademicYear(ctx context.Context, tenantID uuid.UUID) (schooldomain.AcademicYear, bool, error)
 }
@@ -84,9 +147,9 @@ type reportScope struct {
 }
 
 // resolveScope turns a class_id/grade_level_id pair (already validated
-// mutually exclusive by reports/service.Run) into a reportScope: the
-// active year's classes for a grade level, or the single named class, or
-// -- for the reports whose class argument is optional -- neither.
+// mutually exclusive by reports/service.RunDocument) into a reportScope:
+// the active year's classes for a grade level, or the single named class,
+// or -- for the reports whose class argument is optional -- neither.
 func resolveScope(ctx context.Context, academic ReportsAcademic, years ReportsYears, tenantID uuid.UUID, classID, gradeLevelID uuid.NullUUID) (reportScope, error) {
 	year, ok, err := years.GetActiveAcademicYear(ctx, tenantID)
 	if err != nil {
@@ -140,6 +203,41 @@ func floatPtrOrNil(v *float64) any {
 		return nil
 	}
 	return *v
+}
+
+// permitsCategoryLabels and permitsStatusLabels mirror the exact
+// Indonesian wording apps/web/messages/id.json already uses for these
+// same enum values (leave request category and workflow status), so a
+// downloaded report reads the same as the screen it came from rather
+// than a raw storage code like "religious_ceremony".
+var permitsCategoryLabels = map[permitsdomain.Category]string{
+	permitsdomain.CategorySick:              "Sakit",
+	permitsdomain.CategoryReligiousCeremony: "Upacara keagamaan",
+	permitsdomain.CategoryDispensation:      "Dispensasi",
+	permitsdomain.CategoryOther:             "Lainnya",
+}
+
+func permitsCategoryLabel(c permitsdomain.Category) string {
+	if label, ok := permitsCategoryLabels[c]; ok {
+		return label
+	}
+	return string(c)
+}
+
+var permitsStatusLabels = map[permitsdomain.Status]string{
+	permitsdomain.StatusInProgress: "Berjalan",
+	permitsdomain.StatusApproved:   "Disetujui",
+	permitsdomain.StatusCompleted:  "Selesai",
+	permitsdomain.StatusRejected:   "Ditolak",
+	permitsdomain.StatusCancelled:  "Dibatalkan",
+	permitsdomain.StatusExpired:    "Kedaluwarsa",
+}
+
+func permitsStatusLabel(s permitsdomain.Status) string {
+	if label, ok := permitsStatusLabels[s]; ok {
+		return label
+	}
+	return string(s)
 }
 
 type DisciplineReports struct {
@@ -327,8 +425,8 @@ func (g GradingReports) ReportScoreRows(ctx context.Context, tenantID uuid.UUID,
 	}
 	if len(scope.Classes) == 0 {
 		// grading.report_scores' class argument is required (Catalog);
-		// Run's requireArgs already refuses a call that reaches here with
-		// neither class_id nor grade_level_id set.
+		// RunDocument's requireArgs already refuses a call that reaches
+		// here with neither class_id nor grade_level_id set.
 		return reportdoc.Document{}, reportsservice.ErrMissingArgument
 	}
 	if gradeLevelID.Valid {
@@ -473,8 +571,8 @@ func (p PermitsReports) leaveSection(ctx context.Context, tenantID uuid.UUID, cl
 	rows := make([][]any, len(items))
 	for i, item := range items {
 		rows[i] = []any{
-			i + 1, item.StudentNameSnapshot, item.ClassNameSnapshot, string(item.Category),
-			dateOrNil(item.StartsOn), dateOrNil(item.EndsOn), item.LetterNumber, string(item.Status),
+			i + 1, item.StudentNameSnapshot, item.ClassNameSnapshot, permitsCategoryLabel(item.Category),
+			dateOrNil(item.StartsOn), dateOrNil(item.EndsOn), item.LetterNumber, permitsStatusLabel(item.Status),
 		}
 	}
 	return reportdoc.Section{Name: name, Rows: rows}, nil
@@ -511,7 +609,7 @@ func (p PermitsReports) ExitPermitYearlyRows(ctx context.Context, tenantID uuid.
 		}
 		sectionRows[i] = []any{
 			i + 1, row.StudentNameSnapshot, row.ClassNameSnapshot, row.Destination,
-			dateOrNil(row.OpenedAt), string(row.Status), exitedAt,
+			dateOrNil(row.OpenedAt), permitsStatusLabel(row.Status), exitedAt,
 		}
 	}
 	return reportdoc.Document{

@@ -21,7 +21,14 @@ paths:
       tags: [reports]
       operationId: exportReport
       x-permission: authenticated
-      summary: Run one report and download it as XLSX
+      summary: Run one report and download it as XLSX or PDF
+      description: >
+        format/title/letterhead/columns customise the downloaded file (see
+        docs/05-shared-components.md, "Laporan dan ekspor"); every report
+        kind accepts them. grade_level_id is an additional scope every
+        class-scoped kind accepts in place of class_id, to export one
+        section per class in the grade level; the two are mutually
+        exclusive.
       parameters:
         - { name: reportKind, in: path, required: true, schema: { type: string } }
         - { name: class_id, in: query, schema: { type: string, format: uuid } }
@@ -34,33 +41,18 @@ paths:
         - { name: subject_id, in: query, schema: { type: string, format: uuid } }
         - { name: term_id, in: query, schema: { type: string, format: uuid } }
         - { name: date, in: query, schema: { type: string, format: date } }
-        - {
-            name: format,
-            in: query,
-            description: "File type to render; defaults to xlsx when omitted",
-            schema: { type: string, enum: [xlsx, pdf] },
-          }
-        - {
-            name: title,
-            in: query,
-            description: "Overrides the report's default title",
-            schema: { type: string },
-          }
-        - {
-            name: letterhead,
-            in: query,
-            description: "Print the tenant's configured kop laporan; defaults to true (shown when the tenant has one configured)",
-            schema: { type: boolean },
-          }
+        - { name: format, in: query, schema: { type: string, enum: [xlsx, pdf], default: xlsx } }
+        - { name: title, in: query, schema: { type: string, maxLength: 200 } }
+        - { name: letterhead, in: query, schema: { type: boolean, default: true } }
         - {
             name: columns,
             in: query,
-            description: "Comma-separated column keys, each optionally renamed as key:label (URL-encoded); omitted keeps every column in its default order",
             schema: { type: string },
+            description: "Comma-separated column keys, each optionally `key:Label` (URL-encoded); empty/absent keeps every column.",
           }
       responses:
         "200":
-          description: Rendered report
+          description: Workbook or PDF, depending on format
           content:
             application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
               schema: { type: string, format: binary }
@@ -198,7 +190,7 @@ components:
   schemas:
     ReportArgumentKind:
       type: string
-      enum: [class, subject, date, term]
+      enum: [class, grade_level, subject, date, term]
     ReportArgument:
       type: object
       required: [name, kind, required]

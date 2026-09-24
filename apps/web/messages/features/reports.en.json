@@ -105,7 +105,23 @@
     "subjectPlaceholder": "Select a subject",
     "date": "Date",
     "term": "Term",
-    "termPlaceholder": "Select a term"
+    "termPlaceholder": "Select a term",
+    "scope": "Scope",
+    "scopeClass": "Class",
+    "scopeGradeLevel": "Grade level",
+    "gradeLevel": "Grade level",
+    "gradeLevelPlaceholder": "Select a grade level"
+  },
+  "attendanceDaily": {
+    "defaultTitle": "Daily Attendance",
+    "columns": {
+      "no": "No",
+      "name": "Name",
+      "status": "Status",
+      "expected_sessions": "Expected Sessions",
+      "submitted_sessions": "Submitted Sessions",
+      "complete": "Complete"
+    }
   },
   "kinds": {
     "attendance_daily": {

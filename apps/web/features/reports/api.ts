@@ -3,6 +3,7 @@
 import { ApiError, type components } from "@newsekolah/api-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import type { ReportExportOptions } from "../../components/report-export-dialog";
 import { getAccessToken } from "../../lib/api/access-token";
 import { useApiClient } from "../../lib/api/client";
 import { API_URL } from "../../lib/env";
@@ -51,6 +52,7 @@ export function useReportTermsQuery(enabled: boolean) {
 
 export interface ReportExportArgs {
   class_id?: string;
+  /** All classes of one grade level in a single export, one section per class. Mutually exclusive with class_id. */
   grade_level_id?: string;
   subject_id?: string;
   term_id?: string;
@@ -92,6 +94,28 @@ function buildExportQuery(args: ReportExportArgs): string {
   return query ? `?${query}` : "";
 }
 
+/**
+ * Encodes one chosen column as the `columns` query param's `key` or
+ * `key:Label` form (see docs/05-shared-components.md "Laporan dan
+ * ekspor"). The label half is URL-encoded on its own so a comma or colon
+ * in a user-typed label cannot be mistaken for the list/key separators.
+ */
+function encodeColumnChoice(choice: { key: string; label?: string }): string {
+  return choice.label ? `${choice.key}:${encodeURIComponent(choice.label)}` : choice.key;
+}
+
+/** Adds format/title/letterhead/columns on top of {@link buildExportQuery}'s scope args. */
+function buildCustomExportQuery(args: ReportExportArgs, options: ReportExportOptions): string {
+  const params = new URLSearchParams(buildExportQuery(args).replace(/^\?/, ""));
+  params.set("format", options.format);
+  params.set("title", options.title);
+  params.set("letterhead", options.showLetterhead ? "true" : "false");
+  if (options.columns.length > 0) {
+    params.set("columns", options.columns.map(encodeColumnChoice).join(","));
+  }
+  return `?${params.toString()}`;
+}
+
 async function readErrorCode(response: Response): Promise<string> {
   try {
     const body: unknown = await response.json();
@@ -104,6 +128,34 @@ async function readErrorCode(response: Response): Promise<string> {
   return "UNKNOWN";
 }
 
+/** Triggers a browser download of `blob` under `filename`, then releases the object URL. */
+function saveBlob(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob);
+  try {
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+async function fetchExport(reportKind: string, query: string): Promise<Blob> {
+  const token = getAccessToken();
+  const response = await fetch(
+    `${API_URL}/v1/reports/${encodeURIComponent(reportKind)}/export${query}`,
+    { headers: token ? { Authorization: `Bearer ${token}` } : undefined },
+  );
+  if (!response.ok) {
+    const code = await readErrorCode(response);
+    throw new ApiError({ status: response.status, code, message: code });
+  }
+  return response.blob();
+}
+
 /**
  * Runs a report export and saves the resulting workbook. Uses a direct
  * `fetch` rather than the shared API client: the client parses every
@@ -113,29 +165,25 @@ export async function downloadReportExport(
   reportKind: string,
   args: ReportExportArgs,
 ): Promise<void> {
-  const token = getAccessToken();
-  const response = await fetch(
-    `${API_URL}/v1/reports/${encodeURIComponent(reportKind)}/export${buildExportQuery(args)}`,
-    {
-      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-    },
-  );
-  if (!response.ok) {
-    const code = await readErrorCode(response);
-    throw new ApiError({ status: response.status, code, message: code });
-  }
-  const blob = await response.blob();
-  const url = URL.createObjectURL(blob);
-  try {
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = buildReportFileName(reportKind, args);
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-  } finally {
-    URL.revokeObjectURL(url);
-  }
+  const blob = await fetchExport(reportKind, buildExportQuery(args));
+  saveBlob(blob, buildReportFileName(reportKind, args));
+}
+
+/**
+ * The customisable export used by {@link ReportExportDialog}: same
+ * endpoint, with format/title/letterhead/columns added to the query per
+ * docs/05-shared-components.md "Laporan dan ekspor". `reportKind.<ext>` is
+ * used as the file name since `options.title` may contain characters that
+ * are awkward in a downloaded file name.
+ */
+export async function downloadCustomReportExport(
+  reportKind: string,
+  args: ReportExportArgs,
+  options: ReportExportOptions,
+): Promise<void> {
+  const blob = await fetchExport(reportKind, buildCustomExportQuery(args, options));
+  const extension = options.format === "pdf" ? "pdf" : "xlsx";
+  saveBlob(blob, `${reportKind}.${extension}`);
 }
 
 // Scheduled exports.

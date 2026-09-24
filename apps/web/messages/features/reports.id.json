@@ -105,7 +105,23 @@
     "subjectPlaceholder": "Pilih mata pelajaran",
     "date": "Tanggal",
     "term": "Semester",
-    "termPlaceholder": "Pilih semester"
+    "termPlaceholder": "Pilih semester",
+    "scope": "Cakupan",
+    "scopeClass": "Kelas",
+    "scopeGradeLevel": "Tingkat (angkatan)",
+    "gradeLevel": "Tingkat",
+    "gradeLevelPlaceholder": "Pilih tingkat"
+  },
+  "attendanceDaily": {
+    "defaultTitle": "Presensi Harian",
+    "columns": {
+      "no": "No",
+      "name": "Nama",
+      "status": "Status",
+      "expected_sessions": "Sesi Wajib",
+      "submitted_sessions": "Sesi Terkirim",
+      "complete": "Lengkap"
+    }
   },
   "kinds": {
     "attendance_daily": {

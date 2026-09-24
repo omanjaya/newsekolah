@@ -15,6 +15,7 @@ import (
 	transporthttp "github.com/omanjaya/newsekolah/apps/api/internal/modules/reports/transport/http"
 	transportjobs "github.com/omanjaya/newsekolah/apps/api/internal/modules/reports/transport/jobs"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 )
 
 type Dependencies struct {
@@ -23,10 +24,6 @@ type Dependencies struct {
 	Discipline service.DisciplineReader
 	Grading    service.GradingReader
 	Permits    service.PermitsReader
-	// Letterhead resolves a tenant's kop laporan and default signature
-	// block for every rendered export; nil omits it from every document
-	// (Run degrades gracefully, see LetterheadReader's doc comment).
-	Letterhead service.LetterheadReader
 	Perms      transporthttp.PermissionChecker
 	// Emails validates that a schedule's recipients are tenant users; nil
 	// disables that check (only wired this way in tests).
@@ -35,6 +32,14 @@ type Dependencies struct {
 	// periodic job's RegisterJobs registration entirely.
 	Storage service.ScheduleStorage
 	Clock   clock.Clock
+	// Academic resolves grade-level scope for every class-scoped report's
+	// reportdoc export (one section per class in a grade level); nil
+	// makes a grade_level_id export fail with ErrReportNotFound.
+	// Letterhead loads the tenant's kop laporan and default signature for
+	// every rendered export; nil renders without one even when the
+	// caller asked for it.
+	Academic   service.AcademicReader
+	Letterhead reportdoc.LetterheadSource
 }
 
 type Module struct {
@@ -44,7 +49,8 @@ type Module struct {
 }
 
 func Register(deps Dependencies) *Module {
-	svc := service.New(deps.Attendance, deps.Discipline, deps.Grading, deps.Permits, deps.Letterhead)
+	svc := service.New(deps.Attendance, deps.Discipline, deps.Grading, deps.Permits)
+	svc.SetReportDocDependencies(deps.Academic, deps.Letterhead)
 
 	clk := deps.Clock
 	if clk == nil {

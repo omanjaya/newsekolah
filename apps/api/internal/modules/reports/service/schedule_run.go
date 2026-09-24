@@ -97,7 +97,7 @@ func (s *ScheduleService) runOne(ctx context.Context, tenantID uuid.UUID, sched 
 	format := sched.Format.WithDefault()
 	opts := reportdoc.Options{Format: reportdoc.Format(format), ShowLetterhead: true}
 
-	rendered, contentType, err := s.reports.Run(ctx, tenantID, Kind(sched.ReportKind), args, opts)
+	rendered, contentType, err := s.reports.RunDocument(ctx, tenantID, Kind(sched.ReportKind), args, opts)
 	if err != nil {
 		s.failRun(ctx, tenantID, run.ID, fmt.Sprintf("render: %v", err))
 		return PendingNotification{}, false, nil

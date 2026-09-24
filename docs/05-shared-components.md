@@ -88,3 +88,58 @@ Setiap komponen di `packages/ui` punya story (tema terang/gelap, RTL tidak diper
 3. Komponen fitur (`apps/web/features/*/components`) boleh memakai hook data dan hanya dipakai dalam fiturnya; bila dipakai fitur kedua, pindahkan ke `packages/ui`.
 4. Tidak ada emoji dan tidak ada ikon selain Lucide.
 5. Semua string lewat i18n; komponen menerima label sebagai props atau memakai kunci pesan bersama.
+
+## 10. Laporan dan ekspor
+
+Fondasi untuk laporan yang bisa diunduh dengan kop laporan dan kolom yang bisa disesuaikan pengguna, per kelas maupun per angkatan (satu tingkat kelas). Bagian ini meringkas kontraknya; detail implementasi ada di komentar paket masing-masing.
+
+### `reportdoc` (`apps/api/internal/platform/reportdoc`)
+
+Paket platform leaf (tanpa akses DB, tanpa impor modul, sama seperti `platform/documents`) yang merender satu `Document` generik menjadi XLSX (`excelize`) atau PDF (`go-pdf/fpdf`):
+
+- `Document{Letterhead, Title, Scope []ScopeLine, Columns []Column, Sections []Section, Signature, PageLabelFormat}`. Satu `Section` = satu sheet (XLSX) atau satu kelompok halaman (PDF) — laporan satu kelas punya satu `Section`, laporan satu angkatan punya satu `Section` per kelas.
+- `Column{Key, Label, Kind (text|number|date|percent), Width}`. `Key` adalah nama mesin yang stabil, dirujuk oleh `Options.Columns`; `Label` yang tampil ke pengguna boleh diganti tanpa mengubah `Key`.
+- `Options{Format (xlsx|pdf), Title, ShowLetterhead, Columns []ColumnChoice{Key, Label}}` lalu `Apply(doc, opts) (Document, error)` menyaring dan mengurutkan ulang `Columns` beserta setiap baris di `Sections`. Key yang tidak dikenal mengembalikan `*UnknownColumnError` (dipetakan ke 400 di lapisan HTTP).
+- `RenderXLSX`/`RenderPDF` menggambar kop laporan (logo + baris teks), judul, baris cakupan (`Scope`), header tabel yang di-bold/freeze/autofilter (XLSX) atau diulang tiap halaman (PDF), sel bertipe (angka tetap numerik, tanggal tetap tanggal), baris total opsional, dan blok tanda tangan. PDF memilih potret/lanskap dari total lebar kolom, dan nomor halaman memakai `Document.PageLabelFormat` (mis. `"Halaman {page} dari {pages}"`) — teks selalu dari pemanggil, tidak pernah di-hardcode di paket ini.
+- `reportdoc.LetterheadSource` adalah interface kecil (`Letterhead(ctx, tenantID) (*Letterhead, *Signature, error)`) yang diimplementasikan modul mana pun yang tahu cara memuat kop laporan tenant. Lihat komentar paketnya untuk pola adaptor.
+
+### Pengaturan tenant "Kop laporan" (modul `school`)
+
+Disimpan sebagai satu baris `tenant_settings` (`key = "report_header.config"`, `value` jsonb) — tidak perlu migrasi baru karena tabel key/value generik ini sudah ada untuk `branding.*`. Bentuknya: `{show_logo, lines (1-5), place, signers []{role_label, name, id_label, id_number}}`, divalidasi oleh `domain.ValidateReportHeaderWrite`.
+
+Endpoint (izin `manage_settings`, sama seperti branding):
+
+- `GET/PUT /v1/tenant/report-header`
+- `GET /v1/tenant/report-header/preview?format=pdf|xlsx` — merender contoh dokumen dengan kop laporan yang tersimpan, dipakai halaman pengaturan untuk pratinjau langsung.
+
+`school/service.Service.ReportLetterhead(ctx, tenantID) (*reportdoc.Letterhead, *reportdoc.Signature, error)` adalah helper yang diekspor untuk modul lain: ia memuat `ReportHeader`, dan bila `show_logo` aktif, mengunduh logo branding tenant lewat `storage.Client.DownloadBounded` (hanya PNG/JPEG yang bisa ditanam ke dokumen; WebP/SVG diabaikan secara diam-diam, baris teks tetap tampil). Modul lain tidak memanggil paket ini langsung — selalu lewat adaptor sempit di `apps/api/internal/wiring` (lihat `wiring.ReportHeaderReports`), pola yang sama dengan setiap pembacaan lintas modul lain di `docs/03-layered-architecture.md` bagian 1.
+
+### Kontrak query param ekspor
+
+`GET /v1/reports/{reportKind}/export` (permission per-report dari katalog) menerima, selain parameter cakupan yang sudah ada (`class_id`, `subject_id`, `term_id`, `date`):
+
+| Param            | Bentuk            | Default              | Keterangan                                                                             |
+| ---------------- | ----------------- | -------------------- | -------------------------------------------------------------------------------------- |
+| `grade_level_id` | uuid              | -                    | Cakupan angkatan; untuk `attendance.daily`, satu section per kelas di tingkat tersebut |
+| `format`         | `xlsx` \| `pdf`   | `xlsx`               |                                                                                        |
+| `title`          | string            | judul bawaan laporan |                                                                                        |
+| `letterhead`     | `true` \| `false` | `true`               |                                                                                        |
+| `columns`        | string            | kosong = semua kolom | Daftar dipisah koma, tiap entri `key` atau `key:Label` (Label di-`encodeURIComponent`) |
+
+Hari ini hanya `attendance.daily` yang sudah pindah ke `reportdoc` sepenuhnya (lihat `reports/service.Service.RunDocument`); kind lain tetap memakai jalur `Run`/XLSX lama tanpa berubah, terlepas dari `format` yang dikirim.
+
+### `ReportExportDialog` (`apps/web/components/report-export-dialog.tsx`)
+
+Dialog unduh laporan yang dipakai bersama: kontrol format (Excel/PDF), input judul, switch "Tampilkan kop laporan", daftar kolom (checkbox + label bisa diedit + naik/turun, bisa dioperasikan keyboard, target sentuh besar di HP), dan "Pulihkan default". Dialog ini tidak pernah memanggil jaringan sendiri — `onExport(options)` yang melakukan unduhan (biasanya lewat helper fetch-ke-blob terautentikasi yang sudah ada, `apps/web/features/reports/api.ts`'s `downloadReportExport`/`downloadCustomReportExport`). Pilihan terakhir (format, kop laporan, kolom termasuk urutan/label/keterpilihan) disimpan di `localStorage["newsekolah:report-export:<reportKey>"]`, dibungkus try/catch.
+
+Props: `{ open, onOpenChange, reportKey, defaultTitle, availableColumns: {key,label}[], scopeSlot?, onExport(options) }`. `options` yang dikirim ke `onExport`: `{ format, title, showLetterhead, columns: {key, label?}[] }`.
+
+Halaman pengaturan "Kop laporan" ada di `/settings/report-header` (`apps/web/features/settings/components/report-header-view.tsx`), dengan pratinjau PDF langsung (`<iframe>` di desktop, tombol "Lihat pratinjau" di HP) memakai `GET /v1/tenant/report-header/preview`.
+
+### Daftar periksa migrasi satu jenis laporan
+
+1. Di sisi Go: tentukan `Key` yang stabil untuk tiap kolom laporan (jangan pakai label yang tampil), bangun `reportdoc.Document` dari data modul, tambahkan `RunDocument`-setara atau perluas fungsi render laporan itu untuk menerima `reportdoc.Options` dan memanggil `reportdoc.Apply` lalu `RenderXLSX`/`RenderPDF`. Pertahankan jalur lama tetap berfungsi untuk pemanggil yang belum pindah.
+2. Tambahkan `format`, `title`, `letterhead`, `columns` (dan argumen cakupan baru bila perlu, mis. `grade_level_id`) ke operasi OpenAPI laporan tersebut di `openapi/modules/reports.yaml`, lalu `pnpm openapi:bundle` dan `make api-gen` (sqlc + oapi-codegen).
+3. Panggil `service.ReportLetterhead`-setara (lewat adaptor `wiring`) untuk mengisi `Document.Letterhead`/`Document.Signature` bila laporan itu memang dicetak/diarsipkan.
+4. Di sisi web: daftar `availableColumns` (key + label i18n), render `ReportExportDialog` (dengan `scopeSlot` bila laporan itu punya kontrol cakupan sendiri seperti kelas/angkatan/rentang tanggal), panggil `downloadCustomReportExport` (atau bangun URL query sendiri mengikuti kontrak di atas) dari `onExport`.
+5. `pnpm --filter @newsekolah/api-client generate` supaya tipe TypeScript ikut ter-update, lalu `pnpm typecheck && pnpm --filter web lint && pnpm --filter web test`.

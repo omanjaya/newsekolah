@@ -231,10 +231,12 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		Emails:  identityModule.Service,
 		Storage: sharedStorage,
 		Clock:   clock.Real{},
-		// Letterhead is left unwired until the tenant "report header"
-		// setting (kop laporan + default signers) lands; see this
-		// branch's final report for what that piece needs to satisfy
-		// (service.LetterheadReader).
+		// attendance.daily's reportdoc export: grade-level class
+		// resolution and the tenant's kop laporan. The same source now
+		// backs every migrated report kind's document, not just
+		// attendance.daily.
+		Academic:   wiring.AcademicReports{Academic: academicModule.Service, School: schoolModule.Service},
+		Letterhead: wiring.ReportHeaderReports{Svc: schoolModule.Service},
 	})
 
 	// Background jobs: every module registers its workers on one River

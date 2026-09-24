@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"net/url"
 	"strings"
 
 	"github.com/google/uuid"
@@ -48,41 +49,22 @@ func mapError(err error) error {
 		errors.Is(err, service.ErrSubjectNotOffered),
 		errors.Is(err, service.ErrNoActiveAcademicYear),
 		errors.Is(err, disciplinedomain.ErrNoActiveAcademicYear),
-		errors.Is(err, gradingdomain.ErrNoActiveAcademicYear),
-		errors.Is(err, reportdoc.ErrUnknownColumn):
+		errors.Is(err, gradingdomain.ErrNoActiveAcademicYear):
 		return httpx.ErrValidation
 	case errors.Is(err, academicdomain.ErrClassNotFound),
 		errors.Is(err, academicdomain.ErrGradeLevelNotFound),
 		errors.Is(err, academicdomain.ErrSubjectNotFound):
 		return httpx.ErrNotFound
 	}
+	var unknownColumn *reportdoc.UnknownColumnError
+	if errors.As(err, &unknownColumn) {
+		return httpx.ErrValidation.WithDetails(httpx.ErrorDetail{Field: "columns", Code: "UNKNOWN_COLUMN"})
+	}
 	var appErr *httpx.Error
 	if errors.As(err, &appErr) {
 		return appErr
 	}
 	return httpx.Internal(err)
-}
-
-// parseColumns turns the export endpoint's "columns" query parameter --
-// a comma-separated list of column keys, each optionally renamed as
-// key:label -- into reportdoc's ColumnChoice slice. An empty string
-// (the parameter omitted) returns nil, which reportdoc.Apply treats as
-// "keep every column in its default order".
-func parseColumns(raw string) []reportdoc.ColumnChoice {
-	if raw == "" {
-		return nil
-	}
-	parts := strings.Split(raw, ",")
-	choices := make([]reportdoc.ColumnChoice, 0, len(parts))
-	for _, part := range parts {
-		part = strings.TrimSpace(part)
-		if part == "" {
-			continue
-		}
-		key, label, _ := strings.Cut(part, ":")
-		choices = append(choices, reportdoc.ColumnChoice{Key: key, Label: label})
-	}
-	return choices
 }
 
 func (h *ReportsHandler) permissions(ctx context.Context) authz.Set {
@@ -141,36 +123,47 @@ func (h *ReportsHandler) ExportReport(ctx context.Context, request api.ExportRep
 		args.Date = &date
 	}
 
-	opts := reportdoc.Options{
-		Format: reportdoc.FormatXLSX,
-		// Letterhead defaults on: an existing caller (the mobile app)
-		// that never sends this parameter keeps getting one when the
-		// tenant has configured it, matching the pre-migration behaviour.
-		ShowLetterhead: true,
-	}
-	if request.Params.Format != nil {
-		opts.Format = reportdoc.Format(*request.Params.Format)
-	}
-	if request.Params.Title != nil {
-		opts.Title = *request.Params.Title
-	}
-	if request.Params.Letterhead != nil {
-		opts.ShowLetterhead = *request.Params.Letterhead
-	}
-	if request.Params.Columns != nil {
-		opts.Columns = parseColumns(*request.Params.Columns)
-	}
-
-	rendered, contentType, err := h.service.Run(ctx, tenantID(ctx), kind, args, opts)
+	opts := exportOptionsFromParams(request.Params)
+	out, contentType, err := h.service.RunDocument(ctx, tenantID(ctx), kind, args, opts)
 	if err != nil {
 		return nil, mapError(err)
 	}
-	if contentType == "application/pdf" {
-		return api.ExportReport200ApplicationpdfResponse{
-			Body: bytes.NewReader(rendered), ContentLength: int64(len(rendered)),
-		}, nil
+	if contentType == service.PDFContentType {
+		return api.ExportReport200ApplicationpdfResponse{Body: bytes.NewReader(out), ContentLength: int64(len(out))}, nil
 	}
 	return api.ExportReport200ApplicationvndOpenxmlformatsOfficedocumentSpreadsheetmlSheetResponse{
-		Body: bytes.NewReader(rendered), ContentLength: int64(len(rendered)),
+		Body: bytes.NewReader(out), ContentLength: int64(len(out)),
 	}, nil
+}
+
+// exportOptionsFromParams decodes format/title/letterhead/columns into
+// reportdoc.Options. letterhead defaults to true (a report a school
+// downloads is normally meant to be printed/filed with its kop laporan);
+// columns is a comma list of `key` or `key:Label`, the label URL-decoded
+// -- see openapi/modules/reports.yaml's exportReport description.
+func exportOptionsFromParams(params api.ExportReportParams) reportdoc.Options {
+	opts := reportdoc.Options{Format: reportdoc.FormatXLSX, ShowLetterhead: true}
+	if params.Format != nil && reportdoc.Format(*params.Format).Valid() {
+		opts.Format = reportdoc.Format(*params.Format)
+	}
+	if params.Title != nil {
+		opts.Title = *params.Title
+	}
+	if params.Letterhead != nil {
+		opts.ShowLetterhead = *params.Letterhead
+	}
+	if params.Columns != nil && *params.Columns != "" {
+		for _, part := range strings.Split(*params.Columns, ",") {
+			part = strings.TrimSpace(part)
+			if part == "" {
+				continue
+			}
+			key, label, _ := strings.Cut(part, ":")
+			if decoded, err := url.QueryUnescape(label); err == nil {
+				label = decoded
+			}
+			opts.Columns = append(opts.Columns, reportdoc.ColumnChoice{Key: key, Label: label})
+		}
+	}
+	return opts
 }

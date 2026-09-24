@@ -6,6 +6,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"strings"
 	"time"
 
@@ -31,6 +32,9 @@ type Repository interface {
 	ListBrandingSettings(ctx context.Context, tenantID uuid.UUID) (map[string]string, error)
 	SetBrandingSetting(ctx context.Context, tenantID, actorID uuid.UUID, key, value string) error
 	CreateAssetRecord(ctx context.Context, in NewAsset) (AssetRecord, error)
+
+	GetTenantSettingJSON(ctx context.Context, tenantID uuid.UUID, key string) (json.RawMessage, bool, error)
+	SetTenantSettingJSON(ctx context.Context, tenantID, actorID uuid.UUID, key string, value json.RawMessage) error
 
 	CreateAcademicYear(ctx context.Context, tenantID uuid.UUID, label string, startsOn, endsOn time.Time) (domain.AcademicYear, error)
 	GetActiveAcademicYear(ctx context.Context, tenantID uuid.UUID) (domain.AcademicYear, bool, error)
