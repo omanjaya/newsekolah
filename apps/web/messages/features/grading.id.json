@@ -39,23 +39,42 @@
     "exportScopeClass": "Kelas",
     "exportScopeGradeLevel": "Angkatan",
     "exportScopeClassPlaceholder": "Pilih kelas",
-    "exportScopeGradeLevelPlaceholder": "Pilih angkatan"
+    "exportScopeGradeLevelPlaceholder": "Pilih angkatan",
+    "publishedBadge": "Diterbitkan",
+    "draftBadge": "Draf"
   },
   "table": {
     "studentColumn": "Nama siswa",
     "editComponent": "Ubah komponen {code}",
     "weightLabel": "Bobot {weight}",
     "saveColumn": "Simpan",
+    "saveAll": "Simpan semua",
+    "saveHint": "Semua nilai tersimpan.",
     "averageColumn": "Rata-rata",
     "reportScoreColumn": "Nilai rapor",
+    "reportScorePending": "Diperbarui setelah disimpan",
     "starsColumn": "Bintang",
     "scoreFor": "Nilai {code} untuk {name}",
     "starsFor": "Atur bintang {name}",
+    "rowChanged": "Baris ini berubah",
     "noComponents": "Belum ada komponen penilaian untuk mapel ini.",
     "noMatch": "Tidak ada siswa yang cocok dengan pencarian.",
-    "scoresSaved": "Nilai kolom tersimpan.",
+    "scoresSaved": "Nilai tersimpan pukul {time}.",
     "unsavedChanges": "{count, plural, other {# perubahan belum tersimpan}}",
-    "discardChanges": "Perubahan nilai yang belum tersimpan akan hilang. Lanjutkan?"
+    "discardChanges": "Perubahan nilai yang belum tersimpan akan hilang. Lanjutkan?",
+    "retry": "Coba lagi",
+    "missingCount": "{count, plural, other {# kosong}}",
+    "validationError": "Perbaiki nilai di luar rentang {min}-{max} sebelum menyimpan.",
+    "draftFoundTitle": "Ada draf nilai yang belum tersimpan",
+    "draftFoundBody": "Draf terakhir disimpan pukul {time}, dari perangkat ini.",
+    "draftRestore": "Pulihkan draf",
+    "draftDismiss": "Abaikan",
+    "entryMode": {
+      "label": "Mode isi nilai",
+      "component": "Per komponen",
+      "student": "Per siswa",
+      "componentPicker": "Pilih komponen penilaian"
+    }
   },
   "componentDialog": {
     "editTitle": "Ubah komponen",
