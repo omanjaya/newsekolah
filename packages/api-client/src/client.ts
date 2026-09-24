@@ -230,6 +230,18 @@ export function createApiClient(options: CreateApiClientOptions): NewsekolahApiC
     return (await options.getAccessToken()) ?? lastRefreshed;
   }
 
+  // A Request's body can be read exactly once -- by the time onResponse
+  // sees `request`, coreFetch has already sent it and its body stream (if
+  // any) is spent, so `new Request(request, ...)` for a retry throws
+  // "already been used" for every mutating method. onRequest clones the
+  // request (headers -- Idempotency-Key included -- and body) before it is
+  // sent, while the body is still untouched, and stashes the untouched
+  // clone here for onResponse to rebuild a retry from; a GET has no body,
+  // so cloning it is just cheap insurance. Keyed by the original request
+  // object identity, so no explicit cleanup is needed: the entry drops out
+  // once that request is no longer reachable.
+  const retrySeeds = new WeakMap<Request, Request>();
+
   const middleware: Middleware = {
     async onRequest({ request }) {
       if (!(await currentToken())) {
@@ -248,6 +260,7 @@ export function createApiClient(options: CreateApiClientOptions): NewsekolahApiC
       if (MUTATING_METHODS.includes(method) && !request.headers.has("Idempotency-Key")) {
         request.headers.set("Idempotency-Key", randomUUID());
       }
+      retrySeeds.set(request, request.clone());
       return request;
     },
     async onResponse({ request, response }) {
@@ -269,9 +282,13 @@ export function createApiClient(options: CreateApiClientOptions): NewsekolahApiC
       if (!newToken) {
         return response;
       }
-      const retryHeaders = new Headers(request.headers);
+      // Same Idempotency-Key (and same body) as the first attempt, carried
+      // over from the untouched clone -- this retry must read as the exact
+      // same logical request to the server, not a new one.
+      const seed = retrySeeds.get(request) ?? request;
+      const retryHeaders = new Headers(seed.headers);
       retryHeaders.set("Authorization", `Bearer ${newToken}`);
-      return fetch(new Request(request, { headers: retryHeaders }));
+      return fetch(new Request(seed, { headers: retryHeaders }));
     },
   };
   raw.use(middleware);

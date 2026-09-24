@@ -183,6 +183,42 @@ describe("createApiClient", () => {
     expect(tokenStore.accessTokenHistory).toEqual(["fresh-token"]);
   });
 
+  it("reuses the same Idempotency-Key across the automatic 401-refresh retry", async () => {
+    const seenKeys: (string | null)[] = [];
+    server.use(
+      http.post(`${BASE_URL}/v1/billing/payments`, ({ request }) => {
+        seenKeys.push(request.headers.get("idempotency-key"));
+        const auth = request.headers.get("authorization");
+        if (auth !== "Bearer fresh-token") {
+          return HttpResponse.json(errorBody("AUTH_TOKEN_EXPIRED"), { status: 401 });
+        }
+        return HttpResponse.json({ id: "p1" }, { status: 201 });
+      }),
+      http.post(`${BASE_URL}/v1/auth/refresh`, () =>
+        HttpResponse.json({ access_token: "fresh-token" }),
+      ),
+    );
+
+    const client = createApiClient({
+      baseUrl: BASE_URL,
+      getAccessToken: () => "expired",
+      clientHeader: "mobile/ios/1.0.0",
+      tokenStore: createMemoryTokenStore("refresh-abc"),
+    });
+
+    const result = await client.POST("/v1/billing/payments", { body: {} as never });
+
+    expect(result).toEqual({ id: "p1" });
+    // One key sent with the first (401) attempt, the same key sent again
+    // on the transparent retry -- a client-driven retry of the *same*
+    // logical request must never mint a second key, or the server's
+    // idempotency store would treat it as an unrelated request and
+    // double-run the payment.
+    expect(seenKeys).toHaveLength(2);
+    expect(seenKeys[0]).toEqual(expect.any(String));
+    expect(seenKeys[1]).toBe(seenKeys[0]);
+  });
+
   it("single-flights concurrent refreshes: two 401s trigger only one /v1/auth/refresh call", async () => {
     let refreshCalls = 0;
     server.use(
