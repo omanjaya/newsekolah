@@ -103,10 +103,19 @@ type Sheet struct {
 type AttendanceReader interface {
 	DailyReportRows(ctx context.Context, tenantID, classID uuid.UUID, date time.Time) (Sheet, error)
 	// DailyReportTypedRows is DailyReportRows' data, natively typed
-	// (int/string, not everything stringified) for RunDocument's
+	// (int/string/bool, not everything stringified) for RunDocument's
 	// reportdoc.Document -- attendance.daily's reportdoc migration; every
 	// other report kind still only needs DailyReportRows' flat Sheet.
+	// The status cell is the raw tenant/policy code (or the special
+	// "NONE"/"INCOMPLETE"/"MIXED"), and complete is a native bool --
+	// RunDocument resolves both to the export's own locale via
+	// StatusLabels, since this port itself has no locale.
 	DailyReportTypedRows(ctx context.Context, tenantID, classID uuid.UUID, date time.Time) ([][]any, error)
+	// StatusLabels returns the tenant's configured attendance status
+	// policy as code -> display label (e.g. "H" -> "Hadir"), already in
+	// whatever language the tenant chose when configuring it (tenant
+	// content, not translated per report locale).
+	StatusLabels(ctx context.Context, tenantID uuid.UUID) (map[string]string, error)
 }
 
 // ClassRef is the handful of class fields a report needs to label a
@@ -124,6 +133,9 @@ type ClassRef struct {
 type AcademicReader interface {
 	ClassByID(ctx context.Context, tenantID, classID uuid.UUID) (ClassRef, error)
 	ClassesInGradeLevel(ctx context.Context, tenantID, gradeLevelID uuid.UUID) ([]ClassRef, error)
+	// GradeLevelName resolves a grade level's own name (e.g. "Kelas X"),
+	// for a grade-level export's "Angkatan: Kelas X" scope line.
+	GradeLevelName(ctx context.Context, tenantID, gradeLevelID uuid.UUID) (string, error)
 }
 
 type DisciplineReader interface {
@@ -191,13 +203,17 @@ func (s *Service) Run(ctx context.Context, tenantID uuid.UUID, kind Kind, args R
 }
 
 // RunDocument renders kind for a download, honouring opts (format, title,
-// letterhead, column subset/order/labels). Only attendance.daily has
-// migrated onto reportdoc so far (docs/05-shared-components.md's
-// migration checklist covers every other kind): every other kind falls
-// back to the legacy Run/XLSX path regardless of opts.Format, so it keeps
-// working exactly as before this endpoint grew customisation options.
-// The returned string is the response's content type.
-func (s *Service) RunDocument(ctx context.Context, tenantID uuid.UUID, kind Kind, args RunArgs, opts reportdoc.Options) ([]byte, string, error) {
+// letterhead, column subset/order/labels) and locale (an
+// platform/i18n-style "id"/"en" code -- the tenant's own configured
+// locale, resolved by the caller, since a generated document follows the
+// school's language, not the requester's Accept-Language). Only
+// attendance.daily has migrated onto reportdoc so far
+// (docs/05-shared-components.md's migration checklist covers every other
+// kind): every other kind falls back to the legacy Run/XLSX path
+// regardless of opts.Format or locale, so it keeps working exactly as
+// before this endpoint grew customisation options. The returned string
+// is the response's content type.
+func (s *Service) RunDocument(ctx context.Context, tenantID uuid.UUID, kind Kind, args RunArgs, opts reportdoc.Options, locale string) ([]byte, string, error) {
 	def, ok := Find(kind)
 	if !ok {
 		return nil, "", ErrReportNotFound
@@ -223,6 +239,10 @@ func (s *Service) RunDocument(ctx context.Context, tenantID uuid.UUID, kind Kind
 	if err != nil {
 		return nil, "", err
 	}
+	statusLabels, err := s.attendance.StatusLabels(ctx, tenantID)
+	if err != nil {
+		statusLabels = nil // degrade to the special-code fallback text rather than failing the export
+	}
 
 	sections := make([]reportdoc.Section, 0, len(classes))
 	for _, c := range classes {
@@ -230,21 +250,27 @@ func (s *Service) RunDocument(ctx context.Context, tenantID uuid.UUID, kind Kind
 		if err != nil {
 			return nil, "", err
 		}
-		sections = append(sections, reportdoc.Section{Name: c.Name, Rows: rows})
+		sections = append(sections, reportdoc.Section{Name: c.Name, Rows: translateAttendanceDailyRows(rows, locale, statusLabels)})
+	}
+
+	gradeLevelName := ""
+	if args.GradeLevelID.Valid && s.academic != nil {
+		gradeLevelName, _ = s.academic.GradeLevelName(ctx, tenantID, args.GradeLevelID.UUID)
 	}
 
 	doc := reportdoc.Document{
-		Title:           "Attendance Daily Report",
-		Scope:           attendanceDailyScope(args, classes),
-		Columns:         attendanceDailyColumns(),
+		Title:           attendanceDailyText(locale, "title"),
+		Scope:           attendanceDailyScope(locale, args, classes, gradeLevelName),
+		Columns:         attendanceDailyColumns(locale),
 		Sections:        sections,
-		PageLabelFormat: "Page {page} of {pages}",
+		PageLabelFormat: reportdoc.PageLabel(locale),
+		EmptyRowsLabel:  reportdoc.EmptyRowsLabelFor(locale),
 	}
 	if s.letterhead != nil {
 		if lh, sig, err := s.letterhead.Letterhead(ctx, tenantID); err == nil {
 			doc.Letterhead = lh
 			if sig != nil {
-				sig.Date = args.Date.Format("2006-01-02")
+				sig.Date = reportdoc.FormatDate(locale, *args.Date)
 				doc.Signature = sig
 			}
 		}
@@ -287,33 +313,126 @@ func (s *Service) resolveClasses(ctx context.Context, tenantID uuid.UUID, args R
 	return []ClassRef{{ID: args.ClassID.UUID, Name: name}}, nil
 }
 
-// attendanceDailyScope builds the "Class: X-1" / "Grade Level: X" /
-// "Date: 2026-09-01" lines describing what this export covers.
-func attendanceDailyScope(args RunArgs, classes []ClassRef) []reportdoc.ScopeLine {
+// attendanceDailyScope builds the "Kelas: X-1" / "Angkatan: Kelas X" /
+// "Tanggal: 2 September 2026" lines describing what this export covers,
+// in locale. gradeLevelName is "" when it could not be resolved (no
+// academic.AcademicReader wired, or the lookup failed); the scope line
+// then falls back to a class count rather than silently disappearing.
+func attendanceDailyScope(locale string, args RunArgs, classes []ClassRef, gradeLevelName string) []reportdoc.ScopeLine {
 	var scope []reportdoc.ScopeLine
 	switch {
 	case args.GradeLevelID.Valid:
-		scope = append(scope, reportdoc.ScopeLine{Label: "Grade Level", Value: fmt.Sprintf("%d classes", len(classes))})
+		value := gradeLevelName
+		if value == "" {
+			value = fmt.Sprintf("%d %s", len(classes), attendanceDailyText(locale, "classesUnit"))
+		}
+		scope = append(scope, reportdoc.ScopeLine{Label: attendanceDailyText(locale, "scopeGradeLevel"), Value: value})
 	case len(classes) == 1:
-		scope = append(scope, reportdoc.ScopeLine{Label: "Class", Value: classes[0].Name})
+		scope = append(scope, reportdoc.ScopeLine{Label: attendanceDailyText(locale, "scopeClass"), Value: classes[0].Name})
 	}
 	if args.Date != nil {
-		scope = append(scope, reportdoc.ScopeLine{Label: "Date", Value: args.Date.Format("2006-01-02")})
+		scope = append(scope, reportdoc.ScopeLine{Label: attendanceDailyText(locale, "scopeDate"), Value: reportdoc.FormatDate(locale, *args.Date)})
 	}
 	return scope
 }
 
 // attendanceDailyColumns is attendance.daily's full column set -- the
 // same six fields DailyReportRows' Sheet has always had, now with a
-// stable Key and a Kind for reportdoc's typed cells.
-func attendanceDailyColumns() []reportdoc.Column {
+// stable Key, a Kind for reportdoc's typed cells, and a locale-correct
+// Label. The Key never changes with locale: Options.Columns (and any
+// saved column preference) refers to it.
+func attendanceDailyColumns(locale string) []reportdoc.Column {
 	return []reportdoc.Column{
-		{Key: "no", Label: "No", Kind: reportdoc.ColumnNumber, Width: 5},
-		{Key: "name", Label: "Name", Kind: reportdoc.ColumnText, Width: 28},
-		{Key: "status", Label: "Status", Kind: reportdoc.ColumnText, Width: 12},
-		{Key: "expected_sessions", Label: "Expected Sessions", Kind: reportdoc.ColumnNumber, Width: 14},
-		{Key: "submitted_sessions", Label: "Submitted Sessions", Kind: reportdoc.ColumnNumber, Width: 14},
-		{Key: "complete", Label: "Complete", Kind: reportdoc.ColumnText, Width: 10},
+		{Key: "no", Label: attendanceDailyText(locale, "colNo"), Kind: reportdoc.ColumnNumber, Width: 5},
+		{Key: "name", Label: attendanceDailyText(locale, "colName"), Kind: reportdoc.ColumnText, Width: 28},
+		{Key: "status", Label: attendanceDailyText(locale, "colStatus"), Kind: reportdoc.ColumnText, Width: 12},
+		{Key: "expected_sessions", Label: attendanceDailyText(locale, "colExpected"), Kind: reportdoc.ColumnNumber, Width: 14},
+		{Key: "submitted_sessions", Label: attendanceDailyText(locale, "colSubmitted"), Kind: reportdoc.ColumnNumber, Width: 14},
+		{Key: "complete", Label: attendanceDailyText(locale, "colComplete"), Kind: reportdoc.ColumnText, Width: 10},
+	}
+}
+
+// attendanceDailyVocabulary is attendance.daily's own small id/en
+// vocabulary: the title, scope labels, column labels, and the words for
+// "yes"/"no" and the special status codes DailyReportTypedRows can
+// return (NONE/INCOMPLETE/MIXED are not tenant content -- a tenant's own
+// status codes are translated via StatusLabels instead, see
+// translateAttendanceDailyRows). Other migrated report kinds get their
+// own such table; reportdoc itself stays free of this vocabulary (see
+// its package doc comment).
+var attendanceDailyVocabulary = map[string]map[string]string{
+	reportdoc.LocaleID: {
+		"title":           "Presensi Harian",
+		"scopeGradeLevel": "Angkatan", "scopeClass": "Kelas", "scopeDate": "Tanggal", "classesUnit": "kelas",
+		"colNo": "No", "colName": "Nama", "colStatus": "Status",
+		"colExpected": "Jumlah Sesi Diharapkan", "colSubmitted": "Jumlah Sesi Terisi", "colComplete": "Lengkap",
+		"yes": "Ya", "no": "Tidak",
+		"statusNone": "-", "statusIncomplete": "Belum Lengkap", "statusMixed": "Campuran",
+	},
+	reportdoc.LocaleEN: {
+		"title":           "Attendance Daily Report",
+		"scopeGradeLevel": "Grade Level", "scopeClass": "Class", "scopeDate": "Date", "classesUnit": "classes",
+		"colNo": "No", "colName": "Name", "colStatus": "Status",
+		"colExpected": "Expected Sessions", "colSubmitted": "Submitted Sessions", "colComplete": "Complete",
+		"yes": "Yes", "no": "No",
+		"statusNone": "-", "statusIncomplete": "Incomplete", "statusMixed": "Mixed",
+	},
+}
+
+func attendanceDailyText(locale, key string) string {
+	if m, ok := attendanceDailyVocabulary[locale]; ok {
+		if v, ok := m[key]; ok {
+			return v
+		}
+	}
+	return attendanceDailyVocabulary[reportdoc.LocaleEN][key]
+}
+
+// translateAttendanceDailyRows resolves DailyReportTypedRows' raw status
+// code (column index 2) and native bool complete (column index 5) to
+// locale-correct display text: a tenant's own status code goes through
+// statusLabels (its own configured label, e.g. "H" -> "Hadir", tenant
+// content that is never translated by locale); the special codes
+// NONE/INCOMPLETE/MIXED and the complete bool go through
+// attendanceDailyVocabulary since those are this package's own words.
+// rows itself is never mutated; a new slice of new rows is returned.
+func translateAttendanceDailyRows(rows [][]any, locale string, statusLabels map[string]string) [][]any {
+	const statusCol, completeCol = 2, 5
+	out := make([][]any, len(rows))
+	for i, row := range rows {
+		translated := append([]any(nil), row...)
+		if statusCol < len(translated) {
+			if code, ok := translated[statusCol].(string); ok {
+				translated[statusCol] = attendanceStatusText(locale, code, statusLabels)
+			}
+		}
+		if completeCol < len(translated) {
+			if complete, ok := translated[completeCol].(bool); ok {
+				key := "no"
+				if complete {
+					key = "yes"
+				}
+				translated[completeCol] = attendanceDailyText(locale, key)
+			}
+		}
+		out[i] = translated
+	}
+	return out
+}
+
+func attendanceStatusText(locale, code string, statusLabels map[string]string) string {
+	if label, ok := statusLabels[code]; ok && label != "" {
+		return label
+	}
+	switch code {
+	case "NONE":
+		return attendanceDailyText(locale, "statusNone")
+	case "INCOMPLETE":
+		return attendanceDailyText(locale, "statusIncomplete")
+	case "MIXED":
+		return attendanceDailyText(locale, "statusMixed")
+	default:
+		return code
 	}
 }
 

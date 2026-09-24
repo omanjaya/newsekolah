@@ -16,20 +16,26 @@ func TestManualDump(t *testing.T) {
 
 	doc := Document{
 		Letterhead: &Letterhead{
-			Logo:  testPNG(t, 240, 240),
-			Lines: []string{"SMA Negeri 1 Denpasar", "Jl. Kamboja No. 4, Denpasar", "Telp. (0361) 123456"},
+			Logo: testPNG(t, 240, 240),
+			Lines: []string{
+				"Yayasan Pendidikan Dharma Praja",
+				"SMA Negeri 1 Denpasar",
+				"Jl. Kamboja No. 4, Denpasar",
+				"Telp. (0361) 123456",
+			},
+			Emphasis: 1, // the school name, not the foundation line
 		},
 		Title: "Presensi Harian",
 		Scope: []ScopeLine{
 			{Label: "Kelas", Value: "X-1"},
-			{Label: "Tanggal", Value: "1 September 2026"},
+			{Label: "Tanggal", Value: FormatDate(LocaleID, time.Date(2026, 9, 1, 0, 0, 0, 0, time.UTC))},
 		},
 		Columns: []Column{
 			{Key: "no", Label: "No", Kind: ColumnNumber, Width: 5},
 			{Key: "name", Label: "Nama Siswa", Kind: ColumnText, Width: 28},
 			{Key: "status", Label: "Status", Kind: ColumnText, Width: 12},
-			{Key: "expected", Label: "Jumlah Sesi", Kind: ColumnNumber, Width: 12},
-			{Key: "submitted", Label: "Sesi Terisi", Kind: ColumnNumber, Width: 12},
+			{Key: "expected", Label: "Jumlah Sesi Diharapkan", Kind: ColumnNumber, Width: 12},
+			{Key: "submitted", Label: "Jumlah Sesi Terisi", Kind: ColumnNumber, Width: 12},
 			{Key: "complete", Label: "Lengkap", Kind: ColumnPercent, Width: 12},
 		},
 		Sections: []Section{
@@ -42,17 +48,18 @@ func TestManualDump(t *testing.T) {
 				},
 				Footer: [][]any{{nil, "Total", nil, 18, 17, 0.94}},
 			},
+			{Name: "X-2"}, // no rows: exercises EmptyRowsLabel
 		},
 		Signature: &Signature{
-			Place: "Denpasar", Date: "1 September 2026",
+			Place: "Denpasar", Date: FormatDate(LocaleID, time.Date(2026, 9, 1, 0, 0, 0, 0, time.UTC)),
 			Signers: []Signer{
 				{RoleLabel: "Wali Kelas", Name: "Ni Made Sari, S.Pd.", IDLabel: "NIP", IDNumber: "198001012005011001"},
 				{RoleLabel: "Kepala Sekolah", Name: "I Wayan Arta, M.Pd.", IDLabel: "NIP", IDNumber: "197001011999031002"},
 			},
 		},
-		PageLabelFormat: "Halaman {page} dari {pages}",
+		PageLabelFormat: PageLabel(LocaleID),
+		EmptyRowsLabel:  EmptyRowsLabelFor(LocaleID),
 	}
-	_ = time.Now()
 
 	xlsx, err := RenderXLSX(doc)
 	if err != nil {

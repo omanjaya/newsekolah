@@ -11533,8 +11533,10 @@ export interface components {
         ReportHeaderWrite: {
             /** @description Print the tenant's branding logo above the letterhead lines (PNG/JPEG only; other formats are skipped). */
             show_logo: boolean;
-            /** @description First line is conventionally the school name and renders bold. */
+            /** @description Kop laporan text lines, e.g. foundation name, school name, address, phone. */
             lines: string[];
+            /** @description Index into lines that is the school name (rendered bold and larger). Omit for automatic selection (matches the tenant name, else the second-to-last line). */
+            emphasis?: number;
             place: string;
             signers: components["schemas"]["ReportHeaderSigner"][];
         };
