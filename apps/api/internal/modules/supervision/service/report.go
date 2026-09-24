@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -109,21 +108,6 @@ func teacherReportRow(criteria []domain.Criterion, obs domain.Observation) []any
 	return row
 }
 
-// indonesianDayMonthNames is a stand-in for a shared Indonesian date-
-// formatting helper the reportdoc foundation is adding (see
-// apps/api/internal/platform/reportdoc's package comment); swap this for
-// that helper once it lands.
-var indonesianDayMonthNames = [...]string{
-	"Januari", "Februari", "Maret", "April", "Mei", "Juni",
-	"Juli", "Agustus", "September", "Oktober", "November", "Desember",
-}
-
-// indonesianDate renders t as "22 September 2026", the long form every
-// formal Indonesian report/letter uses for a signature date.
-func indonesianDate(t time.Time) string {
-	return fmt.Sprintf("%d %s %d", t.Day(), indonesianDayMonthNames[t.Month()-1], t.Year())
-}
-
 // lastObserverName resolves the name of whoever conducted the most recent
 // observation in the report -- the "Pengawas" signer on the formal PDF
 // report, since a cycle keeps no single supervisor of its own (each
@@ -143,12 +127,14 @@ func (s *Service) lastObserverName(ctx context.Context, tenantID uuid.UUID, obse
 }
 
 // ExportTeacherReport renders a teacher's cycle report per opts (format,
-// title override, letterhead visibility, column subset/order). The PDF
-// format reads as a formal supervision report: the tenant's kop laporan
-// (when configured), the observation table, and a two-signer signature
-// block for the supervisor who conducted the observations and the
-// principal.
-func (s *Service) ExportTeacherReport(ctx context.Context, tenantID, cycleID, teacherUserID uuid.UUID, opts reportdoc.Options) ([]byte, error) {
+// title override, letterhead visibility, column subset/order), following
+// locale (the caller's resolved tenant locale) for every piece of
+// generated text: the signature date, the PDF page-number footer, and
+// the empty-section placeholder. The PDF format reads as a formal
+// supervision report: the tenant's kop laporan (when configured), the
+// observation table, and a two-signer signature block for the supervisor
+// who conducted the observations and the principal.
+func (s *Service) ExportTeacherReport(ctx context.Context, tenantID, cycleID, teacherUserID uuid.UUID, locale string, opts reportdoc.Options) ([]byte, error) {
 	report, err := s.TeacherReport(ctx, tenantID, cycleID, teacherUserID)
 	if err != nil {
 		return nil, err
@@ -158,7 +144,7 @@ func (s *Service) ExportTeacherReport(ctx context.Context, tenantID, cycleID, te
 		return nil, err
 	}
 
-	doc := buildTeacherReportDocument(report, supervisorName, s.clock.Now())
+	doc := buildTeacherReportDocument(report, supervisorName, s.clock.Now(), locale)
 	if s.letterhead != nil {
 		if lh, _, err := s.letterhead.Letterhead(ctx, tenantID); err == nil {
 			// The report's own two-signer block (supervisor, principal)
@@ -178,7 +164,7 @@ func (s *Service) ExportTeacherReport(ctx context.Context, tenantID, cycleID, te
 // signature block for the supervisor who conducted the observations and
 // the principal. Kept separate from the database reads above so it can be
 // unit tested without a fixture.
-func buildTeacherReportDocument(report TeacherCycleReport, supervisorName string, now time.Time) reportdoc.Document {
+func buildTeacherReportDocument(report TeacherCycleReport, supervisorName string, now time.Time, locale string) reportdoc.Document {
 	criteria := report.Cycle.Instrument.Criteria
 	rows := make([][]any, len(report.Observations))
 	for i, obs := range report.Observations {
@@ -194,12 +180,14 @@ func buildTeacherReportDocument(report TeacherCycleReport, supervisorName string
 		Columns:  teacherReportColumns(criteria),
 		Sections: []reportdoc.Section{{Name: report.TeacherName, Rows: rows}},
 		Signature: &reportdoc.Signature{
-			Date: indonesianDate(now),
+			Date: reportdoc.FormatDate(locale, now),
 			Signers: []reportdoc.Signer{
 				{RoleLabel: "Pengawas", Name: supervisorName},
 				{RoleLabel: "Kepala Sekolah"},
 			},
 		},
+		PageLabelFormat: reportdoc.PageLabel(locale),
+		EmptyRowsLabel:  reportdoc.EmptyRowsLabelFor(locale),
 	}
 }
 

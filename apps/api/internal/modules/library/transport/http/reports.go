@@ -78,7 +78,7 @@ func (h *LibraryHandler) GetLibraryLoansReportXlsx(ctx context.Context, request 
 	from, to := reportPeriod(request.Params.From, request.Params.To)
 	p := request.Params
 	opts := libraryReportOptions(p.Format, p.Title, p.Letterhead, p.Columns)
-	body, err := h.service.ExportLoansReport(ctx, tenantID(ctx), from, to, opts)
+	body, err := h.service.ExportLoansReport(ctx, tenantID(ctx), from, to, tenantLocale(ctx), opts)
 	if err != nil {
 		return nil, mapReportError(err)
 	}
@@ -107,7 +107,7 @@ func (h *LibraryHandler) GetLibraryOverdueMembersReport(ctx context.Context, _ a
 func (h *LibraryHandler) GetLibraryOverdueMembersReportXlsx(ctx context.Context, request api.GetLibraryOverdueMembersReportXlsxRequestObject) (api.GetLibraryOverdueMembersReportXlsxResponseObject, error) {
 	p := request.Params
 	opts := libraryReportOptions(p.Format, p.Title, p.Letterhead, p.Columns)
-	body, err := h.service.ExportOverdueMembersReport(ctx, tenantID(ctx), opts)
+	body, err := h.service.ExportOverdueMembersReport(ctx, tenantID(ctx), tenantLocale(ctx), opts)
 	if err != nil {
 		return nil, mapReportError(err)
 	}
@@ -136,7 +136,7 @@ func (h *LibraryHandler) GetLibraryMostBorrowedReportXlsx(ctx context.Context, r
 	from, to := reportPeriod(request.Params.From, request.Params.To)
 	p := request.Params
 	opts := libraryReportOptions(p.Format, p.Title, p.Letterhead, p.Columns)
-	body, err := h.service.ExportMostBorrowedReport(ctx, tenantID(ctx), from, to, intOr(p.Limit, 20), opts)
+	body, err := h.service.ExportMostBorrowedReport(ctx, tenantID(ctx), from, to, intOr(p.Limit, 20), tenantLocale(ctx), opts)
 	if err != nil {
 		return nil, mapReportError(err)
 	}
@@ -183,7 +183,7 @@ func (h *LibraryHandler) GetLibraryVisitsReportXlsx(ctx context.Context, request
 	from, to := reportPeriod(request.Params.From, request.Params.To)
 	p := request.Params
 	opts := libraryReportOptions(p.Format, p.Title, p.Letterhead, p.Columns)
-	body, err := h.service.ExportVisitsReport(ctx, tenantID(ctx), from, to, opts)
+	body, err := h.service.ExportVisitsReport(ctx, tenantID(ctx), from, to, tenantLocale(ctx), opts)
 	if err != nil {
 		return nil, mapReportError(err)
 	}
@@ -208,7 +208,7 @@ func (h *LibraryHandler) GetLibraryMembersReport(ctx context.Context, _ api.GetL
 func (h *LibraryHandler) GetLibraryMembersReportXlsx(ctx context.Context, request api.GetLibraryMembersReportXlsxRequestObject) (api.GetLibraryMembersReportXlsxResponseObject, error) {
 	p := request.Params
 	opts := libraryReportOptions(p.Format, p.Title, p.Letterhead, p.Columns)
-	body, err := h.service.ExportMembersReport(ctx, tenantID(ctx), opts)
+	body, err := h.service.ExportMembersReport(ctx, tenantID(ctx), tenantLocale(ctx), opts)
 	if err != nil {
 		return nil, mapReportError(err)
 	}
@@ -253,7 +253,7 @@ func (h *LibraryHandler) GetLibraryAccessionRegisterReportXlsx(ctx context.Conte
 	from, to := reportPeriod(request.Params.From, request.Params.To)
 	p := request.Params
 	opts := libraryReportOptions(p.Format, p.Title, p.Letterhead, p.Columns)
-	body, err := h.service.ExportAccessionRegisterReport(ctx, tenantID(ctx), from, to, opts)
+	body, err := h.service.ExportAccessionRegisterReport(ctx, tenantID(ctx), from, to, tenantLocale(ctx), opts)
 	if err != nil {
 		return nil, mapReportError(err)
 	}

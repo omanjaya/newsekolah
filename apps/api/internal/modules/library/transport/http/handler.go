@@ -14,6 +14,8 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/library/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/library/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/i18n"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/tenant"
 )
 
 type LibraryHandler struct{ service *service.Service }
@@ -22,6 +24,17 @@ func New(svc *service.Service) *LibraryHandler { return &LibraryHandler{service:
 
 func tenantID(ctx context.Context) uuid.UUID { id, _ := httpx.TenantIDFromContext(ctx); return id }
 func userID(ctx context.Context) uuid.UUID   { id, _ := httpx.UserIDFromContext(ctx); return id }
+
+// tenantLocale resolves the current request's tenant to a locale
+// reportdoc's FormatDate/PageLabel/EmptyRowsLabelFor understand,
+// defaulting to Indonesian. Mirrors reports/transport/http.tenantLocale.
+func tenantLocale(ctx context.Context) string {
+	t, ok := tenant.FromContext(ctx)
+	if !ok {
+		return i18n.DefaultLocale
+	}
+	return i18n.FromTenantLocale(t.Locale)
+}
 
 var errorMap = map[error]*httpx.Error{
 	domain.ErrTitleNotFound:          httpx.ErrLibraryTitleNotFound,

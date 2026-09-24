@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -48,25 +47,26 @@ func sourceLabel(source domain.Source) string {
 	}
 }
 
-// indonesianMonthNames is a stand-in for a shared Indonesian date-
-// formatting helper the reportdoc foundation is adding (see
-// apps/api/internal/platform/reportdoc's package comment); swap this for
-// that helper once it lands instead of keeping a local copy in every
-// module report.go.
-var indonesianMonthNames = [...]string{
+// indonesianMonths is the month-name half of reportdoc.FormatDate a
+// "Bulan" (month/year, no day) scope line needs and reportdoc.FormatDate
+// does not expose on its own (it always anchors on a specific day).
+var indonesianMonths = [...]string{
 	"Januari", "Februari", "Maret", "April", "Mei", "Juni",
 	"Juli", "Agustus", "September", "Oktober", "November", "Desember",
 }
 
-// indonesianMonth turns a "YYYY-MM" month string into "<Nama Bulan> YYYY"
-// for a report's scope line, falling back to the raw string if it does
-// not parse.
-func indonesianMonth(month string) string {
+// monthScopeValue turns a "YYYY-MM" month string into a locale-correct
+// "<Month> <Year>" for a report's scope line, falling back to the raw
+// string if it does not parse.
+func monthScopeValue(locale, month string) string {
 	t, err := time.Parse("2006-01", month)
 	if err != nil {
 		return month
 	}
-	return fmt.Sprintf("%s %d", indonesianMonthNames[t.Month()-1], t.Year())
+	if locale == reportdoc.LocaleID {
+		return indonesianMonths[t.Month()-1] + " " + t.Format("2006")
+	}
+	return t.Format("January 2006")
 }
 
 // monthlyRecapColumns is the stable column set every monthly recap export
@@ -147,19 +147,22 @@ func (s *Service) withLetterhead(ctx context.Context, tenantID uuid.UUID, doc re
 }
 
 // ExportMonthlyRecapReport renders one employee's monthly recap per opts
-// (format, title override, letterhead visibility, column subset/order).
-func (s *Service) ExportMonthlyRecapReport(ctx context.Context, tenantID, employeeUserID uuid.UUID, month string, opts reportdoc.Options) ([]byte, error) {
+// (format, title override, letterhead visibility, column subset/order),
+// following locale (the caller's resolved tenant locale) for every piece
+// of generated text: the scope line, the PDF page-number footer, and the
+// empty-section placeholder.
+func (s *Service) ExportMonthlyRecapReport(ctx context.Context, tenantID, employeeUserID uuid.UUID, month, locale string, opts reportdoc.Options) ([]byte, error) {
 	recap, err := s.GetMonthlyRecap(ctx, tenantID, employeeUserID, month)
 	if err != nil {
 		return nil, err
 	}
 	doc := reportdoc.Document{
-		Title:   "Rekap Bulanan Presensi Pegawai",
-		Scope:   []reportdoc.ScopeLine{{Label: "Bulan", Value: indonesianMonth(month)}, {Label: "Pegawai", Value: recap.EmployeeName}},
-		Columns: monthlyRecapColumns(),
-		Sections: []reportdoc.Section{
-			monthlyRecapSection(recap),
-		},
+		Title:           "Rekap Bulanan Presensi Pegawai",
+		Scope:           []reportdoc.ScopeLine{{Label: "Bulan", Value: monthScopeValue(locale, month)}, {Label: "Pegawai", Value: recap.EmployeeName}},
+		Columns:         monthlyRecapColumns(),
+		Sections:        []reportdoc.Section{monthlyRecapSection(recap)},
+		PageLabelFormat: reportdoc.PageLabel(locale),
+		EmptyRowsLabel:  reportdoc.EmptyRowsLabelFor(locale),
 	}
 	doc = s.withLetterhead(ctx, tenantID, doc)
 	return renderReport(doc, opts)
@@ -168,7 +171,7 @@ func (s *Service) ExportMonthlyRecapReport(ctx context.Context, tenantID, employ
 // ExportAllEmployeesMonthlyRecapReport is the tenant-wide counterpart to
 // ExportMonthlyRecapReport: every tracked employee's recap for month, one
 // reportdoc Section per employee.
-func (s *Service) ExportAllEmployeesMonthlyRecapReport(ctx context.Context, tenantID uuid.UUID, month string, opts reportdoc.Options) ([]byte, error) {
+func (s *Service) ExportAllEmployeesMonthlyRecapReport(ctx context.Context, tenantID uuid.UUID, month, locale string, opts reportdoc.Options) ([]byte, error) {
 	recaps, err := s.GetAllEmployeesMonthlyRecap(ctx, tenantID, month)
 	if err != nil {
 		return nil, err
@@ -178,10 +181,12 @@ func (s *Service) ExportAllEmployeesMonthlyRecapReport(ctx context.Context, tena
 		sections[i] = monthlyRecapSection(recap)
 	}
 	doc := reportdoc.Document{
-		Title:    "Rekap Bulanan Presensi Pegawai",
-		Scope:    []reportdoc.ScopeLine{{Label: "Bulan", Value: indonesianMonth(month)}},
-		Columns:  monthlyRecapColumns(),
-		Sections: sections,
+		Title:           "Rekap Bulanan Presensi Pegawai",
+		Scope:           []reportdoc.ScopeLine{{Label: "Bulan", Value: monthScopeValue(locale, month)}},
+		Columns:         monthlyRecapColumns(),
+		Sections:        sections,
+		PageLabelFormat: reportdoc.PageLabel(locale),
+		EmptyRowsLabel:  reportdoc.EmptyRowsLabelFor(locale),
 	}
 	doc = s.withLetterhead(ctx, tenantID, doc)
 	return renderReport(doc, opts)

@@ -118,17 +118,17 @@ func TestGetAllEmployeesMonthlyRecap(t *testing.T) {
 	require.Equal(t, 0, recapB.StatusTotals["present"])
 	require.Equal(t, 28, recapB.StatusTotals["absent"])
 
-	xlsx, err := mod.Service.ExportAllEmployeesMonthlyRecapReport(ctx, tenant.ID, "2025-02", reportdoc.Options{Format: reportdoc.FormatXLSX})
+	xlsx, err := mod.Service.ExportAllEmployeesMonthlyRecapReport(ctx, tenant.ID, "2025-02", reportdoc.LocaleID, reportdoc.Options{Format: reportdoc.FormatXLSX})
 	require.NoError(t, err)
 	require.NotEmpty(t, xlsx)
 
-	pdf, err := mod.Service.ExportMonthlyRecapReport(ctx, tenant.ID, employeeA, "2025-02", reportdoc.Options{Format: reportdoc.FormatPDF, ShowLetterhead: true})
+	pdf, err := mod.Service.ExportMonthlyRecapReport(ctx, tenant.ID, employeeA, "2025-02", reportdoc.LocaleID, reportdoc.Options{Format: reportdoc.FormatPDF, ShowLetterhead: true})
 	require.NoError(t, err)
 	require.NotEmpty(t, pdf)
 
 	// An unknown column key in the caller's selection is rejected rather
 	// than silently ignored.
-	_, err = mod.Service.ExportMonthlyRecapReport(ctx, tenant.ID, employeeA, "2025-02", reportdoc.Options{
+	_, err = mod.Service.ExportMonthlyRecapReport(ctx, tenant.ID, employeeA, "2025-02", reportdoc.LocaleID, reportdoc.Options{
 		Format: reportdoc.FormatXLSX, Columns: []reportdoc.ColumnChoice{{Key: "not_a_real_column"}},
 	})
 	require.ErrorIs(t, err, reportdoc.ErrUnknownColumn)
@@ -136,9 +136,9 @@ func TestGetAllEmployeesMonthlyRecap(t *testing.T) {
 	// The tenant's kop laporan (stubLetterhead above) is wired in and
 	// actually reaches the rendered file: turning it off produces a
 	// visibly smaller workbook.
-	withHeader, err := mod.Service.ExportMonthlyRecapReport(ctx, tenant.ID, employeeA, "2025-02", reportdoc.Options{Format: reportdoc.FormatXLSX, ShowLetterhead: true})
+	withHeader, err := mod.Service.ExportMonthlyRecapReport(ctx, tenant.ID, employeeA, "2025-02", reportdoc.LocaleID, reportdoc.Options{Format: reportdoc.FormatXLSX, ShowLetterhead: true})
 	require.NoError(t, err)
-	withoutHeader, err := mod.Service.ExportMonthlyRecapReport(ctx, tenant.ID, employeeA, "2025-02", reportdoc.Options{Format: reportdoc.FormatXLSX, ShowLetterhead: false})
+	withoutHeader, err := mod.Service.ExportMonthlyRecapReport(ctx, tenant.ID, employeeA, "2025-02", reportdoc.LocaleID, reportdoc.Options{Format: reportdoc.FormatXLSX, ShowLetterhead: false})
 	require.NoError(t, err)
 	require.Greater(t, len(withHeader), len(withoutHeader), "the letterhead line must add real content to the workbook")
 }

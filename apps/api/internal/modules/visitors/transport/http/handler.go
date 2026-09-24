@@ -13,7 +13,9 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/visitors/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/visitors/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/i18n"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/tenant"
 )
 
 type VisitorsHandler struct{ service *service.Service }
@@ -22,6 +24,17 @@ func New(svc *service.Service) *VisitorsHandler { return &VisitorsHandler{servic
 
 func tenantID(ctx context.Context) uuid.UUID { id, _ := httpx.TenantIDFromContext(ctx); return id }
 func userID(ctx context.Context) uuid.UUID   { id, _ := httpx.UserIDFromContext(ctx); return id }
+
+// tenantLocale resolves the current request's tenant to a locale
+// reportdoc's FormatDate/PageLabel/EmptyRowsLabelFor understand,
+// defaulting to Indonesian. Mirrors reports/transport/http.tenantLocale.
+func tenantLocale(ctx context.Context) string {
+	t, ok := tenant.FromContext(ctx)
+	if !ok {
+		return i18n.DefaultLocale
+	}
+	return i18n.FromTenantLocale(t.Locale)
+}
 
 var errorMap = map[error]*httpx.Error{
 	domain.ErrExpectedGuestNotFound:  httpx.ErrExpectedGuestNotFound,
@@ -224,7 +237,7 @@ func (h *VisitorsHandler) ExportDailyVisitorRecap(ctx context.Context, request a
 		return nil, mapError(err)
 	}
 	opts := recapOptions(formatPtr(request.Params.Format), request.Params.Title, request.Params.Letterhead, request.Params.Columns)
-	body, err := h.service.ExportRecapReport(ctx, tenantID(ctx), "Rekap Kunjungan Harian", recap, opts)
+	body, err := h.service.ExportRecapReport(ctx, tenantID(ctx), "Rekap Kunjungan Harian", tenantLocale(ctx), recap, opts)
 	if err != nil {
 		return nil, mapReportError(err)
 	}
@@ -252,7 +265,7 @@ func (h *VisitorsHandler) ExportMonthlyVisitorRecap(ctx context.Context, request
 		return nil, mapError(err)
 	}
 	opts := recapOptions(formatPtr(request.Params.Format), request.Params.Title, request.Params.Letterhead, request.Params.Columns)
-	body, err := h.service.ExportRecapReport(ctx, tenantID(ctx), "Rekap Kunjungan Bulanan", recap, opts)
+	body, err := h.service.ExportRecapReport(ctx, tenantID(ctx), "Rekap Kunjungan Bulanan", tenantLocale(ctx), recap, opts)
 	if err != nil {
 		return nil, mapReportError(err)
 	}

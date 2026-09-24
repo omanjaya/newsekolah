@@ -41,7 +41,7 @@ func TestBuildTeacherReportDocument(t *testing.T) {
 	report := sampleTeacherCycleReport()
 	now := time.Date(2026, 9, 24, 0, 0, 0, 0, time.UTC)
 
-	doc := buildTeacherReportDocument(report, "Pak Budi", now)
+	doc := buildTeacherReportDocument(report, "Pak Budi", now, reportdoc.LocaleID)
 
 	require.Equal(t, "Laporan Supervisi Guru", doc.Title)
 	require.Len(t, doc.Columns, 7, "date + 2 criteria + average + 3 free-text fields")
@@ -50,12 +50,15 @@ func TestBuildTeacherReportDocument(t *testing.T) {
 	require.Len(t, doc.Sections, 1)
 	require.Len(t, doc.Sections[0].Rows, 2)
 	require.NotNil(t, doc.Signature)
+	require.Equal(t, reportdoc.FormatDate(reportdoc.LocaleID, now), doc.Signature.Date)
 	require.Equal(t, "24 September 2026", doc.Signature.Date)
 	require.Len(t, doc.Signature.Signers, 2)
 	require.Equal(t, "Pengawas", doc.Signature.Signers[0].RoleLabel)
 	require.Equal(t, "Pak Budi", doc.Signature.Signers[0].Name)
 	require.Equal(t, "Kepala Sekolah", doc.Signature.Signers[1].RoleLabel)
 	require.Empty(t, doc.Signature.Signers[1].Name, "no principal data source yet -- left for the signer to fill in by hand")
+	require.Equal(t, reportdoc.PageLabel(reportdoc.LocaleID), doc.PageLabelFormat)
+	require.Equal(t, reportdoc.EmptyRowsLabelFor(reportdoc.LocaleID), doc.EmptyRowsLabel)
 
 	xlsx, err := renderReport(doc, reportdoc.Options{Format: reportdoc.FormatXLSX, ShowLetterhead: true})
 	require.NoError(t, err)

@@ -77,7 +77,7 @@ func (h *StaffAttendanceHandler) ExportStaffAttendanceMonthlyRecap(ctx context.C
 		format = &f
 	}
 	opts := reportOptions(format, p.Title, p.Letterhead, p.Columns)
-	body, err := h.service.ExportMonthlyRecapReport(ctx, tenantIDFromContext(ctx), request.EmployeeId, p.Month, opts)
+	body, err := h.service.ExportMonthlyRecapReport(ctx, tenantIDFromContext(ctx), request.EmployeeId, p.Month, tenantLocale(ctx), opts)
 	if err != nil {
 		return nil, mapError(err)
 	}
@@ -99,7 +99,7 @@ func (h *StaffAttendanceHandler) ExportAllStaffAttendanceMonthlyRecap(ctx contex
 		format = &f
 	}
 	opts := reportOptions(format, p.Title, p.Letterhead, p.Columns)
-	body, err := h.service.ExportAllEmployeesMonthlyRecapReport(ctx, tenantIDFromContext(ctx), p.Month, opts)
+	body, err := h.service.ExportAllEmployeesMonthlyRecapReport(ctx, tenantIDFromContext(ctx), p.Month, tenantLocale(ctx), opts)
 	if err != nil {
 		return nil, mapError(err)
 	}
