@@ -1,10 +1,12 @@
 import { navigation, type NavItem, type NavProfileKind } from "./navigation";
 
 /**
- * The permission a path needs, taken from the registry rather than repeated
- * on every page. Matching is longest-prefix so a detail route inherits the
- * permission of the list it belongs to, and a path the registry does not
- * know needs nothing beyond a session.
+ * The single permission a path needs, taken from the registry rather than
+ * repeated on every page. Matching is longest-prefix so a detail route
+ * inherits the permission of the list it belongs to, and a path the
+ * registry does not know needs nothing beyond a session. Items gated by
+ * `anyPermission` instead of one `permission` (see navigation.ts) have no
+ * single code to return here; use `canOpenPath` for those.
  *
  * Its own file because navigation.ts is at the 400-line cap.
  */
@@ -14,10 +16,12 @@ export function permissionForPath(pathname: string): string | undefined {
 }
 
 /**
- * Whether a reader may open `pathname`: the permission above, plus the
- * profile kinds the registry scopes the page to (a teacher's journal is
- * not a parent's page even though the list endpoint accepts any session).
- * Checked before the page mounts, so a refused page fires no requests.
+ * Whether a reader may open `pathname`: the permission(s) above, plus the
+ * profile kinds the registry scopes the page to or excludes it from (a
+ * teacher's journal is not a parent's page, and a student's own
+ * view_academic_data does not make a master-data roster theirs, even
+ * though the list endpoint accepts any session). Checked before the page
+ * mounts, so a refused page fires no requests.
  */
 export function canOpenPath(
   pathname: string,
@@ -28,7 +32,11 @@ export function canOpenPath(
   if (!best) return true;
   const required = best.routePermission ?? best.permission;
   if (required && !can(required)) return false;
+  if (best.anyPermission && !best.anyPermission.some((code) => can(code))) return false;
   if (best.profileKinds && (!profileKind || !best.profileKinds.includes(profileKind))) {
+    return false;
+  }
+  if (best.excludeProfileKinds && profileKind && best.excludeProfileKinds.includes(profileKind)) {
     return false;
   }
   return true;
