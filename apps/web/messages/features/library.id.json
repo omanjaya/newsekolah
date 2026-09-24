@@ -4,11 +4,22 @@
     "desk": "Meja sirkulasi",
     "stocktake": "Opname"
   },
+  "dueBadge": {
+    "dueOn": "Kembali {date}",
+    "overdue": "Terlambat {days} hari (jatuh tempo {date})"
+  },
   "dashboard": {
     "eyebrow": "Perpustakaan",
     "title": "Dasbor perpustakaan",
     "navLabel": "Dasbor",
     "currency": "Rp{amount}",
+    "today": {
+      "loansToday": "Peminjaman hari ini",
+      "returnsToday": "Pengembalian hari ini",
+      "overdue": "Terlambat",
+      "openDesk": "Buka meja sirkulasi",
+      "followUp": "Tindak lanjuti"
+    },
     "stats": {
       "titles": "Judul",
       "copies": "Eksemplar",
@@ -175,31 +186,65 @@
   "desk": {
     "eyebrow": "Perpustakaan",
     "title": "Meja sirkulasi",
+    "scanSubmit": "Catat",
+    "undoLastScan": "Batalkan pindai terakhir",
     "lookup": {
       "label": "Cari anggota atau eksemplar",
       "placeholder": "Nama, NIS, nomor anggota, atau judul",
       "noMatch": "Tidak ada yang cocok"
     },
-    "borrow": {
-      "heading": "Pinjam",
+    "member": {
       "searchPlaceholder": "Cari nama, NIS, atau nomor anggota",
-      "changeMember": "Ganti anggota",
-      "noMemberSelected": "Pilih anggota terlebih dahulu",
-      "scanLabel": "Pindai barcode eksemplar",
-      "scanSubmit": "Tambahkan",
-      "codeNotFound": "Kode {code} tidak ditemukan",
-      "removeFromList": "Hapus {barcode} dari daftar",
-      "rejectedTitle": "Ditolak",
-      "submit": "Pinjamkan {count} eksemplar",
-      "success": "{count} peminjaman berhasil dicatat",
-      "someRejected": "{count} barcode ditolak, lihat daftar di bawah"
+      "scanHint": "Atau pindai kartu anggota untuk mulai.",
+      "endSession": "Selesai",
+      "hintTitle": "Pilih anggota terlebih dahulu",
+      "hintBody": "Cari nama di atas atau pindai kartu anggota untuk mulai meminjamkan, mengembalikan, atau memperpanjang buku.",
+      "notFound": "Kartu atau kode \"{code}\" tidak dikenali",
+      "lookupFailed": "Pencarian anggota gagal, coba lagi"
     },
-    "return": {
-      "heading": "Kembalikan",
-      "scanLabel": "Pindai barcode untuk mengembalikan",
-      "scanSubmit": "Kembalikan",
-      "success": "{title} berhasil dikembalikan",
-      "fine": "Denda Rp{amount}"
+    "modes": {
+      "borrow": "Pinjam",
+      "return": "Kembalikan",
+      "renew": "Perpanjang",
+      "shortcutHint": "Alt+{key}",
+      "scanLabel": {
+        "borrow": "Pindai atau ketik barcode buku yang dipinjam",
+        "return": "Pindai atau ketik barcode buku yang dikembalikan",
+        "renew": "Pindai atau ketik barcode buku yang diperpanjang"
+      }
+    },
+    "basket": {
+      "emptyTitle": {
+        "borrow": "Belum ada buku dipindai",
+        "return": "Belum ada buku dikembalikan",
+        "renew": "Belum ada buku diperpanjang"
+      },
+      "emptyBody": {
+        "borrow": "Pindai barcode buku untuk menambahkannya ke daftar pinjam.",
+        "return": "Pindai barcode buku untuk langsung mengembalikannya.",
+        "renew": "Pindai barcode buku untuk langsung memperpanjang peminjamannya."
+      },
+      "removeFromList": "Hapus {barcode} dari daftar",
+      "confirmBorrow": "Pinjamkan {count} eksemplar",
+      "reason": {
+        "notAvailable": "Sudah dipinjam",
+        "notLoanable": "Hanya baca di tempat, tidak bisa dipinjam"
+      },
+      "borrowedDue": "Dipinjam, jatuh tempo {date}",
+      "returnedOnTime": "Dikembalikan tepat waktu",
+      "returnedLate": "Terlambat {days} hari, denda Rp{amount}",
+      "renewedUntil": "Diperpanjang sampai {date}"
+    },
+    "borrow": {
+      "codeNotFound": "Kode {code} tidak ditemukan"
+    },
+    "receipt": {
+      "open": "Struk sesi",
+      "title": "Struk sirkulasi",
+      "forMember": "Untuk {name}",
+      "empty": "Belum ada transaksi pada sesi ini.",
+      "close": "Tutup",
+      "print": "Cetak"
     },
     "overdue": {
       "heading": "Terlambat",
@@ -216,6 +261,7 @@
       "return": "Kembalikan",
       "returned": "Pengembalian dicatat",
       "markLost": "Tandai hilang",
+      "moreActions": "Aksi lain",
       "sendReminders": "Kirim pengingat",
       "remindersSent": "Pengingat terkirim ke {count} anggota",
       "emptyTitle": "Tidak ada yang terlambat",
@@ -262,24 +308,31 @@
     }
   },
   "memberHistory": {
-    "title": "Riwayat peminjaman",
-    "columns": {
-      "title": "Judul",
-      "borrowedAt": "Tanggal pinjam",
-      "dueOn": "Jatuh tempo",
-      "status": "Status",
-      "fine": "Denda",
-      "actions": "Aksi"
-    },
+    "currentLoans": "Sedang dipinjam",
+    "pastLoans": "Riwayat peminjaman",
+    "rowActions": "Aksi lain",
+    "renewAction": "Perpanjang",
+    "renewed": "Peminjaman diperpanjang",
+    "renewBlockedOverdue": "Peminjaman yang sudah terlambat tidak bisa diperpanjang",
     "markLost": "Tandai hilang",
     "status": {
       "active": "Dipinjam",
       "returned": "Dikembalikan",
       "lost": "Hilang"
     },
+    "fines": {
+      "title": "Denda belum dibayar",
+      "manage": "Kelola di halaman pelanggaran",
+      "kind": {
+        "late": "Keterlambatan",
+        "lost": "Buku hilang",
+        "damaged": "Buku rusak",
+        "other": "Lainnya"
+      }
+    },
     "reservationsHeading": "Reservasi",
     "printCard": "Cetak kartu anggota",
-    "emptyTitle": "Belum ada riwayat peminjaman",
+    "emptyTitle": "Tidak ada buku yang sedang dipinjam",
     "renewals": {
       "viewHistory": "Riwayat perpanjangan",
       "title": "Riwayat perpanjangan",
@@ -410,6 +463,7 @@
   },
   "memberDetail": {
     "eyebrow": "Perpustakaan",
+    "backToList": "Kembali ke daftar anggota",
     "notFoundTitle": "Anggota tidak ditemukan",
     "notFoundBody": "Anggota ini mungkin sudah dihapus atau belum pernah didaftarkan.",
     "memberNo": "Nomor anggota",
@@ -1247,7 +1301,10 @@
       "bookingDisabled": "Reservasi mandiri sedang dinonaktifkan. Hubungi pustakawan untuk memesan judul."
     },
     "dueOn": "Kembali {date}",
-    "overdueSince": "Terlambat, jatuh tempo {date}"
+    "overdueSince": "Terlambat, jatuh tempo {date}",
+    "renewAction": "Perpanjang",
+    "renewed": "Diperpanjang sampai {date}",
+    "renewBlockedOverdue": "Peminjaman yang sudah terlambat tidak bisa diperpanjang sendiri, hubungi pustakawan"
   },
   "memberProfile": {
     "memberType": "Jenis anggota",

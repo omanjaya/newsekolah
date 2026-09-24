@@ -6,7 +6,6 @@ import type { Locale } from "@newsekolah/i18n";
 import {
   Badge,
   Button,
-  DataTable,
   Dialog,
   DialogContent,
   EmptyState,
@@ -15,7 +14,8 @@ import {
   domainIcons,
   useToast,
 } from "@newsekolah/ui";
-import type { ColumnDef } from "@tanstack/react-table";
+import { ArrowLeft, Printer } from "lucide-react";
+import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
@@ -23,24 +23,25 @@ import { useMemo, useState } from "react";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import { useDirectoryQuery, useLookup } from "../../reference/api";
-import {
-  type LibraryLoan,
-  printMemberCard,
-  useMemberLoanHistoryQuery,
-  useMemberReservationsQuery,
-} from "../api";
+import { printMemberCard, useMemberLoanHistoryQuery, useMemberReservationsQuery } from "../api";
 import {
   printLibraryClearanceLetter,
   useClearLibraryMemberMutation,
   useLibraryMemberQuery,
   useLibraryMemberTypesQuery,
 } from "../members-api";
+import { useMemberViolationsQuery } from "../violations-api";
 
 import { LibraryTitleName } from "./library-title-name";
 import { LoanRenewalsDialog } from "./loan-renewals-dialog";
 import { MarkLostDialog } from "./mark-lost-dialog";
+import { MemberLoanRow, loanRowSortKey } from "./member-loan-row";
 import { MemberProfileForm } from "./member-profile-form";
 import { MemberStatusMenu } from "./member-status-menu";
+
+function todayIso(): string {
+  return new Date().toLocaleDateString("en-CA");
+}
 
 export function MemberDetailView({ userId }: { userId: string }): ReactElement {
   const t = useTranslations("app.library.memberDetail");
@@ -50,6 +51,7 @@ export function MemberDetailView({ userId }: { userId: string }): ReactElement {
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const canManage = useCan("manage_library_members");
+  const today = todayIso();
 
   const member = useLibraryMemberQuery(userId);
   const memberTypes = useLibraryMemberTypesQuery();
@@ -58,6 +60,7 @@ export function MemberDetailView({ userId }: { userId: string }): ReactElement {
   const directoryMap = useLookup(directory.data?.data);
   const loans = useMemberLoanHistoryQuery(userId);
   const reservations = useMemberReservationsQuery(userId);
+  const violations = useMemberViolationsQuery(userId);
   const clearMember = useClearLibraryMemberMutation();
 
   const [editing, setEditing] = useState(false);
@@ -65,84 +68,21 @@ export function MemberDetailView({ userId }: { userId: string }): ReactElement {
   const [viewingRenewals, setViewingRenewals] = useState<string | null>(null);
   const [clearanceError, setClearanceError] = useState("");
 
-  const items = loans.data?.data ?? [];
-  const hasActiveLoan = items.some((loan) => loan.status === "active");
-  const userName = directoryMap.get(userId)?.name;
-
-  const columns = useMemo<ColumnDef<LibraryLoan>[]>(
-    () => [
-      {
-        accessorKey: "title_id",
-        header: tHistory("columns.title"),
-        enableSorting: false,
-        cell: ({ row }) => <LibraryTitleName titleId={row.original.title_id} />,
-      },
-      {
-        accessorKey: "borrowed_at",
-        header: tHistory("columns.borrowedAt"),
-        enableSorting: false,
-        cell: ({ row }) => formatDate(row.original.borrowed_at, { locale }),
-      },
-      {
-        accessorKey: "due_on",
-        header: tHistory("columns.dueOn"),
-        enableSorting: false,
-        cell: ({ row }) => formatDate(row.original.due_on, { locale }),
-      },
-      {
-        accessorKey: "status",
-        header: tHistory("columns.status"),
-        enableSorting: false,
-        cell: ({ row }) => (
-          <Badge variant={row.original.status === "active" ? "accent" : "neutral"}>
-            {tHistory(`status.${row.original.status}`)}
-          </Badge>
-        ),
-      },
-      {
-        accessorKey: "fine_amount",
-        header: tHistory("columns.fine"),
-        enableSorting: false,
-        cell: ({ row }) =>
-          row.original.fine_amount > 0
-            ? formatCurrency(row.original.fine_amount, "IDR", { locale })
-            : "-",
-      },
-      {
-        id: "actions",
-        header: tHistory("columns.actions"),
-        enableSorting: false,
-        cell: ({ row }) => (
-          <div className="flex flex-wrap gap-2">
-            {row.original.renewal_count > 0 && (
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => {
-                  setViewingRenewals(row.original.id);
-                }}
-              >
-                {tHistory("renewals.viewHistory")}
-              </Button>
-            )}
-            {row.original.status === "active" && (
-              <Button
-                size="sm"
-                variant="ghost"
-                className="text-status-absent"
-                onClick={() => {
-                  setMarkingLost(row.original.id);
-                }}
-              >
-                {tHistory("markLost")}
-              </Button>
-            )}
-          </div>
-        ),
-      },
-    ],
-    [tHistory, locale],
+  const activeLoans = useMemo(
+    () =>
+      (loans.data?.data ?? [])
+        .filter((loan) => loan.status === "active")
+        .sort((a, b) => loanRowSortKey(a, today) - loanRowSortKey(b, today)),
+    [loans.data, today],
   );
+  const pastLoans = useMemo(
+    () => (loans.data?.data ?? []).filter((loan) => loan.status !== "active"),
+    [loans.data],
+  );
+  const unpaidViolations = (violations.data?.data ?? []).filter((v) => v.status === "unpaid");
+  const unpaidTotal = unpaidViolations.reduce((sum, v) => sum + v.amount, 0);
+  const hasActiveLoan = activeLoans.length > 0;
+  const userName = directoryMap.get(userId)?.name;
 
   if (member.isLoading) {
     return (
@@ -168,7 +108,14 @@ export function MemberDetailView({ userId }: { userId: string }): ReactElement {
   const data = member.data;
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
+    <div className="flex flex-col gap-5 p-4 md:p-6">
+      <Button asChild variant="secondary" size="sm" className="self-start">
+        <Link href="/library/members">
+          <ArrowLeft className="size-4" aria-hidden="true" />
+          {t("backToList")}
+        </Link>
+      </Button>
+
       <PageHeader
         eyebrow={t("eyebrow")}
         title={userName ?? data.member_no}
@@ -186,6 +133,7 @@ export function MemberDetailView({ userId }: { userId: string }): ReactElement {
             )}
             <Button
               variant="secondary"
+              icon={<Printer />}
               onClick={() => {
                 void printMemberCard(userId);
               }}
@@ -270,29 +218,83 @@ export function MemberDetailView({ userId }: { userId: string }): ReactElement {
         <p className="text-[13px] text-fg-muted">{t("clearanceBlockedByLoan")}</p>
       )}
 
+      {unpaidViolations.length > 0 && (
+        <div className="flex flex-col gap-2 rounded-sm border border-status-late/40 bg-status-late/5 p-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-[15px] font-semibold text-fg">{tHistory("fines.title")}</h2>
+            <Badge variant="neutral">{formatCurrency(unpaidTotal, "IDR", { locale })}</Badge>
+          </div>
+          <ul className="flex flex-col gap-1">
+            {unpaidViolations.map((violation) => (
+              <li key={violation.id} className="flex items-center justify-between text-[13px]">
+                <span className="text-fg">{tHistory(`fines.kind.${violation.kind}`)}</span>
+                <span className="tabular-nums text-status-late">
+                  {formatCurrency(violation.amount, "IDR", { locale })}
+                </span>
+              </li>
+            ))}
+          </ul>
+          <Button asChild variant="secondary" size="sm" className="self-start">
+            <Link href="/library/violations">{tHistory("fines.manage")}</Link>
+          </Button>
+        </div>
+      )}
+
       <div className="flex flex-col gap-3">
-        <h2 className="text-[16px] font-medium text-fg">{tHistory("title")}</h2>
-        <DataTable
-          stateKey="features/library/components/member-detail-view:1"
-          mode="local"
-          data={items}
-          columns={columns}
-          rowCount={items.length}
-          pagination={{ pageIndex: 0, pageSize: 50 }}
-          onPaginationChange={() => undefined}
-          sorting={[]}
-          onSortingChange={() => undefined}
-          globalFilter=""
-          isLoading={loans.isLoading}
-          getRowId={(item) => item.id}
-          emptyState={
-            <EmptyState
-              icon={<domainIcons.library aria-hidden="true" />}
-              title={tHistory("emptyTitle")}
-            />
-          }
-        />
+        <h2 className="text-[16px] font-medium text-fg">{tHistory("currentLoans")}</h2>
+        {loans.isLoading ? (
+          <Skeleton className="h-24 w-full" />
+        ) : activeLoans.length === 0 ? (
+          <EmptyState
+            icon={<domainIcons.library aria-hidden="true" />}
+            title={tHistory("emptyTitle")}
+          />
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {activeLoans.map((loan) => (
+              <MemberLoanRow
+                key={loan.id}
+                loan={loan}
+                today={today}
+                locale={locale}
+                canManage={canManage}
+                onViewRenewals={() => {
+                  setViewingRenewals(loan.id);
+                }}
+                onMarkLost={() => {
+                  setMarkingLost(loan.id);
+                }}
+              />
+            ))}
+          </ul>
+        )}
       </div>
+
+      {pastLoans.length > 0 && (
+        <div className="flex flex-col gap-3">
+          <h2 className="text-[16px] font-medium text-fg">{tHistory("pastLoans")}</h2>
+          <ul className="flex flex-col divide-y divide-border rounded-sm border border-border bg-surface">
+            {pastLoans.map((loan) => (
+              <li
+                key={loan.id}
+                className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-[13px]"
+              >
+                <span className="min-w-0 truncate text-fg">
+                  <LibraryTitleName titleId={loan.title_id} />
+                </span>
+                <div className="flex shrink-0 items-center gap-2">
+                  <span className="text-fg-muted">
+                    {loan.returned_at ? formatDate(loan.returned_at, { locale }) : "-"}
+                  </span>
+                  <Badge variant={loan.status === "lost" ? "neutral" : "accent"}>
+                    {tHistory(`status.${loan.status}`)}
+                  </Badge>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {(reservations.data?.data.length ?? 0) > 0 && (
         <div className="flex flex-col gap-2">

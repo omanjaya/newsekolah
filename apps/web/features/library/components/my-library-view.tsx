@@ -11,23 +11,22 @@ import type { LibraryLoan } from "../api";
 import { useMyLibraryProfileQuery } from "../me-api";
 
 import { LibraryTitleName } from "./library-title-name";
+import { MyLibraryLoanRow } from "./my-library-loan-row";
 import { MyLibraryReservations } from "./my-library-reservations";
 
-function LoanRow({ loan, showDueOn }: { loan: LibraryLoan; showDueOn: boolean }): ReactElement {
-  const t = useTranslations("app.library.me");
+function todayIso(): string {
+  return new Date().toLocaleDateString("en-CA");
+}
+
+function HistoryRow({ loan }: { loan: LibraryLoan }): ReactElement {
   const locale = useLocale() as Locale;
-  // due_on is a calendar date (YYYY-MM-DD); compare it as one, not as an instant.
-  const overdue = showDueOn && loan.due_on < new Date().toLocaleDateString("en-CA");
-  const date = formatDate(showDueOn ? loan.due_on : (loan.returned_at ?? loan.borrowed_at), {
-    locale,
-  });
   return (
     <li className="flex items-center justify-between gap-3 text-[13px]">
-      <span className="min-w-0 text-fg">
+      <span className="min-w-0 truncate text-fg">
         <LibraryTitleName titleId={loan.title_id} />
       </span>
-      <span className={overdue ? "shrink-0 text-status-absent" : "shrink-0 text-fg-muted"}>
-        {showDueOn ? t(overdue ? "overdueSince" : "dueOn", { date }) : date}
+      <span className="shrink-0 text-fg-muted">
+        {formatDate(loan.returned_at ?? loan.borrowed_at, { locale })}
       </span>
     </li>
   );
@@ -36,6 +35,8 @@ function LoanRow({ loan, showDueOn }: { loan: LibraryLoan; showDueOn: boolean })
 /** A member's own loans, history, reservations, and fines, with a self-service reserve form. */
 export function MyLibraryView(): ReactElement {
   const t = useTranslations("app.library.me");
+  const locale = useLocale() as Locale;
+  const today = todayIso();
   const { data, isLoading, isError, refetch } = useMyLibraryProfileQuery();
 
   if (isError && !data) return <QueryError retry={() => refetch()} className="m-4" />;
@@ -90,9 +91,9 @@ export function MyLibraryView(): ReactElement {
           {data.active_loans.length === 0 ? (
             <p className="text-[13px] text-fg-muted">{t("noActiveLoans")}</p>
           ) : (
-            <ul className="flex flex-col gap-2">
+            <ul className="flex flex-col divide-y divide-border">
               {data.active_loans.map((loan) => (
-                <LoanRow key={loan.id} loan={loan} showDueOn />
+                <MyLibraryLoanRow key={loan.id} loan={loan} today={today} locale={locale} />
               ))}
             </ul>
           )}
@@ -105,7 +106,7 @@ export function MyLibraryView(): ReactElement {
           ) : (
             <ul className="flex flex-col gap-2">
               {data.history.slice(0, 10).map((loan) => (
-                <LoanRow key={loan.id} loan={loan} showDueOn={false} />
+                <HistoryRow key={loan.id} loan={loan} />
               ))}
             </ul>
           )}

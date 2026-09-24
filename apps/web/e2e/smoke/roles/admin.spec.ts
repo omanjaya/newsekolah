@@ -51,8 +51,7 @@ test("admin: settings > Kop laporan loads", async ({ page }) => {
 test("admin: library circulation desk loads", async ({ page }) => {
   await goto(page, "/library/desk");
   await expect(page.getByRole("heading", { level: 1, name: "Meja sirkulasi" })).toBeVisible();
-  await expect(page.getByRole("heading", { level: 2, name: "Pinjam" })).toBeVisible();
-  await expect(page.getByRole("heading", { level: 2, name: "Kembalikan" })).toBeVisible();
+  await expect(page.getByPlaceholder("Cari nama, NIS, atau nomor anggota")).toBeVisible();
   await assertNoHorizontalOverflow(page);
 });
 

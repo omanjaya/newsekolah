@@ -39,6 +39,37 @@ export function useFindLibraryCopyByCodeMutation() {
   });
 }
 
+/** Resolves one title's display name, for a scan result that only carries a title id. */
+export function useLibraryTitleNameMutation() {
+  const client = useApiClient();
+  return useMutation({
+    mutationFn: async (titleId: string) => {
+      const title = await client.GET("/v1/library/titles/{titleId}", {
+        params: { path: { titleId } },
+      });
+      return title.title;
+    },
+  });
+}
+
+/**
+ * Resolves a scanned or typed code to a member (the desk's continuous scan
+ * flow's member-card step): `/v1/library/lookup` is a fuzzy multi-match
+ * search, so this takes its first member result -- good enough for a code
+ * read off a card, which is expected to match at most one person.
+ */
+export function useFindMemberByCodeMutation() {
+  const client = useApiClient();
+  return useMutation({
+    mutationFn: async (code: string) => {
+      const result = await client.GET("/v1/library/lookup", {
+        params: { query: { q: code.trim() } },
+      });
+      return result.data.find((entry) => entry.member)?.member ?? null;
+    },
+  });
+}
+
 /** Borrows several scanned barcodes for one member in a single visit. */
 export function useBatchBorrowLoansMutation() {
   const client = useApiClient();
@@ -57,6 +88,17 @@ export function useReturnLoanByBarcodeMutation() {
   return useMutation({
     mutationFn: (body: { barcode: string; condition?: LibraryCopy["condition"] }) =>
       client.POST("/v1/library/loans/return-by-barcode", { body }),
+    onSuccess: invalidate,
+  });
+}
+
+/** Renews a loan by its copy's barcode, without needing the loan id -- the desk's continuous scan flow. */
+export function useRenewLoanByBarcodeMutation() {
+  const client = useApiClient();
+  const invalidate = useInvalidateLibrary();
+  return useMutation({
+    mutationFn: (body: { barcode: string }) =>
+      client.POST("/v1/library/loans/renew-by-barcode", { body }),
     onSuccess: invalidate,
   });
 }

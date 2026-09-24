@@ -4,11 +4,22 @@
     "desk": "Loan desk",
     "stocktake": "Stocktake"
   },
+  "dueBadge": {
+    "dueOn": "Due {date}",
+    "overdue": "{days} days overdue (due {date})"
+  },
   "dashboard": {
     "eyebrow": "Library",
     "title": "Library dashboard",
     "navLabel": "Dashboard",
     "currency": "Rp{amount}",
+    "today": {
+      "loansToday": "Loans today",
+      "returnsToday": "Returns today",
+      "overdue": "Overdue",
+      "openDesk": "Open loan desk",
+      "followUp": "Follow up"
+    },
     "stats": {
       "titles": "Titles",
       "copies": "Copies",
@@ -175,31 +186,65 @@
   "desk": {
     "eyebrow": "Library",
     "title": "Loan desk",
+    "scanSubmit": "Record",
+    "undoLastScan": "Undo last scan",
     "lookup": {
       "label": "Search a member or copy",
       "placeholder": "Name, student ID, member number, or title",
       "noMatch": "No match"
     },
-    "borrow": {
-      "heading": "Borrow",
+    "member": {
       "searchPlaceholder": "Search by name, student ID, or member number",
-      "changeMember": "Change member",
-      "noMemberSelected": "Pick a member first",
-      "scanLabel": "Scan the copy's barcode",
-      "scanSubmit": "Add",
-      "codeNotFound": "Code {code} was not found",
-      "removeFromList": "Remove {barcode} from the list",
-      "rejectedTitle": "Rejected",
-      "submit": "Lend {count} copies",
-      "success": "{count} loans recorded",
-      "someRejected": "{count} barcodes rejected, see the list below"
+      "scanHint": "Or scan a member card to start.",
+      "endSession": "Done",
+      "hintTitle": "Pick a member first",
+      "hintBody": "Search a name above or scan a member card to start lending, returning, or renewing books.",
+      "notFound": "Card or code \"{code}\" was not recognized",
+      "lookupFailed": "Member lookup failed, try again"
     },
-    "return": {
-      "heading": "Return",
-      "scanLabel": "Scan a barcode to return it",
-      "scanSubmit": "Return",
-      "success": "{title} returned",
-      "fine": "Fine Rp{amount}"
+    "modes": {
+      "borrow": "Borrow",
+      "return": "Return",
+      "renew": "Renew",
+      "shortcutHint": "Alt+{key}",
+      "scanLabel": {
+        "borrow": "Scan or type the barcode of the book being borrowed",
+        "return": "Scan or type the barcode of the book being returned",
+        "renew": "Scan or type the barcode of the book being renewed"
+      }
+    },
+    "basket": {
+      "emptyTitle": {
+        "borrow": "No books scanned yet",
+        "return": "No books returned yet",
+        "renew": "No books renewed yet"
+      },
+      "emptyBody": {
+        "borrow": "Scan a book's barcode to add it to the loan list.",
+        "return": "Scan a book's barcode to return it right away.",
+        "renew": "Scan a book's barcode to renew it right away."
+      },
+      "removeFromList": "Remove {barcode} from the list",
+      "confirmBorrow": "Lend {count} copies",
+      "reason": {
+        "notAvailable": "Already on loan",
+        "notLoanable": "Read in place only, cannot be borrowed"
+      },
+      "borrowedDue": "Borrowed, due {date}",
+      "returnedOnTime": "Returned on time",
+      "returnedLate": "{days} days late, fine Rp{amount}",
+      "renewedUntil": "Renewed until {date}"
+    },
+    "borrow": {
+      "codeNotFound": "Code {code} was not found"
+    },
+    "receipt": {
+      "open": "Session receipt",
+      "title": "Circulation receipt",
+      "forMember": "For {name}",
+      "empty": "No transactions in this session yet.",
+      "close": "Close",
+      "print": "Print"
     },
     "overdue": {
       "heading": "Overdue",
@@ -216,6 +261,7 @@
       "return": "Return",
       "returned": "Return recorded",
       "markLost": "Mark lost",
+      "moreActions": "More actions",
       "sendReminders": "Send reminders",
       "remindersSent": "Reminder sent to {count} members",
       "emptyTitle": "Nothing overdue",
@@ -262,24 +308,31 @@
     }
   },
   "memberHistory": {
-    "title": "Loan history",
-    "columns": {
-      "title": "Title",
-      "borrowedAt": "Borrowed on",
-      "dueOn": "Due on",
-      "status": "Status",
-      "fine": "Fine",
-      "actions": "Actions"
-    },
+    "currentLoans": "Currently borrowed",
+    "pastLoans": "Loan history",
+    "rowActions": "More actions",
+    "renewAction": "Renew",
+    "renewed": "Loan renewed",
+    "renewBlockedOverdue": "An overdue loan cannot be renewed",
     "markLost": "Mark lost",
     "status": {
       "active": "On loan",
       "returned": "Returned",
       "lost": "Lost"
     },
+    "fines": {
+      "title": "Unpaid fines",
+      "manage": "Manage on the violations page",
+      "kind": {
+        "late": "Late return",
+        "lost": "Lost book",
+        "damaged": "Damaged book",
+        "other": "Other"
+      }
+    },
     "reservationsHeading": "Reservations",
     "printCard": "Print member card",
-    "emptyTitle": "No loan history yet",
+    "emptyTitle": "No books currently borrowed",
     "renewals": {
       "viewHistory": "Renewal history",
       "title": "Renewal history",
@@ -410,6 +463,7 @@
   },
   "memberDetail": {
     "eyebrow": "Library",
+    "backToList": "Back to member list",
     "notFoundTitle": "Member not found",
     "notFoundBody": "This member may have been removed or was never registered.",
     "memberNo": "Member number",
@@ -1247,7 +1301,10 @@
       "bookingDisabled": "Self-service reservations are turned off right now. Ask a librarian to reserve a title."
     },
     "dueOn": "Due {date}",
-    "overdueSince": "Overdue, was due {date}"
+    "overdueSince": "Overdue, was due {date}",
+    "renewAction": "Renew",
+    "renewed": "Renewed until {date}",
+    "renewBlockedOverdue": "An overdue loan cannot be self-renewed, ask a librarian"
   },
   "memberProfile": {
     "memberType": "Member type",

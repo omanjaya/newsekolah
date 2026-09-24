@@ -79,11 +79,19 @@ func (h *LibraryHandler) ReturnLibraryLoanByBarcode(ctx context.Context, request
 }
 
 func (h *LibraryHandler) RenewLibraryLoan(ctx context.Context, request api.RenewLibraryLoanRequestObject) (api.RenewLibraryLoanResponseObject, error) {
-	loan, err := h.service.Renew(ctx, tenantID(ctx), request.LoanId, userID(ctx))
+	loan, err := h.service.Renew(ctx, tenantID(ctx), service.RenewInput{LoanID: uuid.NullUUID{UUID: request.LoanId, Valid: true}}, userID(ctx))
 	if err != nil {
 		return nil, mapError(err)
 	}
 	return api.RenewLibraryLoan200JSONResponse(toAPILoan(loan)), nil
+}
+
+func (h *LibraryHandler) RenewLibraryLoanByBarcode(ctx context.Context, request api.RenewLibraryLoanByBarcodeRequestObject) (api.RenewLibraryLoanByBarcodeResponseObject, error) {
+	loan, err := h.service.Renew(ctx, tenantID(ctx), service.RenewInput{Barcode: request.Body.Barcode}, userID(ctx))
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return api.RenewLibraryLoanByBarcode200JSONResponse(toAPILoan(loan)), nil
 }
 
 func (h *LibraryHandler) ListLibraryLoanRenewals(ctx context.Context, request api.ListLibraryLoanRenewalsRequestObject) (api.ListLibraryLoanRenewalsResponseObject, error) {
