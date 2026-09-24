@@ -501,11 +501,35 @@
       "intro": "Tampilkan QR sesuai keperluan. Setiap kode sekali pakai dan diperbarui otomatis saat kedaluwarsa. Persetujuan izin keluar ada di halaman Izin Keluar, tab Setujui.",
       "purposes": {
         "classroom_entry": "QR masuk kelas",
-        "late_arrival": "QR terlambat"
+        "late_arrival": "QR terlambat",
+        "manual": "Catat manual"
       },
       "help": {
         "classroom_entry": "Siswa memindai kode ini saat masuk kelas untuk mencatat kehadiran mandiri pada sesi yang sedang berjalan.",
         "late_arrival": "Siswa yang datang terlambat memindai kode ini. Namanya masuk ke antrean peninjauan di halaman Terlambat."
+      },
+      "manualForm": {
+        "intro": "Untuk siswa yang tidak membawa HP: cari siswa, pilih izin keluar atau terlambat, lalu catat langsung di sini.",
+        "kindExit": "Izin keluar",
+        "kindLate": "Terlambat",
+        "student": "Siswa",
+        "studentSearchPlaceholder": "Cari nama siswa",
+        "noStudents": "Tidak ada siswa yang cocok.",
+        "changeStudent": "Ganti",
+        "destination": "Tujuan",
+        "destinationPlaceholder": "Contoh: Puskesmas, jemput adik",
+        "startPeriod": "Jam mulai",
+        "endPeriod": "Jam selesai",
+        "selectPeriod": "Pilih jam",
+        "noPeriods": "Jam pelajaran belum diatur.",
+        "reason": "Alasan terlambat",
+        "reasonPlaceholder": "Contoh: macet, bangun kesiangan",
+        "homeroomReported": "Wali kelas sudah diberi tahu",
+        "requiredError": "Lengkapi data yang wajib diisi.",
+        "recordedHint": "Tercatat sebagai dicatat oleh guru piket, bukan permintaan mandiri siswa.",
+        "recordedExit": "Izin keluar tercatat untuk {student}",
+        "recordedLate": "Keterlambatan tercatat untuk {student}",
+        "submit": "Catat"
       }
     },
     "common": {

@@ -322,6 +322,7 @@
     "ATTACHMENT_NOT_FOUND": "Lampiran tidak ditemukan",
     "ATTACHMENT_TOO_LARGE": "Berkas melebihi batas 10 MB",
     "ATTACHMENT_INVALID_TYPE": "Hanya gambar JPEG atau PNG yang diterima",
+    "ATTACHMENT_LIMIT_REACHED": "Catatan ini sudah punya maksimal 3 foto",
     "REPORT_UNAVAILABLE": "Laporan belum bisa dibuat saat ini, coba lagi sebentar lagi",
     "GRADE_RANGE_OVERLAP": "Rentang ini saling tumpang tindih; atur ulang agar tidak ada nilai yang masuk ke dua rentang",
     "TP_EXPORT_CODE_EXISTS": "Kode ekspor ini sudah dipakai komponen lain pada kelas, mapel, dan semester yang sama",

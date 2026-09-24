@@ -2022,6 +2022,99 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/discipline/points-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Current point total and issued SP levels for one or more students, before recording
+         * @description One query for every requested student: each student's current active point total this year and
+         *     the warning-letter levels already issued to them, plus the tenant's current SP policy. The
+         *     client already has each violation type's points from the catalog it fetched to build the
+         *     checklist, so it adds those itself to get the new total and, with the policy's levels and
+         *     issued_levels, works out which level (if any) is newly due -- mirroring how a live gradebook
+         *     average is computed client-side from server-fetched scores. Nothing is written.
+         */
+        post: operations["previewViolationPoints"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/discipline/violations/{recordId}/attachments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Photo evidence on a violation record */
+        get: operations["listViolationAttachments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/discipline/violations/{recordId}/attachments/upload-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Presigned upload target for a new photo (1-3 per record) */
+        post: operations["requestViolationAttachmentUpload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/discipline/violations/{recordId}/attachments/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Validate and record an uploaded photo (JPEG/PNG, max 3 per record) */
+        post: operations["confirmViolationAttachment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/discipline/violations/{recordId}/attachments/{attachmentId}/url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Short-lived download URL for one photo */
+        get: operations["getViolationAttachmentUrl"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/discipline/students/{studentId}": {
         parameters: {
             query?: never;
@@ -6062,6 +6155,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/exit-permits/staff-record": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Duty teacher records an exit permit for a student at the desk, without the student's own QR request
+         * @description For a student who is not carrying a phone: the duty teacher searches or scans the student,
+         *     picks a destination and period range, and the permit is created and completed in one call --
+         *     the same workflow instance and exit_permits row a normal QR-driven permit produces, so it
+         *     appears in the same review queues, reports and the student's own history. The recording
+         *     teacher is the workflow's created_by and every stage's actor, not the student; every event is
+         *     tagged verification "manual" with a note explaining it was recorded at the desk.
+         */
+        post: operations["recordExitPermitByStaff"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/exit-permits/review-queue": {
         parameters: {
             query?: never;
@@ -6175,6 +6293,32 @@ export interface paths {
         put?: never;
         /** Late student scans the duty teacher's token to open the flow */
         post: operations["openLateArrival"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/late-arrivals/staff-record": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Duty teacher records a late arrival for a student at the gate, without the student's own QR scan
+         * @description For a student who is not carrying a phone: the duty teacher searches or scans the student,
+         *     picks a reason, and the flow is opened and completed in one call -- the same workflow instance
+         *     and late_arrivals row a normal QR-driven late arrival produces (occurrence counting, required
+         *     action and reports included), so it appears in the same lists as any other late arrival. The
+         *     recording teacher is the workflow's created_by, duty_teacher_user_id and every stage's actor,
+         *     not the student; every event is tagged verification "manual" with a note explaining it was
+         *     recorded at the gate.
+         */
+        post: operations["recordLateArrivalByStaff"];
         delete?: never;
         options?: never;
         head?: never;
@@ -9177,6 +9321,22 @@ export interface components {
             counseling_id: string;
             /** Format: date-time */
             created_at: string;
+        };
+        ViolationAttachment: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            record_id: string;
+            /** Format: date-time */
+            created_at: string;
+        };
+        PointsPreviewEntry: {
+            /** Format: uuid */
+            student_user_id: string;
+            /** @description Active point total this year before this call. */
+            total_points: number;
+            /** @description Warning-letter levels already issued to this student, so the client does not offer one already sent. */
+            issued_levels: number[];
         };
         ChildCalendarDay: {
             /** Format: date */
@@ -16350,6 +16510,157 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+        };
+    };
+    previewViolationPoints: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    student_user_ids: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description Preview */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["PointsPreviewEntry"][];
+                        policy: components["schemas"]["SPPolicy"];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    listViolationAttachments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recordId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Attachments */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ViolationAttachment"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    requestViolationAttachmentUpload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recordId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Target */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        upload_url: string;
+                        object_key: string;
+                        /** Format: date-time */
+                        expires_at: string;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    confirmViolationAttachment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recordId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    object_key: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Recorded */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ViolationAttachment"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getViolationAttachmentUrl: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recordId: string;
+                attachmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description URL */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        url: string;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     getStudentDiscipline: {
@@ -24657,6 +24968,43 @@ export interface operations {
             409: components["responses"]["Conflict"];
         };
     };
+    recordExitPermitByStaff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    student_user_id: string;
+                    destination: string;
+                    /** Format: uuid */
+                    start_period_id: string;
+                    /** Format: uuid */
+                    end_period_id: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Recorded */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExitPermitDetail"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
     listExitPermitsForApproval: {
         parameters: {
             query?: never;
@@ -24846,6 +25194,42 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             409: components["responses"]["Conflict"];
             410: components["responses"]["TokenGone"];
+        };
+    };
+    recordLateArrivalByStaff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    student_user_id: string;
+                    reason: string;
+                    /** @default false */
+                    homeroom_reported?: boolean;
+                    violation_ids?: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description Recorded */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LateArrivalDetail"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
         };
     };
     getCurrentLateArrival: {

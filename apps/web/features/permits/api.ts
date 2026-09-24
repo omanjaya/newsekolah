@@ -114,6 +114,27 @@ export function useCreateExitPermitMutation() {
   });
 }
 
+/**
+ * Duty teacher's ad-hoc desk record: for a student with no phone to run
+ * the QR-relayed approval chain, this creates and completes the exit
+ * permit in one call, still writing to the same workflow instance and
+ * `exit_permits` row a self-service permit produces (same lists, review
+ * queues and reports).
+ */
+export function useRecordExitPermitByStaffMutation() {
+  const client = useApiClient();
+  const invalidate = useInvalidatePermits();
+  return useMutation({
+    mutationFn: (body: {
+      student_user_id: string;
+      destination: string;
+      start_period_id: string;
+      end_period_id: string;
+    }) => client.POST("/v1/exit-permits/staff-record", { body }),
+    onSuccess: invalidate,
+  });
+}
+
 export function useScanExitPermitStageMutation() {
   const client = useApiClient();
   const invalidate = useInvalidatePermits();
@@ -201,6 +222,25 @@ export function useLateArrivalQueueQuery(enabled = true) {
     // Pause polling on a hidden tab instead of ticking forever in the
     // background.
     refetchIntervalInBackground: false,
+  });
+}
+
+/**
+ * Duty teacher records a late arrival for a student at the gate, without
+ * the student's own QR scan (no phone on hand). Opens and completes the
+ * same workflow a QR-driven late arrival ends up as, in one call.
+ */
+export function useRecordLateArrivalByStaffMutation() {
+  const client = useApiClient();
+  const invalidate = useInvalidatePermits();
+  return useMutation({
+    mutationFn: (body: {
+      student_user_id: string;
+      reason: string;
+      homeroom_reported?: boolean;
+      violation_ids?: string[];
+    }) => client.POST("/v1/late-arrivals/staff-record", { body }),
+    onSuccess: invalidate,
   });
 }
 

@@ -206,6 +206,22 @@ func (f *fakeRecordRepo) GetAsset(context.Context, uuid.UUID, uuid.UUID) (AssetI
 	f.unimplemented()
 	return AssetInfo{}, false, nil
 }
+func (f *fakeRecordRepo) ListPointsPreview(context.Context, uuid.UUID, uuid.UUID, []uuid.UUID) ([]PointsPreviewEntry, error) {
+	f.unimplemented()
+	return nil, nil
+}
+func (f *fakeRecordRepo) CreateViolationAttachment(context.Context, uuid.UUID, uuid.UUID, uuid.UUID) (domain.ViolationAttachment, error) {
+	f.unimplemented()
+	return domain.ViolationAttachment{}, nil
+}
+func (f *fakeRecordRepo) ListViolationAttachments(context.Context, uuid.UUID, uuid.UUID) ([]domain.ViolationAttachment, error) {
+	f.unimplemented()
+	return nil, nil
+}
+func (f *fakeRecordRepo) GetViolationAttachment(context.Context, uuid.UUID, uuid.UUID) (domain.ViolationAttachment, bool, error) {
+	f.unimplemented()
+	return domain.ViolationAttachment{}, false, nil
+}
 
 var _ Repository = (*fakeRecordRepo)(nil)
 

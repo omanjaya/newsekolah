@@ -501,11 +501,35 @@
       "intro": "Show the QR for each purpose. Every code is single-use and renews itself when it expires. Exit permit approvals live on the Exit Permits page, Approve tab.",
       "purposes": {
         "classroom_entry": "Classroom entry QR",
-        "late_arrival": "Late arrival QR"
+        "late_arrival": "Late arrival QR",
+        "manual": "Manual record"
       },
       "help": {
         "classroom_entry": "Students scan this code when entering class to record their own presence for the running session.",
         "late_arrival": "Students arriving late scan this code. They appear in the review queue on the Late Arrivals page."
+      },
+      "manualForm": {
+        "intro": "For a student with no phone on hand: search for the student, pick an exit permit or a late arrival, and record it directly here.",
+        "kindExit": "Exit permit",
+        "kindLate": "Late arrival",
+        "student": "Student",
+        "studentSearchPlaceholder": "Search by student name",
+        "noStudents": "No matching students.",
+        "changeStudent": "Change",
+        "destination": "Destination",
+        "destinationPlaceholder": "E.g. clinic, picking up a sibling",
+        "startPeriod": "Start period",
+        "endPeriod": "End period",
+        "selectPeriod": "Select a period",
+        "noPeriods": "No periods have been set up yet.",
+        "reason": "Reason for lateness",
+        "reasonPlaceholder": "E.g. traffic, overslept",
+        "homeroomReported": "Homeroom teacher already notified",
+        "requiredError": "Fill in the required fields.",
+        "recordedHint": "Recorded as entered by the duty teacher, not the student's own request.",
+        "recordedExit": "Exit permit recorded for {student}",
+        "recordedLate": "Late arrival recorded for {student}",
+        "submit": "Record"
       }
     },
     "common": {

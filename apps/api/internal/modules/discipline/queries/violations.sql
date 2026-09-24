@@ -102,3 +102,31 @@ where vr.tenant_id = $1 and vr.academic_year_id = $2 and vr.voided_at is null
 group by vr.student_user_id
 order by total desc
 limit $3;
+
+-- name: ListPointsPreviewForStudents :many
+-- Live points preview while a teacher is still choosing violation types
+-- (docs/15 "pratinjau ambang SP"): one round trip for every selected
+-- student's current active total and the SP levels already issued,
+-- mirroring CountEntryStatusesForStudentsInYear's one-query-per-roster
+-- pattern (attendance/queries/entries.sql). A student absent from the
+-- result has zero points and no issued levels.
+select vr.student_user_id,
+  coalesce(sum(vr.points_snapshot), 0)::int as total_points,
+  coalesce(array_agg(distinct wl.level) filter (where wl.level is not null), '{}')::int[] as issued_levels
+from violation_records vr
+left join warning_letters wl on wl.tenant_id = vr.tenant_id and wl.academic_year_id = vr.academic_year_id
+  and wl.student_user_id = vr.student_user_id
+where vr.tenant_id = $1 and vr.academic_year_id = $2 and vr.voided_at is null
+  and vr.student_user_id = any(sqlc.arg(student_ids)::uuid[])
+group by vr.student_user_id;
+
+-- name: CreateViolationAttachment :one
+insert into violation_attachments (tenant_id, violation_record_id, asset_id)
+values ($1, $2, $3)
+returning *;
+
+-- name: ListViolationAttachments :many
+select * from violation_attachments where tenant_id = $1 and violation_record_id = $2 order by created_at;
+
+-- name: GetViolationAttachment :one
+select * from violation_attachments where tenant_id = $1 and id = $2;

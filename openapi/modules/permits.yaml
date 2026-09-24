@@ -161,6 +161,43 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "409": { $ref: "#/components/responses/Conflict" }
 
+  /v1/exit-permits/staff-record:
+    post:
+      tags: [permits]
+      operationId: recordExitPermitByStaff
+      x-permission: issue_scan_tokens
+      summary: Duty teacher records an exit permit for a student at the desk, without the student's own QR request
+      description: |
+        For a student who is not carrying a phone: the duty teacher searches or scans the student,
+        picks a destination and period range, and the permit is created and completed in one call --
+        the same workflow instance and exit_permits row a normal QR-driven permit produces, so it
+        appears in the same review queues, reports and the student's own history. The recording
+        teacher is the workflow's created_by and every stage's actor, not the student; every event is
+        tagged verification "manual" with a note explaining it was recorded at the desk.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [student_user_id, destination, start_period_id, end_period_id]
+              properties:
+                student_user_id: { type: string, format: uuid }
+                destination: { type: string, minLength: 1, maxLength: 500 }
+                start_period_id: { type: string, format: uuid }
+                end_period_id: { type: string, format: uuid }
+      responses:
+        "201":
+          description: Recorded
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ExitPermitDetail" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
   /v1/exit-permits/review-queue:
     get:
       tags: [permits]
@@ -309,6 +346,46 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "409": { $ref: "#/components/responses/Conflict" }
         "410": { $ref: "#/components/responses/TokenGone" }
+
+  /v1/late-arrivals/staff-record:
+    post:
+      tags: [permits]
+      operationId: recordLateArrivalByStaff
+      x-permission: issue_scan_tokens
+      summary: Duty teacher records a late arrival for a student at the gate, without the student's own QR scan
+      description: |
+        For a student who is not carrying a phone: the duty teacher searches or scans the student,
+        picks a reason, and the flow is opened and completed in one call -- the same workflow instance
+        and late_arrivals row a normal QR-driven late arrival produces (occurrence counting, required
+        action and reports included), so it appears in the same lists as any other late arrival. The
+        recording teacher is the workflow's created_by, duty_teacher_user_id and every stage's actor,
+        not the student; every event is tagged verification "manual" with a note explaining it was
+        recorded at the gate.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [student_user_id, reason]
+              properties:
+                student_user_id: { type: string, format: uuid }
+                reason: { type: string, minLength: 1, maxLength: 500 }
+                homeroom_reported: { type: boolean, default: false }
+                violation_ids:
+                  type: array
+                  items: { type: string, format: uuid }
+      responses:
+        "201":
+          description: Recorded
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LateArrivalDetail" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
 
   /v1/late-arrivals/current:
     get:

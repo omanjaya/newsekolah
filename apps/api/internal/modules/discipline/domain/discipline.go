@@ -30,6 +30,7 @@ var (
 	ErrAttachmentNotFound      = errors.New("attachment not found")
 	ErrAttachmentTooLarge      = errors.New("attachment file exceeds the size limit")
 	ErrAttachmentInvalidType   = errors.New("attachment file is not a supported image type")
+	ErrAttachmentLimitReached  = errors.New("violation record already has the maximum number of attachments")
 	ErrReportUnavailable       = errors.New("pdf report generation is not configured for this deployment")
 )
 
@@ -65,6 +66,17 @@ type ViolationRecord struct {
 }
 
 func (r ViolationRecord) IsVoided() bool { return r.VoidedAt != nil }
+
+// ViolationAttachment is one photo evidence file on a violation record
+// (violation_attachments), mirroring CounselingAttachment: an asset row
+// plus which record it belongs to.
+type ViolationAttachment struct {
+	ID                uuid.UUID
+	TenantID          uuid.UUID
+	ViolationRecordID uuid.UUID
+	AssetID           uuid.UUID
+	CreatedAt         time.Time
+}
 
 type WarningLetter struct {
 	ID              uuid.UUID

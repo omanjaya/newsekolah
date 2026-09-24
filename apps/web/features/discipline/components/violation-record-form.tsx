@@ -2,6 +2,7 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import { Avatar, Badge, Button, Checkbox, Input, Textarea, useToast } from "@newsekolah/ui";
+import { TriangleAlert } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
@@ -13,6 +14,8 @@ import {
   useRecordViolationMutation,
   useViolationTypesQuery,
 } from "../api";
+import { usePointsPreviewQuery } from "../api-violation-extras";
+import { computePointsPreview } from "../lib/points-preview";
 
 const MAX_TYPES = 50;
 const MAX_STUDENTS = 50;
@@ -49,6 +52,8 @@ export function ViolationRecordForm({
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  const preview = usePointsPreviewQuery(studentIds);
+
   const allStudents = useMemo(() => students.data?.data ?? [], [students.data]);
   const studentMap = useMemo(() => new Map(allStudents.map((s) => [s.id, s])), [allStudents]);
   const visibleStudents = useMemo(() => {
@@ -74,6 +79,12 @@ export function ViolationRecordForm({
         .reduce((sum, type) => sum + type.points, 0),
     [activeTypes, typeIds],
   );
+
+  const previewRows = useMemo(
+    () => computePointsPreview(preview.data?.data ?? [], pointsPerStudent, preview.data?.policy),
+    [preview.data, pointsPerStudent],
+  );
+  const showPreview = studentIds.length > 0 && typeIds.length > 0;
 
   function toggleStudent(id: string) {
     setStudentIds((current) => {
@@ -244,12 +255,44 @@ export function ViolationRecordForm({
           </>
         )}
         {typeIds.length >= MAX_TYPES && <p className="text-fg-muted">{t("maxTypesReached")}</p>}
-        {studentIds.length > 1 && typeIds.length > 0 && (
-          <p className="text-fg-muted">
-            {t("pointsPerStudentHint", { points: pointsPerStudent, count: studentIds.length })}
-          </p>
-        )}
       </div>
+
+      {showPreview && (
+        <div className="flex flex-col gap-2 rounded-sm border border-border bg-surface p-3 text-[13px]">
+          <span className="font-medium text-fg">{t("preview.title")}</span>
+          {preview.isPending ? (
+            <p className="text-fg-muted">{t("preview.loading")}</p>
+          ) : preview.isError ? (
+            <p className="text-fg-muted">{t("preview.error")}</p>
+          ) : (
+            <ul className="flex flex-col gap-2">
+              {previewRows.map((row) => {
+                const name = studentMap.get(row.studentUserId)?.name ?? t("unknownStudent");
+                return (
+                  <li key={row.studentUserId} className="flex flex-col gap-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="min-w-0 truncate text-fg">{name}</span>
+                      <span className="shrink-0 text-fg-muted [font-variant-numeric:tabular-nums]">
+                        {t("preview.totals", {
+                          current: row.currentPoints,
+                          added: row.addedPoints,
+                          next: row.newPoints,
+                        })}
+                      </span>
+                    </div>
+                    {row.crossedLevels.map((level) => (
+                      <div key={level.level} className="flex items-center gap-1.5 text-status-late">
+                        <TriangleAlert className="size-3.5 shrink-0" aria-hidden="true" />
+                        <span>{t("preview.crosses", { level: level.label })}</span>
+                      </div>
+                    ))}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      )}
 
       <label className="flex flex-col gap-1 text-[13px]">
         <span className="font-medium">{t("date")}</span>

@@ -322,6 +322,7 @@
     "ATTACHMENT_NOT_FOUND": "Attachment not found",
     "ATTACHMENT_TOO_LARGE": "The file exceeds the 10 MB limit",
     "ATTACHMENT_INVALID_TYPE": "Only JPEG or PNG images are accepted",
+    "ATTACHMENT_LIMIT_REACHED": "This record already has the maximum of 3 photos",
     "REPORT_UNAVAILABLE": "The report could not be generated right now; try again shortly",
     "GRADE_RANGE_OVERLAP": "These ranges overlap; adjust them so no score falls in two ranges",
     "TP_EXPORT_CODE_EXISTS": "This export code is already used by another component in this class, subject and term",

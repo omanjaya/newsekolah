@@ -190,6 +190,7 @@ counselings (id, tenant_id, academic_year_id, student_user_id, counselor_user_id
              content_encrypted bytea, content_key_id, follow_up_plan_encrypted bytea, visibility text check in ('counselor','bk_team','leadership'),
              created_at, updated_at)
 counseling_attachments (id, counseling_id, asset_id, created_at)
+violation_attachments (id, tenant_id, violation_record_id, asset_id, created_at)
 ```
 
 ## 9. Domain: penilaian

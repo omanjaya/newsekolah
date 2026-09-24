@@ -248,6 +248,146 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { $ref: "#/components/responses/Conflict" }
 
+  /v1/discipline/points-preview:
+    post:
+      tags: [discipline]
+      operationId: previewViolationPoints
+      x-permission: record_violations
+      summary: Current point total and issued SP levels for one or more students, before recording
+      description: |
+        One query for every requested student: each student's current active point total this year and
+        the warning-letter levels already issued to them, plus the tenant's current SP policy. The
+        client already has each violation type's points from the catalog it fetched to build the
+        checklist, so it adds those itself to get the new total and, with the policy's levels and
+        issued_levels, works out which level (if any) is newly due -- mirroring how a live gradebook
+        average is computed client-side from server-fetched scores. Nothing is written.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [student_user_ids]
+              properties:
+                student_user_ids:
+                  {
+                    type: array,
+                    minItems: 1,
+                    maxItems: 50,
+                    uniqueItems: true,
+                    items: { type: string, format: uuid },
+                  }
+      responses:
+        "200":
+          description: Preview
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, policy]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/PointsPreviewEntry" } }
+                  policy: { $ref: "#/components/schemas/SPPolicy" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /v1/discipline/violations/{recordId}/attachments:
+    get:
+      tags: [discipline]
+      operationId: listViolationAttachments
+      x-permission: view_discipline
+      summary: Photo evidence on a violation record
+      parameters:
+        - { name: recordId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Attachments
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/ViolationAttachment" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /v1/discipline/violations/{recordId}/attachments/upload-url:
+    post:
+      tags: [discipline]
+      operationId: requestViolationAttachmentUpload
+      x-permission: record_violations
+      summary: Presigned upload target for a new photo (1-3 per record)
+      parameters:
+        - { name: recordId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Target
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [upload_url, object_key, expires_at]
+                properties:
+                  upload_url: { type: string }
+                  object_key: { type: string }
+                  expires_at: { type: string, format: date-time }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /v1/discipline/violations/{recordId}/attachments/confirm:
+    post:
+      tags: [discipline]
+      operationId: confirmViolationAttachment
+      x-permission: record_violations
+      summary: Validate and record an uploaded photo (JPEG/PNG, max 3 per record)
+      parameters:
+        - { name: recordId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [object_key]
+              properties:
+                object_key: { type: string }
+      responses:
+        "201":
+          description: Recorded
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ViolationAttachment" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /v1/discipline/violations/{recordId}/attachments/{attachmentId}/url:
+    get:
+      tags: [discipline]
+      operationId: getViolationAttachmentUrl
+      x-permission: view_discipline
+      summary: Short-lived download URL for one photo
+      parameters:
+        - { name: recordId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: attachmentId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: URL
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [url]
+                properties:
+                  url: { type: string }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
   /v1/discipline/students/{studentId}:
     get:
       tags: [discipline]
@@ -933,3 +1073,21 @@ components:
         id: { type: string, format: uuid }
         counseling_id: { type: string, format: uuid }
         created_at: { type: string, format: date-time }
+    ViolationAttachment:
+      type: object
+      required: [id, record_id, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        record_id: { type: string, format: uuid }
+        created_at: { type: string, format: date-time }
+    PointsPreviewEntry:
+      type: object
+      required: [student_user_id, total_points, issued_levels]
+      properties:
+        student_user_id: { type: string, format: uuid }
+        total_points:
+          { type: integer, description: "Active point total this year before this call." }
+        issued_levels:
+          type: array
+          items: { type: integer }
+          description: "Warning-letter levels already issued to this student, so the client does not offer one already sent."

@@ -397,6 +397,7 @@ type Querier interface {
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	CreateUserProfile(ctx context.Context, arg CreateUserProfileParams) error
 	CreateViolation(ctx context.Context, arg CreateViolationParams) (LibraryViolation, error)
+	CreateViolationAttachment(ctx context.Context, arg CreateViolationAttachmentParams) (ViolationAttachment, error)
 	CreateViolationRecord(ctx context.Context, arg CreateViolationRecordParams) (ViolationRecord, error)
 	CreateViolationType(ctx context.Context, arg CreateViolationTypeParams) (ViolationType, error)
 	CreateVisit(ctx context.Context, arg CreateVisitParams) (VisitorVisit, error)
@@ -724,6 +725,7 @@ type Querier interface {
 	GetUserRefForSchedule(ctx context.Context, arg GetUserRefForScheduleParams) (GetUserRefForScheduleRow, error)
 	GetValidPasswordResetByHash(ctx context.Context, arg GetValidPasswordResetByHashParams) (PasswordReset, error)
 	GetViolation(ctx context.Context, arg GetViolationParams) (LibraryViolation, error)
+	GetViolationAttachment(ctx context.Context, arg GetViolationAttachmentParams) (ViolationAttachment, error)
 	GetViolationRecord(ctx context.Context, arg GetViolationRecordParams) (ViolationRecord, error)
 	// Idempotency lookup for cross-module callers (attendance sessions, late
 	// arrival review): a second call with the same (workflow_instance_id,
@@ -1127,6 +1129,13 @@ type Querier interface {
 	ListPermissionCodesForDutyTypes(ctx context.Context, dutyTypeIds []uuid.UUID) ([]ListPermissionCodesForDutyTypesRow, error)
 	ListPermissionCodesForRoles(ctx context.Context, roleIds []uuid.UUID) ([]string, error)
 	ListPermissionsCatalog(ctx context.Context) ([]Permission, error)
+	// Live points preview while a teacher is still choosing violation types
+	// (docs/15 "pratinjau ambang SP"): one round trip for every selected
+	// student's current active total and the SP levels already issued,
+	// mirroring CountEntryStatusesForStudentsInYear's one-query-per-roster
+	// pattern (attendance/queries/entries.sql). A student absent from the
+	// result has zero points and no issued levels.
+	ListPointsPreviewForStudents(ctx context.Context, arg ListPointsPreviewForStudentsParams) ([]ListPointsPreviewForStudentsRow, error)
 	ListPublishedSubjectsForClass(ctx context.Context, arg ListPublishedSubjectsForClassParams) ([]uuid.UUID, error)
 	ListPushDevicesForUser(ctx context.Context, arg ListPushDevicesForUserParams) ([]PushDevice, error)
 	ListPushDevicesForUsers(ctx context.Context, arg ListPushDevicesForUsersParams) ([]PushDevice, error)
@@ -1228,6 +1237,7 @@ type Querier interface {
 	// Drives the hourly digest periodic job: every user whose configured
 	// digest hour is the current tenant-local hour.
 	ListUsersDueForDigest(ctx context.Context, arg ListUsersDueForDigestParams) ([]NotificationSetting, error)
+	ListViolationAttachments(ctx context.Context, arg ListViolationAttachmentsParams) ([]ViolationAttachment, error)
 	// The admin list: optional class (via active enrollment) and date range filters.
 	ListViolationRecords(ctx context.Context, arg ListViolationRecordsParams) ([]ListViolationRecordsRow, error)
 	ListViolationRecordsForStudent(ctx context.Context, arg ListViolationRecordsForStudentParams) ([]ListViolationRecordsForStudentRow, error)

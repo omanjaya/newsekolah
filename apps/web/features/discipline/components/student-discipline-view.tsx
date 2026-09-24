@@ -7,6 +7,8 @@ import {
   Alert,
   Badge,
   Button,
+  Dialog,
+  DialogContent,
   EmptyState,
   PageHeader,
   Skeleton,
@@ -16,17 +18,20 @@ import {
 import { FileText, Printer } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
+import { useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import { useDirectoryQuery, useLookup } from "../../reference/api";
 import {
+  type ViolationRecord,
   useIssueWarningLetterMutation,
   useStudentDisciplineQuery,
   useStudentDisciplineReportMutation,
 } from "../api";
 
 import { StudentCounselingHistory } from "./student-counseling-history";
+import { ViolationAttachments } from "./violation-attachments";
 
 /**
  * The staff-facing detail behind one student's discipline record: the same
@@ -41,6 +46,8 @@ export function StudentDisciplineView({ studentId }: { studentId: string }): Rea
   const apiErrorMessage = useApiErrorMessage();
   const canIssue = useCan("issue_warning_letters");
   const canSeeCounseling = useCan("manage_counseling");
+  const canRecordViolations = useCan("record_violations");
+  const [viewingRecord, setViewingRecord] = useState<ViolationRecord | null>(null);
 
   const students = useDirectoryQuery("student");
   const studentMap = useLookup(students.data?.data);
@@ -183,17 +190,22 @@ export function StudentDisciplineView({ studentId }: { studentId: string }): Rea
         ) : (
           <ul className="flex flex-col gap-1.5">
             {records.map((record) => (
-              <li
-                key={record.id}
-                className="flex items-center justify-between gap-2 text-[13px] text-fg"
-              >
-                <span>
-                  {record.type_name}{" "}
-                  <span className="text-fg-muted">
-                    {formatDate(record.occurred_on, { locale })}
+              <li key={record.id}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setViewingRecord(record);
+                  }}
+                  className="flex min-h-9 w-full items-center justify-between gap-2 rounded-xs px-1.5 py-1 text-left text-[13px] text-fg hover:bg-bg"
+                >
+                  <span>
+                    {record.type_name}{" "}
+                    <span className="text-fg-muted">
+                      {formatDate(record.occurred_on, { locale })}
+                    </span>
                   </span>
-                </span>
-                <span className="[font-variant-numeric:tabular-nums]">{record.points}</span>
+                  <span className="[font-variant-numeric:tabular-nums]">{record.points}</span>
+                </button>
               </li>
             ))}
           </ul>
@@ -201,6 +213,26 @@ export function StudentDisciplineView({ studentId }: { studentId: string }): Rea
       </section>
 
       {canSeeCounseling && <StudentCounselingHistory studentId={studentId} />}
+
+      <Dialog
+        open={viewingRecord != null}
+        onOpenChange={(open) => {
+          if (!open) setViewingRecord(null);
+        }}
+      >
+        <DialogContent title={viewingRecord?.type_name ?? ""}>
+          {viewingRecord && (
+            <div className="flex flex-col gap-3">
+              <p className="text-[13px] text-fg-muted">
+                {formatDate(viewingRecord.occurred_on, { locale })} ·{" "}
+                {t("recordPoints", { points: viewingRecord.points })}
+              </p>
+              {viewingRecord.notes && <p className="text-[13px] text-fg">{viewingRecord.notes}</p>}
+              <ViolationAttachments recordId={viewingRecord.id} canUpload={canRecordViolations} />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
