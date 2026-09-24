@@ -26,7 +26,7 @@ import { useCan, useSession } from "../../../lib/session/session-provider";
 import {
   useClassesQuery,
   useLookup,
-  usePeriodsQuery,
+  useAllPeriodsQuery,
   useSchoolDaysQuery,
   useSubjectsQuery,
 } from "../../reference/api";
@@ -104,7 +104,9 @@ function DaySessions(): ReactElement {
   );
   const classes = useClassesQuery();
   const subjects = useSubjectsQuery();
-  const periods = usePeriodsQuery();
+  // Every period template, not only the default: a class timetabled on a
+  // second template would otherwise show no time and sort first.
+  const periods = useAllPeriodsQuery();
   const schoolDays = useSchoolDaysQuery();
   const classMap = useLookup(classes.data?.data);
   const subjectMap = useLookup(subjects.data?.data);
@@ -199,11 +201,10 @@ function DaySessions(): ReactElement {
 
   const nextScheduleId = useMemo(() => {
     if (!isToday) return null;
-    // A session whose period is not in periodMap (a schedule built on a
-    // period template other than the tenant's default one -- see
-    // usePeriodsQuery) has no timing to compare, so it is left out of
-    // "next" rather than guessed at: a placeholder time could wrongly
-    // mark it either always-next or never-next.
+    // A session whose period is not in periodMap (a stale or deleted
+    // period) has no timing to compare, so it is left out of "next"
+    // rather than guessed at: a placeholder time could wrongly mark it
+    // either always-next or never-next.
     const timed = sortedItems.filter((session) => {
       const start = periodMap.get(session.start_period_id);
       const end = periodMap.get(session.end_period_id);
