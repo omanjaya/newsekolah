@@ -192,6 +192,16 @@ func seedWorld(t *testing.T, ctx context.Context, pool *pgxpool.Pool, slug strin
 		require.NoError(t, err)
 	}
 
+	// Only student1 gets a profile (with a NIS), so a test can assert the
+	// roster carries it through while student2 -- whose left-joined
+	// student_profiles row does not exist -- still appears with an empty
+	// NIS rather than being dropped from the roster.
+	_, err = pool.Exec(ctx,
+		`insert into student_profiles (user_id, tenant_id, nis) values ($1, $2, '2025001')`,
+		w.student1ID, w.tenantID,
+	)
+	require.NoError(t, err)
+
 	dutyType, err := q.CreateDutyType(ctx, db.CreateDutyTypeParams{TenantID: w.tenantID, Slug: "homeroom", Name: "Wali Kelas", ScopeKind: "class"})
 	require.NoError(t, err)
 	_, err = q.CreateDutyAssignment(ctx, db.CreateDutyAssignmentParams{
@@ -235,9 +245,87 @@ func TestOpenSessionIsIdempotent(t *testing.T) {
 	require.Len(t, first.Roster, 2, "both enrolled students must appear on the roster")
 	require.Equal(t, 1, first.MeetingNumber)
 
+	for _, item := range first.Roster {
+		switch item.StudentUserID {
+		case w.student1ID:
+			require.Equal(t, "2025001", item.NIS, "roster must carry the student's NIS from student_profiles")
+		case w.student2ID:
+			require.Empty(t, item.NIS, "a student with no profile row must not fail the roster, just carry an empty NIS")
+		}
+	}
+
 	second, err := svc.OpenSession(ctx, w.tenantID, actor, w.scheduleTodayID, w.today, domain.SaveModeNormal)
 	require.NoError(t, err)
 	require.Equal(t, first.Session.ID, second.Session.ID, "opening the same schedule+date twice must return the same session")
+}
+
+// TestListSessionsReportsFillProgress covers SessionSummary.RosterCount and
+// EnteredCount, which the session list's "30/36 diisi" fill-progress badge
+// is built from: the roster count must reflect the class's active
+// enrollment regardless of how many entries exist yet, and the entered
+// count must grow as entries are saved for that specific session.
+func TestListSessionsReportsFillProgress(t *testing.T) {
+	pg := dbtest.Start(t)
+	ctx := context.Background()
+	svc := buildService(pg.AppPool)
+	w := seedWorld(t, ctx, pg.AdminPool, "list-progress")
+
+	actor := service.Actor{UserID: w.teacherID}
+
+	sessions, err := svc.ListSessions(ctx, w.tenantID, w.teacherID, service.ListSessionsOptions{Date: &w.today})
+	require.NoError(t, err)
+	require.Len(t, sessions, 1)
+	require.Equal(t, 2, sessions[0].RosterCount, "both enrolled students count toward the roster")
+	require.Equal(t, 0, sessions[0].EnteredCount, "nothing has been saved for this session yet")
+
+	opened, err := svc.OpenSession(ctx, w.tenantID, actor, w.scheduleTodayID, w.today, domain.SaveModeNormal)
+	require.NoError(t, err)
+	_, err = svc.SaveEntries(ctx, w.tenantID, actor, opened.Session.ID, service.SaveEntriesInput{
+		Entries: []service.SaveEntryInput{{StudentUserID: w.student1ID, StatusCode: "H"}},
+	})
+	require.NoError(t, err)
+
+	sessions, err = svc.ListSessions(ctx, w.tenantID, w.teacherID, service.ListSessionsOptions{Date: &w.today})
+	require.NoError(t, err)
+	require.Len(t, sessions, 1)
+	require.Equal(t, 2, sessions[0].RosterCount)
+	require.Equal(t, 1, sessions[0].EnteredCount, "one student now has an entry recorded")
+}
+
+// TestRosterYearCounts covers RosterItem.YearCounts, the roster's
+// per-student "N Sakit, N Izin, ..." recap: it must total a student's
+// entries across every session in the academic year (not just this
+// class/subject), and a student with no entries yet must carry an empty
+// map rather than a nil-vs-empty inconsistency breaking the roster.
+func TestRosterYearCounts(t *testing.T) {
+	pg := dbtest.Start(t)
+	ctx := context.Background()
+	svc := buildService(pg.AppPool)
+	w := seedWorld(t, ctx, pg.AdminPool, "year-counts")
+
+	actor := service.Actor{UserID: w.teacherID}
+
+	yesterday, err := svc.OpenSession(ctx, w.tenantID, actor, w.scheduleYesterdayID, w.yesterday, domain.SaveModeNormal)
+	require.NoError(t, err)
+	_, err = svc.SaveEntries(ctx, w.tenantID, actor, yesterday.Session.ID, service.SaveEntriesInput{
+		Entries: []service.SaveEntryInput{{StudentUserID: w.student1ID, StatusCode: "S"}},
+	})
+	require.NoError(t, err)
+
+	today, err := svc.OpenSession(ctx, w.tenantID, actor, w.scheduleTodayID, w.today, domain.SaveModeNormal)
+	require.NoError(t, err)
+	detail, err := svc.SaveEntries(ctx, w.tenantID, actor, today.Session.ID, service.SaveEntriesInput{
+		Entries: []service.SaveEntryInput{{StudentUserID: w.student1ID, StatusCode: "I"}},
+	})
+	require.NoError(t, err)
+
+	byStudent := make(map[uuid.UUID]service.RosterItem, len(detail.Roster))
+	for _, item := range detail.Roster {
+		byStudent[item.StudentUserID] = item
+	}
+	require.Equal(t, map[string]int{"S": 1, "I": 1}, byStudent[w.student1ID].YearCounts,
+		"student1's recap must total entries across both of yesterday's and today's sessions")
+	require.Empty(t, byStudent[w.student2ID].YearCounts, "a student with no entries this year has no recap")
 }
 
 func TestSaveEntriesPolicyAndWindow(t *testing.T) {

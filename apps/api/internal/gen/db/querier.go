@@ -260,6 +260,11 @@ type Querier interface {
 	CountCopiesByStatus(ctx context.Context, arg CountCopiesByStatusParams) (int32, error)
 	CountCopiesTotal(ctx context.Context, tenantID uuid.UUID) (int32, error)
 	CountDailySummaryStatusesForAttendance(ctx context.Context, arg CountDailySummaryStatusesForAttendanceParams) ([]CountDailySummaryStatusesForAttendanceRow, error)
+	// Every roster student's per-status entry count across the whole
+	// academic year (every class and subject, not just this one), the
+	// roster's "N Sakit, N Izin, ..." recap: one aggregate query for the
+	// whole class rather than one round trip per student.
+	CountEntryStatusesForStudentsInYear(ctx context.Context, arg CountEntryStatusesForStudentsInYearParams) ([]CountEntryStatusesForStudentsInYearRow, error)
 	// Backs the admin dashboard's pending queues (leave requests, exit
 	// permits, late arrivals all share this table -- see the kind check
 	// constraint).

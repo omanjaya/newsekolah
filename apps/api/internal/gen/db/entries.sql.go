@@ -12,6 +12,50 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countEntryStatusesForStudentsInYear = `-- name: CountEntryStatusesForStudentsInYear :many
+select e.student_user_id, e.status_code, count(*)::bigint as total
+from attendance_entries e
+join attendance_sessions s on s.id = e.session_id
+where e.tenant_id = $1 and s.academic_year_id = $2 and e.student_user_id = any($3::uuid[])
+group by e.student_user_id, e.status_code
+`
+
+type CountEntryStatusesForStudentsInYearParams struct {
+	TenantID       uuid.UUID   `json:"tenant_id"`
+	AcademicYearID uuid.UUID   `json:"academic_year_id"`
+	StudentIds     []uuid.UUID `json:"student_ids"`
+}
+
+type CountEntryStatusesForStudentsInYearRow struct {
+	StudentUserID uuid.UUID `json:"student_user_id"`
+	StatusCode    string    `json:"status_code"`
+	Total         int64     `json:"total"`
+}
+
+// Every roster student's per-status entry count across the whole
+// academic year (every class and subject, not just this one), the
+// roster's "N Sakit, N Izin, ..." recap: one aggregate query for the
+// whole class rather than one round trip per student.
+func (q *Queries) CountEntryStatusesForStudentsInYear(ctx context.Context, arg CountEntryStatusesForStudentsInYearParams) ([]CountEntryStatusesForStudentsInYearRow, error) {
+	rows, err := q.db.Query(ctx, countEntryStatusesForStudentsInYear, arg.TenantID, arg.AcademicYearID, arg.StudentIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []CountEntryStatusesForStudentsInYearRow{}
+	for rows.Next() {
+		var i CountEntryStatusesForStudentsInYearRow
+		if err := rows.Scan(&i.StudentUserID, &i.StatusCode, &i.Total); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getEntryBySessionStudent = `-- name: GetEntryBySessionStudent :one
 select id, tenant_id, session_id, student_user_id, status_code, source, notes, recorded_by, created_at, updated_at from attendance_entries where tenant_id = $1 and session_id = $2 and student_user_id = $3
 `

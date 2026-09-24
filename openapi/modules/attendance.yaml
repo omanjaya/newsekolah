@@ -433,12 +433,24 @@ components:
         end_period_id: { type: string, format: uuid }
         is_substitute: { type: boolean }
         submitted_at: { type: string, format: date-time }
+        roster_count:
+          { type: integer, description: "Active enrollment count for the session's class." }
+        entered_count:
+          {
+            type: integer,
+            description: "How many of the roster already have an entry recorded for this session.",
+          }
     AttendanceRosterItem:
       type: object
       required: [student_user_id, name]
       properties:
         student_user_id: { type: string, format: uuid }
         name: { type: string }
+        nis: { type: string }
+        year_counts:
+          type: object
+          additionalProperties: { type: integer }
+          description: "This student's total entries per status code across the current academic year (every class/subject), for the roster's per-student recap."
         previous_status: { type: string }
         current_status: { type: string }
         source: { type: string, enum: [teacher, leave, permit, system] }

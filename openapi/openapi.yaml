@@ -19913,6 +19913,12 @@ components:
         submitted_at:
           type: string
           format: date-time
+        roster_count:
+          type: integer
+          description: Active enrollment count for the session's class.
+        entered_count:
+          type: integer
+          description: How many of the roster already have an entry recorded for this session.
     AttendanceRosterItem:
       type: object
       required:
@@ -19924,6 +19930,14 @@ components:
           format: uuid
         name:
           type: string
+        nis:
+          type: string
+        year_counts:
+          type: object
+          additionalProperties:
+            type: integer
+          description: This student's total entries per status code across the current academic year (every class/subject), for
+            the roster's per-student recap.
         previous_status:
           type: string
         current_status:

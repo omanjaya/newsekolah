@@ -7,19 +7,9 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
-type DailyReportSession = components["schemas"]["AttendanceDailyReportSession"];
+import { statusToken } from "../lib/status-tokens";
 
-const STATUS_TOKEN: Record<
-  string,
-  "present" | "sick" | "excused" | "dispensation" | "absent" | "late"
-> = {
-  H: "present",
-  S: "sick",
-  I: "excused",
-  D: "dispensation",
-  A: "absent",
-  INCOMPLETE: "late",
-};
+type DailyReportSession = components["schemas"]["AttendanceDailyReportSession"];
 
 /**
  * Per-session detail behind the daily report's aggregate table: which
@@ -77,7 +67,7 @@ export function AttendanceDailySessions({
                     <li className="px-3 py-3 text-[13px] text-fg-muted">{t("sessionNoEntries")}</li>
                   ) : (
                     session.entries.map((entry) => {
-                      const token = STATUS_TOKEN[entry.status_code];
+                      const token = statusToken(entry.status_code);
                       return (
                         <li
                           key={entry.student_user_id}

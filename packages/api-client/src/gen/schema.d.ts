@@ -8594,11 +8594,20 @@ export interface components {
             is_substitute: boolean;
             /** Format: date-time */
             submitted_at?: string;
+            /** @description Active enrollment count for the session's class. */
+            roster_count?: number;
+            /** @description How many of the roster already have an entry recorded for this session. */
+            entered_count?: number;
         };
         AttendanceRosterItem: {
             /** Format: uuid */
             student_user_id: string;
             name: string;
+            nis?: string;
+            /** @description This student's total entries per status code across the current academic year (every class/subject), for the roster's per-student recap. */
+            year_counts?: {
+                [key: string]: number;
+            };
             previous_status?: string;
             current_status?: string;
             /** @enum {string} */

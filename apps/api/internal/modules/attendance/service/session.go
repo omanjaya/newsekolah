@@ -114,7 +114,20 @@ func (s *Service) ListSessions(ctx context.Context, tenantID, teacherUserID uuid
 			if err != nil {
 				return err
 			}
-			out = append(out, SessionSummary{Session: session, IsSubstitute: occ.isSubstitute})
+
+			students, err := s.repo.ListActiveEnrollments(ctx, tenantID, yearID, occ.schedule.ClassID)
+			if err != nil {
+				return err
+			}
+			entries, err := s.repo.ListEntriesBySession(ctx, tenantID, session.ID)
+			if err != nil {
+				return err
+			}
+
+			out = append(out, SessionSummary{
+				Session: session, IsSubstitute: occ.isSubstitute,
+				RosterCount: len(students), EnteredCount: len(entries),
+			})
 		}
 		return nil
 	})
@@ -282,11 +295,30 @@ func (s *Service) buildSessionDetail(ctx context.Context, tenantID uuid.UUID, se
 		entryByStudent[e.StudentUserID] = e
 	}
 
+	studentIDs := make([]uuid.UUID, len(students))
+	for i, student := range students {
+		studentIDs[i] = student.ID
+	}
+	yearCounts, err := s.repo.CountEntryStatusesForStudentsInYear(ctx, tenantID, session.AcademicYearID, studentIDs)
+	if err != nil {
+		return SessionDetail{}, err
+	}
+	yearCountsByStudent := make(map[uuid.UUID]map[string]int, len(students))
+	for _, c := range yearCounts {
+		if yearCountsByStudent[c.StudentUserID] == nil {
+			yearCountsByStudent[c.StudentUserID] = make(map[string]int)
+		}
+		yearCountsByStudent[c.StudentUserID][c.StatusCode] = c.Total
+	}
+
 	defaultCode := defaultStatusCode(policy)
 
 	roster := make([]RosterItem, 0, len(students))
 	for _, student := range students {
-		item := RosterItem{StudentUserID: student.ID, Name: student.Name, CurrentStatus: defaultCode, Source: domain.SourceTeacher}
+		item := RosterItem{
+			StudentUserID: student.ID, Name: student.Name, NIS: student.NIS,
+			YearCounts: yearCountsByStudent[student.ID], CurrentStatus: defaultCode, Source: domain.SourceTeacher,
+		}
 
 		if prevStatus, found, err := s.repo.GetPreviousEntryForStudent(
 			ctx, tenantID, student.ID, session.ClassID, session.SubjectID, session.Date,
