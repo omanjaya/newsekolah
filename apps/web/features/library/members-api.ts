@@ -215,3 +215,46 @@ export function printLibraryClearanceLetter(userId: string): Promise<void> {
     `surat-bebas-pustaka-${userId}.pdf`,
   );
 }
+
+/**
+ * A4 sheet of membership cards (2x5 grid) for many members at once, by an
+ * explicit member (user) id list, by member type, or by class -- exactly
+ * one selection is required, mirroring the API's PrintMemberCardFilter.
+ * The API returns raw PDF bytes for a POST body, so a plain `fetch` is
+ * used instead of the JSON-typed client (see copies-api.ts's
+ * printLibraryCopyLabelsBatch, the same pattern for copy labels).
+ */
+export async function printLibraryMemberCardsBatch(selection: {
+  memberIds?: string[];
+  memberTypeId?: string;
+  classId?: string;
+}): Promise<void> {
+  const token = getAccessToken();
+  const response = await fetch(`${API_URL}/v1/library/members/cards`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({
+      member_ids: selection.memberIds,
+      member_type_id: selection.memberTypeId,
+      class_id: selection.classId,
+    }),
+  });
+  if (!response.ok) {
+    throw new ApiError({ status: response.status, code: "UNKNOWN", message: "UNKNOWN" });
+  }
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  try {
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "kartu-anggota-perpustakaan.pdf";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}

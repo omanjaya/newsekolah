@@ -297,6 +297,50 @@ func (q *Queries) GetMemberTypeByRole(ctx context.Context, arg GetMemberTypeByRo
 	return i, err
 }
 
+const getMembersByIDs = `-- name: GetMembersByIDs :many
+select user_id, tenant_id, member_no, member_type_id, registered_on, valid_until, status, suspended_until, late_return_count, notes, created_at, updated_at from library_members where tenant_id = $1 and user_id = any($2::uuid[])
+`
+
+type GetMembersByIDsParams struct {
+	TenantID uuid.UUID   `json:"tenant_id"`
+	Ids      []uuid.UUID `json:"ids"`
+}
+
+// Bulk card printing's explicit member-ids mode (order is applied by the
+// caller, same as GetCopiesByIDs for copy labels).
+func (q *Queries) GetMembersByIDs(ctx context.Context, arg GetMembersByIDsParams) ([]LibraryMember, error) {
+	rows, err := q.db.Query(ctx, getMembersByIDs, arg.TenantID, arg.Ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []LibraryMember{}
+	for rows.Next() {
+		var i LibraryMember
+		if err := rows.Scan(
+			&i.UserID,
+			&i.TenantID,
+			&i.MemberNo,
+			&i.MemberTypeID,
+			&i.RegisteredOn,
+			&i.ValidUntil,
+			&i.Status,
+			&i.SuspendedUntil,
+			&i.LateReturnCount,
+			&i.Notes,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const incrementLateReturnCount = `-- name: IncrementLateReturnCount :one
 update library_members set late_return_count = late_return_count + 1 where tenant_id = $1 and user_id = $2 returning user_id, tenant_id, member_no, member_type_id, registered_on, valid_until, status, suspended_until, late_return_count, notes, created_at, updated_at
 `
@@ -448,6 +492,70 @@ func (q *Queries) ListMembers(ctx context.Context, arg ListMembersParams) ([]Lib
 		arg.Status,
 		arg.MemberTypeID,
 		arg.Search,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []LibraryMember{}
+	for rows.Next() {
+		var i LibraryMember
+		if err := rows.Scan(
+			&i.UserID,
+			&i.TenantID,
+			&i.MemberNo,
+			&i.MemberTypeID,
+			&i.RegisteredOn,
+			&i.ValidUntil,
+			&i.Status,
+			&i.SuspendedUntil,
+			&i.LateReturnCount,
+			&i.Notes,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listMembersForCardPrint = `-- name: ListMembersForCardPrint :many
+select m.user_id, m.tenant_id, m.member_no, m.member_type_id, m.registered_on, m.valid_until, m.status, m.suspended_until, m.late_return_count, m.notes, m.created_at, m.updated_at from library_members m
+join users u on u.id = m.user_id
+where m.tenant_id = $1
+  and ($3::uuid is null or m.member_type_id = $3::uuid)
+  and (
+    $4::uuid is null
+    or exists (
+      select 1 from enrollments e
+      where e.tenant_id = m.tenant_id and e.student_user_id = m.user_id and e.status = 'active' and e.class_id = $4::uuid
+    )
+  )
+order by u.name
+limit $2
+`
+
+type ListMembersForCardPrintParams struct {
+	TenantID     uuid.UUID   `json:"tenant_id"`
+	Limit        int32       `json:"limit"`
+	MemberTypeID pgtype.UUID `json:"member_type_id"`
+	ClassID      pgtype.UUID `json:"class_id"`
+}
+
+// Bulk card printing's member-type/class mode: members of one type
+// and/or currently enrolled (active) in one class, up to limit rows,
+// ordered by name.
+func (q *Queries) ListMembersForCardPrint(ctx context.Context, arg ListMembersForCardPrintParams) ([]LibraryMember, error) {
+	rows, err := q.db.Query(ctx, listMembersForCardPrint,
+		arg.TenantID,
+		arg.Limit,
+		arg.MemberTypeID,
+		arg.ClassID,
 	)
 	if err != nil {
 		return nil, err

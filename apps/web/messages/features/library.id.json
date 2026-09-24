@@ -637,6 +637,13 @@
     "clearSelection": "Batalkan pilihan",
     "printLabels": "Cetak label"
   },
+  "memberCards": {
+    "selectedCount": "{count} anggota dipilih",
+    "overLimit": "{count} anggota dipilih, maksimal {max} per cetakan",
+    "clearSelection": "Batalkan pilihan",
+    "printCards": "Cetak kartu",
+    "printFiltered": "Cetak kartu (sesuai filter jenis)"
+  },
   "copiesBrowser": {
     "navLabel": "Eksemplar",
     "eyebrow": "Perpustakaan",

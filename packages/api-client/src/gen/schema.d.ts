@@ -5205,6 +5205,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/library/members/cards": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Printable membership cards for many members in one A4 PDF, 2 columns x 5 rows of 85.6x54mm cards per page -- by an explicit list of member (user) ids, by member type, or by class (current active enrollment), up to 500 cards per print. Exactly one of member_ids or (member_type_id and/or class_id) must be given. */
+        post: operations["printLibraryMemberCards"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/library/titles/{titleId}/reservations": {
         parameters: {
             query?: never;
@@ -22931,6 +22948,40 @@ export interface operations {
                     "application/pdf": string;
                 };
             };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    printLibraryMemberCards: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    member_ids?: string[];
+                    /** Format: uuid */
+                    member_type_id?: string;
+                    /** Format: uuid */
+                    class_id?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Cards PDF */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": string;
+                };
+            };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];

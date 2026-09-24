@@ -293,6 +293,8 @@ type Repository interface {
 	GetMember(ctx context.Context, tenantID, userID uuid.UUID) (domain.Member, bool, error)
 	GetMemberByNo(ctx context.Context, tenantID uuid.UUID, memberNo string) (domain.Member, bool, error)
 	ListMembers(ctx context.Context, tenantID uuid.UUID, filter MemberListFilter, limit, offset int) ([]domain.Member, error)
+	GetMembersByIDs(ctx context.Context, tenantID uuid.UUID, ids []uuid.UUID) ([]domain.Member, error)
+	ListMembersForCardPrint(ctx context.Context, tenantID uuid.UUID, filter MemberCardListFilter, limit int) ([]domain.Member, error)
 	UpdateMemberStatus(ctx context.Context, tenantID, userID uuid.UUID, status domain.MemberStatus, suspendedUntil *pgtype.Date) (domain.Member, bool, error)
 	UpdateMemberProfile(ctx context.Context, tenantID, userID, memberTypeID uuid.UUID, validUntil *time.Time, notes string) (domain.Member, bool, error)
 	IncrementLateReturnCount(ctx context.Context, tenantID, userID uuid.UUID) (domain.Member, error)

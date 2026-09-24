@@ -637,6 +637,13 @@
     "clearSelection": "Clear selection",
     "printLabels": "Print labels"
   },
+  "memberCards": {
+    "selectedCount": "{count} members selected",
+    "overLimit": "{count} members selected, {max} maximum per print run",
+    "clearSelection": "Clear selection",
+    "printCards": "Print cards",
+    "printFiltered": "Print cards (matching type filter)"
+  },
   "copiesBrowser": {
     "navLabel": "Copies",
     "eyebrow": "Library",

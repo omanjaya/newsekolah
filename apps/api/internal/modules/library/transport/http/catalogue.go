@@ -267,6 +267,28 @@ func (h *LibraryHandler) PrintLibraryMemberCard(ctx context.Context, request api
 	return api.PrintLibraryMemberCard200ApplicationpdfResponse{Body: bytes.NewReader(pdf), ContentLength: int64(len(pdf))}, nil
 }
 
+func (h *LibraryHandler) PrintLibraryMemberCards(ctx context.Context, request api.PrintLibraryMemberCardsRequestObject) (api.PrintLibraryMemberCardsResponseObject, error) {
+	if request.Body == nil {
+		return nil, mapError(domain.ErrInvalidInput)
+	}
+	b := request.Body
+	filter := service.MemberCardFilter{
+		MemberTypeID: nullUUID(b.MemberTypeId),
+		ClassID:      nullUUID(b.ClassId),
+	}
+	if b.MemberIds != nil {
+		filter.MemberIDs = make([]uuid.UUID, len(*b.MemberIds))
+		for i, id := range *b.MemberIds {
+			filter.MemberIDs[i] = uuid.UUID(id)
+		}
+	}
+	pdf, err := h.service.PrintMemberCards(ctx, tenantID(ctx), filter)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return api.PrintLibraryMemberCards200ApplicationpdfResponse{Body: bytes.NewReader(pdf), ContentLength: int64(len(pdf))}, nil
+}
+
 func (h *LibraryHandler) SearchOpacTitles(ctx context.Context, request api.SearchOpacTitlesRequestObject) (api.SearchOpacTitlesResponseObject, error) {
 	titles, err := h.service.OpacSearch(ctx, tenantID(ctx), service.OpacSearchParams{
 		Search: strOr(request.Params.Search), ClassificationPrefix: strOr(request.Params.ClassificationPrefix),
