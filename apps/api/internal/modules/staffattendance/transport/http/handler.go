@@ -14,6 +14,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/staffattendance/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/staffattendance/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/i18n"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/tenant"
 )
 
@@ -30,6 +31,20 @@ func tenantIDFromContext(ctx context.Context) uuid.UUID {
 		return t.ID
 	}
 	return uuid.UUID{}
+}
+
+// tenantLocale resolves the current request's tenant to a locale
+// reportdoc's FormatDate/PageLabel/EmptyRowsLabelFor understand,
+// defaulting to Indonesian -- a generated report is the school's own
+// document, so it follows the tenant's configured locale
+// (tenants.locale), not the requester's Accept-Language header. Mirrors
+// reports/transport/http.tenantLocale.
+func tenantLocale(ctx context.Context) string {
+	t, ok := tenant.FromContext(ctx)
+	if !ok {
+		return i18n.DefaultLocale
+	}
+	return i18n.FromTenantLocale(t.Locale)
 }
 
 // This module's own transport-local error codes, mirroring

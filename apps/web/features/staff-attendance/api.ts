@@ -3,8 +3,10 @@
 import { ApiError, queryKeys, type components } from "@newsekolah/api-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import type { ReportExportOptions } from "../../components/report-export-dialog";
 import { getAccessToken } from "../../lib/api/access-token";
 import { useApiClient } from "../../lib/api/client";
+import { reportExportExtension, withReportExportParams } from "../../lib/api/report-export-query";
 import { API_URL } from "../../lib/env";
 
 export type Employee = components["schemas"]["StaffAttendanceEmployee"];
@@ -127,31 +129,17 @@ export function useCorrectStaffAttendanceRecordMutation() {
 }
 
 /**
- * Downloads the monthly recap as an XLSX file. Uses a direct `fetch`
- * rather than the shared API client, same reasoning as
- * `downloadDailyAttendanceReport` in `features/attendance/api.ts`: the
- * client always parses the response as JSON, but this endpoint returns a
- * binary workbook.
+ * Downloads a blob under `filename`, then releases the object URL. Shared
+ * by every direct-`fetch` export download below -- the shared API client
+ * always parses the response as JSON, but these endpoints return a
+ * binary workbook or PDF.
  */
-export async function downloadStaffAttendanceRecap(
-  employeeId: string,
-  month: string,
-): Promise<void> {
-  const token = getAccessToken();
-  const query = new URLSearchParams({ month }).toString();
-  const response = await fetch(
-    `${API_URL}/v1/staff-attendance/employees/${employeeId}/recap/export?${query}`,
-    { headers: token ? { Authorization: `Bearer ${token}` } : undefined },
-  );
-  if (!response.ok) {
-    throw new ApiError({ status: response.status, code: "UNKNOWN", message: "UNKNOWN" });
-  }
-  const blob = await response.blob();
+function saveBlob(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob);
   try {
     const link = document.createElement("a");
     link.href = url;
-    link.download = `staff-attendance-${employeeId}-${month}.xlsx`;
+    link.download = filename;
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -160,32 +148,46 @@ export async function downloadStaffAttendanceRecap(
   }
 }
 
-/**
- * Downloads the whole staff's monthly recap as one XLSX workbook (one
- * block per employee), the administrative counterpart to
- * `downloadStaffAttendanceRecap` above.
- */
-export async function downloadAllStaffAttendanceRecap(month: string): Promise<void> {
+async function fetchExport(path: string, query: URLSearchParams): Promise<Blob> {
   const token = getAccessToken();
-  const query = new URLSearchParams({ month }).toString();
-  const response = await fetch(`${API_URL}/v1/staff-attendance/recap/export?${query}`, {
+  const response = await fetch(`${API_URL}${path}?${query.toString()}`, {
     headers: token ? { Authorization: `Bearer ${token}` } : undefined,
   });
   if (!response.ok) {
     throw new ApiError({ status: response.status, code: "UNKNOWN", message: "UNKNOWN" });
   }
-  const blob = await response.blob();
-  const url = URL.createObjectURL(blob);
-  try {
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `staff-attendance-${month}.xlsx`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-  } finally {
-    URL.revokeObjectURL(url);
-  }
+  return response.blob();
+}
+
+/**
+ * Runs the monthly recap export per the {@link ReportExportDialog}'s
+ * chosen format/title/letterhead/columns.
+ */
+export async function downloadStaffAttendanceRecap(
+  employeeId: string,
+  month: string,
+  options: ReportExportOptions,
+): Promise<void> {
+  const params = withReportExportParams(new URLSearchParams({ month }), options);
+  const blob = await fetchExport(
+    `/v1/staff-attendance/employees/${employeeId}/recap/export`,
+    params,
+  );
+  saveBlob(blob, `staff-attendance-${employeeId}-${month}.${reportExportExtension(options)}`);
+}
+
+/**
+ * Runs the whole staff's monthly recap export (one block per employee)
+ * per the {@link ReportExportDialog}'s chosen options -- the
+ * administrative counterpart to `downloadStaffAttendanceRecap` above.
+ */
+export async function downloadAllStaffAttendanceRecap(
+  month: string,
+  options: ReportExportOptions,
+): Promise<void> {
+  const params = withReportExportParams(new URLSearchParams({ month }), options);
+  const blob = await fetchExport("/v1/staff-attendance/recap/export", params);
+  saveBlob(blob, `staff-attendance-${month}.${reportExportExtension(options)}`);
 }
 
 /** "YYYY-MM-DD" in the tenant's timezone, for "today" queries. */

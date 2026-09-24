@@ -35,19 +35,19 @@ func TestRenderLibraryReportLoans(t *testing.T) {
 		}},
 	}
 
-	xlsx, err := svc.renderLibraryReport(ctx, tenantID, doc, reportdoc.Options{Format: reportdoc.FormatXLSX, ShowLetterhead: true})
+	xlsx, err := svc.renderLibraryReport(ctx, tenantID, reportdoc.LocaleID, doc, reportdoc.Options{Format: reportdoc.FormatXLSX, ShowLetterhead: true})
 	require.NoError(t, err)
 	require.NotEmpty(t, xlsx)
 
-	pdf, err := svc.renderLibraryReport(ctx, tenantID, doc, reportdoc.Options{Format: reportdoc.FormatPDF, ShowLetterhead: true})
+	pdf, err := svc.renderLibraryReport(ctx, tenantID, reportdoc.LocaleID, doc, reportdoc.Options{Format: reportdoc.FormatPDF, ShowLetterhead: true})
 	require.NoError(t, err)
 	require.NotEmpty(t, pdf)
 
-	withoutHeader, err := svc.renderLibraryReport(ctx, tenantID, doc, reportdoc.Options{Format: reportdoc.FormatXLSX, ShowLetterhead: false})
+	withoutHeader, err := svc.renderLibraryReport(ctx, tenantID, reportdoc.LocaleID, doc, reportdoc.Options{Format: reportdoc.FormatXLSX, ShowLetterhead: false})
 	require.NoError(t, err)
 	require.Greater(t, len(xlsx), len(withoutHeader), "the letterhead line must add real content to the workbook")
 
-	_, err = svc.renderLibraryReport(ctx, tenantID, doc, reportdoc.Options{
+	_, err = svc.renderLibraryReport(ctx, tenantID, reportdoc.LocaleID, doc, reportdoc.Options{
 		Format: reportdoc.FormatXLSX, Columns: []reportdoc.ColumnChoice{{Key: "not_a_real_column"}},
 	})
 	require.ErrorIs(t, err, reportdoc.ErrUnknownColumn)
@@ -72,15 +72,15 @@ func TestRenderLibraryReportTwoShapeSections(t *testing.T) {
 		},
 	}
 
-	xlsx, err := svc.renderLibraryReport(ctx, tenantID, doc, reportdoc.Options{Format: reportdoc.FormatXLSX, ShowLetterhead: true})
+	xlsx, err := svc.renderLibraryReport(ctx, tenantID, reportdoc.LocaleID, doc, reportdoc.Options{Format: reportdoc.FormatXLSX, ShowLetterhead: true})
 	require.NoError(t, err)
 	require.NotEmpty(t, xlsx)
 
-	pdf, err := svc.renderLibraryReport(ctx, tenantID, doc, reportdoc.Options{Format: reportdoc.FormatPDF, ShowLetterhead: true})
+	pdf, err := svc.renderLibraryReport(ctx, tenantID, reportdoc.LocaleID, doc, reportdoc.Options{Format: reportdoc.FormatPDF, ShowLetterhead: true})
 	require.NoError(t, err)
 	require.NotEmpty(t, pdf)
 
-	narrowed, err := svc.renderLibraryReport(ctx, tenantID, doc, reportdoc.Options{
+	narrowed, err := svc.renderLibraryReport(ctx, tenantID, reportdoc.LocaleID, doc, reportdoc.Options{
 		Format: reportdoc.FormatXLSX, Title: "Custom",
 		Columns: []reportdoc.ColumnChoice{{Key: "name"}, {Key: "loan_count", Label: "Total"}},
 	})
@@ -109,6 +109,6 @@ func TestPeriodScope(t *testing.T) {
 	from := time.Date(2026, 9, 1, 0, 0, 0, 0, time.UTC)
 	to := time.Date(2026, 9, 30, 0, 0, 0, 0, time.UTC)
 
-	require.Equal(t, "1 September 2026 s.d. 30 September 2026", periodScope(&from, &to).Value)
-	require.Equal(t, "Semua data", periodScope(nil, nil).Value)
+	require.Equal(t, "1 September 2026 s.d. 30 September 2026", periodScope(reportdoc.LocaleID, &from, &to).Value)
+	require.Equal(t, "Semua data", periodScope(reportdoc.LocaleID, nil, nil).Value)
 }

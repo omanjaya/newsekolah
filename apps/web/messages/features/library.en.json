@@ -1042,6 +1042,61 @@
         "barcode": "Barcode",
         "acquiredOn": "Acquired on"
       }
+    },
+    "export": {
+      "loans": {
+        "defaultTitle": "Loans Report",
+        "columns": {
+          "title": "Title",
+          "borrower": "Borrower",
+          "borrowed_at": "Borrowed At",
+          "due_on": "Due On",
+          "returned_at": "Returned At",
+          "status": "Status",
+          "fine": "Fine"
+        }
+      },
+      "overdueMembers": {
+        "defaultTitle": "Overdue Members Report",
+        "columns": {
+          "member": "Member",
+          "loan_count": "Overdue Loans",
+          "fine": "Estimated Fine"
+        }
+      },
+      "mostBorrowed": {
+        "defaultTitle": "Most Borrowed Titles and Top Borrowers Report",
+        "columns": {
+          "name": "Name",
+          "detail": "Detail",
+          "loan_count": "Loan Count"
+        }
+      },
+      "visits": {
+        "defaultTitle": "Library Visits Report",
+        "columns": {
+          "label": "Label",
+          "count": "Count"
+        }
+      },
+      "members": {
+        "defaultTitle": "Library Members Report",
+        "columns": {
+          "label": "Label",
+          "count": "Count"
+        }
+      },
+      "accessionRegister": {
+        "defaultTitle": "Accession Register",
+        "columns": {
+          "accession_number": "Accession Number",
+          "barcode": "Barcode",
+          "call_number": "Call Number",
+          "status": "Status",
+          "price": "Price",
+          "acquired_on": "Acquired On"
+        }
+      }
     }
   },
   "markLost": {

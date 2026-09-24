@@ -14,7 +14,9 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/supervision/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/supervision/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/i18n"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/tenant"
 )
 
 type SupervisionHandler struct{ service *service.Service }
@@ -23,6 +25,17 @@ func New(svc *service.Service) *SupervisionHandler { return &SupervisionHandler{
 
 func tenantID(ctx context.Context) uuid.UUID { id, _ := httpx.TenantIDFromContext(ctx); return id }
 func userID(ctx context.Context) uuid.UUID   { id, _ := httpx.UserIDFromContext(ctx); return id }
+
+// tenantLocale resolves the current request's tenant to a locale
+// reportdoc's FormatDate/PageLabel/EmptyRowsLabelFor understand,
+// defaulting to Indonesian. Mirrors reports/transport/http.tenantLocale.
+func tenantLocale(ctx context.Context) string {
+	t, ok := tenant.FromContext(ctx)
+	if !ok {
+		return i18n.DefaultLocale
+	}
+	return i18n.FromTenantLocale(t.Locale)
+}
 
 var errorMap = map[error]*httpx.Error{
 	domain.ErrCycleNotFound:        httpx.ErrSupervisionCycleNotFound,
@@ -256,7 +269,7 @@ func (h *SupervisionHandler) ExportTeacherSupervisionReport(ctx context.Context,
 		}
 	}
 
-	body, err := h.service.ExportTeacherReport(ctx, tenantID(ctx), request.CycleId, request.TeacherId, opts)
+	body, err := h.service.ExportTeacherReport(ctx, tenantID(ctx), request.CycleId, request.TeacherId, tenantLocale(ctx), opts)
 	if err != nil {
 		if errors.Is(err, reportdoc.ErrUnknownColumn) {
 			return nil, httpx.ErrValidation

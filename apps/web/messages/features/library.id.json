@@ -1042,6 +1042,61 @@
         "barcode": "Barcode",
         "acquiredOn": "Tanggal masuk"
       }
+    },
+    "export": {
+      "loans": {
+        "defaultTitle": "Laporan Peminjaman",
+        "columns": {
+          "title": "Judul",
+          "borrower": "Peminjam",
+          "borrowed_at": "Tanggal Pinjam",
+          "due_on": "Jatuh Tempo",
+          "returned_at": "Tanggal Kembali",
+          "status": "Status",
+          "fine": "Denda"
+        }
+      },
+      "overdueMembers": {
+        "defaultTitle": "Laporan Anggota Terlambat",
+        "columns": {
+          "member": "Anggota",
+          "loan_count": "Jumlah Pinjaman Telat",
+          "fine": "Estimasi Denda"
+        }
+      },
+      "mostBorrowed": {
+        "defaultTitle": "Laporan Judul dan Peminjam Terpopuler",
+        "columns": {
+          "name": "Nama",
+          "detail": "Keterangan",
+          "loan_count": "Jumlah Pinjam"
+        }
+      },
+      "visits": {
+        "defaultTitle": "Laporan Kunjungan Perpustakaan",
+        "columns": {
+          "label": "Keterangan",
+          "count": "Jumlah"
+        }
+      },
+      "members": {
+        "defaultTitle": "Laporan Anggota Perpustakaan",
+        "columns": {
+          "label": "Keterangan",
+          "count": "Jumlah"
+        }
+      },
+      "accessionRegister": {
+        "defaultTitle": "Buku Induk",
+        "columns": {
+          "accession_number": "Nomor Induk",
+          "barcode": "Barcode",
+          "call_number": "Nomor Panggil",
+          "status": "Status",
+          "price": "Harga",
+          "acquired_on": "Tanggal Pengadaan"
+        }
+      }
     }
   },
   "markLost": {

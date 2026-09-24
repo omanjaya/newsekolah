@@ -24,7 +24,7 @@ func TestManualDumpLoansReport(t *testing.T) {
 	returned := time.Date(2026, 9, 10, 0, 0, 0, 0, time.UTC)
 	doc := reportdoc.Document{
 		Title: "Laporan Peminjaman",
-		Scope: []reportdoc.ScopeLine{periodScope(&from, &to)},
+		Scope: []reportdoc.ScopeLine{periodScope(reportdoc.LocaleID, &from, &to)},
 		Letterhead: &reportdoc.Letterhead{
 			Lines: []string{"SMA Negeri 1 Denpasar", "Jl. Kamboja No. 4, Denpasar"},
 		},
@@ -38,7 +38,7 @@ func TestManualDumpLoansReport(t *testing.T) {
 		}},
 	}
 	svc := &Service{}
-	pdf, err := svc.renderLibraryReport(context.Background(), uuid.New(), doc, reportdoc.Options{Format: reportdoc.FormatPDF, ShowLetterhead: true})
+	pdf, err := svc.renderLibraryReport(context.Background(), uuid.New(), reportdoc.LocaleID, doc, reportdoc.Options{Format: reportdoc.FormatPDF, ShowLetterhead: true})
 	if err != nil {
 		t.Fatal(err)
 	}

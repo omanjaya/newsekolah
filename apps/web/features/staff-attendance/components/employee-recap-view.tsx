@@ -9,6 +9,7 @@ import {
   Select,
   StatusBadge,
   type StatusName,
+  useToast,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { CalendarRange, Download } from "lucide-react";
@@ -16,6 +17,11 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import {
+  ReportExportDialog,
+  type ReportExportColumn,
+  type ReportExportOptions,
+} from "../../../components/report-export-dialog";
 import { useDateFilter } from "../../../lib/hooks/use-date-filter";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import {
@@ -27,6 +33,17 @@ import {
   useStaffAttendanceHistoryQuery,
   useStaffAttendanceRecapQuery,
 } from "../api";
+
+/** Must match staffattendance/service/report.go's monthlyRecapColumns keys exactly. */
+const RECAP_COLUMN_KEYS = [
+  "date",
+  "status",
+  "arrival",
+  "departure",
+  "late_minutes",
+  "early_leave_minutes",
+  "source",
+] as const;
 
 const STATUS_TOKEN: Partial<Record<AttendanceRecord["status_code"], StatusName>> = {
   present: "present",
@@ -47,16 +64,20 @@ function StatusCell({ code }: { code: AttendanceRecord["status_code"] }): ReactE
 export function EmployeeRecapView({ employees }: { employees: Employee[] }): ReactElement {
   const t = useTranslations("app.staffAttendance");
   const apiErrorMessage = useApiErrorMessage();
+  const toast = useToast();
 
   const [employeeId, setEmployeeId] = useState("");
   const today = todayInZone();
   const [from, setFrom] = useDateFilter("from", today.slice(0, 8) + "01");
   const [to, setTo] = useDateFilter("to", today);
   const [month, setMonth] = useDateFilter("month", today.slice(0, 7), true);
-  const [downloading, setDownloading] = useState(false);
-  const [downloadError, setDownloadError] = useState<string | null>(null);
-  const [downloadingAll, setDownloadingAll] = useState(false);
-  const [downloadAllError, setDownloadAllError] = useState<string | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogAllOpen, setDialogAllOpen] = useState(false);
+
+  const recapColumns: ReportExportColumn[] = RECAP_COLUMN_KEYS.map((key) => ({
+    key,
+    label: t(`recap.columns.${key}`),
+  }));
 
   const history = useStaffAttendanceHistoryQuery(employeeId, from, to);
   const recap = useStaffAttendanceRecapQuery(employeeId, month);
@@ -83,32 +104,22 @@ export function EmployeeRecapView({ employees }: { employees: Employee[] }): Rea
     [t],
   );
 
-  async function handleDownload() {
+  async function handleExport(options: ReportExportOptions) {
     if (employeeId === "") return;
-    setDownloadError(null);
-    setDownloading(true);
     try {
-      await downloadStaffAttendanceRecap(employeeId, month);
+      await downloadStaffAttendanceRecap(employeeId, month, options);
     } catch (error) {
-      setDownloadError(
-        error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
-      );
-    } finally {
-      setDownloading(false);
+      if (error instanceof ApiError) toast.error(apiErrorMessage(error.code));
+      throw error;
     }
   }
 
-  async function handleDownloadAll() {
-    setDownloadAllError(null);
-    setDownloadingAll(true);
+  async function handleExportAll(options: ReportExportOptions) {
     try {
-      await downloadAllStaffAttendanceRecap(month);
+      await downloadAllStaffAttendanceRecap(month, options);
     } catch (error) {
-      setDownloadAllError(
-        error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
-      );
-    } finally {
-      setDownloadingAll(false);
+      if (error instanceof ApiError) toast.error(apiErrorMessage(error.code));
+      throw error;
     }
   }
 
@@ -125,19 +136,26 @@ export function EmployeeRecapView({ employees }: { employees: Employee[] }): Rea
             className="w-72"
           />
         </label>
-        <div className="flex flex-col items-end gap-1">
-          <Button
-            variant="secondary"
-            size="sm"
-            loading={downloadingAll}
-            onClick={() => void handleDownloadAll()}
-          >
-            <Download className="size-4" aria-hidden="true" />
-            {t("recap.downloadAll")}
-          </Button>
-          {downloadAllError && <p className="text-[13px] text-status-absent">{downloadAllError}</p>}
-        </div>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => {
+            setDialogAllOpen(true);
+          }}
+        >
+          <Download className="size-4" aria-hidden="true" />
+          {t("recap.downloadAll")}
+        </Button>
       </div>
+
+      <ReportExportDialog
+        open={dialogAllOpen}
+        onOpenChange={setDialogAllOpen}
+        reportKey="staff-attendance.recap.all"
+        defaultTitle={t("recap.defaultTitleAll")}
+        availableColumns={recapColumns}
+        onExport={handleExportAll}
+      />
 
       {employeeId === "" ? (
         <EmptyState
@@ -211,14 +229,22 @@ export function EmployeeRecapView({ employees }: { employees: Employee[] }): Rea
               <Button
                 variant="secondary"
                 size="sm"
-                loading={downloading}
-                onClick={() => void handleDownload()}
+                onClick={() => {
+                  setDialogOpen(true);
+                }}
               >
                 <Download className="size-4" aria-hidden="true" />
                 {t("recap.download")}
               </Button>
             </div>
-            {downloadError && <p className="text-[13px] text-status-absent">{downloadError}</p>}
+            <ReportExportDialog
+              open={dialogOpen}
+              onOpenChange={setDialogOpen}
+              reportKey="staff-attendance.recap"
+              defaultTitle={t("recap.defaultTitle")}
+              availableColumns={recapColumns}
+              onExport={handleExport}
+            />
             {recapData && recapData.days.length > 0 ? (
               <>
                 <dl className="flex flex-wrap gap-4 text-[13px]">

@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -93,24 +92,9 @@ func severityLabel(sev domain.Severity) string {
 	}
 }
 
-// indonesianMonthNames is a stand-in for a shared Indonesian date-
-// formatting helper the reportdoc foundation is adding (see
-// apps/api/internal/platform/reportdoc's package comment); swap this for
-// that helper once it lands.
-var indonesianMonthNames = [...]string{
-	"Januari", "Februari", "Maret", "April", "Mei", "Juni",
-	"Juli", "Agustus", "September", "Oktober", "November", "Desember",
-}
-
-// indonesianDate renders t as "22 September 2026", the long form a
-// report's scope line uses for a period boundary.
-func indonesianDate(t time.Time) string {
-	return fmt.Sprintf("%d %s %d", t.Day(), indonesianMonthNames[t.Month()-1], t.Year())
-}
-
 // buildRecapDocument assembles the reportdoc.Document title renders as a
 // two-section report: overall figures, then incidents by severity.
-func buildRecapDocument(title string, r Recap) reportdoc.Document {
+func buildRecapDocument(title, locale string, r Recap) reportdoc.Document {
 	summaryRows := [][]any{
 		{"Total kunjungan", r.TotalVisits},
 		{"Masih di kampus", r.StillOnCampus},
@@ -123,20 +107,24 @@ func buildRecapDocument(title string, r Recap) reportdoc.Document {
 	return reportdoc.Document{
 		Title: title,
 		Scope: []reportdoc.ScopeLine{
-			{Label: "Periode", Value: indonesianDate(r.From) + " s.d. " + indonesianDate(r.To.AddDate(0, 0, -1))},
+			{Label: "Periode", Value: reportdoc.FormatDate(locale, r.From) + " s.d. " + reportdoc.FormatDate(locale, r.To.AddDate(0, 0, -1))},
 		},
 		Columns: recapColumns(),
 		Sections: []reportdoc.Section{
 			{Name: "Ringkasan", Rows: summaryRows},
 			{Name: "Insiden per Tingkat Keparahan", Rows: incidentRows},
 		},
+		PageLabelFormat: reportdoc.PageLabel(locale),
+		EmptyRowsLabel:  reportdoc.EmptyRowsLabelFor(locale),
 	}
 }
 
 // ExportRecapReport renders a Recap per opts (format, title override,
-// letterhead visibility, column subset/order).
-func (s *Service) ExportRecapReport(ctx context.Context, tenantID uuid.UUID, title string, r Recap, opts reportdoc.Options) ([]byte, error) {
-	doc := buildRecapDocument(title, r)
+// letterhead visibility, column subset/order), following locale (the
+// caller's resolved tenant locale) for the scope line, the PDF page-
+// number footer, and the empty-section placeholder.
+func (s *Service) ExportRecapReport(ctx context.Context, tenantID uuid.UUID, title, locale string, r Recap, opts reportdoc.Options) ([]byte, error) {
+	doc := buildRecapDocument(title, locale, r)
 	if s.letterhead != nil {
 		if lh, sig, err := s.letterhead.Letterhead(ctx, tenantID); err == nil {
 			doc.Letterhead = lh

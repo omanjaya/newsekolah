@@ -17,7 +17,7 @@ func TestManualDumpSupervisionReport(t *testing.T) {
 	}
 	report := sampleTeacherCycleReport()
 	now := time.Date(2026, 9, 24, 0, 0, 0, 0, time.UTC)
-	doc := buildTeacherReportDocument(report, "Pak Budi Hartono, S.Pd.", now)
+	doc := buildTeacherReportDocument(report, "Pak Budi Hartono, S.Pd.", now, reportdoc.LocaleID)
 	doc.Letterhead = &reportdoc.Letterhead{Lines: []string{"SMA Negeri 1 Denpasar", "Jl. Kamboja No. 4, Denpasar"}}
 
 	pdf, err := renderReport(doc, reportdoc.Options{Format: reportdoc.FormatPDF, ShowLetterhead: true})

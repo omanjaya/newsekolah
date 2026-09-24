@@ -154,7 +154,9 @@
     },
     "dateLabel": "Tanggal",
     "monthLabel": "Bulan",
-    "export": "Unduh Excel",
+    "export": "Unduh",
+    "defaultTitleDaily": "Rekap Kunjungan Harian",
+    "defaultTitleMonthly": "Rekap Kunjungan Bulanan",
     "totalVisits": "Total kunjungan",
     "stillOnCampus": "Masih di kampus",
     "avgStayMinutes": "Rata-rata durasi (menit)",
@@ -164,6 +166,10 @@
       "medium": "Sedang",
       "high": "Tinggi",
       "critical": "Kritis"
+    },
+    "columns": {
+      "label": "Keterangan",
+      "value": "Jumlah"
     }
   }
 }

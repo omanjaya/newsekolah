@@ -84,11 +84,19 @@
   },
   "teacherReport": {
     "export": "Unduh",
+    "defaultTitle": "Laporan Supervisi Guru",
     "overallAverage": "Rata-rata keseluruhan",
     "byCriterion": "Rata-rata per kriteria",
     "observations": "Observasi",
     "noObservations": "Belum ada observasi yang selesai pada siklus ini.",
-    "scoreCount": "{count} skor"
+    "scoreCount": "{count} skor",
+    "columns": {
+      "date": "Tanggal Observasi",
+      "average": "Rata-rata",
+      "observer_notes": "Catatan Pengamat",
+      "teacher_response": "Tanggapan Guru",
+      "agreed_follow_up": "Tindak Lanjut"
+    }
   },
   "observationDetail": {
     "scores": "Skor",
