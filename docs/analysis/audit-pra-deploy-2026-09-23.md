@@ -160,3 +160,5 @@ Langkah manual di VPS sebelum deploy: isi `APP_DB_PASSWORD`, `DATA_ENCRYPTION_KE
 - Izin keluar ganda di hari yang sama kini selalu 409, bukan 500, termasuk di jendela ketika tanggal lokal sudah berganti tetapi tanggal UTC belum. Sisa kasus tepi: izin pukul 23.00 lalu 07.30 keesokan harinya masih ditolak karena index memakai tanggal UTC.
 
 Keputusan 25 September: TOTP admin tetap opsional (pemilik produk menguji dulu di live), kepala sekolah mendapat peran `principal` sendiri sebagai pengawas, dan celah nomor migrasi diisi placeholder no-op.
+
+Risiko terbuka per 25 September: database produksi belum punya backup (profile backup belum aktif, tujuan penyimpanan belum dipilih). Pemilik produk memilih menunda selama masa uji; wajib dipasang sebelum pengguna sungguhan mengisi data.
