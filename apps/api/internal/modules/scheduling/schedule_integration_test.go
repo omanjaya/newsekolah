@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
@@ -287,6 +288,99 @@ func TestScheduleBlockMutationsPreserveHistory(t *testing.T) {
 		}
 		require.NotContains(t, strings.Join(uflat, " | "), "Wali Kelas", "an unscoped ('own journals') export has no single class to attribute a homeroom teacher to")
 	})
+}
+
+// noopSubstitutionPublisher discards every event -- these tests assert on
+// the repository/service return values, not on what reaches the
+// notifications module.
+type noopSubstitutionPublisher struct{}
+
+func (noopSubstitutionPublisher) Publish(context.Context, service.Event) error { return nil }
+
+// A substitution request's incoming/outgoing list must come back joined
+// with the class/subject/period it covers (domain.SubstitutionWithSchedule),
+// not just the bare request row -- what the web substitutions page renders
+// as a session-card needs that join to avoid a second round trip per row.
+func TestListSubstitutionsWithSchedule(t *testing.T) {
+	if testing.Short() {
+		t.Skip("integration test requires Docker")
+	}
+	ctx := context.Background()
+	pg := dbtest.Start(t)
+	pool := pg.AdminPool
+	insertID := func(sql string, args ...any) uuid.UUID {
+		t.Helper()
+		var id uuid.UUID
+		require.NoError(t, pool.QueryRow(ctx, sql+" returning id", args...).Scan(&id))
+		return id
+	}
+	exec := func(sql string, args ...any) {
+		t.Helper()
+		_, err := pool.Exec(ctx, sql, args...)
+		require.NoError(t, err)
+	}
+	tenant := insertID(`insert into tenants (slug,name,education_level,timezone,locale,status,plan) values ('substitution-test','Test','sma','UTC','id','active','default')`)
+	year := insertID(`insert into academic_years (tenant_id,label,starts_on,ends_on) values ($1,'2026/2027','2026-01-01','2027-12-31')`, tenant)
+	grade := insertID(`insert into grade_levels (tenant_id,code,name,sequence) values ($1,'X','X',1)`, tenant)
+	class := insertID(`insert into classes (tenant_id,academic_year_id,grade_level_id,name) values ($1,$2,$3,'X-A')`, tenant, year, grade)
+	subject := insertID(`insert into subjects (tenant_id,code,name) values ($1,'MTK','Math')`, tenant)
+	teacher := insertID(`insert into users (tenant_id,username,password_hash,name,status,locale) values ($1,'teacher-req','x','Requester','active','id')`, tenant)
+	substitute := insertID(`insert into users (tenant_id,username,password_hash,name,status,locale) values ($1,'teacher-sub','x','Substitute','active','id')`, tenant)
+	template := insertID(`insert into period_templates (tenant_id,name) values ($1,'Default')`, tenant)
+	p1 := insertID(`insert into periods (tenant_id,template_id,name,sequence,starts_at,ends_at) values ($1,$2,'P1',1,'08:00','09:00')`, tenant, template)
+	exec(`insert into teaching_assignments (tenant_id,academic_year_id,teacher_user_id,subject_id,class_id) values ($1,$2,$3,$4,$5)`, tenant, year, teacher, subject, class)
+	// IsActiveTeacher requires the substitute to have some teaching
+	// assignment this year too, not necessarily this class/subject.
+	exec(`insert into teaching_assignments (tenant_id,academic_year_id,teacher_user_id,subject_id,class_id) values ($1,$2,$3,$4,$5)`, tenant, year, substitute, subject, class)
+	// CreateSchedule requires day 1 (Monday) to be an active school day.
+	exec(`insert into school_days (tenant_id,academic_year_id,day_of_week) values ($1,$2,1)`, tenant, year)
+	exec(`insert into period_day_assignments (tenant_id,academic_year_id,day_of_week,template_id) values ($1,$2,1,$3)`, tenant, year, template)
+
+	svc := service.New(pg.AppPool, repository.New(pg.AppPool))
+	actor := service.Actor{CanManage: true, UserID: teacher}
+	sched, err := svc.CreateSchedule(ctx, tenant, service.ScheduleInput{
+		AcademicYearID: year, ClassID: class, SubjectID: subject, TeacherUserID: teacher,
+		DayOfWeek: 1, StartPeriodID: p1, EndPeriodID: p1, Source: domain.SourceAdmin,
+	}, actor)
+	require.NoError(t, err)
+
+	// 2026-09-21 is a Monday, matching the schedule's day_of_week above.
+	date := mustParseDate(t, "2026-09-21")
+	created, err := svc.RequestSubstitution(ctx, tenant, sched.ID, date, teacher, substitute, "tolong gantikan", noopSubstitutionPublisher{})
+	require.NoError(t, err)
+	require.Equal(t, domain.SubstitutionPending, created.Status)
+
+	incoming, err := svc.ListSubstitutionsIncomingWithSchedule(ctx, tenant, substitute)
+	require.NoError(t, err)
+	require.Len(t, incoming, 1)
+	require.Equal(t, created.ID, incoming[0].ID)
+	require.Equal(t, class, incoming[0].ClassID)
+	require.Equal(t, subject, incoming[0].SubjectID)
+	require.Equal(t, p1, incoming[0].StartPeriodID)
+	require.Equal(t, p1, incoming[0].EndPeriodID)
+
+	outgoing, err := svc.ListSubstitutionsOutgoingWithSchedule(ctx, tenant, teacher)
+	require.NoError(t, err)
+	require.Len(t, outgoing, 1)
+	require.Equal(t, created.ID, outgoing[0].ID)
+	require.Equal(t, class, outgoing[0].ClassID)
+	require.Equal(t, subject, outgoing[0].SubjectID)
+
+	// Accepting it must not change the joined class/subject/period.
+	_, err = svc.RespondSubstitution(ctx, tenant, created.ID, substitute, true, "", noopSubstitutionPublisher{})
+	require.NoError(t, err)
+	incoming, err = svc.ListSubstitutionsIncomingWithSchedule(ctx, tenant, substitute)
+	require.NoError(t, err)
+	require.Len(t, incoming, 1)
+	require.Equal(t, domain.SubstitutionAccepted, incoming[0].Status)
+	require.Equal(t, class, incoming[0].ClassID)
+}
+
+func mustParseDate(t *testing.T, value string) time.Time {
+	t.Helper()
+	parsed, err := time.Parse("2006-01-02", value)
+	require.NoError(t, err)
+	return parsed
 }
 
 // fakeJournalLetterheadSource is a minimal reportdoc.LetterheadSource

@@ -65,3 +65,18 @@ func (h *StaffAttendanceHandler) GetStaffAttendanceHistory(ctx context.Context, 
 	}
 	return api.GetStaffAttendanceHistory200JSONResponse{Data: toAPIRecords(views)}, nil
 }
+
+// GetStaffAttendanceMyHistory is the self-service counterpart to
+// GetStaffAttendanceHistory: any authenticated user can read their own
+// history (no view_staff_attendance permission required), the same way
+// ScanStaffAttendance resolves the current user rather than trusting a
+// path parameter. Lets the check-in screen show "this week" for an
+// employee who is not a staff-attendance manager.
+func (h *StaffAttendanceHandler) GetStaffAttendanceMyHistory(ctx context.Context, request api.GetStaffAttendanceMyHistoryRequestObject) (api.GetStaffAttendanceMyHistoryResponseObject, error) {
+	userID, _ := httpx.UserIDFromContext(ctx)
+	views, err := h.service.GetEmployeeHistory(ctx, tenantIDFromContext(ctx), userID, request.Params.From.Time, request.Params.To.Time)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return api.GetStaffAttendanceMyHistory200JSONResponse{Data: toAPIRecords(views)}, nil
+}

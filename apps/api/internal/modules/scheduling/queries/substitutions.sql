@@ -41,6 +41,25 @@ select * from substitution_requests
 where tenant_id = $1 and requester_user_id = $2
 order by date desc, created_at desc;
 
+-- name: ListSubstitutionsIncomingWithSchedule :many
+-- Same rows as ListSubstitutionsIncoming, joined with the covered
+-- schedule's class/subject/period so the web substitutions page can render
+-- a session-card without a second round trip per row. The join is always
+-- safe: substitution_requests.schedule_id cascades on schedule delete, so
+-- the referenced schedule row always exists for as long as this row does.
+select sqlc.embed(sr), s.class_id, s.subject_id, s.start_period_id, s.end_period_id
+from substitution_requests sr
+join schedules s on s.id = sr.schedule_id
+where sr.tenant_id = $1 and sr.substitute_user_id = $2
+order by sr.date desc, sr.created_at desc;
+
+-- name: ListSubstitutionsOutgoingWithSchedule :many
+select sqlc.embed(sr), s.class_id, s.subject_id, s.start_period_id, s.end_period_id
+from substitution_requests sr
+join schedules s on s.id = sr.schedule_id
+where sr.tenant_id = $1 and sr.requester_user_id = $2
+order by sr.date desc, sr.created_at desc;
+
 -- name: ListSubstitutionsAll :many
 -- The manage_schedules-only "all" scope (docs/analysis/backend-inventory.md
 -- section 1.13): every substitution request tenant-wide, optionally

@@ -41,3 +41,15 @@ export function dateTimeLocalToIso(value: string): string | null {
   if (!value) return null;
   return new Date(value).toISOString();
 }
+
+/**
+ * "YYYY-MM-DD" shifted by `days` (negative goes back), staying in UTC so a
+ * daylight-saving transition never skips or repeats a calendar day --
+ * mirrors `attendance-view.tsx`'s local `shiftDate`, needed here too for
+ * the self check-in screen's rolling "this week" range.
+ */
+export function shiftDateISO(date: string, days: number): string {
+  const [y, m, d] = date.split("-").map(Number) as [number, number, number];
+  const next = new Date(Date.UTC(y, m - 1, d + days));
+  return `${next.getUTCFullYear()}-${String(next.getUTCMonth() + 1).padStart(2, "0")}-${String(next.getUTCDate()).padStart(2, "0")}`;
+}

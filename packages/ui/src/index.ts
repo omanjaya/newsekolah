@@ -85,6 +85,7 @@ export {
 export { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from "./components/popover.js";
 export { Progress, type ProgressProps } from "./components/progress.js";
 export { Kbd } from "./components/kbd.js";
+export { StickySaveBar, type StickySaveBarProps } from "./components/sticky-save-bar.js";
 export {
   CommandPalette,
   type CommandPaletteGroup,

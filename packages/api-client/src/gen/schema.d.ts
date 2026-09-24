@@ -7080,6 +7080,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/staff-attendance/me/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The current user's own daily status across a date range (self-service, no view_staff_attendance permission needed) */
+        get: operations["getStaffAttendanceMyHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/staff-attendance/employees/{employeeId}/history": {
         parameters: {
             query?: never;
@@ -11360,6 +11377,14 @@ export interface components {
             responded_at?: string;
             /** Format: date-time */
             created_at: string;
+            /** Format: uuid */
+            class_id?: string;
+            /** Format: uuid */
+            subject_id?: string;
+            /** Format: uuid */
+            start_period_id?: string;
+            /** Format: uuid */
+            end_period_id?: string;
         };
         SubstituteCandidate: {
             /** Format: uuid */
@@ -26562,6 +26587,34 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             403: components["responses"]["Forbidden"];
+        };
+    };
+    getStaffAttendanceMyHistory: {
+        parameters: {
+            query: {
+                from: string;
+                /** @description Exclusive end date */
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description History */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["StaffAttendanceRecord"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
         };
     };
     getStaffAttendanceHistory: {
