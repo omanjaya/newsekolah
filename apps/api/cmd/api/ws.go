@@ -37,6 +37,13 @@ type monitorSnapshotReader interface {
 // 1.6.1 -- the old app checked on connect only, never again).
 const sessionRevocationCheckInterval = 60 * time.Second
 
+// presenceHeartbeatInterval is how often a live /ws/me connection refreshes
+// its own presence entry (see heartbeatPresence). It must stay well under
+// realtime.Presence's own ttl (cmd/api/wire.go's presenceTTL, 90s) so a
+// connection that is still open never goes stale in GET
+// /v1/monitor/presence's snapshot between two heartbeats.
+const presenceHeartbeatInterval = 30 * time.Second
+
 // watchSessionValidity closes client the moment sessionID stops being
 // active (revoked, expired) or the connection itself ends, whichever
 // comes first. Runs in its own goroutine for the life of one WebSocket
@@ -54,6 +61,33 @@ func watchSessionValidity(client *realtime.Client, sessions auth.SessionLookup, 
 				client.Close()
 				return
 			}
+		}
+	}
+}
+
+// heartbeatPresence refreshes presence's last-seen time for key every
+// interval, for as long as client stays connected, so a long-lived /ws/me
+// session keeps counting as "online" in GET /v1/monitor/presence instead
+// of only ever heartbeating once at connect time (the previous behaviour:
+// docs/15-paritas-sion.md's "Heartbeat presence pengguna online" gap) and
+// then quietly going stale -- and, past realtime.Presence's ttl, dropping
+// out of the snapshot entirely -- while the socket is still open. It stops
+// the moment client disconnects (client.Done() closes), whether that is a
+// clean close, a network drop caught by the ping/pong deadline, or
+// watchSessionValidity closing it after revocation; wsMeHandler's onClose
+// callback still does the actual presence.Remove on disconnect, so a
+// closed connection is never left heartbeating a key nothing will ever
+// clean up. Runs in its own goroutine for the life of one WebSocket
+// connection, mirroring watchSessionValidity above.
+func heartbeatPresence(client *realtime.Client, presence *realtime.Presence, key string, interval time.Duration) {
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-client.Done():
+			return
+		case <-ticker.C:
+			presence.Heartbeat(context.Background(), key, time.Now())
 		}
 	}
 }
@@ -88,7 +122,11 @@ func mountRealtimeRoutes(router chi.Router, pool *pgxpool.Pool, tokenIssuer *aut
 // heartbeats presence (GET /v1/monitor/presence): the key is
 // "<tenant>:<role>:<user>" so attendance/module.go's livePresence can both
 // scope a snapshot to one tenant and recover each connection's role for
-// the per-role counts.
+// the per-role counts. heartbeatPresence keeps re-heartbeating that key
+// every presenceHeartbeatInterval for the life of the connection, so a
+// long-lived session stays "online" instead of aging out of the snapshot
+// after realtime.Presence's ttl from only the one heartbeat sent here at
+// connect time.
 func wsMeHandler(tokenIssuer *auth.TokenIssuer, sessions auth.SessionLookup, hub *realtime.Hub, presence *realtime.Presence, appOrigins []string, logger *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		token, _, ok := realtime.ExtractBearer(r)
@@ -140,6 +178,10 @@ func wsMeHandler(tokenIssuer *auth.TokenIssuer, sessions auth.SessionLookup, hub
 		// moment this upgrade handler returns.
 		// #nosec G118 -- see watchSessionValidity's doc comment
 		go watchSessionValidity(client, sessions, t.ID, sessionID) //nolint:gosec // see watchSessionValidity's doc comment
+		// heartbeatPresence uses context.Background() internally for the
+		// same reason watchSessionValidity does above.
+		// #nosec G118 -- see heartbeatPresence's doc comment
+		go heartbeatPresence(client, presence, presenceKey, presenceHeartbeatInterval) //nolint:gosec // see heartbeatPresence's doc comment
 	}
 }
 

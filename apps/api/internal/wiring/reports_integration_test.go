@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/xuri/excelize/v2"
 
@@ -21,6 +22,7 @@ import (
 	permitsservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/service"
 	reportsservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/reports/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/school"
+	schooldomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/school/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/dbtest"
@@ -303,6 +305,60 @@ func TestPermitsExitPermitYearlyRowsRenders(t *testing.T) {
 	pdf, err := reportdoc.RenderPDF(doc)
 	require.NoError(t, err)
 	require.True(t, bytes.HasPrefix(pdf, []byte("%PDF")))
+}
+
+// TestExportReportExitPermitYearlyPDFHasLetterhead is the end-to-end proof
+// for the exit permit report's PDF variant (docs/15-paritas-sion.md's
+// "Laporan PDF izin keluar" item): the same reports/service.Service.
+// RunDocument path GET /v1/reports/{reportKind}/export calls, through the
+// same query-param format switch ExportReport uses
+// (transport/http/handler.go's exportOptionsFromParams), with the
+// school's real, database-configured letterhead attached -- not the
+// reader-level reportdoc.RenderPDF call TestPermitsExitPermitYearlyRowsRenders
+// above already covers, and not a fakeLetterhead like reports/service's
+// own unit tests use. format=xlsx confirms the letterhead line lands in
+// cell A1 (writeLetterhead's documented layout); format=pdf confirms the
+// exact same Document renders as a valid PDF through the identical
+// RunDocument call the HTTP handler makes for either format.
+func TestExportReportExitPermitYearlyPDFHasLetterhead(t *testing.T) {
+	pg := dbtest.Start(t)
+	fx := seedGradeLevelFixture(t, pg.AdminPool)
+
+	schoolModule := school.Register(pg.AppPool, tenant.ModeSingle, nil)
+	academicModule := academic.Register(pg.AppPool, clock.Real{})
+	permitsModule := permits.Register(permits.Dependencies{
+		Pool: pg.AppPool, Years: schoolModule.Service, Clock: clock.Real{},
+		Config: permitsservice.DefaultConfig([]byte("01234567890123456789012345678901"), ""),
+	})
+	permitsReports := PermitsReports{Svc: permitsModule.Service, Academic: academicModule.Service, Years: schoolModule.Service}
+
+	_, err := schoolModule.Service.UpdateReportHeader(context.Background(), fx.tenantID, uuid.New(), schooldomain.ReportHeader{
+		Lines: []string{"SMA Uji Coba Ekspor"},
+		Place: "Denpasar",
+		Signers: []schooldomain.ReportHeaderSigner{
+			{RoleLabel: "Kepala Sekolah", Name: "Ibu Kepala Uji"},
+		},
+	})
+	require.NoError(t, err)
+
+	svc := reportsservice.New(nil, nil, nil, permitsReports)
+	svc.SetReportDocDependencies(AcademicReports{Academic: academicModule.Service, School: schoolModule.Service}, ReportHeaderReports{Svc: schoolModule.Service})
+
+	xlsx, contentType, err := svc.RunDocument(context.Background(), fx.tenantID, reportsservice.KindExitPermitsYearly, reportsservice.RunArgs{}, reportdoc.Options{Format: reportdoc.FormatXLSX, ShowLetterhead: true}, reportdoc.LocaleID)
+	require.NoError(t, err)
+	require.Equal(t, reportsservice.XLSXContentType, contentType)
+	f, err := excelize.OpenReader(bytes.NewReader(xlsx))
+	require.NoError(t, err)
+	defer f.Close() //nolint:errcheck
+	sheet := f.GetSheetList()[0]
+	cell, err := f.GetCellValue(sheet, "A1")
+	require.NoError(t, err)
+	assert.Equal(t, "SMA Uji Coba Ekspor", cell, "the configured kop laporan must appear on the rendered export")
+
+	pdf, contentType, err := svc.RunDocument(context.Background(), fx.tenantID, reportsservice.KindExitPermitsYearly, reportsservice.RunArgs{}, reportdoc.Options{Format: reportdoc.FormatPDF, ShowLetterhead: true}, reportdoc.LocaleID)
+	require.NoError(t, err)
+	require.Equal(t, reportsservice.PDFContentType, contentType)
+	require.True(t, bytes.HasPrefix(pdf, []byte("%PDF")), "must render as a valid PDF")
 }
 
 // requireOpensAsWorkbookWithSheets re-opens a rendered XLSX with excelize
