@@ -15,6 +15,7 @@ import (
 	transporthttp "github.com/omanjaya/newsekolah/apps/api/internal/modules/reports/transport/http"
 	transportjobs "github.com/omanjaya/newsekolah/apps/api/internal/modules/reports/transport/jobs"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 )
 
 type Dependencies struct {
@@ -31,6 +32,12 @@ type Dependencies struct {
 	// periodic job's RegisterJobs registration entirely.
 	Storage service.ScheduleStorage
 	Clock   clock.Clock
+	// Academic resolves grade-level scope for attendance.daily's
+	// reportdoc export; nil makes a grade_level_id export 404. Letterhead
+	// loads the tenant's kop laporan for that same export; nil renders
+	// without one even when the caller asked for it.
+	Academic   service.AcademicReader
+	Letterhead reportdoc.LetterheadSource
 }
 
 type Module struct {
@@ -41,6 +48,7 @@ type Module struct {
 
 func Register(deps Dependencies) *Module {
 	svc := service.New(deps.Attendance, deps.Discipline, deps.Grading, deps.Permits)
+	svc.SetReportDocDependencies(deps.Academic, deps.Letterhead)
 
 	clk := deps.Clock
 	if clk == nil {

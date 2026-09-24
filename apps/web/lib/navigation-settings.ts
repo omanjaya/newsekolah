@@ -75,6 +75,15 @@ export const settingsNavItems: NavItem[] = [
     sidebarPlacement: "footer",
   },
   {
+    key: "settings-report-header",
+    labelKey: "app.settings.reportHeader.navLabel",
+    href: "/settings/report-header",
+    icon: domainIcons.document,
+    permission: "manage_settings",
+    group: NAV_GROUP.settings,
+    sidebarPlacement: "footer",
+  },
+  {
     key: "settings-sso",
     labelKey: "app.sso.navLabel",
     href: "/settings/sso",

@@ -116,6 +116,38 @@ func (r *Repository) SetBrandingSetting(ctx context.Context, tenantID, actorID u
 	return nil
 }
 
+// GetTenantSettingJSON reads one exact tenant_settings key as raw jsonb,
+// for a setting (like report_header.config) stored as one structured
+// blob rather than one row per field the way branding.* is. Passing an
+// exact key to ListTenantSettingsByPrefix's LIKE pattern (no "%") is an
+// exact match, so this reuses that query rather than adding a new one.
+func (r *Repository) GetTenantSettingJSON(ctx context.Context, tenantID uuid.UUID, key string) (json.RawMessage, bool, error) {
+	rows, err := r.queries(ctx).ListTenantSettingsByPrefix(ctx, db.ListTenantSettingsByPrefixParams{
+		TenantID: tenantID, Key: key,
+	})
+	if err != nil {
+		return nil, false, fmt.Errorf("get tenant setting %s: %w", key, err)
+	}
+	if len(rows) == 0 {
+		return nil, false, nil
+	}
+	return rows[0].Value, true, nil
+}
+
+// SetTenantSettingJSON upserts one exact tenant_settings key with an
+// already-marshaled jsonb value (SetTenantSettingJSON's caller owns the
+// shape; this just stores it), report_header.config's counterpart to
+// GetTenantSettingJSON.
+func (r *Repository) SetTenantSettingJSON(ctx context.Context, tenantID, actorID uuid.UUID, key string, value json.RawMessage) error {
+	if err := r.queries(ctx).UpsertTenantSetting(ctx, db.UpsertTenantSettingParams{
+		TenantID: tenantID, Key: key, Value: value,
+		UpdatedBy: pdatabase.NullUUID(uuid.NullUUID{UUID: actorID, Valid: actorID != uuid.Nil}),
+	}); err != nil {
+		return fmt.Errorf("upsert tenant setting %s: %w", key, err)
+	}
+	return nil
+}
+
 // CreateAssetRecord records an uploaded branding logo/favicon in the
 // shared assets table (the same one identity's avatar upload uses).
 func (r *Repository) CreateAssetRecord(ctx context.Context, in service.NewAsset) (service.AssetRecord, error) {

@@ -2,10 +2,12 @@ package wiring
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
 
+	academicservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/academic/service"
 	attendanceservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance/service"
 	disciplineservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/discipline/service"
 	familyservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/family/service"
@@ -13,6 +15,8 @@ import (
 	identityservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/identity/service"
 	permitsservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/service"
 	reportsservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/reports/service"
+	schoolservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/school/service"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 )
 
 // Report readers turn each module's own view types into the flat sheet the
@@ -35,6 +39,75 @@ func (a AttendanceReports) DailyReportRows(ctx context.Context, tenantID, classI
 		sheet.Rows[i] = []any{i + 1, s.Name, s.StatusCode, s.ExpectedSessions, s.SubmittedSessions, s.Complete}
 	}
 	return sheet, nil
+}
+
+// DailyReportTypedRows is DailyReportRows' data again, natively typed for
+// reportdoc.Section.Rows instead of flattened into reportsservice.Sheet's
+// strings -- attendance.daily's reportdoc export path (RunDocument).
+func (a AttendanceReports) DailyReportTypedRows(ctx context.Context, tenantID, classID uuid.UUID, date time.Time) ([][]any, error) {
+	report, err := a.Svc.GetDailyReport(ctx, tenantID, classID, date)
+	if err != nil {
+		return nil, err
+	}
+	rows := make([][]any, len(report.Students))
+	for i, s := range report.Students {
+		rows[i] = []any{i + 1, s.Name, s.StatusCode, s.ExpectedSessions, s.SubmittedSessions, completeLabel(s.Complete)}
+	}
+	return rows, nil
+}
+
+func completeLabel(complete bool) string {
+	if complete {
+		return "Yes"
+	}
+	return "No"
+}
+
+// AcademicReports resolves the class(es) attendance.daily's grade-level
+// (angkatan) scope needs: School gives the active academic year,
+// Academic lists that year's classes for a grade level or a single class
+// by id.
+type AcademicReports struct {
+	Academic *academicservice.Service
+	School   *schoolservice.Service
+}
+
+func (a AcademicReports) ClassByID(ctx context.Context, tenantID, classID uuid.UUID) (reportsservice.ClassRef, error) {
+	c, err := a.Academic.GetClass(ctx, tenantID, classID)
+	if err != nil {
+		return reportsservice.ClassRef{}, err
+	}
+	return reportsservice.ClassRef{ID: c.ID, Name: c.Name}, nil
+}
+
+func (a AcademicReports) ClassesInGradeLevel(ctx context.Context, tenantID, gradeLevelID uuid.UUID) ([]reportsservice.ClassRef, error) {
+	yearID, ok, err := a.School.GetActiveAcademicYearID(ctx, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
+		return nil, errNoActiveAcademicYear
+	}
+	classes, _, err := a.Academic.ListClasses(ctx, tenantID, yearID, "", &gradeLevelID, academicservice.Page{Limit: 200})
+	if err != nil {
+		return nil, err
+	}
+	out := make([]reportsservice.ClassRef, len(classes))
+	for i, c := range classes {
+		out[i] = reportsservice.ClassRef{ID: c.ID, Name: c.Name}
+	}
+	return out, nil
+}
+
+var errNoActiveAcademicYear = fmt.Errorf("reports: tenant has no active academic year")
+
+// ReportHeaderReports loads a tenant's configured kop laporan and default
+// signature for reportdoc's LetterheadSource port (see
+// reportdoc.LetterheadSource's doc comment).
+type ReportHeaderReports struct{ Svc *schoolservice.Service }
+
+func (r ReportHeaderReports) Letterhead(ctx context.Context, tenantID uuid.UUID) (*reportdoc.Letterhead, *reportdoc.Signature, error) {
+	return r.Svc.ReportLetterhead(ctx, tenantID)
 }
 
 type DisciplineReports struct {

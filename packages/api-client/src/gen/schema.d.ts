@@ -6583,7 +6583,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Run one report and download it as XLSX */
+        /**
+         * Run one report and download it as XLSX or PDF
+         * @description format/title/letterhead/columns customise the downloaded file (see docs/05-shared-components.md, "Laporan dan ekspor"); every report kind accepts them, but only attendance.daily builds a fully reportdoc-backed document today -- other kinds still ignore letterhead/columns and always return XLSX. grade_level_id is an additional scope: attendance.daily accepts it in place of class_id to export one section per class in the grade level.
+         */
         get: operations["exportReport"];
         put?: never;
         post?: never;
@@ -7383,6 +7386,41 @@ export interface paths {
         put?: never;
         /** Confirm the uploaded object as the new favicon (validated server-side) */
         post: operations["confirmFaviconUpload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tenant/report-header": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The tenant's configured report letterhead (kop laporan) */
+        get: operations["getTenantReportHeader"];
+        /** Change the report letterhead (kop laporan) and default signers */
+        put: operations["updateTenantReportHeader"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tenant/report-header/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Render a sample report with the tenant's current report header, for the settings page's live preview */
+        get: operations["previewTenantReportHeader"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -11050,7 +11088,7 @@ export interface components {
             completed_at?: string;
         };
         /** @enum {string} */
-        ReportArgumentKind: "class" | "subject" | "date" | "term";
+        ReportArgumentKind: "class" | "grade_level" | "subject" | "date" | "term";
         ReportArgument: {
             name: string;
             kind: components["schemas"]["ReportArgumentKind"];
@@ -11486,6 +11524,21 @@ export interface components {
             locale: "id" | "en";
             timezone: string;
         };
+        ReportHeaderSigner: {
+            role_label: string;
+            name: string;
+            id_label?: string;
+            id_number?: string;
+        };
+        ReportHeaderWrite: {
+            /** @description Print the tenant's branding logo above the letterhead lines (PNG/JPEG only; other formats are skipped). */
+            show_logo: boolean;
+            /** @description First line is conventionally the school name and renders bold. */
+            lines: string[];
+            place: string;
+            signers: components["schemas"]["ReportHeaderSigner"][];
+        };
+        ReportHeader: components["schemas"]["ReportHeaderWrite"];
         LevelTemplateSummary: {
             /** @enum {string} */
             key: "sd" | "smp" | "sma" | "smk";
@@ -25280,9 +25333,15 @@ export interface operations {
         parameters: {
             query?: {
                 class_id?: string;
+                grade_level_id?: string;
                 subject_id?: string;
                 term_id?: string;
                 date?: string;
+                format?: "xlsx" | "pdf";
+                title?: string;
+                letterhead?: boolean;
+                /** @description Comma-separated column keys, each optionally `key:Label` (URL-encoded); empty/absent keeps every column. */
+                columns?: string;
             };
             header?: never;
             path: {
@@ -25292,13 +25351,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Workbook */
+            /** @description Workbook or PDF, depending on format */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
+                    "application/pdf": string;
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -26919,6 +26979,81 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TenantBranding"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    getTenantReportHeader: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Report header */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportHeader"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    updateTenantReportHeader: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReportHeaderWrite"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportHeader"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    previewTenantReportHeader: {
+        parameters: {
+            query: {
+                format: "pdf" | "xlsx";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sample document */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": string;
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
                 };
             };
             400: components["responses"]["BadRequest"];

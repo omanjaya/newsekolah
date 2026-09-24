@@ -20,4 +20,11 @@ var (
 	ErrUploadInvalidType    = errors.New("logo/favicon must be PNG, WebP, or SVG")
 	ErrUploadTooLarge       = errors.New("file exceeds the allowed size")
 	ErrUploadObjectNotOwned = errors.New("uploaded object does not belong to this tenant")
+
+	// Report header (kop laporan)
+	ErrReportHeaderTooManyLines   = errors.New("report header may have at most 5 lines")
+	ErrReportHeaderLineTooLong    = errors.New("report header line exceeds 200 characters")
+	ErrReportHeaderTooManySigners = errors.New("report header may have at most 5 default signers")
+	ErrReportHeaderPlaceTooLong   = errors.New("report header place exceeds 80 characters")
+	ErrReportHeaderSignerInvalid  = errors.New("report header signer role and name are required")
 )
