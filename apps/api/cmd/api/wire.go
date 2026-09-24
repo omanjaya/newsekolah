@@ -125,6 +125,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	})
 
 	academicModule := academic.Register(pool, clock.Real{})
+	academicModule.Service.SetLetterheadSource(wiring.ReportHeaderReports{Svc: schoolModule.Service})
 
 	// The onboarding wizard (level templates, Dapodik import, sample-data
 	// seeding) lives on schoolModule.Service but needs academic and

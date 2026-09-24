@@ -2,25 +2,15 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import {
-  Avatar,
-  Badge,
   Button,
-  ConfirmDialog,
   Dialog,
   DialogContent,
   EmptyState,
-  Input,
   PageHeader,
-  Select,
   Skeleton,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
   domainIcons,
-  useToast,
 } from "@newsekolah/ui";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useEffect, useMemo, useState } from "react";
@@ -29,22 +19,11 @@ import { useActiveYear } from "../../../lib/hooks/use-active-year";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
-import { useDeleteClassMutation } from "../../academic/api-school-extras";
-import { useClassesQuery, useLookup, useTeachersQuery } from "../../reference/api";
-import {
-  type ClassRow,
-  useCreateClassMutation,
-  useEnrollmentsQuery,
-  useGradeLevelsQuery,
-  useTeachingAssignmentsQuery,
-  useUpdateClassMutation,
-} from "../api";
+import { useClassesQuery } from "../../reference/api";
 
+import { CLASS_TABS, ClassDetail } from "./class-detail";
+import { ClassForm } from "./class-form";
 import { ClassNavigation } from "./class-navigation";
-import { EnrollmentPanel } from "./class-panels";
-import { TeachingPanel } from "./teaching-panel";
-
-const CLASS_TABS = ["students", "teachers"] as const;
 
 /** Class list on the left, the selected class's students and teachers on the right. */
 export function ClassesView(): ReactElement {
@@ -149,266 +128,5 @@ export function ClassesView(): ReactElement {
         </DialogContent>
       </Dialog>
     </div>
-  );
-}
-
-function ClassForm({
-  yearId,
-  initial,
-  onDone,
-}: {
-  yearId: string;
-  initial?: ClassRow;
-  onDone: () => void;
-}): ReactElement {
-  const t = useTranslations("app.school.classes.form");
-  const toast = useToast();
-  const apiErrorMessage = useApiErrorMessage();
-  const grades = useGradeLevelsQuery();
-  const teachers = useTeachersQuery();
-  const create = useCreateClassMutation();
-  const update = useUpdateClassMutation();
-  const [name, setName] = useState(initial?.name ?? "");
-  const [gradeId, setGradeId] = useState(initial?.grade_level_id ?? "");
-  const [homeroomId, setHomeroomId] = useState(initial?.homeroom_teacher_id ?? "");
-  const [capacity, setCapacity] = useState(initial?.capacity ? String(initial.capacity) : "");
-  const [error, setError] = useState<string | null>(null);
-
-  async function submit() {
-    setError(null);
-    if (!name.trim() || !gradeId) {
-      setError(t("requiredError"));
-      return;
-    }
-    const body = {
-      academic_year_id: yearId,
-      grade_level_id: gradeId,
-      name: name.trim(),
-      ...(homeroomId ? { homeroom_teacher_id: homeroomId } : {}),
-      ...(capacity ? { capacity: Number(capacity) } : {}),
-    };
-    try {
-      if (initial) await update.mutateAsync({ id: initial.id, body });
-      else await create.mutateAsync(body);
-      toast.success(t("saved"));
-      onDone();
-    } catch (err) {
-      setError(err instanceof ApiError ? apiErrorMessage(err.code) : apiErrorMessage("UNKNOWN"));
-    }
-  }
-
-  return (
-    <form
-      className="flex flex-col gap-4"
-      onSubmit={(e) => {
-        e.preventDefault();
-        void submit();
-      }}
-    >
-      {error && (
-        <p role="alert" className="rounded-xs border border-status-late/40 px-3 py-2 text-[13px]">
-          {error}
-        </p>
-      )}
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("name")}</span>
-        <Input
-          value={name}
-          onChange={(e) => {
-            setName(e.target.value);
-          }}
-          placeholder="X-A"
-          required
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("grade")}</span>
-        <Select
-          options={(grades.data?.data ?? []).map((g) => ({ value: g.id, label: g.name }))}
-          value={gradeId}
-          onValueChange={setGradeId}
-          placeholder={t("pick")}
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("homeroom")}</span>
-        <Select
-          options={(teachers.data?.data ?? []).map((u) => ({ value: u.id, label: u.name }))}
-          value={homeroomId}
-          onValueChange={setHomeroomId}
-          placeholder={t("pick")}
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-[13px]">
-        <span className="font-medium">{t("capacity")}</span>
-        <Input
-          type="number"
-          min={1}
-          value={capacity}
-          onChange={(e) => {
-            setCapacity(e.target.value);
-          }}
-        />
-      </label>
-      <div className="flex justify-end gap-2 border-t border-border pt-4">
-        <Button type="button" variant="secondary" onClick={onDone}>
-          {t("cancel")}
-        </Button>
-        <Button type="submit" loading={create.isPending || update.isPending}>
-          {t("save")}
-        </Button>
-      </div>
-    </form>
-  );
-}
-
-function ClassDetail({
-  cls,
-  canManage,
-  tab,
-  onTabChange,
-}: {
-  cls: ClassRow;
-  canManage: boolean;
-  tab: (typeof CLASS_TABS)[number];
-  onTabChange: (tab: (typeof CLASS_TABS)[number]) => void;
-}): ReactElement {
-  const t = useTranslations("app.school.classes");
-  const year = useActiveYear();
-  const teachers = useTeachersQuery();
-  const teacherMap = useLookup(teachers.data?.data);
-  const [editing, setEditing] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const remove = useDeleteClassMutation();
-  const toast = useToast();
-  const apiErrorMessage = useApiErrorMessage();
-  // Shared with EnrollmentPanel/TeachingPanel below; React Query dedupes the
-  // request so the header counts cost nothing extra over the panels' own.
-  const enrollments = useEnrollmentsQuery(cls.id);
-  const teachingAssignments = useTeachingAssignmentsQuery(cls.id);
-  const activeEnrollmentCount = useMemo(
-    () => (enrollments.data?.data ?? []).filter((e) => e.status === "active").length,
-    [enrollments.data],
-  );
-  const activeTeachingCount = useMemo(
-    () => (teachingAssignments.data?.data ?? []).filter((a) => a.is_active).length,
-    [teachingAssignments.data],
-  );
-  const homeroomTeacher = cls.homeroom_teacher_id
-    ? teacherMap.get(cls.homeroom_teacher_id)
-    : undefined;
-  return (
-    <section className="flex min-w-0 flex-col gap-4 rounded-sm border border-border bg-surface p-4 md:min-h-0">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div className="flex flex-col gap-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-[18px] font-medium text-fg">{cls.name}</h2>
-            {enrollments.data && (
-              <Badge variant="neutral" className="tabular-nums">
-                {cls.capacity
-                  ? t("rosterOfCapacity", { n: activeEnrollmentCount, max: cls.capacity })
-                  : t("studentCount", { n: activeEnrollmentCount })}
-              </Badge>
-            )}
-          </div>
-          <div className="flex items-center gap-2 text-[13px] text-fg-muted">
-            <span>{t("homeroomLabel")}:</span>
-            {homeroomTeacher ? (
-              <span className="flex items-center gap-2">
-                <Avatar size="sm" name={homeroomTeacher.name} />
-                {homeroomTeacher.name}
-              </span>
-            ) : (
-              <span>{t("noHomeroom")}</span>
-            )}
-          </div>
-        </div>
-        {canManage && (
-          <div className="flex gap-2">
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={<Pencil />}
-              onClick={() => {
-                setEditing(true);
-              }}
-            >
-              {t("editClass")}
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={<Trash2 />}
-              onClick={() => {
-                setDeleting(true);
-              }}
-            >
-              {t("deleteClass")}
-            </Button>
-          </div>
-        )}
-      </div>
-      <Tabs
-        value={tab}
-        onValueChange={(value) => {
-          onTabChange(value as (typeof CLASS_TABS)[number]);
-        }}
-        className="flex flex-col md:min-h-0 md:flex-1"
-      >
-        <TabsList>
-          <TabsTrigger value="students">
-            {t("tabStudents")}
-            {enrollments.data && (
-              <span className="ml-1 tabular-nums text-fg-muted">({activeEnrollmentCount})</span>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="teachers">
-            {t("tabTeachers")}
-            {teachingAssignments.data && (
-              <span className="ml-1 tabular-nums text-fg-muted">({activeTeachingCount})</span>
-            )}
-          </TabsTrigger>
-        </TabsList>
-        <TabsContent value="students" className="pt-3 md:min-h-0 md:flex-1">
-          <EnrollmentPanel classId={cls.id} canManage={canManage} />
-        </TabsContent>
-        <TabsContent value="teachers" className="pt-3 md:min-h-0 md:flex-1">
-          <TeachingPanel classId={cls.id} canManage={canManage} />
-        </TabsContent>
-      </Tabs>
-      <ConfirmDialog
-        open={deleting}
-        onOpenChange={setDeleting}
-        title={t("deleteClass")}
-        description={t("deleteClassBody", { name: cls.name })}
-        confirmLabel={t("deleteClass")}
-        destructive
-        confirming={remove.isPending}
-        onConfirm={async () => {
-          try {
-            await remove.mutateAsync(cls.id);
-            toast.success(t("classDeleted"));
-            setDeleting(false);
-          } catch (error) {
-            toast.error(
-              error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
-            );
-          }
-        }}
-      />
-      <Dialog open={editing} onOpenChange={setEditing}>
-        <DialogContent title={t("editClass")}>
-          {editing && (
-            <ClassForm
-              yearId={year.id}
-              initial={cls}
-              onDone={() => {
-                setEditing(false);
-              }}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
-    </section>
   );
 }

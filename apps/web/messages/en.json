@@ -1153,7 +1153,15 @@
         "allGrades": "All grade levels",
         "deleteClass": "Delete class",
         "deleteClassBody": "Delete class {name}? Classes with students or teaching assignments cannot be deleted. Historical data is retained.",
-        "classDeleted": "Class deleted."
+        "classDeleted": "Class deleted.",
+        "rosterExport": {
+          "button": "Download roster",
+          "defaultTitle": "Class Roster",
+          "scopeClass": "Class",
+          "scopeGradeLevel": "Grade level",
+          "scopeClassPlaceholder": "Choose a class",
+          "scopeGradeLevelPlaceholder": "Choose a grade level"
+        }
       },
       "subjects": {
         "eyebrow": "School Data",

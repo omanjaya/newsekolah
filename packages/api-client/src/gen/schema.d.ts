@@ -371,6 +371,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/academic/classes/roster/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The actively enrolled students of one class or every class of a grade level ("angkatan") as an XLSX or PDF file, one section per class -- NIS, NISN, name, gender, birth place/date, guardian name where recorded. */
+        get: operations["exportClassRoster"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/academic/classes/{classId}/enrollments/bulk": {
         parameters: {
             query?: never;
@@ -12682,6 +12699,42 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             403: components["responses"]["Forbidden"];
             409: components["responses"]["Conflict"];
+        };
+    };
+    exportClassRoster: {
+        parameters: {
+            query?: {
+                /** @description Exactly one of class_id or grade_level_id is required. */
+                class_id?: string;
+                /** @description Every class of the tenant's active academic year under this grade level, one section per class. Exactly one of class_id or grade_level_id is required. */
+                grade_level_id?: string;
+                /** @description Rendered file type. Defaults to xlsx. */
+                format?: components["parameters"]["ReportFormatParam"];
+                /** @description Overrides the report's own default title. */
+                title?: components["parameters"]["ReportTitleParam"];
+                /** @description Show the tenant's configured letterhead (kop laporan). Defaults to true. */
+                letterhead?: components["parameters"]["ReportLetterheadParam"];
+                /** @description Comma-separated column selection and order, each entry either a bare column key or "key:label" to rename it. Omitted or empty keeps every column, in the report's own default order and labels. */
+                columns?: components["parameters"]["ReportColumnsParam"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Report file */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
+                    "application/pdf": string;
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
         };
     };
     bulkAssignStudents: {

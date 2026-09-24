@@ -18,6 +18,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/academic/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/tenant"
 )
 
@@ -119,6 +120,8 @@ var validationErrs = []error{
 	domain.ErrImportRowInvalid,
 	domain.ErrImportHasInvalidRow,
 	domain.ErrFieldTooLong,
+	domain.ErrInvalidScope,
+	reportdoc.ErrUnknownColumn,
 }
 
 // mapDomainError maps a domain sentinel error to a stable httpx.Error; any

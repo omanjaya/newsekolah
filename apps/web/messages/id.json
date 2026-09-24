@@ -1153,7 +1153,15 @@
         "allGrades": "Semua tingkat",
         "deleteClass": "Hapus kelas",
         "deleteClassBody": "Hapus kelas {name}? Kelas yang masih memiliki siswa atau penugasan mengajar tidak dapat dihapus. Riwayat data tetap disimpan.",
-        "classDeleted": "Kelas berhasil dihapus."
+        "classDeleted": "Kelas berhasil dihapus.",
+        "rosterExport": {
+          "button": "Unduh daftar siswa",
+          "defaultTitle": "Daftar Siswa",
+          "scopeClass": "Kelas",
+          "scopeGradeLevel": "Angkatan",
+          "scopeClassPlaceholder": "Pilih kelas",
+          "scopeGradeLevelPlaceholder": "Pilih angkatan"
+        }
       },
       "subjects": {
         "eyebrow": "Data Sekolah",

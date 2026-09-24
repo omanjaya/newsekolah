@@ -105,6 +105,13 @@ type Querier interface {
 	// whose [date, end_date] range covers the given date, for
 	// domain.IsSchoolDay to evaluate against a grade level.
 	AcademicListCalendarEventsForDate(ctx context.Context, arg AcademicListCalendarEventsForDateParams) ([]AcademicCalendarEvent, error)
+	// Read-only lookups against tables owned by the identity module (users,
+	// user_profiles, student_profiles), same convention as students_lookup.sql:
+	// additive, read-only, scoped to exactly what the class roster export
+	// needs (NIS, NISN, name, gender, birth place/date, guardian).
+	// Every actively enrolled student of a class, with the full set of fields
+	// a printed "daftar siswa" needs, ordered by name.
+	AcademicListClassRosterForExport(ctx context.Context, arg AcademicListClassRosterForExportParams) ([]AcademicListClassRosterForExportRow, error)
 	AcademicListClasses(ctx context.Context, arg AcademicListClassesParams) ([]AcademicListClassesRow, error)
 	AcademicListClassesByYearAndGradeLevel(ctx context.Context, arg AcademicListClassesByYearAndGradeLevelParams) ([]Class, error)
 	// Every class in one academic year (no pagination, no search): used to
