@@ -70,6 +70,12 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	tokenIssuer := auth.NewTokenIssuer(signingKey, "newsekolah", cfg.AccessTokenTTL)
 	sessionCache := auth.NewSessionCache(store)
 	rateLimiter := auth.NewLoginRateLimiter(store)
+	// resetLimiter bounds password-reset-request attempts per IP
+	// (docs/08-security.md section 2). It was previously never passed to
+	// identity.Dependencies, leaving service.Extras.ResetLimiter nil and
+	// the nil-check in service.RequestPasswordReset a silent no-op -- the
+	// per-IP budget the doc promises was dead in production.
+	resetLimiter := auth.NewIPRateLimiter(store, "reset_password:ip", 20, 15*time.Minute)
 
 	mode := tenant.ModeSingle
 	if cfg.TenancyMode == config.TenancyMulti {
@@ -119,6 +125,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		IsProduction: cfg.IsProduction(),
 		AppOrigins:   cfg.AppOrigins,
 		PushDevices:  pushDevices,
+		ResetLimiter: resetLimiter,
 		Email:        senders.Email,
 		MfaSealer:    sealer,
 		Ceremony:     store,
@@ -410,7 +417,14 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 
 	strict := api.NewStrictHandlerWithOptions(
 		server,
-		[]api.StrictMiddlewareFunc{authzStrictMiddleware(ops, identityModule.Service)},
+		// authz runs first (innermost middleware in the slice = wraps the
+		// handler directly), then publicIPRateLimit wraps that and so runs
+		// before it, rejecting an over-budget anonymous caller before any
+		// permission check does work.
+		[]api.StrictMiddlewareFunc{
+			authzStrictMiddleware(ops, identityModule.Service),
+			publicIPRateLimitStrictMiddleware(store),
+		},
 		api.StrictHTTPServerOptions{
 			RequestErrorHandlerFunc:  decodeErrorHandler,
 			ResponseErrorHandlerFunc: responseErrorHandler,
