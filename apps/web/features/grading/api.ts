@@ -360,7 +360,7 @@ export function useEraporPreviewQuery(classId: string, termId?: string) {
   });
 }
 
-async function readErrorCode(response: Response): Promise<string> {
+export async function readErrorCode(response: Response): Promise<string> {
   try {
     const body: unknown = await response.json();
     if (body && typeof body === "object" && "code" in body && typeof body.code === "string") {

@@ -731,8 +731,22 @@ type Querier interface {
 	// taught in one term.
 	GradingClassSubjects(ctx context.Context, arg GradingClassSubjectsParams) ([]GradingClassSubjectsRow, error)
 	GradingCreatePolicy(ctx context.Context, arg GradingCreatePolicyParams) error
+	// cross-module read: classes is owned by the academic module. The
+	// gradebook export's class scope needs a name for its section/sheet.
+	GradingGetClassName(ctx context.Context, arg GradingGetClassNameParams) (string, error)
+	// cross-module read: grade_levels is owned by the academic module. The
+	// gradebook export's grade-level ("angkatan") scope needs a name for its
+	// scope line.
+	GradingGetGradeLevelName(ctx context.Context, arg GradingGetGradeLevelNameParams) (string, error)
 	GradingGetLatestPolicy(ctx context.Context, arg GradingGetLatestPolicyParams) (GradingGetLatestPolicyRow, error)
+	// cross-module read: subjects is owned by the academic module. The
+	// gradebook export's scope line needs the subject's own name.
+	GradingGetSubjectName(ctx context.Context, arg GradingGetSubjectNameParams) (string, error)
 	GradingGetTerm(ctx context.Context, arg GradingGetTermParams) (GradingGetTermRow, error)
+	// cross-module read: classes is owned by the academic module. Every
+	// non-deleted class of the academic year under a grade level, ordered by
+	// name -- the gradebook export's grade-level scope: one section per class.
+	GradingListClassesByGradeLevel(ctx context.Context, arg GradingListClassesByGradeLevelParams) ([]GradingListClassesByGradeLevelRow, error)
 	GradingPreviousTerm(ctx context.Context, arg GradingPreviousTermParams) (uuid.UUID, error)
 	GradingStudentClassID(ctx context.Context, arg GradingStudentClassIDParams) (uuid.UUID, error)
 	// cross-module read: student_profiles is owned by the identity module.

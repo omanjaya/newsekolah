@@ -52,6 +52,43 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
 
+  /v1/grading/gradebook/export:
+    get:
+      tags: [grading]
+      operationId: exportGradebook
+      x-permission: manage_grades
+      summary:
+        The gradebook as an XLSX or PDF file, for one class or every class of a grade level -- one section per
+        class, using the same data GET /v1/grading/gradebook shows (NOT the e-Rapor export, which stays separate).
+      parameters:
+        - name: class_id
+          in: query
+          description: Exactly one of class_id or grade_level_id is required.
+          schema: { type: string, format: uuid }
+        - name: grade_level_id
+          in: query
+          description:
+            Every class of the tenant's active academic year under this grade level, one section per class. Exactly
+            one of class_id or grade_level_id is required.
+          schema: { type: string, format: uuid }
+        - { name: subject_id, in: query, required: true, schema: { type: string, format: uuid } }
+        - { name: term_id, in: query, schema: { type: string, format: uuid } }
+        - $ref: "#/components/parameters/ReportFormatParam"
+        - $ref: "#/components/parameters/ReportTitleParam"
+        - $ref: "#/components/parameters/ReportLetterheadParam"
+        - $ref: "#/components/parameters/ReportColumnsParam"
+      responses:
+        "200":
+          description: Report file
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: { type: string, format: binary }
+            application/pdf:
+              schema: { type: string, format: binary }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
   /v1/grading/components:
     post:
       tags: [grading]

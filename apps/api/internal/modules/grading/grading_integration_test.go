@@ -25,12 +25,14 @@ import (
 // straight through the generated db.Queries the way cmd/seed does, so the
 // test does not depend on the academic module's own service layer.
 type fixture struct {
-	tenantID  uuid.UUID
-	classID   uuid.UUID
-	subjectID uuid.UUID
-	termID    uuid.UUID
-	teacherID uuid.UUID
-	studentID uuid.UUID
+	tenantID     uuid.UUID
+	yearID       uuid.UUID
+	gradeLevelID uuid.UUID
+	classID      uuid.UUID
+	subjectID    uuid.UUID
+	termID       uuid.UUID
+	teacherID    uuid.UUID
+	studentID    uuid.UUID
 }
 
 func seedFixture(t *testing.T, pool *pgxpool.Pool) fixture {
@@ -95,9 +97,38 @@ func seedFixture(t *testing.T, pool *pgxpool.Pool) fixture {
 	require.NoError(t, err)
 
 	return fixture{
-		tenantID: tenantRow.ID, classID: class.ID, subjectID: subject.ID, termID: term.ID,
+		tenantID: tenantRow.ID, yearID: year.ID, gradeLevelID: grade.ID, classID: class.ID, subjectID: subject.ID, termID: term.ID,
 		teacherID: teacher.ID, studentID: student.ID,
 	}
+}
+
+// seedSecondClass adds a second class to fx's own grade level and
+// academic year, with one enrolled student -- for exercising the
+// gradebook export's grade-level ("angkatan") scope, which must cover
+// both classes.
+func seedSecondClass(t *testing.T, pool *pgxpool.Pool, fx fixture) (classID, studentID uuid.UUID) {
+	t.Helper()
+	ctx := context.Background()
+	q := db.New(pool)
+
+	class, err := q.CreateClass(ctx, db.CreateClassParams{
+		TenantID: fx.tenantID, AcademicYearID: fx.yearID, GradeLevelID: fx.gradeLevelID, Name: "X-B",
+	})
+	require.NoError(t, err)
+
+	student, err := q.CreateUser(ctx, db.CreateUserParams{
+		TenantID: fx.tenantID, Username: "siswa2-" + uuid.NewString(), PasswordHash: "x",
+		Name: "Siswa Dua", Status: "active", Locale: "id",
+	})
+	require.NoError(t, err)
+
+	_, err = q.AcademicCreateEnrollment(ctx, db.AcademicCreateEnrollmentParams{
+		TenantID: fx.tenantID, AcademicYearID: fx.yearID, StudentUserID: student.ID, ClassID: class.ID,
+		JoinedOn: database.Date(time.Date(2026, 7, 1, 0, 0, 0, 0, time.UTC)),
+	})
+	require.NoError(t, err)
+
+	return class.ID, student.ID
 }
 
 // TestSetManualScoreOnStudentWithNoGrades reproduces the transfer-student

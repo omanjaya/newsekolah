@@ -14,6 +14,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/grading/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 )
 
 const policyKindGradingScale = "grading"
@@ -85,6 +86,23 @@ type Repository interface {
 
 	GetLatestPolicy(ctx context.Context, tenantID uuid.UUID, kind string) ([]byte, int, bool, error)
 	CreatePolicy(ctx context.Context, tenantID uuid.UUID, kind string, version int, config []byte, effectiveFrom time.Time, createdBy uuid.NullUUID) error
+
+	// Gradebook export's grade-level ("angkatan") scope.
+	//
+	// -- cross-module read; replace with academic reader interface after merge --
+	GetClassName(ctx context.Context, tenantID, classID uuid.UUID) (string, error)
+	GetGradeLevelName(ctx context.Context, tenantID, gradeLevelID uuid.UUID) (string, error)
+	GetSubjectName(ctx context.Context, tenantID, subjectID uuid.UUID) (string, error)
+	ListClassesByGradeLevel(ctx context.Context, tenantID, yearID, gradeLevelID uuid.UUID) ([]ClassRef, error)
+}
+
+// ClassRef is a class's id and display name, the grade-level scope
+// resolution needs for the gradebook export (one section per class).
+//
+// -- cross-module read; replace with academic reader interface after merge --
+type ClassRef struct {
+	ID   uuid.UUID
+	Name string
 }
 
 type StudentGradeRow struct {
@@ -172,6 +190,11 @@ type Service struct {
 	years AcademicYearReader
 	flags FlagReader
 	clock clock.Clock
+	// letterheads is optional (set via SetLetterheadSource after
+	// construction, mirroring attendance/scheduling's identically named
+	// setter): nil means the gradebook export renders without a tenant
+	// letterhead.
+	letterheads reportdoc.LetterheadSource
 }
 
 func New(pool *pgxpool.Pool, repo Repository, years AcademicYearReader, flags FlagReader, clk clock.Clock) *Service {
@@ -183,6 +206,25 @@ func New(pool *pgxpool.Pool, repo Repository, years AcademicYearReader, flags Fl
 
 func (s *Service) withTx(ctx context.Context, tenantID uuid.UUID, fn func(ctx context.Context) error) error {
 	return database.WithTenantTx(ctx, s.pool, tenantID, fn)
+}
+
+// SetLetterheadSource wires the school module's tenant letterhead/default
+// signature reader in after construction (cmd/api/wire.go, once the
+// school module it depends on has itself been registered), for the
+// gradebook export's Document.Letterhead/Signature.
+func (s *Service) SetLetterheadSource(source reportdoc.LetterheadSource) {
+	s.letterheads = source
+}
+
+// reportLetterhead loads tenantID's configured kop laporan and default
+// signature, if any -- (nil, nil) when no letterheads source is wired or
+// the tenant has not configured one, so a report renders without one
+// rather than failing.
+func (s *Service) reportLetterhead(ctx context.Context, tenantID uuid.UUID) (*reportdoc.Letterhead, *reportdoc.Signature, error) {
+	if s.letterheads == nil {
+		return nil, nil, nil
+	}
+	return s.letterheads.Letterhead(ctx, tenantID)
 }
 
 // requireEnabled is the module's single enforcement point: every use case

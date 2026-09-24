@@ -65,3 +65,27 @@ select u.id, u.name, coalesce(sp.nis, '') as nis, coalesce(sp.nisn, '') as nisn
 from users u
 left join student_profiles sp on sp.user_id = u.id and sp.tenant_id = u.tenant_id
 where u.tenant_id = $1 and u.id = any(sqlc.arg(user_ids)::uuid[]);
+
+-- name: GradingGetClassName :one
+-- cross-module read: classes is owned by the academic module. The
+-- gradebook export's class scope needs a name for its section/sheet.
+select name from classes where tenant_id = $1 and id = $2;
+
+-- name: GradingGetGradeLevelName :one
+-- cross-module read: grade_levels is owned by the academic module. The
+-- gradebook export's grade-level ("angkatan") scope needs a name for its
+-- scope line.
+select name from grade_levels where tenant_id = $1 and id = $2;
+
+-- name: GradingListClassesByGradeLevel :many
+-- cross-module read: classes is owned by the academic module. Every
+-- non-deleted class of the academic year under a grade level, ordered by
+-- name -- the gradebook export's grade-level scope: one section per class.
+select id, name from classes
+where tenant_id = $1 and academic_year_id = $2 and grade_level_id = $3 and deleted_at is null
+order by name;
+
+-- name: GradingGetSubjectName :one
+-- cross-module read: subjects is owned by the academic module. The
+-- gradebook export's scope line needs the subject's own name.
+select name from subjects where tenant_id = $1 and id = $2;
