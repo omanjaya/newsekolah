@@ -21,6 +21,7 @@ import { useMemo, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
+import { formatDisplayName } from "../../../lib/text/format-name";
 import { useDirectoryQuery, useLookup } from "../../reference/api";
 import {
   type MentorGroupMember,
@@ -54,7 +55,7 @@ export function MentorGroupMembersPanel({ groupId }: { groupId: string }): React
 
   const candidateOptions = (students.data?.data ?? [])
     .filter((s) => !memberIds.has(s.id))
-    .map((s) => ({ value: s.id, label: s.name }));
+    .map((s) => ({ value: s.id, label: formatDisplayName(s.name) }));
 
   const columns = useMemo<ColumnDef<MentorGroupMember>[]>(
     () => [
@@ -62,8 +63,10 @@ export function MentorGroupMembersPanel({ groupId }: { groupId: string }): React
         id: "student",
         header: t("columns.student"),
         enableSorting: false,
-        cell: ({ row }) =>
-          studentMap.get(row.original.student_user_id)?.name ?? t("unknownStudent"),
+        cell: ({ row }) => {
+          const name = studentMap.get(row.original.student_user_id)?.name;
+          return name ? formatDisplayName(name) : t("unknownStudent");
+        },
       },
       {
         id: "actions",
@@ -100,6 +103,13 @@ export function MentorGroupMembersPanel({ groupId }: { groupId: string }): React
     ],
     [t, studentMap, canManage, router, groupId],
   );
+
+  const pendingRemoveRawName = pendingRemove
+    ? studentMap.get(pendingRemove.student_user_id)?.name
+    : undefined;
+  const pendingRemoveName = pendingRemoveRawName
+    ? formatDisplayName(pendingRemoveRawName)
+    : t("unknownStudent");
 
   return (
     <div className="flex flex-col gap-4">
@@ -143,6 +153,20 @@ export function MentorGroupMembersPanel({ groupId }: { groupId: string }): React
             icon={<domainIcons.users aria-hidden="true" />}
             title={t("emptyTitle")}
             description={t("emptyBody")}
+            action={
+              canManage && (
+                <Button
+                  size="sm"
+                  icon={<Plus />}
+                  disabled={atCapacity}
+                  onClick={() => {
+                    setAdding(true);
+                  }}
+                >
+                  {t("add")}
+                </Button>
+              )
+            }
           />
         }
       />
@@ -204,13 +228,7 @@ export function MentorGroupMembersPanel({ groupId }: { groupId: string }): React
           if (!open) setPendingRemove(null);
         }}
         title={t("removeTitle")}
-        description={
-          pendingRemove
-            ? t("removeBody", {
-                name: studentMap.get(pendingRemove.student_user_id)?.name ?? t("unknownStudent"),
-              })
-            : ""
-        }
+        description={pendingRemove ? t("removeBody", { name: pendingRemoveName }) : ""}
         confirmLabel={t("remove")}
         destructive
         confirming={remove.isPending}

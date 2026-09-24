@@ -128,9 +128,17 @@
   },
   "studentView": {
     "eyebrow": "Mentoring",
+    "backToGroup": "Back to group",
     "attendance": {
       "title": "This month's attendance",
-      "empty": "No attendance recorded this month yet."
+      "empty": "No attendance recorded this month yet.",
+      "codes": {
+        "H": "Present",
+        "S": "Sick",
+        "I": "Excused",
+        "D": "Dispensation",
+        "A": "Absent"
+      }
     },
     "discipline": {
       "title": "Discipline",

@@ -21,6 +21,7 @@ import { useMemo, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
+import { formatDisplayName } from "../../../lib/text/format-name";
 import { useDirectoryQuery, useLookup } from "../../reference/api";
 import {
   type MentorGroupMember,
@@ -55,7 +56,7 @@ export function MentorMeetingNotesPanel({
   const students = useDirectoryQuery("student");
   const studentMap = useLookup(students.data?.data);
   const studentNames = useMemo(
-    () => new Map([...studentMap.entries()].map(([id, s]) => [id, s.name])),
+    () => new Map([...studentMap.entries()].map(([id, s]) => [id, formatDisplayName(s.name)])),
     [studentMap],
   );
   const remove = useDeleteMentorMeetingNoteMutation();
@@ -122,6 +123,19 @@ export function MentorMeetingNotesPanel({
             icon={<domainIcons.mentoring aria-hidden="true" />}
             title={t("emptyTitle")}
             description={t("emptyBody")}
+            action={
+              canManage && (
+                <Button
+                  size="sm"
+                  icon={<Plus />}
+                  onClick={() => {
+                    setEditing("new");
+                  }}
+                >
+                  {t("add")}
+                </Button>
+              )
+            }
           />
         }
       />

@@ -18,6 +18,7 @@ import { type StudentRisk, useAtRiskStudentsQuery } from "../api";
 
 import { PolicyDialog } from "./policy-dialog";
 import { RiskLevelBadge } from "./risk-level-badge";
+import { RiskLevelSummary } from "./risk-level-summary";
 
 /**
  * The early-warning list: who to check on, ranked by score. A homeroom
@@ -148,6 +149,7 @@ export function AtRiskStudentsView(): ReactElement {
       />
       {canManage && policyOpen && <PolicyDialog open={policyOpen} onOpenChange={setPolicyOpen} />}
       <p className="text-[13px] text-fg-muted">{t("description")}</p>
+      <RiskLevelSummary rows={rows} />
       <div className="flex flex-col md:min-h-0 md:flex-1">
         <DataTable
           stateKey="features/analytics/components/at-risk-students-view:1"

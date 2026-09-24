@@ -46,8 +46,12 @@
     "schedule": "Jadwalkan observasi",
     "emptyTitle": "Belum ada observasi terjadwal",
     "emptyBody": "Jadwalkan observasi terhadap pelajaran seorang guru untuk memulai siklus ini.",
-    "scheduleTitle": "Jadwalkan observasi",
-    "completeTitle": "Isi hasil observasi"
+    "scheduleTitle": "Jadwalkan observasi"
+  },
+  "completeObservation": {
+    "backToCycle": "Kembali ke siklus",
+    "notFoundTitle": "Observasi terjadwal tidak ditemukan",
+    "notFoundBody": "Observasi ini mungkin sudah diisi atau jadwalnya dihapus. Kembali ke daftar siklus untuk memeriksa."
   },
   "cycleReport": {
     "title": "Laporan siklus: {cycle}",
@@ -75,12 +79,20 @@
   },
   "observationForm": {
     "observedAt": "Waktu observasi",
-    "scores": "Skor per kriteria (skala {min}–{max})",
+    "scoresHeading": "Skor per kriteria",
+    "scoresHint": "Skala {min}–{max}",
+    "progress": "{scored} dari {total} kriteria dinilai",
     "observerNotes": "Catatan pengamat",
     "observerNotesPlaceholder": "Uraian yang diamati selama pelajaran",
     "cancel": "Batal",
-    "submit": "Simpan",
-    "saved": "Hasil observasi tersimpan"
+    "submit": "Simpan hasil observasi",
+    "retry": "Coba lagi",
+    "savedAt": "Tersimpan pukul {time}",
+    "discardChanges": "Hasil observasi yang belum tersimpan akan hilang. Lanjutkan?",
+    "draftFoundTitle": "Ada draf observasi yang belum tersimpan",
+    "draftFoundBody": "Draf terakhir disimpan otomatis pukul {time} di perangkat ini.",
+    "draftRestore": "Pulihkan draf",
+    "draftDismiss": "Abaikan"
   },
   "teacherReport": {
     "export": "Unduh",
@@ -99,6 +111,7 @@
     }
   },
   "observationDetail": {
+    "backToCycle": "Kembali ke siklus",
     "scores": "Skor",
     "observerNotes": "Catatan pengamat",
     "teacherResponse": "Tanggapan guru",
@@ -110,6 +123,7 @@
     "submit": "Simpan",
     "saved": "Tanggapan tersimpan",
     "noResponseYet": "Belum ada tanggapan.",
+    "noFollowUpYet": "Belum ada kesepakatan tindak lanjut.",
     "editResponse": "Ubah tanggapan",
     "addResponse": "Tambah tanggapan"
   },

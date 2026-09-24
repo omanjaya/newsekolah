@@ -31,6 +31,7 @@ import { useMemo, useState } from "react";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
+import { formatDisplayName } from "../../../lib/text/format-name";
 import { useLookup, useTeachersQuery } from "../../reference/api";
 import { type MentorGroup, useDeleteMentorGroupMutation, useMentorGroupsQuery } from "../api";
 
@@ -62,7 +63,10 @@ export function MentorGroupsView(): ReactElement {
         id: "mentor",
         header: t("columns.mentor"),
         enableSorting: false,
-        cell: ({ row }) => teacherMap.get(row.original.mentor_user_id)?.name ?? t("unknownMentor"),
+        cell: ({ row }) => {
+          const name = teacherMap.get(row.original.mentor_user_id)?.name;
+          return name ? formatDisplayName(name) : t("unknownMentor");
+        },
       },
     ];
     if (!canManage) return base;
@@ -160,6 +164,19 @@ export function MentorGroupsView(): ReactElement {
                   icon={<domainIcons.mentoring aria-hidden="true" />}
                   title={t("emptyTitle")}
                   description={t("emptyBody")}
+                  action={
+                    canManage && (
+                      <Button
+                        size="sm"
+                        icon={<Plus />}
+                        onClick={() => {
+                          setEditing("new");
+                        }}
+                      >
+                        {t("add")}
+                      </Button>
+                    )
+                  }
                 />
               }
             />

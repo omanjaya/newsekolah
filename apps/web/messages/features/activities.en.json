@@ -75,7 +75,10 @@
       "join": "Enroll",
       "joined": "Student enrolled",
       "includeLeft": "Show former members",
+      "searchPlaceholder": "Search member name",
       "empty": "No members yet.",
+      "noMatch": "No members match this search.",
+      "unknownStudent": "Student name unavailable",
       "status": {
         "active": "Active",
         "left": "Left"
@@ -89,9 +92,18 @@
       "scheduled": "Meeting scheduled",
       "empty": "No meetings scheduled yet.",
       "roster": {
-        "studentId": "Student",
-        "status": "Attendance status",
-        "save": "Save",
+        "loading": "Loading attendance…",
+        "loadError": "Unable to load attendance.",
+        "noMembers": "No active members to record attendance for yet.",
+        "unknownStudent": "Student name unavailable",
+        "searchPlaceholder": "Search member name",
+        "filterByStatus": "Filter by status",
+        "markAllPresent": "Mark all present",
+        "noMatch": "No members match this filter.",
+        "rowChanged": "Not saved yet",
+        "unsavedChanges": "{count, plural, one {# unsaved change} other {# unsaved changes}}",
+        "saveHint": "All changes saved",
+        "save": "Save attendance",
         "recorded": "Attendance saved",
         "statuses": {
           "H": "Present",

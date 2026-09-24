@@ -108,9 +108,12 @@ export function MentorMeetingNoteForm({
       </label>
       <fieldset className="flex flex-col gap-2 text-[13px]">
         <legend className="font-medium">{t("attendees")}</legend>
-        <div className="flex max-h-40 flex-col gap-2 overflow-y-auto rounded-sm border border-border p-2">
+        <div className="flex max-h-52 flex-col overflow-y-auto rounded-sm border border-border">
           {members.map((member) => (
-            <label key={member.id} className="flex items-center gap-2">
+            <label
+              key={member.id}
+              className="flex min-h-11 cursor-pointer items-center gap-2 border-b border-border px-2 last:border-b-0 hover:bg-bg"
+            >
               <Checkbox
                 checked={attendeeIds.has(member.student_user_id)}
                 onCheckedChange={(checked) => {

@@ -4,6 +4,8 @@ import { ApiError } from "@newsekolah/api-client";
 import type { Locale } from "@newsekolah/i18n";
 import { formatDateTime } from "@newsekolah/i18n";
 import { Button, PageHeader, Skeleton, Textarea, useToast } from "@newsekolah/ui";
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -11,11 +13,14 @@ import { useState } from "react";
 import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
+import { useLookup, useTeachersQuery } from "../../reference/api";
 import {
   useObservationQuery,
   useRespondToObservationMutation,
+  useScheduledObservationsForTeacherQuery,
   useSupervisionCycleQuery,
 } from "../api";
+import { useLessonContext } from "../lib/use-lesson-context";
 
 /**
  * One observation: the scores, the observer's notes, and the teacher's own
@@ -33,6 +38,23 @@ export function ObservationDetailView({ observationId }: { observationId: string
 
   const observation = useObservationQuery(observationId);
   const cycle = useSupervisionCycleQuery(observation.data?.cycle_id ?? "", !!observation.data);
+  const teachers = useTeachersQuery();
+  const teacherMap = useLookup(teachers.data?.data);
+  // Resolved best-effort, for the "subject/class if available" line: the
+  // scheduled observation this record came from carries the `schedule_id`
+  // needed to look up class/subject, but `Observation` itself does not.
+  const scheduledForTeacher = useScheduledObservationsForTeacherQuery(
+    observation.data?.cycle_id ?? "",
+    observation.data?.teacher_user_id ?? "",
+    !!observation.data,
+  );
+  const scheduled = scheduledForTeacher.data?.data.find(
+    (s) => s.id === observation.data?.scheduled_id,
+  );
+  const lesson = useLessonContext(
+    observation.data?.teacher_user_id ?? "",
+    scheduled?.schedule_id ?? "",
+  );
   const respond = useRespondToObservationMutation();
 
   const [teacherResponse, setTeacherResponse] = useState("");
@@ -55,6 +77,9 @@ export function ObservationDetailView({ observationId }: { observationId: string
 
   const obs = observation.data;
   const criteriaByKey = new Map(cycle.data.instrument.criteria.map((c) => [c.key, c.name]));
+  const teacherName =
+    teacherMap.get(obs.teacher_user_id)?.name ?? tRoot("cycleDetail.unknownTeacher");
+  const contextLine = [lesson.subjectName, lesson.className].filter(Boolean).join(" · ");
 
   function startEditing() {
     setTeacherResponse(obs.teacher_response);
@@ -64,13 +89,26 @@ export function ObservationDetailView({ observationId }: { observationId: string
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
-      <PageHeader
-        breadcrumb={[
-          { label: tRoot("navLabelCycles"), href: "/supervision/cycles" },
-          { label: cycle.data.name, href: `/supervision/cycles/${cycle.data.id}` },
-        ]}
-        title={formatDateTime(obs.observed_at, { locale })}
-      />
+      <div className="flex flex-col gap-2">
+        <Button asChild variant="secondary" size="sm" className="self-start">
+          <Link href={`/supervision/cycles/${cycle.data.id}`}>
+            <ArrowLeft className="size-4" aria-hidden="true" />
+            {t("backToCycle")}
+          </Link>
+        </Button>
+        <PageHeader
+          breadcrumb={[
+            { label: tRoot("navLabelCycles"), href: "/supervision/cycles" },
+            { label: cycle.data.name, href: `/supervision/cycles/${cycle.data.id}` },
+          ]}
+          eyebrow={cycle.data.name}
+          title={teacherName}
+        />
+        <p className="text-[13px] text-fg-muted">
+          {formatDateTime(obs.observed_at, { locale })}
+          {contextLine && <> &middot; {contextLine}</>}
+        </p>
+      </div>
 
       <section className="flex flex-col gap-3">
         <h2 className="text-[16px] font-medium">{t("scores")}</h2>
@@ -164,14 +202,6 @@ export function ObservationDetailView({ observationId }: { observationId: string
             ) : (
               <p className="text-[13px] text-fg-muted">{t("noResponseYet")}</p>
             )}
-            {obs.agreed_follow_up && (
-              <div className="flex flex-col gap-1 border-t border-border pt-3">
-                <span className="text-[13px] font-medium">{t("followUpLabel")}</span>
-                <p className="whitespace-pre-wrap text-[13px] text-fg-muted">
-                  {obs.agreed_follow_up}
-                </p>
-              </div>
-            )}
             {canRespond && (
               <div>
                 <Button size="sm" variant="secondary" onClick={startEditing}>
@@ -182,6 +212,17 @@ export function ObservationDetailView({ observationId }: { observationId: string
           </div>
         )}
       </section>
+
+      {!editingResponse && (
+        <section className="flex flex-col gap-2 border-t border-border pt-4">
+          <h2 className="text-[16px] font-medium">{t("followUpLabel")}</h2>
+          {obs.agreed_follow_up ? (
+            <p className="whitespace-pre-wrap text-[13px] text-fg">{obs.agreed_follow_up}</p>
+          ) : (
+            <p className="text-[13px] text-fg-muted">{t("noFollowUpYet")}</p>
+          )}
+        </section>
+      )}
     </div>
   );
 }
