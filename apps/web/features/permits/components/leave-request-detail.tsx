@@ -283,7 +283,7 @@ export function LeaveRequestDetail({ id }: { id: string }): ReactElement {
           </Button>
         </div>
       )}
-      {inst.status === "approved" && data.has_letter && (
+      {(inst.status === "completed" || inst.status === "approved") && data.has_letter && (
         <Alert variant="info" title={t("issuedTitle")}>
           {t("issuedBody")}
         </Alert>

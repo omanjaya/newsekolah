@@ -333,7 +333,11 @@ func (s *Service) IssueLeaveLetter(ctx context.Context, tenantID, instanceID, is
 		}
 
 		updated, def, _, err := s.approveCurrentStage(ctx, stageTransitionInput{
-			tenantID: tenantID, instanceID: instanceID, actorUserID: issuerUserID, note: "letter issued", onLastStageStatus: domain.StatusApproved,
+			// Completed, not approved: an issued letter ends the workflow,
+			// and "approved" is a non-terminal status that
+			// GetInProgressWorkflowInstance treats as still open, which
+			// blocked the student's every later leave request with a 409.
+			tenantID: tenantID, instanceID: instanceID, actorUserID: issuerUserID, note: "letter issued", onLastStageStatus: domain.StatusCompleted,
 		})
 		if err != nil {
 			return err
