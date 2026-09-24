@@ -23,6 +23,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/redis/go-redis/v9"
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/rivertype"
 
@@ -37,6 +38,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/integrations"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/library"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/notifications"
+	notificationsservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/notifications/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/permits"
 	permitsservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/platform"
@@ -49,6 +51,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/events"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/jobs"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/realtime"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/storage"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/telemetry"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/tenant"
@@ -87,6 +90,28 @@ func run(logger *slog.Logger) error {
 		return err
 	}
 
+	// redisClient backs a publish-only realtime.Hub: this process never
+	// serves a WebSocket (no mountRealtimeRoutes, no Upgrade -- that is
+	// cmd/api's job), so hub.Subscribe/watchRemote are simply never
+	// called here and h.topics stays empty for the process's whole life.
+	// hub.Publish still reaches every cmd/api replica's own Hub over the
+	// same Redis channel cmd/api's hub uses (broadcasterFor's "realtime:"
+	// prefix, see platform/realtime/redis.go), so a notification a
+	// background job creates here (library due reminders, a scheduled
+	// report's "ready" notification, any module's realtime Publish) is
+	// pushed live to a connected /ws/me client instead of only landing in
+	// the inbox until the next page load -- the gap WORKER_INLINE=false
+	// had before this hub existed: this process built every module below
+	// with no Hub/Realtime dependency at all, so River kept those
+	// publishes silently dropped regardless of who was online. With
+	// REDIS_URL unset, newWorkerRedisClient returns nil and hub.Publish
+	// degrades to its own no-op (no broadcaster, no local subscribers).
+	redisClient := newWorkerRedisClient(cfg.RedisURL, logger)
+	if redisClient != nil {
+		defer func() { _ = redisClient.Close() }()
+	}
+	hub := realtime.NewHub(workerBroadcasterFor(redisClient))
+
 	workers := jobs.NewWorkers()
 	eventBus := events.NewBus()
 	sharedStorage := workerStorageClientFor(cfg, logger)
@@ -101,7 +126,7 @@ func run(logger *slog.Logger) error {
 	identityModule := identity.Register(identity.Dependencies{Pool: pool, Clock: clock.Real{}})
 
 	permitsModule := permits.Register(permits.Dependencies{
-		Pool: pool, Years: schoolModule.Service, Clock: clock.Real{},
+		Pool: pool, Years: schoolModule.Service, Clock: clock.Real{}, Hub: hub,
 		Config: permitsservice.DefaultConfig([]byte(cfg.DocumentSigningKey), cfg.S3Bucket), Logger: logger,
 	})
 	periodic := permitsModule.RegisterJobs(workers, logger)
@@ -121,7 +146,7 @@ func run(logger *slog.Logger) error {
 	attendanceModule := attendance.Register(attendance.Dependencies{
 		Pool: pool, Bus: eventBus, Years: schoolModule.Service,
 		Schedules: schedulingModule.ScheduleReader, Access: schedulingModule.AccessChecker, Journals: schedulingModule.JournalService,
-		Perms: identityModule.Service,
+		Perms: identityModule.Service, Hub: hub,
 	})
 	disciplineModule := discipline.Register(discipline.Dependencies{
 		Pool: pool, Years: schoolModule.Service, Sealer: sealer, Clock: clock.Real{},
@@ -182,7 +207,7 @@ func run(logger *slog.Logger) error {
 		Pool: pool, Jobs: jobInserter, Contacts: identityContacts{svc: identityModule.Service}, Bus: eventBus, Clock: clock.Real{},
 		Push: senders.Push, Email: senders.Email, WhatsApp: senders.WhatsApp,
 		Sealer: sealer, WhatsAppAppSecret: cfg.WhatsAppAppSecret, WhatsAppWebhookVerifyToken: cfg.WhatsAppWebhookVerifyToken,
-		APNSConfigured: cfg.APNSKeyP8 != "",
+		APNSConfigured: cfg.APNSKeyP8 != "", Realtime: hubRealtimePublisher{hub: hub},
 	})
 	// Bridges library's LoanDueReminderEvent/ReservationReadyEvent (and
 	// every other module's domain events) into the events.Envelope shape
@@ -307,4 +332,43 @@ func tenantModeFor(cfg config.Config) tenant.Mode {
 		return tenant.ModeMulti
 	}
 	return tenant.ModeSingle
+}
+
+// hubRealtimePublisher pushes "notification_created" events to the
+// recipient's own WebSocket topic (see cmd/api/ws.go for the topic
+// convention) -- mirrors cmd/api/integrations.go's hubRealtimePublisher
+// (unexported there, so duplicated rather than shared across two package
+// main, the same call this file makes for identityContacts/lateBoundJobs
+// above). tenantID/userID come from notifications/service.Notify's own
+// parameters, not ctx: a background job's ctx never carries the
+// httpx-resolved tenant an HTTP request's would.
+type hubRealtimePublisher struct{ hub *realtime.Hub }
+
+func (p hubRealtimePublisher) Publish(_ context.Context, tenantID, userID uuid.UUID, event notificationsservice.RealtimeEvent) error {
+	return p.hub.Publish("user:"+tenantID.String()+":"+userID.String(), map[string]any{"type": event.Type, "payload": event.Payload})
+}
+
+// workerBroadcasterFor mirrors cmd/api/wire.go's broadcasterFor: a nil
+// Redis client (REDIS_URL unset) keeps the worker's Hub in single-process,
+// publish-nowhere mode -- Publish then only ever calls deliverLocal, which
+// is always a no-op here since nothing in this process ever Subscribes.
+func workerBroadcasterFor(redisClient *redis.Client) realtime.Broadcaster {
+	if redisClient == nil {
+		return nil
+	}
+	return realtime.NewRedisBroadcaster(redisClient)
+}
+
+// newWorkerRedisClient mirrors cmd/api/wire.go's newRedisClient.
+func newWorkerRedisClient(redisURL string, logger *slog.Logger) *redis.Client {
+	if redisURL == "" {
+		logger.Warn("REDIS_URL empty; realtime pushes from background jobs are disabled (single-instance only)")
+		return nil
+	}
+	opts, err := redis.ParseURL(redisURL)
+	if err != nil {
+		logger.Warn("invalid REDIS_URL, realtime pushes from background jobs are disabled", "error", err)
+		return nil
+	}
+	return redis.NewClient(opts)
 }

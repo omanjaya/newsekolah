@@ -321,7 +321,9 @@ func (s *Service) ListExitPermitsForApproval(ctx context.Context, tenantID, call
 // ExitPermitYearlyReportRows is the counselor's yearly report (missing
 // feature, docs/analysis/backend-inventory.md 1.15): every exit permit
 // opened this academic year, regardless of status, via the reports
-// module's XLSX pipeline (see wiring.PermitsReports).
+// module's shared reportdoc pipeline (see wiring.PermitsReports), which
+// renders it as either XLSX or PDF (GET /v1/reports/{reportKind}/export's
+// format query parameter -- see reports/service.RunDocument).
 func (s *Service) ExitPermitYearlyReportRows(ctx context.Context, tenantID uuid.UUID) ([]ExitPermitReportRow, error) {
 	var out []ExitPermitReportRow
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
