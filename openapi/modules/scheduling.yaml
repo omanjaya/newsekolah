@@ -383,8 +383,7 @@ paths:
                   total:
                     {
                       type: integer,
-                      description: Total journals matching the filter,
-                      ignoring limit/offset.,
+                      description: "Total journals matching the filter, ignoring limit/offset.",
                     }
         "403": { $ref: "#/components/responses/Forbidden" }
     post:

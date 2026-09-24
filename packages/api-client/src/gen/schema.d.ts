@@ -16090,7 +16090,10 @@ export interface operations {
     recordPayment: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Client-generated key (mobile clients on unstable networks) that makes a POST/PUT safe to retry; docs/08-security.md section 7. The same key replays the first response instead of repeating the write. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKeyHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -16119,7 +16122,10 @@ export interface operations {
     voidPayment: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Client-generated key (mobile clients on unstable networks) that makes a POST/PUT safe to retry; docs/08-security.md section 7. The same key replays the first response instead of repeating the write. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKeyHeader"];
+            };
             path: {
                 paymentId: string;
             };
@@ -18030,7 +18036,6 @@ export interface operations {
             query: {
                 class_id: string;
                 term_id?: string;
-                /** @default xlsx */
                 format?: components["schemas"]["EraporFormat"];
             };
             header?: never;
@@ -21584,7 +21589,10 @@ export interface operations {
     batchBorrowLibraryLoans: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Client-generated key (mobile clients on unstable networks) that makes a POST/PUT safe to retry; docs/08-security.md section 7. The same key replays the first response instead of repeating the write. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKeyHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -22957,7 +22965,10 @@ export interface operations {
     borrowLibraryLoan: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Client-generated key (mobile clients on unstable networks) that makes a POST/PUT safe to retry; docs/08-security.md section 7. The same key replays the first response instead of repeating the write. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKeyHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -22995,7 +23006,10 @@ export interface operations {
     returnLibraryLoan: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Client-generated key (mobile clients on unstable networks) that makes a POST/PUT safe to retry; docs/08-security.md section 7. The same key replays the first response instead of repeating the write. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKeyHeader"];
+            };
             path: {
                 loanId: string;
             };
@@ -24937,7 +24951,10 @@ export interface operations {
     createExitPermit: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Client-generated key (mobile clients on unstable networks) that makes a POST/PUT safe to retry; docs/08-security.md section 7. The same key replays the first response instead of repeating the write. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKeyHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -25169,7 +25186,10 @@ export interface operations {
     openLateArrival: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Client-generated key (mobile clients on unstable networks) that makes a POST/PUT safe to retry; docs/08-security.md section 7. The same key replays the first response instead of repeating the write. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKeyHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -25199,7 +25219,10 @@ export interface operations {
     recordLateArrivalByStaff: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Client-generated key (mobile clients on unstable networks) that makes a POST/PUT safe to retry; docs/08-security.md section 7. The same key replays the first response instead of repeating the write. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKeyHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -25396,7 +25419,10 @@ export interface operations {
     submitLeaveRequest: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Client-generated key (mobile clients on unstable networks) that makes a POST/PUT safe to retry; docs/08-security.md section 7. The same key replays the first response instead of repeating the write. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKeyHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -26753,7 +26779,7 @@ export interface operations {
                 content: {
                     "application/json": {
                         data: components["schemas"]["Journal"][];
-                        /** @description Total journals matching the filter */
+                        /** @description Total journals matching the filter, ignoring limit/offset. */
                         total: number;
                     };
                 };
@@ -28198,7 +28224,10 @@ export interface operations {
     checkInVisit: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Client-generated key (mobile clients on unstable networks) that makes a POST/PUT safe to retry; docs/08-security.md section 7. The same key replays the first response instead of repeating the write. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKeyHeader"];
+            };
             path?: never;
             cookie?: never;
         };

@@ -38,6 +38,7 @@ func testConfig(dsn string) config.Config {
 		AccessTokenTTL:     15 * time.Minute,
 		RefreshTokenTTL:    720 * time.Hour,
 		BodyLimitBytes:     1 << 20,
+		OpenAPIValidation:  "enforce",
 	}
 }
 
@@ -131,7 +132,7 @@ func TestLoginRefreshLogoutFlow(t *testing.T) {
 	require.NotEmpty(t, mobileRefreshToken)
 
 	// Refresh rotation via cookie (web).
-	req := httptest.NewRequest(http.MethodPost, "/v1/auth/refresh", bytes.NewBufferString("{}"))
+	req := httptest.NewRequest(http.MethodPost, "/v1/auth/refresh", nil)
 	req.AddCookie(cookie)
 	rec = httptest.NewRecorder()
 	server.ServeHTTP(rec, req)
@@ -140,7 +141,7 @@ func TestLoginRefreshLogoutFlow(t *testing.T) {
 	require.NotEqual(t, cookie.Value, newCookie.Value, "refresh must rotate the token")
 
 	// Reusing the now-rotated cookie must fail and revoke the family.
-	req = httptest.NewRequest(http.MethodPost, "/v1/auth/refresh", bytes.NewBufferString("{}"))
+	req = httptest.NewRequest(http.MethodPost, "/v1/auth/refresh", nil)
 	req.AddCookie(cookie)
 	rec = httptest.NewRecorder()
 	server.ServeHTTP(rec, req)
@@ -148,7 +149,7 @@ func TestLoginRefreshLogoutFlow(t *testing.T) {
 
 	// The freshly rotated token must also now be dead, because reuse
 	// detection revoked the whole family.
-	req = httptest.NewRequest(http.MethodPost, "/v1/auth/refresh", bytes.NewBufferString("{}"))
+	req = httptest.NewRequest(http.MethodPost, "/v1/auth/refresh", nil)
 	req.AddCookie(newCookie)
 	rec = httptest.NewRecorder()
 	server.ServeHTTP(rec, req)

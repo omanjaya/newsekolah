@@ -55,6 +55,14 @@ type Config struct {
 	TrustedProxies []string
 	BodyLimitBytes int64
 
+	// OpenAPIValidation is "enforce", "log", or "off" (platform/openapivalidate.Mode),
+	// controlling what a request that does not match openapi/openapi.yaml
+	// does: enforce rejects it (VALIDATION_FAILED), log records it and lets
+	// it through, off skips validation. Defaults to enforce in development
+	// and test (spec drift fails CI fast) and log in production (spec
+	// drift alone must never take the live site down).
+	OpenAPIValidation string
+
 	S3Endpoint  string
 	S3Bucket    string
 	S3AccessKey string
@@ -212,6 +220,15 @@ func Load() (Config, error) {
 		c.BodyLimitBytes = n
 	} else {
 		errs = append(errs, "BODY_LIMIT_BYTES (must be an integer)")
+	}
+
+	defaultOpenAPIValidation := "enforce"
+	if c.IsProduction() {
+		defaultOpenAPIValidation = "log"
+	}
+	c.OpenAPIValidation = orDefault(lookup("OPENAPI_VALIDATION"), defaultOpenAPIValidation)
+	if c.OpenAPIValidation != "enforce" && c.OpenAPIValidation != "log" && c.OpenAPIValidation != "off" {
+		errs = append(errs, "OPENAPI_VALIDATION (must be enforce, log, or off)")
 	}
 
 	accessTTL := orDefault(lookup("ACCESS_TOKEN_TTL"), "15m")

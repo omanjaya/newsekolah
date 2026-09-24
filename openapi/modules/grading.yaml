@@ -555,8 +555,7 @@ paths:
         - {
             name: format,
             in: query,
-            schema: { $ref: "#/components/schemas/EraporFormat" },
-            default: xlsx,
+            schema: { $ref: "#/components/schemas/EraporFormat", default: xlsx },
           }
       responses:
         "200":

@@ -85,6 +85,16 @@ Set `COMPOSE_EXTRA_FILES` (space-separated, paths relative to `DEPLOY_DIR`) to l
 files such as `infra/docker/compose.vps.yml` on top of `docker-compose.prod.yml` for every command
 the script runs, e.g. `COMPOSE_EXTRA_FILES=infra/docker/compose.vps.yml bash infra/scripts/update.sh`.
 
+`api` validates every request against `openapi/openapi.yaml` (`OPENAPI_VALIDATION` in `.env`,
+default `log` in production per `infra/docker/.env.prod.example`): a request that does not match
+the spec is only logged (`openapi_validation_failed`, with the operation and field), never
+rejected, so a spec that is momentarily behind the code an update just deployed cannot itself take
+the site down. Watch the `api` logs for that message after an update that touched
+`openapi/openapi.yaml`; a repeated hit means the spec needs a fix (regenerate with
+`pnpm openapi:bundle` after editing `openapi/modules/*.yaml`, then `cd apps/api && go generate
+./internal/gen/api/...` and `pnpm api:gen`). Set `OPENAPI_VALIDATION=enforce` only once the spec is
+known to be in sync, and `=off` to disable the check entirely.
+
 ## Backup and restore
 
 Enable the optional backup sidecar (daily `pg_dump` + MinIO mirror to an offsite S3-compatible

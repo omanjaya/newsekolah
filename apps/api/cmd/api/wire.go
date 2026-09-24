@@ -50,6 +50,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/events"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/jobs"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/openapivalidate"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/realtime"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/storage"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/tenant"
@@ -388,6 +389,10 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	if err != nil {
 		return nil, nil, err
 	}
+	validateRequest, err := openapivalidate.NewMiddleware(doc, resolveOpenAPIValidationMode(cfg.OpenAPIValidation), logger)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	server := &combinedServer{
 		Handler:                identityModule.Handler,
@@ -439,6 +444,11 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		BodyLimitBytes: cfg.BodyLimitBytes,
 		Logger:         logger,
 	})
+	// Request-shape validation runs first: it needs no tenant/identity
+	// context, and rejecting a malformed request before spending effort
+	// resolving either is strictly cheaper. It never sees the parsed
+	// identity, so it cannot itself become an authorization bypass.
+	router.Use(validateRequest)
 	router.Use(tenant.Middleware(mode, schoolModule.Loader, cfg.BaseDomain))
 	router.Use(httpx.RefreshCookieMiddleware)
 	router.Use(authenticator.Middleware)
@@ -456,6 +466,21 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	mountRealtimeRoutes(router, pool, tokenIssuer, identityModule.Service, hub, presence, attendanceModule.Service, cfg.AppOrigins, logger)
 
 	return router, bg, nil
+}
+
+// resolveOpenAPIValidationMode converts config's raw OPENAPI_VALIDATION
+// string into openapivalidate.Mode. config.Load already rejects any value
+// other than "enforce"/"log"/"off", so the default here only matters for a
+// config.Config built directly (tests) rather than through Load.
+func resolveOpenAPIValidationMode(raw string) openapivalidate.Mode {
+	switch raw {
+	case string(openapivalidate.ModeLog):
+		return openapivalidate.ModeLog
+	case string(openapivalidate.ModeOff):
+		return openapivalidate.ModeOff
+	default:
+		return openapivalidate.ModeEnforce
+	}
 }
 
 // background owns the River client built by buildRouter. Start is a no-op
