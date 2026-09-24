@@ -22,6 +22,9 @@ export type DutyType = components["schemas"]["DutyType"];
 export type DutyAssignment = components["schemas"]["DutyAssignment"];
 export type UserImportRow = components["schemas"]["UserImportRow"];
 export type UserImportRowResult = components["schemas"]["UserImportRowResult"];
+export type UserImportMode = components["schemas"]["UserImportMode"];
+export type UserImportRowAction = components["schemas"]["UserImportRowAction"];
+export type UserImportResult = components["schemas"]["UserImportResult"];
 
 /** Shared with duties-api.ts, which lives in its own file to keep this one under the line limit. */
 export function useInvalidate(prefix: readonly unknown[]) {
@@ -119,11 +122,20 @@ export function useRolesQuery() {
 // response, so it goes around the generated client), preview and commit
 // are plain JSON POSTs the client handles directly.
 
+export interface UserImportRequestInput {
+  rows: UserImportRow[];
+  mode: UserImportMode;
+  /** Only meaningful when mode is "upsert"; ignored (and should stay false) in create mode. */
+  updateRoles: boolean;
+}
+
 export function usePreviewImportMutation() {
   const client = useApiClient();
   return useMutation({
-    mutationFn: (rows: UserImportRow[]) =>
-      client.POST("/v1/users/import/preview", { body: { rows } }),
+    mutationFn: ({ rows, mode, updateRoles }: UserImportRequestInput) =>
+      client.POST("/v1/users/import/preview", {
+        body: { rows, mode, update_roles: updateRoles },
+      }),
   });
 }
 
@@ -131,8 +143,10 @@ export function useCommitImportMutation() {
   const client = useApiClient();
   const invalidate = useInvalidate(["users"]);
   return useMutation({
-    mutationFn: (rows: UserImportRow[]) =>
-      client.POST("/v1/users/import/commit", { body: { rows } }),
+    mutationFn: ({ rows, mode, updateRoles }: UserImportRequestInput) =>
+      client.POST("/v1/users/import/commit", {
+        body: { rows, mode, update_roles: updateRoles },
+      }),
     onSuccess: invalidate,
   });
 }

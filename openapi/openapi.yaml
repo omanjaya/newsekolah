@@ -6564,7 +6564,11 @@ paths:
         - users
       operationId: previewUserImport
       x-permission: create_users
-      summary: Validate a batch of parsed import rows (up to 5000) without creating anything
+      summary: Validate a batch of parsed import rows (up to 5000) without writing anything
+      description: "In create mode (the default) every row is validated to become a new user, exactly as before. In upsert
+        mode, a row whose username matches an existing user in this tenant is validated as an update instead: username
+        and password are never touched, and roles are left alone unless update_roles is true and the caller holds
+        manage_permissions."
       requestBody:
         required: true
         content:
@@ -6590,7 +6594,9 @@ paths:
         - users
       operationId: commitUserImport
       x-permission: create_users
-      summary: Re-validate the same batch and create every row in one transaction; any invalid row aborts the whole batch
+      summary: Re-validate the same batch and write every row in one transaction; any invalid row aborts the whole batch
+      description: "Preview and commit must be called with the same mode and update_roles, and never drift: commit re-runs the
+        same evaluation preview did and writes nothing if any row is invalid."
       requestBody:
         required: true
         content:
@@ -22420,11 +22426,41 @@ components:
           type: string
         position:
           type: string
+    UserImportMode:
+      type: string
+      enum:
+        - create
+        - upsert
+      description: "\"create\" (the default) only ever creates new users, matching the historical behaviour; a row whose
+        username is already taken is an error. \"upsert\" matches a row against an existing user in this tenant by
+        username: a match updates that user's profile fields instead of failing, while an unmatched row still creates a
+        new user."
+    UserImportRowAction:
+      type: string
+      enum:
+        - create
+        - update
+        - unchanged
+        - error
+      description: What the row will do (preview) or did (commit). "unchanged" means the row matched an existing user in
+        upsert mode but every field it carries already matches; nothing is written for that row on commit. "error" means
+        the row has one or more validation errors.
     UserImportRequest:
       type: object
       required:
         - rows
       properties:
+        mode:
+          allOf:
+            - $ref: "#/components/schemas/UserImportMode"
+          default: create
+        update_roles:
+          type: boolean
+          default: false
+          description: Only meaningful in upsert mode. When true, a matched row's role_slug replaces the existing user's role
+            exactly like a create row's does; the caller must hold manage_permissions or the whole request is rejected.
+            When false (the default), an upsert never changes an existing user's roles, regardless of what role_slug
+            carries.
         rows:
           type: array
           maxItems: 5000
@@ -22434,12 +22470,20 @@ components:
       type: object
       required:
         - row_number
+        - action
         - errors
       properties:
         row_number:
           type: integer
         username:
           type: string
+        action:
+          $ref: "#/components/schemas/UserImportRowAction"
+        changed_fields:
+          type: array
+          items:
+            type: string
+          description: Field names that differ from the existing user's current values; only present when action is "update".
         errors:
           type: array
           items:
@@ -22453,6 +22497,15 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/UserImportRowResult"
+        created:
+          type: integer
+          description: "Commit only: how many rows created a new user."
+        updated:
+          type: integer
+          description: "Commit only: how many rows updated an existing user."
+        unchanged:
+          type: integer
+          description: "Commit only: how many matched rows needed no write."
     AuthSettings:
       type: object
       required:

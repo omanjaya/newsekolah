@@ -95,6 +95,7 @@ export type MessageKey =
   | "errors.HOMEROOM_TEACHER_REQUIRED"
   | "errors.IMPERSONATION_NOT_ALLOWED"
   | "errors.IMPORT_FILE_INVALID"
+  | "errors.IMPORT_ROLE_UPDATE_FORBIDDEN"
   | "errors.IMPORT_TOO_MANY_ROWS"
   | "errors.INCIDENT_ALREADY_CLOSED"
   | "errors.INCIDENT_FORBIDDEN"
@@ -370,6 +371,7 @@ export const MESSAGE_KEYS: readonly MessageKey[] = [
   "errors.HOMEROOM_TEACHER_REQUIRED",
   "errors.IMPERSONATION_NOT_ALLOWED",
   "errors.IMPORT_FILE_INVALID",
+  "errors.IMPORT_ROLE_UPDATE_FORBIDDEN",
   "errors.IMPORT_TOO_MANY_ROWS",
   "errors.INCIDENT_ALREADY_CLOSED",
   "errors.INCIDENT_FORBIDDEN",

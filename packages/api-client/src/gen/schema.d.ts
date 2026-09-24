@@ -2865,7 +2865,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Validate a batch of parsed import rows (up to 5000) without creating anything */
+        /**
+         * Validate a batch of parsed import rows (up to 5000) without writing anything
+         * @description In create mode (the default) every row is validated to become a new user, exactly as before. In upsert mode, a row whose username matches an existing user in this tenant is validated as an update instead: username and password are never touched, and roles are left alone unless update_roles is true and the caller holds manage_permissions.
+         */
         post: operations["previewUserImport"];
         delete?: never;
         options?: never;
@@ -2882,7 +2885,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Re-validate the same batch and create every row in one transaction; any invalid row aborts the whole batch */
+        /**
+         * Re-validate the same batch and write every row in one transaction; any invalid row aborts the whole batch
+         * @description Preview and commit must be called with the same mode and update_roles, and never drift: commit re-runs the same evaluation preview did and writes nothing if any row is invalid.
+         */
         post: operations["commitUserImport"];
         delete?: never;
         options?: never;
@@ -9654,16 +9660,42 @@ export interface components {
             employee_number?: string;
             position?: string;
         };
+        /**
+         * @description "create" (the default) only ever creates new users, matching the historical behaviour; a row whose username is already taken is an error. "upsert" matches a row against an existing user in this tenant by username: a match updates that user's profile fields instead of failing, while an unmatched row still creates a new user.
+         * @enum {string}
+         */
+        UserImportMode: "create" | "upsert";
+        /**
+         * @description What the row will do (preview) or did (commit). "unchanged" means the row matched an existing user in upsert mode but every field it carries already matches; nothing is written for that row on commit. "error" means the row has one or more validation errors.
+         * @enum {string}
+         */
+        UserImportRowAction: "create" | "update" | "unchanged" | "error";
         UserImportRequest: {
+            /** @default create */
+            mode: components["schemas"]["UserImportMode"];
+            /**
+             * @description Only meaningful in upsert mode. When true, a matched row's role_slug replaces the existing user's role exactly like a create row's does; the caller must hold manage_permissions or the whole request is rejected. When false (the default), an upsert never changes an existing user's roles, regardless of what role_slug carries.
+             * @default false
+             */
+            update_roles: boolean;
             rows: components["schemas"]["UserImportRow"][];
         };
         UserImportRowResult: {
             row_number: number;
             username?: string;
+            action: components["schemas"]["UserImportRowAction"];
+            /** @description Field names that differ from the existing user's current values; only present when action is "update". */
+            changed_fields?: string[];
             errors: string[];
         };
         UserImportResult: {
             data: components["schemas"]["UserImportRowResult"][];
+            /** @description Commit only: how many rows created a new user. */
+            created?: number;
+            /** @description Commit only: how many rows updated an existing user. */
+            updated?: number;
+            /** @description Commit only: how many matched rows needed no write. */
+            unchanged?: number;
         };
         AuthSettings: {
             session_days: number;

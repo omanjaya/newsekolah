@@ -1166,6 +1166,15 @@
           "downloadTemplate": "Unduh templat XLSX",
           "step2Title": "2. Unggah berkas yang sudah diisi",
           "step2Body": "Maksimal 5000 baris dalam satu berkas. Baris kosong dilewati.",
+          "mode": {
+            "label": "Mode impor",
+            "create": "Hanya buat baru",
+            "upsert": "Buat dan perbarui",
+            "createBody": "Setiap baris membuat pengguna baru. Baris dengan nama pengguna yang sudah dipakai dianggap error.",
+            "upsertBody": "Baris dengan nama pengguna yang cocok dengan pengguna yang sudah ada akan memperbarui profil pengguna itu, bukan gagal; baris yang tidak cocok tetap membuat pengguna baru. Nama pengguna dan kata sandi tidak pernah diubah.",
+            "updateRolesLabel": "Perbarui peran juga",
+            "updateRolesBody": "Jika aktif, peran pada baris yang cocok akan menggantikan peran pengguna yang sudah ada. Memerlukan hak kelola izin; nonaktif secara default agar impor tidak pernah mengubah siapa memegang peran apa."
+          },
           "chooseFile": "Pilih berkas",
           "parsing": "Membaca {file}...",
           "parseError": {
@@ -1175,13 +1184,18 @@
           },
           "step3Title": "3. Pratinjau",
           "rowCount": "{n} baris",
+          "createCount": "{n} akan dibuat",
+          "updateCount": "{n} akan diperbarui",
+          "unchangedCount": "{n} tidak berubah",
           "invalidCount": "{n} baris tidak valid",
           "blockedTitle": "Belum bisa diimpor",
-          "blockedBody": "Impor berjalan dalam satu transaksi: selama masih ada satu baris tidak valid, tidak ada satu pun pengguna yang akan dibuat. Perbaiki baris yang ditandai, lalu unggah ulang berkasnya.",
+          "blockedBody": "Impor berjalan dalam satu transaksi: selama masih ada satu baris tidak valid, tidak ada apa pun yang akan disimpan. Perbaiki baris yang ditandai, lalu unggah ulang berkasnya.",
           "readyTitle": "Siap diimpor",
           "readyBody": "Semua {n} baris valid. Semua akan dibuat sekaligus saat Anda menekan Impor sekarang.",
+          "readyBodyUpsert": "Semua baris valid: {created} akan dibuat, {updated} akan diperbarui, dan {unchanged} tidak perlu diubah.",
           "doneTitle": "Impor selesai",
           "doneBody": "{n} pengguna berhasil dibuat.",
+          "doneBodyUpsert": "{created} pengguna dibuat, {updated} diperbarui, {unchanged} tidak berubah.",
           "startOver": "Mulai ulang",
           "commit": "Impor sekarang",
           "importAnother": "Impor berkas lain",
@@ -1193,7 +1207,14 @@
             "username": "Nama pengguna",
             "status": "Status",
             "valid": "Valid",
-            "invalid": "Tidak valid"
+            "invalid": "Tidak valid",
+            "changedFields": "Berubah: {fields}",
+            "action": {
+              "create": "Akan dibuat",
+              "update": "Akan diperbarui",
+              "unchanged": "Tidak berubah",
+              "error": "Tidak valid"
+            }
           }
         }
       },

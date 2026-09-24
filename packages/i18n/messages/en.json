@@ -332,6 +332,7 @@
     "LEAVE_PERMISSION_REQUIRES_DUTY": "Reviewing leave requests and issuing leave letters cannot be granted directly to the teacher role, that access comes from a duty assignment",
     "IMPORT_TOO_MANY_ROWS": "The import file exceeds the 5000 row limit",
     "IMPORT_FILE_INVALID": "The import file is unreadable or does not match the template",
+    "IMPORT_ROLE_UPDATE_FORBIDDEN": "Updating roles through an import requires the manage permissions right",
     "ANALYTICS_NOT_HOMEROOM_TEACHER": "This list is available to homeroom teachers, counselors, or school leaders with an active assignment.",
     "SCAN_TOKEN_GONE": "This code has expired, was already used, or is not for this purpose. Ask the teacher for a new one.",
     "SCAN_TOKEN_CONSUMER_NOT_STUDENT": "Only a student account can scan this code.",

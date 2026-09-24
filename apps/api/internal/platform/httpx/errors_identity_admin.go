@@ -29,4 +29,5 @@ var (
 	ErrPushEndpointNotAllowed           = NewError(http.StatusBadRequest, "PUSH_ENDPOINT_NOT_ALLOWED")
 	ErrApnsNotConfigured                = NewError(http.StatusServiceUnavailable, "APNS_NOT_CONFIGURED")
 	ErrImportTooManyRows                = NewError(http.StatusBadRequest, "IMPORT_TOO_MANY_ROWS")
+	ErrImportRoleUpdateForbidden        = NewError(http.StatusForbidden, "IMPORT_ROLE_UPDATE_FORBIDDEN")
 )

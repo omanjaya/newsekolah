@@ -1166,6 +1166,15 @@
           "downloadTemplate": "Download XLSX template",
           "step2Title": "2. Upload the filled-in file",
           "step2Body": "Up to 5000 rows in one file. Blank rows are skipped.",
+          "mode": {
+            "label": "Import mode",
+            "create": "Create only",
+            "upsert": "Create and update",
+            "createBody": "Every row creates a new user. A row whose username is already taken is an error.",
+            "upsertBody": "A row whose username matches an existing user updates that user's profile instead of failing; an unmatched row still creates a new user. Username and password are never changed.",
+            "updateRolesLabel": "Also update roles",
+            "updateRolesBody": "When on, a matched row's role replaces the existing user's role. Requires the manage permissions right; off by default so an import never changes who holds which role."
+          },
           "chooseFile": "Choose file",
           "parsing": "Reading {file}...",
           "parseError": {
@@ -1175,13 +1184,18 @@
           },
           "step3Title": "3. Preview",
           "rowCount": "{n} rows",
+          "createCount": "{n} to create",
+          "updateCount": "{n} to update",
+          "unchangedCount": "{n} unchanged",
           "invalidCount": "{n} invalid rows",
           "blockedTitle": "Not ready to import",
-          "blockedBody": "The import runs as one transaction: as long as a single row is invalid, no user at all will be created. Fix the flagged rows, then upload the file again.",
+          "blockedBody": "The import runs as one transaction: as long as a single row is invalid, nothing at all will be written. Fix the flagged rows, then upload the file again.",
           "readyTitle": "Ready to import",
           "readyBody": "All {n} rows are valid. They will all be created at once when you press Import now.",
+          "readyBodyUpsert": "All rows are valid: {created} will be created, {updated} will be updated, and {unchanged} need no change.",
           "doneTitle": "Import complete",
           "doneBody": "{n} users were created.",
+          "doneBodyUpsert": "{created} users created, {updated} updated, {unchanged} left unchanged.",
           "startOver": "Start over",
           "commit": "Import now",
           "importAnother": "Import another file",
@@ -1193,7 +1207,14 @@
             "username": "Username",
             "status": "Status",
             "valid": "Valid",
-            "invalid": "Invalid"
+            "invalid": "Invalid",
+            "changedFields": "Changed: {fields}",
+            "action": {
+              "create": "Will create",
+              "update": "Will update",
+              "unchanged": "Unchanged",
+              "error": "Invalid"
+            }
           }
         }
       },

@@ -20,13 +20,27 @@ const MaxImportRows = 5000
 // column must use.
 const ImportBirthDateLayout = "2006-01-02"
 
+// ImportMode is the batch-level choice between only ever creating new
+// users (the historical behaviour) or matching a row against an existing
+// user first. Carried on the request, not per row: every row in one batch
+// is evaluated the same way.
+type ImportMode string
+
+const (
+	ImportModeCreate ImportMode = "create"
+	ImportModeUpsert ImportMode = "upsert"
+)
+
 // ImportAction is what the service decided a row should do, after matching
-// it against existing users by username/NIS/NIP.
+// it against an existing user by username (the only key the reference app
+// matched on; see docs/15-paritas-sion.md).
 type ImportAction string
 
 const (
-	ImportActionCreate ImportAction = "create"
-	ImportActionUpdate ImportAction = "update"
+	ImportActionCreate    ImportAction = "create"
+	ImportActionUpdate    ImportAction = "update"
+	ImportActionUnchanged ImportAction = "unchanged"
+	ImportActionError     ImportAction = "error"
 )
 
 // ImportRow is one parsed spreadsheet row, before it is matched against the
@@ -73,14 +87,6 @@ type ImportRow struct {
 	Specialization   string
 	EmployeeNumber   string
 	Position         string
-}
-
-// ImportRowResult is what the preview and commit endpoints report back for
-// one row.
-type ImportRowResult struct {
-	RowNumber int
-	Action    ImportAction
-	Errors    []string
 }
 
 // ValidateImportRow checks the fields of one row that do not require a
