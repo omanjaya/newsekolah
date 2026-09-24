@@ -40,13 +40,23 @@ type RealtimeEvent struct {
 // clients. The scheduling module owns the actual WebSocket hub; until that
 // is wired in after merge, NoopRealtimePublisher is used so Notify's
 // behavior does not depend on realtime delivery ever succeeding.
+//
+// Publish takes tenantID explicitly rather than expecting an implementation
+// to pull it from ctx: Notify's caller may be an HTTP request (whose ctx
+// an adapter could otherwise read a resolved tenant from) or a background
+// job -- a scheduled reminder, a river.Worker's Work(ctx, job) -- whose ctx
+// never carries one. notifyOne already has tenantID in scope from Notify's
+// own parameter, so passing it here costs nothing and keeps every
+// implementation correct regardless of which kind of caller triggered it.
 type RealtimePublisher interface {
-	Publish(ctx context.Context, userID uuid.UUID, event RealtimeEvent) error
+	Publish(ctx context.Context, tenantID, userID uuid.UUID, event RealtimeEvent) error
 }
 
 type NoopRealtimePublisher struct{}
 
-func (NoopRealtimePublisher) Publish(context.Context, uuid.UUID, RealtimeEvent) error { return nil }
+func (NoopRealtimePublisher) Publish(context.Context, uuid.UUID, uuid.UUID, RealtimeEvent) error {
+	return nil
+}
 
 // PreferenceUpdate is one (kind, channel) -> enabled row a user is setting.
 type PreferenceUpdate struct {

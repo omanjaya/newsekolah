@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/realtime"
@@ -188,6 +189,71 @@ func TestHubDedupesOwnMessagesInMultiReplicaMode(t *testing.T) {
 	require.NoError(t, conn.SetReadDeadline(time.Now().Add(200*time.Millisecond)))
 	_, _, err = conn.ReadMessage()
 	require.Error(t, err, "must not receive the same message twice")
+}
+
+// TestPublishOnlyHubReachesSubscriberOnSeparateHub proves the shape
+// cmd/worker/main.go's Hub relies on: a Hub that never Subscribes any
+// local client -- exactly what a background-job process that never serves
+// a WebSocket upgrade looks like, unlike cmd/api's own Hub -- can still
+// push an event that reaches a client connected to a *different*
+// process's Hub, purely through the shared Broadcaster. fakeBroadcaster
+// stands in for Redis pub-sub here (this repo has no Redis testcontainers
+// module or miniredis dependency yet; it implements the same Broadcaster
+// contract RedisBroadcaster does over a real REDIS_URL, so this proves the
+// same fan-out RedisBroadcaster would perform in production).
+func TestPublishOnlyHubReachesSubscriberOnSeparateHub(t *testing.T) {
+	broadcaster := newFakeBroadcaster()
+
+	// workerHub stands in for cmd/worker's hub: nothing ever calls
+	// Subscribe on it (no mountRealtimeRoutes, no Upgrade -- see
+	// cmd/worker/main.go's hub construction comment), so it never gains a
+	// local client and its own watchRemote is never started either.
+	workerHub := realtime.NewHub(broadcaster)
+
+	// apiHub stands in for cmd/api's hub, in a different process, with one
+	// real WebSocket client connected the way GET /ws/me's wsMeHandler
+	// does.
+	apiHub := realtime.NewHub(broadcaster)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, err := realtime.Upgrade(w, r, apiHub, "user:tenant-1:user-1", nil, nil)
+		require.NoError(t, err)
+	}))
+	defer server.Close()
+
+	wsURL := "ws" + strings.TrimPrefix(server.URL, "http")
+	conn, resp, err := websocket.DefaultDialer.Dial(wsURL, nil) //nolint:bodyclose // closed below
+	require.NoError(t, err)
+	if resp != nil && resp.Body != nil {
+		_ = resp.Body.Close()
+	}
+	defer func() { _ = conn.Close() }()
+
+	require.Eventually(t, func() bool {
+		return apiHub.TopicSize("user:tenant-1:user-1") == 1
+	}, time.Second, 10*time.Millisecond)
+
+	// This is exactly what notifications/service.Notify's realtime.Publish
+	// call does from inside a background job -- e.g. library's due
+	// reminder job or a scheduled report's "ready" notification -- once
+	// cmd/worker/main.go wires its own Hub into notifications.Dependencies.
+	// Realtime.
+	type event struct {
+		Type string `json:"type"`
+	}
+	require.NoError(t, workerHub.Publish("user:tenant-1:user-1", event{Type: "notification_created"}))
+
+	require.NoError(t, conn.SetReadDeadline(time.Now().Add(2*time.Second)))
+	_, payload, err := conn.ReadMessage()
+	require.NoError(t, err, "the client on the separate hub must receive the worker's publish")
+
+	var got event
+	require.NoError(t, json.Unmarshal(payload, &got))
+	assert.Equal(t, "notification_created", got.Type)
+
+	// workerHub itself never gained a local subscriber -- confirms the
+	// message really travelled the cross-process (Broadcaster) path, not
+	// local delivery within one Hub.
+	assert.Equal(t, 0, workerHub.TopicSize("user:tenant-1:user-1"))
 }
 
 func TestExtractBearer(t *testing.T) {

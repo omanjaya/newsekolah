@@ -143,13 +143,14 @@ func (a disciplineViolationsAdapter) ReplaceSessionViolations(
 
 // hubRealtimePublisher pushes "notification_created" events to the
 // recipient's own WebSocket topic (see ws.go for the topic convention).
+// tenantID comes from the caller (notifications/service.Notify's own
+// parameter, threaded through RealtimePublisher.Publish) rather than from
+// ctx: Notify runs both inside an HTTP request and from a background job
+// (a scheduled reminder, an event bridge fan-out triggered by one), and
+// only the former's ctx ever carries a resolved tenant via httpx.
 type hubRealtimePublisher struct{ hub *realtime.Hub }
 
-func (p hubRealtimePublisher) Publish(ctx context.Context, userID uuid.UUID, event notificationsservice.RealtimeEvent) error {
-	tenantID, ok := httpx.TenantIDFromContext(ctx)
-	if !ok {
-		return nil
-	}
+func (p hubRealtimePublisher) Publish(_ context.Context, tenantID, userID uuid.UUID, event notificationsservice.RealtimeEvent) error {
 	return p.hub.Publish("user:"+tenantID.String()+":"+userID.String(), map[string]any{"type": event.Type, "payload": event.Payload})
 }
 

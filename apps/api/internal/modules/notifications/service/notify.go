@@ -86,7 +86,7 @@ func (s *Service) notifyOne(
 	for _, ch := range channels {
 		switch ch {
 		case domain.ChannelInApp:
-			_ = s.realtime.Publish(ctx, userID, RealtimeEvent{
+			_ = s.realtime.Publish(ctx, tenantID, userID, RealtimeEvent{
 				Type:    "notification_created",
 				Payload: map[string]any{"id": n.ID, "kind": n.Kind, "title": n.Title, "body": n.Body, "href": n.Href},
 			})
