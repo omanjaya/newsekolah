@@ -91,6 +91,7 @@ const APP_FEATURE_NAMESPACES = [
   "app.onboarding",
   "app.platform",
   "app.promotion",
+  "app.reportExport",
   "app.reports",
   "app.sso",
   "app.staffAttendance",
@@ -160,4 +161,5 @@ export const LIBRARY_NAMESPACES: readonly string[] = [
   ...SHARED_NAMESPACES,
   ...ROOT_APP_NAMESPACES,
   "app.library",
+  "app.reportExport",
 ];

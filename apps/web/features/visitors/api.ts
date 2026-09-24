@@ -3,8 +3,10 @@
 import { ApiError, type components } from "@newsekolah/api-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import type { ReportExportOptions } from "../../components/report-export-dialog";
 import { getAccessToken } from "../../lib/api/access-token";
 import { useApiClient } from "../../lib/api/client";
+import { reportExportExtension, withReportExportParams } from "../../lib/api/report-export-query";
 import { API_URL } from "../../lib/env";
 
 export type ExpectedGuest = components["schemas"]["ExpectedGuest"];
@@ -215,14 +217,21 @@ async function readErrorCode(response: Response): Promise<string> {
 }
 
 /**
- * Runs a recap export and saves the resulting workbook. Uses a direct
+ * Runs a recap export per the {@link ReportExportDialog}'s chosen format/
+ * title/letterhead/columns and saves the resulting file. Uses a direct
  * `fetch` rather than the shared API client, same as `features/reports`:
  * the client parses every response as JSON, but this endpoint returns an
- * XLSX binary.
+ * XLSX or PDF binary.
  */
-async function downloadRecapExport(path: string, filename: string): Promise<void> {
+async function downloadRecapExport(
+  path: string,
+  baseParams: URLSearchParams,
+  filenameBase: string,
+  options: ReportExportOptions,
+): Promise<void> {
   const token = getAccessToken();
-  const response = await fetch(`${API_URL}${path}`, {
+  const params = withReportExportParams(baseParams, options);
+  const response = await fetch(`${API_URL}${path}?${params.toString()}`, {
     headers: token ? { Authorization: `Bearer ${token}` } : undefined,
   });
   if (!response.ok) {
@@ -234,7 +243,7 @@ async function downloadRecapExport(path: string, filename: string): Promise<void
   try {
     const link = document.createElement("a");
     link.href = url;
-    link.download = filename;
+    link.download = `${filenameBase}.${reportExportExtension(options)}`;
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -245,20 +254,24 @@ async function downloadRecapExport(path: string, filename: string): Promise<void
 
 export function useExportDailyRecapMutation() {
   return useMutation({
-    mutationFn: (date: string) =>
+    mutationFn: ({ date, options }: { date: string; options: ReportExportOptions }) =>
       downloadRecapExport(
-        `/v1/visitors/recap/daily/export?date=${encodeURIComponent(date)}`,
-        `rekap-tamu-${date}.xlsx`,
+        "/v1/visitors/recap/daily/export",
+        new URLSearchParams({ date }),
+        `rekap-tamu-${date}`,
+        options,
       ),
   });
 }
 
 export function useExportMonthlyRecapMutation() {
   return useMutation({
-    mutationFn: (month: string) =>
+    mutationFn: ({ month, options }: { month: string; options: ReportExportOptions }) =>
       downloadRecapExport(
-        `/v1/visitors/recap/monthly/export?month=${encodeURIComponent(month)}`,
-        `rekap-tamu-${month}.xlsx`,
+        "/v1/visitors/recap/monthly/export",
+        new URLSearchParams({ month }),
+        `rekap-tamu-${month}`,
+        options,
       ),
   });
 }

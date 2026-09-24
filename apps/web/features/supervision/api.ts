@@ -3,8 +3,10 @@
 import { ApiError, type components } from "@newsekolah/api-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import type { ReportExportOptions } from "../../components/report-export-dialog";
 import { getAccessToken } from "../../lib/api/access-token";
 import { useApiClient } from "../../lib/api/client";
+import { reportExportExtension, withReportExportParams } from "../../lib/api/report-export-query";
 import { API_URL } from "../../lib/env";
 
 export type SupervisionCriterion = components["schemas"]["SupervisionCriterion"];
@@ -198,19 +200,22 @@ async function readErrorCode(response: Response): Promise<string> {
 }
 
 /**
- * Downloads the per-teacher report workbook. Uses a direct `fetch` rather
+ * Runs the per-teacher report export per the {@link ReportExportDialog}'s
+ * chosen format/title/letterhead/columns. Uses a direct `fetch` rather
  * than the shared API client, same as `features/reports/api.ts`: the
- * client parses every response as JSON, but this endpoint returns an XLSX
- * binary.
+ * client parses every response as JSON, but this endpoint returns an
+ * XLSX or PDF binary.
  */
 export async function downloadTeacherSupervisionReport(
   cycleId: string,
   teacherId: string,
-  fileName: string,
+  fileNameBase: string,
+  options: ReportExportOptions,
 ): Promise<void> {
   const token = getAccessToken();
+  const params = withReportExportParams(new URLSearchParams(), options);
   const response = await fetch(
-    `${API_URL}/v1/supervision/cycles/${encodeURIComponent(cycleId)}/teachers/${encodeURIComponent(teacherId)}/report/export`,
+    `${API_URL}/v1/supervision/cycles/${encodeURIComponent(cycleId)}/teachers/${encodeURIComponent(teacherId)}/report/export?${params.toString()}`,
     { headers: token ? { Authorization: `Bearer ${token}` } : undefined },
   );
   if (!response.ok) {
@@ -222,7 +227,7 @@ export async function downloadTeacherSupervisionReport(
   try {
     const link = document.createElement("a");
     link.href = url;
-    link.download = fileName;
+    link.download = `${fileNameBase}.${reportExportExtension(options)}`;
     document.body.appendChild(link);
     link.click();
     link.remove();

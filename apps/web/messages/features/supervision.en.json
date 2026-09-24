@@ -84,11 +84,19 @@
   },
   "teacherReport": {
     "export": "Download",
+    "defaultTitle": "Teacher Supervision Report",
     "overallAverage": "Overall average",
     "byCriterion": "Average by criterion",
     "observations": "Observations",
     "noObservations": "No completed observations in this cycle yet.",
-    "scoreCount": "{count} scores"
+    "scoreCount": "{count} scores",
+    "columns": {
+      "date": "Observation Date",
+      "average": "Average",
+      "observer_notes": "Observer Notes",
+      "teacher_response": "Teacher Response",
+      "agreed_follow_up": "Follow-up"
+    }
   },
   "observationDetail": {
     "scores": "Scores",

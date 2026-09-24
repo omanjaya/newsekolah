@@ -15,8 +15,14 @@ import {
 import { Download } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
+import { useState } from "react";
 
 import { QueryError } from "../../../components/query-error";
+import {
+  ReportExportDialog,
+  type ReportExportColumn,
+  type ReportExportOptions,
+} from "../../../components/report-export-dialog";
 import { useDateFilter } from "../../../lib/hooks/use-date-filter";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { thisMonthInZone, todayInZone } from "../../../lib/tenant-date";
@@ -27,6 +33,9 @@ import {
   useExportMonthlyRecapMutation,
   useMonthlyRecapQuery,
 } from "../api";
+
+/** Must match visitors/service/recap.go's recapColumns keys exactly. */
+const RECAP_COLUMN_KEYS = ["label", "value"] as const;
 
 const SEVERITIES = ["low", "medium", "high", "critical"] as const;
 
@@ -69,6 +78,16 @@ function DailyRecapTab(): ReactElement {
   const [date, setDate] = useDateFilter("date", todayIso());
   const { data, isLoading, isError, refetch } = useDailyRecapQuery(date);
   const exportDaily = useExportDailyRecapMutation();
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  const columns: ReportExportColumn[] = RECAP_COLUMN_KEYS.map((key) => ({
+    key,
+    label: t(`columns.${key}`),
+  }));
+
+  async function handleExport(options: ReportExportOptions) {
+    await exportDaily.mutateAsync({ date, options });
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -86,14 +105,21 @@ function DailyRecapTab(): ReactElement {
         <Button
           variant="secondary"
           icon={<Download />}
-          loading={exportDaily.isPending}
           onClick={() => {
-            exportDaily.mutate(date);
+            setDialogOpen(true);
           }}
         >
           {t("export")}
         </Button>
       </div>
+      <ReportExportDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        reportKey="visitors.recap.daily"
+        defaultTitle={t("defaultTitleDaily")}
+        availableColumns={columns}
+        onExport={handleExport}
+      />
       {isError && <QueryError retry={() => refetch()} />}
       {isError && !data ? null : isLoading || !data ? (
         <Skeleton className="h-40 w-full" />
@@ -109,6 +135,16 @@ function MonthlyRecapTab(): ReactElement {
   const [month, setMonth] = useDateFilter("month", thisMonthIso(), true);
   const { data, isLoading, isError, refetch } = useMonthlyRecapQuery(month);
   const exportMonthly = useExportMonthlyRecapMutation();
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  const columns: ReportExportColumn[] = RECAP_COLUMN_KEYS.map((key) => ({
+    key,
+    label: t(`columns.${key}`),
+  }));
+
+  async function handleExport(options: ReportExportOptions) {
+    await exportMonthly.mutateAsync({ month, options });
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -126,14 +162,21 @@ function MonthlyRecapTab(): ReactElement {
         <Button
           variant="secondary"
           icon={<Download />}
-          loading={exportMonthly.isPending}
           onClick={() => {
-            exportMonthly.mutate(month);
+            setDialogOpen(true);
           }}
         >
           {t("export")}
         </Button>
       </div>
+      <ReportExportDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        reportKey="visitors.recap.monthly"
+        defaultTitle={t("defaultTitleMonthly")}
+        availableColumns={columns}
+        onExport={handleExport}
+      />
       {isError && <QueryError retry={() => refetch()} />}
       {isError && !data ? null : isLoading || !data ? (
         <Skeleton className="h-40 w-full" />

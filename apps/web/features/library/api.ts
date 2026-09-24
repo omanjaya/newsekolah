@@ -413,23 +413,11 @@ export function printMemberCard(userId: string): Promise<void> {
   );
 }
 
-export function downloadLoansReportXlsx(from: string, to: string): Promise<void> {
-  return downloadPDF(
-    `/v1/library/reports/loans.xlsx?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
-    `laporan-peminjaman-${from}-${to}.xlsx`,
-  );
-}
-
-export function downloadOverdueMembersReportXlsx(): Promise<void> {
-  return downloadPDF("/v1/library/reports/overdue-members.xlsx", "laporan-anggota-terlambat.xlsx");
-}
-
-export function downloadMostBorrowedReportXlsx(from: string, to: string): Promise<void> {
-  return downloadPDF(
-    `/v1/library/reports/most-borrowed.xlsx?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
-    `laporan-paling-sering-dipinjam-${from}-${to}.xlsx`,
-  );
-}
+// downloadLoansReportXlsx, downloadOverdueMembersReportXlsx and
+// downloadMostBorrowedReportXlsx moved to reports-api.ts (they are
+// reportdoc-backed exports and need withReportExportParams, same as
+// that file's other report downloads) to keep this file under the lint
+// line-count limit.
 
 export function downloadMonthlyLibraryReportPdf(month: string): Promise<void> {
   return downloadPDF(

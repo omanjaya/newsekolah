@@ -154,7 +154,9 @@
     },
     "dateLabel": "Date",
     "monthLabel": "Month",
-    "export": "Download Excel",
+    "export": "Download",
+    "defaultTitleDaily": "Daily Visit Recap",
+    "defaultTitleMonthly": "Monthly Visit Recap",
     "totalVisits": "Total visits",
     "stillOnCampus": "Still on campus",
     "avgStayMinutes": "Average stay (minutes)",
@@ -164,6 +166,10 @@
       "medium": "Medium",
       "high": "High",
       "critical": "Critical"
+    },
+    "columns": {
+      "label": "Label",
+      "value": "Count"
     }
   }
 }

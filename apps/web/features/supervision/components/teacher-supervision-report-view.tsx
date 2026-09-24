@@ -11,6 +11,11 @@ import type { ReactElement, ReactNode } from "react";
 import { useState } from "react";
 
 import { QueryError } from "../../../components/query-error";
+import {
+  ReportExportDialog,
+  type ReportExportColumn,
+  type ReportExportOptions,
+} from "../../../components/report-export-dialog";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { downloadTeacherSupervisionReport, useTeacherSupervisionReportQuery } from "../api";
 
@@ -44,7 +49,7 @@ export function TeacherSupervisionReportView({
     cycleId,
     teacherId,
   );
-  const [downloading, setDownloading] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   // Embedded under another page's header, the host already pads the page.
   const shell = cn("flex flex-col gap-6", !hideHeader && "p-4 md:p-6");
@@ -64,20 +69,31 @@ export function TeacherSupervisionReportView({
 
   const report = data;
 
-  async function handleExport() {
-    setDownloading(true);
+  // Must match supervision/service/report.go's teacherReportColumns keys
+  // and order exactly: the observation date, one column per instrument
+  // criterion (in the instrument's own order, labelled with the
+  // criterion's own name -- not translated, it is the tenant's own
+  // vocabulary), then the average and the three free-text fields.
+  const columns: ReportExportColumn[] = [
+    { key: "date", label: t("columns.date") },
+    ...report.cycle.instrument.criteria.map((c) => ({ key: `criterion_${c.key}`, label: c.name })),
+    { key: "average", label: t("columns.average") },
+    { key: "observer_notes", label: t("columns.observer_notes") },
+    { key: "teacher_response", label: t("columns.teacher_response") },
+    { key: "agreed_follow_up", label: t("columns.agreed_follow_up") },
+  ];
+
+  async function handleExport(options: ReportExportOptions) {
     try {
       await downloadTeacherSupervisionReport(
         cycleId,
         teacherId,
-        `${report.teacher_name}-${report.cycle.name}.xlsx`,
+        `${report.teacher_name}-${report.cycle.name}`,
+        options,
       );
     } catch (error) {
-      toast.error(
-        error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
-      );
-    } finally {
-      setDownloading(false);
+      if (error instanceof ApiError) toast.error(apiErrorMessage(error.code));
+      throw error;
     }
   }
 
@@ -89,9 +105,8 @@ export function TeacherSupervisionReportView({
       size="sm"
       variant="secondary"
       icon={<Download />}
-      loading={downloading}
       onClick={() => {
-        void handleExport();
+        setDialogOpen(true);
       }}
     >
       {t("export")}
@@ -119,6 +134,15 @@ export function TeacherSupervisionReportView({
           actions={exportButton}
         />
       )}
+
+      <ReportExportDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        reportKey="supervision.teacher-report"
+        defaultTitle={t("defaultTitle")}
+        availableColumns={columns}
+        onExport={handleExport}
+      />
 
       <div className="grid gap-4 md:grid-cols-[minmax(0,14rem)_minmax(0,1fr)]">
         <section className="flex flex-col gap-2 rounded-sm border border-border bg-surface p-4">
