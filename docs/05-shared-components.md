@@ -118,15 +118,17 @@ Endpoint (izin `manage_settings`, sama seperti branding):
 
 `GET /v1/reports/{reportKind}/export` (permission per-report dari katalog) menerima, selain parameter cakupan yang sudah ada (`class_id`, `subject_id`, `term_id`, `date`):
 
-| Param            | Bentuk            | Default              | Keterangan                                                                             |
-| ---------------- | ----------------- | -------------------- | -------------------------------------------------------------------------------------- |
-| `grade_level_id` | uuid              | -                    | Cakupan angkatan; untuk `attendance.daily`, satu section per kelas di tingkat tersebut |
-| `format`         | `xlsx` \| `pdf`   | `xlsx`               |                                                                                        |
-| `title`          | string            | judul bawaan laporan |                                                                                        |
-| `letterhead`     | `true` \| `false` | `true`               |                                                                                        |
-| `columns`        | string            | kosong = semua kolom | Daftar dipisah koma, tiap entri `key` atau `key:Label` (Label di-`encodeURIComponent`) |
+| Param            | Bentuk            | Default              | Keterangan                                                                                   |
+| ---------------- | ----------------- | -------------------- | -------------------------------------------------------------------------------------------- |
+| `grade_level_id` | uuid              | -                    | Cakupan angkatan (satu section per kelas di tingkat itu); saling eksklusif dengan `class_id` |
+| `format`         | `xlsx` \| `pdf`   | `xlsx`               |                                                                                              |
+| `title`          | string            | judul bawaan laporan |                                                                                              |
+| `letterhead`     | `true` \| `false` | `true`               |                                                                                              |
+| `columns`        | string            | kosong = semua kolom | Daftar dipisah koma, tiap entri `key` atau `key:Label` (Label di-`encodeURIComponent`)       |
 
-Hari ini hanya `attendance.daily` yang sudah pindah ke `reportdoc` sepenuhnya (lihat `reports/service.Service.RunDocument`); kind lain tetap memakai jalur `Run`/XLSX lama tanpa berubah, terlepas dari `format` yang dikirim.
+Seluruh katalog sudah pindah ke `reportdoc` lewat `reports/service.Service.RunDocument`: `attendance.daily` (referensi awal), lalu `discipline.points`, `discipline.warning_letters`, `grading.report_scores`, `permits.leave_requests`, `permits.exit_permits_yearly`. `grading.report_scores` di cakupan angkatan memvalidasi mata pelajaran memang diampu di tingkat itu (400 `VALIDATION_FAILED` bila tidak) dan menyatukan kolom komponen penilaian lintas kelas (union berdasar kode komponen, urutan kemunculan pertama). `discipline.points`/`discipline.warning_letters`/`permits.leave_requests` tanpa `class_id`/`grade_level_id` tetap berarti "seluruh sekolah", satu section tanpa nama, sama seperti sebelum migrasi. Jalur `Run`/XLSX lama (`Sheet`) sudah tidak dipakai lagi oleh kind mana pun; `RunDocument` adalah satu-satunya jalur render.
+
+Di web, `ReportExportDialog` sudah dipasang untuk `attendance.daily`, `discipline.warning_letters`, `permits.leave_requests`, dan `permits.exit_permits_yearly` (lihat `apps/web/features/reports/components/report-export-forms.tsx`). `discipline.points` dan `grading.report_scores` sengaja belum dipindah ke dialog: kolomnya dinamis per tenant (satu kolom per level SP yang dikonfigurasi tenant, atau per komponen penilaian yang dipilih), dan dialog belum bisa menampilkan daftar kolom itu di muka tanpa memanggil endpoint pratinjau -- menyaring kolom lewat dialog untuk keduanya akan diam-diam membuang kolom dinamis itu (`reportdoc.Apply` menyaring persis ke kolom yang dikirim). Keduanya tetap memakai tombol unduh polos (`downloadReportExport`, selalu XLSX, semua kolom) sampai ada endpoint pratinjau kolom.
 
 ### `ReportExportDialog` (`apps/web/components/report-export-dialog.tsx`)
 
