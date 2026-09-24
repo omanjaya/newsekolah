@@ -87,5 +87,9 @@ func toAPIBranding(b domain.Branding) api.TenantBranding {
 	if b.FaviconURL != "" {
 		branding.FaviconUrl = &b.FaviconURL
 	}
+	if b.EducationLevel != "" {
+		level := api.TenantBrandingEducationLevel(b.EducationLevel)
+		branding.EducationLevel = &level
+	}
 	return branding
 }

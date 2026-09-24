@@ -27159,6 +27159,15 @@ components:
             - en
         timezone:
           type: string
+        education_level:
+          type: string
+          enum:
+            - sd
+            - smp
+            - sma
+            - smk
+            - other
+          description: Empty until the school profile setup step is completed.
     ReportHeaderSigner:
       type: object
       required:

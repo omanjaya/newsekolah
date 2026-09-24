@@ -11605,6 +11605,11 @@ export interface components {
             /** @enum {string} */
             locale: "id" | "en";
             timezone: string;
+            /**
+             * @description Empty until the school profile setup step is completed.
+             * @enum {string}
+             */
+            education_level?: "sd" | "smp" | "sma" | "smk" | "other";
         };
         ReportHeaderSigner: {
             role_label: string;
