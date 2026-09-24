@@ -27,11 +27,11 @@ func (h *Handler) PreviewUserImport(ctx context.Context, request api.PreviewUser
 	if request.Body == nil {
 		return nil, httpx.ErrValidation
 	}
-	outcomes, err := h.service.PreviewImport(ctx, tenantID, actorID, fromAPIImportRows(request.Body.Rows))
+	outcomes, err := h.service.PreviewImport(ctx, tenantID, actorID, fromAPIImportRows(request.Body.Rows), fromAPIImportOptions(request.Body))
 	if err != nil {
 		return nil, mapImportError(err)
 	}
-	return api.PreviewUserImport200JSONResponse{Data: toAPIImportOutcomes(outcomes)}, nil
+	return api.PreviewUserImport200JSONResponse(toAPIImportResult(outcomes)), nil
 }
 
 func (h *Handler) CommitUserImport(ctx context.Context, request api.CommitUserImportRequestObject) (api.CommitUserImportResponseObject, error) {
@@ -40,11 +40,11 @@ func (h *Handler) CommitUserImport(ctx context.Context, request api.CommitUserIm
 	if request.Body == nil {
 		return nil, httpx.ErrValidation
 	}
-	outcomes, err := h.service.CommitImport(ctx, tenantID, actorID, fromAPIImportRows(request.Body.Rows))
+	outcomes, err := h.service.CommitImport(ctx, tenantID, actorID, fromAPIImportRows(request.Body.Rows), fromAPIImportOptions(request.Body))
 	if err != nil {
 		return nil, mapImportError(err)
 	}
-	return api.CommitUserImport200JSONResponse{Data: toAPIImportOutcomes(outcomes)}, nil
+	return api.CommitUserImport200JSONResponse(toAPIImportResult(outcomes)), nil
 }
 
 func mapImportError(err error) error {
@@ -59,8 +59,25 @@ func mapImportError(err error) error {
 		// client's error handling still treats "nothing committed" as a
 		// failure, distinct from the 200 a clean commit returns.
 		return httpx.ErrValidation.WithDetails(httpx.ErrorDetail{Field: "rows", Code: "HAS_ROW_ERRORS"})
+	case errors.Is(err, domain.ErrImportRoleUpdateForbidden):
+		return httpx.ErrImportRoleUpdateForbidden
 	}
 	return mapAdminError(err)
+}
+
+// fromAPIImportOptions reads the request-level mode/update_roles fields,
+// both optional: an absent mode is domain.ImportModeCreate (the historical
+// create-only behaviour), an absent update_roles is false (never touch an
+// existing user's roles).
+func fromAPIImportOptions(body *api.UserImportRequest) service.ImportOptions {
+	opts := service.ImportOptions{Mode: domain.ImportModeCreate}
+	if body.Mode != nil {
+		opts.Mode = domain.ImportMode(*body.Mode)
+	}
+	if body.UpdateRoles != nil {
+		opts.UpdateRoles = *body.UpdateRoles
+	}
+	return opts
 }
 
 func fromAPIImportRows(rows []api.UserImportRow) []domain.ImportRow {
@@ -88,13 +105,39 @@ func fromAPIImportRows(rows []api.UserImportRow) []domain.ImportRow {
 	return out
 }
 
+// toAPIImportResult builds the whole response body: every row's outcome,
+// plus the create/update/unchanged counts the web import screen's preview
+// step shows before commit.
+func toAPIImportResult(outcomes []service.ImportRowOutcome) api.UserImportResult {
+	created, updated, unchanged := 0, 0, 0
+	for _, o := range outcomes {
+		switch o.Action {
+		case domain.ImportActionCreate:
+			created++
+		case domain.ImportActionUpdate:
+			updated++
+		case domain.ImportActionUnchanged:
+			unchanged++
+		}
+	}
+	return api.UserImportResult{
+		Data: toAPIImportOutcomes(outcomes), Created: &created, Updated: &updated, Unchanged: &unchanged,
+	}
+}
+
 func toAPIImportOutcomes(outcomes []service.ImportRowOutcome) []api.UserImportRowResult {
 	out := make([]api.UserImportRowResult, len(outcomes))
 	for i, o := range outcomes {
-		result := api.UserImportRowResult{RowNumber: o.RowNumber, Errors: o.Errors}
+		result := api.UserImportRowResult{
+			RowNumber: o.RowNumber, Action: api.UserImportRowAction(o.Action), Errors: o.Errors,
+		}
 		if o.Username != "" {
 			username := o.Username
 			result.Username = &username
+		}
+		if len(o.Changes) > 0 {
+			changes := o.Changes
+			result.ChangedFields = &changes
 		}
 		out[i] = result
 	}
