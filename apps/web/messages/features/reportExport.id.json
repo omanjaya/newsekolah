@@ -1,0 +1,17 @@
+{
+  "title": "Unduh laporan",
+  "description": "Atur kop laporan dan kolom yang ditampilkan sebelum mengunduh.",
+  "formatLabel": "Format berkas",
+  "formatExcel": "Excel",
+  "formatPdf": "PDF",
+  "titleLabel": "Judul laporan",
+  "showLetterheadLabel": "Tampilkan kop laporan",
+  "columnsLabel": "Kolom ({count} dipilih)",
+  "includeColumn": "Sertakan kolom {column}",
+  "columnLabel": "Label kolom {column}",
+  "moveUp": "Naikkan urutan kolom {column}",
+  "moveDown": "Turunkan urutan kolom {column}",
+  "restoreDefaults": "Pulihkan default",
+  "export": "Unduh",
+  "error": "Laporan gagal diunduh. Coba lagi."
+}

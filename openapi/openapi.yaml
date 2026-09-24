@@ -14993,7 +14993,12 @@ paths:
         - reports
       operationId: exportReport
       x-permission: authenticated
-      summary: Run one report and download it as XLSX
+      summary: Run one report and download it as XLSX or PDF
+      description: >
+        format/title/letterhead/columns customise the downloaded file (see docs/05-shared-components.md, "Laporan dan
+        ekspor"); every report kind accepts them, but only attendance.daily builds a fully reportdoc-backed document
+        today -- other kinds still ignore letterhead/columns and always return XLSX. grade_level_id is an additional
+        scope: attendance.daily accepts it in place of class_id to export one section per class in the grade level.
       parameters:
         - name: reportKind
           in: path
@@ -15001,6 +15006,11 @@ paths:
           schema:
             type: string
         - name: class_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: grade_level_id
           in: query
           schema:
             type: string
@@ -15020,11 +15030,38 @@ paths:
           schema:
             type: string
             format: date
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum:
+              - xlsx
+              - pdf
+            default: xlsx
+        - name: title
+          in: query
+          schema:
+            type: string
+            maxLength: 200
+        - name: letterhead
+          in: query
+          schema:
+            type: boolean
+            default: true
+        - name: columns
+          in: query
+          schema:
+            type: string
+          description: Comma-separated column keys, each optionally `key:Label` (URL-encoded); empty/absent keeps every column.
       responses:
         "200":
-          description: Workbook
+          description: Workbook or PDF, depending on format
           content:
             application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+            application/pdf:
               schema:
                 type: string
                 format: binary
@@ -16825,6 +16862,83 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/TenantBranding"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/tenant/report-header:
+    get:
+      tags:
+        - tenant
+      operationId: getTenantReportHeader
+      x-permission: manage_settings
+      summary: The tenant's configured report letterhead (kop laporan)
+      responses:
+        "200":
+          description: Report header
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportHeader"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    put:
+      tags:
+        - tenant
+      operationId: updateTenantReportHeader
+      x-permission: manage_settings
+      summary: Change the report letterhead (kop laporan) and default signers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReportHeaderWrite"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportHeader"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/tenant/report-header/preview:
+    get:
+      tags:
+        - tenant
+      operationId: previewTenantReportHeader
+      x-permission: manage_settings
+      summary: Render a sample report with the tenant's current report header, for the settings page's live preview
+      parameters:
+        - name: format
+          in: query
+          required: true
+          schema:
+            type: string
+            enum:
+              - pdf
+              - xlsx
+      responses:
+        "200":
+          description: Sample document
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -25633,6 +25747,7 @@ components:
       type: string
       enum:
         - class
+        - grade_level
         - subject
         - date
         - term
@@ -26668,6 +26783,55 @@ components:
             - en
         timezone:
           type: string
+    ReportHeaderSigner:
+      type: object
+      required:
+        - role_label
+        - name
+      properties:
+        role_label:
+          type: string
+          minLength: 1
+          maxLength: 80
+        name:
+          type: string
+          minLength: 1
+          maxLength: 160
+        id_label:
+          type: string
+          maxLength: 20
+        id_number:
+          type: string
+          maxLength: 40
+    ReportHeaderWrite:
+      type: object
+      required:
+        - show_logo
+        - lines
+        - place
+        - signers
+      properties:
+        show_logo:
+          type: boolean
+          description: Print the tenant's branding logo above the letterhead lines (PNG/JPEG only; other formats are skipped).
+        lines:
+          type: array
+          maxItems: 5
+          items:
+            type: string
+            maxLength: 200
+          description: First line is conventionally the school name and renders bold.
+        place:
+          type: string
+          maxLength: 80
+        signers:
+          type: array
+          maxItems: 5
+          items:
+            $ref: "#/components/schemas/ReportHeaderSigner"
+    ReportHeader:
+      allOf:
+        - $ref: "#/components/schemas/ReportHeaderWrite"
     LevelTemplateSummary:
       type: object
       required:

@@ -323,6 +323,34 @@
           "uploading": "Mengunggah... {percent}%",
           "updated": "Favicon diperbarui"
         }
+      },
+      "reportHeader": {
+        "navLabel": "Kop Laporan",
+        "eyebrow": "Pengaturan",
+        "title": "Kop Laporan",
+        "showLogoLabel": "Tampilkan logo sekolah",
+        "showLogoHint": "Memakai logo yang sama dengan Merek Sekolah.",
+        "linesLabel": "Baris kop laporan",
+        "firstLinePlaceholder": "Nama sekolah",
+        "linePlaceholder": "Baris kop laporan",
+        "lineLabel": "Baris kop laporan ke-{index}",
+        "removeLine": "Hapus baris kop laporan ke-{index}",
+        "addLine": "Tambah baris",
+        "linesRequiredError": "Isi minimal satu baris kop laporan.",
+        "placeLabel": "Tempat",
+        "placePlaceholder": "Contoh: Denpasar",
+        "signersLabel": "Penanda tangan default",
+        "signerRoleLabel": "Jabatan",
+        "signerNameLabel": "Nama",
+        "signerIdLabel": "Label nomor identitas",
+        "signerIdNumberLabel": "Nomor identitas",
+        "removeSigner": "Hapus penanda tangan ke-{index}",
+        "addSigner": "Tambah penanda tangan",
+        "save": "Simpan perubahan",
+        "saved": "Kop laporan tersimpan",
+        "previewTitle": "Pratinjau",
+        "previewOpen": "Lihat pratinjau",
+        "previewError": "Pratinjau gagal dimuat."
       }
     },
     "forbidden": {
