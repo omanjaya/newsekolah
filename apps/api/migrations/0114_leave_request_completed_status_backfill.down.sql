@@ -1,0 +1,8 @@
+-- Documented no-op: this migration corrects data corrupted by a code bug
+-- (see the .up.sql comment) by moving already-issued leave_request
+-- instances stuck at 'approved' to 'completed'. No marker column was
+-- added to record which rows it touched, so reversing it cannot restore
+-- exactly those rows to 'approved' -- and unconditionally moving every
+-- 'completed' leave_request instance back would also catch every leave
+-- request issued normally after this migration ran, reintroducing the
+-- exact bug cd37e06 and this migration both fix. Nothing to undo.
