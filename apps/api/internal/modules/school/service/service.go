@@ -127,12 +127,13 @@ func (s *Service) Branding(ctx context.Context, tenantID uuid.UUID) (domain.Bran
 	}
 
 	b := domain.Branding{
-		TenantID:    t.ID,
-		Slug:        t.Slug,
-		Name:        t.Name,
-		AccentColor: domain.DefaultAccentColor,
-		Locale:      t.Locale,
-		Timezone:    t.Timezone,
+		TenantID:       t.ID,
+		Slug:           t.Slug,
+		Name:           t.Name,
+		AccentColor:    domain.DefaultAccentColor,
+		Locale:         t.Locale,
+		Timezone:       t.Timezone,
+		EducationLevel: t.EducationLevel,
 	}
 	b.ProductName = domain.DefaultProductName
 	if v, ok, err := s.repo.GetPlatformSetting(ctx, "product_name"); err == nil && ok && v != "" {

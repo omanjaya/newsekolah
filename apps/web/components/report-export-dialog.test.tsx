@@ -141,4 +141,32 @@ describe("ReportExportDialog", () => {
     const call = secondExport.mock.calls[0]?.[0] as ReportExportOptions;
     expect(call.columns.map((c) => c.key)).toEqual(["no", "name"]);
   });
+
+  it("hides the column list and exports without needing one when columnsCustomizable is false", async () => {
+    const onExport = vi.fn().mockResolvedValue(undefined);
+    render(
+      <ReportExportDialog
+        open
+        onOpenChange={vi.fn()}
+        reportKey="test.no-columns"
+        defaultTitle="Ringkasan Katalog"
+        availableColumns={[]}
+        columnsCustomizable={false}
+        onExport={onExport}
+      />,
+    );
+
+    expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
+    const exportButton = screen.getByRole("button", { name: "export" });
+    expect(exportButton).toBeEnabled();
+
+    await userEvent.click(exportButton);
+
+    expect(onExport).toHaveBeenCalledWith({
+      format: "xlsx",
+      title: "Ringkasan Katalog",
+      showLetterhead: true,
+      columns: [],
+    });
+  });
 });

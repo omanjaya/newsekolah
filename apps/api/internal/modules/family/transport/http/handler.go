@@ -63,7 +63,7 @@ func (h *FamilyHandler) GetChildGrades(ctx context.Context, request api.GetChild
 	}
 	subjects := make([]api.ChildSubjectGrade, len(grades.Subjects))
 	for i, s := range grades.Subjects {
-		subjects[i] = api.ChildSubjectGrade{SubjectId: s.SubjectID, Average: floatPtr(s.Average), ReportScore: floatPtr(s.ReportScore)}
+		subjects[i] = api.ChildSubjectGrade{SubjectId: s.SubjectID, SubjectName: s.SubjectName, Average: floatPtr(s.Average), ReportScore: floatPtr(s.ReportScore)}
 	}
 	return api.GetChildGrades200JSONResponse{TermId: grades.TermID, TermName: grades.TermName, Subjects: subjects, Stars: grades.Stars}, nil
 }

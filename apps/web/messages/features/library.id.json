@@ -577,6 +577,7 @@
     "printLabels": "Cetak label"
   },
   "copiesBrowser": {
+    "navLabel": "Eksemplar",
     "eyebrow": "Perpustakaan",
     "title": "Eksemplar",
     "searchPlaceholder": "Cari barcode, nomor induk, atau RFID",
@@ -1071,6 +1072,9 @@
           "detail": "Keterangan",
           "loan_count": "Jumlah Pinjam"
         }
+      },
+      "summary": {
+        "defaultTitle": "Ringkasan Katalog"
       },
       "visits": {
         "defaultTitle": "Laporan Kunjungan Perpustakaan",

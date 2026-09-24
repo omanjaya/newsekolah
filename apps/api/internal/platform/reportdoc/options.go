@@ -103,6 +103,18 @@ func Apply(doc Document, opts Options) (Document, error) {
 
 	out.Sections = make([]Section, len(doc.Sections))
 	for i, sec := range doc.Sections {
+		if sec.Columns != nil {
+			// This section defines its own columns, independent of
+			// doc.Columns -- an end-user column selection only applies to
+			// sections that share the document's column set, so a section
+			// with its own Columns passes through unfiltered rather than
+			// being projected against a selection keyed to a different
+			// column layout (docs/05-shared-components.md, "Laporan dan
+			// ekspor": reports with per-section columns do not offer
+			// column customisation in the export dialog yet).
+			out.Sections[i] = sec
+			continue
+		}
 		out.Sections[i] = Section{
 			Name:   sec.Name,
 			Rows:   projectRows(sec.Rows, selected),

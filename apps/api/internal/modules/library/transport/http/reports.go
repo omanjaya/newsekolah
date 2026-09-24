@@ -161,12 +161,23 @@ func (h *LibraryHandler) GetLibraryCatalogueSummaryReport(ctx context.Context, r
 
 func (h *LibraryHandler) GetLibraryCatalogueSummaryReportXlsx(ctx context.Context, request api.GetLibraryCatalogueSummaryReportXlsxRequestObject) (api.GetLibraryCatalogueSummaryReportXlsxResponseObject, error) {
 	from, to := reportPeriod(request.Params.From, request.Params.To)
-	xlsx, err := h.service.CatalogueSummaryXLSX(ctx, tenantID(ctx), from, to)
+	p := request.Params
+	// No columns param: this report's two sections have different column
+	// counts, so it does not offer end-user column customisation (see
+	// openapi/modules/library-catalogue.yaml's description of this
+	// operation).
+	opts := libraryReportOptions(p.Format, p.Title, p.Letterhead, nil)
+	body, err := h.service.ExportCatalogueSummaryReport(ctx, tenantID(ctx), from, to, tenantLocale(ctx), opts)
 	if err != nil {
-		return nil, mapError(err)
+		return nil, mapReportError(err)
+	}
+	if opts.Format == reportdoc.FormatPDF {
+		return api.GetLibraryCatalogueSummaryReportXlsx200ApplicationpdfResponse{
+			Body: bytes.NewReader(body), ContentLength: int64(len(body)),
+		}, nil
 	}
 	return api.GetLibraryCatalogueSummaryReportXlsx200ApplicationvndOpenxmlformatsOfficedocumentSpreadsheetmlSheetResponse{
-		Body: bytes.NewReader(xlsx), ContentLength: int64(len(xlsx)),
+		Body: bytes.NewReader(body), ContentLength: int64(len(body)),
 	}, nil
 }
 

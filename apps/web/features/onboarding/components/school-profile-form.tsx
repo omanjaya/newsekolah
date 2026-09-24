@@ -25,8 +25,9 @@ const LOCALES: Locale[] = ["id", "en"];
 /**
  * First onboarding step, inline on the setup page rather than a separate
  * route (docs/07-ui-ux.md section 4, "wizard 6 langkah"). `getTenantBranding`
- * does not report the tenant's education level, so that field always starts
- * blank and is required before saving.
+ * reports the tenant's education level once the profile step has been
+ * saved at least once, preselecting it here; it is still required before
+ * saving so a school cannot clear it.
  */
 export function SchoolProfileSection(): ReactElement {
   const t = useTranslations("app.onboarding.profile");
@@ -59,7 +60,9 @@ function SchoolProfileForm({ initial }: { initial: TenantBranding }): ReactEleme
   const apiErrorMessage = useApiErrorMessage();
   const update = useUpdateSchoolProfileMutation();
   const [name, setName] = useState(initial.name);
-  const [educationLevel, setEducationLevel] = useState<EducationLevel | "">("");
+  const [educationLevel, setEducationLevel] = useState<EducationLevel | "">(
+    initial.education_level ?? "",
+  );
   const [timezone, setTimezone] = useState(initial.timezone);
   const [locale, setLocale] = useState<Locale>(initial.locale);
   const [error, setError] = useState<string | null>(null);

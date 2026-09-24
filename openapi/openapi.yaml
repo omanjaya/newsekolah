@@ -9163,7 +9163,9 @@ paths:
         - library
       operationId: getLibraryCatalogueSummaryReportXlsx
       x-permission: view_library_reports
-      summary: Accreditation-style catalogue summary as XLSX
+      summary: Accreditation-style catalogue summary as XLSX or PDF
+      description: "No columns parameter: this report's two sections (indicators, Dewey-class breakdown) have different column
+        counts, so it does not offer end-user column customisation."
       parameters:
         - name: from
           in: query
@@ -9175,11 +9177,18 @@ paths:
           schema:
             type: string
             format: date
+        - $ref: "#/components/parameters/ReportFormat"
+        - $ref: "#/components/parameters/ReportTitle"
+        - $ref: "#/components/parameters/ReportLetterhead"
       responses:
         "200":
-          description: XLSX
+          description: File
           content:
             application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+            application/pdf:
               schema:
                 type: string
                 format: binary
@@ -21131,10 +21140,13 @@ components:
       type: object
       required:
         - subject_id
+        - subject_name
       properties:
         subject_id:
           type: string
           format: uuid
+        subject_name:
+          type: string
         average:
           type: number
         report_score:
@@ -27156,6 +27168,15 @@ components:
             - en
         timezone:
           type: string
+        education_level:
+          type: string
+          enum:
+            - sd
+            - smp
+            - sma
+            - smk
+            - other
+          description: Empty until the school profile setup step is completed.
     ReportHeaderSigner:
       type: object
       required:

@@ -577,6 +577,7 @@
     "printLabels": "Print labels"
   },
   "copiesBrowser": {
+    "navLabel": "Copies",
     "eyebrow": "Library",
     "title": "Copies",
     "searchPlaceholder": "Search barcode, accession number, or RFID",
@@ -1071,6 +1072,9 @@
           "detail": "Detail",
           "loan_count": "Loan Count"
         }
+      },
+      "summary": {
+        "defaultTitle": "Catalogue Summary"
       },
       "visits": {
         "defaultTitle": "Library Visits Report",

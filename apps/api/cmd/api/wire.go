@@ -365,6 +365,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		Links:      identityModule.Service,
 		Attendance: wiring.FamilyAttendance{Svc: attendanceModule.Service},
 		Grading:    wiring.FamilyGrading{Svc: gradingModule.Service},
+		Subjects:   wiring.FamilySubjects{Svc: academicModule.Service},
 		Discipline: wiring.FamilyDiscipline{Svc: disciplineModule.Service},
 	})
 

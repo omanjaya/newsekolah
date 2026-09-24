@@ -71,8 +71,19 @@ type ScopeLine struct {
 // grade level (angkatan) has one Section per class in it.
 type Section struct {
 	Name string
-	// Rows holds one []any per row, each element ordered to match
-	// Document.Columns and typed to match that column's Kind: string for
+	// Columns overrides Document.Columns for this section only, when
+	// non-nil: most reports share one column set across every section
+	// (one class, one sheet), but a few (the library catalogue summary's
+	// indicator table and its Dewey-class breakdown, in the same
+	// Document) have a genuinely different column count per section.
+	// Rows/Footer are then ordered/typed to match this section's own
+	// Columns instead of the Document's. A nil Section.Columns (the
+	// common case) means "use Document.Columns", unchanged from before
+	// this field existed.
+	Columns []Column
+	// Rows holds one []any per row, each element ordered to match this
+	// section's effective Columns (Columns above, or Document.Columns
+	// when nil) and typed to match that column's Kind: string for
 	// ColumnText, a numeric Go type for ColumnNumber/ColumnPercent (a
 	// percent is a fraction, e.g. 0.5 for 50%), time.Time for ColumnDate.
 	// nil renders as a blank cell.
@@ -81,6 +92,15 @@ type Section struct {
 	// visually distinct style (e.g. a totals row). Same per-column typing
 	// as Rows.
 	Footer [][]any
+}
+
+// columns returns this section's own effective column set: its own
+// Columns when set, otherwise doc's shared Columns.
+func (s Section) columns(doc Document) []Column {
+	if s.Columns != nil {
+		return s.Columns
+	}
+	return doc.Columns
 }
 
 // Letterhead is a school's kop laporan: an optional logo image and one to

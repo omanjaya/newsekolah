@@ -88,6 +88,53 @@ func TestRenderLibraryReportTwoShapeSections(t *testing.T) {
 	require.NotEmpty(t, narrowed)
 }
 
+// TestRenderLibraryReportCatalogueSummaryTwoColumnCounts exercises the
+// catalogue summary's own shape end to end through the same
+// Apply+RenderXLSX/RenderPDF path renderLibraryReport uses: a 2-column
+// indicator section and a 3-column DDC breakdown section, sharing one
+// Document via reportdoc.Section.Columns (Document.Columns left empty).
+func TestRenderLibraryReportCatalogueSummaryTwoColumnCounts(t *testing.T) {
+	ctx := context.Background()
+	tenantID := uuid.New()
+	svc := &Service{}
+	doc := reportdoc.Document{
+		Title: catalogueSummaryText(reportdoc.LocaleID, "title"),
+		Sections: []reportdoc.Section{
+			{
+				Name: catalogueSummaryText(reportdoc.LocaleID, "sectionSummary"),
+				Columns: []reportdoc.Column{
+					{Key: "indicator", Label: "Indikator", Kind: reportdoc.ColumnText},
+					{Key: "value", Label: "Nilai", Kind: reportdoc.ColumnText},
+				},
+				Rows: [][]any{{"Total Judul Aktif", "842"}},
+			},
+			{
+				Name: catalogueSummaryText(reportdoc.LocaleID, "sectionDDC"),
+				Columns: []reportdoc.Column{
+					{Key: "code", Label: "Kelas DDC", Kind: reportdoc.ColumnText},
+					{Key: "name", Label: "Nama", Kind: reportdoc.ColumnText},
+					{Key: "count", Label: "Jumlah Judul", Kind: reportdoc.ColumnNumber},
+				},
+				Rows: [][]any{{"000", "Karya Umum", 42}},
+			},
+		},
+	}
+
+	xlsx, err := svc.renderLibraryReport(ctx, tenantID, reportdoc.LocaleID, doc, reportdoc.Options{Format: reportdoc.FormatXLSX, ShowLetterhead: true})
+	require.NoError(t, err)
+	require.NotEmpty(t, xlsx)
+
+	pdf, err := svc.renderLibraryReport(ctx, tenantID, reportdoc.LocaleID, doc, reportdoc.Options{Format: reportdoc.FormatPDF, ShowLetterhead: true})
+	require.NoError(t, err)
+	require.NotEmpty(t, pdf)
+}
+
+func TestCatalogueSummaryTextFallsBackToEnglish(t *testing.T) {
+	require.Equal(t, "Ringkasan Katalog", catalogueSummaryText(reportdoc.LocaleID, "title"))
+	require.Equal(t, "Catalogue Summary", catalogueSummaryText(reportdoc.LocaleEN, "title"))
+	require.Equal(t, "Catalogue Summary", catalogueSummaryText("fr", "title"), "unknown locale falls back to English")
+}
+
 func TestLibraryReportColumnSets(t *testing.T) {
 	require.Len(t, loansReportColumns(), 7)
 	require.Len(t, overdueMembersReportColumns(), 3)

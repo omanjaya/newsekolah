@@ -93,6 +93,31 @@ func TestApplyReordersFooterRows(t *testing.T) {
 	assert.Equal(t, []any{"Total", 0}, out.Sections[0].Footer[0])
 }
 
+func TestApplySectionColumnsPassThroughUnfiltered(t *testing.T) {
+	doc := sampleDocument()
+	doc.Sections = append(doc.Sections, Section{
+		Name: "Ringkasan",
+		Columns: []Column{
+			{Key: "indicator", Label: "Indikator", Kind: ColumnText},
+			{Key: "value", Label: "Nilai", Kind: ColumnText},
+		},
+		Rows: [][]any{{"Total", "5"}},
+	})
+
+	out, err := Apply(doc, Options{Columns: []ColumnChoice{{Key: "name"}, {Key: "no"}}})
+	require.NoError(t, err)
+	require.Len(t, out.Sections, 2)
+
+	// The first section shares doc.Columns, so the end-user selection
+	// still narrows/reorders it as usual.
+	assert.Equal(t, []any{"Budi Santoso", 1}, out.Sections[0].Rows[0])
+
+	// The second section defines its own Columns -- it is not a valid
+	// projection target for a selection keyed to doc.Columns, so it
+	// passes through untouched rather than being filtered or corrupted.
+	assert.Equal(t, doc.Sections[1], out.Sections[1])
+}
+
 func TestApplyDoesNotMutateInput(t *testing.T) {
 	doc := sampleDocument()
 	originalColumns := len(doc.Columns)

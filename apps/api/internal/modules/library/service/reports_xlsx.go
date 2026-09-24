@@ -211,56 +211,101 @@ func (s *Service) ExportMostBorrowedReport(ctx context.Context, tenantID uuid.UU
 	return s.renderLibraryReport(ctx, tenantID, locale, doc, opts)
 }
 
-// CatalogueSummaryXLSX is CatalogueSummary as a single-sheet key/value
-// workbook -- the accreditation summary is a list of figures, not a
-// table, so it is laid out as two columns rather than the header+rows
-// shape every other report uses.
-func (s *Service) CatalogueSummaryXLSX(ctx context.Context, tenantID uuid.UUID, from, to *time.Time) ([]byte, error) {
+// catalogueSummaryVocabulary is the accreditation summary's own small
+// id/en vocabulary (docs/05-shared-components.md, "Lokalisasi"): title,
+// section names, and every indicator/column label -- reportdoc itself
+// stays free of this vocabulary (see its package doc comment).
+var catalogueSummaryVocabulary = map[string]map[string]string{
+	reportdoc.LocaleID: {
+		"title": "Ringkasan Katalog", "sectionSummary": "Ringkasan", "sectionDDC": "Judul per DDC",
+		"colIndicator": "Indikator", "colValue": "Nilai",
+		"colDDCCode": "Kelas DDC", "colDDCName": "Nama", "colDDCCount": "Jumlah Judul",
+		"rowTotalTitles": "Total Judul Aktif", "rowAdditions": "Judul Baru Periode Ini",
+		"rowLoans": "Peminjaman Periode Ini", "rowActiveBorrowers": "Peminjam Aktif",
+		"rowOverdue": "Terlambat Saat Ini", "rowFictionRatio": "Rasio Fiksi",
+		"rowStudentsTotal": "Total Siswa Aktif", "rowMembersTotal": "Total Anggota",
+		"rowItemsPerStudent": "Eksemplar per Siswa", "rowLoansPerStudent": "Peminjaman per Siswa",
+		"rowVisits": "Kunjungan Periode Ini", "rowVisitsPerStudent": "Kunjungan per Siswa",
+	},
+	reportdoc.LocaleEN: {
+		"title": "Catalogue Summary", "sectionSummary": "Summary", "sectionDDC": "Titles by DDC class",
+		"colIndicator": "Indicator", "colValue": "Value",
+		"colDDCCode": "DDC class", "colDDCName": "Name", "colDDCCount": "Title count",
+		"rowTotalTitles": "Active titles", "rowAdditions": "New titles this period",
+		"rowLoans": "Loans this period", "rowActiveBorrowers": "Active borrowers",
+		"rowOverdue": "Currently overdue", "rowFictionRatio": "Fiction ratio",
+		"rowStudentsTotal": "Active students", "rowMembersTotal": "Total members",
+		"rowItemsPerStudent": "Copies per student", "rowLoansPerStudent": "Loans per student",
+		"rowVisits": "Visits this period", "rowVisitsPerStudent": "Visits per student",
+	},
+}
+
+func catalogueSummaryText(locale, key string) string {
+	if m, ok := catalogueSummaryVocabulary[locale]; ok {
+		if v, ok := m[key]; ok {
+			return v
+		}
+	}
+	return catalogueSummaryVocabulary[reportdoc.LocaleEN][key]
+}
+
+// ExportCatalogueSummaryReport renders CatalogueSummary per opts (format,
+// title override, letterhead visibility -- deliberately no column
+// customisation: its two sections have different column counts, so an
+// end-user column selection keyed to one would silently corrupt the
+// other, see reportdoc.Apply). A key/value indicator sheet and a
+// Dewey-class breakdown, in one Document, is exactly the case
+// reportdoc.Section.Columns exists for.
+func (s *Service) ExportCatalogueSummaryReport(ctx context.Context, tenantID uuid.UUID, from, to *time.Time, locale string, opts reportdoc.Options) ([]byte, error) {
 	summary, err := s.CatalogueSummary(ctx, tenantID, from, to)
 	if err != nil {
 		return nil, err
 	}
-	f := excelize.NewFile()
-	defer f.Close() //nolint:errcheck // closing an in-memory workbook after Write cannot meaningfully fail.
-	headerStyle, err := newXLSXHeaderStyle(f)
-	if err != nil {
-		return nil, fmt.Errorf("catalogue summary style: %w", err)
+	text := func(key string) string { return catalogueSummaryText(locale, key) }
+
+	summaryColumns := []reportdoc.Column{
+		{Key: "indicator", Label: text("colIndicator"), Kind: reportdoc.ColumnText, Width: 30},
+		{Key: "value", Label: text("colValue"), Kind: reportdoc.ColumnText, Width: 16},
 	}
-	sheet, err := newSheet(f, "Ringkasan", true)
-	if err != nil {
-		return nil, err
-	}
-	rows := [][]any{
-		{"Total Judul Aktif", nil},
-		{"Judul Baru Periode Ini", summary.AdditionsInPeriod},
-		{"Peminjaman Periode Ini", summary.LoansInPeriod},
-		{"Peminjam Aktif", summary.ActiveBorrowers},
-		{"Terlambat Saat Ini", summary.OverdueNow},
-		{"Rasio Fiksi", fmt.Sprintf("%d/%d", summary.FictionCount, summary.FictionTotal)},
-		{"Total Siswa Aktif", summary.StudentsTotal},
-		{"Total Anggota", summary.MembersTotal},
-		{"Eksemplar per Siswa", summary.ItemsPerStudent},
-		{"Peminjaman per Siswa", summary.LoansPerStudent},
-		{"Kunjungan Periode Ini", summary.VisitsInPeriod},
-		{"Kunjungan per Siswa", summary.VisitsPerStudent},
-	}
-	if err := writeXLSXSheet(f, sheet, headerStyle, []string{"Indikator", "Nilai"}, rows); err != nil {
-		return nil, fmt.Errorf("catalogue summary write: %w", err)
+	summaryRows := [][]any{
+		{text("rowTotalTitles"), summary.FictionTotal},
+		{text("rowAdditions"), summary.AdditionsInPeriod},
+		{text("rowLoans"), summary.LoansInPeriod},
+		{text("rowActiveBorrowers"), summary.ActiveBorrowers},
+		{text("rowOverdue"), summary.OverdueNow},
+		{text("rowFictionRatio"), fmt.Sprintf("%d/%d", summary.FictionCount, summary.FictionTotal)},
+		{text("rowStudentsTotal"), summary.StudentsTotal},
+		{text("rowMembersTotal"), summary.MembersTotal},
+		// Per-student ratios share this section's "value" column with
+		// strings like the fiction ratio above, so the column is
+		// ColumnText and these floats are formatted here rather than left
+		// to render at full float64 precision (the web's own summary
+		// table already rounds the same figures to 2 decimals).
+		{text("rowItemsPerStudent"), fmt.Sprintf("%.2f", summary.ItemsPerStudent)},
+		{text("rowLoansPerStudent"), fmt.Sprintf("%.2f", summary.LoansPerStudent)},
+		{text("rowVisits"), summary.VisitsInPeriod},
+		{text("rowVisitsPerStudent"), fmt.Sprintf("%.2f", summary.VisitsPerStudent)},
 	}
 
-	ddcSheet, err := newSheet(f, "Judul per DDC", false)
-	if err != nil {
-		return nil, err
+	ddcColumns := []reportdoc.Column{
+		{Key: "code", Label: text("colDDCCode"), Kind: reportdoc.ColumnText, Width: 12},
+		{Key: "name", Label: text("colDDCName"), Kind: reportdoc.ColumnText, Width: 30},
+		{Key: "count", Label: text("colDDCCount"), Kind: reportdoc.ColumnNumber, Width: 14},
 	}
 	ddcRows := make([][]any, len(summary.TitlesByDDC))
 	for i, d := range summary.TitlesByDDC {
 		ddcRows[i] = []any{d.Code, d.Name, d.TitleCount}
 	}
-	if err := writeXLSXSheet(f, ddcSheet, headerStyle, []string{"Kelas DDC", "Nama", "Jumlah Judul"}, ddcRows); err != nil {
-		return nil, fmt.Errorf("catalogue summary ddc write: %w", err)
+
+	doc := reportdoc.Document{
+		Title: text("title"),
+		Scope: []reportdoc.ScopeLine{periodScope(locale, from, to)},
+		Sections: []reportdoc.Section{
+			{Name: text("sectionSummary"), Columns: summaryColumns, Rows: summaryRows},
+			{Name: text("sectionDDC"), Columns: ddcColumns, Rows: ddcRows},
+		},
 	}
-	f.SetActiveSheet(0)
-	return writeXLSXBuffer(f)
+	return s.renderLibraryReport(ctx, tenantID, locale, doc, opts)
 }
 
 // labelCountColumns is the shared two-column ("what, how many") shape

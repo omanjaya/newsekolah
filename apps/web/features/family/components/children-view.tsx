@@ -19,7 +19,6 @@ import { useState } from "react";
 
 import { useCan } from "../../../lib/session/session-provider";
 import { useGuardianLeaveQueueQuery } from "../../permits/api";
-import { useLookup, useSubjectsQuery } from "../../reference/api";
 import {
   currentMonth,
   useChildAttendanceQuery,
@@ -173,13 +172,10 @@ function AttendanceSection({
 function GradesSection({ query }: { query: ReturnType<typeof useChildGradesQuery> }): ReactElement {
   const t = useTranslations("app.family.myChildren.grades");
   const format = useFormatter();
-  // The subject catalogue needs view_academic_data, which a parent does not
-  // hold; the grades response carries only subject ids. Asking anyway only
-  // collects a 403, so without the catalogue the rows go unnamed and a
-  // summary line carries the term's overall picture instead.
-  const canReadSubjects = useCan("view_academic_data");
-  const subjects = useSubjectsQuery(canReadSubjects);
-  const subjectMap = useLookup(subjects.data?.data);
+  // Subject names come from the grades response itself: a parent cannot
+  // read /v1/academic/subjects (no view_academic_data), so the API names
+  // each subject for us instead of the client resolving it from the
+  // catalogue.
   const rows = query.data?.subjects ?? [];
   const score = (value: number) =>
     format.number(value, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
@@ -221,26 +217,21 @@ function GradesSection({ query }: { query: ReturnType<typeof useChildGradesQuery
               {t("overall", { score: score(overall), count: rows.length })}
             </p>
           )}
-          {canReadSubjects && (
-            <ul className="flex flex-col gap-1.5 border-t border-border pt-2">
-              {rows.map((subject) => (
-                <li
-                  key={subject.subject_id}
-                  className="flex items-center justify-between gap-2 text-[13px]"
-                >
-                  <span className="min-w-0 text-fg">
-                    {subjectMap.get(subject.subject_id)?.name ?? t("unknownSubject")}
-                  </span>
-                  <span className="shrink-0 text-fg-muted [font-variant-numeric:tabular-nums]">
-                    {subject.average !== undefined &&
-                      t("average", { score: score(subject.average) })}
-                    {subject.report_score !== undefined &&
-                      ` · ${t("reportScore", { score: score(subject.report_score) })}`}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
+          <ul className="flex flex-col gap-1.5 border-t border-border pt-2">
+            {rows.map((subject) => (
+              <li
+                key={subject.subject_id}
+                className="flex items-center justify-between gap-2 text-[13px]"
+              >
+                <span className="min-w-0 truncate text-fg">{subject.subject_name}</span>
+                <span className="shrink-0 text-fg-muted [font-variant-numeric:tabular-nums]">
+                  {subject.average !== undefined && t("average", { score: score(subject.average) })}
+                  {subject.report_score !== undefined &&
+                    ` · ${t("reportScore", { score: score(subject.report_score) })}`}
+                </span>
+              </li>
+            ))}
+          </ul>
         </>
       )}
     </section>

@@ -26,6 +26,14 @@ export const libraryNavItems: NavItem[] = [
     group: "nav.library.label",
   },
   {
+    key: "library-copies",
+    labelKey: "app.library.copiesBrowser.navLabel",
+    href: "/library/copies",
+    icon: domainIcons.library,
+    permission: "view_library",
+    group: "nav.library.label",
+  },
+  {
     key: "library-desk",
     labelKey: "nav.library.items.circulation",
     href: "/library/desk",

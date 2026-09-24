@@ -61,8 +61,16 @@ export interface ReportExportDialogProps {
   reportKey: string;
   /** Prefilled into the title field and used by "Restore defaults". */
   defaultTitle: string;
-  /** Every column the report can show, in its natural/default order. */
+  /** Every column the report can show, in its natural/default order. Ignored when columnsCustomizable is false. */
   availableColumns: ReportExportColumn[];
+  /**
+   * false hides the column list entirely and always exports every column
+   * -- for a report whose sections have a different column count
+   * (`reportdoc.Section.Columns`, docs/05-shared-components.md "Laporan
+   * dan ekspor"), where one end-user column selection cannot apply to
+   * every section at once. Defaults to true.
+   */
+  columnsCustomizable?: boolean;
   /** Optional slot rendered above the format control (class/grade-level pickers, date, ...). */
   scopeSlot?: ReactNode;
   /** Runs the export; the dialog shows its own loading state around the returned promise. */
@@ -199,6 +207,7 @@ function ReportExportForm({
   reportKey,
   defaultTitle,
   availableColumns,
+  columnsCustomizable = true,
   scopeSlot,
   onExport,
 }: ReportExportDialogProps): ReactElement {
@@ -217,7 +226,8 @@ function ReportExportForm({
   const [error, setError] = useState<string | null>(null);
 
   const includedCount = columns.filter((c) => c.included).length;
-  const canExport = title.trim() !== "" && includedCount > 0 && !submitting;
+  const canExport =
+    title.trim() !== "" && (!columnsCustomizable || includedCount > 0) && !submitting;
 
   function move(index: number, delta: number) {
     setColumns((current) => {
@@ -364,55 +374,57 @@ function ReportExportForm({
           />
         </div>
 
-        <div className="flex flex-col gap-2">
-          <span className="text-[13px] font-medium text-fg">
-            {t("columnsLabel", { count: includedCount })}
-          </span>
-          <ul className="flex flex-col gap-1">
-            {columns.map((column, index) => (
-              <li
-                key={column.key}
-                className="flex items-center gap-2 rounded-sm border border-border bg-surface px-2 py-1.5"
-              >
-                <Checkbox
-                  checked={column.included}
-                  onCheckedChange={(checked) => {
-                    toggle(column.key, checked === true);
-                  }}
-                  aria-label={t("includeColumn", { column: column.defaultLabel })}
-                />
-                <Input
-                  value={column.label}
-                  onChange={(e) => {
-                    rename(column.key, e.target.value);
-                  }}
-                  aria-label={t("columnLabel", { column: column.defaultLabel })}
-                  maxLength={60}
-                  className="h-9 flex-1"
-                  disabled={!column.included}
-                />
-                <div className="flex shrink-0 gap-0.5">
-                  <IconButton
-                    icon={<ChevronUp aria-hidden="true" />}
-                    aria-label={t("moveUp", { column: column.defaultLabel })}
-                    onClick={() => {
-                      move(index, -1);
+        {columnsCustomizable && (
+          <div className="flex flex-col gap-2">
+            <span className="text-[13px] font-medium text-fg">
+              {t("columnsLabel", { count: includedCount })}
+            </span>
+            <ul className="flex flex-col gap-1">
+              {columns.map((column, index) => (
+                <li
+                  key={column.key}
+                  className="flex items-center gap-2 rounded-sm border border-border bg-surface px-2 py-1.5"
+                >
+                  <Checkbox
+                    checked={column.included}
+                    onCheckedChange={(checked) => {
+                      toggle(column.key, checked === true);
                     }}
-                    disabled={index === 0}
+                    aria-label={t("includeColumn", { column: column.defaultLabel })}
                   />
-                  <IconButton
-                    icon={<ChevronDown aria-hidden="true" />}
-                    aria-label={t("moveDown", { column: column.defaultLabel })}
-                    onClick={() => {
-                      move(index, 1);
+                  <Input
+                    value={column.label}
+                    onChange={(e) => {
+                      rename(column.key, e.target.value);
                     }}
-                    disabled={index === columns.length - 1}
+                    aria-label={t("columnLabel", { column: column.defaultLabel })}
+                    maxLength={60}
+                    className="h-9 flex-1"
+                    disabled={!column.included}
                   />
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
+                  <div className="flex shrink-0 gap-0.5">
+                    <IconButton
+                      icon={<ChevronUp aria-hidden="true" />}
+                      aria-label={t("moveUp", { column: column.defaultLabel })}
+                      onClick={() => {
+                        move(index, -1);
+                      }}
+                      disabled={index === 0}
+                    />
+                    <IconButton
+                      icon={<ChevronDown aria-hidden="true" />}
+                      aria-label={t("moveDown", { column: column.defaultLabel })}
+                      onClick={() => {
+                        move(index, 1);
+                      }}
+                      disabled={index === columns.length - 1}
+                    />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
     </DialogContent>
   );

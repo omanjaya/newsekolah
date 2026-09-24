@@ -50,41 +50,8 @@ export function useLibraryAccessionRegisterReportQuery(from: string, to: string)
   });
 }
 
-// XLSX exports: the API returns raw spreadsheet bytes, so a plain `fetch`
-// is used instead of the JSON-typed client (see api.ts's own `downloadPDF`).
-
-async function downloadFile(path: string, fileName: string): Promise<void> {
-  const token = getAccessToken();
-  const response = await fetch(`${API_URL}${path}`, {
-    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-  });
-  if (!response.ok) {
-    throw new ApiError({ status: response.status, code: "UNKNOWN", message: "UNKNOWN" });
-  }
-  const blob = await response.blob();
-  const url = URL.createObjectURL(blob);
-  try {
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-  } finally {
-    URL.revokeObjectURL(url);
-  }
-}
-
-// The catalogue accreditation summary is NOT migrated onto reportdoc (its
-// two sheets have different column counts, which does not fit one
-// Document per docs/15-paritas-sion.md's ledger), so this one keeps its
-// plain xlsx-only download.
-export function downloadLibrarySummaryReportXlsx(from: string, to: string): Promise<void> {
-  return downloadFile(
-    `/v1/library/reports/summary.xlsx?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
-    `laporan-akreditasi-${from}-${to}.xlsx`,
-  );
-}
+// XLSX/PDF exports: the API returns raw file bytes, so a plain `fetch` is
+// used instead of the JSON-typed client (see api.ts's own `downloadPDF`).
 
 /**
  * Runs one of the reportdoc-backed library report exports per the
@@ -116,6 +83,27 @@ async function downloadReportExport(
   } finally {
     URL.revokeObjectURL(url);
   }
+}
+
+/**
+ * Renders the catalogue accreditation summary per the
+ * {@link ReportExportDialog}'s chosen format/title/letterhead -- no
+ * `columns` param, since its two sections (indicators, Dewey-class
+ * breakdown) have different column counts and cannot share one end-user
+ * column selection (see reportdoc.Section.Columns and the dialog's own
+ * `columnsCustomizable={false}` mode this report uses).
+ */
+export function downloadLibrarySummaryReportXlsx(
+  from: string,
+  to: string,
+  options: ReportExportOptions,
+): Promise<void> {
+  return downloadReportExport(
+    "/v1/library/reports/summary.xlsx",
+    new URLSearchParams({ from, to }),
+    `laporan-akreditasi-${from}-${to}`,
+    options,
+  );
 }
 
 export function downloadLoansReportXlsx(

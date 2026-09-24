@@ -862,6 +862,27 @@ func (f FamilyGrading) StudentGrades(ctx context.Context, tenantID, studentID uu
 	return out, nil
 }
 
+// FamilySubjects adapts academic's subject catalogue to the batched
+// subject-name lookup family needs to label a child's per-subject grades
+// -- parents cannot call /v1/academic/subjects themselves (they lack
+// view_academic_data), so the response must already carry the names.
+type FamilySubjects struct{ Svc *academicservice.Service }
+
+func (f FamilySubjects) SubjectNames(ctx context.Context, tenantID uuid.UUID, ids []uuid.UUID) (map[uuid.UUID]string, error) {
+	out := make(map[uuid.UUID]string, len(ids))
+	for _, id := range ids {
+		if _, ok := out[id]; ok {
+			continue
+		}
+		subject, err := f.Svc.GetSubject(ctx, tenantID, id)
+		if err != nil {
+			return nil, err
+		}
+		out[id] = subject.Name
+	}
+	return out, nil
+}
+
 type FamilyDiscipline struct{ Svc *disciplineservice.Service }
 
 func (f FamilyDiscipline) StudentDiscipline(ctx context.Context, tenantID, studentID uuid.UUID) (familyservice.StudentDiscipline, error) {

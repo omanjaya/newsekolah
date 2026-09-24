@@ -61,9 +61,10 @@ const TABS_WITHOUT_DATE_RANGE: ReportTab[] = ["overdueMembers", "members"];
 /**
  * Every migrated report's stable column keys, in the exact order and
  * spelling `library/service/reports_xlsx.go`'s Column sets declare.
- * "summary" is not in this map: its two-sheet workbook has not moved
- * onto reportdoc (see docs/15-paritas-sion.md), so its tab keeps the
- * plain xlsx-only download below instead of a dialog.
+ * "summary" is not in this map: its two sections have different column
+ * counts (a key/value indicator table, a Dewey-class breakdown), so its
+ * tab uses the dialog with `columnsCustomizable={false}` instead of a
+ * fixed column list -- see reportdoc.Section.Columns.
  */
 const REPORT_EXPORT_COLUMN_KEYS: Record<Exclude<ReportTab, "summary">, readonly string[]> = {
   loans: ["title", "borrower", "borrowed_at", "due_on", "returned_at", "status", "fine"],
@@ -114,22 +115,17 @@ export function LibraryReportsView(): ReactElement {
   const [month, setMonth] = useDateFilter("month", monthIso(), true);
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  // "summary" has no reportdoc export (see REPORT_EXPORT_COLUMN_KEYS'
-  // comment), so it keeps the old immediate xlsx-only download.
-  const exportOptions: Record<
-    Exclude<ReportTab, "summary">,
-    (options: ReportExportOptions) => Promise<void>
-  > = {
+  const exportOptions: Record<ReportTab, (options: ReportExportOptions) => Promise<void>> = {
     loans: (options) => downloadLoansReportXlsx(from, to, options),
     overdueMembers: (options) => downloadOverdueMembersReportXlsx(options),
     mostBorrowed: (options) => downloadMostBorrowedReportXlsx(from, to, options),
+    summary: (options) => downloadLibrarySummaryReportXlsx(from, to, options),
     visits: (options) => downloadLibraryVisitsReportXlsx(from, to, options),
     members: (options) => downloadLibraryMembersReportXlsx(options),
     accessionRegister: (options) => downloadLibraryAccessionRegisterReportXlsx(from, to, options),
   };
 
   async function handleExport(options: ReportExportOptions) {
-    if (tab === "summary") return;
     await exportOptions[tab](options);
   }
 
@@ -194,10 +190,6 @@ export function LibraryReportsView(): ReactElement {
           variant="secondary"
           icon={<Download />}
           onClick={() => {
-            if (tab === "summary") {
-              void downloadLibrarySummaryReportXlsx(from, to);
-              return;
-            }
             setDialogOpen(true);
           }}
         >
@@ -205,16 +197,15 @@ export function LibraryReportsView(): ReactElement {
         </Button>
       </div>
 
-      {tab !== "summary" && (
-        <ReportExportDialog
-          open={dialogOpen}
-          onOpenChange={setDialogOpen}
-          reportKey={`library.reports.${tab}`}
-          defaultTitle={t(`export.${tab}.defaultTitle`)}
-          availableColumns={exportColumns}
-          onExport={handleExport}
-        />
-      )}
+      <ReportExportDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        reportKey={`library.reports.${tab}`}
+        defaultTitle={t(`export.${tab}.defaultTitle`)}
+        availableColumns={exportColumns}
+        columnsCustomizable={tab !== "summary"}
+        onExport={handleExport}
+      />
 
       {tab === "loans" && <LoansReportTable from={from} to={to} />}
       {tab === "overdueMembers" && <OverdueMembersReportTable />}

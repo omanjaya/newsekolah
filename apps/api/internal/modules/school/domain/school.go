@@ -10,17 +10,18 @@ import (
 )
 
 type Branding struct {
-	TenantID    uuid.UUID
-	Slug        string
-	Name        string
-	ShortName   string
-	Tagline     string
-	LogoURL     string
-	FaviconURL  string
-	AccentColor string
-	Locale      string
-	Timezone    string
-	ProductName string
+	TenantID       uuid.UUID
+	Slug           string
+	Name           string
+	ShortName      string
+	Tagline        string
+	LogoURL        string
+	FaviconURL     string
+	AccentColor    string
+	Locale         string
+	Timezone       string
+	ProductName    string
+	EducationLevel string
 }
 
 // DefaultAccentColor is used when a tenant has not set branding.accent_color.
