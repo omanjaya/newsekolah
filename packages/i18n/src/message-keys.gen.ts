@@ -91,13 +91,17 @@ export type MessageKey =
   | "errors.FEE_TYPE_NOT_FOUND"
   | "errors.FORBIDDEN"
   | "errors.GRADE_RANGE_OVERLAP"
+  | "errors.HOMEROOM_TEACHER_REQUIRED"
   | "errors.IMPERSONATION_NOT_ALLOWED"
   | "errors.IMPORT_FILE_INVALID"
   | "errors.IMPORT_TOO_MANY_ROWS"
   | "errors.INCIDENT_ALREADY_CLOSED"
   | "errors.INCIDENT_FORBIDDEN"
   | "errors.INCIDENT_NOT_FOUND"
+  | "errors.LEAVE_CATEGORY_INVALID"
+  | "errors.LEAVE_DATE_RANGE_INVALID"
   | "errors.LEAVE_PERMISSION_REQUIRES_DUTY"
+  | "errors.LEAVE_REQUEST_GUARDIAN_NOT_LINKED"
   | "errors.LIBRARY_COPY_AVAILABLE_FOR_LOAN"
   | "errors.LIBRARY_COPY_BARCODE_EXISTS"
   | "errors.LIBRARY_COPY_NOT_AVAILABLE"
@@ -174,6 +178,7 @@ export type MessageKey =
   | "errors.VISIT_NOT_FOUND"
   | "errors.WARNING_LETTER_ALREADY_ISSUED"
   | "errors.WARNING_LETTER_NOT_DUE"
+  | "errors.WORKFLOW_ALREADY_IN_PROGRESS"
   | "nav.academic.items.attendance"
   | "nav.academic.items.grading"
   | "nav.academic.items.homeroomClass"
@@ -348,13 +353,17 @@ export const MESSAGE_KEYS: readonly MessageKey[] = [
   "errors.FEE_TYPE_NOT_FOUND",
   "errors.FORBIDDEN",
   "errors.GRADE_RANGE_OVERLAP",
+  "errors.HOMEROOM_TEACHER_REQUIRED",
   "errors.IMPERSONATION_NOT_ALLOWED",
   "errors.IMPORT_FILE_INVALID",
   "errors.IMPORT_TOO_MANY_ROWS",
   "errors.INCIDENT_ALREADY_CLOSED",
   "errors.INCIDENT_FORBIDDEN",
   "errors.INCIDENT_NOT_FOUND",
+  "errors.LEAVE_CATEGORY_INVALID",
+  "errors.LEAVE_DATE_RANGE_INVALID",
   "errors.LEAVE_PERMISSION_REQUIRES_DUTY",
+  "errors.LEAVE_REQUEST_GUARDIAN_NOT_LINKED",
   "errors.LIBRARY_COPY_AVAILABLE_FOR_LOAN",
   "errors.LIBRARY_COPY_BARCODE_EXISTS",
   "errors.LIBRARY_COPY_NOT_AVAILABLE",
@@ -431,6 +440,7 @@ export const MESSAGE_KEYS: readonly MessageKey[] = [
   "errors.VISIT_NOT_FOUND",
   "errors.WARNING_LETTER_ALREADY_ISSUED",
   "errors.WARNING_LETTER_NOT_DUE",
+  "errors.WORKFLOW_ALREADY_IN_PROGRESS",
   "nav.academic.items.attendance",
   "nav.academic.items.grading",
   "nav.academic.items.homeroomClass",

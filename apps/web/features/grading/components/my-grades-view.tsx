@@ -7,9 +7,10 @@ import {
   EmptyState,
   PageHeader,
   Skeleton,
+  cn,
   domainIcons,
 } from "@newsekolah/ui";
-import { Star } from "lucide-react";
+import { Minus, Star, TrendingDown, TrendingUp } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
@@ -117,6 +118,30 @@ export function MyGradesView(): ReactElement {
   );
 }
 
+/**
+ * A simple, defensible trend from the data already on hand: the last two
+ * scored components in the order the teacher entered them (chronological
+ * for how a gradebook fills in over a term), not a synthetic history the
+ * API does not carry. Fewer than two scored components has no trend to
+ * show, so the card stays silent rather than guessing.
+ */
+function subjectTrend(components: MySubjectGrade["components"]): "up" | "down" | "flat" | null {
+  if (components.length < 2) return null;
+  const latest = components[components.length - 1];
+  const previous = components[components.length - 2];
+  if (!latest || !previous) return null;
+  if (latest.score > previous.score) return "up";
+  if (latest.score < previous.score) return "down";
+  return "flat";
+}
+
+const TREND_ICON = { up: TrendingUp, down: TrendingDown, flat: Minus } as const;
+const TREND_CLASS = {
+  up: "text-status-present",
+  down: "text-status-absent",
+  flat: "text-fg-muted",
+} as const;
+
 function SubjectCard({
   subject,
   subjectName,
@@ -126,16 +151,28 @@ function SubjectCard({
 }): ReactElement {
   const t = useTranslations("app.grading.myGrades");
   const tKind = useTranslations("app.grading.kind");
+  const trend = subjectTrend(subject.components);
+  const TrendIcon = trend ? TREND_ICON[trend] : null;
 
   return (
     <section className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-4">
       <div className="flex items-start justify-between gap-3">
         <h2 className="text-[16px] font-medium text-fg">{subjectName}</h2>
-        {subject.report_score !== undefined && (
-          <span className="text-[20px] font-medium text-fg [font-variant-numeric:tabular-nums]">
-            {subject.report_score.toFixed(1)}
-          </span>
-        )}
+        <div className="flex items-center gap-1.5">
+          {trend && TrendIcon && (
+            <span
+              className={cn("flex items-center gap-1 text-[12px] font-medium", TREND_CLASS[trend])}
+            >
+              <TrendIcon className="size-3.5" aria-hidden="true" />
+              {t(`trend.${trend}`)}
+            </span>
+          )}
+          {subject.report_score !== undefined && (
+            <span className="text-[20px] font-medium text-fg [font-variant-numeric:tabular-nums]">
+              {subject.report_score.toFixed(1)}
+            </span>
+          )}
+        </div>
       </div>
 
       {subject.components.length === 0 ? (

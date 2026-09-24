@@ -21,7 +21,9 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import { QueryError } from "../../../components/query-error";
+import { groupByDay } from "../../../lib/group-by-day";
 import { useSession } from "../../../lib/session/session-provider";
+import { useDayLabel } from "../../../lib/use-day-label";
 import { useRememberedViewState } from "../../../lib/view-state/view-state-provider";
 import {
   NOTIFICATION_KINDS,
@@ -54,6 +56,8 @@ export function NotificationsView(): ReactElement {
   const items = data?.data ?? [];
   const hasUnread = items.some((n) => !n.read_at);
   const isFiltering = search.trim() !== "" || kind !== "";
+  const dayGroups = groupByDay(items, (item) => item.created_at, me?.tenant.timezone);
+  const dayLabel = useDayLabel();
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
@@ -132,19 +136,28 @@ export function NotificationsView(): ReactElement {
           description={isFiltering ? t("emptyFilteredBody") : t("emptyBody")}
         />
       ) : (
-        <ul className="flex flex-col divide-y divide-border rounded-sm border border-border bg-surface">
-          {items.map((item) => (
-            <NotificationRow
-              key={item.id}
-              item={item}
-              locale={locale}
-              timeZone={me?.tenant.timezone}
-              onOpen={() => {
-                if (!item.read_at) markRead.mutate(item.id);
-              }}
-            />
+        <div className="flex flex-col gap-4">
+          {dayGroups.map((group) => (
+            <section key={group.dateKey} className="flex flex-col gap-2">
+              <h2 className="px-1 text-[12px] font-medium text-fg-muted">
+                {dayLabel(group.dateKey)}
+              </h2>
+              <ul className="flex flex-col divide-y divide-border rounded-sm border border-border bg-surface">
+                {group.items.map((item) => (
+                  <NotificationRow
+                    key={item.id}
+                    item={item}
+                    locale={locale}
+                    timeZone={me?.tenant.timezone}
+                    onOpen={() => {
+                      if (!item.read_at) markRead.mutate(item.id);
+                    }}
+                  />
+                ))}
+              </ul>
+            </section>
           ))}
-        </ul>
+        </div>
       )}
     </div>
   );

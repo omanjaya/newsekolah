@@ -518,7 +518,9 @@
         "5": "Jum",
         "6": "Sab",
         "7": "Min"
-      }
+      },
+      "today": "Hari ini",
+      "yesterday": "Kemarin"
     },
     "schedule": {
       "eyebrow": "Akademik",

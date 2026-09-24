@@ -26,6 +26,17 @@ describe("mobile daily destinations", () => {
       true,
     );
   });
+  it("gives a student their schedule and classroom-entry scan, not the occasional exit permit", () => {
+    const permitted = filterNavigation(
+      navigation,
+      (permission) => permission === "view_schedules",
+      "student",
+    );
+    const keys = mobileNavigation(permitted, "student").map((item) => item.key);
+    expect(keys).toContain("schedule");
+    expect(keys).toContain("classroom-entry");
+    expect(keys).not.toContain("exit-permits");
+  });
   it("gives a counselor duty (guru BK) the leave and counseling queues instead of an empty teaching schedule", () => {
     // A counselor is seeded with the "teacher" profile kind and the base
     // teacher role's manage_attendance/view_schedules, same as any teacher

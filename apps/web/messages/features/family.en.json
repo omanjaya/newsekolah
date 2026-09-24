@@ -14,6 +14,19 @@
       "title": "{count, plural, one {One leave request awaits your decision} other {# leave requests await your decision}}",
       "link": "Review now"
     },
+    "today": {
+      "todayLabel": "Today",
+      "thisWeekLabel": "This week",
+      "sessionsRecorded": "{submitted} of {expected} sessions recorded",
+      "noAttendanceToday": "No attendance recorded today yet.",
+      "pendingLeaveLabel": "Leave requests awaiting you",
+      "pendingLeaveEmpty": "None waiting on your decision.",
+      "awaitingYou": "Awaiting you",
+      "submitLeave": "Submit leave request",
+      "submitLeaveTitle": "Leave request for {name}",
+      "leaveSubmitted": "Leave request for {name} sent to the homeroom teacher",
+      "cancel": "Cancel"
+    },
     "attendance": {
       "title": "This month's attendance",
       "pickMonth": "Pick a month",
@@ -23,7 +36,8 @@
         "S": "Sick",
         "I": "Excused",
         "D": "Dispensation",
-        "A": "Absent"
+        "A": "Absent",
+        "INCOMPLETE": "Incomplete"
       },
       "incomplete": "{count} days incomplete"
     },

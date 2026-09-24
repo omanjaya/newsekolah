@@ -1,48 +1,53 @@
 "use client";
 
-import { type Locale, formatCurrency, formatDate } from "@newsekolah/i18n";
-import {
-  Alert,
-  Badge,
-  EmptyState,
-  Input,
-  PageHeader,
-  Select,
-  Skeleton,
-  domainIcons,
-} from "@newsekolah/ui";
-import { FileText, GraduationCap, ShieldCheck, Star } from "lucide-react";
+import { Alert, Avatar, EmptyState, PageHeader, Skeleton, cn, domainIcons } from "@newsekolah/ui";
 import Link from "next/link";
-import { useFormatter, useLocale, useTranslations } from "next-intl";
+import { useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { useCan } from "../../../lib/session/session-provider";
+import { formatDisplayName } from "../../../lib/text/format-name";
 import { useGuardianLeaveQueueQuery } from "../../permits/api";
 import {
+  type LinkedChild,
   currentMonth,
   useChildAttendanceQuery,
   useChildBillingQuery,
   useChildDisciplineQuery,
   useChildGradesQuery,
   useMyChildrenQuery,
-  type LinkedChild,
 } from "../api";
 
-const ATTENDANCE_CODES = ["H", "S", "I", "D", "A"];
+import {
+  AttendanceSection,
+  BillingSection,
+  DisciplineSection,
+  GradesSection,
+} from "./child-record-sections";
+import { TodayCard } from "./child-today-card";
 
 /**
- * A parent's own children: a picker (when there is more than one), then
- * that child's attendance for the selected month, published grades, and
- * discipline record. Only what has been published is shown (docs/07-ui-ux.md
- * section 5); nothing here implies a judgement the data does not carry.
+ * A parent's own children: one screen per child that answers "is my child
+ * OK today" first (today's status, this week, pending leave requests --
+ * see child-today-card.tsx), then grades, discipline, and bills.
+ * Switching children is one tap (a chip row, not a dropdown) since a
+ * parent with several kids checks this screen constantly during the
+ * school day. Only published data is shown (docs/07-ui-ux.md section 5);
+ * nothing here implies a judgement the data does not carry.
  */
 export function ChildrenView(): ReactElement {
   const t = useTranslations("app.family.myChildren");
   const children = useMyChildrenQuery();
   const rows = children.data?.data ?? [];
+  const searchParams = useSearchParams();
+  const requestedId = searchParams.get("child") ?? "";
   const [studentId, setStudentId] = useState("");
-  const effectiveId = studentId || (rows[0]?.student_user_id ?? "");
+  const effectiveId =
+    studentId ||
+    (rows.some((c) => c.student_user_id === requestedId) ? requestedId : "") ||
+    (rows[0]?.student_user_id ?? "");
   const selected = rows.find((c) => c.student_user_id === effectiveId);
 
   return (
@@ -63,17 +68,59 @@ export function ChildrenView(): ReactElement {
       ) : (
         <div className="flex flex-col gap-6">
           {rows.length > 1 && (
-            <Select
-              options={rows.map((c) => ({ value: c.student_user_id, label: c.student_name }))}
-              value={effectiveId}
-              onValueChange={setStudentId}
-              aria-label={t("pickChild")}
-              className="w-64"
-            />
+            <ChildSwitcher rows={rows} selectedId={effectiveId} onSelect={setStudentId} />
           )}
           {selected && <ChildSections child={selected} />}
         </div>
       )}
+    </div>
+  );
+}
+
+/** One tap to switch: a horizontally scrollable chip row, not a dropdown. */
+function ChildSwitcher({
+  rows,
+  selectedId,
+  onSelect,
+}: {
+  rows: LinkedChild[];
+  selectedId: string;
+  onSelect: (id: string) => void;
+}): ReactElement {
+  const t = useTranslations("app.family.myChildren");
+  return (
+    <div
+      role="tablist"
+      aria-label={t("pickChild")}
+      className={cn(
+        "flex snap-x snap-mandatory gap-2 overflow-x-auto py-0.5",
+        "[scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+      )}
+    >
+      {rows.map((child) => {
+        const name = formatDisplayName(child.student_name);
+        const active = child.student_user_id === selectedId;
+        return (
+          <button
+            key={child.student_user_id}
+            type="button"
+            role="tab"
+            aria-selected={active}
+            onClick={() => {
+              onSelect(child.student_user_id);
+            }}
+            className={cn(
+              "flex min-h-11 shrink-0 snap-start items-center gap-2 rounded-full border px-3 py-1.5 text-[13px] font-medium transition-colors",
+              active
+                ? "border-accent bg-accent/10 text-accent"
+                : "border-border text-fg-muted hover:bg-bg",
+            )}
+          >
+            <Avatar name={name} size="sm" />
+            {name}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -111,255 +158,11 @@ function ChildSections({ child }: { child: LinkedChild }): ReactElement {
 
   return (
     <div className="flex flex-col gap-6">
+      <TodayCard child={child} attendance={attendance} />
       <AttendanceSection month={month} onMonthChange={setMonth} query={attendance} />
       {canSeeGrades && <GradesSection query={grades} />}
       <DisciplineSection query={discipline} />
       {canSeeBilling && <BillingSection query={billing} />}
     </div>
-  );
-}
-
-function AttendanceSection({
-  month,
-  onMonthChange,
-  query,
-}: {
-  month: string;
-  onMonthChange: (month: string) => void;
-  query: ReturnType<typeof useChildAttendanceQuery>;
-}): ReactElement {
-  const t = useTranslations("app.family.myChildren.attendance");
-  const totals = query.data?.totals ?? {};
-  const incomplete = (query.data?.data ?? []).filter((d) => !d.complete).length;
-  const total = Object.values(totals).reduce((sum, n) => sum + n, 0);
-
-  return (
-    <section className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-4">
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-[16px] font-medium text-fg">{t("title")}</h2>
-        <Input
-          type="month"
-          value={month}
-          onChange={(e) => {
-            onMonthChange(e.target.value);
-          }}
-          aria-label={t("pickMonth")}
-          className="w-40"
-        />
-      </div>
-      {query.isLoading ? (
-        <Skeleton className="h-20 w-full" />
-      ) : total === 0 ? (
-        <p className="text-[13px] text-fg-muted">{t("empty")}</p>
-      ) : (
-        <>
-          <div className="flex flex-wrap gap-4">
-            {ATTENDANCE_CODES.filter((code) => totals[code]).map((code) => (
-              <span key={code} className="text-[13px] text-fg [font-variant-numeric:tabular-nums]">
-                {t(`codes.${code}`)}: {totals[code]}
-              </span>
-            ))}
-          </div>
-          <p className="border-t border-border pt-2 text-[13px] text-fg-muted">
-            {t("incomplete", { count: incomplete })}
-          </p>
-        </>
-      )}
-    </section>
-  );
-}
-
-function GradesSection({ query }: { query: ReturnType<typeof useChildGradesQuery> }): ReactElement {
-  const t = useTranslations("app.family.myChildren.grades");
-  const format = useFormatter();
-  // Subject names come from the grades response itself: a parent cannot
-  // read /v1/academic/subjects (no view_academic_data), so the API names
-  // each subject for us instead of the client resolving it from the
-  // catalogue.
-  const rows = query.data?.subjects ?? [];
-  const score = (value: number) =>
-    format.number(value, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-  const averages = rows.flatMap((row) => {
-    const value = row.average ?? row.report_score;
-    return value === undefined ? [] : [value];
-  });
-  const overall =
-    averages.length > 0 ? averages.reduce((sum, value) => sum + value, 0) / averages.length : null;
-
-  return (
-    <section className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-4">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex min-w-0 flex-col">
-          <h2 className="text-[16px] font-medium text-fg">{t("title")}</h2>
-          {query.data?.term_name && (
-            <p className="text-[13px] text-fg-muted">{query.data.term_name}</p>
-          )}
-        </div>
-        {query.data && (
-          <span className="flex shrink-0 items-center gap-1.5 text-[13px] text-fg-muted">
-            <Star className="size-4" aria-hidden="true" />
-            {t("stars", { count: query.data.stars })}
-          </span>
-        )}
-      </div>
-      {query.isLoading ? (
-        <Skeleton className="h-20 w-full" />
-      ) : rows.length === 0 ? (
-        <EmptyState
-          icon={<GraduationCap aria-hidden="true" />}
-          title={t("emptyTitle")}
-          description={t("emptyBody")}
-        />
-      ) : (
-        <>
-          {overall !== null && (
-            <p className="text-[13px] text-fg">
-              {t("overall", { score: score(overall), count: rows.length })}
-            </p>
-          )}
-          <ul className="flex flex-col gap-1.5 border-t border-border pt-2">
-            {rows.map((subject) => (
-              <li
-                key={subject.subject_id}
-                className="flex items-center justify-between gap-2 text-[13px]"
-              >
-                <span className="min-w-0 truncate text-fg">{subject.subject_name}</span>
-                <span className="shrink-0 text-fg-muted [font-variant-numeric:tabular-nums]">
-                  {subject.average !== undefined && t("average", { score: score(subject.average) })}
-                  {subject.report_score !== undefined &&
-                    ` · ${t("reportScore", { score: score(subject.report_score) })}`}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
-    </section>
-  );
-}
-
-function DisciplineSection({
-  query,
-}: {
-  query: ReturnType<typeof useChildDisciplineQuery>;
-}): ReactElement {
-  const t = useTranslations("app.family.myChildren.discipline");
-  const locale = useLocale() as Locale;
-  const records = query.data?.records ?? [];
-  const letters = query.data?.letters ?? [];
-
-  return (
-    <section className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-4">
-      <h2 className="text-[16px] font-medium text-fg">{t("title")}</h2>
-      {query.isLoading ? (
-        <Skeleton className="h-20 w-full" />
-      ) : records.length === 0 && letters.length === 0 ? (
-        <EmptyState
-          icon={<ShieldCheck aria-hidden="true" />}
-          title={t("emptyTitle")}
-          description={t("emptyBody")}
-        />
-      ) : (
-        <div className="flex flex-col gap-3">
-          <p className="text-[13px] text-fg-muted">
-            {t("totalPoints", { points: query.data?.total_points ?? 0 })}
-          </p>
-          {letters.length > 0 && (
-            <ul className="flex flex-col gap-1.5">
-              {letters.map((letter, index) => (
-                <li
-                  key={`${letter.number}-${index}`}
-                  className="flex items-center gap-2 text-[13px] text-fg"
-                >
-                  <FileText className="size-4 shrink-0 text-fg-muted" aria-hidden="true" />
-                  {letter.number} · {letter.level_label} ·{" "}
-                  {formatDate(letter.issued_at, { locale })}
-                </li>
-              ))}
-            </ul>
-          )}
-          {records.length > 0 && (
-            <ul className="flex flex-col divide-y divide-border">
-              {records.map((record, index) => (
-                <li
-                  key={`${record.type_name}-${record.occurred_on}-${index}`}
-                  className="flex items-center justify-between gap-3 py-2 text-[13px] text-fg"
-                >
-                  <span className="flex flex-col">
-                    <span>{record.type_name}</span>
-                    <span className="text-[12px] text-fg-muted">
-                      {formatDate(record.occurred_on, { locale })}
-                    </span>
-                  </span>
-                  <span className="[font-variant-numeric:tabular-nums]">{record.points}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
-    </section>
-  );
-}
-
-/**
- * A guardian's read-only view of their child's bills and payments, the
- * same data the finance office sees on the student's bill history minus
- * anything that would let a parent record or void a payment themselves.
- */
-function BillingSection({
-  query,
-}: {
-  query: ReturnType<typeof useChildBillingQuery>;
-}): ReactElement {
-  const t = useTranslations("app.family.myChildren.billing");
-  const locale = useLocale() as Locale;
-  const entries = query.data?.data ?? [];
-  const outstanding = entries.reduce(
-    (sum, entry) => sum + entry.bill.amount_minor - entry.bill.paid_amount_minor,
-    0,
-  );
-
-  return (
-    <section className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-4">
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-[16px] font-medium text-fg">{t("title")}</h2>
-        {entries.length > 0 && (
-          <span className="text-[13px] text-fg-muted [font-variant-numeric:tabular-nums]">
-            {t("outstanding", { amount: formatCurrency(outstanding, "IDR", { locale }) })}
-          </span>
-        )}
-      </div>
-      {query.isLoading ? (
-        <Skeleton className="h-20 w-full" />
-      ) : entries.length === 0 ? (
-        <EmptyState
-          icon={<domainIcons.billing aria-hidden="true" />}
-          title={t("emptyTitle")}
-          description={t("emptyBody")}
-        />
-      ) : (
-        <ul className="flex flex-col gap-1.5">
-          {entries.map(({ bill }) => (
-            <li key={bill.id} className="flex items-center justify-between gap-2 text-[13px]">
-              <div className="flex flex-col">
-                <span className="text-fg">{bill.fee_type_name}</span>
-                <span className="text-fg-muted">
-                  {bill.period} · {t("dueDate", { date: formatDate(bill.due_date, { locale }) })}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-fg [font-variant-numeric:tabular-nums]">
-                  {formatCurrency(bill.amount_minor, bill.currency, { locale })}
-                </span>
-                <Badge variant={bill.status === "paid" ? "accent" : "neutral"}>
-                  {t(`status.${bill.status}`)}
-                </Badge>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
   );
 }

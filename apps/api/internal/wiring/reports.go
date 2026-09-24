@@ -2,6 +2,7 @@ package wiring
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -902,4 +903,39 @@ func (f FamilyDiscipline) StudentDiscipline(ctx context.Context, tenantID, stude
 		out.Letters[i] = familyservice.DisciplineLetter{Number: l.LetterNumber, LevelLabel: l.LevelLabel, IssuedAt: l.IssuedAt.Format("2006-01-02")}
 	}
 	return out, nil
+}
+
+// FamilyLeaveRequests lets a guardian open a planned leave request for a
+// linked child from the parent view, reusing permits' own submission path
+// (same validation: active enrollment, homeroom teacher present, category
+// and date range) instead of duplicating it here.
+type FamilyLeaveRequests struct{ Svc *permitsservice.Service }
+
+func (f FamilyLeaveRequests) SubmitChildLeaveRequest(
+	ctx context.Context, tenantID, guardianUserID, studentUserID uuid.UUID,
+	category, reason string, startsOn, endsOn time.Time,
+) (uuid.UUID, error) {
+	cat := permitsdomain.Category(category)
+	if !cat.Valid() {
+		return uuid.Nil, familyservice.ErrLeaveCategoryInvalid
+	}
+	detail, err := f.Svc.SubmitLeaveRequest(ctx, permitsservice.SubmitLeaveRequestInput{
+		TenantID: tenantID, ActorUserID: guardianUserID, StudentUserID: studentUserID,
+		Category: cat, Reason: reason, StartsOn: startsOn, EndsOn: endsOn,
+	})
+	if err != nil {
+		switch {
+		case errors.Is(err, permitsdomain.ErrLeaveRequestGuardianNotLinked):
+			return uuid.Nil, familyservice.ErrLeaveGuardianNotApproving
+		case errors.Is(err, permitsdomain.ErrLeaveRequestDateRangeInvalid):
+			return uuid.Nil, familyservice.ErrLeaveDateRangeInvalid
+		case errors.Is(err, permitsdomain.ErrHomeroomTeacherRequired):
+			return uuid.Nil, familyservice.ErrLeaveHomeroomRequired
+		case errors.Is(err, permitsdomain.ErrAlreadyInProgress):
+			return uuid.Nil, familyservice.ErrLeaveAlreadyInProgress
+		default:
+			return uuid.Nil, err
+		}
+	}
+	return detail.Instance.ID, nil
 }

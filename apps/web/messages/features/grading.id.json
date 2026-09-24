@@ -164,7 +164,12 @@
     "average": "Rata-rata {score}",
     "starsBreakdown": "Bintang per mapel dan guru",
     "starsBreakdownEmpty": "Belum ada bintang.",
-    "starsBreakdownRow": "{count} dari {teacher}"
+    "starsBreakdownRow": "{count} dari {teacher}",
+    "trend": {
+      "up": "Naik",
+      "down": "Turun",
+      "flat": "Stabil"
+    }
   },
   "erapor": {
     "pickTerm": "Pilih semester",

@@ -5345,6 +5345,65 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+  /v1/children/{studentId}/leave-requests:
+    post:
+      tags:
+        - family
+      operationId: submitChildLeaveRequest
+      x-permission: approve_child_leave_requests
+      summary: Guardian submits a planned leave request for a linked child
+      parameters:
+        - name: studentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - category
+                - reason
+                - starts_on
+                - ends_on
+              properties:
+                category:
+                  $ref: "#/components/schemas/LeaveCategory"
+                reason:
+                  type: string
+                  minLength: 1
+                  maxLength: 500
+                starts_on:
+                  type: string
+                  format: date
+                ends_on:
+                  type: string
+                  format: date
+      responses:
+        "201":
+          description: Submitted
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - instance_id
+                properties:
+                  instance_id:
+                    type: string
+                    format: uuid
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
   /v1/children/{studentId}/discipline:
     get:
       tags:

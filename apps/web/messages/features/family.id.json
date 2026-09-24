@@ -14,6 +14,19 @@
       "title": "{count, plural, other {Ada # pengajuan izin yang menunggu keputusan Anda}}",
       "link": "Tinjau sekarang"
     },
+    "today": {
+      "todayLabel": "Hari ini",
+      "thisWeekLabel": "Minggu ini",
+      "sessionsRecorded": "{submitted} dari {expected} sesi tercatat",
+      "noAttendanceToday": "Belum ada presensi tercatat hari ini.",
+      "pendingLeaveLabel": "Izin menunggu keputusan Anda",
+      "pendingLeaveEmpty": "Tidak ada yang menunggu keputusan Anda.",
+      "awaitingYou": "Menunggu Anda",
+      "submitLeave": "Ajukan izin",
+      "submitLeaveTitle": "Pengajuan izin untuk {name}",
+      "leaveSubmitted": "Pengajuan izin untuk {name} terkirim ke wali kelas",
+      "cancel": "Batal"
+    },
     "attendance": {
       "title": "Presensi bulan ini",
       "pickMonth": "Pilih bulan",
@@ -23,7 +36,8 @@
         "S": "Sakit",
         "I": "Izin",
         "D": "Dispensasi",
-        "A": "Alpha"
+        "A": "Alpha",
+        "INCOMPLETE": "Belum lengkap"
       },
       "incomplete": "{count} hari belum lengkap"
     },

@@ -322,6 +322,11 @@
     "ANALYTICS_NOT_HOMEROOM_TEACHER": "Daftar ini tersedia untuk wali kelas, guru BK, atau pimpinan sekolah yang memiliki penugasan aktif.",
     "SCAN_TOKEN_GONE": "Kode sudah kedaluwarsa, sudah dipakai, atau bukan untuk keperluan ini. Minta guru menampilkan kode baru.",
     "SCAN_TOKEN_CONSUMER_NOT_STUDENT": "Hanya akun siswa yang bisa memindai kode ini.",
-    "REASON_TOO_LONG": "Alasan maksimal 500 karakter."
+    "REASON_TOO_LONG": "Alasan maksimal 500 karakter.",
+    "LEAVE_CATEGORY_INVALID": "Jenis izin tidak dikenali.",
+    "LEAVE_DATE_RANGE_INVALID": "Tanggal selesai tidak boleh sebelum tanggal mulai.",
+    "LEAVE_REQUEST_GUARDIAN_NOT_LINKED": "Anda belum terdaftar sebagai wali yang bisa mengajukan izin untuk siswa ini.",
+    "HOMEROOM_TEACHER_REQUIRED": "Kelas siswa ini belum memiliki wali kelas aktif, jadi izin belum bisa diajukan. Hubungi sekolah.",
+    "WORKFLOW_ALREADY_IN_PROGRESS": "Sudah ada pengajuan izin yang masih berjalan hari ini untuk siswa ini."
   }
 }

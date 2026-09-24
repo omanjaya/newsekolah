@@ -31,7 +31,10 @@ type LeaveRequestDetail struct {
 }
 
 type SubmitLeaveRequestInput struct {
-	TenantID      uuid.UUID
+	TenantID uuid.UUID
+	// ActorUserID is whoever is making the request: the student
+	// themselves, or a guardian submitting for a linked child.
+	ActorUserID   uuid.UUID
 	StudentUserID uuid.UUID
 	Category      domain.Category
 	Reason        string
@@ -59,6 +62,21 @@ func (s *Service) SubmitLeaveRequest(ctx context.Context, in SubmitLeaveRequestI
 	}
 	if label, ok := domain.DefaultReasonFor(in.Category); ok {
 		in.Reason = label
+	}
+	// A guardian submitting for a child must hold the same approving link
+	// used for the guardian review queue (can_approve_leave) -- the same
+	// relationship that later lets them decide this exact request.
+	if in.ActorUserID != in.StudentUserID {
+		if s.guardians == nil {
+			return LeaveRequestDetail{}, domain.ErrLeaveRequestGuardianNotLinked
+		}
+		linked, err := s.guardians.IsApprovingGuardianOf(ctx, in.TenantID, in.ActorUserID, in.StudentUserID)
+		if err != nil {
+			return LeaveRequestDetail{}, fmt.Errorf("check guardian link: %w", err)
+		}
+		if !linked {
+			return LeaveRequestDetail{}, domain.ErrLeaveRequestGuardianNotLinked
+		}
 	}
 
 	var detail LeaveRequestDetail
@@ -90,7 +108,7 @@ func (s *Service) SubmitLeaveRequest(ctx context.Context, in SubmitLeaveRequestI
 			tenantID: in.TenantID, kind: domain.KindLeaveRequest, subjectUserID: in.StudentUserID,
 			classID:   uuid.NullUUID{UUID: enrollment.ClassID, Valid: true},
 			payload:   map[string]any{"category": string(in.Category), "starts_on": in.StartsOn.Format("2006-01-02"), "ends_on": in.EndsOn.Format("2006-01-02")},
-			createdBy: in.StudentUserID,
+			createdBy: in.ActorUserID,
 		})
 		if err != nil {
 			return err
