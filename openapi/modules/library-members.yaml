@@ -420,6 +420,8 @@ paths:
       operationId: batchBorrowLibraryLoans
       x-permission: manage_library_circulation
       summary: Borrow several barcodes for one member in one visit
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKeyHeader"
       requestBody:
         required: true
         content:

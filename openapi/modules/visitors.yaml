@@ -108,6 +108,8 @@ paths:
       operationId: checkInVisit
       x-permission: manage_visitors
       summary: Sign a guest in at the gate and print their badge
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKeyHeader"
       requestBody:
         required: true
         content:

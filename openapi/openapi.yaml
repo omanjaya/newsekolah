@@ -4079,6 +4079,8 @@ paths:
       operationId: recordPayment
       x-permission: record_payments
       summary: Record a payment against a bill and issue its receipt
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKeyHeader"
       requestBody:
         required: true
         content:
@@ -4116,6 +4118,7 @@ paths:
           schema:
             type: string
             format: uuid
+        - $ref: "#/components/parameters/IdempotencyKeyHeader"
       requestBody:
         required: true
         content:
@@ -10357,6 +10360,8 @@ paths:
       operationId: batchBorrowLibraryLoans
       x-permission: manage_library_circulation
       summary: Borrow several barcodes for one member in one visit
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKeyHeader"
       requestBody:
         required: true
         content:
@@ -11974,6 +11979,8 @@ paths:
       operationId: borrowLibraryLoan
       x-permission: manage_library_circulation
       summary: Borrow a copy by scanning its barcode at the loan desk
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKeyHeader"
       requestBody:
         required: true
         content:
@@ -12029,6 +12036,7 @@ paths:
           schema:
             type: string
             format: uuid
+        - $ref: "#/components/parameters/IdempotencyKeyHeader"
       requestBody:
         content:
           application/json:
@@ -14222,6 +14230,8 @@ paths:
       operationId: createExitPermit
       x-permission: submit_leave_requests
       summary: Student requests an exit permit for a period range today
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKeyHeader"
       requestBody:
         required: true
         content:
@@ -14501,6 +14511,8 @@ paths:
       operationId: openLateArrival
       x-permission: authenticated
       summary: Late student scans the duty teacher's token to open the flow
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKeyHeader"
       requestBody:
         required: true
         content:
@@ -14543,6 +14555,8 @@ paths:
         recording teacher is the workflow's created_by, duty_teacher_user_id and every stage's actor,
         not the student; every event is tagged verification "manual" with a note explaining it was
         recorded at the gate.
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKeyHeader"
       requestBody:
         required: true
         content:
@@ -14784,6 +14798,8 @@ paths:
       operationId: submitLeaveRequest
       x-permission: submit_leave_requests
       summary: Student submits a planned leave request
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKeyHeader"
       requestBody:
         required: true
         content:
@@ -18089,6 +18105,8 @@ paths:
       operationId: checkInVisit
       x-permission: manage_visitors
       summary: Sign a guest in at the gate and print their badge
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKeyHeader"
       requestBody:
         required: true
         content:
