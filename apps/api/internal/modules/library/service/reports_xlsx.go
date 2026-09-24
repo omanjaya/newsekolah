@@ -276,10 +276,15 @@ func (s *Service) ExportCatalogueSummaryReport(ctx context.Context, tenantID uui
 		{text("rowFictionRatio"), fmt.Sprintf("%d/%d", summary.FictionCount, summary.FictionTotal)},
 		{text("rowStudentsTotal"), summary.StudentsTotal},
 		{text("rowMembersTotal"), summary.MembersTotal},
-		{text("rowItemsPerStudent"), summary.ItemsPerStudent},
-		{text("rowLoansPerStudent"), summary.LoansPerStudent},
+		// Per-student ratios share this section's "value" column with
+		// strings like the fiction ratio above, so the column is
+		// ColumnText and these floats are formatted here rather than left
+		// to render at full float64 precision (the web's own summary
+		// table already rounds the same figures to 2 decimals).
+		{text("rowItemsPerStudent"), fmt.Sprintf("%.2f", summary.ItemsPerStudent)},
+		{text("rowLoansPerStudent"), fmt.Sprintf("%.2f", summary.LoansPerStudent)},
 		{text("rowVisits"), summary.VisitsInPeriod},
-		{text("rowVisitsPerStudent"), summary.VisitsPerStudent},
+		{text("rowVisitsPerStudent"), fmt.Sprintf("%.2f", summary.VisitsPerStudent)},
 	}
 
 	ddcColumns := []reportdoc.Column{
