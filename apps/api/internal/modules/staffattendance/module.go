@@ -11,6 +11,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/staffattendance/repository"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/staffattendance/service"
 	transporthttp "github.com/omanjaya/newsekolah/apps/api/internal/modules/staffattendance/transport/http"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 )
 
 type Module struct {
@@ -29,11 +30,15 @@ type Dependencies struct {
 	Years    service.AcademicYearReader
 	Calendar service.CalendarReader
 	Leave    service.LeaveReader
+	// Letterhead loads a tenant's configured kop laporan for the
+	// recap.export reportdoc exports; nil is fine (those exports just
+	// never show one).
+	Letterhead reportdoc.LetterheadSource
 }
 
 func Register(deps Dependencies) *Module {
 	repo := repository.New(deps.Pool)
-	svc := service.New(deps.Pool, repo, deps.Years, deps.Calendar, deps.Leave)
+	svc := service.New(deps.Pool, repo, deps.Years, deps.Calendar, deps.Leave, deps.Letterhead)
 	handler := transporthttp.New(svc)
 	return &Module{Service: svc, Handler: handler}
 }

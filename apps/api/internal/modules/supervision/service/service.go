@@ -13,6 +13,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/supervision/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 )
 
 // Repository is supervision's data boundary.
@@ -69,19 +70,22 @@ type FlagChecker interface {
 const ModuleKey = "supervision"
 
 type Service struct {
-	pool      *pgxpool.Pool
-	repo      Repository
-	years     AcademicYearReader
-	schedules ScheduleReader
-	flags     FlagChecker
-	clock     clock.Clock
+	pool       *pgxpool.Pool
+	repo       Repository
+	years      AcademicYearReader
+	schedules  ScheduleReader
+	flags      FlagChecker
+	letterhead reportdoc.LetterheadSource
+	clock      clock.Clock
 }
 
-func New(pool *pgxpool.Pool, repo Repository, years AcademicYearReader, schedules ScheduleReader, flags FlagChecker, clk clock.Clock) *Service {
+// New wires a Service. letterhead may be nil (a tenant's kop laporan
+// simply never shows on the teacher report export then).
+func New(pool *pgxpool.Pool, repo Repository, years AcademicYearReader, schedules ScheduleReader, flags FlagChecker, letterhead reportdoc.LetterheadSource, clk clock.Clock) *Service {
 	if clk == nil {
 		clk = clock.Real{}
 	}
-	return &Service{pool: pool, repo: repo, years: years, schedules: schedules, flags: flags, clock: clk}
+	return &Service{pool: pool, repo: repo, years: years, schedules: schedules, flags: flags, letterhead: letterhead, clock: clk}
 }
 
 func (s *Service) withTx(ctx context.Context, tenantID uuid.UUID, fn func(ctx context.Context) error) error {

@@ -160,6 +160,34 @@ export async function downloadStaffAttendanceRecap(
   }
 }
 
+/**
+ * Downloads the whole staff's monthly recap as one XLSX workbook (one
+ * block per employee), the administrative counterpart to
+ * `downloadStaffAttendanceRecap` above.
+ */
+export async function downloadAllStaffAttendanceRecap(month: string): Promise<void> {
+  const token = getAccessToken();
+  const query = new URLSearchParams({ month }).toString();
+  const response = await fetch(`${API_URL}/v1/staff-attendance/recap/export?${query}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  });
+  if (!response.ok) {
+    throw new ApiError({ status: response.status, code: "UNKNOWN", message: "UNKNOWN" });
+  }
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  try {
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `staff-attendance-${month}.xlsx`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
 /** "YYYY-MM-DD" in the tenant's timezone, for "today" queries. */
 export function todayInZone(timeZone?: string): string {
   const parts = new Intl.DateTimeFormat("en-CA", {
