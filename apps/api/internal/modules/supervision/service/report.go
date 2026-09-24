@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -108,8 +109,23 @@ func teacherReportRow(criteria []domain.Criterion, obs domain.Observation) []any
 	return row
 }
 
+// indonesianDayMonthNames is a stand-in for a shared Indonesian date-
+// formatting helper the reportdoc foundation is adding (see
+// apps/api/internal/platform/reportdoc's package comment); swap this for
+// that helper once it lands.
+var indonesianDayMonthNames = [...]string{
+	"Januari", "Februari", "Maret", "April", "Mei", "Juni",
+	"Juli", "Agustus", "September", "Oktober", "November", "Desember",
+}
+
+// indonesianDate renders t as "22 September 2026", the long form every
+// formal Indonesian report/letter uses for a signature date.
+func indonesianDate(t time.Time) string {
+	return fmt.Sprintf("%d %s %d", t.Day(), indonesianDayMonthNames[t.Month()-1], t.Year())
+}
+
 // lastObserverName resolves the name of whoever conducted the most recent
-// observation in the report -- the "Supervisor" signer on the formal PDF
+// observation in the report -- the "Pengawas" signer on the formal PDF
 // report, since a cycle keeps no single supervisor of its own (each
 // observation names its own observer, and different observers may cover
 // the same teacher across a cycle).
@@ -128,11 +144,10 @@ func (s *Service) lastObserverName(ctx context.Context, tenantID uuid.UUID, obse
 
 // ExportTeacherReport renders a teacher's cycle report per opts (format,
 // title override, letterhead visibility, column subset/order). The PDF
-// format reads as a formal supervision report: a letterhead slot (see
-// reportdoc's package comment -- no tenant report-header reader is wired
-// into this module yet, so opts.ShowLetterhead has no visible effect
-// until one is), the observation table, and a two-signer signature block
-// for the supervisor who conducted the observations and the principal.
+// format reads as a formal supervision report: the tenant's kop laporan
+// (when configured), the observation table, and a two-signer signature
+// block for the supervisor who conducted the observations and the
+// principal.
 func (s *Service) ExportTeacherReport(ctx context.Context, tenantID, cycleID, teacherUserID uuid.UUID, opts reportdoc.Options) ([]byte, error) {
 	report, err := s.TeacherReport(ctx, tenantID, cycleID, teacherUserID)
 	if err != nil {
@@ -144,6 +159,16 @@ func (s *Service) ExportTeacherReport(ctx context.Context, tenantID, cycleID, te
 	}
 
 	doc := buildTeacherReportDocument(report, supervisorName, s.clock.Now())
+	if s.letterhead != nil {
+		if lh, _, err := s.letterhead.Letterhead(ctx, tenantID); err == nil {
+			// The report's own two-signer block (supervisor, principal)
+			// is more specific than the tenant's generic default
+			// signature, so only the letterhead (logo/lines) is adopted
+			// here; doc.Signature stays the one buildTeacherReportDocument
+			// set.
+			doc.Letterhead = lh
+		}
+	}
 	return renderReport(doc, opts)
 }
 
@@ -169,9 +194,9 @@ func buildTeacherReportDocument(report TeacherCycleReport, supervisorName string
 		Columns:  teacherReportColumns(criteria),
 		Sections: []reportdoc.Section{{Name: report.TeacherName, Rows: rows}},
 		Signature: &reportdoc.Signature{
-			Date: now.Format("02-01-2006"),
+			Date: indonesianDate(now),
 			Signers: []reportdoc.Signer{
-				{RoleLabel: "Supervisor", Name: supervisorName},
+				{RoleLabel: "Pengawas", Name: supervisorName},
 				{RoleLabel: "Kepala Sekolah"},
 			},
 		},

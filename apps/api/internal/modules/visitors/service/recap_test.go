@@ -1,9 +1,11 @@
 package service
 
 import (
+	"context"
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/visitors/domain"
@@ -18,34 +20,51 @@ func sampleRecap() Recap {
 	}
 }
 
+// stubLetterhead is a minimal reportdoc.LetterheadSource, standing in for
+// the school module's ReportLetterhead in this test.
+type stubLetterhead struct{}
+
+func (stubLetterhead) Letterhead(context.Context, uuid.UUID) (*reportdoc.Letterhead, *reportdoc.Signature, error) {
+	return &reportdoc.Letterhead{Lines: []string{"SMA Test"}}, nil, nil
+}
+
 func TestBuildRecapDocument(t *testing.T) {
 	doc := buildRecapDocument("Rekap Kunjungan Bulanan", sampleRecap())
 
 	require.Equal(t, "Rekap Kunjungan Bulanan", doc.Title)
+	require.Equal(t, "1 September 2026 s.d. 30 September 2026", doc.Scope[0].Value)
 	require.Len(t, doc.Columns, 2)
 	require.Len(t, doc.Sections, 2, "overall figures, then incidents by severity")
 	require.Len(t, doc.Sections[0].Rows, 3)
 	require.Len(t, doc.Sections[1].Rows, 4, "every severity level appears even when its count is zero")
+	require.Equal(t, "Rendah", doc.Sections[1].Rows[0][0], "severity shows its Indonesian label, not the raw code")
 }
 
 func TestExportRecapReport(t *testing.T) {
+	ctx := context.Background()
+	tenantID := uuid.New()
 	recap := sampleRecap()
+	svc := &Service{letterhead: stubLetterhead{}}
 
-	xlsx, err := ExportRecapReport("Rekap Kunjungan Harian", recap, reportdoc.Options{Format: reportdoc.FormatXLSX, ShowLetterhead: true})
+	xlsx, err := svc.ExportRecapReport(ctx, tenantID, "Rekap Kunjungan Harian", recap, reportdoc.Options{Format: reportdoc.FormatXLSX, ShowLetterhead: true})
 	require.NoError(t, err)
 	require.NotEmpty(t, xlsx)
 
-	pdf, err := ExportRecapReport("Rekap Kunjungan Harian", recap, reportdoc.Options{Format: reportdoc.FormatPDF, ShowLetterhead: true})
+	pdf, err := svc.ExportRecapReport(ctx, tenantID, "Rekap Kunjungan Harian", recap, reportdoc.Options{Format: reportdoc.FormatPDF, ShowLetterhead: true})
 	require.NoError(t, err)
 	require.NotEmpty(t, pdf)
 
-	narrowed, err := ExportRecapReport("Rekap Kunjungan Harian", recap, reportdoc.Options{
+	withoutHeader, err := svc.ExportRecapReport(ctx, tenantID, "Rekap Kunjungan Harian", recap, reportdoc.Options{Format: reportdoc.FormatXLSX, ShowLetterhead: false})
+	require.NoError(t, err)
+	require.Greater(t, len(xlsx), len(withoutHeader), "the letterhead line must add real content to the workbook")
+
+	narrowed, err := svc.ExportRecapReport(ctx, tenantID, "Rekap Kunjungan Harian", recap, reportdoc.Options{
 		Format: reportdoc.FormatXLSX, Columns: []reportdoc.ColumnChoice{{Key: "value", Label: "Total"}},
 	})
 	require.NoError(t, err)
 	require.NotEmpty(t, narrowed)
 
-	_, err = ExportRecapReport("Rekap Kunjungan Harian", recap, reportdoc.Options{
+	_, err = svc.ExportRecapReport(ctx, tenantID, "Rekap Kunjungan Harian", recap, reportdoc.Options{
 		Format: reportdoc.FormatXLSX, Columns: []reportdoc.ColumnChoice{{Key: "not_a_real_column"}},
 	})
 	require.ErrorIs(t, err, reportdoc.ErrUnknownColumn)

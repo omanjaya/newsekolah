@@ -174,8 +174,9 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 
 	staffAttendanceModule := staffattendance.Register(staffattendance.Dependencies{
 		Pool: pool, Years: schoolModule.Service,
-		Calendar: wiring.StaffAttendanceCalendar{Academic: academicModule.Service},
-		Leave:    wiring.StaffAttendanceLeave{Permits: permitsModule.Service},
+		Calendar:   wiring.StaffAttendanceCalendar{Academic: academicModule.Service},
+		Leave:      wiring.StaffAttendanceLeave{Permits: permitsModule.Service},
+		Letterhead: wiring.ReportHeaderReports{Svc: schoolModule.Service},
 	})
 
 	// grading's module flag is read through platformModule, which is not
@@ -282,13 +283,15 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	})
 	supervisionModule := supervision.Register(supervision.Dependencies{
 		Pool: pool, Years: schoolModule.Service,
-		Schedules: wiring.SupervisionSchedule{Reader: schedulingModule.ScheduleReader},
-		Flags:     wiring.PlatformFlags{Svc: platformModule.Service},
-		Clock:     clock.Real{},
+		Schedules:  wiring.SupervisionSchedule{Reader: schedulingModule.ScheduleReader},
+		Flags:      wiring.PlatformFlags{Svc: platformModule.Service},
+		Letterhead: wiring.ReportHeaderReports{Svc: schoolModule.Service},
+		Clock:      clock.Real{},
 	})
 	visitorsModule := visitors.Register(visitors.Dependencies{
 		Pool: pool, Years: schoolModule.Service, Docs: wiring.VisitorsDocuments{Permits: permitsModule.Service},
-		Flags: wiring.VisitorsFlags{Platform: platformModule.Service}, Audit: wiring.VisitorsAudit{}, Clock: clock.Real{},
+		Flags: wiring.VisitorsFlags{Platform: platformModule.Service}, Audit: wiring.VisitorsAudit{},
+		Letterhead: wiring.ReportHeaderReports{Svc: schoolModule.Service}, Clock: clock.Real{},
 	})
 	billingModule := billing.Register(billing.Dependencies{
 		Pool: pool, Years: schoolModule.Service, Docs: wiring.BillingDocuments{Permits: permitsModule.Service},
@@ -300,7 +303,8 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		Flags: wiring.LibraryFlags{Platform: platformModule.Service}, Permissions: wiring.LibraryPermissions{Identity: identityModule.Service},
 		Events: wiring.LibraryEvents{Bus: eventBus}, ScanTokens: wiring.LibraryScanTokens{Permits: permitsModule.Service},
 		Storage: sharedStorage, Bucket: cfg.S3Bucket,
-		Clock: clock.Real{},
+		Letterhead: wiring.ReportHeaderReports{Svc: schoolModule.Service},
+		Clock:      clock.Real{},
 	})
 
 	var (

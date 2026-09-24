@@ -18,6 +18,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/documents"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 )
 
 // TitleFilter narrows ListTitles: an empty Search skips text matching, an
@@ -435,6 +436,7 @@ type Service struct {
 	storage       Storage
 	storageBucket string
 	isbnCache     *isbnCache
+	letterhead    reportdoc.LetterheadSource
 }
 
 // Deps bundles Service's optional collaborators beyond members and
@@ -448,6 +450,10 @@ type Deps struct {
 	ScanTokens    ScanTokens
 	Storage       Storage // nil: cover download is disabled
 	StorageBucket string
+	// Letterhead loads a tenant's configured kop laporan for the report
+	// exports built on reportdoc; nil is fine (those exports just never
+	// show one).
+	Letterhead reportdoc.LetterheadSource
 }
 
 func New(pool *pgxpool.Pool, repo Repository, members MemberDirectory, settings SettingsReader, clk clock.Clock, deps ...Deps) *Service {
@@ -462,6 +468,7 @@ func New(pool *pgxpool.Pool, repo Repository, members MemberDirectory, settings 
 		d := deps[0]
 		s.flags, s.permissions, s.events, s.scanTokens = d.Flags, d.Permissions, d.Events, d.ScanTokens
 		s.storage, s.storageBucket = d.Storage, d.StorageBucket
+		s.letterhead = d.Letterhead
 	}
 	return s
 }

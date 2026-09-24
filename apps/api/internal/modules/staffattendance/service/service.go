@@ -10,6 +10,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/staffattendance/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 )
 
 // FeatureFlagModule is the feature_flags.module value this package checks
@@ -68,16 +69,20 @@ type LeaveReader interface {
 }
 
 type Service struct {
-	pool     *pgxpool.Pool
-	repo     Repository
-	years    AcademicYearReader
-	calendar CalendarReader
-	leave    LeaveReader
-	clock    clock.Clock
+	pool       *pgxpool.Pool
+	repo       Repository
+	years      AcademicYearReader
+	calendar   CalendarReader
+	leave      LeaveReader
+	letterhead reportdoc.LetterheadSource
+	clock      clock.Clock
 }
 
-func New(pool *pgxpool.Pool, repo Repository, years AcademicYearReader, calendar CalendarReader, leave LeaveReader) *Service {
-	return &Service{pool: pool, repo: repo, years: years, calendar: calendar, leave: leave, clock: clock.Real{}}
+// New wires a Service. letterhead may be nil (a tenant's kop laporan
+// simply never shows on this module's exports then) -- most tests have
+// no reason to fake it.
+func New(pool *pgxpool.Pool, repo Repository, years AcademicYearReader, calendar CalendarReader, leave LeaveReader, letterhead reportdoc.LetterheadSource) *Service {
+	return &Service{pool: pool, repo: repo, years: years, calendar: calendar, leave: leave, letterhead: letterhead, clock: clock.Real{}}
 }
 
 func (s *Service) withTx(ctx context.Context, tenantID uuid.UUID, fn func(ctx context.Context) error) error {

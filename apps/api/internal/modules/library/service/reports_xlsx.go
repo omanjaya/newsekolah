@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/xuri/excelize/v2"
 
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/library/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 )
 
@@ -28,6 +29,84 @@ func formatDatePtr(t *time.Time) string {
 	return formatDate(*t)
 }
 
+// indonesianMonthNames is a stand-in for a shared Indonesian date-
+// formatting helper the reportdoc foundation is adding (see
+// apps/api/internal/platform/reportdoc's package comment); swap this for
+// that helper once it lands instead of keeping a local copy in every
+// module report file.
+var indonesianMonthNames = [...]string{
+	"Januari", "Februari", "Maret", "April", "Mei", "Juni",
+	"Juli", "Agustus", "September", "Oktober", "November", "Desember",
+}
+
+// indonesianDate renders t as "22 September 2026", the long form a
+// report's scope line uses for a period boundary.
+func indonesianDate(t time.Time) string {
+	return fmt.Sprintf("%d %s %d", t.Day(), indonesianMonthNames[t.Month()-1], t.Year())
+}
+
+// periodScope builds the "Periode" scope line every from/to-bounded
+// report shares, falling back to "Semua data" when the caller gave no
+// bound (these endpoints default to the last 30 days server-side, but
+// AccessionRegister and PopularReport allow an unbounded query too).
+func periodScope(from, to *time.Time) reportdoc.ScopeLine {
+	if from == nil && to == nil {
+		return reportdoc.ScopeLine{Label: "Periode", Value: "Semua data"}
+	}
+	value := "s.d. "
+	if from != nil {
+		value = indonesianDate(*from) + " s.d. "
+	}
+	if to != nil {
+		value += indonesianDate(*to)
+	} else {
+		value += "sekarang"
+	}
+	return reportdoc.ScopeLine{Label: "Periode", Value: value}
+}
+
+// loanStatusLabel maps a LoanStatus onto the Indonesian label the web
+// app's own "app.library" catalogue uses.
+func loanStatusLabel(status domain.LoanStatus) string {
+	switch status {
+	case domain.LoanActive:
+		return "Dipinjam"
+	case domain.LoanReturned:
+		return "Dikembalikan"
+	case domain.LoanLost:
+		return "Hilang"
+	default:
+		return string(status)
+	}
+}
+
+// copyStatusLabel maps a CopyStatus onto the Indonesian label the web
+// app's own "app.library" catalogue uses.
+func copyStatusLabel(status domain.CopyStatus) string {
+	switch status {
+	case domain.CopyAvailable:
+		return "Tersedia"
+	case domain.CopyOnLoan:
+		return "Dipinjam"
+	case domain.CopyReserved:
+		return "Dipesan"
+	case domain.CopyDamaged:
+		return "Rusak"
+	case domain.CopyLost:
+		return "Hilang"
+	case domain.CopyInRepair:
+		return "Diperbaiki"
+	case domain.CopyProcessing:
+		return "Diproses"
+	case domain.CopyDonated:
+		return "Dihibahkan"
+	case domain.CopyReserveStack:
+		return "Rak cadangan"
+	default:
+		return string(status)
+	}
+}
+
 // loansReportColumns is the loans report's stable column set.
 func loansReportColumns() []reportdoc.Column {
 	return []reportdoc.Column{
@@ -42,8 +121,7 @@ func loansReportColumns() []reportdoc.Column {
 }
 
 // ExportLoansReport renders LoansInPeriod per opts (format, title override,
-// letterhead visibility, column subset/order). Letterhead is always nil
-// today: no tenant report-header reader is wired into this module yet.
+// letterhead visibility, column subset/order).
 func (s *Service) ExportLoansReport(ctx context.Context, tenantID uuid.UUID, from, to *time.Time, opts reportdoc.Options) ([]byte, error) {
 	rows, err := s.LoansInPeriod(ctx, tenantID, from, to)
 	if err != nil {
@@ -55,14 +133,15 @@ func (s *Service) ExportLoansReport(ctx context.Context, tenantID uuid.UUID, fro
 		if r.Loan.ReturnedAt != nil {
 			returned = *r.Loan.ReturnedAt
 		}
-		tableRows[i] = []any{r.Title, r.MemberName, r.Loan.BorrowedAt, r.Loan.DueOn, returned, string(r.Loan.Status), r.Loan.FineAmount}
+		tableRows[i] = []any{r.Title, r.MemberName, r.Loan.BorrowedAt, r.Loan.DueOn, returned, loanStatusLabel(r.Loan.Status), r.Loan.FineAmount}
 	}
 	doc := reportdoc.Document{
 		Title:    "Laporan Peminjaman",
+		Scope:    []reportdoc.ScopeLine{periodScope(from, to)},
 		Columns:  loansReportColumns(),
 		Sections: []reportdoc.Section{{Name: "Peminjaman", Rows: tableRows}},
 	}
-	return renderLibraryReport(doc, opts)
+	return s.renderLibraryReport(ctx, tenantID, doc, opts)
 }
 
 // overdueMembersReportColumns is the overdue-members report's stable
@@ -76,9 +155,7 @@ func overdueMembersReportColumns() []reportdoc.Column {
 }
 
 // ExportOverdueMembersReport renders OverdueMembers per opts (format, title
-// override, letterhead visibility, column subset/order). Letterhead is
-// always nil today: no tenant report-header reader is wired into this
-// module yet.
+// override, letterhead visibility, column subset/order).
 func (s *Service) ExportOverdueMembersReport(ctx context.Context, tenantID uuid.UUID, opts reportdoc.Options) ([]byte, error) {
 	rows, err := s.OverdueMembers(ctx, tenantID)
 	if err != nil {
@@ -99,7 +176,7 @@ func (s *Service) ExportOverdueMembersReport(ctx context.Context, tenantID uuid.
 		Columns:  overdueMembersReportColumns(),
 		Sections: []reportdoc.Section{{Name: "Terlambat", Rows: tableRows}},
 	}
-	return renderLibraryReport(doc, opts)
+	return s.renderLibraryReport(ctx, tenantID, doc, opts)
 }
 
 // mostBorrowedReportColumns is the most-borrowed report's stable column
@@ -120,8 +197,7 @@ func mostBorrowedReportColumns() []reportdoc.Column {
 // ExportMostBorrowedReport renders PopularReport per opts (format, title
 // override, letterhead visibility, column subset/order) as a two-section
 // report: most borrowed titles ("Keterangan" is the author), then top
-// borrowers ("Keterangan" is the class). Letterhead is always nil today:
-// no tenant report-header reader is wired into this module yet.
+// borrowers ("Keterangan" is the class).
 func (s *Service) ExportMostBorrowedReport(ctx context.Context, tenantID uuid.UUID, from, to *time.Time, limit int, opts reportdoc.Options) ([]byte, error) {
 	report, err := s.PopularReport(ctx, tenantID, from, to, limit)
 	if err != nil {
@@ -137,13 +213,14 @@ func (s *Service) ExportMostBorrowedReport(ctx context.Context, tenantID uuid.UU
 	}
 	doc := reportdoc.Document{
 		Title:   "Laporan Judul dan Peminjam Terpopuler",
+		Scope:   []reportdoc.ScopeLine{periodScope(from, to)},
 		Columns: mostBorrowedReportColumns(),
 		Sections: []reportdoc.Section{
 			{Name: "Judul Terpopuler", Rows: titleRows},
 			{Name: "Peminjam Teraktif", Rows: borrowerRows},
 		},
 	}
-	return renderLibraryReport(doc, opts)
+	return s.renderLibraryReport(ctx, tenantID, doc, opts)
 }
 
 // CatalogueSummaryXLSX is CatalogueSummary as a single-sheet key/value
@@ -212,8 +289,7 @@ func labelCountColumns(labelHeader string) []reportdoc.Column {
 
 // ExportVisitsReport renders VisitsReport per opts (format, title
 // override, letterhead visibility, column subset/order) as a two-section
-// report: visits per day, then per class. Letterhead is always nil today:
-// no tenant report-header reader is wired into this module yet.
+// report: visits per day, then per class.
 func (s *Service) ExportVisitsReport(ctx context.Context, tenantID uuid.UUID, from, to *time.Time, opts reportdoc.Options) ([]byte, error) {
 	report, err := s.VisitsReport(ctx, tenantID, from, to)
 	if err != nil {
@@ -221,7 +297,7 @@ func (s *Service) ExportVisitsReport(ctx context.Context, tenantID uuid.UUID, fr
 	}
 	dayRows := make([][]any, len(report.PerDay))
 	for i, d := range report.PerDay {
-		dayRows[i] = []any{formatDate(d.Day), d.Count}
+		dayRows[i] = []any{indonesianDate(d.Day), d.Count}
 	}
 	classRows := make([][]any, len(report.PerClass))
 	for i, c := range report.PerClass {
@@ -229,19 +305,19 @@ func (s *Service) ExportVisitsReport(ctx context.Context, tenantID uuid.UUID, fr
 	}
 	doc := reportdoc.Document{
 		Title:   "Laporan Kunjungan Perpustakaan",
+		Scope:   []reportdoc.ScopeLine{periodScope(from, to)},
 		Columns: labelCountColumns("Keterangan"),
 		Sections: []reportdoc.Section{
 			{Name: "Per Hari", Rows: dayRows},
 			{Name: "Per Kelas", Rows: classRows},
 		},
 	}
-	return renderLibraryReport(doc, opts)
+	return s.renderLibraryReport(ctx, tenantID, doc, opts)
 }
 
 // ExportMembersReport renders MembersReport per opts (format, title
 // override, letterhead visibility, column subset/order) as a two-section
-// report: members per type, then per class. Letterhead is always nil
-// today: no tenant report-header reader is wired into this module yet.
+// report: members per type, then per class.
 func (s *Service) ExportMembersReport(ctx context.Context, tenantID uuid.UUID, opts reportdoc.Options) ([]byte, error) {
 	report, err := s.MembersReport(ctx, tenantID)
 	if err != nil {
@@ -263,7 +339,7 @@ func (s *Service) ExportMembersReport(ctx context.Context, tenantID uuid.UUID, o
 			{Name: "Per Kelas", Rows: classRows},
 		},
 	}
-	return renderLibraryReport(doc, opts)
+	return s.renderLibraryReport(ctx, tenantID, doc, opts)
 }
 
 // accessionRegisterColumns is the accession register (Buku Induk)
@@ -281,8 +357,7 @@ func accessionRegisterColumns() []reportdoc.Column {
 
 // ExportAccessionRegisterReport renders AccessionRegister (Buku Induk)
 // per opts (format, title override, letterhead visibility, column
-// subset/order). Letterhead is always nil today: no tenant report-header
-// reader is wired into this module yet.
+// subset/order).
 func (s *Service) ExportAccessionRegisterReport(ctx context.Context, tenantID uuid.UUID, from, to *time.Time, opts reportdoc.Options) ([]byte, error) {
 	copies, err := s.AccessionRegister(ctx, tenantID, from, to)
 	if err != nil {
@@ -294,20 +369,30 @@ func (s *Service) ExportAccessionRegisterReport(ctx context.Context, tenantID uu
 		if c.AcquiredOn != nil {
 			acquired = *c.AcquiredOn
 		}
-		tableRows[i] = []any{c.AccessionNumber, c.Barcode, c.CallNumber, string(c.Status), c.Price, acquired}
+		tableRows[i] = []any{c.AccessionNumber, c.Barcode, c.CallNumber, copyStatusLabel(c.Status), c.Price, acquired}
 	}
 	doc := reportdoc.Document{
 		Title:    "Buku Induk",
+		Scope:    []reportdoc.ScopeLine{periodScope(from, to)},
 		Columns:  accessionRegisterColumns(),
 		Sections: []reportdoc.Section{{Name: "Buku Induk", Rows: tableRows}},
 	}
-	return renderLibraryReport(doc, opts)
+	return s.renderLibraryReport(ctx, tenantID, doc, opts)
 }
 
-// renderLibraryReport applies opts to doc and renders it in the format
-// opts requests, defaulting to XLSX when the caller (or an old client
-// that predates this query-param contract) did not name one.
-func renderLibraryReport(doc reportdoc.Document, opts reportdoc.Options) ([]byte, error) {
+// renderLibraryReport loads tenantID's configured kop laporan (nil
+// letterhead source or a tenant that has not configured one both degrade
+// to "no letterhead" rather than an error), applies opts to doc, and
+// renders it in the format opts requests, defaulting to XLSX when the
+// caller (or an old client that predates this query-param contract) did
+// not name one.
+func (s *Service) renderLibraryReport(ctx context.Context, tenantID uuid.UUID, doc reportdoc.Document, opts reportdoc.Options) ([]byte, error) {
+	if s.letterhead != nil {
+		if lh, sig, err := s.letterhead.Letterhead(ctx, tenantID); err == nil {
+			doc.Letterhead = lh
+			doc.Signature = sig
+		}
+	}
 	narrowed, err := reportdoc.Apply(doc, opts)
 	if err != nil {
 		return nil, err

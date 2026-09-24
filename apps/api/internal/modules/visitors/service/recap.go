@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -74,6 +75,39 @@ func recapColumns() []reportdoc.Column {
 // its incident breakdown, low to critical.
 var severityOrder = []domain.Severity{domain.SeverityLow, domain.SeverityMedium, domain.SeverityHigh, domain.SeverityCritical}
 
+// severityLabel maps a Severity onto the Indonesian label the web app's
+// own "app.visitors" catalogue uses, so the export and the screen never
+// disagree about what a severity is called.
+func severityLabel(sev domain.Severity) string {
+	switch sev {
+	case domain.SeverityLow:
+		return "Rendah"
+	case domain.SeverityMedium:
+		return "Sedang"
+	case domain.SeverityHigh:
+		return "Tinggi"
+	case domain.SeverityCritical:
+		return "Kritis"
+	default:
+		return string(sev)
+	}
+}
+
+// indonesianMonthNames is a stand-in for a shared Indonesian date-
+// formatting helper the reportdoc foundation is adding (see
+// apps/api/internal/platform/reportdoc's package comment); swap this for
+// that helper once it lands.
+var indonesianMonthNames = [...]string{
+	"Januari", "Februari", "Maret", "April", "Mei", "Juni",
+	"Juli", "Agustus", "September", "Oktober", "November", "Desember",
+}
+
+// indonesianDate renders t as "22 September 2026", the long form a
+// report's scope line uses for a period boundary.
+func indonesianDate(t time.Time) string {
+	return fmt.Sprintf("%d %s %d", t.Day(), indonesianMonthNames[t.Month()-1], t.Year())
+}
+
 // buildRecapDocument assembles the reportdoc.Document title renders as a
 // two-section report: overall figures, then incidents by severity.
 func buildRecapDocument(title string, r Recap) reportdoc.Document {
@@ -84,12 +118,12 @@ func buildRecapDocument(title string, r Recap) reportdoc.Document {
 	}
 	incidentRows := make([][]any, len(severityOrder))
 	for i, sev := range severityOrder {
-		incidentRows[i] = []any{string(sev), r.Incidents[sev]}
+		incidentRows[i] = []any{severityLabel(sev), r.Incidents[sev]}
 	}
 	return reportdoc.Document{
 		Title: title,
 		Scope: []reportdoc.ScopeLine{
-			{Label: "Periode", Value: r.From.Format("2006-01-02") + " s.d. " + r.To.AddDate(0, 0, -1).Format("2006-01-02")},
+			{Label: "Periode", Value: indonesianDate(r.From) + " s.d. " + indonesianDate(r.To.AddDate(0, 0, -1))},
 		},
 		Columns: recapColumns(),
 		Sections: []reportdoc.Section{
@@ -100,18 +134,21 @@ func buildRecapDocument(title string, r Recap) reportdoc.Document {
 }
 
 // ExportRecapReport renders a Recap per opts (format, title override,
-// letterhead visibility, column subset/order). Letterhead is always nil
-// today: no tenant report-header reader is wired into this module yet, so
-// opts.ShowLetterhead has no visible effect until one is (see
-// apps/api/internal/platform/reportdoc's package comment for that
-// follow-up).
-func ExportRecapReport(title string, r Recap, opts reportdoc.Options) ([]byte, error) {
-	doc, err := reportdoc.Apply(buildRecapDocument(title, r), opts)
+// letterhead visibility, column subset/order).
+func (s *Service) ExportRecapReport(ctx context.Context, tenantID uuid.UUID, title string, r Recap, opts reportdoc.Options) ([]byte, error) {
+	doc := buildRecapDocument(title, r)
+	if s.letterhead != nil {
+		if lh, sig, err := s.letterhead.Letterhead(ctx, tenantID); err == nil {
+			doc.Letterhead = lh
+			doc.Signature = sig
+		}
+	}
+	narrowed, err := reportdoc.Apply(doc, opts)
 	if err != nil {
 		return nil, err
 	}
 	if opts.Format == reportdoc.FormatPDF {
-		return reportdoc.RenderPDF(doc)
+		return reportdoc.RenderPDF(narrowed)
 	}
-	return reportdoc.RenderXLSX(doc)
+	return reportdoc.RenderXLSX(narrowed)
 }

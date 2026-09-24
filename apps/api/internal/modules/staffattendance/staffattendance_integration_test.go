@@ -36,6 +36,16 @@ func (stubLeave) OnApprovedLeave(context.Context, uuid.UUID, uuid.UUID, time.Tim
 	return false, nil
 }
 
+// stubLetterhead is a minimal reportdoc.LetterheadSource, standing in for
+// the school module's ReportLetterhead in this test -- just enough to
+// confirm withLetterhead actually wires a tenant's kop laporan into an
+// export rather than checking school's own storage/branding logic again.
+type stubLetterhead struct{}
+
+func (stubLetterhead) Letterhead(context.Context, uuid.UUID) (*reportdoc.Letterhead, *reportdoc.Signature, error) {
+	return &reportdoc.Letterhead{Lines: []string{"SMA Test"}}, nil, nil
+}
+
 func TestGetAllEmployeesMonthlyRecap(t *testing.T) {
 	pg := dbtest.Start(t)
 	ctx := context.Background()
@@ -47,7 +57,9 @@ func TestGetAllEmployeesMonthlyRecap(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	mod := Register(Dependencies{Pool: pg.AppPool, Years: stubYears{}, Calendar: stubCalendar{}, Leave: stubLeave{}})
+	mod := Register(Dependencies{
+		Pool: pg.AppPool, Years: stubYears{}, Calendar: stubCalendar{}, Leave: stubLeave{}, Letterhead: stubLetterhead{},
+	})
 
 	// newEmployee seeds one user via the admin pool (bypassing RLS, the way
 	// a one-off admin script would) and gives them a full 7-day working
@@ -120,4 +132,13 @@ func TestGetAllEmployeesMonthlyRecap(t *testing.T) {
 		Format: reportdoc.FormatXLSX, Columns: []reportdoc.ColumnChoice{{Key: "not_a_real_column"}},
 	})
 	require.ErrorIs(t, err, reportdoc.ErrUnknownColumn)
+
+	// The tenant's kop laporan (stubLetterhead above) is wired in and
+	// actually reaches the rendered file: turning it off produces a
+	// visibly smaller workbook.
+	withHeader, err := mod.Service.ExportMonthlyRecapReport(ctx, tenant.ID, employeeA, "2025-02", reportdoc.Options{Format: reportdoc.FormatXLSX, ShowLetterhead: true})
+	require.NoError(t, err)
+	withoutHeader, err := mod.Service.ExportMonthlyRecapReport(ctx, tenant.ID, employeeA, "2025-02", reportdoc.Options{Format: reportdoc.FormatXLSX, ShowLetterhead: false})
+	require.NoError(t, err)
+	require.Greater(t, len(withHeader), len(withoutHeader), "the letterhead line must add real content to the workbook")
 }

@@ -224,7 +224,7 @@ func (h *VisitorsHandler) ExportDailyVisitorRecap(ctx context.Context, request a
 		return nil, mapError(err)
 	}
 	opts := recapOptions(formatPtr(request.Params.Format), request.Params.Title, request.Params.Letterhead, request.Params.Columns)
-	body, err := service.ExportRecapReport("Rekap Kunjungan Harian", recap, opts)
+	body, err := h.service.ExportRecapReport(ctx, tenantID(ctx), "Rekap Kunjungan Harian", recap, opts)
 	if err != nil {
 		return nil, mapReportError(err)
 	}
@@ -252,7 +252,7 @@ func (h *VisitorsHandler) ExportMonthlyVisitorRecap(ctx context.Context, request
 		return nil, mapError(err)
 	}
 	opts := recapOptions(formatPtr(request.Params.Format), request.Params.Title, request.Params.Letterhead, request.Params.Columns)
-	body, err := service.ExportRecapReport("Rekap Kunjungan Bulanan", recap, opts)
+	body, err := h.service.ExportRecapReport(ctx, tenantID(ctx), "Rekap Kunjungan Bulanan", recap, opts)
 	if err != nil {
 		return nil, mapReportError(err)
 	}
