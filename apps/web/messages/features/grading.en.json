@@ -39,23 +39,42 @@
     "exportScopeClass": "Class",
     "exportScopeGradeLevel": "Grade level",
     "exportScopeClassPlaceholder": "Choose a class",
-    "exportScopeGradeLevelPlaceholder": "Choose a grade level"
+    "exportScopeGradeLevelPlaceholder": "Choose a grade level",
+    "publishedBadge": "Published",
+    "draftBadge": "Draft"
   },
   "table": {
     "studentColumn": "Student",
     "editComponent": "Edit component {code}",
     "weightLabel": "Weight {weight}",
     "saveColumn": "Save",
+    "saveAll": "Save all",
+    "saveHint": "All scores saved.",
     "averageColumn": "Average",
     "reportScoreColumn": "Report score",
+    "reportScorePending": "Updates once saved",
     "starsColumn": "Stars",
     "scoreFor": "{code} score for {name}",
     "starsFor": "Set stars for {name}",
+    "rowChanged": "This row changed",
     "noComponents": "No assessment components for this subject yet.",
     "noMatch": "No student matches your search.",
-    "scoresSaved": "Column scores saved.",
+    "scoresSaved": "Scores saved at {time}.",
     "unsavedChanges": "{count, plural, one {# unsaved change} other {# unsaved changes}}",
-    "discardChanges": "Your unsaved score changes will be lost. Continue?"
+    "discardChanges": "Your unsaved score changes will be lost. Continue?",
+    "retry": "Retry",
+    "missingCount": "{count, plural, one {# missing} other {# missing}}",
+    "validationError": "Fix scores outside the {min}-{max} range before saving.",
+    "draftFoundTitle": "There is an unsaved score draft",
+    "draftFoundBody": "Last saved at {time}, from this device.",
+    "draftRestore": "Restore draft",
+    "draftDismiss": "Dismiss",
+    "entryMode": {
+      "label": "Score entry mode",
+      "component": "By component",
+      "student": "By student",
+      "componentPicker": "Choose an assessment component"
+    }
   },
   "componentDialog": {
     "editTitle": "Edit component",

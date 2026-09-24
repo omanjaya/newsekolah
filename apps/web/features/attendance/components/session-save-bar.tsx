@@ -1,14 +1,13 @@
 "use client";
 
-import { Button, Input } from "@newsekolah/ui";
+import { Input, StickySaveBar } from "@newsekolah/ui";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 /**
  * The sticky bottom action bar: change count, the reason field when a
- * correction is required, and save/retry. Sits above the mobile tab bar
- * (`--shell-mobile-tab-offset`) and the desktop sidebar
- * (`--shell-sidebar-width`), matching the shell's own fixed elements.
+ * correction is required, and save/retry. Built on `packages/ui`'s
+ * `StickySaveBar` (also used by the gradebook's own save bar).
  */
 export function SessionSaveBar({
   isCorrection,
@@ -33,9 +32,9 @@ export function SessionSaveBar({
   const tEditor = useTranslations("app.attendanceEditor");
 
   return (
-    <div className="fixed inset-x-0 bottom-[var(--shell-mobile-tab-offset)] z-(--z-sticky) border-t border-border bg-surface px-4 py-3 md:bottom-0 md:left-[var(--shell-sidebar-width)]">
-      <div className="mx-auto flex max-w-5xl flex-col gap-2 md:flex-row md:items-center md:justify-between">
-        {isCorrection ? (
+    <StickySaveBar
+      leadingSlot={
+        isCorrection ? (
           <Input
             value={reason}
             onChange={(e) => {
@@ -49,21 +48,21 @@ export function SessionSaveBar({
           <span className="text-[13px] text-fg-muted">
             {isDirty ? tEditor("unsavedChanges", { count: pendingChanges }) : t("saveHint")}
           </span>
-        )}
-        <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
-          {formError && (
-            <span role="alert" className="flex items-center gap-2 text-[13px] text-status-absent">
-              {formError}
-              <button type="button" className="font-medium underline" onClick={onSave}>
-                {t("retry")}
-              </button>
-            </span>
-          )}
-          <Button onClick={onSave} loading={saving} className="w-full md:w-auto">
-            {isCorrection ? t("saveCorrection") : t("save")}
-          </Button>
-        </div>
-      </div>
-    </div>
+        )
+      }
+      trailingSlot={
+        formError && (
+          <span role="alert" className="flex items-center gap-2 text-[13px] text-status-absent">
+            {formError}
+            <button type="button" className="font-medium underline" onClick={onSave}>
+              {t("retry")}
+            </button>
+          </span>
+        )
+      }
+      saveLabel={isCorrection ? t("saveCorrection") : t("save")}
+      saving={saving}
+      onSave={onSave}
+    />
   );
 }
