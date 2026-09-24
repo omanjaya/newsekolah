@@ -26,8 +26,18 @@ services:
   # quay.io mirrors of the MinIO images: Docker Hub rate-limits anonymous
   # pulls, which a shared VPS running several projects' compose stacks can
   # hit during `docker compose pull`/`build`. Functionally identical images.
+  #
+  # Also published on loopback: presigned URLs are signed for
+  # S3_PUBLIC_ENDPOINT (infra/README.md "Object storage through the shared
+  # Caddy"), which the system Caddy on this same host reverse-proxies to
+  # this port -- MinIO must be reachable from that Caddy process, which the
+  # base file's `expose`-only (no published port) does not allow. Port
+  # 9011 is arbitrary; pick any free loopback port and match it in both the
+  # system Caddy vhost and this line.
   minio:
     image: quay.io/minio/minio:latest
+    ports:
+      - "127.0.0.1:9011:9000"
 
   minio-init:
     image: quay.io/minio/mc:latest

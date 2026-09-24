@@ -5,6 +5,7 @@ package config
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -59,6 +60,19 @@ type Config struct {
 	S3AccessKey string
 	S3SecretKey string
 	S3UseSSL    bool
+	// S3PublicEndpoint, when set, is the absolute URL (scheme + host, e.g.
+	// "https://sion.nouma.id") that presigned URLs handed to browsers are
+	// signed against instead of S3Endpoint. Needed whenever S3Endpoint is
+	// not itself reachable from the browser -- e.g. a Docker-internal host
+	// such as "minio:9000" behind a shared system Caddy that never
+	// publishes MinIO's port (infra/README.md "Shared system Caddy
+	// (VPS)"). Server-side object operations always keep using S3Endpoint.
+	// Optional: empty keeps today's single-endpoint behaviour exactly.
+	S3PublicEndpoint string
+	// S3Region avoids an implicit GetBucketLocation call when presigning
+	// (platform/storage.DefaultRegion documents why). Optional: defaults
+	// to "us-east-1", also MinIO's own default bucket region.
+	S3Region string
 
 	SMTPURL string
 
@@ -136,11 +150,13 @@ func Load() (Config, error) {
 		DocumentSigningKey: req("DOCUMENT_SIGNING_KEY"),
 		DataEncryptionKey:  lookup("DATA_ENCRYPTION_KEY"),
 
-		S3Endpoint:  lookup("S3_ENDPOINT"),
-		S3Bucket:    lookup("S3_BUCKET"),
-		S3AccessKey: lookup("S3_ACCESS_KEY"),
-		S3SecretKey: lookup("S3_SECRET_KEY"),
-		S3UseSSL:    lookup("S3_USE_SSL") == "true",
+		S3Endpoint:       lookup("S3_ENDPOINT"),
+		S3Bucket:         lookup("S3_BUCKET"),
+		S3AccessKey:      lookup("S3_ACCESS_KEY"),
+		S3SecretKey:      lookup("S3_SECRET_KEY"),
+		S3UseSSL:         lookup("S3_USE_SSL") == "true",
+		S3PublicEndpoint: lookup("S3_PUBLIC_ENDPOINT"),
+		S3Region:         orDefault(lookup("S3_REGION"), "us-east-1"),
 
 		SMTPURL: lookup("SMTP_URL"),
 
@@ -173,6 +189,12 @@ func Load() (Config, error) {
 
 	if c.DocumentSigningKey != "" && len(c.DocumentSigningKey) < 32 {
 		errs = append(errs, "DOCUMENT_SIGNING_KEY (must be at least 32 characters)")
+	}
+
+	if c.S3PublicEndpoint != "" {
+		if u, err := url.Parse(c.S3PublicEndpoint); err != nil || u.Scheme == "" || u.Host == "" {
+			errs = append(errs, "S3_PUBLIC_ENDPOINT (must be an absolute URL, e.g. https://sekolah-anda.sch.id)")
+		}
 	}
 
 	origins := lookup("APP_ORIGINS")
