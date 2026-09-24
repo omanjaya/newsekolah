@@ -233,7 +233,7 @@ paths:
       tags: [attendance]
       operationId: exportDailyAttendanceReport
       x-permission: view_reports
-      summary: The daily report as an XLSX file, for one class or every class of a grade level
+      summary: The daily report as an XLSX or PDF file, for one class or every class of a grade level
       parameters:
         - name: date
           in: query
@@ -249,11 +249,17 @@ paths:
             Every class of the tenant's active academic year under this grade level, one sheet per class. Exactly
             one of class_id or grade_level_id is required.
           schema: { type: string, format: uuid }
+        - $ref: "#/components/parameters/ReportFormatParam"
+        - $ref: "#/components/parameters/ReportTitleParam"
+        - $ref: "#/components/parameters/ReportLetterheadParam"
+        - $ref: "#/components/parameters/ReportColumnsParam"
       responses:
         "200":
-          description: XLSX file
+          description: Report file
           content:
             application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: { type: string, format: binary }
+            application/pdf:
               schema: { type: string, format: binary }
         "400": { $ref: "#/components/responses/BadRequest" }
   /v1/attendance/reports/monthly:
@@ -294,8 +300,8 @@ paths:
       operationId: exportMonthlyAttendanceReport
       x-permission: view_reports
       summary:
-        The monthly recap as an XLSX file, for one class or every class of a grade level -- one row per student
-        (NIS, name, one column per attendance status, total, percentage present), one sheet per class.
+        The monthly recap as an XLSX or PDF file, for one class or every class of a grade level -- one row per
+        student (NIS, name, one column per attendance status, total, percentage present), one section per class.
       parameters:
         - name: month
           in: query
@@ -312,11 +318,17 @@ paths:
             Every class of the tenant's active academic year under this grade level, one sheet per class. Exactly
             one of class_id or grade_level_id is required.
           schema: { type: string, format: uuid }
+        - $ref: "#/components/parameters/ReportFormatParam"
+        - $ref: "#/components/parameters/ReportTitleParam"
+        - $ref: "#/components/parameters/ReportLetterheadParam"
+        - $ref: "#/components/parameters/ReportColumnsParam"
       responses:
         "200":
-          description: XLSX file
+          description: Report file
           content:
             application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: { type: string, format: binary }
+            application/pdf:
               schema: { type: string, format: binary }
         "400": { $ref: "#/components/responses/BadRequest" }
   /v1/monitor/snapshot:

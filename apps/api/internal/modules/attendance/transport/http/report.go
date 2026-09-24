@@ -6,6 +6,7 @@ import (
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/api"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 )
 
 func (h *AttendanceHandler) GetDailyAttendanceReport(ctx context.Context, request api.GetDailyAttendanceReportRequestObject) (api.GetDailyAttendanceReportResponseObject, error) {
@@ -36,27 +37,39 @@ func (h *AttendanceHandler) GetOwnDailyAttendanceReport(ctx context.Context, req
 func (h *AttendanceHandler) ExportDailyAttendanceReport(ctx context.Context, request api.ExportDailyAttendanceReportRequestObject) (api.ExportDailyAttendanceReportResponseObject, error) {
 	tenantID := tenantIDFromContext(ctx)
 
-	xlsx, err := h.service.ExportDailyReportXLSXScoped(ctx, tenantID, request.Params.ClassId, request.Params.GradeLevelId, request.Params.Date.Time)
+	opts := reportdocOptions((*string)(request.Params.Format), request.Params.Title, request.Params.Letterhead, request.Params.Columns)
+	file, err := h.service.ExportDailyReport(ctx, tenantID, request.Params.ClassId, request.Params.GradeLevelId, request.Params.Date.Time, opts)
 	if err != nil {
 		return nil, mapAttendanceError(err)
 	}
+	if opts.Format == reportdoc.FormatPDF {
+		return api.ExportDailyAttendanceReport200ApplicationpdfResponse{
+			Body: bytes.NewReader(file), ContentLength: int64(len(file)),
+		}, nil
+	}
 	return api.ExportDailyAttendanceReport200ApplicationvndOpenxmlformatsOfficedocumentSpreadsheetmlSheetResponse{
-		Body: bytes.NewReader(xlsx), ContentLength: int64(len(xlsx)),
+		Body: bytes.NewReader(file), ContentLength: int64(len(file)),
 	}, nil
 }
 
-// ExportMonthlyAttendanceReport is the monthly recap as an XLSX file, for
-// one class or every class of a grade level -- unlike
+// ExportMonthlyAttendanceReport is the monthly recap as an XLSX or PDF
+// file, for one class or every class of a grade level -- unlike
 // GetMonthlyAttendanceSummary (one student's own calendar), this scopes to
 // a class's or grade level's whole roster at once.
 func (h *AttendanceHandler) ExportMonthlyAttendanceReport(ctx context.Context, request api.ExportMonthlyAttendanceReportRequestObject) (api.ExportMonthlyAttendanceReportResponseObject, error) {
 	tenantID := tenantIDFromContext(ctx)
 
-	xlsx, err := h.service.ExportMonthlyReportXLSX(ctx, tenantID, request.Params.ClassId, request.Params.GradeLevelId, request.Params.Month)
+	opts := reportdocOptions((*string)(request.Params.Format), request.Params.Title, request.Params.Letterhead, request.Params.Columns)
+	file, err := h.service.ExportMonthlyRecap(ctx, tenantID, request.Params.ClassId, request.Params.GradeLevelId, request.Params.Month, opts)
 	if err != nil {
 		return nil, mapAttendanceError(err)
 	}
+	if opts.Format == reportdoc.FormatPDF {
+		return api.ExportMonthlyAttendanceReport200ApplicationpdfResponse{
+			Body: bytes.NewReader(file), ContentLength: int64(len(file)),
+		}, nil
+	}
 	return api.ExportMonthlyAttendanceReport200ApplicationvndOpenxmlformatsOfficedocumentSpreadsheetmlSheetResponse{
-		Body: bytes.NewReader(xlsx), ContentLength: int64(len(xlsx)),
+		Body: bytes.NewReader(file), ContentLength: int64(len(file)),
 	}, nil
 }

@@ -70,6 +70,25 @@ func (q *Queries) GetActiveClassNameForStudent(ctx context.Context, arg GetActiv
 	return name, err
 }
 
+const getClassNameForAttendance = `-- name: GetClassNameForAttendance :one
+select name from classes where tenant_id = $1 and id = $2
+`
+
+type GetClassNameForAttendanceParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	ID       uuid.UUID `json:"id"`
+}
+
+// One class's display name, for the class scope of a report export (the
+// grade-level scope already gets every class's name from
+// ListClassesByGradeLevelForAttendance below).
+func (q *Queries) GetClassNameForAttendance(ctx context.Context, arg GetClassNameForAttendanceParams) (string, error) {
+	row := q.db.QueryRow(ctx, getClassNameForAttendance, arg.TenantID, arg.ID)
+	var name string
+	err := row.Scan(&name)
+	return name, err
+}
+
 const getEnrolledClassForAttendance = `-- name: GetEnrolledClassForAttendance :one
 select class_id
 from enrollments

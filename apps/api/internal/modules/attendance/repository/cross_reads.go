@@ -66,6 +66,12 @@ func (r *Repository) GetTenantTimezone(ctx context.Context, tenantID uuid.UUID) 
 	return r.queries(ctx).GetTenantTimezoneForAttendance(ctx, tenantID)
 }
 
+// GetClassName resolves classID's display name, for the class scope of a
+// report export's Section name.
+func (r *Repository) GetClassName(ctx context.Context, tenantID, classID uuid.UUID) (string, error) {
+	return r.queries(ctx).GetClassNameForAttendance(ctx, db.GetClassNameForAttendanceParams{TenantID: tenantID, ID: classID})
+}
+
 // ListClassesByGradeLevel resolves the grade-level ("angkatan") scope for
 // a report export: every class of the academic year under gradeLevelID,
 // ordered by name, one section per class.

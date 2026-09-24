@@ -528,6 +528,10 @@ type Querier interface {
 	GetAttendanceSessionBySchedule(ctx context.Context, arg GetAttendanceSessionByScheduleParams) (AttendanceSession, error)
 	GetBill(ctx context.Context, arg GetBillParams) (Bill, error)
 	GetClassName(ctx context.Context, arg GetClassNameParams) (string, error)
+	// One class's display name, for the class scope of a report export (the
+	// grade-level scope already gets every class's name from
+	// ListClassesByGradeLevelForAttendance below).
+	GetClassNameForAttendance(ctx context.Context, arg GetClassNameForAttendanceParams) (string, error)
 	// cross-module read; replace with academic reader interface after merge
 	// Every query in this file reads a table owned by the academic module
 	// (migration 0003), which is being built in parallel in its own worktree.

@@ -3371,7 +3371,7 @@ paths:
         - attendance
       operationId: exportDailyAttendanceReport
       x-permission: view_reports
-      summary: The daily report as an XLSX file, for one class or every class of a grade level
+      summary: The daily report as an XLSX or PDF file, for one class or every class of a grade level
       parameters:
         - name: date
           in: query
@@ -3392,11 +3392,19 @@ paths:
           schema:
             type: string
             format: uuid
+        - $ref: "#/components/parameters/ReportFormatParam"
+        - $ref: "#/components/parameters/ReportTitleParam"
+        - $ref: "#/components/parameters/ReportLetterheadParam"
+        - $ref: "#/components/parameters/ReportColumnsParam"
       responses:
         "200":
-          description: XLSX file
+          description: Report file
           content:
             application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+            application/pdf:
               schema:
                 type: string
                 format: binary
@@ -3450,8 +3458,8 @@ paths:
         - attendance
       operationId: exportMonthlyAttendanceReport
       x-permission: view_reports
-      summary: The monthly recap as an XLSX file, for one class or every class of a grade level -- one row per student (NIS,
-        name, one column per attendance status, total, percentage present), one sheet per class.
+      summary: The monthly recap as an XLSX or PDF file, for one class or every class of a grade level -- one row per student
+        (NIS, name, one column per attendance status, total, percentage present), one section per class.
       parameters:
         - name: month
           in: query
@@ -3473,11 +3481,19 @@ paths:
           schema:
             type: string
             format: uuid
+        - $ref: "#/components/parameters/ReportFormatParam"
+        - $ref: "#/components/parameters/ReportTitleParam"
+        - $ref: "#/components/parameters/ReportLetterheadParam"
+        - $ref: "#/components/parameters/ReportColumnsParam"
       responses:
         "200":
-          description: XLSX file
+          description: Report file
           content:
             application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+            application/pdf:
               schema:
                 type: string
                 format: binary
@@ -27117,6 +27133,37 @@ components:
       schema:
         type: string
         maxLength: 100
+    ReportFormatParam:
+      name: format
+      in: query
+      description: Rendered file type. Defaults to xlsx.
+      schema:
+        type: string
+        enum:
+          - xlsx
+          - pdf
+        default: xlsx
+    ReportTitleParam:
+      name: title
+      in: query
+      description: Overrides the report's own default title.
+      schema:
+        type: string
+        maxLength: 200
+    ReportLetterheadParam:
+      name: letterhead
+      in: query
+      description: Show the tenant's configured letterhead (kop laporan). Defaults to true.
+      schema:
+        type: boolean
+        default: true
+    ReportColumnsParam:
+      name: columns
+      in: query
+      description: Comma-separated column selection and order, each entry either a bare column key or "key:label" to rename
+        it. Omitted or empty keeps every column, in the report's own default order and labels.
+      schema:
+        type: string
     YearIdParam:
       name: yearId
       in: path

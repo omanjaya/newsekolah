@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 )
 
 // resolveReportScope turns a report export's class_id/grade_level_id
@@ -19,7 +20,11 @@ func (s *Service) resolveReportScope(ctx context.Context, tenantID uuid.UUID, cl
 		return nil, domain.ErrInvalidScope
 	}
 	if classID != nil {
-		return []ClassRef{{ID: *classID}}, nil
+		name, err := s.repo.GetClassName(ctx, tenantID, *classID)
+		if err != nil {
+			return nil, err
+		}
+		return []ClassRef{{ID: *classID, Name: name}}, nil
 	}
 	yearID, err := s.activeAcademicYear(ctx, tenantID)
 	if err != nil {
@@ -30,4 +35,18 @@ func (s *Service) resolveReportScope(ctx context.Context, tenantID uuid.UUID, cl
 		return nil, err
 	}
 	return classes, nil
+}
+
+// renderReport is every attendance report export's last step: narrow doc
+// per opts (Apply), then render it as opts.Format picks (an empty/zero
+// Format defaults to XLSX, reportdoc.Options' own documented default).
+func renderReport(doc reportdoc.Document, opts reportdoc.Options) ([]byte, error) {
+	applied, err := reportdoc.Apply(doc, opts)
+	if err != nil {
+		return nil, err
+	}
+	if opts.Format == reportdoc.FormatPDF {
+		return reportdoc.RenderPDF(applied)
+	}
+	return reportdoc.RenderXLSX(applied)
 }

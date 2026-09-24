@@ -14,6 +14,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/dbtest"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 )
 
 // secondClass is a second class in w's own grade level and academic year,
@@ -90,34 +91,47 @@ func TestReportExportGradeLevelScope(t *testing.T) {
 	require.NoError(t, err)
 
 	month := w.today.Format("2006-01")
+	defaultOpts := reportdoc.Options{Format: reportdoc.FormatXLSX, ShowLetterhead: true}
 
 	t.Run("exactly one of class_id/grade_level_id is required", func(t *testing.T) {
-		_, err := svc.ExportDailyReportXLSXScoped(ctx, w.tenantID, &w.classID, &w.gradeLevelID, w.today)
+		_, err := svc.ExportDailyReport(ctx, w.tenantID, &w.classID, &w.gradeLevelID, w.today, defaultOpts)
 		require.ErrorIs(t, err, domain.ErrInvalidScope)
-		_, err = svc.ExportDailyReportXLSXScoped(ctx, w.tenantID, nil, nil, w.today)
+		_, err = svc.ExportDailyReport(ctx, w.tenantID, nil, nil, w.today, defaultOpts)
 		require.ErrorIs(t, err, domain.ErrInvalidScope)
 
-		_, err = svc.ExportMonthlyReportXLSX(ctx, w.tenantID, &w.classID, &w.gradeLevelID, month)
+		_, err = svc.ExportMonthlyRecap(ctx, w.tenantID, &w.classID, &w.gradeLevelID, month, defaultOpts)
 		require.ErrorIs(t, err, domain.ErrInvalidScope)
-		_, err = svc.ExportMonthlyReportXLSX(ctx, w.tenantID, nil, nil, month)
+		_, err = svc.ExportMonthlyRecap(ctx, w.tenantID, nil, nil, month, defaultOpts)
 		require.ErrorIs(t, err, domain.ErrInvalidScope)
 	})
 
-	t.Run("class scope keeps ExportDailyReportXLSX's single-sheet behaviour", func(t *testing.T) {
-		scoped, err := svc.ExportDailyReportXLSXScoped(ctx, w.tenantID, &w.classID, nil, w.today)
-		require.NoError(t, err)
-		direct, err := svc.ExportDailyReportXLSX(ctx, w.tenantID, w.classID, w.today)
-		require.NoError(t, err)
-		require.Equal(t, direct, scoped, "an unmigrated caller passing only class_id must see byte-identical output")
-	})
-
-	t.Run("grade-level daily export covers every class, one sheet each", func(t *testing.T) {
-		xlsx, err := svc.ExportDailyReportXLSXScoped(ctx, w.tenantID, nil, &w.gradeLevelID, w.today)
+	t.Run("class scope daily export renders one sheet named after the class", func(t *testing.T) {
+		xlsx, err := svc.ExportDailyReport(ctx, w.tenantID, &w.classID, nil, w.today, defaultOpts)
 		require.NoError(t, err)
 		f, err := excelize.OpenReader(bytes.NewReader(xlsx))
 		require.NoError(t, err)
 		defer f.Close() //nolint:errcheck
-		require.Len(t, f.GetSheetList(), 2, "one sheet per class in the grade level")
+		require.Equal(t, []string{"X-A"}, f.GetSheetList())
+
+		pdf, err := svc.ExportDailyReport(ctx, w.tenantID, &w.classID, nil, w.today, reportdoc.Options{Format: reportdoc.FormatPDF})
+		require.NoError(t, err)
+		require.True(t, bytes.HasPrefix(pdf, []byte("%PDF")), "PDF format must render a PDF file")
+	})
+
+	t.Run("grade-level daily export covers every class, one sheet each named after its class", func(t *testing.T) {
+		xlsx, err := svc.ExportDailyReport(ctx, w.tenantID, nil, &w.gradeLevelID, w.today, defaultOpts)
+		require.NoError(t, err)
+		f, err := excelize.OpenReader(bytes.NewReader(xlsx))
+		require.NoError(t, err)
+		defer f.Close() //nolint:errcheck
+		require.ElementsMatch(t, []string{"X-A", "X-B"}, f.GetSheetList(), "one sheet per class in the grade level")
+	})
+
+	t.Run("an unknown column choice is rejected", func(t *testing.T) {
+		_, err := svc.ExportDailyReport(ctx, w.tenantID, &w.classID, nil, w.today, reportdoc.Options{
+			Format: reportdoc.FormatXLSX, Columns: []reportdoc.ColumnChoice{{Key: "does_not_exist"}},
+		})
+		require.ErrorIs(t, err, reportdoc.ErrUnknownColumn)
 	})
 
 	t.Run("grade-level monthly recap has one section per class with correct per-status counts", func(t *testing.T) {
@@ -149,20 +163,43 @@ func TestReportExportGradeLevelScope(t *testing.T) {
 		require.Equal(t, 1, classBRecap.Rows[0].Counts["A"])
 		require.InDelta(t, 0.0, classBRecap.Rows[0].PercentPresent, 0.01)
 
-		xlsx, err := svc.ExportMonthlyReportXLSX(ctx, w.tenantID, nil, &w.gradeLevelID, month)
+		xlsx, err := svc.ExportMonthlyRecap(ctx, w.tenantID, nil, &w.gradeLevelID, month, defaultOpts)
 		require.NoError(t, err)
 		f, err := excelize.OpenReader(bytes.NewReader(xlsx))
 		require.NoError(t, err)
 		defer f.Close() //nolint:errcheck
-		require.Len(t, f.GetSheetList(), 2)
+		require.ElementsMatch(t, []string{"X-A", "X-B"}, f.GetSheetList())
+
+		pdf, err := svc.ExportMonthlyRecap(ctx, w.tenantID, nil, &w.gradeLevelID, month, reportdoc.Options{Format: reportdoc.FormatPDF})
+		require.NoError(t, err)
+		require.True(t, bytes.HasPrefix(pdf, []byte("%PDF")), "PDF format must render a PDF file")
 	})
 
-	t.Run("class scope monthly export renders a single sheet", func(t *testing.T) {
-		xlsx, err := svc.ExportMonthlyReportXLSX(ctx, w.tenantID, &w.classID, nil, month)
+	t.Run("class scope monthly export renders a single sheet, and a caller-chosen column subset is honoured", func(t *testing.T) {
+		xlsx, err := svc.ExportMonthlyRecap(ctx, w.tenantID, &w.classID, nil, month, defaultOpts)
 		require.NoError(t, err)
 		f, err := excelize.OpenReader(bytes.NewReader(xlsx))
 		require.NoError(t, err)
 		defer f.Close() //nolint:errcheck
 		require.Len(t, f.GetSheetList(), 1)
+
+		narrowed, err := svc.ExportMonthlyRecap(ctx, w.tenantID, &w.classID, nil, month, reportdoc.Options{
+			Format: reportdoc.FormatXLSX,
+			Columns: []reportdoc.ColumnChoice{
+				{Key: "name", Label: "Nama"},
+				{Key: "total"},
+			},
+		})
+		require.NoError(t, err)
+		nf, err := excelize.OpenReader(bytes.NewReader(narrowed))
+		require.NoError(t, err)
+		defer nf.Close() //nolint:errcheck
+		sheet := nf.GetSheetList()[0]
+		rows, err := nf.GetRows(sheet)
+		require.NoError(t, err)
+		require.Contains(
+			t, rows, []string{"Nama", "Total"},
+			"the column subset and relabel must be honoured, in the chosen order, as the table's header row",
+		)
 	})
 }

@@ -2,13 +2,12 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/xuri/excelize/v2"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 )
 
 // GetDailyReport builds one class's expected-vs-submitted counts and
@@ -132,58 +131,57 @@ func periodLabel(start, end string) string {
 	return start + " - " + end
 }
 
-// ExportDailyReportXLSX renders GetDailyReport as a single-sheet workbook,
-// the "daily report as XLSX" operation in attendance.yaml.
-func (s *Service) ExportDailyReportXLSX(ctx context.Context, tenantID, classID uuid.UUID, date time.Time) ([]byte, error) {
-	report, err := s.GetDailyReport(ctx, tenantID, classID, date)
-	if err != nil {
-		return nil, err
+// dailyReportColumns are the daily report's stable column keys and
+// default Indonesian labels, shared by every scope (class or grade
+// level) so Options.Columns always refers to the same keys regardless of
+// how many sections the export ends up with.
+func dailyReportColumns() []reportdoc.Column {
+	return []reportdoc.Column{
+		{Key: "no", Label: "No", Kind: reportdoc.ColumnNumber, Width: 5},
+		{Key: "name", Label: "Nama Siswa", Kind: reportdoc.ColumnText, Width: 28},
+		{Key: "status", Label: "Status", Kind: reportdoc.ColumnText, Width: 12},
+		{Key: "expected", Label: "Jumlah Sesi", Kind: reportdoc.ColumnNumber, Width: 12},
+		{Key: "submitted", Label: "Sesi Terisi", Kind: reportdoc.ColumnNumber, Width: 12},
+		{Key: "complete", Label: "Lengkap", Kind: reportdoc.ColumnPercent, Width: 12},
 	}
-
-	f := excelize.NewFile()
-	defer f.Close() //nolint:errcheck // closing an in-memory workbook after WriteToBuffer cannot meaningfully fail.
-
-	const sheet = "Attendance"
-	if err := f.SetSheetName("Sheet1", sheet); err != nil {
-		return nil, fmt.Errorf("rename sheet: %w", err)
-	}
-
-	headers := []string{"No", "Name", "Status", "Expected Sessions", "Submitted Sessions", "Complete"}
-	for col, h := range headers {
-		cell, _ := excelize.CoordinatesToCellName(col+1, 1)
-		_ = f.SetCellValue(sheet, cell, h)
-	}
-
-	for i, student := range report.Students {
-		row := i + 2
-		values := []any{i + 1, student.Name, student.StatusCode, student.ExpectedSessions, student.SubmittedSessions, student.Complete}
-		for col, v := range values {
-			cell, _ := excelize.CoordinatesToCellName(col+1, row)
-			_ = f.SetCellValue(sheet, cell, v)
-		}
-	}
-
-	summaryRow := len(report.Students) + 3
-	_ = f.SetCellValue(sheet, fmt.Sprintf("A%d", summaryRow), "Class expected/submitted:")
-	_ = f.SetCellValue(sheet, fmt.Sprintf("B%d", summaryRow), fmt.Sprintf("%d/%d", report.ExpectedSessions, report.SubmittedSessions))
-
-	buf, err := f.WriteToBuffer()
-	if err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
 }
 
-// ExportDailyReportXLSXScoped is ExportDailyReportXLSX plus the
-// grade-level ("angkatan") scope: exactly one of classID/gradeLevelID must
-// be set. The class scope keeps ExportDailyReportXLSX's exact single-sheet
-// output (existing callers, including the mobile app, do not break); the
-// grade-level scope renders one sheet per class, ordered by class name.
-func (s *Service) ExportDailyReportXLSXScoped(ctx context.Context, tenantID uuid.UUID, classID, gradeLevelID *uuid.UUID, date time.Time) ([]byte, error) {
-	if classID != nil && gradeLevelID == nil {
-		return s.ExportDailyReportXLSX(ctx, tenantID, *classID, date)
+// dailyReportSection turns one class's DailyReport into a reportdoc
+// Section: one row per student, ordered to match dailyReportColumns, plus
+// a Footer totals row.
+func dailyReportSection(name string, report DailyReport) reportdoc.Section {
+	rows := make([][]any, len(report.Students))
+	for i, student := range report.Students {
+		rows[i] = []any{i + 1, student.Name, student.StatusCode, student.ExpectedSessions, student.SubmittedSessions, completeRatio(student.ExpectedSessions, student.SubmittedSessions)}
 	}
+	footer := [][]any{{nil, "Total", nil, report.ExpectedSessions, report.SubmittedSessions, completeRatio(report.ExpectedSessions, report.SubmittedSessions)}}
+	return reportdoc.Section{Name: name, Rows: rows, Footer: footer}
+}
 
+// completeRatio is submitted/expected as a fraction for reportdoc's
+// ColumnPercent kind (e.g. 0.83 for 5/6), matching domain's own "complete
+// once expected is 0 or submitted has caught up" rule: an untaught day
+// (expected 0) renders as fully complete (1.0) rather than dividing by
+// zero.
+func completeRatio(expected, submitted int) float64 {
+	if expected <= 0 {
+		return 1.0
+	}
+	ratio := float64(submitted) / float64(expected)
+	if ratio > 1 {
+		ratio = 1
+	}
+	return ratio
+}
+
+// ExportDailyReport renders GetDailyReport as a reportdoc file (XLSX or
+// PDF per opts.Format), for one class or every class of a grade level
+// ("angkatan") -- one section per class, in resolveReportScope's order.
+// Exactly one of classID/gradeLevelID must be set. Called with a zero
+// reportdoc.Options (no format/title/letterhead/columns query params),
+// this keeps every existing caller's request working: xlsx, every
+// column, the report's own default title.
+func (s *Service) ExportDailyReport(ctx context.Context, tenantID uuid.UUID, classID, gradeLevelID *uuid.UUID, date time.Time, opts reportdoc.Options) ([]byte, error) {
 	var out []byte
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		classes, err := s.resolveReportScope(ctx, tenantID, classID, gradeLevelID)
@@ -191,61 +189,23 @@ func (s *Service) ExportDailyReportXLSXScoped(ctx context.Context, tenantID uuid
 			return err
 		}
 
-		reports := make([]DailyReport, len(classes))
+		sections := make([]reportdoc.Section, len(classes))
 		for i, class := range classes {
 			report, err := s.GetDailyReport(ctx, tenantID, class.ID, date)
 			if err != nil {
 				return err
 			}
-			reports[i] = report
+			sections[i] = dailyReportSection(class.Name, report)
 		}
-		out, err = renderDailyReportsXLSX(classes, reports)
+
+		doc := reportdoc.Document{
+			Title:    "Presensi Harian",
+			Scope:    []reportdoc.ScopeLine{{Label: "Tanggal", Value: date.Format("2006-01-02")}},
+			Columns:  dailyReportColumns(),
+			Sections: sections,
+		}
+		out, err = renderReport(doc, opts)
 		return err
 	})
 	return out, err
-}
-
-// renderDailyReportsXLSX is ExportDailyReportXLSX's per-class sheet body,
-// reused for both the single-class and grade-level scopes so their column
-// layout never drifts apart.
-func renderDailyReportsXLSX(classes []ClassRef, reports []DailyReport) ([]byte, error) {
-	f := excelize.NewFile()
-	defer f.Close() //nolint:errcheck // closing an in-memory workbook after WriteToBuffer cannot meaningfully fail.
-
-	headers := []string{"No", "Name", "Status", "Expected Sessions", "Submitted Sessions", "Complete"}
-	used := make(map[string]int)
-
-	for i, report := range reports {
-		sheet := sanitizeSheetName(classes[i].Name, i, used)
-		if i == 0 {
-			if err := f.SetSheetName("Sheet1", sheet); err != nil {
-				return nil, fmt.Errorf("rename sheet: %w", err)
-			}
-		} else if _, err := f.NewSheet(sheet); err != nil {
-			return nil, fmt.Errorf("add sheet: %w", err)
-		}
-
-		for col, h := range headers {
-			cell, _ := excelize.CoordinatesToCellName(col+1, 1)
-			_ = f.SetCellValue(sheet, cell, h)
-		}
-		for r, student := range report.Students {
-			row := r + 2
-			values := []any{r + 1, student.Name, student.StatusCode, student.ExpectedSessions, student.SubmittedSessions, student.Complete}
-			for col, v := range values {
-				cell, _ := excelize.CoordinatesToCellName(col+1, row)
-				_ = f.SetCellValue(sheet, cell, v)
-			}
-		}
-
-		summaryRow := len(report.Students) + 3
-		_ = f.SetCellValue(sheet, fmt.Sprintf("A%d", summaryRow), "Class expected/submitted:")
-		_ = f.SetCellValue(sheet, fmt.Sprintf("B%d", summaryRow), fmt.Sprintf("%d/%d", report.ExpectedSessions, report.SubmittedSessions))
-	}
-
-	buf, err := f.WriteToBuffer()
-	if err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
 }

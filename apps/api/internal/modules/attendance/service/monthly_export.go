@@ -2,14 +2,12 @@ package service
 
 import (
 	"context"
-	"fmt"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/xuri/excelize/v2"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 )
 
 // MonthlyRecapRow is one student's per-status attendance totals for a
@@ -128,14 +126,59 @@ func (s *Service) classMonthlyRecap(
 	return ClassMonthlyRecap{ClassID: class.ID, ClassName: class.Name, Rows: rows}, nil
 }
 
-// ExportMonthlyReportXLSX renders GetMonthlyRecap as a workbook: one sheet
-// per class, columns NIS/Name/one per configured status code/Total/
-// Percentage. A per-day column group was considered and left out -- 28-31
-// extra columns per student duplicates what the existing per-student
-// calendar view (GET .../reports/monthly, and the on-screen monthly tab)
-// already shows, and would not fit a printed recap the way a one-row-per-
-// student summary does.
-func (s *Service) ExportMonthlyReportXLSX(ctx context.Context, tenantID uuid.UUID, classID, gradeLevelID *uuid.UUID, month string) ([]byte, error) {
+// monthlyRecapColumns are the monthly recap's stable column keys and
+// default Indonesian labels: NIS, name, one column per the tenant's
+// configured status code (key "status_<code>", so it never collides with
+// "total"/"percentage" even if a tenant ever configured a status code
+// spelled that way), total counted days, and percentage present.
+//
+// A per-day column group was considered and left out -- 28-31 extra
+// columns per student duplicates what the existing per-student calendar
+// view (GET .../reports/monthly, and the on-screen monthly tab) already
+// shows, and would not fit a printed recap the way a one-row-per-student
+// summary does.
+func monthlyRecapColumns(policy domain.StatusPolicy) []reportdoc.Column {
+	columns := make([]reportdoc.Column, 0, 5+len(policy.Statuses))
+	columns = append(columns,
+		reportdoc.Column{Key: "no", Label: "No", Kind: reportdoc.ColumnNumber, Width: 5},
+		reportdoc.Column{Key: "nis", Label: "NIS", Kind: reportdoc.ColumnText, Width: 14},
+		reportdoc.Column{Key: "name", Label: "Nama Siswa", Kind: reportdoc.ColumnText, Width: 28},
+	)
+	for _, def := range policy.Statuses {
+		columns = append(columns, reportdoc.Column{Key: "status_" + def.Code, Label: def.Label, Kind: reportdoc.ColumnNumber, Width: 10})
+	}
+	columns = append(columns,
+		reportdoc.Column{Key: "total", Label: "Total", Kind: reportdoc.ColumnNumber, Width: 10},
+		reportdoc.Column{Key: "percentage", Label: "Persentase Hadir", Kind: reportdoc.ColumnPercent, Width: 14},
+	)
+	return columns
+}
+
+// monthlyRecapSection turns one class's ClassMonthlyRecap into a
+// reportdoc Section, ordered to match monthlyRecapColumns.
+func monthlyRecapSection(recap ClassMonthlyRecap, policy domain.StatusPolicy) reportdoc.Section {
+	rows := make([][]any, len(recap.Rows))
+	for i, row := range recap.Rows {
+		values := make([]any, 0, 5+len(policy.Statuses))
+		values = append(values, i+1, row.NIS, row.Name)
+		for _, def := range policy.Statuses {
+			values = append(values, row.Counts[def.Code])
+		}
+		percent := 0.0
+		if row.TotalDays > 0 {
+			percent = row.PercentPresent / 100
+		}
+		values = append(values, row.TotalDays, percent)
+		rows[i] = values
+	}
+	return reportdoc.Section{Name: recap.ClassName, Rows: rows}
+}
+
+// ExportMonthlyRecap renders GetMonthlyRecap as a reportdoc file (XLSX or
+// PDF per opts.Format): one section per class, one row per student.
+// Exactly one of classID/gradeLevelID must be set. Called with a zero
+// reportdoc.Options, this keeps every existing caller's request working.
+func (s *Service) ExportMonthlyRecap(ctx context.Context, tenantID uuid.UUID, classID, gradeLevelID *uuid.UUID, month string, opts reportdoc.Options) ([]byte, error) {
 	var out []byte
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		// GetMonthlyRecap opens its own s.withTx, which joins this
@@ -151,118 +194,19 @@ func (s *Service) ExportMonthlyReportXLSX(ctx context.Context, tenantID uuid.UUI
 		if err != nil {
 			return err
 		}
-		out, err = renderMonthlyRecapXLSX(recaps, policy)
+
+		sections := make([]reportdoc.Section, len(recaps))
+		for i, recap := range recaps {
+			sections[i] = monthlyRecapSection(recap, policy)
+		}
+		doc := reportdoc.Document{
+			Title:    "Rekap Presensi Bulanan",
+			Scope:    []reportdoc.ScopeLine{{Label: "Bulan", Value: month}},
+			Columns:  monthlyRecapColumns(policy),
+			Sections: sections,
+		}
+		out, err = renderReport(doc, opts)
 		return err
 	})
 	return out, err
-}
-
-func renderMonthlyRecapXLSX(recaps []ClassMonthlyRecap, policy domain.StatusPolicy) ([]byte, error) {
-	f := excelize.NewFile()
-	defer f.Close() //nolint:errcheck // closing an in-memory workbook after WriteToBuffer cannot meaningfully fail.
-
-	statusCodes := make([]string, len(policy.Statuses))
-	for i, def := range policy.Statuses {
-		statusCodes[i] = def.Code
-	}
-
-	headers := make([]string, 0, 4+len(statusCodes))
-	headers = append(headers, "No", "NIS", "Name")
-	headers = append(headers, statusCodes...)
-	headers = append(headers, "Total", "Percentage")
-
-	used := make(map[string]int)
-	for i, recap := range recaps {
-		name := recap.ClassName
-		if name == "" && len(recaps) == 1 {
-			// Single-class scope: resolveReportScope does not resolve the
-			// class's own name (only grade-level scope needs it, to tell
-			// sheets apart), so fall back to a fixed title instead of
-			// sanitizeSheetName's generic "Class 1".
-			name = "Attendance"
-		}
-		sheet := sanitizeSheetName(name, i, used)
-		if i == 0 {
-			if err := f.SetSheetName("Sheet1", sheet); err != nil {
-				return nil, fmt.Errorf("rename sheet: %w", err)
-			}
-		} else if _, err := f.NewSheet(sheet); err != nil {
-			return nil, fmt.Errorf("add sheet: %w", err)
-		}
-
-		for col, h := range headers {
-			cell, _ := excelize.CoordinatesToCellName(col+1, 1)
-			_ = f.SetCellValue(sheet, cell, h)
-		}
-		for r, row := range recap.Rows {
-			excelRow := r + 2
-			values := []any{r + 1, row.NIS, row.Name}
-			for _, code := range statusCodes {
-				values = append(values, row.Counts[code])
-			}
-			values = append(values, row.TotalDays, fmt.Sprintf("%.1f%%", row.PercentPresent))
-			for col, v := range values {
-				cell, _ := excelize.CoordinatesToCellName(col+1, excelRow)
-				_ = f.SetCellValue(sheet, cell, v)
-			}
-		}
-	}
-
-	if len(recaps) == 0 {
-		for col, h := range headers {
-			cell, _ := excelize.CoordinatesToCellName(col+1, 1)
-			_ = f.SetCellValue("Sheet1", cell, h)
-		}
-	}
-
-	buf, err := f.WriteToBuffer()
-	if err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
-}
-
-// sheetNameInvalidChars are the characters Excel forbids in a sheet name.
-const sheetNameInvalidChars = `:\/?*[]`
-
-// sanitizeSheetName turns a class name into a valid, unique Excel sheet
-// name: strips characters Excel rejects, truncates to its 31-character
-// limit, and appends a counter on a collision (e.g. two classes named
-// identically after truncation) -- used has already-used names is
-// updated in place.
-func sanitizeSheetName(name string, index int, used map[string]int) string {
-	clean := strings.Map(func(r rune) rune {
-		if strings.ContainsRune(sheetNameInvalidChars, r) {
-			return '-'
-		}
-		return r
-	}, name)
-	clean = strings.TrimSpace(clean)
-	if clean == "" {
-		clean = fmt.Sprintf("Class %d", index+1)
-	}
-	const maxLen = 31
-	if len(clean) > maxLen {
-		clean = clean[:maxLen]
-	}
-	base := clean
-	for {
-		n, seen := used[clean]
-		if !seen {
-			used[clean] = 0
-			return clean
-		}
-		n++
-		used[clean] = n
-		suffix := fmt.Sprintf(" (%d)", n)
-		maxBase := maxLen - len(suffix)
-		if maxBase < 1 {
-			maxBase = 1
-		}
-		if len(base) > maxBase {
-			clean = base[:maxBase] + suffix
-		} else {
-			clean = base + suffix
-		}
-	}
 }

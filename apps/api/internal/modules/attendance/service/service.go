@@ -147,6 +147,11 @@ type Repository interface {
 	GetEnrolledClass(ctx context.Context, tenantID, academicYearID, studentUserID uuid.UUID) (classID uuid.UUID, ok bool, err error)
 	GetHomeroomClassForTeacher(ctx context.Context, tenantID, academicYearID, teacherUserID uuid.UUID) (classID uuid.UUID, ok bool, err error)
 	GetTenantTimezone(ctx context.Context, tenantID uuid.UUID) (string, error)
+	// GetClassName resolves one class's display name, for the class scope
+	// of a report export's Section name.
+	//
+	// -- cross-module read; replace with academic reader interface after merge --
+	GetClassName(ctx context.Context, tenantID, classID uuid.UUID) (string, error)
 	// ListClassesByGradeLevel resolves the grade-level ("angkatan") scope
 	// for a report export: every class of the academic year under
 	// gradeLevelID, ordered by name.

@@ -16,6 +16,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/authz"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/tenant"
 )
 
@@ -68,6 +69,7 @@ var (
 	errNoActiveYear             = httpx.NewError(http.StatusBadRequest, "ATTENDANCE_NO_ACTIVE_YEAR")
 	errInvalidMonth             = httpx.NewError(http.StatusBadRequest, "ATTENDANCE_INVALID_MONTH")
 	errInvalidScope             = httpx.NewError(http.StatusBadRequest, "ATTENDANCE_INVALID_SCOPE")
+	errUnknownColumn            = httpx.NewError(http.StatusBadRequest, "ATTENDANCE_REPORT_UNKNOWN_COLUMN")
 	errMonitorTokenInvalid      = httpx.NewError(http.StatusUnauthorized, "ATTENDANCE_MONITOR_TOKEN_INVALID")
 )
 
@@ -104,6 +106,8 @@ func mapAttendanceError(err error) error {
 		return errInvalidMonth
 	case errors.Is(err, domain.ErrInvalidScope):
 		return errInvalidScope
+	case errors.Is(err, reportdoc.ErrUnknownColumn):
+		return errUnknownColumn
 	default:
 		var appErr *httpx.Error
 		if errors.As(err, &appErr) {

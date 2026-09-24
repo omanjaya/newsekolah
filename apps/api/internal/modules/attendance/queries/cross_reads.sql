@@ -104,6 +104,12 @@ where c.tenant_id = $1 and c.academic_year_id = $2 and c.deleted_at is null
   )
 order by c.name;
 
+-- name: GetClassNameForAttendance :one
+-- One class's display name, for the class scope of a report export (the
+-- grade-level scope already gets every class's name from
+-- ListClassesByGradeLevelForAttendance below).
+select name from classes where tenant_id = $1 and id = $2;
+
 -- name: ListClassesByGradeLevelForAttendance :many
 -- Every non-deleted class of the academic year in grade_level_id, ordered
 -- by name -- the grade-level ("angkatan") scope for attendance report
