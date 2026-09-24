@@ -20,6 +20,10 @@ func (c StaffAttendanceCalendar) IsSchoolDay(ctx context.Context, tenantID, acad
 	return c.Academic.IsSchoolDay(ctx, tenantID, academicYearID, date, nil)
 }
 
+func (c StaffAttendanceCalendar) HolidayName(ctx context.Context, tenantID, academicYearID uuid.UUID, date time.Time) (string, bool, error) {
+	return c.Academic.NonTeachingEventName(ctx, tenantID, academicYearID, date, nil)
+}
+
 // StaffAttendanceLeave exposes permits' issued leave requests to staff
 // attendance, reusing ListMyLeaveRequests (built for a student's own leave
 // history, but its query filters only by workflow_instances.subject_user_id,

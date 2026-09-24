@@ -111,7 +111,7 @@ func (s *Service) upsertFromSource(
 		}
 	}
 
-	result, err := s.computeStatus(ctx, tenantID, employeeUserID, date, mergedArrival, mergedDeparture)
+	result, _, err := s.computeStatus(ctx, tenantID, employeeUserID, date, mergedArrival, mergedDeparture)
 	if err != nil {
 		return RecordView{}, err
 	}
@@ -169,13 +169,13 @@ func (s *Service) GetTodayBoard(ctx context.Context, tenantID uuid.UUID, date *t
 				out = append(out, toRecordView(rec, emp.Name))
 				continue
 			}
-			result, err := s.computeStatus(ctx, tenantID, emp.ID, resolved, nil, nil)
+			result, holidayName, err := s.computeStatus(ctx, tenantID, emp.ID, resolved, nil, nil)
 			if err != nil {
 				return err
 			}
 			out = append(out, RecordView{
 				EmployeeUserID: emp.ID, EmployeeName: emp.Name, Date: resolved,
-				StatusCode: result.StatusCode, Source: domain.SourceManual,
+				StatusCode: result.StatusCode, Source: domain.SourceManual, HolidayName: holidayName,
 			})
 		}
 		return nil
@@ -222,11 +222,14 @@ func (s *Service) employeeHistory(ctx context.Context, tenantID, employeeUserID 
 			out = append(out, toRecordView(rec, name))
 			continue
 		}
-		result, err := s.computeStatus(ctx, tenantID, employeeUserID, d, nil, nil)
+		result, holidayName, err := s.computeStatus(ctx, tenantID, employeeUserID, d, nil, nil)
 		if err != nil {
 			return nil, err
 		}
-		out = append(out, RecordView{EmployeeUserID: employeeUserID, EmployeeName: name, Date: d, StatusCode: result.StatusCode})
+		out = append(out, RecordView{
+			EmployeeUserID: employeeUserID, EmployeeName: name, Date: d,
+			StatusCode: result.StatusCode, HolidayName: holidayName,
+		})
 	}
 	return out, nil
 }

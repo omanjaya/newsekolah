@@ -14,7 +14,8 @@
     "absent": "Absent",
     "on_leave": "On leave",
     "holiday": "Holiday",
-    "incomplete": "Incomplete"
+    "incomplete": "Incomplete",
+    "unscheduled": "Schedule not set"
   },
   "sources": {
     "qr": "QR scan",
@@ -160,6 +161,9 @@
     "doneBody": "Arrival and departure are both recorded. Contact the admin if anything needs correcting.",
     "hint": "Tap once when you arrive and once more when you leave. The time comes from the school server.",
     "thisWeek": "This week",
-    "thisWeekEmpty": "No days to show yet."
+    "thisWeekEmpty": "No days to show yet.",
+    "holidayWithName": "Holiday - {name}",
+    "holidayHint": "Today is a holiday. You can still record attendance if needed.",
+    "unscheduledHint": "Your work schedule has not been set up yet. Contact the admin to set it."
   }
 }

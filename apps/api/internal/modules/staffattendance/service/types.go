@@ -48,6 +48,11 @@ type RecordView struct {
 	EarlyLeaveMinutes int
 	Source            domain.Source
 	Notes             string
+	// HolidayName names the calendar event behind a StatusCode of Holiday,
+	// when one is on record; empty otherwise (including for every other
+	// status, and for a Holiday day with no matching named event, e.g. an
+	// ordinary weekend).
+	HolidayName string
 }
 
 // EntryInput is a single day's arrival/departure for one employee, shared

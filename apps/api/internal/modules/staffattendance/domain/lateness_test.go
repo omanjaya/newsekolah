@@ -98,11 +98,27 @@ func TestComputeLateness_CalendarNonWorkingDayOverridesSchedule(t *testing.T) {
 	require.Zero(t, result.LateMinutes)
 }
 
-func TestComputeLateness_NoScheduleForWeekdayIsHoliday(t *testing.T) {
+// No schedule row at all is a configuration gap, not a day off: it must
+// read as Unscheduled, never Holiday, even on a day the calendar itself
+// counts as a working day -- this is exactly the case that used to make
+// an employee's check-in screen say "Libur" on an ordinary Thursday
+// simply because nobody had set up their weekly schedule yet.
+func TestComputeLateness_NoScheduleForWeekdayIsUnscheduled(t *testing.T) {
 	result := domain.ComputeLateness(domain.LatenessInput{
 		Date: dayTime("2026-03-02", "00:00"), Schedule: nil, IsWorkingDay: true,
 	})
-	require.Equal(t, domain.StatusHoliday, result.StatusCode)
+	require.Equal(t, domain.StatusUnscheduled, result.StatusCode)
+}
+
+// A missing schedule on a day the calendar also marks non-working is
+// still Unscheduled, not Holiday: OnLeave aside, Unscheduled is checked
+// before IsWorkingDay precisely so the two failure modes never collapse
+// into one ambiguous status.
+func TestComputeLateness_NoScheduleOnNonWorkingCalendarDayIsStillUnscheduled(t *testing.T) {
+	result := domain.ComputeLateness(domain.LatenessInput{
+		Date: dayTime("2026-03-02", "00:00"), Schedule: nil, IsWorkingDay: false,
+	})
+	require.Equal(t, domain.StatusUnscheduled, result.StatusCode)
 }
 
 func TestComputeLateness_ScheduleMarkedNonWorkingIsHoliday(t *testing.T) {

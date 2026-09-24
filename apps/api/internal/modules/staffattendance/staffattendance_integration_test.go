@@ -34,6 +34,10 @@ func (stubCalendar) IsSchoolDay(context.Context, uuid.UUID, uuid.UUID, time.Time
 	return true, nil
 }
 
+func (stubCalendar) HolidayName(context.Context, uuid.UUID, uuid.UUID, time.Time) (string, bool, error) {
+	return "", false, nil
+}
+
 type stubLeave struct{}
 
 func (stubLeave) OnApprovedLeave(context.Context, uuid.UUID, uuid.UUID, time.Time) (bool, error) {
@@ -182,5 +186,36 @@ func TestGetAllEmployeesMonthlyRecap(t *testing.T) {
 		require.Len(t, otherSaved.Data, 2)
 		require.Equal(t, "absent", string(otherSaved.Data[0].StatusCode))
 		require.Equal(t, "Citra", otherSaved.Data[0].EmployeeName)
+	})
+
+	// The bug this guards against: an employee with no weekly schedule
+	// configured at all used to read back as "holiday" on an ordinary
+	// weekday, the same as a real day off -- which made the check-in
+	// screen show "Libur" (holiday) right next to an active "record
+	// arrival" button, a contradiction. It must read as "unscheduled"
+	// instead, and carry no holiday name (there is nothing to name: no
+	// calendar event made it a holiday, there simply is no schedule).
+	t.Run("an employee with no weekly schedule at all is unscheduled, never holiday", func(t *testing.T) {
+		// Deliberately bypasses ReplaceWeeklySchedule -- no
+		// staff_attendance_schedules row exists for this employee at all.
+		noSchedule, err := adminQ.CreateUser(ctx, db.CreateUserParams{
+			TenantID: tenant.ID, Username: "pegawai-" + uuid.NewString(), PasswordHash: "x",
+			Name: "Dewi", Status: "active", Locale: "id",
+		})
+		require.NoError(t, err)
+
+		actorCtx := httpx.WithUserID(tenantctx.WithTenant(ctx, tenantctx.Tenant{ID: tenant.ID}), noSchedule.ID)
+		response, err := mod.Handler.GetStaffAttendanceMyHistory(actorCtx, api.GetStaffAttendanceMyHistoryRequestObject{
+			Params: api.GetStaffAttendanceMyHistoryParams{
+				From: openapi_types.Date{Time: time.Date(2025, 2, 3, 0, 0, 0, 0, time.UTC)},
+				To:   openapi_types.Date{Time: time.Date(2025, 2, 4, 0, 0, 0, 0, time.UTC)},
+			},
+		})
+		require.NoError(t, err)
+		saved, ok := response.(api.GetStaffAttendanceMyHistory200JSONResponse)
+		require.True(t, ok)
+		require.Len(t, saved.Data, 1)
+		require.Equal(t, "unscheduled", string(saved.Data[0].StatusCode))
+		require.Nil(t, saved.Data[0].HolidayName, "no schedule configured is not a named calendar event")
 	})
 }

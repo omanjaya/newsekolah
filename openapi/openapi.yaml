@@ -26733,6 +26733,7 @@ components:
         - on_leave
         - holiday
         - incomplete
+        - unscheduled
     StaffAttendanceSource:
       type: string
       enum:
@@ -26779,6 +26780,8 @@ components:
         source:
           $ref: "#/components/schemas/StaffAttendanceSource"
         notes:
+          type: string
+        holiday_name:
           type: string
     StaffAttendanceManualEntry:
       type: object

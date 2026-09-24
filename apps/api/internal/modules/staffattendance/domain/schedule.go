@@ -12,6 +12,12 @@ const (
 	StatusOnLeave    StatusCode = "on_leave"
 	StatusHoliday    StatusCode = "holiday"
 	StatusIncomplete StatusCode = "incomplete"
+	// StatusUnscheduled is a day with no weekly schedule row at all for the
+	// employee's weekday -- a configuration gap, never a day off. Distinct
+	// from StatusHoliday (the calendar, or the employee's own configured
+	// schedule, says no work is expected), which is a genuine "nothing to
+	// do today".
+	StatusUnscheduled StatusCode = "unscheduled"
 )
 
 // Source is one staff_attendance_records.source value: how the record's

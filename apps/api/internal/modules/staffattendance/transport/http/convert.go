@@ -23,6 +23,10 @@ func toAPIRecord(rec service.RecordView) api.StaffAttendanceRecord {
 		notes := rec.Notes
 		out.Notes = &notes
 	}
+	if rec.HolidayName != "" {
+		name := rec.HolidayName
+		out.HolidayName = &name
+	}
 	return out
 }
 
