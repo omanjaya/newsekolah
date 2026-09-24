@@ -116,6 +116,39 @@ bash infra/scripts/restore.sh --with-storage postgres-20260101T020000Z.dump   # 
 An age-encrypted dump (`*.dump.age`) needs `AGE_IDENTITY_FILE` pointing at the matching private
 key.
 
+After `pg_restore` finishes, `restore.sh` runs a smoke check against `$DATABASE_URL` before
+touching object storage: it connects, counts rows in `tenants` and `users` (a restore that leaves
+either table empty did not actually bring the data back), and checks `schema_migrations.dirty`
+(a dirty flag means golang-migrate was interrupted mid-migration and the schema cannot be trusted).
+Any of those checks failing prints `SMOKE CHECK FAILED: ...` and exits non-zero before
+`--with-storage` restores MinIO, so a bad Postgres restore is caught before it can be compounded by
+overwriting object storage too. `--dry-run` only prints the checks it would run.
+
+### Restore drill
+
+docs/08-security.md section 9 requires a monthly automated restore test; this is how to run one
+manually and what "passing" means.
+
+1. Take the latest object from `target/${BACKUP_S3_BUCKET}/postgres/` (or run `make prod-backup`
+   first to produce a fresh one).
+2. Point `DATABASE_URL` at a **scratch** database, never the production one -- `restore.sh` runs
+   `pg_restore --clean --if-exists`, which drops and recreates every object it finds. A throwaway
+   Postgres container (`docker run --rm -e POSTGRES_PASSWORD=drill -p 5433:5432 postgres:16`) or a
+   dedicated `*_restore_drill` database on a non-production instance both work.
+3. Run the restore against that database:
+   ```
+   DATABASE_URL=postgresql://postgres:drill@localhost:5433/postgres \
+     bash infra/scripts/restore.sh postgres-20260101T020000Z.dump
+   ```
+4. A drill passes when the script prints `smoke check passed` and exits 0. If it exits non-zero
+   with a `SMOKE CHECK FAILED` line, the backup (or the backup pipeline) is broken -- treat that as
+   an incident, not something to retry quietly, since it means the last N days of backups may be
+   unusable in a real disaster.
+5. Tear down the scratch database/container afterward; a drill never needs `--with-storage` unless
+   you are specifically validating the MinIO mirror too.
+6. Record the drill (date, backup object tested, pass/fail) wherever the school's operational log
+   lives, so a gap in monthly drills is visible.
+
 ## Switching to multi-tenant SaaS mode
 
 Single-school self-host and multi-tenant SaaS run the same images; only `TENANCY_MODE` and the

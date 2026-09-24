@@ -109,6 +109,56 @@ restore_postgres() {
     pg_restore --clean --if-exists --no-owner --dbname "$DATABASE_URL" "$dump_path"
 }
 
+smoke_check_postgres() {
+    if [[ "$DRY_RUN" -eq 1 ]]; then
+        log "[dry-run] psql \$DATABASE_URL -c 'select ...' (connectivity, tenants/users counts, schema_migrations.dirty)"
+        return
+    fi
+
+    log "smoke-checking restored database"
+
+    local psql_out
+    if ! psql_out="$(psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -tAc "select 1" 2>&1)"; then
+        echo "SMOKE CHECK FAILED: could not connect to the restored database: ${psql_out}" >&2
+        exit 1
+    fi
+
+    local tenant_count
+    if ! tenant_count="$(psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -tAc "select count(*) from tenants" 2>&1)"; then
+        echo "SMOKE CHECK FAILED: could not count rows in tenants: ${tenant_count}" >&2
+        exit 1
+    fi
+    if [[ "$tenant_count" -eq 0 ]]; then
+        echo "SMOKE CHECK FAILED: tenants table is empty after restore -- the dump did not bring back tenant data" >&2
+        exit 1
+    fi
+    log "tenants: ${tenant_count} row(s)"
+
+    local user_count
+    if ! user_count="$(psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -tAc "select count(*) from users" 2>&1)"; then
+        echo "SMOKE CHECK FAILED: could not count rows in users: ${user_count}" >&2
+        exit 1
+    fi
+    if [[ "$user_count" -eq 0 ]]; then
+        echo "SMOKE CHECK FAILED: users table is empty after restore -- the dump did not bring back user data" >&2
+        exit 1
+    fi
+    log "users: ${user_count} row(s)"
+
+    local dirty
+    if ! dirty="$(psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -tAc "select dirty from schema_migrations" 2>&1)"; then
+        echo "SMOKE CHECK FAILED: could not read schema_migrations.dirty: ${dirty}" >&2
+        exit 1
+    fi
+    if [[ "$dirty" == "t" ]]; then
+        echo "SMOKE CHECK FAILED: schema_migrations.dirty is true -- the restored schema is left mid-migration, do not point traffic at this database" >&2
+        exit 1
+    fi
+    log "schema_migrations: not dirty"
+
+    log "smoke check passed"
+}
+
 restore_storage() {
     if [[ "$WITH_STORAGE" -ne 1 ]]; then
         return
@@ -133,6 +183,7 @@ main() {
     local dump_path
     dump_path="$(fetch_dump)"
     restore_postgres "$dump_path"
+    smoke_check_postgres
     restore_storage
     log "restore complete"
 }
