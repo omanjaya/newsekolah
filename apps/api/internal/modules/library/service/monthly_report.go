@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/library/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 )
 
 // MonthlyReport is the printable A4 monthly report's data (old app:
@@ -197,26 +198,51 @@ func formatFloat1(v float64) string {
 }
 
 // MonthlyReportPDF renders MonthlyReport as a single A4 page: the report's
-// 11 indicators, its top-10 tables, and Pustakawan/Kepala Sekolah
-// signature columns (old app: library_monthly_report.go, HTML with
-// auto-print; here a server-rendered PDF since the platform has no
-// browser-print step for a generated document).
+// 11 indicators, its top-10 tables, and a signature block (old app:
+// library_monthly_report.go, HTML with auto-print; here a server-rendered
+// PDF since the platform has no browser-print step for a generated
+// document). The tenant's configured kop laporan and signers, when set,
+// are drawn through reportdoc.DrawLetterhead/DrawSignature -- the same
+// rendering every other reportdoc-backed report uses -- without moving
+// this report onto reportdoc.Document itself: its fixed indicator grid
+// and three differently-shaped tables are a layout RenderPDF cannot
+// express. A tenant that has not configured a kop laporan or any signers
+// still gets the plain library-name heading and blank signature lines
+// this report always printed.
 func (s *Service) MonthlyReportPDF(ctx context.Context, tenantID uuid.UUID, month string) ([]byte, error) {
 	report, err := s.MonthlyReport(ctx, tenantID, month)
 	if err != nil {
 		return nil, err
 	}
 
+	var letterhead *reportdoc.Letterhead
+	var signature *reportdoc.Signature
+	if s.letterhead != nil {
+		if lh, sig, err := s.letterhead.Letterhead(ctx, tenantID); err == nil {
+			letterhead, signature = lh, sig
+		}
+	}
+	return renderMonthlyReportPDF(report, letterhead, signature)
+}
+
+// renderMonthlyReportPDF is MonthlyReportPDF's pure rendering step, split
+// out so the layout can be exercised in a test without a database (see
+// monthly_report_test.go).
+func renderMonthlyReportPDF(report MonthlyReport, letterhead *reportdoc.Letterhead, signature *reportdoc.Signature) ([]byte, error) {
 	pdf := fpdf.New("P", "mm", "A4", "")
 	pdf.SetMargins(18, 16, 18)
 	pdf.AddPage()
 
-	libraryName := report.LibraryName
-	if libraryName == "" {
-		libraryName = "Perpustakaan Sekolah"
+	if letterhead != nil {
+		reportdoc.DrawLetterhead(pdf, letterhead)
+	} else {
+		libraryName := report.LibraryName
+		if libraryName == "" {
+			libraryName = "Perpustakaan Sekolah"
+		}
+		pdf.SetFont("Helvetica", "B", 14)
+		pdf.CellFormat(0, 7, libraryName, "", 1, "C", false, 0, "")
 	}
-	pdf.SetFont("Helvetica", "B", 14)
-	pdf.CellFormat(0, 7, libraryName, "", 1, "C", false, 0, "")
 	pdf.SetFont("Helvetica", "B", 12)
 	pdf.CellFormat(0, 6, "Laporan Bulanan Perpustakaan", "", 1, "C", false, 0, "")
 	pdf.SetFont("Helvetica", "", 10)
@@ -293,20 +319,24 @@ func (s *Service) MonthlyReportPDF(ctx context.Context, tenantID uuid.UUID, mont
 
 	pdf.Ln(10)
 	pdf.SetFont("Helvetica", "", 9)
-	_, pageHeight := pdf.GetPageSize()
-	_, _, _, bottom := pdf.GetMargins()
-	if pdf.GetY() > pageHeight-bottom-40 {
-		pdf.AddPage()
+	if signature != nil && len(signature.Signers) > 0 {
+		reportdoc.DrawSignature(pdf, signature)
+	} else {
+		_, pageHeight := pdf.GetPageSize()
+		_, _, _, bottom := pdf.GetMargins()
+		if pdf.GetY() > pageHeight-bottom-40 {
+			pdf.AddPage()
+		}
+		y := pdf.GetY()
+		pdf.SetXY(18, y)
+		pdf.CellFormat(80, 6, "Pustakawan,", "", 0, "C", false, 0, "")
+		pdf.SetXY(112, y)
+		pdf.CellFormat(80, 6, "Kepala Sekolah,", "", 1, "C", false, 0, "")
+		pdf.SetXY(18, y+25)
+		pdf.CellFormat(80, 6, "(_________________________)", "", 0, "C", false, 0, "")
+		pdf.SetXY(112, y+25)
+		pdf.CellFormat(80, 6, "(_________________________)", "", 1, "C", false, 0, "")
 	}
-	y := pdf.GetY()
-	pdf.SetXY(18, y)
-	pdf.CellFormat(80, 6, "Pustakawan,", "", 0, "C", false, 0, "")
-	pdf.SetXY(112, y)
-	pdf.CellFormat(80, 6, "Kepala Sekolah,", "", 1, "C", false, 0, "")
-	pdf.SetXY(18, y+25)
-	pdf.CellFormat(80, 6, "(_________________________)", "", 0, "C", false, 0, "")
-	pdf.SetXY(112, y+25)
-	pdf.CellFormat(80, 6, "(_________________________)", "", 1, "C", false, 0, "")
 
 	var buf bytes.Buffer
 	if err := pdf.Output(&buf); err != nil {

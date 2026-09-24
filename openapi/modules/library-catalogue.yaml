@@ -442,15 +442,24 @@ paths:
       tags: [library]
       operationId: getLibraryCatalogueSummaryReportXlsx
       x-permission: view_library_reports
-      summary: Accreditation-style catalogue summary as XLSX
+      summary: Accreditation-style catalogue summary as XLSX or PDF
+      description: >-
+        No columns parameter: this report's two sections (indicators,
+        Dewey-class breakdown) have different column counts, so it does
+        not offer end-user column customisation.
       parameters:
         - { name: from, in: query, schema: { type: string, format: date } }
         - { name: to, in: query, schema: { type: string, format: date } }
+        - $ref: "#/components/parameters/ReportFormat"
+        - $ref: "#/components/parameters/ReportTitle"
+        - $ref: "#/components/parameters/ReportLetterhead"
       responses:
         "200":
-          description: XLSX
+          description: File
           content:
             application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: { type: string, format: binary }
+            application/pdf:
               schema: { type: string, format: binary }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }

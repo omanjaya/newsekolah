@@ -1073,6 +1073,9 @@
           "loan_count": "Loan Count"
         }
       },
+      "summary": {
+        "defaultTitle": "Catalogue Summary"
+      },
       "visits": {
         "defaultTitle": "Library Visits Report",
         "columns": {

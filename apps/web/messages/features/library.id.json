@@ -1073,6 +1073,9 @@
           "loan_count": "Jumlah Pinjam"
         }
       },
+      "summary": {
+        "defaultTitle": "Ringkasan Katalog"
+      },
       "visits": {
         "defaultTitle": "Laporan Kunjungan Perpustakaan",
         "columns": {

@@ -3998,7 +3998,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Accreditation-style catalogue summary as XLSX */
+        /**
+         * Accreditation-style catalogue summary as XLSX or PDF
+         * @description No columns parameter: this report's two sections (indicators, Dewey-class breakdown) have different column counts, so it does not offer end-user column customisation.
+         */
         get: operations["getLibraryCatalogueSummaryReportXlsx"];
         put?: never;
         post?: never;
@@ -20334,6 +20337,12 @@ export interface operations {
             query?: {
                 from?: string;
                 to?: string;
+                /** @description xlsx (default) or pdf */
+                format?: components["parameters"]["ReportFormat"];
+                /** @description Overrides the report's default title */
+                title?: components["parameters"]["ReportTitle"];
+                /** @description Show the tenant's letterhead (default true; has no visible effect until the tenant has configured one) */
+                letterhead?: components["parameters"]["ReportLetterhead"];
             };
             header?: never;
             path?: never;
@@ -20341,13 +20350,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description XLSX */
+            /** @description File */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
+                    "application/pdf": string;
                 };
             };
             400: components["responses"]["BadRequest"];
