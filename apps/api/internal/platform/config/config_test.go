@@ -17,7 +17,7 @@ func clearEnv(t *testing.T) {
 		"ACCESS_TOKEN_TTL", "REFRESH_TOKEN_TTL", "TRUSTED_PROXIES", "BODY_LIMIT_BYTES",
 		"S3_ENDPOINT", "S3_BUCKET", "S3_ACCESS_KEY", "S3_SECRET_KEY", "S3_PUBLIC_ENDPOINT", "S3_REGION", "SMTP_URL",
 		"WHATSAPP_PROVIDER", "WHATSAPP_TOKEN", "WHATSAPP_PHONE_ID",
-		"OTEL_EXPORTER_OTLP_ENDPOINT", "SEED_PASSWORD",
+		"OTEL_EXPORTER_OTLP_ENDPOINT", "SEED_PASSWORD", "OPENAPI_VALIDATION",
 	}
 	for _, v := range vars {
 		t.Setenv(v, "")
@@ -160,6 +160,66 @@ func TestLoad_S3PublicEndpointOverridesAndValidates(t *testing.T) {
 	}
 	if cfg.S3Region != "ap-southeast-1" {
 		t.Errorf("expected S3Region override, got %q", cfg.S3Region)
+	}
+}
+
+func TestLoad_OpenAPIValidationDefaultsEnforceOutsideProduction(t *testing.T) {
+	clearEnv(t)
+	t.Setenv("DATABASE_URL", "postgres://localhost/test")
+	t.Setenv("JWT_SIGNING_KEY", "base64key")
+	t.Setenv("DOCUMENT_SIGNING_KEY", "a-test-document-signing-key-32-chars-long")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if cfg.OpenAPIValidation != "enforce" {
+		t.Errorf("expected OpenAPIValidation to default to enforce, got %q", cfg.OpenAPIValidation)
+	}
+}
+
+func TestLoad_OpenAPIValidationDefaultsLogInProduction(t *testing.T) {
+	clearEnv(t)
+	t.Setenv("DATABASE_URL", "postgres://localhost/test")
+	t.Setenv("JWT_SIGNING_KEY", "base64key")
+	t.Setenv("DOCUMENT_SIGNING_KEY", "a-test-document-signing-key-32-chars-long")
+	t.Setenv("APP_ENV", "production")
+	t.Setenv("APP_ORIGINS", "https://app.example.com")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if cfg.OpenAPIValidation != "log" {
+		t.Errorf("expected OpenAPIValidation to default to log in production, got %q", cfg.OpenAPIValidation)
+	}
+}
+
+func TestLoad_OpenAPIValidationRespectsExplicitValue(t *testing.T) {
+	clearEnv(t)
+	t.Setenv("DATABASE_URL", "postgres://localhost/test")
+	t.Setenv("JWT_SIGNING_KEY", "base64key")
+	t.Setenv("DOCUMENT_SIGNING_KEY", "a-test-document-signing-key-32-chars-long")
+	t.Setenv("OPENAPI_VALIDATION", "off")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if cfg.OpenAPIValidation != "off" {
+		t.Errorf("expected explicit OPENAPI_VALIDATION=off to be respected, got %q", cfg.OpenAPIValidation)
+	}
+}
+
+func TestLoad_RejectsInvalidOpenAPIValidation(t *testing.T) {
+	clearEnv(t)
+	t.Setenv("DATABASE_URL", "postgres://localhost/test")
+	t.Setenv("JWT_SIGNING_KEY", "base64key")
+	t.Setenv("DOCUMENT_SIGNING_KEY", "a-test-document-signing-key-32-chars-long")
+	t.Setenv("OPENAPI_VALIDATION", "sometimes")
+
+	if _, err := Load(); err == nil {
+		t.Fatal("expected Load to reject an unknown OPENAPI_VALIDATION")
 	}
 }
 

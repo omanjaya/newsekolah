@@ -6475,7 +6475,7 @@ paths:
           in: query
           schema:
             $ref: "#/components/schemas/EraporFormat"
-          default: xlsx
+            default: xlsx
       responses:
         "200":
           description: e-Rapor import file
@@ -16509,8 +16509,7 @@ paths:
                       $ref: "#/components/schemas/Journal"
                   total:
                     type: integer
-                    description: Total journals matching the filter
-                    ignoring limit/offset.: null
+                    description: Total journals matching the filter, ignoring limit/offset.
         "403":
           $ref: "#/components/responses/Forbidden"
     post:
