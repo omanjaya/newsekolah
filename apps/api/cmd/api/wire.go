@@ -410,7 +410,11 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 
 	strict := api.NewStrictHandlerWithOptions(
 		server,
-		[]api.StrictMiddlewareFunc{authzStrictMiddleware(ops, identityModule.Service)},
+		// idempotencyStrictMiddleware first (innermost) so it only runs
+		// once authzStrictMiddleware (outermost, so it runs first) has
+		// let the request through -- an unauthorized retry must never
+		// claim or consume an Idempotency-Key.
+		[]api.StrictMiddlewareFunc{idempotencyStrictMiddleware(store), authzStrictMiddleware(ops, identityModule.Service)},
 		api.StrictHTTPServerOptions{
 			RequestErrorHandlerFunc:  decodeErrorHandler,
 			ResponseErrorHandlerFunc: responseErrorHandler,

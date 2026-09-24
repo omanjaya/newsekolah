@@ -62,6 +62,14 @@ var catalog = map[string]map[string]string{
 		Indonesian: "Operasi ini belum memiliki konfigurasi izin.",
 		English:    "This operation has no permission configured.",
 	},
+	"IDEMPOTENCY_KEY_REUSED": {
+		Indonesian: "Idempotency-Key ini sudah dipakai untuk permintaan lain dengan data berbeda.",
+		English:    "This Idempotency-Key was already used for a different request.",
+	},
+	"IDEMPOTENCY_REQUEST_IN_PROGRESS": {
+		Indonesian: "Permintaan dengan Idempotency-Key ini sedang diproses, coba lagi sebentar lagi.",
+		English:    "A request with this Idempotency-Key is still being processed, try again shortly.",
+	},
 }
 
 // Message returns the localized message for code in the given
