@@ -44,9 +44,12 @@ export interface GradebookTableProps {
 /**
  * The score grid: components as columns, students as rows. Each column
  * keeps its own edit buffer so a teacher can fill several columns before
- * saving any of them; a column's own "Simpan" only sends that column's
- * entries, and the sticky bottom bar's "Simpan semua" sends every changed
- * column in one pass (`../lib/use-gradebook-save.ts`).
+ * saving any of them; the sticky bottom bar's "Simpan semua" is the one
+ * primary way to save, sending every changed column in one pass
+ * (`../lib/use-gradebook-save.ts`) -- a column can still be saved on its
+ * own from its "..." menu (`GradebookColumnMenu`) when that is genuinely
+ * useful, but that is not a second permanent save button competing with
+ * the bar.
  *
  * Renders exactly one of the desktop table or a mobile entry mode (picked
  * by `useMediaQuery`, not both behind `hidden`/`md:hidden` CSS), and each
@@ -186,19 +189,28 @@ export function GradebookTable({
     return set;
   }, [edits]);
 
-  const invalidComponentIds = useMemo(() => {
-    const set = new Set<string>();
-    for (const [componentId, byStudent] of Object.entries(edits)) {
-      for (const value of Object.values(byStudent)) {
-        if (isScoreOutOfRange(value, sheet.scale.min, sheet.scale.max)) {
-          set.add(componentId);
-          break;
+  // Every pending edit outside the tenant's grading scale, in row-major
+  // order (student, then component) so "the first invalid cell" the save
+  // bar can jump to is the one nearest the top of the sheet, not whatever
+  // order `edits` happens to iterate in.
+  const invalidCells = useMemo(() => {
+    const list: { componentId: string; studentId: string }[] = [];
+    for (const student of students) {
+      for (const component of components) {
+        const value = edits[component.id]?.[student.student_user_id];
+        if (value !== undefined && isScoreOutOfRange(value, sheet.scale.min, sheet.scale.max)) {
+          list.push({ componentId: component.id, studentId: student.student_user_id });
         }
       }
     }
-    return set;
-  }, [edits, sheet.scale.min, sheet.scale.max]);
-  const hasInvalidEdits = invalidComponentIds.size > 0;
+    return list;
+  }, [students, components, edits, sheet.scale.min, sheet.scale.max]);
+  const invalidComponentIds = useMemo(
+    () => new Set(invalidCells.map((cell) => cell.componentId)),
+    [invalidCells],
+  );
+  const hasInvalidEdits = invalidCells.length > 0;
+  const rangeHint = t("scoreRangeHint", { min: sheet.scale.min, max: sheet.scale.max });
 
   // Stable identities (functional state updates, no closed-over deps) so
   // `GradebookScoreCell`'s memo actually bails out for cells the teacher
@@ -255,6 +267,29 @@ export function GradebookTable({
     [components, students],
   );
 
+  // Jumps to (and focuses) the first invalid cell, for the save bar's "N
+  // nilai tidak valid" hint. On the mobile "one component at a time" mode
+  // that cell's input may not even be mounted yet if it belongs to a
+  // component the teacher isn't currently looking at -- switch to it first,
+  // then focus once the next paint has mounted it.
+  function focusFirstInvalidCell() {
+    const first = invalidCells[0];
+    if (!first) return;
+    const rowIndex = students.findIndex((s) => s.student_user_id === first.studentId);
+    if (rowIndex === -1) return;
+    const refKey = `${first.componentId}:${rowIndex}`;
+    const existing = inputRefs.current.get(refKey);
+    if (existing) {
+      existing.focus();
+      return;
+    }
+    setEntryMode("component");
+    setRawActiveComponentId(first.componentId);
+    requestAnimationFrame(() => {
+      inputRefs.current.get(refKey)?.focus();
+    });
+  }
+
   if (components.length === 0) {
     return <p className="p-6 text-center text-[13px] text-fg-muted">{t("noComponents")}</p>;
   }
@@ -291,6 +326,7 @@ export function GradebookTable({
           starBalances={starBalances}
           scaleMin={sheet.scale.min}
           scaleMax={sheet.scale.max}
+          rangeHint={rangeHint}
           liveByStudent={liveByStudent}
           missingByComponent={missingByComponent}
           invalidComponentIds={invalidComponentIds}
@@ -319,6 +355,7 @@ export function GradebookTable({
               savingComponentId={savingComponentId}
               scaleMin={sheet.scale.min}
               scaleMax={sheet.scale.max}
+              rangeHint={rangeHint}
               missingByComponent={missingByComponent}
               invalidComponentIds={invalidComponentIds}
               activeComponentId={activeComponentId}
@@ -339,6 +376,7 @@ export function GradebookTable({
               starBalances={starBalances}
               scaleMin={sheet.scale.min}
               scaleMax={sheet.scale.max}
+              rangeHint={rangeHint}
               liveByStudent={liveByStudent}
               pendingStudentIds={pendingStudentIds}
               onManualOverride={onManualOverride}
@@ -359,8 +397,15 @@ export function GradebookTable({
           }
           trailingSlot={
             hasInvalidEdits ? (
-              <span role="alert" className="text-[13px] text-status-absent">
-                {t("validationError", { min: sheet.scale.min, max: sheet.scale.max })}
+              <span role="alert" className="flex items-center gap-2 text-[13px] text-status-absent">
+                {t("invalidCount", { count: invalidCells.length })}
+                <button
+                  type="button"
+                  className="font-medium underline"
+                  onClick={focusFirstInvalidCell}
+                >
+                  {t("invalidFocus")}
+                </button>
               </span>
             ) : undefined
           }

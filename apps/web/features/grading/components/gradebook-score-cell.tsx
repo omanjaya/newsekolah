@@ -16,10 +16,17 @@ export interface GradebookScoreCellProps {
   value: string;
   disabled: boolean;
   ariaLabel: string;
+  /** Layout classes (width, shrink, text alignment) -- moved onto the wrapper, not the input, so they still apply once the range hint needs a sizing anchor. */
   className?: string;
   /** The tenant's grading scale, for inline min/max validation (undefined skips validation). */
   min?: number;
   max?: number;
+  /**
+   * Precomputed once for the whole sheet (e.g. "Nilai 0-100"), shown under
+   * an out-of-range cell and linked to it with `aria-describedby` so a
+   * screen reader announces it, not just the bare `aria-invalid`.
+   */
+  rangeHint?: string;
   /** True when this cell differs from what was last saved -- shows a small accent marker. */
   changed?: boolean;
   /** "lg" is the mobile one-component-at-a-time entry mode's big tap target; "sm" (default) is the spreadsheet grid. */
@@ -59,6 +66,7 @@ export const GradebookScoreCell = memo(function GradebookScoreCell({
   className,
   min,
   max,
+  rangeHint,
   changed,
   size = "sm",
   onCommit,
@@ -101,6 +109,8 @@ export const GradebookScoreCell = memo(function GradebookScoreCell({
   const refKey = `${componentId}:${rowIndex}`;
   const invalid =
     min !== undefined && max !== undefined ? isScoreOutOfRange(draft, min, max) : false;
+  const cellId = `gradebook-score-${componentId}-${studentId}`;
+  const hintId = `${cellId}-hint`;
 
   function handlePaste(e: ClipboardEvent<HTMLInputElement>) {
     if (!onPasteBlock) return;
@@ -114,62 +124,75 @@ export const GradebookScoreCell = memo(function GradebookScoreCell({
   }
 
   return (
-    <Input
-      ref={(el) => {
-        onRegisterRef(refKey, el);
-      }}
-      type="number"
-      inputMode="decimal"
-      step="0.1"
-      min={min}
-      max={max}
-      disabled={disabled}
-      value={draft}
-      placeholder="-"
-      aria-label={ariaLabel}
-      aria-invalid={invalid || undefined}
-      className={cn(
-        className,
-        size === "lg" && "h-12 text-center text-[20px] font-medium",
-        changed && "border-accent bg-accent/5",
-        invalid && "border-status-absent text-status-absent",
-      )}
-      onFocus={() => {
-        focusedRef.current = true;
-      }}
-      onChange={(e) => {
-        const next = e.target.value;
-        setDraft(next);
-        commitDebounced(next);
-      }}
-      onPaste={handlePaste}
-      onBlur={() => {
-        focusedRef.current = false;
-        // Only write an entry when the value actually changed: blurring an
-        // untouched cell (e.g. tabbing through) must not mark it "pending".
-        if (draft !== value) onCommit(componentId, studentId, draft);
-      }}
-      onKeyDown={(e) => {
-        if (!onNavigate) return;
-        if (e.key === "Enter" || e.key === "ArrowDown") {
-          e.preventDefault();
+    <div className={cn("relative", className)}>
+      <Input
+        ref={(el) => {
+          onRegisterRef(refKey, el);
+        }}
+        id={cellId}
+        type="number"
+        inputMode="decimal"
+        step="0.1"
+        min={min}
+        max={max}
+        disabled={disabled}
+        value={draft}
+        placeholder="-"
+        aria-label={ariaLabel}
+        invalid={invalid}
+        aria-describedby={invalid && rangeHint ? hintId : undefined}
+        className={cn(
+          "w-full",
+          size === "lg" && "h-12 text-center text-[20px] font-medium",
+          changed && "border-accent bg-accent/5",
+          invalid && "text-status-absent",
+        )}
+        onFocus={() => {
+          focusedRef.current = true;
+        }}
+        onChange={(e) => {
+          const next = e.target.value;
+          setDraft(next);
+          commitDebounced(next);
+        }}
+        onPaste={handlePaste}
+        onBlur={() => {
+          focusedRef.current = false;
+          // Only write an entry when the value actually changed: blurring an
+          // untouched cell (e.g. tabbing through) must not mark it "pending".
           if (draft !== value) onCommit(componentId, studentId, draft);
-          onNavigate(componentId, rowIndex, "down");
-        } else if (e.key === "ArrowUp") {
-          e.preventDefault();
-          onNavigate(componentId, rowIndex, "up");
-        } else if (e.key === "ArrowLeft") {
-          // A number input has no meaningful in-field cursor to preserve
-          // (selectionStart is unsupported for type="number" across
-          // browsers), so left/right always move a column -- consistent
-          // with up/down/Enter always moving a row.
-          e.preventDefault();
-          onNavigate(componentId, rowIndex, "left");
-        } else if (e.key === "ArrowRight") {
-          e.preventDefault();
-          onNavigate(componentId, rowIndex, "right");
-        }
-      }}
-    />
+        }}
+        onKeyDown={(e) => {
+          if (!onNavigate) return;
+          if (e.key === "Enter" || e.key === "ArrowDown") {
+            e.preventDefault();
+            if (draft !== value) onCommit(componentId, studentId, draft);
+            onNavigate(componentId, rowIndex, "down");
+          } else if (e.key === "ArrowUp") {
+            e.preventDefault();
+            onNavigate(componentId, rowIndex, "up");
+          } else if (e.key === "ArrowLeft") {
+            // A number input has no meaningful in-field cursor to preserve
+            // (selectionStart is unsupported for type="number" across
+            // browsers), so left/right always move a column -- consistent
+            // with up/down/Enter always moving a row.
+            e.preventDefault();
+            onNavigate(componentId, rowIndex, "left");
+          } else if (e.key === "ArrowRight") {
+            e.preventDefault();
+            onNavigate(componentId, rowIndex, "right");
+          }
+        }}
+      />
+      {invalid && rangeHint && (
+        <p
+          id={hintId}
+          role="alert"
+          className="absolute inset-x-0 top-full z-10 mt-0.5 text-[11px] leading-tight font-medium text-status-absent"
+        >
+          {rangeHint}
+        </p>
+      )}
+    </div>
   );
 });

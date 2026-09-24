@@ -20,6 +20,7 @@ export interface GradebookMobileCardsProps {
   starBalances: Map<string, number>;
   scaleMin: number;
   scaleMax: number;
+  rangeHint: string;
   liveByStudent: Map<string, { average: number | undefined; missing: number }>;
   pendingStudentIds: Set<string>;
   onManualOverride: (student: GradebookStudent) => void;
@@ -45,6 +46,7 @@ export function GradebookMobileCards({
   starBalances,
   scaleMin,
   scaleMax,
+  rangeHint,
   liveByStudent,
   pendingStudentIds,
   onManualOverride,
@@ -99,6 +101,7 @@ export function GradebookMobileCards({
                       className="w-20 shrink-0 text-right [font-variant-numeric:tabular-nums]"
                       min={scaleMin}
                       max={scaleMax}
+                      rangeHint={rangeHint}
                       changed={changed}
                       onCommit={onCommit}
                       onRegisterRef={onRegisterRef}
