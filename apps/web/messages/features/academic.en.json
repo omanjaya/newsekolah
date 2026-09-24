@@ -230,6 +230,8 @@
     "toYear": "To academic year",
     "preview": "Show plan",
     "sameYearError": "The source and destination academic years must differ.",
+    "idleTitle": "Pick the academic years",
+    "idleBody": "Pick the source and destination academic years, then show the plan to see what will be copied.",
     "emptyTitle": "Nothing to copy",
     "emptyBody": "The destination academic year already has every subject offering and class the source year has.",
     "offeringsTitle": "Subject offerings ({n} new)",

@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@newsekolah/ui";
-import { Copy, Pencil, Plus, Trash2 } from "lucide-react";
+import { AlertTriangle, Copy, Pencil, Plus, Trash2 } from "lucide-react";
 import type { ReactElement, ReactNode } from "react";
 
 import type { ScheduleBlock } from "../api";
@@ -179,6 +179,26 @@ export function EmptySlotCell({
 }
 
 /**
+ * A block whose period range touches a break (see break-warning.ts):
+ * normally an imported timetable built against a different period
+ * template. The grid still draws the lesson edge to edge across that row
+ * so the columns stay aligned, so this badge is the only thing on screen
+ * telling the person building the timetable to take a second look.
+ */
+function BreakWarningBadge({ label }: { label: string }): ReactElement {
+  return (
+    <span
+      role="img"
+      aria-label={label}
+      title={label}
+      className="inline-flex shrink-0 text-status-late"
+    >
+      <AlertTriangle className="size-3.5" aria-hidden="true" />
+    </span>
+  );
+}
+
+/**
  * A lesson fills the periods it runs for, labelled at the top so that a
  * block running three periods still names itself on the row it starts on
  * and the eye can read straight across. Its three controls stay out of
@@ -194,6 +214,8 @@ export function LessonCell({
   detail,
   canManage,
   today,
+  crossesBreak,
+  breakWarningLabel,
   onCopy,
   onEdit,
   onDelete,
@@ -205,6 +227,9 @@ export function LessonCell({
   detail: string;
   canManage: boolean;
   today?: boolean;
+  /** True when this block's periods touch a break; see break-warning.ts. */
+  crossesBreak?: boolean;
+  breakWarningLabel?: string;
   onCopy: (block: ScheduleBlock) => void;
   onEdit: (block: ScheduleBlock) => void;
   onDelete: (block: ScheduleBlock) => void;
@@ -213,7 +238,10 @@ export function LessonCell({
   return (
     <td rowSpan={span} className={cn(CELL, FILLED, today && "bg-accent/5")}>
       <div className="group flex size-full flex-col gap-0.5 px-2.5 py-2 transition-colors hover:bg-accent/5">
-        <span className="truncate text-[14px] font-medium text-fg">{subject}</span>
+        <span className="flex items-center gap-1.5 truncate text-[14px] font-medium text-fg">
+          <span className="truncate">{subject}</span>
+          {crossesBreak && breakWarningLabel && <BreakWarningBadge label={breakWarningLabel} />}
+        </span>
         <span className="truncate text-[12px] text-fg-muted">{detail}</span>
         {canManage && (
           <div

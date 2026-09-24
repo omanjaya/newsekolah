@@ -153,6 +153,8 @@ export type MessageKey =
   | "errors.REPORT_UNAVAILABLE"
   | "errors.SCAN_TOKEN_CONSUMER_NOT_STUDENT"
   | "errors.SCAN_TOKEN_GONE"
+  | "errors.SCHEDULE_CONFLICT_CLASS"
+  | "errors.SCHEDULE_CONFLICT_TEACHER"
   | "errors.SCHEDULE_HAS_HISTORY"
   | "errors.SSO_ACCOUNT_NOT_FOUND"
   | "errors.SSO_CLIENT_SECRET_REQUIRED"
@@ -425,6 +427,8 @@ export const MESSAGE_KEYS: readonly MessageKey[] = [
   "errors.REPORT_UNAVAILABLE",
   "errors.SCAN_TOKEN_CONSUMER_NOT_STUDENT",
   "errors.SCAN_TOKEN_GONE",
+  "errors.SCHEDULE_CONFLICT_CLASS",
+  "errors.SCHEDULE_CONFLICT_TEACHER",
   "errors.SCHEDULE_HAS_HISTORY",
   "errors.SSO_ACCOUNT_NOT_FOUND",
   "errors.SSO_CLIENT_SECRET_REQUIRED",

@@ -1,10 +1,11 @@
 "use client";
 
 import { cn } from "@newsekolah/ui";
-import { Copy, Pencil, Trash2 } from "lucide-react";
+import { AlertTriangle, Copy, Pencil, Trash2 } from "lucide-react";
 import type { ReactElement } from "react";
 
 import type { ScheduleBlock } from "../api";
+import { blockCrossesBreak } from "../break-warning";
 
 type NamedLookup = Map<string, { name: string }>;
 
@@ -215,8 +216,20 @@ export function ScheduleMobileAgenda({
                 </span>
                 {isNow && <span className="font-medium text-accent">{t("now")}</span>}
               </div>
-              <span className="text-[15px] font-medium text-fg">
-                {subjectMap.get(block.subject_id)?.name ?? t("unknownSubject")}
+              <span className="flex items-center gap-1.5 text-[15px] font-medium text-fg">
+                <span className="truncate">
+                  {subjectMap.get(block.subject_id)?.name ?? t("unknownSubject")}
+                </span>
+                {blockCrossesBreak(block, lessonPeriods) && (
+                  <span
+                    role="img"
+                    aria-label={t("crossesBreakWarning")}
+                    title={t("crossesBreakWarning")}
+                    className="inline-flex shrink-0 text-status-late"
+                  >
+                    <AlertTriangle className="size-3.5" aria-hidden="true" />
+                  </span>
+                )}
               </span>
               <span className="text-[13px] text-fg-muted">{title}</span>
               {canManage && (

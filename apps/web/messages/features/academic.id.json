@@ -230,6 +230,8 @@
     "toYear": "Ke tahun ajaran",
     "preview": "Tampilkan rencana",
     "sameYearError": "Tahun ajaran asal dan tujuan harus berbeda.",
+    "idleTitle": "Pilih tahun ajaran",
+    "idleBody": "Pilih tahun ajaran asal dan tujuan, lalu tampilkan rencana untuk melihat apa yang akan disalin.",
     "emptyTitle": "Tidak ada yang perlu disalin",
     "emptyBody": "Tahun ajaran tujuan sudah memiliki semua penawaran mapel dan kelas dari tahun ajaran asal.",
     "offeringsTitle": "Penawaran mapel ({n} baru)",

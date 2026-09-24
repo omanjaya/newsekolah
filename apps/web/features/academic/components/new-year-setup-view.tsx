@@ -107,83 +107,87 @@ export function NewYearSetupView(): ReactElement {
       )}
 
       {preview.isPending ? (
-        <Skeleton className="h-64 w-full" />
-      ) : plan && hasNothingToCopy ? (
+        <Skeleton className="h-64 w-full" aria-busy="true" />
+      ) : plan === null ? (
+        <EmptyState
+          icon={<CalendarPlus aria-hidden="true" />}
+          title={t("idleTitle")}
+          description={t("idleBody")}
+        />
+      ) : hasNothingToCopy ? (
         <EmptyState
           icon={<CalendarPlus aria-hidden="true" />}
           title={t("emptyTitle")}
           description={t("emptyBody")}
         />
       ) : (
-        plan && (
-          <>
-            <section className="flex flex-col gap-2">
-              <h2 className="text-[16px] font-medium text-fg">
-                {t("offeringsTitle", { n: newOfferings.length })}
-              </h2>
-              <ul className="divide-y divide-border rounded-xs border border-border text-[13px]">
-                {plan.subject_offerings.map((offering, i) => (
-                  <li
-                    key={`${offering.subject_id}-${offering.grade_level_id ?? "all"}-${i}`}
-                    className="flex items-center justify-between gap-2 px-3 py-2"
+        <>
+          <section className="flex flex-col gap-2">
+            <h2 className="text-[16px] font-medium text-fg">
+              {t("offeringsTitle", { n: newOfferings.length })}
+            </h2>
+            <ul className="divide-y divide-border rounded-xs border border-border text-[13px]">
+              {plan.subject_offerings.map((offering, i) => (
+                <li
+                  key={`${offering.subject_id}-${offering.grade_level_id ?? "all"}-${i}`}
+                  className="flex items-center justify-between gap-2 px-3 py-2"
+                >
+                  <span className="min-w-0 truncate">
+                    {subjectMap.get(offering.subject_id)?.name ?? offering.subject_id}
+                    {offering.grade_level_id && (
+                      <span className="text-fg-muted">
+                        {" "}
+                        · {gradeLevelMap.get(offering.grade_level_id)?.name ?? "-"}
+                      </span>
+                    )}
+                  </span>
+                  <Badge
+                    className="shrink-0"
+                    variant={offering.already_exists ? "neutral" : "accent"}
                   >
-                    <span className="min-w-0 truncate">
-                      {subjectMap.get(offering.subject_id)?.name ?? offering.subject_id}
-                      {offering.grade_level_id && (
-                        <span className="text-fg-muted">
-                          {" "}
-                          · {gradeLevelMap.get(offering.grade_level_id)?.name ?? "-"}
-                        </span>
-                      )}
-                    </span>
-                    <Badge
-                      className="shrink-0"
-                      variant={offering.already_exists ? "neutral" : "accent"}
-                    >
-                      {offering.already_exists ? t("alreadyExists") : t("willCopy")}
-                    </Badge>
-                  </li>
-                ))}
-                {plan.subject_offerings.length === 0 && (
-                  <li className="px-3 py-4 text-center text-fg-muted">{t("noOfferings")}</li>
-                )}
-              </ul>
-            </section>
+                    {offering.already_exists ? t("alreadyExists") : t("willCopy")}
+                  </Badge>
+                </li>
+              ))}
+              {plan.subject_offerings.length === 0 && (
+                <li className="px-3 py-4 text-center text-fg-muted">{t("noOfferings")}</li>
+              )}
+            </ul>
+          </section>
 
-            <section className="flex flex-col gap-2">
-              <h2 className="text-[16px] font-medium text-fg">
-                {t("classesTitle", { n: newClasses.length })}
-              </h2>
-              <ul className="divide-y divide-border rounded-xs border border-border text-[13px]">
-                {plan.classes.map((cls, i) => (
-                  <li
-                    key={`${cls.name}-${i}`}
-                    className="flex items-center justify-between gap-2 px-3 py-2"
-                  >
-                    <span className="min-w-0 truncate">{cls.name}</span>
-                    <Badge className="shrink-0" variant={cls.already_exists ? "neutral" : "accent"}>
-                      {cls.already_exists ? t("alreadyExists") : t("willCopy")}
-                    </Badge>
-                  </li>
-                ))}
-                {plan.classes.length === 0 && (
-                  <li className="px-3 py-4 text-center text-fg-muted">{t("noClasses")}</li>
-                )}
-              </ul>
-            </section>
+          <section className="flex flex-col gap-2">
+            <h2 className="text-[16px] font-medium text-fg">
+              {t("classesTitle", { n: newClasses.length })}
+            </h2>
+            <ul className="divide-y divide-border rounded-xs border border-border text-[13px]">
+              {plan.classes.map((cls, i) => (
+                <li
+                  key={`${cls.name}-${i}`}
+                  className="flex items-center justify-between gap-2 px-3 py-2"
+                >
+                  <span className="min-w-0 truncate">{cls.name}</span>
+                  <Badge className="shrink-0" variant={cls.already_exists ? "neutral" : "accent"}>
+                    {cls.already_exists ? t("alreadyExists") : t("willCopy")}
+                  </Badge>
+                </li>
+              ))}
+              {plan.classes.length === 0 && (
+                <li className="px-3 py-4 text-center text-fg-muted">{t("noClasses")}</li>
+              )}
+            </ul>
+          </section>
 
-            <div className="flex justify-end border-t border-border pt-4">
-              <Button
-                onClick={() => {
-                  setConfirming(true);
-                }}
-                disabled={hasNothingToCopy}
-              >
-                {t("commit")}
-              </Button>
-            </div>
-          </>
-        )
+          <div className="flex justify-end border-t border-border pt-4">
+            <Button
+              onClick={() => {
+                setConfirming(true);
+              }}
+              disabled={hasNothingToCopy}
+            >
+              {t("commit")}
+            </Button>
+          </div>
+        </>
       )}
 
       <ConfirmDialog
