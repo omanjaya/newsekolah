@@ -74,9 +74,10 @@ components:
         complete: { type: boolean }
     ChildSubjectGrade:
       type: object
-      required: [subject_id]
+      required: [subject_id, subject_name]
       properties:
         subject_id: { type: string, format: uuid }
+        subject_name: { type: string }
         average: { type: number }
         report_score: { type: number }
     ChildGrades:

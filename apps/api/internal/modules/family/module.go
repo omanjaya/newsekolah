@@ -11,6 +11,7 @@ type Dependencies struct {
 	Links      service.LinkChecker
 	Attendance service.AttendanceReader
 	Grading    service.GradingReader
+	Subjects   service.SubjectReader
 	Discipline service.DisciplineReader
 }
 
@@ -20,6 +21,6 @@ type Module struct {
 }
 
 func Register(deps Dependencies) *Module {
-	svc := service.New(deps.Links, deps.Attendance, deps.Grading, deps.Discipline)
+	svc := service.New(deps.Links, deps.Attendance, deps.Grading, deps.Subjects, deps.Discipline)
 	return &Module{Service: svc, Handler: transporthttp.New(svc)}
 }

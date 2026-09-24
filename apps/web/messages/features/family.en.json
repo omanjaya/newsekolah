@@ -32,7 +32,6 @@
       "stars": "{count} stars",
       "emptyTitle": "No grades published yet",
       "emptyBody": "Grades will appear here once a teacher publishes them.",
-      "unknownSubject": "Subject",
       "average": "Average {score}",
       "reportScore": "Report score {score}",
       "overall": "Average {score} across {count} subjects"

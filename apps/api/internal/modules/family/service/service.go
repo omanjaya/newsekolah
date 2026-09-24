@@ -28,6 +28,14 @@ type GradingReader interface {
 	StudentGrades(ctx context.Context, tenantID, studentID uuid.UUID) (StudentGrades, error)
 }
 
+// SubjectReader resolves subject names for the child grades response.
+// Parents cannot call /v1/academic/subjects themselves (they lack
+// view_academic_data), so the family module must name each subject
+// itself rather than leaving that to the web client.
+type SubjectReader interface {
+	SubjectNames(ctx context.Context, tenantID uuid.UUID, ids []uuid.UUID) (map[uuid.UUID]string, error)
+}
+
 type DisciplineReader interface {
 	StudentDiscipline(ctx context.Context, tenantID, studentID uuid.UUID) (StudentDiscipline, error)
 }
@@ -50,6 +58,7 @@ type StudentGrades struct {
 
 type SubjectGrade struct {
 	SubjectID   uuid.UUID
+	SubjectName string
 	Average     *float64
 	ReportScore *float64
 }
@@ -76,11 +85,12 @@ type Service struct {
 	links      LinkChecker
 	attendance AttendanceReader
 	grading    GradingReader
+	subjects   SubjectReader
 	discipline DisciplineReader
 }
 
-func New(links LinkChecker, attendance AttendanceReader, grading GradingReader, discipline DisciplineReader) *Service {
-	return &Service{links: links, attendance: attendance, grading: grading, discipline: discipline}
+func New(links LinkChecker, attendance AttendanceReader, grading GradingReader, subjects SubjectReader, discipline DisciplineReader) *Service {
+	return &Service{links: links, attendance: attendance, grading: grading, subjects: subjects, discipline: discipline}
 }
 
 func (s *Service) requireLink(ctx context.Context, tenantID, parentID, studentID uuid.UUID) error {
@@ -105,7 +115,25 @@ func (s *Service) ChildGrades(ctx context.Context, tenantID, parentID, studentID
 	if err := s.requireLink(ctx, tenantID, parentID, studentID); err != nil {
 		return StudentGrades{}, err
 	}
-	return s.grading.StudentGrades(ctx, tenantID, studentID)
+	grades, err := s.grading.StudentGrades(ctx, tenantID, studentID)
+	if err != nil {
+		return StudentGrades{}, err
+	}
+	if len(grades.Subjects) == 0 {
+		return grades, nil
+	}
+	ids := make([]uuid.UUID, len(grades.Subjects))
+	for i, subject := range grades.Subjects {
+		ids[i] = subject.SubjectID
+	}
+	names, err := s.subjects.SubjectNames(ctx, tenantID, ids)
+	if err != nil {
+		return StudentGrades{}, err
+	}
+	for i := range grades.Subjects {
+		grades.Subjects[i].SubjectName = names[grades.Subjects[i].SubjectID]
+	}
+	return grades, nil
 }
 
 func (s *Service) ChildDiscipline(ctx context.Context, tenantID, parentID, studentID uuid.UUID) (StudentDiscipline, error) {

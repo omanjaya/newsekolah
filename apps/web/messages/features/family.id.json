@@ -32,7 +32,6 @@
       "stars": "{count} bintang",
       "emptyTitle": "Belum ada nilai yang diterbitkan",
       "emptyBody": "Nilai akan muncul di sini setelah guru menerbitkannya.",
-      "unknownSubject": "Mapel",
       "average": "Rata-rata {score}",
       "reportScore": "Nilai rapor {score}",
       "overall": "Rata-rata {score} dari {count} mata pelajaran"

@@ -9109,6 +9109,7 @@ export interface components {
         ChildSubjectGrade: {
             /** Format: uuid */
             subject_id: string;
+            subject_name: string;
             average?: number;
             report_score?: number;
         };
