@@ -1,5 +1,6 @@
 "use client";
 
+import { ApiError } from "@newsekolah/api-client";
 import { formatDate } from "@newsekolah/i18n";
 import type { Locale } from "@newsekolah/i18n";
 import {
@@ -13,15 +14,17 @@ import {
   PageHeader,
   RowActionsMenu,
   Select,
+  selectionColumn,
   useToast,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Plus, Printer, UsersRound } from "lucide-react";
+import { CreditCard, Plus, Printer, UsersRound } from "lucide-react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import { useRememberedViewState } from "../../../lib/view-state/view-state-provider";
 import { useDirectoryQuery, useLookup } from "../../reference/api";
@@ -29,17 +32,21 @@ import { printMemberCard } from "../api";
 import {
   type LibraryMember,
   type LibraryMemberStatus,
+  printLibraryMemberCardsBatch,
   useLibraryMemberTypesQuery,
   useLibraryMembersQuery,
 } from "../members-api";
+import { useOrderedSelection } from "../use-ordered-selection";
 
 import { MemberBulkRegisterDialog } from "./member-bulk-register-dialog";
+import { MemberCardPrintBar } from "./member-card-print-bar";
 import { MemberRegisterForm } from "./member-register-form";
 
 const STATUSES: LibraryMemberStatus[] = ["pending", "active", "inactive", "suspended", "cleared"];
 
 export function MembersView(): ReactElement {
   const t = useTranslations("app.library.members");
+  const tMemberCards = useTranslations("app.library.memberCards");
   const locale = useLocale() as Locale;
   const toast = useToast();
   const canManage = useCan("manage_library_members");
@@ -52,6 +59,9 @@ export function MembersView(): ReactElement {
   const [search, setSearch] = useRememberedViewState("members-search", "");
   const [registering, setRegistering] = useState(false);
   const [bulkRegistering, setBulkRegistering] = useState(false);
+  const [printingFiltered, setPrintingFiltered] = useState(false);
+  const { selection, onSelectionChange, orderedIds, clear } = useOrderedSelection();
+  const apiErrorMessage = useApiErrorMessage();
 
   const { data, isLoading } = useLibraryMembersQuery({ status, memberTypeId, search, limit: 200 });
   const memberTypes = useLibraryMemberTypesQuery();
@@ -69,6 +79,7 @@ export function MembersView(): ReactElement {
 
   const columns = useMemo<ColumnDef<LibraryMember>[]>(
     () => [
+      selectionColumn<LibraryMember>(),
       {
         id: "name",
         header: t("columns.name"),
@@ -205,7 +216,33 @@ export function MembersView(): ReactElement {
             {t("filters.clear")}
           </button>
         )}
+        {memberTypeId !== "" && (
+          <Button
+            size="sm"
+            variant="secondary"
+            icon={<CreditCard />}
+            loading={printingFiltered}
+            onClick={() => {
+              setPrintingFiltered(true);
+              printLibraryMemberCardsBatch({ memberTypeId })
+                .catch((error: unknown) => {
+                  toast.error(
+                    error instanceof ApiError
+                      ? apiErrorMessage(error.code)
+                      : apiErrorMessage("UNKNOWN"),
+                  );
+                })
+                .finally(() => {
+                  setPrintingFiltered(false);
+                });
+            }}
+          >
+            {tMemberCards("printFiltered")}
+          </Button>
+        )}
       </div>
+
+      <MemberCardPrintBar selectedIds={orderedIds} onClear={clear} />
 
       <div className="flex flex-col md:min-h-0 md:flex-1">
         <DataTable
@@ -221,6 +258,8 @@ export function MembersView(): ReactElement {
           onGlobalFilterChange={setSearch}
           toolbarLabels={{ searchPlaceholder: t("searchPlaceholder") }}
           isLoading={isLoading}
+          rowSelection={selection}
+          onRowSelectionChange={onSelectionChange}
           getRowId={(item) => item.user_id}
           fillHeight
           emptyState={
