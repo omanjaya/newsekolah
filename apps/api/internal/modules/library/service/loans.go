@@ -380,6 +380,13 @@ type ReservationReadyEvent struct {
 
 func (ReservationReadyEvent) EventName() string { return "library.reservation_ready" }
 
+// RenewInput is a renewal by loan ID (desk overdue table, member history) or
+// by barcode (desk continuous scan flow) -- exactly one must be set, mirroring ReturnInput.
+type RenewInput struct {
+	LoanID  uuid.NullUUID
+	Barcode string
+}
+
 // Renew extends a loan's due date to a working day n renewal_days after
 // max(today, due_on) (old app: library_circulation.go:970-1078). It is
 // refused for a loan already at its renewal limit, one that is overdue,
@@ -387,19 +394,27 @@ func (ReservationReadyEvent) EventName() string { return "library.reservation_re
 // member waiting in the reservation queue.
 //
 //nolint:gocyclo // the old app's renewal checks (library_circulation.go:970-1078) are a fixed sequence; kept linear for auditability of the rule order
-func (s *Service) Renew(ctx context.Context, tenantID, loanID uuid.UUID, renewedBy uuid.UUID) (domain.Loan, error) {
+func (s *Service) Renew(ctx context.Context, tenantID uuid.UUID, in RenewInput, renewedBy uuid.UUID) (domain.Loan, error) {
 	if err := s.requireEnabled(ctx, tenantID); err != nil {
 		return domain.Loan{}, err
 	}
 	var loan domain.Loan
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		existing, found, err := s.repo.GetLoan(ctx, tenantID, loanID)
+		var existing domain.Loan
+		var found bool
+		var err error
+		if in.LoanID.Valid {
+			existing, found, err = s.repo.GetLoan(ctx, tenantID, in.LoanID.UUID)
+		} else {
+			existing, found, err = s.repo.GetLoanByBarcode(ctx, tenantID, in.Barcode)
+		}
 		if err != nil {
 			return err
 		}
 		if !found {
 			return domain.ErrLoanNotFound
 		}
+		loanID := existing.ID
 		policy, err := s.loadPolicy(ctx, tenantID)
 		if err != nil {
 			return err

@@ -75,6 +75,29 @@ func (s *Service) ReserveForSelf(ctx context.Context, tenantID, titleID, userID 
 // CancelMyReservation cancels reservationID only when it belongs to
 // userID (old app: library_my.go:255-295 "batalkan pesanan milik sendiri
 // saja").
+// RenewMyLoan lets a member renew their own active loan (the "Pinjaman
+// saya" self-service renew action) -- same eligibility chain as the desk's
+// Renew (domain.CanRenew: refused if overdue, at the renewal limit, or the
+// title has a waiting reservation), plus an ownership check no staff-only
+// caller needs, since this is reached through view_own_library_loans
+// rather than manage_library_circulation.
+func (s *Service) RenewMyLoan(ctx context.Context, tenantID, loanID, userID uuid.UUID) (domain.Loan, error) {
+	if err := s.requireEnabled(ctx, tenantID); err != nil {
+		return domain.Loan{}, err
+	}
+	existing, found, err := s.repo.GetLoan(ctx, tenantID, loanID)
+	if err != nil {
+		return domain.Loan{}, err
+	}
+	if !found {
+		return domain.Loan{}, domain.ErrLoanNotFound
+	}
+	if existing.MemberUserID != userID {
+		return domain.Loan{}, domain.ErrForbidden
+	}
+	return s.Renew(ctx, tenantID, RenewInput{LoanID: uuid.NullUUID{UUID: loanID, Valid: true}}, userID)
+}
+
 func (s *Service) CancelMyReservation(ctx context.Context, tenantID, reservationID, userID uuid.UUID) (domain.Reservation, error) {
 	if err := s.requireEnabled(ctx, tenantID); err != nil {
 		return domain.Reservation{}, err

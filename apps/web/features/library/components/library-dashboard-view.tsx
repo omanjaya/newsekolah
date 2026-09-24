@@ -9,22 +9,20 @@ import { useLibraryDashboardQuery } from "../dashboard-api";
 
 import { DashboardActivityLists } from "./dashboard-activity-lists";
 import { DashboardSeriesChart } from "./dashboard-series-chart";
+import { DashboardTodayCards } from "./dashboard-today-cards";
 
-const STAT_KEYS = [
+const SECONDARY_STAT_KEYS = [
   "titles",
   "copies",
   "available",
   "on_loan",
-  "overdue",
   "members",
   "active_members",
   "visits_today",
-  "loans_today",
-  "returns_today",
   "unpaid_fines_total",
 ] as const;
 
-/** The library module's landing page: today's counts, recent activity, and a 30-day trend. */
+/** The library module's landing page: today's counts (as one-tap links to act), recent activity, and a 30-day trend. */
 export function LibraryDashboardView(): ReactElement {
   const t = useTranslations("app.library.dashboard");
   const { data, isLoading, isError, refetch } = useLibraryDashboardQuery();
@@ -38,19 +36,26 @@ export function LibraryDashboardView(): ReactElement {
       ) : isLoading || !data ? (
         <Skeleton className="h-32 w-full" aria-busy="true" />
       ) : (
-        <StatGrid className="rounded-sm border border-border bg-surface p-4 lg:grid-cols-6">
-          {STAT_KEYS.map((key) => (
-            <Stat
-              key={key}
-              label={t(`stats.${key}`)}
-              value={
-                key === "unpaid_fines_total"
-                  ? t("currency", { amount: data.summary[key] })
-                  : data.summary[key]
-              }
-            />
-          ))}
-        </StatGrid>
+        <>
+          <DashboardTodayCards
+            loansToday={data.summary.loans_today}
+            returnsToday={data.summary.returns_today}
+            overdue={data.summary.overdue}
+          />
+          <StatGrid className="rounded-sm border border-border bg-surface p-4 lg:grid-cols-4">
+            {SECONDARY_STAT_KEYS.map((key) => (
+              <Stat
+                key={key}
+                label={t(`stats.${key}`)}
+                value={
+                  key === "unpaid_fines_total"
+                    ? t("currency", { amount: data.summary[key] })
+                    : data.summary[key]
+                }
+              />
+            ))}
+          </StatGrid>
+        </>
       )}
 
       {!isLoading && data && (

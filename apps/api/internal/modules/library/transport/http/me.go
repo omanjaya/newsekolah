@@ -35,6 +35,14 @@ func (h *LibraryHandler) GetMyLibraryProfile(ctx context.Context, _ api.GetMyLib
 	return api.GetMyLibraryProfile200JSONResponse(out), nil
 }
 
+func (h *LibraryHandler) RenewMyLibraryLoan(ctx context.Context, request api.RenewMyLibraryLoanRequestObject) (api.RenewMyLibraryLoanResponseObject, error) {
+	loan, err := h.service.RenewMyLoan(ctx, tenantID(ctx), request.LoanId, userID(ctx))
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return api.RenewMyLibraryLoan200JSONResponse(toAPILoan(loan)), nil
+}
+
 func (h *LibraryHandler) ReserveMyLibraryTitle(ctx context.Context, request api.ReserveMyLibraryTitleRequestObject) (api.ReserveMyLibraryTitleResponseObject, error) {
 	r, err := h.service.ReserveForSelf(ctx, tenantID(ctx), request.Body.TitleId, userID(ctx))
 	if err != nil {

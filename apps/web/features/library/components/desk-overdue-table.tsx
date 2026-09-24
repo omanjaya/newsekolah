@@ -18,6 +18,7 @@ import {
   useSendLibraryDueRemindersMutation,
 } from "../desk-api";
 
+import { DeskOverdueRowActions } from "./desk-overdue-row-actions";
 import { MarkLostDialog } from "./mark-lost-dialog";
 
 /** Overdue loans with class and guardian phone, plus one button to run the due-date reminder pass. */
@@ -86,54 +87,38 @@ export function DeskOverdueTable(): ReactElement {
         cell: ({ row }) => {
           const loan = row.original.loan;
           return (
-            <div className="flex flex-wrap gap-2">
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => {
-                  renew.mutate(loan.id, {
-                    onSuccess: () => toast.success(t("renewed")),
+            <DeskOverdueRowActions
+              returning={returnLoan.isPending && returnLoan.variables.loanId === loan.id}
+              renewing={renew.isPending && renew.variables === loan.id}
+              onRenew={() => {
+                renew.mutate(loan.id, {
+                  onSuccess: () => toast.success(t("renewed")),
+                  onError: (error) =>
+                    toast.error(
+                      error instanceof ApiError
+                        ? apiErrorMessage(error.code)
+                        : apiErrorMessage("UNKNOWN"),
+                    ),
+                });
+              }}
+              onReturn={() => {
+                returnLoan.mutate(
+                  { loanId: loan.id },
+                  {
+                    onSuccess: () => toast.success(t("returned")),
                     onError: (error) =>
                       toast.error(
                         error instanceof ApiError
                           ? apiErrorMessage(error.code)
                           : apiErrorMessage("UNKNOWN"),
                       ),
-                  });
-                }}
-              >
-                {t("renew")}
-              </Button>
-              <Button
-                size="sm"
-                onClick={() => {
-                  returnLoan.mutate(
-                    { loanId: loan.id },
-                    {
-                      onSuccess: () => toast.success(t("returned")),
-                      onError: (error) =>
-                        toast.error(
-                          error instanceof ApiError
-                            ? apiErrorMessage(error.code)
-                            : apiErrorMessage("UNKNOWN"),
-                        ),
-                    },
-                  );
-                }}
-              >
-                {t("return")}
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="text-status-absent"
-                onClick={() => {
-                  setMarkingLost(loan.id);
-                }}
-              >
-                {t("markLost")}
-              </Button>
-            </div>
+                  },
+                );
+              }}
+              onMarkLost={() => {
+                setMarkingLost(loan.id);
+              }}
+            />
           );
         },
       },

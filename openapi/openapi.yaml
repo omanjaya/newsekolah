@@ -10169,6 +10169,43 @@ paths:
           $ref: "#/components/responses/NotFound"
         "409":
           $ref: "#/components/responses/Conflict"
+  /v1/library/loans/renew-by-barcode:
+    post:
+      tags:
+        - library
+      operationId: renewLibraryLoanByBarcode
+      x-permission: manage_library_circulation
+      summary: Renew a loan by scanning its copy's barcode instead of knowing the loan id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - barcode
+              properties:
+                barcode:
+                  type: string
+                  minLength: 1
+                  maxLength: 64
+      responses:
+        "200":
+          description: Renewed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryLoan"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
   /v1/library/loans/{loanId}/renewals:
     get:
       tags:
@@ -10617,6 +10654,36 @@ paths:
                 $ref: "#/components/schemas/LibraryMyProfile"
         "401":
           $ref: "#/components/responses/Unauthorized"
+  /v1/library/me/loans/{loanId}/renew:
+    post:
+      tags:
+        - library
+      operationId: renewMyLibraryLoan
+      x-permission: view_own_library_loans
+      summary: Renew the current user's own active loan (refused if overdue, at its renewal limit, or the title has a waiting
+        reservation)
+      parameters:
+        - name: loanId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Renewed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibraryLoan"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
   /v1/library/me/reservations:
     post:
       tags:

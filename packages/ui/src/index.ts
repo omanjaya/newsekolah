@@ -20,6 +20,7 @@ export {
 } from "./hooks/use-barcode-scanner.js";
 export { createDuplicateScanGuard, type DuplicateScanGuard } from "./hooks/duplicate-scan-guard.js";
 export { useMediaQuery } from "./hooks/use-media-query.js";
+export { useScanFeedback, type ScanFeedback } from "./hooks/use-scan-feedback.js";
 export { Textarea, type TextareaProps } from "./components/textarea.js";
 export { Select, type SelectOption, type SelectProps } from "./components/select.js";
 export { Combobox, type ComboboxOption, type ComboboxProps } from "./components/combobox.js";

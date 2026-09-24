@@ -4425,6 +4425,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/library/loans/renew-by-barcode": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Renew a loan by scanning its copy's barcode instead of knowing the loan id */
+        post: operations["renewLibraryLoanByBarcode"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/library/loans/{loanId}/renewals": {
         parameters: {
             query?: never;
@@ -4642,6 +4659,23 @@ export interface paths {
         get: operations["getMyLibraryProfile"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/library/me/loans/{loanId}/renew": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Renew the current user's own active loan (refused if overdue, at its renewal limit, or the title has a waiting reservation) */
+        post: operations["renewMyLibraryLoan"];
         delete?: never;
         options?: never;
         head?: never;
@@ -21221,6 +21255,37 @@ export interface operations {
             409: components["responses"]["Conflict"];
         };
     };
+    renewLibraryLoanByBarcode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    barcode: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Renewed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryLoan"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
     listLibraryLoanRenewals: {
         parameters: {
             query?: never;
@@ -21624,6 +21689,32 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
+        };
+    };
+    renewMyLibraryLoan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                loanId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Renewed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryLoan"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
         };
     };
     reserveMyLibraryTitle: {

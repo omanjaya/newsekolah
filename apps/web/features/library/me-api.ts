@@ -21,6 +21,17 @@ export function useMyLibraryProfileQuery() {
   });
 }
 
+/** Renews one of the current user's own active loans, so a member does not need to ask a librarian for a routine renewal. */
+export function useRenewMyLoanMutation() {
+  const client = useApiClient();
+  const invalidate = useInvalidateMyProfile();
+  return useMutation({
+    mutationFn: (loanId: string) =>
+      client.POST("/v1/library/me/loans/{loanId}/renew", { params: { path: { loanId } } }),
+    onSuccess: invalidate,
+  });
+}
+
 /** Reserves a title for the current user, so a member can hold a book without asking a librarian. */
 export function useReserveMyLibraryTitleMutation() {
   const client = useApiClient();
