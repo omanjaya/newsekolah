@@ -22,6 +22,7 @@ vi.mock("../../reference/api", () => ({
   useLookup: () => new Map(),
 }));
 vi.mock("./journal-form", () => ({ JournalForm: () => null }));
+vi.mock("./journal-today-panel", () => ({ JournalTodayPanel: () => null }));
 vi.mock("../api", () => ({
   useJournalsQuery: query,
   useDeleteJournalMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),

@@ -18,6 +18,7 @@ import {
   TabsList,
   TabsTrigger,
   Textarea,
+  cn,
   useDebouncedCallback,
   useToast,
 } from "@newsekolah/ui";
@@ -29,7 +30,9 @@ import { useMemo, useState } from "react";
 import { useActiveYear } from "../../../lib/hooks/use-active-year";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSession } from "../../../lib/session/session-provider";
+import { todayInZone } from "../../../lib/tenant-date";
 import {
+  useAllPeriodsQuery,
   useClassesQuery,
   useLookup,
   useSubjectsQuery,
@@ -53,7 +56,7 @@ const STATUS_VARIANT: Record<Substitution["status"], "neutral" | "accent"> = {
   cancelled: "neutral",
 };
 
-/** Requests I received (incoming) and requests I sent (outgoing). */
+/** Requests I received (incoming) and requests I sent (outgoing), rendered with the same session-card look as the attendance day list. */
 export function SubstitutionsView(): ReactElement {
   const t = useTranslations("app.substitutions");
   const locale = useLocale() as Locale;
@@ -67,6 +70,14 @@ export function SubstitutionsView(): ReactElement {
   const cancel = useCancelSubstitutionMutation();
   const teachers = useTeachersQuery();
   const teacherMap = useLookup(teachers.data?.data);
+  const classes = useClassesQuery();
+  const subjects = useSubjectsQuery();
+  const periods = useAllPeriodsQuery();
+  const classMap = useLookup(classes.data?.data);
+  const subjectMap = useLookup(subjects.data?.data);
+  const periodMap = useLookup(periods.data?.data);
+
+  const today = todayInZone(me?.tenant.timezone);
 
   function fail(error: unknown) {
     toast.error(
@@ -118,13 +129,28 @@ export function SubstitutionsView(): ReactElement {
           {items.map((item) => {
             const other =
               direction === "incoming" ? item.requester_user_id : item.substitute_user_id;
+            const className = item.class_id
+              ? (classMap.get(item.class_id)?.name ?? undefined)
+              : undefined;
+            const subjectName = item.subject_id
+              ? (subjectMap.get(item.subject_id)?.name ?? undefined)
+              : undefined;
+            const start = item.start_period_id ? periodMap.get(item.start_period_id) : undefined;
+            const end = item.end_period_id ? periodMap.get(item.end_period_id) : undefined;
+            const isToday = item.date === today;
             return (
               <li
                 key={item.id}
-                className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-4 md:flex-row md:items-center md:justify-between"
+                className={cn(
+                  "flex flex-col gap-3 rounded-sm border bg-surface p-4 md:flex-row md:items-center md:justify-between",
+                  isToday && item.status === "accepted"
+                    ? "border-accent ring-1 ring-accent/40"
+                    : "border-border",
+                )}
               >
-                <div className="flex flex-col gap-1">
-                  <div className="flex items-center gap-2">
+                <div className="flex min-w-0 flex-1 flex-col gap-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    {isToday && <Badge variant="accent">{t("todayBadge")}</Badge>}
                     <span className="text-[15px] font-medium text-fg">
                       {formatDate(item.date, { locale, timeZone: me?.tenant.timezone })}
                     </span>
@@ -132,6 +158,19 @@ export function SubstitutionsView(): ReactElement {
                       {t(`status.${item.status}`)}
                     </Badge>
                   </div>
+                  {(className ?? subjectName) && (
+                    <span className="text-[14px] text-fg">
+                      {className}
+                      {className && subjectName ? " • " : ""}
+                      {subjectName}
+                      {start && end && (
+                        <span className="text-fg-muted">
+                          {" "}
+                          ({start.name} - {end.name})
+                        </span>
+                      )}
+                    </span>
+                  )}
                   <span className="text-[13px] text-fg-muted">
                     {direction === "incoming" ? t("fromTeacher") : t("toTeacher")}:{" "}
                     {teacherMap.get(other)?.name ?? t("unknownTeacher")}

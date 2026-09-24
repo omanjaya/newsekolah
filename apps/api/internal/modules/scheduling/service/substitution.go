@@ -176,6 +176,31 @@ func (s *Service) ListSubstitutionsOutgoing(ctx context.Context, tenantID, userI
 	return out, err
 }
 
+// ListSubstitutionsIncomingWithSchedule is ListSubstitutionsIncoming
+// enriched with each row's class/subject/period, for the web
+// substitutions page's session-card list.
+func (s *Service) ListSubstitutionsIncomingWithSchedule(ctx context.Context, tenantID, userID uuid.UUID) ([]domain.SubstitutionWithSchedule, error) {
+	var out []domain.SubstitutionWithSchedule
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		out, err = s.repo.ListSubstitutionsIncomingWithSchedule(ctx, tenantID, userID)
+		return err
+	})
+	return out, err
+}
+
+// ListSubstitutionsOutgoingWithSchedule is ListSubstitutionsOutgoing's
+// enriched counterpart; see ListSubstitutionsIncomingWithSchedule.
+func (s *Service) ListSubstitutionsOutgoingWithSchedule(ctx context.Context, tenantID, userID uuid.UUID) ([]domain.SubstitutionWithSchedule, error) {
+	var out []domain.SubstitutionWithSchedule
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		out, err = s.repo.ListSubstitutionsOutgoingWithSchedule(ctx, tenantID, userID)
+		return err
+	})
+	return out, err
+}
+
 // ListSubstitutionsAll is the manage_schedules-only "all" list scope; the
 // transport layer is responsible for the permission check.
 func (s *Service) ListSubstitutionsAll(ctx context.Context, tenantID uuid.UUID, status *domain.SubstitutionStatus) ([]domain.Substitution, error) {

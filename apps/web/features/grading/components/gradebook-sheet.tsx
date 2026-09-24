@@ -3,6 +3,7 @@
 import { ApiError } from "@newsekolah/api-client";
 import {
   Alert,
+  Badge,
   Button,
   ConfirmDialog,
   EmptyState,
@@ -154,7 +155,7 @@ export function GradebookSheet({
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className={canManage ? "flex flex-col gap-4 pb-24 md:pb-20" : "flex flex-col gap-4"}>
       <div className="flex flex-wrap items-center gap-3">
         <SearchInput
           value={search}
@@ -188,16 +189,21 @@ export function GradebookSheet({
         >
           {t("exportGradebook")}
         </Button>
-        <label className="ml-auto flex items-center gap-2 text-[13px]">
-          <span className="text-fg-muted">{t("publishToggleLabel")}</span>
-          <Switch
-            checked={sheet.is_published}
-            disabled={!canManage}
-            onCheckedChange={(checked) => {
-              setPendingPublish(checked);
-            }}
-          />
-        </label>
+        <div className="ml-auto flex items-center gap-3">
+          <Badge variant={sheet.is_published ? "accent" : "neutral"}>
+            {sheet.is_published ? t("publishedBadge") : t("draftBadge")}
+          </Badge>
+          <label className="flex items-center gap-2 text-[13px]">
+            <span className="text-fg-muted">{t("publishToggleLabel")}</span>
+            <Switch
+              checked={sheet.is_published}
+              disabled={!canManage}
+              onCheckedChange={(checked) => {
+                setPendingPublish(checked);
+              }}
+            />
+          </label>
+        </div>
       </div>
 
       <ReportExportDialog

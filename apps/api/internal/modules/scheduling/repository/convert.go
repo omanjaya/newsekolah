@@ -34,6 +34,22 @@ func toSubstitution(row db.SubstitutionRequest) domain.Substitution {
 	}
 }
 
+func toSubstitutionWithSchedule(row db.ListSubstitutionsIncomingWithScheduleRow) domain.SubstitutionWithSchedule {
+	return domain.SubstitutionWithSchedule{
+		Substitution: toSubstitution(row.SubstitutionRequest),
+		ClassID:      row.ClassID, SubjectID: row.SubjectID,
+		StartPeriodID: row.StartPeriodID, EndPeriodID: row.EndPeriodID,
+	}
+}
+
+func toOutgoingSubstitutionWithSchedule(row db.ListSubstitutionsOutgoingWithScheduleRow) domain.SubstitutionWithSchedule {
+	return domain.SubstitutionWithSchedule{
+		Substitution: toSubstitution(row.SubstitutionRequest),
+		ClassID:      row.ClassID, SubjectID: row.SubjectID,
+		StartPeriodID: row.StartPeriodID, EndPeriodID: row.EndPeriodID,
+	}
+}
+
 func toJournal(row db.ClassJournal) domain.Journal {
 	return domain.Journal{
 		ID: row.ID, TenantID: row.TenantID, AcademicYearID: row.AcademicYearID, TeacherUserID: row.TeacherUserID,

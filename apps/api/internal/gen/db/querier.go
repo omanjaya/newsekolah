@@ -1185,7 +1185,14 @@ type Querier interface {
 	// narrowed to one status.
 	ListSubstitutionsAll(ctx context.Context, arg ListSubstitutionsAllParams) ([]SubstitutionRequest, error)
 	ListSubstitutionsIncoming(ctx context.Context, arg ListSubstitutionsIncomingParams) ([]SubstitutionRequest, error)
+	// Same rows as ListSubstitutionsIncoming, joined with the covered
+	// schedule's class/subject/period so the web substitutions page can render
+	// a session-card without a second round trip per row. The join is always
+	// safe: substitution_requests.schedule_id cascades on schedule delete, so
+	// the referenced schedule row always exists for as long as this row does.
+	ListSubstitutionsIncomingWithSchedule(ctx context.Context, arg ListSubstitutionsIncomingWithScheduleParams) ([]ListSubstitutionsIncomingWithScheduleRow, error)
 	ListSubstitutionsOutgoing(ctx context.Context, arg ListSubstitutionsOutgoingParams) ([]SubstitutionRequest, error)
+	ListSubstitutionsOutgoingWithSchedule(ctx context.Context, arg ListSubstitutionsOutgoingWithScheduleParams) ([]ListSubstitutionsOutgoingWithScheduleRow, error)
 	ListSystemRoles(ctx context.Context, tenantID uuid.UUID) ([]ListSystemRolesRow, error)
 	ListTPMappings(ctx context.Context, arg ListTPMappingsParams) ([]ReportTpMapping, error)
 	// Active teachers with a teaching assignment in academic_year_id, for a
