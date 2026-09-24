@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -163,6 +164,13 @@ func (r *Repository) CreateInstance(ctx context.Context, inst domain.Instance) (
 		OpenedAt: pdatabase.Timestamptz(inst.OpenedAt), CreatedBy: pdatabase.NullUUID(inst.CreatedBy),
 	})
 	if err != nil {
+		// The service pre-checks this with the tenant-local day, but the
+		// index keys on the UTC day, so near midnight the pre-check can
+		// miss and the index is what rejects the duplicate.
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" && pgErr.ConstraintName == "ux_workflow_instances_one_exit_permit_per_day" {
+			return domain.Instance{}, domain.ErrExitPermitAlreadyToday
+		}
 		return domain.Instance{}, fmt.Errorf("create instance: %w", err)
 	}
 	return toInstance(row), nil
