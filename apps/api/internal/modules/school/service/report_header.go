@@ -22,9 +22,12 @@ const reportHeaderSettingKey = "report_header.config"
 // domain (and so json struct tags -- an encoding detail -- do not leak
 // into it).
 type reportHeaderJSON struct {
-	ShowLogo bool                     `json:"show_logo"`
-	Lines    []string                 `json:"lines"`
-	Emphasis int                      `json:"emphasis"`
+	ShowLogo bool     `json:"show_logo"`
+	Lines    []string `json:"lines"`
+	// Emphasis is omitted for domain.EmphasisAuto, and a blob stored
+	// before the field existed decodes as nil, so both read back as
+	// automatic rather than as "line 1".
+	Emphasis *int                     `json:"emphasis,omitempty"`
 	Place    string                   `json:"place"`
 	Signers  []reportHeaderSignerJSON `json:"signers"`
 }
@@ -41,7 +44,12 @@ func toReportHeaderJSON(h domain.ReportHeader) reportHeaderJSON {
 	for i, s := range h.Signers {
 		signers[i] = reportHeaderSignerJSON{RoleLabel: s.RoleLabel, Name: s.Name, IDLabel: s.IDLabel, IDNumber: s.IDNumber}
 	}
-	return reportHeaderJSON{ShowLogo: h.ShowLogo, Lines: h.Lines, Emphasis: h.Emphasis, Place: h.Place, Signers: signers}
+	var emphasis *int
+	if h.Emphasis != domain.EmphasisAuto {
+		e := h.Emphasis
+		emphasis = &e
+	}
+	return reportHeaderJSON{ShowLogo: h.ShowLogo, Lines: h.Lines, Emphasis: emphasis, Place: h.Place, Signers: signers}
 }
 
 func (j reportHeaderJSON) toDomain() domain.ReportHeader {
@@ -49,7 +57,11 @@ func (j reportHeaderJSON) toDomain() domain.ReportHeader {
 	for i, s := range j.Signers {
 		signers[i] = domain.ReportHeaderSigner{RoleLabel: s.RoleLabel, Name: s.Name, IDLabel: s.IDLabel, IDNumber: s.IDNumber}
 	}
-	return domain.ReportHeader{ShowLogo: j.ShowLogo, Lines: j.Lines, Emphasis: j.Emphasis, Place: j.Place, Signers: signers}
+	emphasis := domain.EmphasisAuto
+	if j.Emphasis != nil {
+		emphasis = *j.Emphasis
+	}
+	return domain.ReportHeader{ShowLogo: j.ShowLogo, Lines: j.Lines, Emphasis: emphasis, Place: j.Place, Signers: signers}
 }
 
 // ReportHeader returns tenantID's configured kop laporan, or
