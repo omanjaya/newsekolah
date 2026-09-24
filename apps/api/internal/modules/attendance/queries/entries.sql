@@ -29,3 +29,14 @@ join attendance_sessions s on s.id = e.session_id
 where e.tenant_id = $1 and e.student_user_id = $2 and s.class_id = $3 and s.subject_id = $4 and s.date < $5
 order by s.date desc
 limit 1;
+
+-- name: CountEntryStatusesForStudentsInYear :many
+-- Every roster student's per-status entry count across the whole
+-- academic year (every class and subject, not just this one), the
+-- roster's "N Sakit, N Izin, ..." recap: one aggregate query for the
+-- whole class rather than one round trip per student.
+select e.student_user_id, e.status_code, count(*)::bigint as total
+from attendance_entries e
+join attendance_sessions s on s.id = e.session_id
+where e.tenant_id = $1 and s.academic_year_id = $2 and e.student_user_id = any(sqlc.arg(student_ids)::uuid[])
+group by e.student_user_id, e.status_code;

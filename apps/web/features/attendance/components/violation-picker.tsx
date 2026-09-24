@@ -6,6 +6,10 @@ import {
   PopoverContent,
   PopoverTrigger,
   Skeleton,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
   cn,
   domainIcons,
 } from "@newsekolah/ui";
@@ -32,22 +36,29 @@ export function ViolationPicker({
   const t = useTranslations("app.attendance.session.violations");
   return (
     <Popover>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          disabled={disabled}
-          aria-label={t("button", { name: studentName })}
-          className={cn(
-            "flex h-11 min-w-11 items-center gap-1 rounded-xs border border-border px-2 md:h-8",
-            selected.length > 0 ? "border-status-absent text-status-absent" : "text-fg-muted",
-          )}
-        >
-          <domainIcons.violation className="size-4" aria-hidden="true" />
-          {selected.length > 0 && (
-            <span className="text-[12px] font-medium">{selected.length}</span>
-          )}
-        </button>
-      </PopoverTrigger>
+      <TooltipProvider delayDuration={300}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                disabled={disabled}
+                aria-label={t("button", { name: studentName })}
+                className={cn(
+                  "flex h-11 min-w-11 items-center gap-1 rounded-xs border border-border px-2 md:h-8",
+                  selected.length > 0 ? "border-status-absent text-status-absent" : "text-fg-muted",
+                )}
+              >
+                <domainIcons.violation className="size-4" aria-hidden="true" />
+                {selected.length > 0 && (
+                  <span className="text-[12px] font-medium">{selected.length}</span>
+                )}
+              </button>
+            </PopoverTrigger>
+          </TooltipTrigger>
+          <TooltipContent>{t("title")}</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
       <PopoverContent align="end">
         <p className="mb-2 text-[13px] font-medium text-fg">{t("title")}</p>
         {loading ? (

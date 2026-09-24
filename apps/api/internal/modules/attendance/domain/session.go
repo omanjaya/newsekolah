@@ -78,6 +78,15 @@ type Entry struct {
 	UpdatedAt     time.Time
 }
 
+// StudentStatusCount is one student's total entry count for one status
+// code across an academic year, the roster's per-student recap
+// ("N Sakit, N Izin, ...").
+type StudentStatusCount struct {
+	StudentUserID uuid.UUID
+	StatusCode    string
+	Total         int
+}
+
 // Correction is an audit row written whenever a save changes an already
 // recorded entry's status under SaveModeCorrection.
 type Correction struct {

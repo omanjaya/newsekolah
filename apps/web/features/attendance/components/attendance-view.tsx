@@ -2,7 +2,6 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import {
-  Badge,
   Button,
   EmptyState,
   IconButton,
@@ -18,7 +17,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { useActiveYear } from "../../../lib/hooks/use-active-year";
 import { useDateFilter } from "../../../lib/hooks/use-date-filter";
@@ -34,12 +33,16 @@ import {
 import { useTeacherOptionsQuery } from "../../schedule/api";
 import {
   type SessionSummary,
+  nowTimeInZone,
   todayInZone,
   useOpenSessionMutation,
   useTodaySessionsQuery,
 } from "../api";
+import { classifyPeriodTiming, deriveFillStatus, findNextSessionId } from "../lib/session-schedule";
 
 import { AttendanceCalendar } from "./attendance-calendar";
+import { AttendanceDaySummary } from "./attendance-day-summary";
+import { AttendanceSessionCard } from "./attendance-session-card";
 
 /** Teachers see a day of sessions to fill; everyone else sees their own calendar. */
 export function AttendanceView(): ReactElement {
@@ -154,8 +157,69 @@ function DaySessions(): ReactElement {
     ? canPickAnyTeacher
     : teacherSelectOptions.some((option) => option.value !== me?.id);
 
-  const items = sessions.data?.data ?? [];
+  const items = useMemo(() => sessions.data?.data ?? [], [sessions.data]);
   const loading = sessions.isLoading && selectedTeacherId !== "";
+
+  const sortedItems = useMemo(
+    () =>
+      [...items].sort((a, b) => {
+        const aStart = periodMap.get(a.start_period_id)?.starts_at ?? "";
+        const bStart = periodMap.get(b.start_period_id)?.starts_at ?? "";
+        return aStart.localeCompare(bStart);
+      }),
+    [items, periodMap],
+  );
+
+  // Re-evaluated every 30s so "sedang berlangsung"/"berikutnya" stays
+  // accurate through a lesson without a full page reload; only meaningful
+  // for today's own list, never for a past or future date.
+  const [now, setNow] = useState(() => nowTimeInZone(me?.tenant.timezone));
+  useEffect(() => {
+    const id = setInterval(() => {
+      setNow(nowTimeInZone(me?.tenant.timezone));
+    }, 30_000);
+    return () => {
+      clearInterval(id);
+    };
+  }, [me?.tenant.timezone]);
+  const isToday = date === today;
+
+  const ongoingScheduleId = useMemo(() => {
+    if (!isToday) return null;
+    const match = sortedItems.find((session) => {
+      const start = periodMap.get(session.start_period_id);
+      const end = periodMap.get(session.end_period_id);
+      if (!start || !end) return false;
+      return (
+        classifyPeriodTiming(now, { startsAt: start.starts_at, endsAt: end.ends_at }) === "ongoing"
+      );
+    });
+    return match?.schedule_id ?? null;
+  }, [isToday, sortedItems, periodMap, now]);
+
+  const nextScheduleId = useMemo(() => {
+    if (!isToday) return null;
+    // A session whose period is not in periodMap (a schedule built on a
+    // period template other than the tenant's default one -- see
+    // usePeriodsQuery) has no timing to compare, so it is left out of
+    // "next" rather than guessed at: a placeholder time could wrongly
+    // mark it either always-next or never-next.
+    const timed = sortedItems.filter((session) => {
+      const start = periodMap.get(session.start_period_id);
+      const end = periodMap.get(session.end_period_id);
+      return Boolean(start && end);
+    });
+    return findNextSessionId(
+      timed,
+      (session) => session.schedule_id,
+      (session) => {
+        const start = periodMap.get(session.start_period_id);
+        const end = periodMap.get(session.end_period_id);
+        return { startsAt: start?.starts_at ?? "", endsAt: end?.ends_at ?? "" };
+      },
+      now,
+    );
+  }, [isToday, sortedItems, periodMap, now]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -279,52 +343,44 @@ function DaySessions(): ReactElement {
           />
         )
       ) : (
-        <section className="flex flex-col gap-3">
+        <section className="grid grid-cols-1 gap-4 md:grid-cols-[minmax(0,1fr)_16rem]">
           <ul className="flex flex-col gap-2">
-            {items.map((session) => {
+            {sortedItems.map((session) => {
               const start = periodMap.get(session.start_period_id);
               const end = periodMap.get(session.end_period_id);
-              const submitted = Boolean(session.submitted_at);
+              const fillStatus = deriveFillStatus(
+                session.submitted_at,
+                session.date || date,
+                today,
+              );
+              const timing: "ongoing" | "next" | null =
+                session.schedule_id === ongoingScheduleId
+                  ? "ongoing"
+                  : session.schedule_id === nextScheduleId
+                    ? "next"
+                    : null;
               return (
-                <li
+                <AttendanceSessionCard
                   key={session.schedule_id}
-                  className="flex flex-col gap-3 rounded-sm border border-border bg-surface p-4 md:flex-row md:items-center md:justify-between"
-                >
-                  <div className="flex flex-col gap-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[15px] font-medium text-fg">
-                        {classMap.get(session.class_id)?.name ?? t("unknownClass")}
-                      </span>
-                      <span className="text-[14px] text-fg-muted">
-                        {subjectMap.get(session.subject_id)?.name ?? t("unknownSubject")}
-                      </span>
-                      {session.is_substitute && (
-                        <Badge variant="accent">{t("substituteBadge")}</Badge>
-                      )}
-                    </div>
-                    <span className="text-[13px] text-fg-muted">
-                      {start && end
-                        ? `${start.name} - ${end.name} (${start.starts_at.slice(0, 5)}-${end.ends_at.slice(0, 5)})`
-                        : ""}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Badge variant={submitted ? "accent" : "neutral"}>
-                      {submitted ? t("statusSubmitted") : t("statusPending")}
-                    </Badge>
-                    <Button
-                      size="sm"
-                      variant={submitted ? "secondary" : "primary"}
-                      loading={open.isPending && open.variables.schedule_id === session.schedule_id}
-                      onClick={() => void openSession(session)}
-                    >
-                      {submitted ? t("openSubmitted") : t("fillAttendance")}
-                    </Button>
-                  </div>
-                </li>
+                  session={session}
+                  className={classMap.get(session.class_id)?.name ?? t("unknownClass")}
+                  subjectName={subjectMap.get(session.subject_id)?.name ?? t("unknownSubject")}
+                  start={start}
+                  end={end}
+                  fillStatus={fillStatus}
+                  timing={timing}
+                  submitting={open.isPending && open.variables.schedule_id === session.schedule_id}
+                  timeZone={me?.tenant.timezone}
+                  onOpen={() => void openSession(session)}
+                />
               );
             })}
           </ul>
+          <AttendanceDaySummary
+            total={sortedItems.length}
+            saved={sortedItems.filter((s) => Boolean(s.submitted_at)).length}
+            pending={sortedItems.filter((s) => !s.submitted_at).length}
+          />
         </section>
       )}
     </div>

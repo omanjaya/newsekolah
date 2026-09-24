@@ -127,6 +127,10 @@ type Repository interface {
 	GetEntryBySessionStudent(ctx context.Context, tenantID, sessionID, studentUserID uuid.UUID) (entry domain.Entry, found bool, err error)
 	ListEntryStatusesForStudentDate(ctx context.Context, tenantID, studentUserID uuid.UUID, date time.Time) ([]string, error)
 	GetPreviousEntryForStudent(ctx context.Context, tenantID, studentUserID, classID, subjectID uuid.UUID, before time.Time) (status string, found bool, err error)
+	// CountEntryStatusesForStudentsInYear backs the roster's per-student
+	// "N Sakit, N Izin, ..." recap (buildSessionDetail): one batched
+	// aggregate for the whole roster rather than one query per student.
+	CountEntryStatusesForStudentsInYear(ctx context.Context, tenantID, academicYearID uuid.UUID, studentUserIDs []uuid.UUID) ([]domain.StudentStatusCount, error)
 
 	CreateCorrection(ctx context.Context, c domain.Correction) (domain.Correction, error)
 

@@ -33,8 +33,14 @@ type Actor struct {
 
 // RosterItem is one student's row in a session's recording payload.
 type RosterItem struct {
-	StudentUserID  uuid.UUID
-	Name           string
+	StudentUserID uuid.UUID
+	Name          string
+	NIS           string
+	// YearCounts is this student's total entries per status code across
+	// the current academic year (every class/subject, not just this
+	// one) -- the roster's per-student recap, e.g. {"S": 1, "I": 2}. A
+	// code with zero entries this year is simply absent from the map.
+	YearCounts     map[string]int
 	PreviousStatus string
 	CurrentStatus  string
 	Source         domain.EntrySource
@@ -68,6 +74,13 @@ type SessionDetail struct {
 type SessionSummary struct {
 	Session      domain.Session
 	IsSubstitute bool
+	// RosterCount is the class's active enrollment count for the session's
+	// academic year, and EnteredCount how many of them already have an
+	// entry recorded for this session -- the "30/36 diisi" fill progress
+	// the session list shows per card, so a teacher can tell a half-filled
+	// roster from a fully recorded one without opening it.
+	RosterCount  int
+	EnteredCount int
 }
 
 // CalendarDaySession is one schedule's contribution to a calendar day: the

@@ -38,16 +38,18 @@ func toAPIStatusDefs(defs []domain.StatusDef) []api.AttendanceStatusDef {
 
 func toAPISessionSummary(s service.SessionSummary) api.AttendanceSessionSummary {
 	sess := s.Session
+	rosterCount, enteredCount := s.RosterCount, s.EnteredCount
 	return api.AttendanceSessionSummary{
 		Id: sess.ID, ScheduleId: sess.ScheduleID, Date: openapi_types.Date{Time: sess.Date}, ClassId: sess.ClassID,
 		SubjectId: sess.SubjectID, TeacherUserId: sess.TeacherUserID, SubstituteUserId: nullUUIDPtr(sess.SubstituteUserID),
 		StartPeriodId: sess.StartPeriodID, EndPeriodId: sess.EndPeriodID, IsSubstitute: s.IsSubstitute, SubmittedAt: sess.SubmittedAt,
+		RosterCount: &rosterCount, EnteredCount: &enteredCount,
 	}
 }
 
 func toAPIRosterItem(r service.RosterItem) api.AttendanceRosterItem {
 	item := api.AttendanceRosterItem{
-		StudentUserId: r.StudentUserID, Name: r.Name, PreviousStatus: strPtrOrNil(r.PreviousStatus),
+		StudentUserId: r.StudentUserID, Name: r.Name, Nis: strPtrOrNil(r.NIS), PreviousStatus: strPtrOrNil(r.PreviousStatus),
 		CurrentStatus: strPtrOrNil(r.CurrentStatus), Notes: strPtrOrNil(r.Notes),
 	}
 	if r.Source != "" {
@@ -58,6 +60,10 @@ func toAPIRosterItem(r service.RosterItem) api.AttendanceRosterItem {
 		blocked := true
 		item.Blocked = &blocked
 		item.BlockedReason = strPtrOrNil(r.BlockedReason)
+	}
+	if len(r.YearCounts) > 0 {
+		counts := r.YearCounts
+		item.YearCounts = &counts
 	}
 	return item
 }

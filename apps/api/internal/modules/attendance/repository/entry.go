@@ -51,6 +51,30 @@ func (r *Repository) ListEntryStatusesForStudentDate(ctx context.Context, tenant
 	})
 }
 
+// CountEntryStatusesForStudentsInYear returns, for every (student, status
+// code) pair with at least one entry in academicYearID, that entry's
+// total count across the whole year -- one query for the whole roster,
+// used by the roster's per-student "N Sakit, N Izin, ..." recap
+// (buildSessionDetail) rather than one round trip per student.
+func (r *Repository) CountEntryStatusesForStudentsInYear(
+	ctx context.Context, tenantID, academicYearID uuid.UUID, studentUserIDs []uuid.UUID,
+) ([]domain.StudentStatusCount, error) {
+	if len(studentUserIDs) == 0 {
+		return nil, nil
+	}
+	rows, err := r.queries(ctx).CountEntryStatusesForStudentsInYear(ctx, db.CountEntryStatusesForStudentsInYearParams{
+		TenantID: tenantID, AcademicYearID: academicYearID, StudentIds: studentUserIDs,
+	})
+	if err != nil {
+		return nil, err
+	}
+	out := make([]domain.StudentStatusCount, len(rows))
+	for i, row := range rows {
+		out[i] = domain.StudentStatusCount{StudentUserID: row.StudentUserID, StatusCode: row.StatusCode, Total: int(row.Total)}
+	}
+	return out, nil
+}
+
 func (r *Repository) GetPreviousEntryForStudent(ctx context.Context, tenantID, studentUserID, classID, subjectID uuid.UUID, before time.Time) (string, bool, error) {
 	status, err := r.queries(ctx).GetPreviousEntryForStudent(ctx, db.GetPreviousEntryForStudentParams{
 		TenantID: tenantID, StudentUserID: studentUserID, ClassID: classID, SubjectID: subjectID, Date: pdatabase.Date(before),
