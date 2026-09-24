@@ -3,6 +3,7 @@
 import { ApiError, queryKeys, type components } from "@newsekolah/api-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import type { ReportExportOptions } from "../../components/report-export-dialog";
 import { getAccessToken } from "../../lib/api/access-token";
 import { useApiClient } from "../../lib/api/client";
 import { API_URL } from "../../lib/env";
@@ -166,16 +167,31 @@ export function useOwnDailyAttendanceReportQuery(date: string, enabled = true) {
   });
 }
 
+/** Either a single class or a whole grade level ("angkatan"), for a report export's scope picker. */
+export type ReportScope =
+  { kind: "class"; classId: string } | { kind: "gradeLevel"; gradeLevelId: string };
+
+function scopeQuery(scope: ReportScope): Record<string, string> {
+  return scope.kind === "class"
+    ? { class_id: scope.classId }
+    : { grade_level_id: scope.gradeLevelId };
+}
+
 /**
- * Downloads the daily report as an XLSX file. Uses a direct `fetch` rather
- * than the shared API client, same reasoning as `downloadReportExport` in
+ * Downloads a binary report export via a direct `fetch` rather than the
+ * shared API client (same reasoning as `downloadReportExport` in
  * `features/reports/api.ts`: the client always parses the response as
- * JSON, but this endpoint returns a binary workbook.
+ * JSON, but these endpoints return a binary workbook), appending
+ * `scopeQuery(scope)` to `query`.
  */
-export async function downloadDailyAttendanceReport(date: string, classId: string): Promise<void> {
+async function downloadExport(
+  path: string,
+  query: Record<string, string>,
+  filename: string,
+): Promise<void> {
   const token = getAccessToken();
-  const query = new URLSearchParams({ date, class_id: classId }).toString();
-  const response = await fetch(`${API_URL}/v1/attendance/reports/daily/export?${query}`, {
+  const params = new URLSearchParams(query).toString();
+  const response = await fetch(`${API_URL}${path}?${params}`, {
     headers: token ? { Authorization: `Bearer ${token}` } : undefined,
   });
   if (!response.ok) {
@@ -186,13 +202,73 @@ export async function downloadDailyAttendanceReport(date: string, classId: strin
   try {
     const link = document.createElement("a");
     link.href = url;
-    link.download = `attendance-daily-${classId}-${date}.xlsx`;
+    link.download = filename;
     document.body.appendChild(link);
     link.click();
     link.remove();
   } finally {
     URL.revokeObjectURL(url);
   }
+}
+
+/**
+ * Encodes one {@link ReportExportDialog}-chosen column as the `columns`
+ * query param's `key` or `key:Label` form (docs/05-shared-components.md
+ * "Laporan dan ekspor"). Unlike features/reports/api.ts's own
+ * encodeColumnChoice, the label is left unencoded here: it is joined into
+ * `query` below and the whole query string gets exactly one
+ * `URLSearchParams` encoding pass (in `downloadExport`), so pre-encoding
+ * it here would double-encode it.
+ */
+function encodeColumnChoice(choice: { key: string; label?: string }): string {
+  return choice.label ? `${choice.key}:${choice.label}` : choice.key;
+}
+
+/** Adds format/title/letterhead/columns to a report export's query, from {@link ReportExportDialog}'s options. */
+function reportOptionsQuery(options: ReportExportOptions): Record<string, string> {
+  const query: Record<string, string> = {
+    format: options.format,
+    title: options.title,
+    letterhead: options.showLetterhead ? "true" : "false",
+  };
+  if (options.columns.length > 0) {
+    query.columns = options.columns.map(encodeColumnChoice).join(",");
+  }
+  return query;
+}
+
+/** Downloads the daily report (XLSX or PDF, per options.format), for one class or a whole grade level. */
+export async function downloadDailyAttendanceReport(
+  date: string,
+  scope: ReportScope,
+  options: ReportExportOptions,
+): Promise<void> {
+  const extension = options.format === "pdf" ? "pdf" : "xlsx";
+  await downloadExport(
+    "/v1/attendance/reports/daily/export",
+    { date, ...scopeQuery(scope), ...reportOptionsQuery(options) },
+    `presensi-harian.${extension}`,
+  );
+}
+
+/**
+ * Downloads the monthly recap (XLSX or PDF, per options.format), for one
+ * class or a whole grade level -- one row per student (NIS, name,
+ * per-status counts, total, percentage present), one sheet per class.
+ * Unlike useMonthlyAttendanceSummaryQuery (one student's own calendar),
+ * this scopes to a class's or grade level's whole roster at once.
+ */
+export async function downloadMonthlyAttendanceReport(
+  month: string,
+  scope: ReportScope,
+  options: ReportExportOptions,
+): Promise<void> {
+  const extension = options.format === "pdf" ? "pdf" : "xlsx";
+  await downloadExport(
+    "/v1/attendance/reports/monthly/export",
+    { month, ...scopeQuery(scope), ...reportOptionsQuery(options) },
+    `rekap-presensi-bulanan.${extension}`,
+  );
 }
 
 /** "YYYY-MM-DD" in the tenant's timezone, for "today" queries. */

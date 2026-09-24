@@ -104,6 +104,33 @@ where c.tenant_id = $1 and c.academic_year_id = $2 and c.deleted_at is null
   )
 order by c.name;
 
+-- name: GetClassHomeroomTeacherForAttendance :one
+-- classes.homeroom_teacher_id, kept in sync with the "homeroom" duty
+-- assignment by the academic module (homeroom_sync.sql) -- the class
+-- scope of a report export's signature block ("Wali Kelas" signer).
+select homeroom_teacher_id from classes where tenant_id = $1 and id = $2;
+
+-- name: GetGradeLevelNameForAttendance :one
+-- One grade level's display name, for the grade-level ("angkatan") scope
+-- of a report export's scope line ("Angkatan: <name>").
+select name from grade_levels where tenant_id = $1 and id = $2;
+
+-- name: GetClassNameForAttendance :one
+-- One class's display name, for the class scope of a report export (the
+-- grade-level scope already gets every class's name from
+-- ListClassesByGradeLevelForAttendance below).
+select name from classes where tenant_id = $1 and id = $2;
+
+-- name: ListClassesByGradeLevelForAttendance :many
+-- Every non-deleted class of the academic year in grade_level_id, ordered
+-- by name -- the grade-level ("angkatan") scope for attendance report
+-- exports: one section per class, matching
+-- academic.AcademicListClassesByYearAndGradeLevel's own scoping rule.
+select c.id as class_id, c.name as class_name
+from classes c
+where c.tenant_id = $1 and c.academic_year_id = $2 and c.grade_level_id = $3 and c.deleted_at is null
+order by c.name;
+
 -- name: CountDailySummaryStatusesForAttendance :many
 select status_code, count(*)::bigint as total
 from attendance_daily_summary

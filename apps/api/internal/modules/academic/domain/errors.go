@@ -53,4 +53,8 @@ var (
 	ErrImportHasInvalidRow = errors.New("the file has at least one invalid row; commit with partial=true to apply the valid rows and skip the rest")
 
 	ErrFieldTooLong = errors.New("field exceeds its maximum length")
+
+	// ErrInvalidScope is the class roster export's scope selection error:
+	// exactly one of class_id or grade_level_id must be given.
+	ErrInvalidScope = errors.New("exactly one of class_id or grade_level_id is required")
 )

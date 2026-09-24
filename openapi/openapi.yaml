@@ -854,6 +854,48 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "409":
           $ref: "#/components/responses/Conflict"
+  /v1/academic/classes/roster/export:
+    get:
+      tags:
+        - academic
+      operationId: exportClassRoster
+      x-permission: view_academic_data
+      summary: The actively enrolled students of one class or every class of a grade level ("angkatan") as an XLSX or PDF
+        file, one section per class -- NIS, NISN, name, gender, birth place/date, guardian name where recorded.
+      parameters:
+        - name: class_id
+          in: query
+          description: Exactly one of class_id or grade_level_id is required.
+          schema:
+            type: string
+            format: uuid
+        - name: grade_level_id
+          in: query
+          description: Every class of the tenant's active academic year under this grade level, one section per class. Exactly one
+            of class_id or grade_level_id is required.
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/ReportFormatParam"
+        - $ref: "#/components/parameters/ReportTitleParam"
+        - $ref: "#/components/parameters/ReportLetterheadParam"
+        - $ref: "#/components/parameters/ReportColumnsParam"
+      responses:
+        "200":
+          description: Report file
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /v1/academic/classes/{classId}/enrollments/bulk:
     parameters:
       - $ref: "#/components/parameters/ClassIdParam"
@@ -3371,7 +3413,7 @@ paths:
         - attendance
       operationId: exportDailyAttendanceReport
       x-permission: view_reports
-      summary: The daily report as an XLSX file
+      summary: The daily report as an XLSX or PDF file, for one class or every class of a grade level
       parameters:
         - name: date
           in: query
@@ -3381,15 +3423,30 @@ paths:
             format: date
         - name: class_id
           in: query
-          required: true
+          description: Exactly one of class_id or grade_level_id is required.
           schema:
             type: string
             format: uuid
+        - name: grade_level_id
+          in: query
+          description: Every class of the tenant's active academic year under this grade level, one sheet per class. Exactly one
+            of class_id or grade_level_id is required.
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/ReportFormatParam"
+        - $ref: "#/components/parameters/ReportTitleParam"
+        - $ref: "#/components/parameters/ReportLetterheadParam"
+        - $ref: "#/components/parameters/ReportColumnsParam"
       responses:
         "200":
-          description: XLSX file
+          description: Report file
           content:
             application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+            application/pdf:
               schema:
                 type: string
                 format: binary
@@ -3435,6 +3492,53 @@ paths:
                     type: object
                     additionalProperties:
                       type: integer
+        "400":
+          $ref: "#/components/responses/BadRequest"
+  /v1/attendance/reports/monthly/export:
+    get:
+      tags:
+        - attendance
+      operationId: exportMonthlyAttendanceReport
+      x-permission: view_reports
+      summary: The monthly recap as an XLSX or PDF file, for one class or every class of a grade level -- one row per student
+        (NIS, name, one column per attendance status, total, percentage present), one section per class.
+      parameters:
+        - name: month
+          in: query
+          required: true
+          description: YYYY-MM
+          schema:
+            type: string
+            pattern: ^[0-9]{4}-[0-9]{2}$
+        - name: class_id
+          in: query
+          description: Exactly one of class_id or grade_level_id is required.
+          schema:
+            type: string
+            format: uuid
+        - name: grade_level_id
+          in: query
+          description: Every class of the tenant's active academic year under this grade level, one sheet per class. Exactly one
+            of class_id or grade_level_id is required.
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/ReportFormatParam"
+        - $ref: "#/components/parameters/ReportTitleParam"
+        - $ref: "#/components/parameters/ReportLetterheadParam"
+        - $ref: "#/components/parameters/ReportColumnsParam"
+      responses:
+        "200":
+          description: Report file
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+            application/pdf:
+              schema:
+                type: string
+                format: binary
         "400":
           $ref: "#/components/responses/BadRequest"
   /v1/monitor/snapshot:
@@ -5339,6 +5443,61 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Gradebook"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /v1/grading/gradebook/export:
+    get:
+      tags:
+        - grading
+      operationId: exportGradebook
+      x-permission: manage_grades
+      summary: The gradebook as an XLSX or PDF file, for one class or every class of a grade level -- one section per class,
+        using the same data GET /v1/grading/gradebook shows (NOT the e-Rapor export, which stays separate).
+      parameters:
+        - name: class_id
+          in: query
+          description: Exactly one of class_id or grade_level_id is required.
+          schema:
+            type: string
+            format: uuid
+        - name: grade_level_id
+          in: query
+          description: Every class of the tenant's active academic year under this grade level, one section per class. Exactly one
+            of class_id or grade_level_id is required.
+          schema:
+            type: string
+            format: uuid
+        - name: subject_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: term_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/ReportFormatParam"
+        - $ref: "#/components/parameters/ReportTitleParam"
+        - $ref: "#/components/parameters/ReportLetterheadParam"
+        - $ref: "#/components/parameters/ReportColumnsParam"
+      responses:
+        "200":
+          description: Report file
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+            application/pdf:
+              schema:
+                type: string
+                format: binary
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -15926,7 +16085,7 @@ paths:
         - journals
       operationId: exportJournals
       x-permission: authenticated
-      summary: Export journals as XLSX or DOCX
+      summary: Export journals as XLSX, PDF, or DOCX
       parameters:
         - name: academic_year_id
           in: query
@@ -15956,16 +16115,26 @@ paths:
         - name: format
           in: query
           required: true
+          description: docx keeps its own fixed layout (no title/letterhead/columns customisation); xlsx and pdf go through
+            reportdoc and honour the params below.
           schema:
             type: string
             enum:
               - xlsx
+              - pdf
               - docx
+        - $ref: "#/components/parameters/ReportTitleParam"
+        - $ref: "#/components/parameters/ReportLetterheadParam"
+        - $ref: "#/components/parameters/ReportColumnsParam"
       responses:
         "200":
           description: File
           content:
             application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+            application/pdf:
               schema:
                 type: string
                 format: binary
@@ -27473,6 +27642,37 @@ components:
       schema:
         type: string
         maxLength: 100
+    ReportFormatParam:
+      name: format
+      in: query
+      description: Rendered file type. Defaults to xlsx.
+      schema:
+        type: string
+        enum:
+          - xlsx
+          - pdf
+        default: xlsx
+    ReportTitleParam:
+      name: title
+      in: query
+      description: Overrides the report's own default title.
+      schema:
+        type: string
+        maxLength: 200
+    ReportLetterheadParam:
+      name: letterhead
+      in: query
+      description: Show the tenant's configured letterhead (kop laporan). Defaults to true.
+      schema:
+        type: boolean
+        default: true
+    ReportColumnsParam:
+      name: columns
+      in: query
+      description: Comma-separated column selection and order, each entry either a bare column key or "key:label" to rename
+        it. Omitted or empty keeps every column, in the report's own default order and labels.
+      schema:
+        type: string
     YearIdParam:
       name: yearId
       in: path

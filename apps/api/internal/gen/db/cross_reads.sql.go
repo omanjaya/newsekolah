@@ -70,6 +70,44 @@ func (q *Queries) GetActiveClassNameForStudent(ctx context.Context, arg GetActiv
 	return name, err
 }
 
+const getClassHomeroomTeacherForAttendance = `-- name: GetClassHomeroomTeacherForAttendance :one
+select homeroom_teacher_id from classes where tenant_id = $1 and id = $2
+`
+
+type GetClassHomeroomTeacherForAttendanceParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	ID       uuid.UUID `json:"id"`
+}
+
+// classes.homeroom_teacher_id, kept in sync with the "homeroom" duty
+// assignment by the academic module (homeroom_sync.sql) -- the class
+// scope of a report export's signature block ("Wali Kelas" signer).
+func (q *Queries) GetClassHomeroomTeacherForAttendance(ctx context.Context, arg GetClassHomeroomTeacherForAttendanceParams) (pgtype.UUID, error) {
+	row := q.db.QueryRow(ctx, getClassHomeroomTeacherForAttendance, arg.TenantID, arg.ID)
+	var homeroom_teacher_id pgtype.UUID
+	err := row.Scan(&homeroom_teacher_id)
+	return homeroom_teacher_id, err
+}
+
+const getClassNameForAttendance = `-- name: GetClassNameForAttendance :one
+select name from classes where tenant_id = $1 and id = $2
+`
+
+type GetClassNameForAttendanceParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	ID       uuid.UUID `json:"id"`
+}
+
+// One class's display name, for the class scope of a report export (the
+// grade-level scope already gets every class's name from
+// ListClassesByGradeLevelForAttendance below).
+func (q *Queries) GetClassNameForAttendance(ctx context.Context, arg GetClassNameForAttendanceParams) (string, error) {
+	row := q.db.QueryRow(ctx, getClassNameForAttendance, arg.TenantID, arg.ID)
+	var name string
+	err := row.Scan(&name)
+	return name, err
+}
+
 const getEnrolledClassForAttendance = `-- name: GetEnrolledClassForAttendance :one
 select class_id
 from enrollments
@@ -91,6 +129,24 @@ func (q *Queries) GetEnrolledClassForAttendance(ctx context.Context, arg GetEnro
 	var class_id uuid.UUID
 	err := row.Scan(&class_id)
 	return class_id, err
+}
+
+const getGradeLevelNameForAttendance = `-- name: GetGradeLevelNameForAttendance :one
+select name from grade_levels where tenant_id = $1 and id = $2
+`
+
+type GetGradeLevelNameForAttendanceParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	ID       uuid.UUID `json:"id"`
+}
+
+// One grade level's display name, for the grade-level ("angkatan") scope
+// of a report export's scope line ("Angkatan: <name>").
+func (q *Queries) GetGradeLevelNameForAttendance(ctx context.Context, arg GetGradeLevelNameForAttendanceParams) (string, error) {
+	row := q.db.QueryRow(ctx, getGradeLevelNameForAttendance, arg.TenantID, arg.ID)
+	var name string
+	err := row.Scan(&name)
+	return name, err
 }
 
 const getHomeroomClassForAttendance = `-- name: GetHomeroomClassForAttendance :one
@@ -313,6 +369,48 @@ func (q *Queries) ListActiveTenantsForLibrary(ctx context.Context) ([]ListActive
 	for rows.Next() {
 		var i ListActiveTenantsForLibraryRow
 		if err := rows.Scan(&i.ID, &i.Timezone); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listClassesByGradeLevelForAttendance = `-- name: ListClassesByGradeLevelForAttendance :many
+select c.id as class_id, c.name as class_name
+from classes c
+where c.tenant_id = $1 and c.academic_year_id = $2 and c.grade_level_id = $3 and c.deleted_at is null
+order by c.name
+`
+
+type ListClassesByGradeLevelForAttendanceParams struct {
+	TenantID       uuid.UUID `json:"tenant_id"`
+	AcademicYearID uuid.UUID `json:"academic_year_id"`
+	GradeLevelID   uuid.UUID `json:"grade_level_id"`
+}
+
+type ListClassesByGradeLevelForAttendanceRow struct {
+	ClassID   uuid.UUID `json:"class_id"`
+	ClassName string    `json:"class_name"`
+}
+
+// Every non-deleted class of the academic year in grade_level_id, ordered
+// by name -- the grade-level ("angkatan") scope for attendance report
+// exports: one section per class, matching
+// academic.AcademicListClassesByYearAndGradeLevel's own scoping rule.
+func (q *Queries) ListClassesByGradeLevelForAttendance(ctx context.Context, arg ListClassesByGradeLevelForAttendanceParams) ([]ListClassesByGradeLevelForAttendanceRow, error) {
+	rows, err := q.db.Query(ctx, listClassesByGradeLevelForAttendance, arg.TenantID, arg.AcademicYearID, arg.GradeLevelID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListClassesByGradeLevelForAttendanceRow{}
+	for rows.Next() {
+		var i ListClassesByGradeLevelForAttendanceRow
+		if err := rows.Scan(&i.ClassID, &i.ClassName); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

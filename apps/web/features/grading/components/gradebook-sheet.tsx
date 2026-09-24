@@ -12,12 +12,17 @@ import {
   domainIcons,
   useToast,
 } from "@newsekolah/ui";
-import { Plus } from "lucide-react";
+import { Download, Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import {
+  ReportExportDialog,
+  type ReportExportOptions,
+} from "../../../components/report-export-dialog";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { useClassesQuery, useGradeLevelsQuery } from "../../reference/api";
 import {
   type AssessmentComponent,
   type GradebookStudent,
@@ -25,8 +30,10 @@ import {
   useGradebookQuery,
   useSetGradePublicationMutation,
 } from "../api";
+import { type GradebookExportScope, downloadGradebookExport } from "../gradebook-export-api";
 
 import { ComponentDialog } from "./component-dialog";
+import { GradebookExportScopePicker } from "./gradebook-export-scope-picker";
 import { GradebookTable } from "./gradebook-table";
 import { ManualScoreDialog } from "./manual-score-dialog";
 import { StarDialog } from "./star-dialog";
@@ -63,12 +70,39 @@ export function GradebookSheet({
   } = useGradebookQuery({ classId, subjectId });
   const starBalancesQuery = useClassStarBalancesQuery(classId);
   const setPublication = useSetGradePublicationMutation();
+  const classes = useClassesQuery();
+  const gradeLevels = useGradeLevelsQuery();
 
   const [search, setSearch] = useState("");
   const [componentDialog, setComponentDialog] = useState<AssessmentComponent | "new" | null>(null);
   const [manualTarget, setManualTarget] = useState<GradebookStudent | null>(null);
   const [starTarget, setStarTarget] = useState<GradebookStudent | null>(null);
   const [pendingPublish, setPendingPublish] = useState<boolean | null>(null);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [exportScope, setExportScope] = useState<GradebookExportScope>({ kind: "class", classId });
+
+  // availableColumns mirrors gradebook_export.go's gradebookReportColumns
+  // exactly: No, Nama Siswa, one per this sheet's own components (key
+  // "component_<id>", label the component's Code), Rata-rata, Nilai
+  // Rapor. A grade-level export reuses this same class's component set
+  // for its column choices too (the server does the same: Document.
+  // Columns comes from the first class in scope).
+  const exportColumns = useMemo(() => {
+    const columns = [
+      { key: "no", label: "No" },
+      { key: "name", label: t("exportColumnName") },
+    ];
+    for (const component of sheet?.components ?? []) {
+      columns.push({ key: `component_${component.id}`, label: component.code });
+    }
+    columns.push({ key: "average", label: t("exportColumnAverage") });
+    columns.push({ key: "report_score", label: t("exportColumnReportScore") });
+    return columns;
+  }, [sheet, t]);
+
+  async function handleExport(options: ReportExportOptions) {
+    await downloadGradebookExport(exportScope, subjectId, sheet?.term_id, options);
+  }
 
   // Hoisted out of the render body: `new Map()` inline gave GradebookTable a
   // fresh `starBalances` identity on every render of this component (e.g.
@@ -143,6 +177,17 @@ export function GradebookSheet({
             {t("addComponent")}
           </Button>
         )}
+        <Button
+          size="sm"
+          variant="secondary"
+          icon={<Download />}
+          onClick={() => {
+            setExportScope({ kind: "class", classId });
+            setExportOpen(true);
+          }}
+        >
+          {t("exportGradebook")}
+        </Button>
         <label className="ml-auto flex items-center gap-2 text-[13px]">
           <span className="text-fg-muted">{t("publishToggleLabel")}</span>
           <Switch
@@ -154,6 +199,29 @@ export function GradebookSheet({
           />
         </label>
       </div>
+
+      <ReportExportDialog
+        open={exportOpen}
+        onOpenChange={setExportOpen}
+        reportKey="grading.gradebook"
+        defaultTitle={t("exportDefaultTitle")}
+        availableColumns={exportColumns}
+        onExport={handleExport}
+        scopeSlot={
+          <GradebookExportScopePicker
+            scope={exportScope}
+            onScopeChange={setExportScope}
+            classes={classes.data?.data}
+            gradeLevels={gradeLevels.data?.data}
+            classesLoading={classes.isLoading}
+            gradeLevelsLoading={gradeLevels.isLoading}
+            classLabel={t("exportScopeClass")}
+            gradeLevelLabel={t("exportScopeGradeLevel")}
+            classPlaceholder={t("exportScopeClassPlaceholder")}
+            gradeLevelPlaceholder={t("exportScopeGradeLevelPlaceholder")}
+          />
+        }
+      />
 
       {sheet.components.length === 0 ? (
         <EmptyState

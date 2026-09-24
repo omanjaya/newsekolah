@@ -30,7 +30,16 @@
     "publishConfirmBody": "Siswa dan orang tua di kelas ini akan langsung bisa melihat nilai mapel ini di aplikasi mereka.",
     "unpublishConfirmBody": "Siswa dan orang tua tidak akan lagi melihat nilai mapel ini sampai diterbitkan kembali.",
     "confirmPublish": "Terbitkan",
-    "confirmUnpublish": "Sembunyikan"
+    "confirmUnpublish": "Sembunyikan",
+    "exportGradebook": "Unduh buku nilai",
+    "exportDefaultTitle": "Buku Nilai",
+    "exportColumnName": "Nama Siswa",
+    "exportColumnAverage": "Rata-rata",
+    "exportColumnReportScore": "Nilai Rapor",
+    "exportScopeClass": "Kelas",
+    "exportScopeGradeLevel": "Angkatan",
+    "exportScopeClassPlaceholder": "Pilih kelas",
+    "exportScopeGradeLevelPlaceholder": "Pilih angkatan"
   },
   "table": {
     "studentColumn": "Nama siswa",

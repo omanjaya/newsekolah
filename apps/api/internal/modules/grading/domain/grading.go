@@ -31,6 +31,10 @@ var (
 	ErrTPKindNotEligible    = errors.New("component kind is not eligible for TP mapping")
 	ErrTPMappingNotFound    = errors.New("TP mapping not found")
 	ErrModuleDisabled       = errors.New("grading module is disabled for this tenant")
+
+	// ErrInvalidScope is the gradebook export's scope selection error:
+	// exactly one of class_id or grade_level_id must be given.
+	ErrInvalidScope = errors.New("exactly one of class_id or grade_level_id is required")
 )
 
 type ComponentKind string

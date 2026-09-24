@@ -91,6 +91,13 @@ type Querier interface {
 	AcademicGetTeachingAssignmentByID(ctx context.Context, arg AcademicGetTeachingAssignmentByIDParams) (TeachingAssignment, error)
 	AcademicGetTermByID(ctx context.Context, arg AcademicGetTermByIDParams) (Term, error)
 	AcademicGetTrackByID(ctx context.Context, arg AcademicGetTrackByIDParams) (Track, error)
+	// Read-only lookups against tables owned by the identity module (users,
+	// user_profiles, student_profiles), same convention as students_lookup.sql:
+	// additive, read-only, scoped to exactly what the class roster export
+	// needs (NIS, NISN, name, gender, birth place/date, guardian).
+	// One user's display name, for the class roster export's "Wali Kelas"
+	// signer (classes.homeroom_teacher_id).
+	AcademicGetUserNameForExport(ctx context.Context, arg AcademicGetUserNameForExportParams) (string, error)
 	AcademicGetWeekdayAssignment(ctx context.Context, arg AcademicGetWeekdayAssignmentParams) (PeriodDayAssignment, error)
 	AcademicGetYearByID(ctx context.Context, arg AcademicGetYearByIDParams) (AcademicYear, error)
 	AcademicIsActiveStudent(ctx context.Context, arg AcademicIsActiveStudentParams) (bool, error)
@@ -105,6 +112,9 @@ type Querier interface {
 	// whose [date, end_date] range covers the given date, for
 	// domain.IsSchoolDay to evaluate against a grade level.
 	AcademicListCalendarEventsForDate(ctx context.Context, arg AcademicListCalendarEventsForDateParams) ([]AcademicCalendarEvent, error)
+	// Every actively enrolled student of a class, with the full set of fields
+	// a printed "daftar siswa" needs, ordered by name.
+	AcademicListClassRosterForExport(ctx context.Context, arg AcademicListClassRosterForExportParams) ([]AcademicListClassRosterForExportRow, error)
 	AcademicListClasses(ctx context.Context, arg AcademicListClassesParams) ([]AcademicListClassesRow, error)
 	AcademicListClassesByYearAndGradeLevel(ctx context.Context, arg AcademicListClassesByYearAndGradeLevelParams) ([]Class, error)
 	// Every class in one academic year (no pagination, no search): used to
@@ -527,7 +537,15 @@ type Querier interface {
 	GetAttendanceSessionByID(ctx context.Context, arg GetAttendanceSessionByIDParams) (AttendanceSession, error)
 	GetAttendanceSessionBySchedule(ctx context.Context, arg GetAttendanceSessionByScheduleParams) (AttendanceSession, error)
 	GetBill(ctx context.Context, arg GetBillParams) (Bill, error)
+	// classes.homeroom_teacher_id, kept in sync with the "homeroom" duty
+	// assignment by the academic module (homeroom_sync.sql) -- the class
+	// scope of a report export's signature block ("Wali Kelas" signer).
+	GetClassHomeroomTeacherForAttendance(ctx context.Context, arg GetClassHomeroomTeacherForAttendanceParams) (pgtype.UUID, error)
 	GetClassName(ctx context.Context, arg GetClassNameParams) (string, error)
+	// One class's display name, for the class scope of a report export (the
+	// grade-level scope already gets every class's name from
+	// ListClassesByGradeLevelForAttendance below).
+	GetClassNameForAttendance(ctx context.Context, arg GetClassNameForAttendanceParams) (string, error)
 	// cross-module read; replace with academic reader interface after merge
 	// Every query in this file reads a table owned by the academic module
 	// (migration 0003), which is being built in parallel in its own worktree.
@@ -570,6 +588,9 @@ type Querier interface {
 	GetExtracurricular(ctx context.Context, arg GetExtracurricularParams) (Extracurricular, error)
 	GetFeeType(ctx context.Context, arg GetFeeTypeParams) (FeeType, error)
 	GetGoogleSSOConfig(ctx context.Context, tenantID uuid.UUID) (SsoGoogleConfig, error)
+	// One grade level's display name, for the grade-level ("angkatan") scope
+	// of a report export's scope line ("Angkatan: <name>").
+	GetGradeLevelNameForAttendance(ctx context.Context, arg GetGradeLevelNameForAttendanceParams) (string, error)
 	// The class a teacher is homeroom (wali kelas) duty holder of this
 	// academic year, if any -- duty slug "homeroom", scope_class_id per
 	// docs/analysis/backend-inventory.md section 1.9's global-corrector rule.
@@ -724,8 +745,31 @@ type Querier interface {
 	// taught in one term.
 	GradingClassSubjects(ctx context.Context, arg GradingClassSubjectsParams) ([]GradingClassSubjectsRow, error)
 	GradingCreatePolicy(ctx context.Context, arg GradingCreatePolicyParams) error
+	// cross-module read: classes is owned by the academic module. The
+	// gradebook export's per-class signature block prepends the class's
+	// homeroom teacher ("Wali Kelas") ahead of the tenant's own default
+	// signer, same as attendance/scheduling's exports.
+	GradingGetClassHomeroomTeacher(ctx context.Context, arg GradingGetClassHomeroomTeacherParams) (pgtype.UUID, error)
+	// cross-module read: classes is owned by the academic module. The
+	// gradebook export's class scope needs a name for its section/sheet.
+	GradingGetClassName(ctx context.Context, arg GradingGetClassNameParams) (string, error)
+	// cross-module read: grade_levels is owned by the academic module. The
+	// gradebook export's grade-level ("angkatan") scope needs a name for its
+	// scope line.
+	GradingGetGradeLevelName(ctx context.Context, arg GradingGetGradeLevelNameParams) (string, error)
 	GradingGetLatestPolicy(ctx context.Context, arg GradingGetLatestPolicyParams) (GradingGetLatestPolicyRow, error)
+	// cross-module read: subjects is owned by the academic module. The
+	// gradebook export's scope line needs the subject's own name.
+	GradingGetSubjectName(ctx context.Context, arg GradingGetSubjectNameParams) (string, error)
 	GradingGetTerm(ctx context.Context, arg GradingGetTermParams) (GradingGetTermRow, error)
+	// cross-module read: users is owned by the identity module. Resolves the
+	// homeroom teacher's display name for the gradebook export's signature
+	// block.
+	GradingGetUserName(ctx context.Context, arg GradingGetUserNameParams) (string, error)
+	// cross-module read: classes is owned by the academic module. Every
+	// non-deleted class of the academic year under a grade level, ordered by
+	// name -- the gradebook export's grade-level scope: one section per class.
+	GradingListClassesByGradeLevel(ctx context.Context, arg GradingListClassesByGradeLevelParams) ([]GradingListClassesByGradeLevelRow, error)
 	GradingPreviousTerm(ctx context.Context, arg GradingPreviousTermParams) (uuid.UUID, error)
 	GradingStudentClassID(ctx context.Context, arg GradingStudentClassIDParams) (uuid.UUID, error)
 	// cross-module read: student_profiles is owned by the identity module.
@@ -907,6 +951,11 @@ type Querier interface {
 	ListBills(ctx context.Context, arg ListBillsParams) ([]Bill, error)
 	ListBillsForStudent(ctx context.Context, arg ListBillsForStudentParams) ([]Bill, error)
 	ListChildrenForParent(ctx context.Context, arg ListChildrenForParentParams) ([]ListChildrenForParentRow, error)
+	// Every non-deleted class of the academic year in grade_level_id, ordered
+	// by name -- the grade-level ("angkatan") scope for attendance report
+	// exports: one section per class, matching
+	// academic.AcademicListClassesByYearAndGradeLevel's own scoping rule.
+	ListClassesByGradeLevelForAttendance(ctx context.Context, arg ListClassesByGradeLevelForAttendanceParams) ([]ListClassesByGradeLevelForAttendanceRow, error)
 	// Every non-deleted class of the academic year that has no schedule row
 	// straddling now_time on day_of_week -- the monitor snapshot shows these
 	// as "no schedule" cards instead of silently omitting them.

@@ -66,6 +66,48 @@ func (r *Repository) GetTenantTimezone(ctx context.Context, tenantID uuid.UUID) 
 	return r.queries(ctx).GetTenantTimezoneForAttendance(ctx, tenantID)
 }
 
+// GetClassName resolves classID's display name, for the class scope of a
+// report export's Section name.
+func (r *Repository) GetClassName(ctx context.Context, tenantID, classID uuid.UUID) (string, error) {
+	return r.queries(ctx).GetClassNameForAttendance(ctx, db.GetClassNameForAttendanceParams{TenantID: tenantID, ID: classID})
+}
+
+// GetClassHomeroomTeacher resolves classID's homeroom teacher user id, if
+// any is currently assigned, for a report export's "Wali Kelas" signer.
+func (r *Repository) GetClassHomeroomTeacher(ctx context.Context, tenantID, classID uuid.UUID) (uuid.UUID, bool, error) {
+	id, err := r.queries(ctx).GetClassHomeroomTeacherForAttendance(ctx, db.GetClassHomeroomTeacherForAttendanceParams{TenantID: tenantID, ID: classID})
+	if err != nil {
+		return uuid.UUID{}, false, err
+	}
+	if !id.Valid {
+		return uuid.UUID{}, false, nil
+	}
+	return id.Bytes, true, nil
+}
+
+// GetGradeLevelName resolves gradeLevelID's display name, for the
+// grade-level ("angkatan") scope of a report export's scope line.
+func (r *Repository) GetGradeLevelName(ctx context.Context, tenantID, gradeLevelID uuid.UUID) (string, error) {
+	return r.queries(ctx).GetGradeLevelNameForAttendance(ctx, db.GetGradeLevelNameForAttendanceParams{TenantID: tenantID, ID: gradeLevelID})
+}
+
+// ListClassesByGradeLevel resolves the grade-level ("angkatan") scope for
+// a report export: every class of the academic year under gradeLevelID,
+// ordered by name, one section per class.
+func (r *Repository) ListClassesByGradeLevel(ctx context.Context, tenantID, academicYearID, gradeLevelID uuid.UUID) ([]service.ClassRef, error) {
+	rows, err := r.queries(ctx).ListClassesByGradeLevelForAttendance(ctx, db.ListClassesByGradeLevelForAttendanceParams{
+		TenantID: tenantID, AcademicYearID: academicYearID, GradeLevelID: gradeLevelID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	out := make([]service.ClassRef, len(rows))
+	for i, row := range rows {
+		out[i] = service.ClassRef{ID: row.ClassID, Name: row.ClassName}
+	}
+	return out, nil
+}
+
 func (r *Repository) ListCurrentPeriodScheduleCards(ctx context.Context, tenantID, academicYearID uuid.UUID, dayOfWeek int16, date, nowLocal time.Time) ([]service.MonitorCardRow, error) {
 	rows, err := r.queries(ctx).ListCurrentPeriodScheduleCardsForAttendance(ctx, db.ListCurrentPeriodScheduleCardsForAttendanceParams{
 		TenantID: tenantID, AcademicYearID: academicYearID, DayOfWeek: dayOfWeek, Date: pdatabase.Date(date), StartsAt: timeOfDay(nowLocal),

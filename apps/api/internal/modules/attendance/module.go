@@ -23,6 +23,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/authz"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/events"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/realtime"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 )
 
 type Module struct {
@@ -122,6 +123,11 @@ type Dependencies struct {
 	Overrider  Overrider
 	Violations ViolationRecorder
 	Discipline DisciplineReader
+	// Letterheads is optional: the school module's tenant letterhead/
+	// default signature reader (wiring.ReportHeaderReports), for the
+	// report exports' Document.Letterhead/Signature. Nil renders every
+	// export without a letterhead, same as before reportdoc existed.
+	Letterheads reportdoc.LetterheadSource
 }
 
 func Register(deps Dependencies) *Module {
@@ -151,6 +157,9 @@ func Register(deps Dependencies) *Module {
 		blocker, overrider, violations, discipline,
 		busPublisher{bus: deps.Bus}, hubPublisher{hub: deps.Hub}, presence,
 	)
+	if deps.Letterheads != nil {
+		svc.SetLetterheadSource(deps.Letterheads)
+	}
 	handler := transporthttp.New(svc, deps.Perms)
 
 	return &Module{Service: svc, Handler: handler}

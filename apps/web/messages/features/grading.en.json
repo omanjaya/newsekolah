@@ -30,7 +30,16 @@
     "publishConfirmBody": "Students and parents in this class will immediately see this subject's grades in their app.",
     "unpublishConfirmBody": "Students and parents will no longer see this subject's grades until it is published again.",
     "confirmPublish": "Publish",
-    "confirmUnpublish": "Hide"
+    "confirmUnpublish": "Hide",
+    "exportGradebook": "Download gradebook",
+    "exportDefaultTitle": "Gradebook",
+    "exportColumnName": "Student Name",
+    "exportColumnAverage": "Average",
+    "exportColumnReportScore": "Report Score",
+    "exportScopeClass": "Class",
+    "exportScopeGradeLevel": "Grade level",
+    "exportScopeClassPlaceholder": "Choose a class",
+    "exportScopeGradeLevelPlaceholder": "Choose a grade level"
   },
   "table": {
     "studentColumn": "Student",

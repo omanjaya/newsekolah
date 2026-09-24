@@ -121,3 +121,30 @@ components:
       schema:
         type: string
         maxLength: 100
+    # The reportdoc query-param contract every report export endpoint that has migrated onto
+    # apps/api/internal/platform/reportdoc shares (docs/05-shared-components.md, "Laporan dan ekspor"): a
+    # customisable letterhead (kop laporan) and column set, rendered as XLSX or PDF. Omitting every one of these
+    # params keeps a migrated endpoint's old behaviour (xlsx, every column, letterhead on if the tenant configured
+    # one) so an existing caller, including the mobile app, never breaks.
+    ReportFormatParam:
+      name: format
+      in: query
+      description: Rendered file type. Defaults to xlsx.
+      schema: { type: string, enum: [xlsx, pdf], default: xlsx }
+    ReportTitleParam:
+      name: title
+      in: query
+      description: Overrides the report's own default title.
+      schema: { type: string, maxLength: 200 }
+    ReportLetterheadParam:
+      name: letterhead
+      in: query
+      description: Show the tenant's configured letterhead (kop laporan). Defaults to true.
+      schema: { type: boolean, default: true }
+    ReportColumnsParam:
+      name: columns
+      in: query
+      description:
+        Comma-separated column selection and order, each entry either a bare column key or "key:label" to rename
+        it. Omitted or empty keeps every column, in the report's own default order and labels.
+      schema: { type: string }

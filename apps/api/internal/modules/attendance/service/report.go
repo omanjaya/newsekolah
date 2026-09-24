@@ -2,13 +2,12 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/xuri/excelize/v2"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 )
 
 // GetDailyReport builds one class's expected-vs-submitted counts and
@@ -132,44 +131,114 @@ func periodLabel(start, end string) string {
 	return start + " - " + end
 }
 
-// ExportDailyReportXLSX renders GetDailyReport as a single-sheet workbook,
-// the "daily report as XLSX" operation in attendance.yaml.
-func (s *Service) ExportDailyReportXLSX(ctx context.Context, tenantID, classID uuid.UUID, date time.Time) ([]byte, error) {
-	report, err := s.GetDailyReport(ctx, tenantID, classID, date)
-	if err != nil {
-		return nil, err
+// dailyReportColumns are the daily report's stable column keys and
+// default Indonesian labels, shared by every scope (class or grade
+// level) so Options.Columns always refers to the same keys regardless of
+// how many sections the export ends up with.
+func dailyReportColumns() []reportdoc.Column {
+	return []reportdoc.Column{
+		{Key: "no", Label: "No", Kind: reportdoc.ColumnNumber, Width: 5},
+		{Key: "name", Label: "Nama Siswa", Kind: reportdoc.ColumnText, Width: 28},
+		{Key: "status", Label: "Status", Kind: reportdoc.ColumnText, Width: 12},
+		{Key: "expected", Label: "Jumlah Sesi", Kind: reportdoc.ColumnNumber, Width: 12},
+		{Key: "submitted", Label: "Sesi Terisi", Kind: reportdoc.ColumnNumber, Width: 12},
+		{Key: "complete", Label: "Lengkap", Kind: reportdoc.ColumnPercent, Width: 12},
 	}
+}
 
-	f := excelize.NewFile()
-	defer f.Close() //nolint:errcheck // closing an in-memory workbook after WriteToBuffer cannot meaningfully fail.
-
-	const sheet = "Attendance"
-	if err := f.SetSheetName("Sheet1", sheet); err != nil {
-		return nil, fmt.Errorf("rename sheet: %w", err)
-	}
-
-	headers := []string{"No", "Name", "Status", "Expected Sessions", "Submitted Sessions", "Complete"}
-	for col, h := range headers {
-		cell, _ := excelize.CoordinatesToCellName(col+1, 1)
-		_ = f.SetCellValue(sheet, cell, h)
-	}
-
+// dailyReportSection turns one class's DailyReport into a reportdoc
+// Section: one row per student, ordered to match dailyReportColumns, plus
+// a Footer totals row. The status column renders policy's own configured
+// label (e.g. "Hadir", tenant content, never translated by locale) or,
+// for a day with no recorded outcome yet, the locale's pseudo-status
+// label (domain.StatusLabel) -- never the raw code (e.g. "H" or
+// "INCOMPLETE") a downloaded report's reader cannot be expected to decode.
+func dailyReportSection(name string, report DailyReport, locale string, policy domain.StatusPolicy) reportdoc.Section {
+	rows := make([][]any, len(report.Students))
 	for i, student := range report.Students {
-		row := i + 2
-		values := []any{i + 1, student.Name, student.StatusCode, student.ExpectedSessions, student.SubmittedSessions, student.Complete}
-		for col, v := range values {
-			cell, _ := excelize.CoordinatesToCellName(col+1, row)
-			_ = f.SetCellValue(sheet, cell, v)
+		rows[i] = []any{
+			i + 1, student.Name, domain.StatusLabel(student.StatusCode, locale, policy),
+			student.ExpectedSessions, student.SubmittedSessions, completeRatio(student.ExpectedSessions, student.SubmittedSessions),
 		}
 	}
+	footer := [][]any{{nil, "Total", nil, report.ExpectedSessions, report.SubmittedSessions, completeRatio(report.ExpectedSessions, report.SubmittedSessions)}}
+	return reportdoc.Section{Name: name, Rows: rows, Footer: footer}
+}
 
-	summaryRow := len(report.Students) + 3
-	_ = f.SetCellValue(sheet, fmt.Sprintf("A%d", summaryRow), "Class expected/submitted:")
-	_ = f.SetCellValue(sheet, fmt.Sprintf("B%d", summaryRow), fmt.Sprintf("%d/%d", report.ExpectedSessions, report.SubmittedSessions))
-
-	buf, err := f.WriteToBuffer()
-	if err != nil {
-		return nil, err
+// completeRatio is submitted/expected as a fraction for reportdoc's
+// ColumnPercent kind (e.g. 0.83 for 5/6), matching domain's own "complete
+// once expected is 0 or submitted has caught up" rule: an untaught day
+// (expected 0) renders as fully complete (1.0) rather than dividing by
+// zero.
+func completeRatio(expected, submitted int) float64 {
+	if expected <= 0 {
+		return 1.0
 	}
-	return buf.Bytes(), nil
+	ratio := float64(submitted) / float64(expected)
+	if ratio > 1 {
+		ratio = 1
+	}
+	return ratio
+}
+
+// ExportDailyReport renders GetDailyReport as a reportdoc file (XLSX or
+// PDF per opts.Format), for one class or every class of a grade level
+// ("angkatan") -- one section per class, in resolveReportScope's order.
+// Exactly one of classID/gradeLevelID must be set. locale (reportdoc.
+// LocaleID/LocaleEN) drives every reportdoc-provided piece of text
+// (dates, the PDF page-number footer, the "no rows" label); report-
+// specific text (title, scope labels, column labels) stays Indonesian,
+// this module's own default. Called with a zero reportdoc.Options (no
+// format/title/letterhead/columns query params), this keeps every
+// existing caller's request working: xlsx, every column, the report's
+// own default title.
+func (s *Service) ExportDailyReport(ctx context.Context, tenantID uuid.UUID, classID, gradeLevelID *uuid.UUID, date time.Time, locale string, opts reportdoc.Options) ([]byte, error) {
+	var out []byte
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		classes, err := s.resolveReportScope(ctx, tenantID, classID, gradeLevelID)
+		if err != nil {
+			return err
+		}
+		scopeLine, err := s.reportScopeLine(ctx, tenantID, classID, gradeLevelID, classes)
+		if err != nil {
+			return err
+		}
+		policy, err := s.loadStatusPolicy(ctx, tenantID)
+		if err != nil {
+			return err
+		}
+
+		sections := make([]reportdoc.Section, len(classes))
+		for i, class := range classes {
+			report, err := s.GetDailyReport(ctx, tenantID, class.ID, date)
+			if err != nil {
+				return err
+			}
+			sections[i] = dailyReportSection(class.Name, report, locale, policy)
+		}
+
+		doc := reportdoc.Document{
+			Title:           "Presensi Harian",
+			Scope:           []reportdoc.ScopeLine{scopeLine, {Label: "Tanggal", Value: reportdoc.FormatDate(locale, date)}},
+			Columns:         dailyReportColumns(),
+			Sections:        sections,
+			PageLabelFormat: reportdoc.PageLabel(locale),
+			EmptyRowsLabel:  reportdoc.EmptyRowsLabelFor(locale),
+		}
+		if opts.ShowLetterhead {
+			lh, sig, err := s.reportLetterhead(ctx, tenantID)
+			if err != nil {
+				return err
+			}
+			doc.Letterhead = lh
+			if sig != nil {
+				signature := *sig
+				signature.Date = reportdoc.FormatDate(locale, date)
+				doc.Signature = s.classSignature(ctx, tenantID, classID, &signature)
+			}
+		}
+		out, err = renderReport(doc, opts)
+		return err
+	})
+	return out, err
 }

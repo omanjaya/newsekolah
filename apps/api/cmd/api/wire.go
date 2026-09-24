@@ -125,6 +125,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	})
 
 	academicModule := academic.Register(pool, clock.Real{})
+	academicModule.Service.SetLetterheadSource(wiring.ReportHeaderReports{Svc: schoolModule.Service})
 
 	// The onboarding wizard (level templates, Dapodik import, sample-data
 	// seeding) lives on schoolModule.Service but needs academic and
@@ -138,6 +139,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	eventBus := events.NewBus()
 	wiring.RegisterNotificationBridge(eventBus, identityModule.Service, logger)
 	schedulingModule := scheduling.Register(pool, eventBus, identityModule.Service)
+	schedulingModule.Service.SetLetterheadSource(wiring.ReportHeaderReports{Svc: schoolModule.Service})
 
 	hub := realtime.NewHub(broadcasterFor(redisClient))
 	// presenceTTL mirrors the old system's presence.go (teacher_attendance
@@ -169,6 +171,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		Perms: identityModule.Service, Hub: hub,
 		Blocker: permitsBlocker{svc: permitsModule.Service}, Overrider: permitsOverrider{svc: permitsModule.Service},
 		Violations: lateViolations, Discipline: lateDiscipline, Presence: presence,
+		Letterheads: wiring.ReportHeaderReports{Svc: schoolModule.Service},
 	})
 	sync.inner = attendanceSyncAdapter{force: attendanceModule.Service.ForceStatus}
 
@@ -188,6 +191,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	gradingModule := grading.Register(grading.Dependencies{
 		Pool: pool, Years: schoolModule.Service, Perms: identityModule.Service, Flags: gradingFlags, Clock: clock.Real{},
 	})
+	gradingModule.Service.SetLetterheadSource(wiring.ReportHeaderReports{Svc: schoolModule.Service})
 	disciplineModule := discipline.Register(discipline.Dependencies{
 		Pool: pool, Years: schoolModule.Service, Docs: wiring.DisciplineDocuments{Permits: permitsModule.Service},
 		Sealer: sealer, Bus: eventBus, Clock: clock.Real{},

@@ -3,6 +3,7 @@
 import { ApiError, queryKeys, type components } from "@newsekolah/api-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import type { ReportExportOptions } from "../../components/report-export-dialog";
 import { getAccessToken } from "../../lib/api/access-token";
 import { useApiClient } from "../../lib/api/client";
 import { API_URL } from "../../lib/env";
@@ -97,6 +98,60 @@ export async function downloadJournalExport(
     const link = document.createElement("a");
     link.href = url;
     link.download = `journal.${format}`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+/**
+ * Encodes one {@link ReportExportDialog}-chosen column as the `columns`
+ * query param's `key` or `key:Label` form (docs/05-shared-components.md
+ * "Laporan dan ekspor"). Left unencoded here on purpose: `query` below
+ * gets exactly one `URLSearchParams` encoding pass, so pre-encoding the
+ * label here (as features/reports/api.ts's own encodeColumnChoice does)
+ * would double-encode it.
+ */
+function encodeColumnChoice(choice: { key: string; label?: string }): string {
+  return choice.label ? `${choice.key}:${choice.label}` : choice.key;
+}
+
+/**
+ * Downloads the journal export as XLSX or PDF (per options.format) via
+ * {@link ReportExportDialog}'s onExport -- reportdoc's own customisable
+ * letterhead/title/columns. DOCX keeps its own fixed layout and
+ * {@link downloadJournalExport} above, unaffected by this dialog.
+ */
+export async function downloadJournalExportReport(
+  yearId: string,
+  classId: string | undefined,
+  options: ReportExportOptions,
+): Promise<void> {
+  const token = getAccessToken();
+  const params = new URLSearchParams({
+    academic_year_id: yearId,
+    format: options.format,
+    title: options.title,
+    letterhead: options.showLetterhead ? "true" : "false",
+  });
+  if (classId) params.set("class_id", classId);
+  if (options.columns.length > 0) {
+    params.set("columns", options.columns.map(encodeColumnChoice).join(","));
+  }
+  const response = await fetch(`${API_URL}/v1/journals/export?${params.toString()}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  });
+  if (!response.ok) {
+    throw new ApiError({ status: response.status, code: "UNKNOWN", message: "UNKNOWN" });
+  }
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  try {
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `jurnal-mengajar.${options.format}`;
     document.body.appendChild(link);
     link.click();
     link.remove();

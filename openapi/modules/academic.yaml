@@ -735,6 +735,39 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "409":
           $ref: "#/components/responses/Conflict"
+  /v1/academic/classes/roster/export:
+    get:
+      tags: [academic]
+      operationId: exportClassRoster
+      x-permission: view_academic_data
+      summary:
+        The actively enrolled students of one class or every class of a grade level ("angkatan") as an XLSX or PDF
+        file, one section per class -- NIS, NISN, name, gender, birth place/date, guardian name where recorded.
+      parameters:
+        - name: class_id
+          in: query
+          description: Exactly one of class_id or grade_level_id is required.
+          schema: { type: string, format: uuid }
+        - name: grade_level_id
+          in: query
+          description:
+            Every class of the tenant's active academic year under this grade level, one section per class. Exactly
+            one of class_id or grade_level_id is required.
+          schema: { type: string, format: uuid }
+        - $ref: "#/components/parameters/ReportFormatParam"
+        - $ref: "#/components/parameters/ReportTitleParam"
+        - $ref: "#/components/parameters/ReportLetterheadParam"
+        - $ref: "#/components/parameters/ReportColumnsParam"
+      responses:
+        "200":
+          description: Report file
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: { type: string, format: binary }
+            application/pdf:
+              schema: { type: string, format: binary }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "403": { $ref: "#/components/responses/Forbidden" }
   /v1/academic/classes/{classId}/enrollments/bulk:
     parameters:
       - $ref: "#/components/parameters/ClassIdParam"

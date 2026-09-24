@@ -758,6 +758,63 @@ func (q *Queries) GradingCreatePolicy(ctx context.Context, arg GradingCreatePoli
 	return err
 }
 
+const gradingGetClassHomeroomTeacher = `-- name: GradingGetClassHomeroomTeacher :one
+select homeroom_teacher_id from classes where tenant_id = $1 and id = $2
+`
+
+type GradingGetClassHomeroomTeacherParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	ID       uuid.UUID `json:"id"`
+}
+
+// cross-module read: classes is owned by the academic module. The
+// gradebook export's per-class signature block prepends the class's
+// homeroom teacher ("Wali Kelas") ahead of the tenant's own default
+// signer, same as attendance/scheduling's exports.
+func (q *Queries) GradingGetClassHomeroomTeacher(ctx context.Context, arg GradingGetClassHomeroomTeacherParams) (pgtype.UUID, error) {
+	row := q.db.QueryRow(ctx, gradingGetClassHomeroomTeacher, arg.TenantID, arg.ID)
+	var homeroom_teacher_id pgtype.UUID
+	err := row.Scan(&homeroom_teacher_id)
+	return homeroom_teacher_id, err
+}
+
+const gradingGetClassName = `-- name: GradingGetClassName :one
+select name from classes where tenant_id = $1 and id = $2
+`
+
+type GradingGetClassNameParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	ID       uuid.UUID `json:"id"`
+}
+
+// cross-module read: classes is owned by the academic module. The
+// gradebook export's class scope needs a name for its section/sheet.
+func (q *Queries) GradingGetClassName(ctx context.Context, arg GradingGetClassNameParams) (string, error) {
+	row := q.db.QueryRow(ctx, gradingGetClassName, arg.TenantID, arg.ID)
+	var name string
+	err := row.Scan(&name)
+	return name, err
+}
+
+const gradingGetGradeLevelName = `-- name: GradingGetGradeLevelName :one
+select name from grade_levels where tenant_id = $1 and id = $2
+`
+
+type GradingGetGradeLevelNameParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	ID       uuid.UUID `json:"id"`
+}
+
+// cross-module read: grade_levels is owned by the academic module. The
+// gradebook export's grade-level ("angkatan") scope needs a name for its
+// scope line.
+func (q *Queries) GradingGetGradeLevelName(ctx context.Context, arg GradingGetGradeLevelNameParams) (string, error) {
+	row := q.db.QueryRow(ctx, gradingGetGradeLevelName, arg.TenantID, arg.ID)
+	var name string
+	err := row.Scan(&name)
+	return name, err
+}
+
 const gradingGetLatestPolicy = `-- name: GradingGetLatestPolicy :one
 select config, version from tenant_policies where tenant_id = $1 and kind = $2 order by version desc limit 1
 `
@@ -777,6 +834,24 @@ func (q *Queries) GradingGetLatestPolicy(ctx context.Context, arg GradingGetLate
 	var i GradingGetLatestPolicyRow
 	err := row.Scan(&i.Config, &i.Version)
 	return i, err
+}
+
+const gradingGetSubjectName = `-- name: GradingGetSubjectName :one
+select name from subjects where tenant_id = $1 and id = $2
+`
+
+type GradingGetSubjectNameParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	ID       uuid.UUID `json:"id"`
+}
+
+// cross-module read: subjects is owned by the academic module. The
+// gradebook export's scope line needs the subject's own name.
+func (q *Queries) GradingGetSubjectName(ctx context.Context, arg GradingGetSubjectNameParams) (string, error) {
+	row := q.db.QueryRow(ctx, gradingGetSubjectName, arg.TenantID, arg.ID)
+	var name string
+	err := row.Scan(&name)
+	return name, err
 }
 
 const gradingGetTerm = `-- name: GradingGetTerm :one
@@ -805,6 +880,65 @@ func (q *Queries) GradingGetTerm(ctx context.Context, arg GradingGetTermParams) 
 		&i.Sequence,
 	)
 	return i, err
+}
+
+const gradingGetUserName = `-- name: GradingGetUserName :one
+select name from users where tenant_id = $1 and id = $2 and deleted_at is null
+`
+
+type GradingGetUserNameParams struct {
+	TenantID uuid.UUID `json:"tenant_id"`
+	ID       uuid.UUID `json:"id"`
+}
+
+// cross-module read: users is owned by the identity module. Resolves the
+// homeroom teacher's display name for the gradebook export's signature
+// block.
+func (q *Queries) GradingGetUserName(ctx context.Context, arg GradingGetUserNameParams) (string, error) {
+	row := q.db.QueryRow(ctx, gradingGetUserName, arg.TenantID, arg.ID)
+	var name string
+	err := row.Scan(&name)
+	return name, err
+}
+
+const gradingListClassesByGradeLevel = `-- name: GradingListClassesByGradeLevel :many
+select id, name from classes
+where tenant_id = $1 and academic_year_id = $2 and grade_level_id = $3 and deleted_at is null
+order by name
+`
+
+type GradingListClassesByGradeLevelParams struct {
+	TenantID       uuid.UUID `json:"tenant_id"`
+	AcademicYearID uuid.UUID `json:"academic_year_id"`
+	GradeLevelID   uuid.UUID `json:"grade_level_id"`
+}
+
+type GradingListClassesByGradeLevelRow struct {
+	ID   uuid.UUID `json:"id"`
+	Name string    `json:"name"`
+}
+
+// cross-module read: classes is owned by the academic module. Every
+// non-deleted class of the academic year under a grade level, ordered by
+// name -- the gradebook export's grade-level scope: one section per class.
+func (q *Queries) GradingListClassesByGradeLevel(ctx context.Context, arg GradingListClassesByGradeLevelParams) ([]GradingListClassesByGradeLevelRow, error) {
+	rows, err := q.db.Query(ctx, gradingListClassesByGradeLevel, arg.TenantID, arg.AcademicYearID, arg.GradeLevelID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GradingListClassesByGradeLevelRow{}
+	for rows.Next() {
+		var i GradingListClassesByGradeLevelRow
+		if err := rows.Scan(&i.ID, &i.Name); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const gradingPreviousTerm = `-- name: GradingPreviousTerm :one

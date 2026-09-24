@@ -15,6 +15,9 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/grading/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/authz"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/i18n"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/tenant"
 )
 
 // PermissionChecker tells the handler whether the caller may write grades
@@ -34,6 +37,19 @@ func New(svc *service.Service, perms PermissionChecker) *GradingHandler {
 
 func tenantID(ctx context.Context) uuid.UUID { id, _ := httpx.TenantIDFromContext(ctx); return id }
 func userID(ctx context.Context) uuid.UUID   { id, _ := httpx.UserIDFromContext(ctx); return id }
+
+// tenantLocale resolves the current request's tenant to a locale
+// reportdoc's FormatDate/PageLabel/EmptyRowsLabelFor understand ("id" or
+// "en"), mirroring attendance/academic/scheduling's identically named
+// helpers: the gradebook export renders in the tenant's own configured
+// locale (tenants.locale), not the requester's Accept-Language header.
+func tenantLocale(ctx context.Context) string {
+	t, ok := tenant.FromContext(ctx)
+	if !ok {
+		return i18n.DefaultLocale
+	}
+	return i18n.FromTenantLocale(t.Locale)
+}
 
 // canManageAny is true for callers holding manage_master_data, the
 // permission schools give curriculum staff who maintain other teachers'
@@ -82,6 +98,8 @@ var errorMap = map[error]*httpx.Error{
 	domain.ErrTPKindNotEligible:    httpx.ErrTPKindNotEligible,
 	domain.ErrTPMappingNotFound:    httpx.ErrTPMappingNotFound,
 	domain.ErrModuleDisabled:       httpx.ErrGradingModuleDisabled,
+	domain.ErrInvalidScope:         httpx.ErrGradebookInvalidScope,
+	reportdoc.ErrUnknownColumn:     httpx.ErrGradebookUnknownColumn,
 }
 
 func mapError(err error) error {
@@ -172,6 +190,29 @@ func (h *GradingHandler) GetGradebook(ctx context.Context, request api.GetGradeb
 		return nil, mapError(err)
 	}
 	return api.GetGradebook200JSONResponse(toAPIGradebook(book)), nil
+}
+
+// ExportGradebook renders one class's or a whole grade level's gradebook
+// as an XLSX or PDF file, using the exact same data GetGradebook shows.
+// NOT the e-Rapor export (ExportErapor/ExportEraporLegacy below), which
+// is a completely separate export surface left untouched.
+func (h *GradingHandler) ExportGradebook(ctx context.Context, request api.ExportGradebookRequestObject) (api.ExportGradebookResponseObject, error) {
+	opts := reportdocOptions(request.Params.Format, request.Params.Title, request.Params.Letterhead, request.Params.Columns)
+	file, err := h.service.ExportGradebook(ctx, tenantID(ctx), userID(ctx), h.canManageAny(ctx), service.GradebookExportQuery{
+		ClassID: request.Params.ClassId, GradeLevelID: request.Params.GradeLevelId,
+		SubjectID: request.Params.SubjectId, TermID: nullUUID(request.Params.TermId),
+	}, tenantLocale(ctx), opts)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	if opts.Format == reportdoc.FormatPDF {
+		return api.ExportGradebook200ApplicationpdfResponse{
+			Body: bytes.NewReader(file), ContentLength: int64(len(file)),
+		}, nil
+	}
+	return api.ExportGradebook200ApplicationvndOpenxmlformatsOfficedocumentSpreadsheetmlSheetResponse{
+		Body: bytes.NewReader(file), ContentLength: int64(len(file)),
+	}, nil
 }
 
 func componentInput(b *api.AssessmentComponentWrite) service.ComponentInput {

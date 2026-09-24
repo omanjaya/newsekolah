@@ -16,6 +16,8 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/authz"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/i18n"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/tenant"
 )
 
@@ -33,6 +35,19 @@ func tenantIDFromContext(ctx context.Context) uuid.UUID {
 		return t.ID
 	}
 	return uuid.UUID{}
+}
+
+// tenantLocale resolves the current request's tenant to a locale
+// reportdoc's FormatDate/PageLabel/EmptyRowsLabelFor understand ("id" or
+// "en"), mirroring reports/transport/http's identically named helper: a
+// report export renders in the tenant's own configured locale
+// (tenants.locale), not the requester's Accept-Language header.
+func tenantLocale(ctx context.Context) string {
+	t, ok := tenant.FromContext(ctx)
+	if !ok {
+		return i18n.DefaultLocale
+	}
+	return i18n.FromTenantLocale(t.Locale)
 }
 
 // actorFor resolves the caller's effective permissions into a
@@ -67,6 +82,8 @@ var (
 	errNotHomeroom              = httpx.NewError(http.StatusForbidden, "ATTENDANCE_NOT_HOMEROOM")
 	errNoActiveYear             = httpx.NewError(http.StatusBadRequest, "ATTENDANCE_NO_ACTIVE_YEAR")
 	errInvalidMonth             = httpx.NewError(http.StatusBadRequest, "ATTENDANCE_INVALID_MONTH")
+	errInvalidScope             = httpx.NewError(http.StatusBadRequest, "ATTENDANCE_INVALID_SCOPE")
+	errUnknownColumn            = httpx.NewError(http.StatusBadRequest, "ATTENDANCE_REPORT_UNKNOWN_COLUMN")
 	errMonitorTokenInvalid      = httpx.NewError(http.StatusUnauthorized, "ATTENDANCE_MONITOR_TOKEN_INVALID")
 )
 
@@ -101,6 +118,10 @@ func mapAttendanceError(err error) error {
 		return errNoActiveYear
 	case errors.Is(err, domain.ErrInvalidMonth):
 		return errInvalidMonth
+	case errors.Is(err, domain.ErrInvalidScope):
+		return errInvalidScope
+	case errors.Is(err, reportdoc.ErrUnknownColumn):
+		return errUnknownColumn
 	default:
 		var appErr *httpx.Error
 		if errors.As(err, &appErr) {

@@ -17,6 +17,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance/domain"
 	scheduling "github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 )
 
 // StudentRef is the minimal academic fact attendance needs about an
@@ -30,6 +31,15 @@ type StudentRef struct {
 	NIS           string
 	GuardianName  string
 	GuardianPhone string
+}
+
+// ClassRef is a class's id and display name, the grade-level scope
+// resolution needs for report exports (one section per class).
+//
+// -- cross-module read; replace with academic reader interface after merge --
+type ClassRef struct {
+	ID   uuid.UUID
+	Name string
 }
 
 // DailySummaryRow is one attendance_daily_summary row as the service reads
@@ -138,6 +148,27 @@ type Repository interface {
 	GetEnrolledClass(ctx context.Context, tenantID, academicYearID, studentUserID uuid.UUID) (classID uuid.UUID, ok bool, err error)
 	GetHomeroomClassForTeacher(ctx context.Context, tenantID, academicYearID, teacherUserID uuid.UUID) (classID uuid.UUID, ok bool, err error)
 	GetTenantTimezone(ctx context.Context, tenantID uuid.UUID) (string, error)
+	// GetClassName resolves one class's display name, for the class scope
+	// of a report export's Section name.
+	//
+	// -- cross-module read; replace with academic reader interface after merge --
+	GetClassName(ctx context.Context, tenantID, classID uuid.UUID) (string, error)
+	// GetClassHomeroomTeacher resolves one class's currently assigned
+	// homeroom teacher, if any, for a report export's "Wali Kelas" signer.
+	//
+	// -- cross-module read; replace with academic reader interface after merge --
+	GetClassHomeroomTeacher(ctx context.Context, tenantID, classID uuid.UUID) (teacherUserID uuid.UUID, ok bool, err error)
+	// GetGradeLevelName resolves one grade level's display name, for the
+	// grade-level scope of a report export's scope line.
+	//
+	// -- cross-module read; replace with academic reader interface after merge --
+	GetGradeLevelName(ctx context.Context, tenantID, gradeLevelID uuid.UUID) (string, error)
+	// ListClassesByGradeLevel resolves the grade-level ("angkatan") scope
+	// for a report export: every class of the academic year under
+	// gradeLevelID, ordered by name.
+	//
+	// -- cross-module read; replace with academic reader interface after merge --
+	ListClassesByGradeLevel(ctx context.Context, tenantID, academicYearID, gradeLevelID uuid.UUID) ([]ClassRef, error)
 	ListCurrentPeriodScheduleCards(ctx context.Context, tenantID, academicYearID uuid.UUID, dayOfWeek int16, date, nowLocal time.Time) ([]MonitorCardRow, error)
 	// ListClassesWithoutCurrentSchedule backs the monitor snapshot's
 	// "no schedule" cards: classes that exist but have nothing scheduled
@@ -279,6 +310,13 @@ type Service struct {
 	realtime   RealtimePublisher
 	presence   PresenceReader
 	clock      clock.Clock
+	// letterheads is optional (set via SetLetterheadSource after
+	// construction, mirroring school/service.Service's
+	// SetOnboardingDependencies pattern for a dependency other modules
+	// wire in late): nil means no tenant has a configured kop laporan
+	// yet available to this module, so every report export renders
+	// without one, same as before reportdoc.LetterheadSource existed.
+	letterheads reportdoc.LetterheadSource
 }
 
 func New(
@@ -297,6 +335,25 @@ func New(
 
 func (s *Service) withTx(ctx context.Context, tenantID uuid.UUID, fn func(ctx context.Context) error) error {
 	return database.WithTenantTx(ctx, s.pool, tenantID, fn)
+}
+
+// SetLetterheadSource wires the school module's tenant letterhead/default
+// signature reader in after construction (module.go, once the school
+// module it depends on has itself been registered), for the report
+// exports' Document.Letterhead/Signature.
+func (s *Service) SetLetterheadSource(source reportdoc.LetterheadSource) {
+	s.letterheads = source
+}
+
+// reportLetterhead loads tenantID's configured kop laporan and default
+// signature, if any -- (nil, nil) when no letterheads source is wired or
+// the tenant has not configured one, so a report renders without one
+// rather than failing.
+func (s *Service) reportLetterhead(ctx context.Context, tenantID uuid.UUID) (*reportdoc.Letterhead, *reportdoc.Signature, error) {
+	if s.letterheads == nil {
+		return nil, nil, nil
+	}
+	return s.letterheads.Letterhead(ctx, tenantID)
 }
 
 // activeAcademicYear resolves the tenant's currently active academic year,

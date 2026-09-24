@@ -7,10 +7,12 @@ import (
 	"io"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
+	"github.com/xuri/excelize/v2"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/api"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling/domain"
@@ -21,6 +23,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/dbtest"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 	tenantctx "github.com/omanjaya/newsekolah/apps/api/internal/platform/tenant"
 )
 
@@ -186,6 +189,116 @@ func TestScheduleBlockMutationsPreserveHistory(t *testing.T) {
 		require.NotContains(t, journalDocumentXML(t, payload), "Teacher topic")
 	})
 
+	t.Run("journal XLSX/PDF export renders through reportdoc, with an Indonesian scope line and a caller-chosen column subset", func(t *testing.T) {
+		exec(`insert into class_journals (tenant_id,academic_year_id,teacher_user_id,written_by_user_id,class_id,subject_id,lesson_date,topic,activities) values ($1,$2,$3,$3,$4,$5,'2026-09-16','XLSX topic','Discussion')`, tenant, year, teacher, class, subject)
+		readerSvc := service.New(pool, repository.New(pool))
+		handler := schedulehttp.New(readerSvc, journalExportPermissions{}, nil)
+		actorCtx := httpx.WithUserID(tenantctx.WithTenant(ctx, tenantctx.Tenant{ID: tenant}), teacher)
+
+		xlsxRequest := api.ExportJournalsRequestObject{Params: api.ExportJournalsParams{AcademicYearId: year, Format: api.ExportJournalsParamsFormatXlsx}}
+		response, err := handler.ExportJournals(actorCtx, xlsxRequest)
+		require.NoError(t, err)
+		recorder := httptest.NewRecorder()
+		require.NoError(t, response.VisitExportJournalsResponse(recorder))
+		require.Equal(t, 200, recorder.Code)
+		require.Equal(t, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", recorder.Header().Get("Content-Type"))
+		f, err := excelize.OpenReader(bytes.NewReader(recorder.Body.Bytes()))
+		require.NoError(t, err)
+		defer f.Close() //nolint:errcheck
+		sheet := f.GetSheetList()[0]
+		rows, err := f.GetRows(sheet)
+		require.NoError(t, err)
+		var flat []string
+		for _, row := range rows {
+			flat = append(flat, row...)
+		}
+		joined := strings.Join(flat, " | ")
+		require.Contains(t, joined, "XLSX topic")
+		require.Contains(t, joined, "Jurnal Mengajar", "the report's own default Indonesian title must render")
+		require.Contains(t, joined, "16/09/2026", "reportdoc's own ColumnDate formatting for the date column")
+
+		pdfRequest := api.ExportJournalsRequestObject{Params: api.ExportJournalsParams{AcademicYearId: year, Format: api.ExportJournalsParamsFormatPdf}}
+		response, err = handler.ExportJournals(actorCtx, pdfRequest)
+		require.NoError(t, err)
+		recorder = httptest.NewRecorder()
+		require.NoError(t, response.VisitExportJournalsResponse(recorder))
+		require.Equal(t, "application/pdf", recorder.Header().Get("Content-Type"))
+		require.True(t, bytes.HasPrefix(recorder.Body.Bytes(), []byte("%PDF")))
+
+		narrowTitle, narrowLetterhead := "Jurnal Kelas X-A", false
+		narrowColumns := "topic:Topik,class"
+		narrowRequest := api.ExportJournalsRequestObject{Params: api.ExportJournalsParams{
+			AcademicYearId: year, Format: api.ExportJournalsParamsFormatXlsx,
+			Title: &narrowTitle, Letterhead: &narrowLetterhead, Columns: &narrowColumns,
+		}}
+		response, err = handler.ExportJournals(actorCtx, narrowRequest)
+		require.NoError(t, err)
+		recorder = httptest.NewRecorder()
+		require.NoError(t, response.VisitExportJournalsResponse(recorder))
+		nf, err := excelize.OpenReader(bytes.NewReader(recorder.Body.Bytes()))
+		require.NoError(t, err)
+		defer nf.Close() //nolint:errcheck
+		nrows, err := nf.GetRows(nf.GetSheetList()[0])
+		require.NoError(t, err)
+		require.Contains(t, nrows, []string{"Topik", "Kelas"}, "the chosen column subset/relabel/order must be honoured")
+
+		badColumns := "does_not_exist"
+		badRequest := api.ExportJournalsRequestObject{Params: api.ExportJournalsParams{AcademicYearId: year, Format: api.ExportJournalsParamsFormatXlsx, Columns: &badColumns}}
+		_, err = handler.ExportJournals(actorCtx, badRequest)
+		require.Error(t, err)
+	})
+
+	t.Run("journal export scoped to one class gets a two-signer signature block: homeroom teacher left, tenant default right", func(t *testing.T) {
+		exec(`update classes set homeroom_teacher_id = $1 where tenant_id = $2 and id = $3`, substitute, tenant, class)
+		readerSvc := service.New(pool, repository.New(pool))
+		readerSvc.SetLetterheadSource(fakeJournalLetterheadSource{
+			signature: &reportdoc.Signature{
+				Place:   "Denpasar",
+				Signers: []reportdoc.Signer{{RoleLabel: "Kepala Sekolah", Name: "Kepala Sekolah Uji"}},
+			},
+		})
+
+		classScoped, err := readerSvc.ExportJournalsReport(ctx, tenant, year, service.JournalFilter{ClassID: uuid.NullUUID{UUID: class, Valid: true}}, reportdoc.LocaleID, reportdoc.Options{Format: reportdoc.FormatXLSX, ShowLetterhead: true})
+		require.NoError(t, err)
+		f, err := excelize.OpenReader(bytes.NewReader(classScoped))
+		require.NoError(t, err)
+		defer f.Close() //nolint:errcheck
+		rows, err := f.GetRows(f.GetSheetList()[0])
+		require.NoError(t, err)
+		var flat []string
+		for _, row := range rows {
+			flat = append(flat, row...)
+		}
+		joined := strings.Join(flat, " | ")
+		require.Contains(t, joined, "Wali Kelas")
+		require.Contains(t, joined, "Substitute", "the class's homeroom teacher (substitute) must be resolved and rendered")
+		require.Contains(t, joined, "Kepala Sekolah Uji")
+
+		unscoped, err := readerSvc.ExportJournalsReport(ctx, tenant, year, service.JournalFilter{TeacherUserID: uuid.NullUUID{UUID: teacher, Valid: true}}, reportdoc.LocaleID, reportdoc.Options{Format: reportdoc.FormatXLSX, ShowLetterhead: true})
+		require.NoError(t, err)
+		uf, err := excelize.OpenReader(bytes.NewReader(unscoped))
+		require.NoError(t, err)
+		defer uf.Close() //nolint:errcheck
+		urows, err := uf.GetRows(uf.GetSheetList()[0])
+		require.NoError(t, err)
+		var uflat []string
+		for _, row := range urows {
+			uflat = append(uflat, row...)
+		}
+		require.NotContains(t, strings.Join(uflat, " | "), "Wali Kelas", "an unscoped ('own journals') export has no single class to attribute a homeroom teacher to")
+	})
+}
+
+// fakeJournalLetterheadSource is a minimal reportdoc.LetterheadSource
+// stub, for verifying the journal export wires in whatever the school
+// module's ReportLetterhead would have returned, without depending on
+// that module's own tenant_settings fixture.
+type fakeJournalLetterheadSource struct {
+	signature *reportdoc.Signature
+}
+
+func (f fakeJournalLetterheadSource) Letterhead(context.Context, uuid.UUID) (*reportdoc.Letterhead, *reportdoc.Signature, error) {
+	return nil, f.signature, nil
 }
 
 type journalExportPermissions struct{ all bool }

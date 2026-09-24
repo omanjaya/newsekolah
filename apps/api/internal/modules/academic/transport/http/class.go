@@ -1,13 +1,39 @@
 package http
 
 import (
+	"bytes"
 	"context"
 
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/api"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/academic/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/academic/service"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 )
+
+// ExportClassRoster renders the actively enrolled students of one class
+// or every class of a grade level ("angkatan") as an XLSX or PDF file --
+// a classic "daftar siswa per kelas/per angkatan" printout, downloadable
+// from the class panel on /school/classes.
+func (h *AcademicHandler) ExportClassRoster(ctx context.Context, request api.ExportClassRosterRequestObject) (api.ExportClassRosterResponseObject, error) {
+	tenantID := tenantIDFromContext(ctx)
+	opts := reportdocOptions(request.Params.Format, request.Params.Title, request.Params.Letterhead, request.Params.Columns)
+	file, err := h.service.ExportClassRoster(ctx, tenantID, service.RosterExportQuery{
+		ClassID: request.Params.ClassId, GradeLevelID: request.Params.GradeLevelId,
+	}, tenantLocale(ctx), opts)
+	if err != nil {
+		return nil, mapDomainError(err)
+	}
+	if opts.Format == reportdoc.FormatPDF {
+		return api.ExportClassRoster200ApplicationpdfResponse{
+			Body: bytes.NewReader(file), ContentLength: int64(len(file)),
+		}, nil
+	}
+	return api.ExportClassRoster200ApplicationvndOpenxmlformatsOfficedocumentSpreadsheetmlSheetResponse{
+		Body: bytes.NewReader(file), ContentLength: int64(len(file)),
+	}, nil
+}
 
 func (h *AcademicHandler) ListClasses(ctx context.Context, request api.ListClassesRequestObject) (api.ListClassesResponseObject, error) {
 	tenantID := tenantIDFromContext(ctx)

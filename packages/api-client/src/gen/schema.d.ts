@@ -371,6 +371,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/academic/classes/roster/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The actively enrolled students of one class or every class of a grade level ("angkatan") as an XLSX or PDF file, one section per class -- NIS, NISN, name, gender, birth place/date, guardian name where recorded. */
+        get: operations["exportClassRoster"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/academic/classes/{classId}/enrollments/bulk": {
         parameters: {
             query?: never;
@@ -1510,7 +1527,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The daily report as an XLSX file */
+        /** The daily report as an XLSX or PDF file, for one class or every class of a grade level */
         get: operations["exportDailyAttendanceReport"];
         put?: never;
         post?: never;
@@ -1529,6 +1546,23 @@ export interface paths {
         };
         /** One student's daily statuses for one month */
         get: operations["getMonthlyAttendanceSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/attendance/reports/monthly/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The monthly recap as an XLSX or PDF file, for one class or every class of a grade level -- one row per student (NIS, name, one column per attendance status, total, percentage present), one section per class. */
+        get: operations["exportMonthlyAttendanceReport"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2359,6 +2393,23 @@ export interface paths {
         };
         /** One class-subject sheet with components, students and scores */
         get: operations["getGradebook"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/grading/gradebook/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The gradebook as an XLSX or PDF file, for one class or every class of a grade level -- one section per class, using the same data GET /v1/grading/gradebook shows (NOT the e-Rapor export, which stays separate). */
+        get: operations["exportGradebook"];
         put?: never;
         post?: never;
         delete?: never;
@@ -6874,7 +6925,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Export journals as XLSX or DOCX */
+        /** Export journals as XLSX, PDF, or DOCX */
         get: operations["exportJournals"];
         put?: never;
         post?: never;
@@ -11811,6 +11862,14 @@ export interface components {
         ReportColumns: string;
         /** @description Client-generated key (mobile clients on unstable networks) that makes a POST/PUT safe to retry; docs/08-security.md section 7. The same key replays the first response instead of repeating the write. */
         IdempotencyKeyHeader: string;
+        /** @description Rendered file type. Defaults to xlsx. */
+        ReportFormatParam: "xlsx" | "pdf";
+        /** @description Overrides the report's own default title. */
+        ReportTitleParam: string;
+        /** @description Show the tenant's configured letterhead (kop laporan). Defaults to true. */
+        ReportLetterheadParam: boolean;
+        /** @description Comma-separated column selection and order, each entry either a bare column key or "key:label" to rename it. Omitted or empty keeps every column, in the report's own default order and labels. */
+        ReportColumnsParam: string;
         YearIdParam: string;
         YearIdQueryParam: string;
         ClassIdParam: string;
@@ -12697,6 +12756,42 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             403: components["responses"]["Forbidden"];
             409: components["responses"]["Conflict"];
+        };
+    };
+    exportClassRoster: {
+        parameters: {
+            query?: {
+                /** @description Exactly one of class_id or grade_level_id is required. */
+                class_id?: string;
+                /** @description Every class of the tenant's active academic year under this grade level, one section per class. Exactly one of class_id or grade_level_id is required. */
+                grade_level_id?: string;
+                /** @description Rendered file type. Defaults to xlsx. */
+                format?: components["parameters"]["ReportFormatParam"];
+                /** @description Overrides the report's own default title. */
+                title?: components["parameters"]["ReportTitleParam"];
+                /** @description Show the tenant's configured letterhead (kop laporan). Defaults to true. */
+                letterhead?: components["parameters"]["ReportLetterheadParam"];
+                /** @description Comma-separated column selection and order, each entry either a bare column key or "key:label" to rename it. Omitted or empty keeps every column, in the report's own default order and labels. */
+                columns?: components["parameters"]["ReportColumnsParam"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Report file */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
+                    "application/pdf": string;
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
         };
     };
     bulkAssignStudents: {
@@ -15136,7 +15231,18 @@ export interface operations {
         parameters: {
             query: {
                 date: string;
-                class_id: string;
+                /** @description Exactly one of class_id or grade_level_id is required. */
+                class_id?: string;
+                /** @description Every class of the tenant's active academic year under this grade level, one sheet per class. Exactly one of class_id or grade_level_id is required. */
+                grade_level_id?: string;
+                /** @description Rendered file type. Defaults to xlsx. */
+                format?: components["parameters"]["ReportFormatParam"];
+                /** @description Overrides the report's own default title. */
+                title?: components["parameters"]["ReportTitleParam"];
+                /** @description Show the tenant's configured letterhead (kop laporan). Defaults to true. */
+                letterhead?: components["parameters"]["ReportLetterheadParam"];
+                /** @description Comma-separated column selection and order, each entry either a bare column key or "key:label" to rename it. Omitted or empty keeps every column, in the report's own default order and labels. */
+                columns?: components["parameters"]["ReportColumnsParam"];
             };
             header?: never;
             path?: never;
@@ -15144,13 +15250,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description XLSX file */
+            /** @description Report file */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
+                    "application/pdf": string;
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -15181,6 +15288,43 @@ export interface operations {
                             [key: string]: number;
                         };
                     };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+        };
+    };
+    exportMonthlyAttendanceReport: {
+        parameters: {
+            query: {
+                /** @description YYYY-MM */
+                month: string;
+                /** @description Exactly one of class_id or grade_level_id is required. */
+                class_id?: string;
+                /** @description Every class of the tenant's active academic year under this grade level, one sheet per class. Exactly one of class_id or grade_level_id is required. */
+                grade_level_id?: string;
+                /** @description Rendered file type. Defaults to xlsx. */
+                format?: components["parameters"]["ReportFormatParam"];
+                /** @description Overrides the report's own default title. */
+                title?: components["parameters"]["ReportTitleParam"];
+                /** @description Show the tenant's configured letterhead (kop laporan). Defaults to true. */
+                letterhead?: components["parameters"]["ReportLetterheadParam"];
+                /** @description Comma-separated column selection and order, each entry either a bare column key or "key:label" to rename it. Omitted or empty keeps every column, in the report's own default order and labels. */
+                columns?: components["parameters"]["ReportColumnsParam"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Report file */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
+                    "application/pdf": string;
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -16832,6 +16976,45 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Gradebook"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    exportGradebook: {
+        parameters: {
+            query: {
+                /** @description Exactly one of class_id or grade_level_id is required. */
+                class_id?: string;
+                /** @description Every class of the tenant's active academic year under this grade level, one section per class. Exactly one of class_id or grade_level_id is required. */
+                grade_level_id?: string;
+                subject_id: string;
+                term_id?: string;
+                /** @description Rendered file type. Defaults to xlsx. */
+                format?: components["parameters"]["ReportFormatParam"];
+                /** @description Overrides the report's own default title. */
+                title?: components["parameters"]["ReportTitleParam"];
+                /** @description Show the tenant's configured letterhead (kop laporan). Defaults to true. */
+                letterhead?: components["parameters"]["ReportLetterheadParam"];
+                /** @description Comma-separated column selection and order, each entry either a bare column key or "key:label" to rename it. Omitted or empty keeps every column, in the report's own default order and labels. */
+                columns?: components["parameters"]["ReportColumnsParam"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Report file */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
+                    "application/pdf": string;
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -26029,7 +26212,14 @@ export interface operations {
                 date_from?: string;
                 date_to?: string;
                 search?: string;
-                format: "xlsx" | "docx";
+                /** @description docx keeps its own fixed layout (no title/letterhead/columns customisation); xlsx and pdf go through reportdoc and honour the params below. */
+                format: "xlsx" | "pdf" | "docx";
+                /** @description Overrides the report's own default title. */
+                title?: components["parameters"]["ReportTitleParam"];
+                /** @description Show the tenant's configured letterhead (kop laporan). Defaults to true. */
+                letterhead?: components["parameters"]["ReportLetterheadParam"];
+                /** @description Comma-separated column selection and order, each entry either a bare column key or "key:label" to rename it. Omitted or empty keeps every column, in the report's own default order and labels. */
+                columns?: components["parameters"]["ReportColumnsParam"];
             };
             header?: never;
             path?: never;
@@ -26044,6 +26234,7 @@ export interface operations {
                 };
                 content: {
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
+                    "application/pdf": string;
                     "application/vnd.openxmlformats-officedocument.wordprocessingml.document": string;
                 };
             };

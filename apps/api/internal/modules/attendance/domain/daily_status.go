@@ -114,6 +114,47 @@ func strictMajority(counts map[string]int, total int) (string, bool) {
 	return "", false
 }
 
+// pseudoStatusLabels is StatusNone/StatusIncomplete/StatusMixed's display
+// text per locale (report-specific text, not tenant content -- reportdoc's
+// own FormatDate/PageLabel doc comment draws this same line, so this
+// package translates its own three pseudo-codes the same way rather than
+// asking reportdoc to). The "id" wording matches the web's own
+// attendanceReports.id.json i18n catalog, so a downloaded report and the
+// on-screen report never disagree.
+var pseudoStatusLabels = map[string]map[string]string{
+	"id": {
+		StatusNone:       "Tidak ada jadwal",
+		StatusIncomplete: "Belum lengkap",
+		StatusMixed:      "Campuran",
+	},
+	"en": {
+		StatusNone:       "No schedule",
+		StatusIncomplete: "Incomplete",
+		StatusMixed:      "Mixed",
+	},
+}
+
+// StatusLabel is code's human display text for a report export: policy's
+// own tenant-configured Label for a real status code (e.g. "H" ->
+// "Hadir"), never translated by locale (it is the tenant's own content);
+// pseudoStatusLabels[locale] for StatusNone/StatusIncomplete/StatusMixed
+// (falling back to "id" for an unrecognized locale); or the raw code
+// itself as a last resort (an unrecognized code should still render
+// something rather than a blank cell).
+func StatusLabel(code, locale string, policy StatusPolicy) string {
+	if label, ok := policy.Label(code); ok {
+		return label
+	}
+	labels, ok := pseudoStatusLabels[locale]
+	if !ok {
+		labels = pseudoStatusLabels["id"]
+	}
+	if label, ok := labels[code]; ok {
+		return label
+	}
+	return code
+}
+
 func highestPriority(counts map[string]int, policy StatusPolicy) string {
 	codes := make([]string, 0, len(counts))
 	for code := range counts {
