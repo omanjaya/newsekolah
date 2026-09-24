@@ -3,7 +3,6 @@
 import { ApiError } from "@newsekolah/api-client";
 import { type Locale, formatCurrency, formatDate } from "@newsekolah/i18n";
 import {
-  Badge,
   Button,
   Dialog,
   DialogContent,
@@ -12,6 +11,7 @@ import {
   Skeleton,
   useToast,
 } from "@newsekolah/ui";
+import { Share2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -26,7 +26,9 @@ import {
   usePaymentReceiptUrlMutation,
   useStudentBillHistoryQuery,
 } from "../api";
+import { openOrShareReceipt } from "../lib/receipt";
 
+import { BillStatusBadge } from "./bill-status-badge";
 import { PaymentForm } from "./payment-form";
 import { VoidPaymentDialog } from "./void-payment-dialog";
 
@@ -77,7 +79,7 @@ export function BillDetailSheet({
   function downloadReceipt(paymentId: string) {
     receiptUrl.mutate(paymentId, {
       onSuccess: (result) => {
-        window.open(result.url, "_blank", "noopener,noreferrer");
+        void openOrShareReceipt(result.url, tDesk("paymentForm.title"));
       },
       onError: (error) => {
         toast.error(
@@ -113,9 +115,7 @@ export function BillDetailSheet({
               <dd className="text-fg">{formatDate(bill.due_date, { locale })}</dd>
               <dt className="text-fg-muted">{t("status.label")}</dt>
               <dd>
-                <Badge variant={bill.status === "paid" ? "accent" : "neutral"}>
-                  {t(`status.${bill.status}`)}
-                </Badge>
+                <BillStatusBadge bill={bill} />
               </dd>
               <dt className="text-fg-muted">{t("originalAmount")}</dt>
               <dd className="tabular-nums text-fg">
@@ -176,6 +176,7 @@ export function BillDetailSheet({
                               <Button
                                 size="sm"
                                 variant="secondary"
+                                icon={<Share2 />}
                                 onClick={() => {
                                   downloadReceipt(payment.id);
                                 }}

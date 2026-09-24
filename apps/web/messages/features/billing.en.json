@@ -108,9 +108,11 @@
   },
   "paymentDesk": {
     "pickStudent": "Student",
-    "pickStudentPlaceholder": "Search a student's name",
+    "pickStudentPlaceholder": "Pick a student",
+    "pickStudentSearchPlaceholder": "Type a student name",
+    "pickStudentEmpty": "No matching student",
     "pickStudentTitle": "Pick a student",
-    "pickStudentBody": "Choose a student to see their bills and payment history.",
+    "pickStudentBody": "Search and pick a student to see their bills and payment history.",
     "emptyTitle": "No bills yet",
     "emptyBody": "This student has no bills for this academic year.",
     "dueDate": "due {date}",
@@ -121,8 +123,13 @@
     "status": {
       "unpaid": "Unpaid",
       "partial": "Partially paid",
-      "paid": "Paid"
+      "paid": "Paid",
+      "overdue": "Overdue"
     },
+    "totalOutstanding": "Total outstanding",
+    "billCount": "Bills",
+    "overdueCount": "Overdue",
+    "shareReceipt": "Share receipt",
     "method": {
       "cash": "Cash",
       "bankTransfer": "Bank transfer",
@@ -175,7 +182,8 @@
       "label": "Status",
       "unpaid": "Unpaid",
       "partial": "Partially paid",
-      "paid": "Paid"
+      "paid": "Paid",
+      "overdue": "Overdue"
     },
     "detailTitle": "Bill detail",
     "originalAmount": "Original amount",
