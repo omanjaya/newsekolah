@@ -8,6 +8,9 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/xuri/excelize/v2"
+
+	"github.com/omanjaya/newsekolah/apps/api/internal/modules/library/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 )
 
 const dateLayout = "2006-01-02"
@@ -26,56 +29,139 @@ func formatDatePtr(t *time.Time) string {
 	return formatDate(*t)
 }
 
-// LoansReportXLSX is LoansInPeriod as a single-sheet workbook (old app:
-// library_reports.go's format=xlsx on every report).
-func (s *Service) LoansReportXLSX(ctx context.Context, tenantID uuid.UUID, from, to *time.Time) ([]byte, error) {
+// indonesianMonthNames is a stand-in for a shared Indonesian date-
+// formatting helper the reportdoc foundation is adding (see
+// apps/api/internal/platform/reportdoc's package comment); swap this for
+// that helper once it lands instead of keeping a local copy in every
+// module report file.
+var indonesianMonthNames = [...]string{
+	"Januari", "Februari", "Maret", "April", "Mei", "Juni",
+	"Juli", "Agustus", "September", "Oktober", "November", "Desember",
+}
+
+// indonesianDate renders t as "22 September 2026", the long form a
+// report's scope line uses for a period boundary.
+func indonesianDate(t time.Time) string {
+	return fmt.Sprintf("%d %s %d", t.Day(), indonesianMonthNames[t.Month()-1], t.Year())
+}
+
+// periodScope builds the "Periode" scope line every from/to-bounded
+// report shares, falling back to "Semua data" when the caller gave no
+// bound (these endpoints default to the last 30 days server-side, but
+// AccessionRegister and PopularReport allow an unbounded query too).
+func periodScope(from, to *time.Time) reportdoc.ScopeLine {
+	if from == nil && to == nil {
+		return reportdoc.ScopeLine{Label: "Periode", Value: "Semua data"}
+	}
+	value := "s.d. "
+	if from != nil {
+		value = indonesianDate(*from) + " s.d. "
+	}
+	if to != nil {
+		value += indonesianDate(*to)
+	} else {
+		value += "sekarang"
+	}
+	return reportdoc.ScopeLine{Label: "Periode", Value: value}
+}
+
+// loanStatusLabel maps a LoanStatus onto the Indonesian label the web
+// app's own "app.library" catalogue uses.
+func loanStatusLabel(status domain.LoanStatus) string {
+	switch status {
+	case domain.LoanActive:
+		return "Dipinjam"
+	case domain.LoanReturned:
+		return "Dikembalikan"
+	case domain.LoanLost:
+		return "Hilang"
+	default:
+		return string(status)
+	}
+}
+
+// copyStatusLabel maps a CopyStatus onto the Indonesian label the web
+// app's own "app.library" catalogue uses.
+func copyStatusLabel(status domain.CopyStatus) string {
+	switch status {
+	case domain.CopyAvailable:
+		return "Tersedia"
+	case domain.CopyOnLoan:
+		return "Dipinjam"
+	case domain.CopyReserved:
+		return "Dipesan"
+	case domain.CopyDamaged:
+		return "Rusak"
+	case domain.CopyLost:
+		return "Hilang"
+	case domain.CopyInRepair:
+		return "Diperbaiki"
+	case domain.CopyProcessing:
+		return "Diproses"
+	case domain.CopyDonated:
+		return "Dihibahkan"
+	case domain.CopyReserveStack:
+		return "Rak cadangan"
+	default:
+		return string(status)
+	}
+}
+
+// loansReportColumns is the loans report's stable column set.
+func loansReportColumns() []reportdoc.Column {
+	return []reportdoc.Column{
+		{Key: "title", Label: "Judul", Kind: reportdoc.ColumnText, Width: 30},
+		{Key: "borrower", Label: "Peminjam", Kind: reportdoc.ColumnText, Width: 22},
+		{Key: "borrowed_at", Label: "Tanggal Pinjam", Kind: reportdoc.ColumnDate, Width: 14},
+		{Key: "due_on", Label: "Jatuh Tempo", Kind: reportdoc.ColumnDate, Width: 14},
+		{Key: "returned_at", Label: "Tanggal Kembali", Kind: reportdoc.ColumnDate, Width: 14},
+		{Key: "status", Label: "Status", Kind: reportdoc.ColumnText, Width: 12},
+		{Key: "fine", Label: "Denda", Kind: reportdoc.ColumnNumber, Width: 12},
+	}
+}
+
+// ExportLoansReport renders LoansInPeriod per opts (format, title override,
+// letterhead visibility, column subset/order).
+func (s *Service) ExportLoansReport(ctx context.Context, tenantID uuid.UUID, from, to *time.Time, opts reportdoc.Options) ([]byte, error) {
 	rows, err := s.LoansInPeriod(ctx, tenantID, from, to)
 	if err != nil {
 		return nil, err
 	}
-	f := excelize.NewFile()
-	defer f.Close() //nolint:errcheck // closing an in-memory workbook after Write cannot meaningfully fail.
-	headerStyle, err := newXLSXHeaderStyle(f)
-	if err != nil {
-		return nil, fmt.Errorf("loans report style: %w", err)
-	}
-	sheet, err := newSheet(f, "Peminjaman", true)
-	if err != nil {
-		return nil, err
-	}
-	headers := []string{"Judul", "Peminjam", "Tanggal Pinjam", "Jatuh Tempo", "Tanggal Kembali", "Status", "Denda"}
-	body := make([][]any, len(rows))
+	tableRows := make([][]any, len(rows))
 	for i, r := range rows {
-		returned := ""
+		var returned any
 		if r.Loan.ReturnedAt != nil {
-			returned = formatDate(*r.Loan.ReturnedAt)
+			returned = *r.Loan.ReturnedAt
 		}
-		body[i] = []any{r.Title, r.MemberName, formatDate(r.Loan.BorrowedAt), formatDate(r.Loan.DueOn), returned, string(r.Loan.Status), r.Loan.FineAmount}
+		tableRows[i] = []any{r.Title, r.MemberName, r.Loan.BorrowedAt, r.Loan.DueOn, returned, loanStatusLabel(r.Loan.Status), r.Loan.FineAmount}
 	}
-	if err := writeXLSXSheet(f, sheet, headerStyle, headers, body); err != nil {
-		return nil, fmt.Errorf("loans report write: %w", err)
+	doc := reportdoc.Document{
+		Title:    "Laporan Peminjaman",
+		Scope:    []reportdoc.ScopeLine{periodScope(from, to)},
+		Columns:  loansReportColumns(),
+		Sections: []reportdoc.Section{{Name: "Peminjaman", Rows: tableRows}},
 	}
-	return writeXLSXBuffer(f)
+	return s.renderLibraryReport(ctx, tenantID, doc, opts)
 }
 
-// OverdueMembersReportXLSX is OverdueMembers as a single-sheet workbook.
-func (s *Service) OverdueMembersReportXLSX(ctx context.Context, tenantID uuid.UUID) ([]byte, error) {
+// overdueMembersReportColumns is the overdue-members report's stable
+// column set.
+func overdueMembersReportColumns() []reportdoc.Column {
+	return []reportdoc.Column{
+		{Key: "member", Label: "Anggota", Kind: reportdoc.ColumnText, Width: 26},
+		{Key: "loan_count", Label: "Jumlah Pinjaman Telat", Kind: reportdoc.ColumnNumber, Width: 18},
+		{Key: "fine", Label: "Estimasi Denda", Kind: reportdoc.ColumnNumber, Width: 16},
+	}
+}
+
+// ExportOverdueMembersReport renders OverdueMembers per opts (format, title
+// override, letterhead visibility, column subset/order).
+func (s *Service) ExportOverdueMembersReport(ctx context.Context, tenantID uuid.UUID, opts reportdoc.Options) ([]byte, error) {
 	rows, err := s.OverdueMembers(ctx, tenantID)
 	if err != nil {
 		return nil, err
 	}
-	f := excelize.NewFile()
-	defer f.Close() //nolint:errcheck // closing an in-memory workbook after Write cannot meaningfully fail.
-	headerStyle, err := newXLSXHeaderStyle(f)
-	if err != nil {
-		return nil, fmt.Errorf("overdue members report style: %w", err)
-	}
-	sheet, err := newSheet(f, "Terlambat", true)
-	if err != nil {
-		return nil, err
-	}
-	headers := []string{"Anggota", "Jumlah Pinjaman Telat", "Estimasi Denda"}
-	body := make([][]any, len(rows))
+	tableRows := make([][]any, len(rows))
 	for i, r := range rows {
 		name := r.MemberUserID.String()
 		if s.members != nil {
@@ -83,29 +169,37 @@ func (s *Service) OverdueMembersReportXLSX(ctx context.Context, tenantID uuid.UU
 				name = resolved
 			}
 		}
-		body[i] = []any{name, r.LoanCount, r.TotalFine}
+		tableRows[i] = []any{name, r.LoanCount, r.TotalFine}
 	}
-	if err := writeXLSXSheet(f, sheet, headerStyle, headers, body); err != nil {
-		return nil, fmt.Errorf("overdue members report write: %w", err)
+	doc := reportdoc.Document{
+		Title:    "Laporan Anggota Terlambat",
+		Columns:  overdueMembersReportColumns(),
+		Sections: []reportdoc.Section{{Name: "Terlambat", Rows: tableRows}},
 	}
-	return writeXLSXBuffer(f)
+	return s.renderLibraryReport(ctx, tenantID, doc, opts)
 }
 
-// MostBorrowedReportXLSX is PopularReport as a two-sheet workbook: most
-// borrowed titles, then top borrowers with class.
-func (s *Service) MostBorrowedReportXLSX(ctx context.Context, tenantID uuid.UUID, from, to *time.Time, limit int) ([]byte, error) {
-	report, err := s.PopularReport(ctx, tenantID, from, to, limit)
-	if err != nil {
-		return nil, err
+// mostBorrowedReportColumns is the most-borrowed report's stable column
+// set. Its two sections describe different things (a title's author, a
+// borrower's class), so "detail" is deliberately generic -- reportdoc
+// shares one column set across every section of a Document (see its
+// package comment), and a title-popularity report and a top-borrower
+// report are two views of the same "who/what and how many loans" shape
+// rather than two unrelated tables.
+func mostBorrowedReportColumns() []reportdoc.Column {
+	return []reportdoc.Column{
+		{Key: "name", Label: "Nama", Kind: reportdoc.ColumnText, Width: 28},
+		{Key: "detail", Label: "Keterangan", Kind: reportdoc.ColumnText, Width: 18},
+		{Key: "loan_count", Label: "Jumlah Pinjam", Kind: reportdoc.ColumnNumber, Width: 14},
 	}
-	f := excelize.NewFile()
-	defer f.Close() //nolint:errcheck // closing an in-memory workbook after Write cannot meaningfully fail.
-	headerStyle, err := newXLSXHeaderStyle(f)
-	if err != nil {
-		return nil, fmt.Errorf("most borrowed report style: %w", err)
-	}
+}
 
-	titleSheet, err := newSheet(f, "Judul Terpopuler", true)
+// ExportMostBorrowedReport renders PopularReport per opts (format, title
+// override, letterhead visibility, column subset/order) as a two-section
+// report: most borrowed titles ("Keterangan" is the author), then top
+// borrowers ("Keterangan" is the class).
+func (s *Service) ExportMostBorrowedReport(ctx context.Context, tenantID uuid.UUID, from, to *time.Time, limit int, opts reportdoc.Options) ([]byte, error) {
+	report, err := s.PopularReport(ctx, tenantID, from, to, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -113,23 +207,20 @@ func (s *Service) MostBorrowedReportXLSX(ctx context.Context, tenantID uuid.UUID
 	for i, t := range report.Titles {
 		titleRows[i] = []any{t.Title.Title.Title, t.Title.Author, t.LoanCount}
 	}
-	if err := writeXLSXSheet(f, titleSheet, headerStyle, []string{"Judul", "Pengarang", "Jumlah Pinjam"}, titleRows); err != nil {
-		return nil, fmt.Errorf("most borrowed report titles write: %w", err)
-	}
-
-	borrowerSheet, err := newSheet(f, "Peminjam Teraktif", false)
-	if err != nil {
-		return nil, err
-	}
 	borrowerRows := make([][]any, len(report.Borrowers))
 	for i, b := range report.Borrowers {
 		borrowerRows[i] = []any{b.MemberName, labelClass(b.ClassName), b.LoanCount}
 	}
-	if err := writeXLSXSheet(f, borrowerSheet, headerStyle, []string{"Anggota", "Kelas", "Jumlah Pinjam"}, borrowerRows); err != nil {
-		return nil, fmt.Errorf("most borrowed report borrowers write: %w", err)
+	doc := reportdoc.Document{
+		Title:   "Laporan Judul dan Peminjam Terpopuler",
+		Scope:   []reportdoc.ScopeLine{periodScope(from, to)},
+		Columns: mostBorrowedReportColumns(),
+		Sections: []reportdoc.Section{
+			{Name: "Judul Terpopuler", Rows: titleRows},
+			{Name: "Peminjam Teraktif", Rows: borrowerRows},
+		},
 	}
-	f.SetActiveSheet(0)
-	return writeXLSXBuffer(f)
+	return s.renderLibraryReport(ctx, tenantID, doc, opts)
 }
 
 // CatalogueSummaryXLSX is CatalogueSummary as a single-sheet key/value
@@ -184,59 +275,51 @@ func (s *Service) CatalogueSummaryXLSX(ctx context.Context, tenantID uuid.UUID, 
 	return writeXLSXBuffer(f)
 }
 
-// VisitsReportXLSX is VisitsReport as a two-sheet workbook: per-day, then
-// per-class.
-func (s *Service) VisitsReportXLSX(ctx context.Context, tenantID uuid.UUID, from, to *time.Time) ([]byte, error) {
+// labelCountColumns is the shared two-column ("what, how many") shape
+// behind the visits and members reports: each has two sections that
+// break the same total down along a different axis (day vs class, type
+// vs class), so one generic label column serves both, the same reasoning
+// mostBorrowedReportColumns documents.
+func labelCountColumns(labelHeader string) []reportdoc.Column {
+	return []reportdoc.Column{
+		{Key: "label", Label: labelHeader, Kind: reportdoc.ColumnText, Width: 26},
+		{Key: "count", Label: "Jumlah", Kind: reportdoc.ColumnNumber, Width: 14},
+	}
+}
+
+// ExportVisitsReport renders VisitsReport per opts (format, title
+// override, letterhead visibility, column subset/order) as a two-section
+// report: visits per day, then per class.
+func (s *Service) ExportVisitsReport(ctx context.Context, tenantID uuid.UUID, from, to *time.Time, opts reportdoc.Options) ([]byte, error) {
 	report, err := s.VisitsReport(ctx, tenantID, from, to)
-	if err != nil {
-		return nil, err
-	}
-	f := excelize.NewFile()
-	defer f.Close() //nolint:errcheck // closing an in-memory workbook after Write cannot meaningfully fail.
-	headerStyle, err := newXLSXHeaderStyle(f)
-	if err != nil {
-		return nil, fmt.Errorf("visits report style: %w", err)
-	}
-	daySheet, err := newSheet(f, "Per Hari", true)
 	if err != nil {
 		return nil, err
 	}
 	dayRows := make([][]any, len(report.PerDay))
 	for i, d := range report.PerDay {
-		dayRows[i] = []any{formatDate(d.Day), d.Count}
-	}
-	if err := writeXLSXSheet(f, daySheet, headerStyle, []string{"Tanggal", "Jumlah Kunjungan"}, dayRows); err != nil {
-		return nil, fmt.Errorf("visits report per-day write: %w", err)
-	}
-	classSheet, err := newSheet(f, "Per Kelas", false)
-	if err != nil {
-		return nil, err
+		dayRows[i] = []any{indonesianDate(d.Day), d.Count}
 	}
 	classRows := make([][]any, len(report.PerClass))
 	for i, c := range report.PerClass {
 		classRows[i] = []any{c.ClassName, c.Count}
 	}
-	if err := writeXLSXSheet(f, classSheet, headerStyle, []string{"Kelas", "Jumlah Kunjungan"}, classRows); err != nil {
-		return nil, fmt.Errorf("visits report per-class write: %w", err)
+	doc := reportdoc.Document{
+		Title:   "Laporan Kunjungan Perpustakaan",
+		Scope:   []reportdoc.ScopeLine{periodScope(from, to)},
+		Columns: labelCountColumns("Keterangan"),
+		Sections: []reportdoc.Section{
+			{Name: "Per Hari", Rows: dayRows},
+			{Name: "Per Kelas", Rows: classRows},
+		},
 	}
-	f.SetActiveSheet(0)
-	return writeXLSXBuffer(f)
+	return s.renderLibraryReport(ctx, tenantID, doc, opts)
 }
 
-// MembersReportXLSX is MembersReport as a two-sheet workbook: per-type,
-// then per-class.
-func (s *Service) MembersReportXLSX(ctx context.Context, tenantID uuid.UUID) ([]byte, error) {
+// ExportMembersReport renders MembersReport per opts (format, title
+// override, letterhead visibility, column subset/order) as a two-section
+// report: members per type, then per class.
+func (s *Service) ExportMembersReport(ctx context.Context, tenantID uuid.UUID, opts reportdoc.Options) ([]byte, error) {
 	report, err := s.MembersReport(ctx, tenantID)
-	if err != nil {
-		return nil, err
-	}
-	f := excelize.NewFile()
-	defer f.Close() //nolint:errcheck // closing an in-memory workbook after Write cannot meaningfully fail.
-	headerStyle, err := newXLSXHeaderStyle(f)
-	if err != nil {
-		return nil, fmt.Errorf("members report style: %w", err)
-	}
-	typeSheet, err := newSheet(f, "Per Jenis", true)
 	if err != nil {
 		return nil, err
 	}
@@ -244,54 +327,80 @@ func (s *Service) MembersReportXLSX(ctx context.Context, tenantID uuid.UUID) ([]
 	for i, t := range report.PerType {
 		typeRows[i] = []any{t.Name, t.Count}
 	}
-	if err := writeXLSXSheet(f, typeSheet, headerStyle, []string{"Jenis Anggota", "Jumlah"}, typeRows); err != nil {
-		return nil, fmt.Errorf("members report per-type write: %w", err)
-	}
-	classSheet, err := newSheet(f, "Per Kelas", false)
-	if err != nil {
-		return nil, err
-	}
 	classRows := make([][]any, len(report.PerClass))
 	for i, c := range report.PerClass {
 		classRows[i] = []any{c.ClassName, c.Count}
 	}
-	if err := writeXLSXSheet(f, classSheet, headerStyle, []string{"Kelas", "Jumlah"}, classRows); err != nil {
-		return nil, fmt.Errorf("members report per-class write: %w", err)
+	doc := reportdoc.Document{
+		Title:   "Laporan Anggota Perpustakaan",
+		Columns: labelCountColumns("Keterangan"),
+		Sections: []reportdoc.Section{
+			{Name: "Per Jenis", Rows: typeRows},
+			{Name: "Per Kelas", Rows: classRows},
+		},
 	}
-	f.SetActiveSheet(0)
-	return writeXLSXBuffer(f)
+	return s.renderLibraryReport(ctx, tenantID, doc, opts)
 }
 
-// AccessionRegisterXLSX is AccessionRegister (Buku Induk) as a
-// single-sheet workbook.
-func (s *Service) AccessionRegisterXLSX(ctx context.Context, tenantID uuid.UUID, from, to *time.Time) ([]byte, error) {
+// accessionRegisterColumns is the accession register (Buku Induk)
+// report's stable column set.
+func accessionRegisterColumns() []reportdoc.Column {
+	return []reportdoc.Column{
+		{Key: "accession_number", Label: "Nomor Induk", Kind: reportdoc.ColumnText, Width: 16},
+		{Key: "barcode", Label: "Barcode", Kind: reportdoc.ColumnText, Width: 16},
+		{Key: "call_number", Label: "Nomor Panggil", Kind: reportdoc.ColumnText, Width: 16},
+		{Key: "status", Label: "Status", Kind: reportdoc.ColumnText, Width: 12},
+		{Key: "price", Label: "Harga", Kind: reportdoc.ColumnNumber, Width: 12},
+		{Key: "acquired_on", Label: "Tanggal Pengadaan", Kind: reportdoc.ColumnDate, Width: 16},
+	}
+}
+
+// ExportAccessionRegisterReport renders AccessionRegister (Buku Induk)
+// per opts (format, title override, letterhead visibility, column
+// subset/order).
+func (s *Service) ExportAccessionRegisterReport(ctx context.Context, tenantID uuid.UUID, from, to *time.Time, opts reportdoc.Options) ([]byte, error) {
 	copies, err := s.AccessionRegister(ctx, tenantID, from, to)
 	if err != nil {
 		return nil, err
 	}
-	f := excelize.NewFile()
-	defer f.Close() //nolint:errcheck // closing an in-memory workbook after Write cannot meaningfully fail.
-	headerStyle, err := newXLSXHeaderStyle(f)
-	if err != nil {
-		return nil, fmt.Errorf("accession register style: %w", err)
+	tableRows := make([][]any, len(copies))
+	for i, c := range copies {
+		var acquired any
+		if c.AcquiredOn != nil {
+			acquired = *c.AcquiredOn
+		}
+		tableRows[i] = []any{c.AccessionNumber, c.Barcode, c.CallNumber, copyStatusLabel(c.Status), c.Price, acquired}
 	}
-	sheet, err := newSheet(f, "Buku Induk", true)
+	doc := reportdoc.Document{
+		Title:    "Buku Induk",
+		Scope:    []reportdoc.ScopeLine{periodScope(from, to)},
+		Columns:  accessionRegisterColumns(),
+		Sections: []reportdoc.Section{{Name: "Buku Induk", Rows: tableRows}},
+	}
+	return s.renderLibraryReport(ctx, tenantID, doc, opts)
+}
+
+// renderLibraryReport loads tenantID's configured kop laporan (nil
+// letterhead source or a tenant that has not configured one both degrade
+// to "no letterhead" rather than an error), applies opts to doc, and
+// renders it in the format opts requests, defaulting to XLSX when the
+// caller (or an old client that predates this query-param contract) did
+// not name one.
+func (s *Service) renderLibraryReport(ctx context.Context, tenantID uuid.UUID, doc reportdoc.Document, opts reportdoc.Options) ([]byte, error) {
+	if s.letterhead != nil {
+		if lh, sig, err := s.letterhead.Letterhead(ctx, tenantID); err == nil {
+			doc.Letterhead = lh
+			doc.Signature = sig
+		}
+	}
+	narrowed, err := reportdoc.Apply(doc, opts)
 	if err != nil {
 		return nil, err
 	}
-	headers := []string{"Nomor Induk", "Barcode", "Nomor Panggil", "Status", "Harga", "Tanggal Pengadaan"}
-	body := make([][]any, len(copies))
-	for i, c := range copies {
-		acquired := ""
-		if c.AcquiredOn != nil {
-			acquired = formatDate(*c.AcquiredOn)
-		}
-		body[i] = []any{c.AccessionNumber, c.Barcode, c.CallNumber, string(c.Status), c.Price, acquired}
+	if opts.Format == reportdoc.FormatPDF {
+		return reportdoc.RenderPDF(narrowed)
 	}
-	if err := writeXLSXSheet(f, sheet, headerStyle, headers, body); err != nil {
-		return nil, fmt.Errorf("accession register write: %w", err)
-	}
-	return writeXLSXBuffer(f)
+	return reportdoc.RenderXLSX(narrowed)
 }
 
 func writeXLSXBuffer(f *excelize.File) ([]byte, error) {

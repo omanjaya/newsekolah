@@ -9,7 +9,9 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/api"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/school/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/i18n"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/tenant"
 )
 
 func mapReportHeaderError(err error) error {
@@ -55,14 +57,18 @@ func (h *TenantHandler) UpdateTenantReportHeader(ctx context.Context, request ap
 // running a real report.
 func (h *TenantHandler) PreviewTenantReportHeader(ctx context.Context, request api.PreviewTenantReportHeaderRequestObject) (api.PreviewTenantReportHeaderResponseObject, error) {
 	tenantID, _ := httpx.TenantIDFromContext(ctx)
+	locale := i18n.DefaultLocale
+	if t, ok := tenant.FromContext(ctx); ok {
+		locale = i18n.FromTenantLocale(t.Locale)
+	}
 	lh, sig, err := h.service.ReportLetterhead(ctx, tenantID)
 	if err != nil {
 		return nil, mapReportHeaderError(err)
 	}
 	if sig != nil {
-		sig.Date = time.Now().Format("2006-01-02")
+		sig.Date = reportdoc.FormatDate(locale, time.Now())
 	}
-	doc := previewDocument(lh, sig)
+	doc := previewDocument(locale, lh, sig)
 
 	switch request.Params.Format {
 	case api.PreviewTenantReportHeaderParamsFormatPdf:
@@ -82,29 +88,57 @@ func (h *TenantHandler) PreviewTenantReportHeader(ctx context.Context, request a
 	}
 }
 
+// previewLabels is previewDocument's own tiny id/en vocabulary -- it is a
+// fixed sample, not a real report, so it does not go through the reports
+// module's own translation.
+var previewLabels = map[string]map[string]string{
+	reportdoc.LocaleID: {
+		"title": "Contoh Laporan", "scopeClass": "Kelas", "scopePeriod": "Periode",
+		"no": "No", "name": "Nama", "status": "Status",
+		"present": "Hadir", "sick": "Sakit",
+	},
+	reportdoc.LocaleEN: {
+		"title": "Sample Report", "scopeClass": "Class", "scopePeriod": "Period",
+		"no": "No", "name": "Name", "status": "Status",
+		"present": "Present", "sick": "Sick",
+	},
+}
+
+func previewLabel(locale, key string) string {
+	if m, ok := previewLabels[locale]; ok {
+		if v, ok := m[key]; ok {
+			return v
+		}
+	}
+	return previewLabels[reportdoc.LocaleEN][key]
+}
+
 // previewDocument is a small, fixed sample -- the settings page's live
 // preview is about the letterhead/signature, not about any real report's
 // data, so three placeholder rows are enough to show the layout.
-func previewDocument(lh *reportdoc.Letterhead, sig *reportdoc.Signature) reportdoc.Document {
+func previewDocument(locale string, lh *reportdoc.Letterhead, sig *reportdoc.Signature) reportdoc.Document {
 	return reportdoc.Document{
 		Letterhead: lh,
-		Title:      "Contoh Laporan",
-		Scope:      []reportdoc.ScopeLine{{Label: "Kelas", Value: "X-1"}, {Label: "Periode", Value: time.Now().Format("2006-01-02")}},
+		Title:      previewLabel(locale, "title"),
+		Scope: []reportdoc.ScopeLine{
+			{Label: previewLabel(locale, "scopeClass"), Value: "X-1"},
+			{Label: previewLabel(locale, "scopePeriod"), Value: reportdoc.FormatDate(locale, time.Now())},
+		},
 		Columns: []reportdoc.Column{
-			{Key: "no", Label: "No", Kind: reportdoc.ColumnNumber, Width: 5},
-			{Key: "name", Label: "Nama", Kind: reportdoc.ColumnText, Width: 28},
-			{Key: "status", Label: "Status", Kind: reportdoc.ColumnText, Width: 14},
+			{Key: "no", Label: previewLabel(locale, "no"), Kind: reportdoc.ColumnNumber, Width: 5},
+			{Key: "name", Label: previewLabel(locale, "name"), Kind: reportdoc.ColumnText, Width: 28},
+			{Key: "status", Label: previewLabel(locale, "status"), Kind: reportdoc.ColumnText, Width: 14},
 		},
 		Sections: []reportdoc.Section{{
 			Name: "X-1",
 			Rows: [][]any{
-				{1, "Budi Santoso", "Hadir"},
-				{2, "Siti Aminah", "Sakit"},
-				{3, "Wayan Putra", "Hadir"},
+				{1, "Budi Santoso", previewLabel(locale, "present")},
+				{2, "Siti Aminah", previewLabel(locale, "sick")},
+				{3, "Wayan Putra", previewLabel(locale, "present")},
 			},
 		}},
 		Signature:       sig,
-		PageLabelFormat: "Halaman {page} dari {pages}",
+		PageLabelFormat: reportdoc.PageLabel(locale),
 	}
 }
 
@@ -125,7 +159,12 @@ func toAPIReportHeader(h domain.ReportHeader) api.ReportHeader {
 	if lines == nil {
 		lines = []string{}
 	}
-	return api.ReportHeader{ShowLogo: h.ShowLogo, Lines: lines, Place: h.Place, Signers: signers}
+	out := api.ReportHeader{ShowLogo: h.ShowLogo, Lines: lines, Place: h.Place, Signers: signers}
+	if h.Emphasis != domain.EmphasisAuto {
+		emphasis := h.Emphasis
+		out.Emphasis = &emphasis
+	}
+	return out
 }
 
 func fromAPIReportHeaderWrite(w api.ReportHeaderWrite) domain.ReportHeader {
@@ -133,5 +172,9 @@ func fromAPIReportHeaderWrite(w api.ReportHeaderWrite) domain.ReportHeader {
 	for i, s := range w.Signers {
 		signers[i] = domain.ReportHeaderSigner{RoleLabel: s.RoleLabel, Name: s.Name, IDLabel: strOf(s.IdLabel), IDNumber: strOf(s.IdNumber)}
 	}
-	return domain.ReportHeader{ShowLogo: w.ShowLogo, Lines: w.Lines, Place: w.Place, Signers: signers}
+	emphasis := domain.EmphasisAuto
+	if w.Emphasis != nil {
+		emphasis = *w.Emphasis
+	}
+	return domain.ReportHeader{ShowLogo: w.ShowLogo, Lines: w.Lines, Emphasis: emphasis, Place: w.Place, Signers: signers}
 }

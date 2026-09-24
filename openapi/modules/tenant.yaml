@@ -463,7 +463,11 @@ components:
           type: array
           maxItems: 5
           items: { type: string, maxLength: 200 }
-          description: First line is conventionally the school name and renders bold.
+          description: Kop laporan text lines, e.g. foundation name, school name, address, phone.
+        emphasis:
+          type: integer
+          minimum: 0
+          description: Index into lines that is the school name (rendered bold and larger). Omit for automatic selection (matches the tenant name, else the second-to-last line).
         place: { type: string, maxLength: 80 }
         signers:
           type: array

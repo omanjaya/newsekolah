@@ -10,6 +10,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/visitors/service"
 	transporthttp "github.com/omanjaya/newsekolah/apps/api/internal/modules/visitors/transport/http"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 )
 
 type Dependencies struct {
@@ -18,7 +19,11 @@ type Dependencies struct {
 	Docs  service.DocumentIssuer // nil: badges are numbered locally without a PDF
 	Flags service.FlagReader
 	Audit service.AuditRecorder
-	Clock clock.Clock
+	// Letterhead loads a tenant's configured kop laporan for the daily/
+	// monthly recap exports; nil is fine (those exports just never show
+	// one).
+	Letterhead reportdoc.LetterheadSource
+	Clock      clock.Clock
 }
 
 type Module struct {
@@ -27,6 +32,6 @@ type Module struct {
 }
 
 func Register(deps Dependencies) *Module {
-	svc := service.New(deps.Pool, repository.New(deps.Pool), deps.Years, deps.Docs, deps.Flags, deps.Audit, deps.Clock)
+	svc := service.New(deps.Pool, repository.New(deps.Pool), deps.Years, deps.Docs, deps.Flags, deps.Audit, deps.Letterhead, deps.Clock)
 	return &Module{Service: svc, Handler: transporthttp.New(svc)}
 }

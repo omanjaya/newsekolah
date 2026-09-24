@@ -18,6 +18,22 @@ type policyConfig struct {
 	Statuses []domain.StatusDef `json:"statuses"`
 }
 
+// StatusPolicy returns tenantID's configured attendance status policy
+// (code -> label, color, ...), exported for another module to resolve a
+// status code's tenant-configured label without importing this package's
+// domain type directly -- see wiring.AttendanceReports.StatusLabels,
+// which adapts this for the reports module's narrow AttendanceReader
+// port.
+func (s *Service) StatusPolicy(ctx context.Context, tenantID uuid.UUID) (domain.StatusPolicy, error) {
+	var policy domain.StatusPolicy
+	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		var err error
+		policy, err = s.loadStatusPolicy(ctx, tenantID)
+		return err
+	})
+	return policy, err
+}
+
 // loadStatusPolicy returns the tenant's configured attendance status
 // policy, seeding domain.DefaultStatusPolicy as tenant_policies version 1
 // the first time a tenant is asked (so every later read is a plain

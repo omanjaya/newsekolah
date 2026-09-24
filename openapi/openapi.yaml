@@ -9226,7 +9226,7 @@ paths:
         - library
       operationId: getLibraryVisitsReportXlsx
       x-permission: view_library_reports
-      summary: Visits report as XLSX
+      summary: Visits report as XLSX or PDF
       parameters:
         - name: from
           in: query
@@ -9238,11 +9238,19 @@ paths:
           schema:
             type: string
             format: date
+        - $ref: "#/components/parameters/ReportFormat"
+        - $ref: "#/components/parameters/ReportTitle"
+        - $ref: "#/components/parameters/ReportLetterhead"
+        - $ref: "#/components/parameters/ReportColumns"
       responses:
         "200":
-          description: XLSX
+          description: File
           content:
             application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+            application/pdf:
               schema:
                 type: string
                 format: binary
@@ -9276,12 +9284,21 @@ paths:
         - library
       operationId: getLibraryMembersReportXlsx
       x-permission: view_library_reports
-      summary: Members report as XLSX
+      summary: Members report as XLSX or PDF
+      parameters:
+        - $ref: "#/components/parameters/ReportFormat"
+        - $ref: "#/components/parameters/ReportTitle"
+        - $ref: "#/components/parameters/ReportLetterhead"
+        - $ref: "#/components/parameters/ReportColumns"
       responses:
         "200":
-          description: XLSX
+          description: File
           content:
             application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+            application/pdf:
               schema:
                 type: string
                 format: binary
@@ -9361,7 +9378,7 @@ paths:
         - library
       operationId: getLibraryAccessionRegisterReportXlsx
       x-permission: view_library_reports
-      summary: Accession register as XLSX
+      summary: Accession register as XLSX or PDF
       parameters:
         - name: from
           in: query
@@ -9373,11 +9390,19 @@ paths:
           schema:
             type: string
             format: date
+        - $ref: "#/components/parameters/ReportFormat"
+        - $ref: "#/components/parameters/ReportTitle"
+        - $ref: "#/components/parameters/ReportLetterhead"
+        - $ref: "#/components/parameters/ReportColumns"
       responses:
         "200":
-          description: XLSX
+          description: File
           content:
             application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+            application/pdf:
               schema:
                 type: string
                 format: binary
@@ -12276,7 +12301,7 @@ paths:
         - library
       operationId: getLibraryLoansReportXlsx
       x-permission: view_library_reports
-      summary: Loans report as XLSX
+      summary: Loans report as XLSX or PDF
       parameters:
         - name: from
           in: query
@@ -12288,11 +12313,19 @@ paths:
           schema:
             type: string
             format: date
+        - $ref: "#/components/parameters/ReportFormat"
+        - $ref: "#/components/parameters/ReportTitle"
+        - $ref: "#/components/parameters/ReportLetterhead"
+        - $ref: "#/components/parameters/ReportColumns"
       responses:
         "200":
-          description: XLSX
+          description: File
           content:
             application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+            application/pdf:
               schema:
                 type: string
                 format: binary
@@ -12333,12 +12366,21 @@ paths:
         - library
       operationId: getLibraryOverdueMembersReportXlsx
       x-permission: view_library_reports
-      summary: Overdue-members report as XLSX
+      summary: Overdue-members report as XLSX or PDF
+      parameters:
+        - $ref: "#/components/parameters/ReportFormat"
+        - $ref: "#/components/parameters/ReportTitle"
+        - $ref: "#/components/parameters/ReportLetterhead"
+        - $ref: "#/components/parameters/ReportColumns"
       responses:
         "200":
-          description: XLSX
+          description: File
           content:
             application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+            application/pdf:
               schema:
                 type: string
                 format: binary
@@ -12402,7 +12444,7 @@ paths:
         - library
       operationId: getLibraryMostBorrowedReportXlsx
       x-permission: view_library_reports
-      summary: Most-borrowed titles and top borrowers as XLSX
+      summary: Most-borrowed titles and top borrowers as XLSX or PDF
       parameters:
         - name: from
           in: query
@@ -12421,11 +12463,19 @@ paths:
             minimum: 1
             maximum: 100
             default: 20
+        - $ref: "#/components/parameters/ReportFormat"
+        - $ref: "#/components/parameters/ReportTitle"
+        - $ref: "#/components/parameters/ReportLetterhead"
+        - $ref: "#/components/parameters/ReportColumns"
       responses:
         "200":
-          description: XLSX
+          description: File
           content:
             application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+            application/pdf:
               schema:
                 type: string
                 format: binary
@@ -16352,7 +16402,7 @@ paths:
         - staff-attendance
       operationId: exportStaffAttendanceMonthlyRecap
       x-permission: view_staff_attendance
-      summary: The monthly recap as an XLSX workbook
+      summary: The monthly recap as an XLSX workbook or PDF
       parameters:
         - name: month
           in: query
@@ -16360,16 +16410,58 @@ paths:
           schema:
             type: string
             pattern: ^[0-9]{4}-[0-9]{2}$
+        - $ref: "#/components/parameters/ReportFormat"
+        - $ref: "#/components/parameters/ReportTitle"
+        - $ref: "#/components/parameters/ReportLetterhead"
+        - $ref: "#/components/parameters/ReportColumns"
       responses:
         "200":
-          description: XLSX file
+          description: File
           content:
             application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
               schema:
                 type: string
                 format: binary
+            application/pdf:
+              schema:
+                type: string
+                format: binary
         "400":
           $ref: "#/components/responses/BadRequest"
+  /v1/staff-attendance/recap/export:
+    get:
+      tags:
+        - staff-attendance
+      operationId: exportAllStaffAttendanceMonthlyRecap
+      x-permission: view_staff_attendance
+      summary: Every tracked employee's monthly recap as one workbook or PDF, one block per employee
+      parameters:
+        - name: month
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: ^[0-9]{4}-[0-9]{2}$
+        - $ref: "#/components/parameters/ReportFormat"
+        - $ref: "#/components/parameters/ReportTitle"
+        - $ref: "#/components/parameters/ReportLetterhead"
+        - $ref: "#/components/parameters/ReportColumns"
+      responses:
+        "200":
+          description: File
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
   /v1/staff-attendance/records/{recordId}/correct:
     parameters:
       - name: recordId
@@ -16754,7 +16846,7 @@ paths:
         - supervision
       operationId: exportTeacherSupervisionReport
       x-permission: view_supervision
-      summary: The same report as an XLSX workbook
+      summary: The same report as an XLSX workbook or a formal PDF report with a supervisor/principal signature block
       parameters:
         - name: cycleId
           in: path
@@ -16768,11 +16860,19 @@ paths:
           schema:
             type: string
             format: uuid
+        - $ref: "#/components/parameters/ReportFormat"
+        - $ref: "#/components/parameters/ReportTitle"
+        - $ref: "#/components/parameters/ReportLetterhead"
+        - $ref: "#/components/parameters/ReportColumns"
       responses:
         "200":
-          description: Workbook
+          description: File
           content:
             application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+            application/pdf:
               schema:
                 type: string
                 format: binary
@@ -17741,7 +17841,7 @@ paths:
         - visitors
       operationId: exportDailyVisitorRecap
       x-permission: view_visitor_reports
-      summary: The daily recap as a workbook
+      summary: The daily recap as a workbook or PDF
       parameters:
         - name: date
           in: query
@@ -17749,11 +17849,19 @@ paths:
           schema:
             type: string
             format: date
+        - $ref: "#/components/parameters/ReportFormat"
+        - $ref: "#/components/parameters/ReportTitle"
+        - $ref: "#/components/parameters/ReportLetterhead"
+        - $ref: "#/components/parameters/ReportColumns"
       responses:
         "200":
-          description: Workbook
+          description: File
           content:
             application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+            application/pdf:
               schema:
                 type: string
                 format: binary
@@ -17797,7 +17905,7 @@ paths:
         - visitors
       operationId: exportMonthlyVisitorRecap
       x-permission: view_visitor_reports
-      summary: The monthly recap as a workbook
+      summary: The monthly recap as a workbook or PDF
       parameters:
         - name: month
           in: query
@@ -17806,11 +17914,19 @@ paths:
             type: string
             format: date
           description: Any date within the target month
+        - $ref: "#/components/parameters/ReportFormat"
+        - $ref: "#/components/parameters/ReportTitle"
+        - $ref: "#/components/parameters/ReportLetterhead"
+        - $ref: "#/components/parameters/ReportColumns"
       responses:
         "200":
-          description: Workbook
+          description: File
           content:
             application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+            application/pdf:
               schema:
                 type: string
                 format: binary
@@ -26989,7 +27105,12 @@ components:
           items:
             type: string
             maxLength: 200
-          description: First line is conventionally the school name and renders bold.
+          description: Kop laporan text lines, e.g. foundation name, school name, address, phone.
+        emphasis:
+          type: integer
+          minimum: 0
+          description: Index into lines that is the school name (rendered bold and larger). Omit for automatic selection (matches
+            the tenant name, else the second-to-last line).
         place:
           type: string
           maxLength: 80
@@ -27395,6 +27516,35 @@ components:
           additionalProperties:
             type: integer
   parameters:
+    ReportFormat:
+      name: format
+      in: query
+      description: xlsx (default) or pdf
+      schema:
+        type: string
+        enum:
+          - xlsx
+          - pdf
+    ReportTitle:
+      name: title
+      in: query
+      description: Overrides the report's default title
+      schema:
+        type: string
+        maxLength: 200
+    ReportLetterhead:
+      name: letterhead
+      in: query
+      description: Show the tenant's letterhead (default true; has no visible effect until the tenant has configured one)
+      schema:
+        type: boolean
+    ReportColumns:
+      name: columns
+      in: query
+      description: Comma-separated column selection and order, each entry "key" or "key:label" (URL-encoded). Omitted or empty
+        keeps every column in the report's own order.
+      schema:
+        type: string
     IdempotencyKeyHeader:
       name: Idempotency-Key
       in: header

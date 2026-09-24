@@ -44,6 +44,12 @@ func (a AttendanceReports) DailyReportRows(ctx context.Context, tenantID, classI
 // DailyReportTypedRows is DailyReportRows' data again, natively typed for
 // reportdoc.Section.Rows instead of flattened into reportsservice.Sheet's
 // strings -- attendance.daily's reportdoc export path (RunDocument).
+// DailyReportTypedRows returns each row with its status still the raw
+// tenant/policy code (e.g. "H", or the special "INCOMPLETE"/"NONE"/
+// "MIXED") and complete as a native bool, not translated to any locale
+// -- reports/service.RunDocument resolves the status label (via
+// StatusLabels) and the complete text itself, since it is the layer that
+// knows the export's locale; this port stays locale-agnostic.
 func (a AttendanceReports) DailyReportTypedRows(ctx context.Context, tenantID, classID uuid.UUID, date time.Time) ([][]any, error) {
 	report, err := a.Svc.GetDailyReport(ctx, tenantID, classID, date)
 	if err != nil {
@@ -51,16 +57,23 @@ func (a AttendanceReports) DailyReportTypedRows(ctx context.Context, tenantID, c
 	}
 	rows := make([][]any, len(report.Students))
 	for i, s := range report.Students {
-		rows[i] = []any{i + 1, s.Name, s.StatusCode, s.ExpectedSessions, s.SubmittedSessions, completeLabel(s.Complete)}
+		rows[i] = []any{i + 1, s.Name, s.StatusCode, s.ExpectedSessions, s.SubmittedSessions, s.Complete}
 	}
 	return rows, nil
 }
 
-func completeLabel(complete bool) string {
-	if complete {
-		return "Yes"
+// StatusLabels adapts attendance's exported StatusPolicy to the reports
+// module's narrow code -> label port (reportsservice.AttendanceReader).
+func (a AttendanceReports) StatusLabels(ctx context.Context, tenantID uuid.UUID) (map[string]string, error) {
+	policy, err := a.Svc.StatusPolicy(ctx, tenantID)
+	if err != nil {
+		return nil, err
 	}
-	return "No"
+	out := make(map[string]string, len(policy.Statuses))
+	for _, def := range policy.Statuses {
+		out[def.Code] = def.Label
+	}
+	return out, nil
 }
 
 // AcademicReports resolves the class(es) attendance.daily's grade-level
@@ -100,6 +113,26 @@ func (a AcademicReports) ClassesInGradeLevel(ctx context.Context, tenantID, grad
 }
 
 var errNoActiveAcademicYear = fmt.Errorf("reports: tenant has no active academic year")
+
+// GradeLevelName resolves gradeLevelID's own name (e.g. "Kelas X"), for
+// a grade-level-scoped export's scope line ("Angkatan: Kelas X"). There
+// is no single-row lookup on the academic service today, so this scans
+// ListGradeLevels -- a tenant has at most a handful of grade levels, so
+// this is not the O(n) concern it would be for classes or students.
+func (a AcademicReports) GradeLevelName(ctx context.Context, tenantID, gradeLevelID uuid.UUID) (string, error) {
+	levels, err := a.Academic.ListGradeLevels(ctx, tenantID)
+	if err != nil {
+		return "", err
+	}
+	for _, l := range levels {
+		if l.ID == gradeLevelID {
+			return l.Name, nil
+		}
+	}
+	return "", errGradeLevelNotFound
+}
+
+var errGradeLevelNotFound = fmt.Errorf("reports: grade level not found")
 
 // ReportHeaderReports loads a tenant's configured kop laporan and default
 // signature for reportdoc's LetterheadSource port (see

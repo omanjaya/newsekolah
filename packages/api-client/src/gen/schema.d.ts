@@ -4032,7 +4032,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Visits report as XLSX */
+        /** Visits report as XLSX or PDF */
         get: operations["getLibraryVisitsReportXlsx"];
         put?: never;
         post?: never;
@@ -4066,7 +4066,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Members report as XLSX */
+        /** Members report as XLSX or PDF */
         get: operations["getLibraryMembersReportXlsx"];
         put?: never;
         post?: never;
@@ -4117,7 +4117,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Accession register as XLSX */
+        /** Accession register as XLSX or PDF */
         get: operations["getLibraryAccessionRegisterReportXlsx"];
         put?: never;
         post?: never;
@@ -5375,7 +5375,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Loans report as XLSX */
+        /** Loans report as XLSX or PDF */
         get: operations["getLibraryLoansReportXlsx"];
         put?: never;
         post?: never;
@@ -5409,7 +5409,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Overdue-members report as XLSX */
+        /** Overdue-members report as XLSX or PDF */
         get: operations["getLibraryOverdueMembersReportXlsx"];
         put?: never;
         post?: never;
@@ -5443,7 +5443,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Most-borrowed titles and top borrowers as XLSX */
+        /** Most-borrowed titles and top borrowers as XLSX or PDF */
         get: operations["getLibraryMostBorrowedReportXlsx"];
         put?: never;
         post?: never;
@@ -7087,8 +7087,25 @@ export interface paths {
             };
             cookie?: never;
         };
-        /** The monthly recap as an XLSX workbook */
+        /** The monthly recap as an XLSX workbook or PDF */
         get: operations["exportStaffAttendanceMonthlyRecap"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/staff-attendance/recap/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every tracked employee's monthly recap as one workbook or PDF, one block per employee */
+        get: operations["exportAllStaffAttendanceMonthlyRecap"];
         put?: never;
         post?: never;
         delete?: never;
@@ -7262,7 +7279,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The same report as an XLSX workbook */
+        /** The same report as an XLSX workbook or a formal PDF report with a supervisor/principal signature block */
         get: operations["exportTeacherSupervisionReport"];
         put?: never;
         post?: never;
@@ -7744,7 +7761,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The daily recap as a workbook */
+        /** The daily recap as a workbook or PDF */
         get: operations["exportDailyVisitorRecap"];
         put?: never;
         post?: never;
@@ -7778,7 +7795,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The monthly recap as a workbook */
+        /** The monthly recap as a workbook or PDF */
         get: operations["exportMonthlyVisitorRecap"];
         put?: never;
         post?: never;
@@ -11567,8 +11584,10 @@ export interface components {
         ReportHeaderWrite: {
             /** @description Print the tenant's branding logo above the letterhead lines (PNG/JPEG only; other formats are skipped). */
             show_logo: boolean;
-            /** @description First line is conventionally the school name and renders bold. */
+            /** @description Kop laporan text lines, e.g. foundation name, school name, address, phone. */
             lines: string[];
+            /** @description Index into lines that is the school name (rendered bold and larger). Omit for automatic selection (matches the tenant name, else the second-to-last line). */
+            emphasis?: number;
             place: string;
             signers: components["schemas"]["ReportHeaderSigner"][];
         };
@@ -11803,6 +11822,14 @@ export interface components {
         };
     };
     parameters: {
+        /** @description xlsx (default) or pdf */
+        ReportFormat: "xlsx" | "pdf";
+        /** @description Overrides the report's default title */
+        ReportTitle: string;
+        /** @description Show the tenant's letterhead (default true; has no visible effect until the tenant has configured one) */
+        ReportLetterhead: boolean;
+        /** @description Comma-separated column selection and order, each entry "key" or "key:label" (URL-encoded). Omitted or empty keeps every column in the report's own order. */
+        ReportColumns: string;
         /** @description Client-generated key (mobile clients on unstable networks) that makes a POST/PUT safe to retry; docs/08-security.md section 7. The same key replays the first response instead of repeating the write. */
         IdempotencyKeyHeader: string;
         /** @description Rendered file type. Defaults to xlsx. */
@@ -20323,6 +20350,14 @@ export interface operations {
             query?: {
                 from?: string;
                 to?: string;
+                /** @description xlsx (default) or pdf */
+                format?: components["parameters"]["ReportFormat"];
+                /** @description Overrides the report's default title */
+                title?: components["parameters"]["ReportTitle"];
+                /** @description Show the tenant's letterhead (default true; has no visible effect until the tenant has configured one) */
+                letterhead?: components["parameters"]["ReportLetterhead"];
+                /** @description Comma-separated column selection and order, each entry "key" or "key:label" (URL-encoded). Omitted or empty keeps every column in the report's own order. */
+                columns?: components["parameters"]["ReportColumns"];
             };
             header?: never;
             path?: never;
@@ -20330,13 +20365,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description XLSX */
+            /** @description File */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
+                    "application/pdf": string;
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -20368,20 +20404,30 @@ export interface operations {
     };
     getLibraryMembersReportXlsx: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description xlsx (default) or pdf */
+                format?: components["parameters"]["ReportFormat"];
+                /** @description Overrides the report's default title */
+                title?: components["parameters"]["ReportTitle"];
+                /** @description Show the tenant's letterhead (default true; has no visible effect until the tenant has configured one) */
+                letterhead?: components["parameters"]["ReportLetterhead"];
+                /** @description Comma-separated column selection and order, each entry "key" or "key:label" (URL-encoded). Omitted or empty keeps every column in the report's own order. */
+                columns?: components["parameters"]["ReportColumns"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description XLSX */
+            /** @description File */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
+                    "application/pdf": string;
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -20447,6 +20493,14 @@ export interface operations {
             query?: {
                 from?: string;
                 to?: string;
+                /** @description xlsx (default) or pdf */
+                format?: components["parameters"]["ReportFormat"];
+                /** @description Overrides the report's default title */
+                title?: components["parameters"]["ReportTitle"];
+                /** @description Show the tenant's letterhead (default true; has no visible effect until the tenant has configured one) */
+                letterhead?: components["parameters"]["ReportLetterhead"];
+                /** @description Comma-separated column selection and order, each entry "key" or "key:label" (URL-encoded). Omitted or empty keeps every column in the report's own order. */
+                columns?: components["parameters"]["ReportColumns"];
             };
             header?: never;
             path?: never;
@@ -20454,13 +20508,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description XLSX */
+            /** @description File */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
+                    "application/pdf": string;
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -22901,6 +22956,14 @@ export interface operations {
             query?: {
                 from?: string;
                 to?: string;
+                /** @description xlsx (default) or pdf */
+                format?: components["parameters"]["ReportFormat"];
+                /** @description Overrides the report's default title */
+                title?: components["parameters"]["ReportTitle"];
+                /** @description Show the tenant's letterhead (default true; has no visible effect until the tenant has configured one) */
+                letterhead?: components["parameters"]["ReportLetterhead"];
+                /** @description Comma-separated column selection and order, each entry "key" or "key:label" (URL-encoded). Omitted or empty keeps every column in the report's own order. */
+                columns?: components["parameters"]["ReportColumns"];
             };
             header?: never;
             path?: never;
@@ -22908,13 +22971,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description XLSX */
+            /** @description File */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
+                    "application/pdf": string;
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -22948,20 +23012,30 @@ export interface operations {
     };
     getLibraryOverdueMembersReportXlsx: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description xlsx (default) or pdf */
+                format?: components["parameters"]["ReportFormat"];
+                /** @description Overrides the report's default title */
+                title?: components["parameters"]["ReportTitle"];
+                /** @description Show the tenant's letterhead (default true; has no visible effect until the tenant has configured one) */
+                letterhead?: components["parameters"]["ReportLetterhead"];
+                /** @description Comma-separated column selection and order, each entry "key" or "key:label" (URL-encoded). Omitted or empty keeps every column in the report's own order. */
+                columns?: components["parameters"]["ReportColumns"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description XLSX */
+            /** @description File */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
+                    "application/pdf": string;
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -23004,6 +23078,14 @@ export interface operations {
                 from?: string;
                 to?: string;
                 limit?: number;
+                /** @description xlsx (default) or pdf */
+                format?: components["parameters"]["ReportFormat"];
+                /** @description Overrides the report's default title */
+                title?: components["parameters"]["ReportTitle"];
+                /** @description Show the tenant's letterhead (default true; has no visible effect until the tenant has configured one) */
+                letterhead?: components["parameters"]["ReportLetterhead"];
+                /** @description Comma-separated column selection and order, each entry "key" or "key:label" (URL-encoded). Omitted or empty keeps every column in the report's own order. */
+                columns?: components["parameters"]["ReportColumns"];
             };
             header?: never;
             path?: never;
@@ -23011,13 +23093,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description XLSX */
+            /** @description File */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
+                    "application/pdf": string;
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -26395,6 +26478,14 @@ export interface operations {
         parameters: {
             query: {
                 month: string;
+                /** @description xlsx (default) or pdf */
+                format?: components["parameters"]["ReportFormat"];
+                /** @description Overrides the report's default title */
+                title?: components["parameters"]["ReportTitle"];
+                /** @description Show the tenant's letterhead (default true; has no visible effect until the tenant has configured one) */
+                letterhead?: components["parameters"]["ReportLetterhead"];
+                /** @description Comma-separated column selection and order, each entry "key" or "key:label" (URL-encoded). Omitted or empty keeps every column in the report's own order. */
+                columns?: components["parameters"]["ReportColumns"];
             };
             header?: never;
             path: {
@@ -26404,16 +26495,50 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description XLSX file */
+            /** @description File */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
+                    "application/pdf": string;
                 };
             };
             400: components["responses"]["BadRequest"];
+        };
+    };
+    exportAllStaffAttendanceMonthlyRecap: {
+        parameters: {
+            query: {
+                month: string;
+                /** @description xlsx (default) or pdf */
+                format?: components["parameters"]["ReportFormat"];
+                /** @description Overrides the report's default title */
+                title?: components["parameters"]["ReportTitle"];
+                /** @description Show the tenant's letterhead (default true; has no visible effect until the tenant has configured one) */
+                letterhead?: components["parameters"]["ReportLetterhead"];
+                /** @description Comma-separated column selection and order, each entry "key" or "key:label" (URL-encoded). Omitted or empty keeps every column in the report's own order. */
+                columns?: components["parameters"]["ReportColumns"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description File */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
+                    "application/pdf": string;
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
         };
     };
     correctStaffAttendanceRecord: {
@@ -26748,7 +26873,16 @@ export interface operations {
     };
     exportTeacherSupervisionReport: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description xlsx (default) or pdf */
+                format?: components["parameters"]["ReportFormat"];
+                /** @description Overrides the report's default title */
+                title?: components["parameters"]["ReportTitle"];
+                /** @description Show the tenant's letterhead (default true; has no visible effect until the tenant has configured one) */
+                letterhead?: components["parameters"]["ReportLetterhead"];
+                /** @description Comma-separated column selection and order, each entry "key" or "key:label" (URL-encoded). Omitted or empty keeps every column in the report's own order. */
+                columns?: components["parameters"]["ReportColumns"];
+            };
             header?: never;
             path: {
                 cycleId: string;
@@ -26758,13 +26892,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Workbook */
+            /** @description File */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
+                    "application/pdf": string;
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -27659,6 +27794,14 @@ export interface operations {
         parameters: {
             query: {
                 date: string;
+                /** @description xlsx (default) or pdf */
+                format?: components["parameters"]["ReportFormat"];
+                /** @description Overrides the report's default title */
+                title?: components["parameters"]["ReportTitle"];
+                /** @description Show the tenant's letterhead (default true; has no visible effect until the tenant has configured one) */
+                letterhead?: components["parameters"]["ReportLetterhead"];
+                /** @description Comma-separated column selection and order, each entry "key" or "key:label" (URL-encoded). Omitted or empty keeps every column in the report's own order. */
+                columns?: components["parameters"]["ReportColumns"];
             };
             header?: never;
             path?: never;
@@ -27666,13 +27809,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Workbook */
+            /** @description File */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
+                    "application/pdf": string;
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -27711,6 +27855,14 @@ export interface operations {
             query: {
                 /** @description Any date within the target month */
                 month: string;
+                /** @description xlsx (default) or pdf */
+                format?: components["parameters"]["ReportFormat"];
+                /** @description Overrides the report's default title */
+                title?: components["parameters"]["ReportTitle"];
+                /** @description Show the tenant's letterhead (default true; has no visible effect until the tenant has configured one) */
+                letterhead?: components["parameters"]["ReportLetterhead"];
+                /** @description Comma-separated column selection and order, each entry "key" or "key:label" (URL-encoded). Omitted or empty keeps every column in the report's own order. */
+                columns?: components["parameters"]["ReportColumns"];
             };
             header?: never;
             path?: never;
@@ -27718,13 +27870,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Workbook */
+            /** @description File */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": string;
+                    "application/pdf": string;
                 };
             };
             400: components["responses"]["BadRequest"];

@@ -16,7 +16,9 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/reports/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/authz"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/i18n"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/tenant"
 )
 
 // PermissionChecker resolves the caller's effective permissions.
@@ -36,6 +38,18 @@ func New(svc *service.Service, schedules *service.ScheduleService, perms Permiss
 
 func tenantID(ctx context.Context) uuid.UUID { id, _ := httpx.TenantIDFromContext(ctx); return id }
 func userID(ctx context.Context) uuid.UUID   { id, _ := httpx.UserIDFromContext(ctx); return id }
+
+// tenantLocale resolves the current request's tenant to a locale
+// RunDocument understands, defaulting to Indonesian. A generated report
+// is the school's own document, so it follows the tenant's configured
+// locale (tenants.locale), not the requester's Accept-Language header.
+func tenantLocale(ctx context.Context) string {
+	t, ok := tenant.FromContext(ctx)
+	if !ok {
+		return i18n.DefaultLocale
+	}
+	return i18n.FromTenantLocale(t.Locale)
+}
 
 func mapError(err error) error {
 	switch {
@@ -112,7 +126,7 @@ func (h *ReportsHandler) ExportReport(ctx context.Context, request api.ExportRep
 	}
 
 	opts := exportOptionsFromParams(request.Params)
-	out, contentType, err := h.service.RunDocument(ctx, tenantID(ctx), kind, args, opts)
+	out, contentType, err := h.service.RunDocument(ctx, tenantID(ctx), kind, args, opts, tenantLocale(ctx))
 	if err != nil {
 		return nil, mapError(err)
 	}

@@ -81,6 +81,36 @@ components:
             request_id:
               type: string
   parameters:
+    # Shared query-param contract for every export endpoint built on
+    # apps/api/internal/platform/reportdoc's Document/Options: format,
+    # title, letterhead and columns. Each report endpoint that supports
+    # this contract lists these four alongside its own scope parameters
+    # (month, employeeId, ...); a request with none of them keeps that
+    # endpoint's old behaviour (xlsx, every column, letterhead on if the
+    # tenant configured one) so existing callers never break.
+    ReportFormat:
+      name: format
+      in: query
+      description: xlsx (default) or pdf
+      schema: { type: string, enum: [xlsx, pdf] }
+    ReportTitle:
+      name: title
+      in: query
+      description: Overrides the report's default title
+      schema: { type: string, maxLength: 200 }
+    ReportLetterhead:
+      name: letterhead
+      in: query
+      description: Show the tenant's letterhead (default true; has no visible effect until the tenant has configured one)
+      schema: { type: boolean }
+    ReportColumns:
+      name: columns
+      in: query
+      description: >-
+        Comma-separated column selection and order, each entry "key" or
+        "key:label" (URL-encoded). Omitted or empty keeps every column in
+        the report's own order.
+      schema: { type: string }
     IdempotencyKeyHeader:
       name: Idempotency-Key
       in: header

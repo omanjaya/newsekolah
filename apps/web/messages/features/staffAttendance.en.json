@@ -86,6 +86,7 @@
     "title": "Monthly recap",
     "month": "Month",
     "download": "Download XLSX",
+    "downloadAll": "Download all employees (XLSX)",
     "totalLate": "Total late (min)",
     "totalEarly": "Total early leave (min)",
     "empty": "No records this month"
