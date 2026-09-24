@@ -1,6 +1,5 @@
 "use client";
 
-import { ApiError } from "@newsekolah/api-client";
 import { Button, DataTable, EmptyState, Input, Select, StatusBadge, cn } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Download, FileBarChart } from "lucide-react";
@@ -8,8 +7,11 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import {
+  ReportExportDialog,
+  type ReportExportOptions,
+} from "../../../components/report-export-dialog";
 import { useDateFilter } from "../../../lib/hooks/use-date-filter";
-import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSession } from "../../../lib/session/session-provider";
 import {
   useClassEnrollmentsQuery,
@@ -25,12 +27,16 @@ import {
   type ReportScope,
 } from "../api";
 
-import { STATUS_TOKEN, classOptions } from "./attendance-report-options";
+import {
+  MONTHLY_RECAP_EXPORT_COLUMNS,
+  STATUS_TOKEN,
+  classOptions,
+} from "./attendance-report-options";
 import { ReportScopePicker, scopeIsReady } from "./report-scope-picker";
 
 /**
  * One student's daily statuses for one month, plus a monthly recap export
- * button (NIS, name, per-status counts, total, percentage present) for
+ * dialog (NIS, name, per-status counts, total, percentage present) for
  * either one class or every class of a grade level ("angkatan") --
  * unlike the on-screen calendar above it, which is always one student.
  */
@@ -46,9 +52,7 @@ export function MonthlyReportTab(): ReactElement {
     true,
   );
   const [downloadScope, setDownloadScope] = useState<ReportScope>({ kind: "class", classId: "" });
-  const [downloading, setDownloading] = useState(false);
-  const [downloadError, setDownloadError] = useState<string | null>(null);
-  const apiErrorMessage = useApiErrorMessage();
+  const [exportOpen, setExportOpen] = useState(false);
 
   const classes = useClassesQuery();
   const gradeLevels = useGradeLevelsQuery();
@@ -100,18 +104,8 @@ export function MonthlyReportTab(): ReactElement {
 
   const rows = (report.data?.data ?? []).filter((day) => day.status_code !== "NONE");
 
-  async function handleRecapDownload() {
-    setDownloadError(null);
-    setDownloading(true);
-    try {
-      await downloadMonthlyAttendanceReport(month, downloadScope);
-    } catch (error) {
-      setDownloadError(
-        error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
-      );
-    } finally {
-      setDownloading(false);
-    }
+  async function handleExport(options: ReportExportOptions) {
+    await downloadMonthlyAttendanceReport(month, downloadScope, options);
   }
 
   return (
@@ -156,33 +150,45 @@ export function MonthlyReportTab(): ReactElement {
             className="w-40"
           />
         </label>
-      </div>
-
-      <div className="flex flex-wrap items-end gap-3 rounded-md border border-border-subtle p-3">
-        <ReportScopePicker
-          scope={downloadScope}
-          onScopeChange={setDownloadScope}
-          classes={classes.data?.data}
-          gradeLevels={gradeLevels.data?.data}
-          classesLoading={classes.isLoading}
-          gradeLevelsLoading={gradeLevels.isLoading}
-          classLabel={t("class")}
-          gradeLevelLabel={t("gradeLevel")}
-          classPlaceholder={t("classPlaceholder")}
-          gradeLevelPlaceholder={t("gradeLevelPlaceholder")}
-        />
         <Button
           size="sm"
           variant="secondary"
-          disabled={!scopeIsReady(downloadScope) || month === ""}
-          loading={downloading}
-          onClick={() => void handleRecapDownload()}
+          onClick={() => {
+            setExportOpen(true);
+          }}
         >
           <Download className="size-4" aria-hidden="true" />
           {t("downloadRecap")}
         </Button>
       </div>
-      {downloadError && <p className="text-[13px] text-status-absent">{downloadError}</p>}
+
+      <ReportExportDialog
+        open={exportOpen}
+        onOpenChange={setExportOpen}
+        reportKey="attendance.monthly-recap"
+        defaultTitle={t("exportTitle")}
+        availableColumns={MONTHLY_RECAP_EXPORT_COLUMNS}
+        onExport={handleExport}
+        scopeSlot={
+          <div className="flex flex-col gap-2">
+            <ReportScopePicker
+              scope={downloadScope}
+              onScopeChange={setDownloadScope}
+              classes={classes.data?.data}
+              gradeLevels={gradeLevels.data?.data}
+              classesLoading={classes.isLoading}
+              gradeLevelsLoading={gradeLevels.isLoading}
+              classLabel={t("class")}
+              gradeLevelLabel={t("gradeLevel")}
+              classPlaceholder={t("classPlaceholder")}
+              gradeLevelPlaceholder={t("gradeLevelPlaceholder")}
+            />
+            {!scopeIsReady(downloadScope) && (
+              <p className="text-[13px] text-fg-muted">{t("exportScopeHint")}</p>
+            )}
+          </div>
+        }
+      />
 
       {studentId === "" ? (
         <EmptyState

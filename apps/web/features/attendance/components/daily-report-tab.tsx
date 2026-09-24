@@ -1,6 +1,5 @@
 "use client";
 
-import { ApiError } from "@newsekolah/api-client";
 import { Button, DataTable, EmptyState, Input, Select, StatusBadge, cn } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Download, FileBarChart } from "lucide-react";
@@ -8,8 +7,11 @@ import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
+import {
+  ReportExportDialog,
+  type ReportExportOptions,
+} from "../../../components/report-export-dialog";
 import { useDateFilter } from "../../../lib/hooks/use-date-filter";
-import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSession } from "../../../lib/session/session-provider";
 import { useClassesQuery, useGradeLevelsQuery } from "../../reference/api";
 import {
@@ -21,24 +23,26 @@ import {
 } from "../api";
 
 import { AttendanceDailySessions } from "./attendance-daily-sessions";
-import { STATUS_TOKEN, classOptions } from "./attendance-report-options";
+import {
+  DAILY_REPORT_EXPORT_COLUMNS,
+  STATUS_TOKEN,
+  classOptions,
+} from "./attendance-report-options";
 import { ReportScopePicker, scopeIsReady } from "./report-scope-picker";
 
 /**
  * One class's expected-vs-submitted counts and per-student daily status
- * for one date, plus an export button that downloads either the same
- * class or every class of a grade level ("angkatan") as XLSX.
+ * for one date, plus an export dialog that downloads either the same
+ * class or every class of a grade level ("angkatan") as XLSX or PDF.
  */
 export function DailyReportTab(): ReactElement {
   const t = useTranslations("app.attendanceReports.daily");
-  const apiErrorMessage = useApiErrorMessage();
   const { me } = useSession();
 
   const [classId, setClassId] = useState("");
   const [date, setDate] = useDateFilter("date", todayInZone(me?.tenant.timezone));
   const [downloadScope, setDownloadScope] = useState<ReportScope>({ kind: "class", classId: "" });
-  const [downloading, setDownloading] = useState(false);
-  const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [exportOpen, setExportOpen] = useState(false);
 
   const classes = useClassesQuery();
   const gradeLevels = useGradeLevelsQuery();
@@ -86,18 +90,8 @@ export function DailyReportTab(): ReactElement {
     [t],
   );
 
-  async function handleDownload() {
-    setDownloadError(null);
-    setDownloading(true);
-    try {
-      await downloadDailyAttendanceReport(date, downloadScope);
-    } catch (error) {
-      setDownloadError(
-        error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
-      );
-    } finally {
-      setDownloading(false);
-    }
+  async function handleExport(options: ReportExportOptions) {
+    await downloadDailyAttendanceReport(date, downloadScope, options);
   }
 
   return (
@@ -127,32 +121,45 @@ export function DailyReportTab(): ReactElement {
             className="w-44"
           />
         </label>
-      </div>
-      <div className="flex flex-wrap items-end gap-3 rounded-md border border-border-subtle p-3">
-        <ReportScopePicker
-          scope={downloadScope}
-          onScopeChange={setDownloadScope}
-          classes={classes.data?.data}
-          gradeLevels={gradeLevels.data?.data}
-          classesLoading={classes.isLoading}
-          gradeLevelsLoading={gradeLevels.isLoading}
-          classLabel={t("class")}
-          gradeLevelLabel={t("gradeLevel")}
-          classPlaceholder={t("classPlaceholder")}
-          gradeLevelPlaceholder={t("gradeLevelPlaceholder")}
-        />
         <Button
           size="sm"
           variant="secondary"
-          disabled={!scopeIsReady(downloadScope) || date === ""}
-          loading={downloading}
-          onClick={() => void handleDownload()}
+          onClick={() => {
+            setExportOpen(true);
+          }}
         >
           <Download className="size-4" aria-hidden="true" />
           {t("download")}
         </Button>
       </div>
-      {downloadError && <p className="text-[13px] text-status-absent">{downloadError}</p>}
+
+      <ReportExportDialog
+        open={exportOpen}
+        onOpenChange={setExportOpen}
+        reportKey="attendance.daily"
+        defaultTitle={t("exportTitle")}
+        availableColumns={DAILY_REPORT_EXPORT_COLUMNS}
+        onExport={handleExport}
+        scopeSlot={
+          <div className="flex flex-col gap-2">
+            <ReportScopePicker
+              scope={downloadScope}
+              onScopeChange={setDownloadScope}
+              classes={classes.data?.data}
+              gradeLevels={gradeLevels.data?.data}
+              classesLoading={classes.isLoading}
+              gradeLevelsLoading={gradeLevels.isLoading}
+              classLabel={t("class")}
+              gradeLevelLabel={t("gradeLevel")}
+              classPlaceholder={t("classPlaceholder")}
+              gradeLevelPlaceholder={t("gradeLevelPlaceholder")}
+            />
+            {!scopeIsReady(downloadScope) && (
+              <p className="text-[13px] text-fg-muted">{t("exportScopeHint")}</p>
+            )}
+          </div>
+        }
+      />
 
       {classId === "" ? (
         <EmptyState
