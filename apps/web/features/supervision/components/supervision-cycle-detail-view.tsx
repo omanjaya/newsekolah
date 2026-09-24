@@ -28,7 +28,6 @@ import {
   useSupervisionCycleQuery,
 } from "../api";
 
-import { CompleteObservationForm } from "./complete-observation-form";
 import { ScheduleObservationForm } from "./schedule-observation-form";
 
 export function SupervisionCycleDetailView({ cycleId }: { cycleId: string }): ReactElement {
@@ -44,7 +43,6 @@ export function SupervisionCycleDetailView({ cycleId }: { cycleId: string }): Re
   const teacherMap = useLookup(teachers.data?.data);
 
   const [scheduling, setScheduling] = useState(false);
-  const [completing, setCompleting] = useState<ScheduledObservation | null>(null);
 
   const items = scheduled.data?.data ?? [];
 
@@ -73,7 +71,7 @@ export function SupervisionCycleDetailView({ cycleId }: { cycleId: string }): Re
               size="sm"
               variant="secondary"
               onClick={() => {
-                setCompleting(row.original);
+                router.push(`/supervision/cycles/${cycleId}/observe/${row.original.id}`);
               }}
             >
               {t("complete")}
@@ -81,7 +79,7 @@ export function SupervisionCycleDetailView({ cycleId }: { cycleId: string }): Re
           ) : null,
       },
     ],
-    [t, locale, teacherMap, canManage, cycle.data],
+    [t, locale, teacherMap, canManage, cycle.data, cycleId, router],
   );
 
   if (cycle.isError && !cycle.data)
@@ -170,25 +168,6 @@ export function SupervisionCycleDetailView({ cycleId }: { cycleId: string }): Re
               setScheduling(false);
             }}
           />
-        </DialogContent>
-      </Dialog>
-
-      <Dialog
-        open={completing !== null}
-        onOpenChange={(open) => {
-          if (!open) setCompleting(null);
-        }}
-      >
-        <DialogContent title={t("completeTitle")} className="max-w-lg">
-          {completing && (
-            <CompleteObservationForm
-              scheduled={completing}
-              instrument={cycle.data.instrument}
-              onDone={() => {
-                setCompleting(null);
-              }}
-            />
-          )}
         </DialogContent>
       </Dialog>
     </div>

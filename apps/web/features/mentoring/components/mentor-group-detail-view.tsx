@@ -7,6 +7,7 @@ import type { ReactElement } from "react";
 import { QueryError } from "../../../components/query-error";
 import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useCan } from "../../../lib/session/session-provider";
+import { formatDisplayName } from "../../../lib/text/format-name";
 import { useLookup, useTeachersQuery } from "../../reference/api";
 import { useMentorGroupMembersQuery, useMentorGroupQuery } from "../api";
 
@@ -32,22 +33,26 @@ export function MentorGroupDetailView({ groupId }: { groupId: string }): ReactEl
 
   if (group.isLoading || !group.data) {
     return (
-      <div className="flex flex-col gap-4 p-4 md:p-6" aria-busy="true">
-        <Skeleton className="h-8 w-64" />
+      <div className="flex flex-col gap-6 p-4 md:p-6" aria-busy="true">
+        <div className="flex flex-col gap-1">
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-7 w-56" />
+          <Skeleton className="h-4 w-40" />
+        </div>
+        <Skeleton className="h-9 w-64" />
         <Skeleton className="h-48 w-full" />
       </div>
     );
   }
 
+  const rawMentorName = teacherMap.get(group.data.mentor_user_id)?.name;
+  const mentorName = rawMentorName ? formatDisplayName(rawMentorName) : t("unknownMentor");
+
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
       <div className="flex flex-col gap-1">
         <PageHeader eyebrow={t("eyebrow")} title={group.data.name} className="border-b-0 pb-0" />
-        <p className="text-[13px] text-fg-muted">
-          {t("mentorLabel", {
-            name: teacherMap.get(group.data.mentor_user_id)?.name ?? t("unknownMentor"),
-          })}
-        </p>
+        <p className="text-[13px] text-fg-muted">{t("mentorLabel", { name: mentorName })}</p>
       </div>
 
       <Tabs value={tab} onValueChange={setTab}>

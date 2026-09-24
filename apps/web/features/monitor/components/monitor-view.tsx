@@ -161,7 +161,9 @@ function MonitorDisplay({
                 className="flex flex-col items-center gap-1 rounded-sm border border-border bg-surface p-4"
               >
                 <dd className="text-[32px] font-medium tabular-nums text-fg">{count}</dd>
-                <dt className="text-[13px] text-fg-muted">{t(`codes.${code}`)}</dt>
+                <dt className="text-[13px] text-fg-muted">
+                  {t.has(`codes.${code}`) ? t(`codes.${code}`) : code}
+                </dt>
               </div>
             ))}
           </dl>
@@ -229,7 +231,9 @@ function SessionCard({ session }: { session: MonitorSessionCard }): ReactElement
         </span>
       )}
       <span className="text-[13px] font-medium text-fg">
-        {t(`sessionStatus.${session.status}`)}
+        {t.has(`sessionStatus.${session.status}`)
+          ? t(`sessionStatus.${session.status}`)
+          : session.status}
       </span>
     </li>
   );

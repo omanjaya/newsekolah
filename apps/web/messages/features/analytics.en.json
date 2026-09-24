@@ -14,7 +14,10 @@
     "unknownStudent": "Unknown student",
     "emptyTitle": "No students need attention",
     "emptyBody": "No student in this class has reached the watch or at-risk threshold yet.",
-    "policy": "Configure policy"
+    "policy": "Configure policy",
+    "summary": {
+      "chartLabel": "Of {total} students: {none} none, {watch} watch, {at_risk} at risk."
+    }
   },
   "level": {
     "none": "None",
@@ -30,15 +33,20 @@
     "reasonsTitle": "Reasons",
     "noReasonsTitle": "No reasons recorded",
     "noReasonsBody": "No signal crossed the watch threshold.",
+    "reasonWeight": "{weight} pts",
     "signalsTitle": "Signals",
     "signals": {
       "attendance": "Attendance",
       "attendanceValue": "Absent {absent} of the last {considered} school days",
+      "attendancePresentTooltip": "Present {count} days",
+      "attendanceAbsentTooltip": "Absent {count} days",
       "discipline": "Discipline",
       "disciplineValue": "{points} active violation points",
       "warningLetters": "Warning letters issued",
       "gradeTrend": "Report-score trend",
-      "gradeTrendValue": "Average dropped from {previous} to {current}",
+      "gradeTrendValue": "Report-score average from {previous} to {current}",
+      "gradeTrendPrevious": "Previous",
+      "gradeTrendCurrent": "Current",
       "noData": "No data yet"
     },
     "reasons": {

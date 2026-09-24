@@ -13,8 +13,11 @@ import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useDirectoryQuery, useLookup } from "../../reference/api";
 import { useStudentRiskQuery } from "../api";
 
+import { AttendanceRatioBar } from "./attendance-ratio-bar";
+import { GradeTrendBars } from "./grade-trend-bars";
 import { useReasonText } from "./reason-text";
 import { RiskLevelBadge } from "./risk-level-badge";
+import { RiskReasonsChart } from "./risk-reasons-chart";
 
 export interface StudentRiskDetailViewProps {
   studentId: string;
@@ -93,60 +96,56 @@ export function StudentRiskDetailView({ studentId }: StudentRiskDetailViewProps)
             description={t("noReasonsBody")}
           />
         ) : (
-          <ul className="flex flex-col gap-1.5">
-            {data.reasons.map((reason, index) => (
-              <li key={`${reason.code}-${index}`} className="text-[13px] text-fg">
-                {reasonText(reason)}
-              </li>
-            ))}
-          </ul>
+          <RiskReasonsChart
+            reasons={data.reasons}
+            reasonText={reasonText}
+            severityLabel={(atRisk) => levelLabel(atRisk ? "at_risk" : "watch")}
+          />
         )}
       </section>
 
       <section className="flex flex-col gap-2 rounded-sm border border-border bg-surface p-4">
         <h2 className="text-[16px] font-medium text-fg">{t("signalsTitle")}</h2>
-        <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <SignalRow
-            label={t("signals.attendance")}
-            value={
-              data.signals.has_attendance
-                ? t("signals.attendanceValue", {
-                    absent: data.signals.absent_days,
-                    considered: data.signals.considered_days,
-                  })
-                : t("signals.noData")
-            }
-          />
-          <SignalRow
-            label={t("signals.discipline")}
-            value={t("signals.disciplineValue", { points: data.signals.discipline_points })}
-          />
-          <SignalRow
-            label={t("signals.warningLetters")}
-            value={String(data.signals.warning_letter_count)}
-          />
-          <SignalRow
-            label={t("signals.gradeTrend")}
-            value={
-              data.signals.has_grade_trend
-                ? t("signals.gradeTrendValue", {
-                    previous: data.signals.previous_average.toFixed(1),
-                    current: data.signals.current_average.toFixed(1),
-                  })
-                : t("signals.noData")
-            }
-          />
+        <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <SignalRow label={t("signals.attendance")}>
+            {data.signals.has_attendance ? (
+              <AttendanceRatioBar
+                absentDays={data.signals.absent_days}
+                consideredDays={data.signals.considered_days}
+              />
+            ) : (
+              <p className="text-[13px] text-fg-muted">{t("signals.noData")}</p>
+            )}
+          </SignalRow>
+          <SignalRow label={t("signals.discipline")}>
+            <p className="text-[20px] font-medium text-fg">
+              {t("signals.disciplineValue", { points: data.signals.discipline_points })}
+            </p>
+          </SignalRow>
+          <SignalRow label={t("signals.warningLetters")}>
+            <p className="text-[20px] font-medium text-fg">{data.signals.warning_letter_count}</p>
+          </SignalRow>
+          <SignalRow label={t("signals.gradeTrend")}>
+            {data.signals.has_grade_trend ? (
+              <GradeTrendBars
+                previous={data.signals.previous_average}
+                current={data.signals.current_average}
+              />
+            ) : (
+              <p className="text-[13px] text-fg-muted">{t("signals.noData")}</p>
+            )}
+          </SignalRow>
         </dl>
       </section>
     </div>
   );
 }
 
-function SignalRow({ label, value }: { label: string; value: string }): ReactElement {
+function SignalRow({ label, children }: { label: string; children: ReactElement }): ReactElement {
   return (
-    <div className="flex flex-col gap-0.5">
+    <div className="flex flex-col gap-1">
       <dt className="text-[12px] text-fg-muted">{label}</dt>
-      <dd className="text-[14px] text-fg">{value}</dd>
+      <dd>{children}</dd>
     </div>
   );
 }

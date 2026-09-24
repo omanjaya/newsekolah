@@ -1,20 +1,22 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
-import { Button, ConfirmDialog, Select, useToast } from "@newsekolah/ui";
+import { Avatar, Button, ConfirmDialog, EmptyState, Select, useToast } from "@newsekolah/ui";
+import { Users } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useState, type ReactElement } from "react";
+import { useMemo, useState, type ReactElement } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { formatDisplayName } from "../../../lib/text/format-name";
 import { useGradeLevelsQuery } from "../../academic/api-master-data";
-import { useClassesQuery } from "../../reference/api";
+import { useClassesQuery, useDirectoryQuery } from "../../reference/api";
 import {
   useActivityEventQuery,
   useAddActivityParticipantMutation,
   useRemoveActivityParticipantMutation,
 } from "../api";
 
-import { StudentName, StudentPicker } from "./student-picker";
+import { StudentPicker } from "./student-picker";
 
 export function ActivityParticipants({ activityId }: { activityId: string }): ReactElement {
   const t = useTranslations("app.activities.events.participants");
@@ -23,6 +25,7 @@ export function ActivityParticipants({ activityId }: { activityId: string }): Re
   const event = useActivityEventQuery(activityId);
   const classes = useClassesQuery();
   const grades = useGradeLevelsQuery();
+  const students = useDirectoryQuery("student");
   const add = useAddActivityParticipantMutation(activityId);
   const remove = useRemoveActivityParticipantMutation();
   const [scope, setScope] = useState("student");
@@ -31,6 +34,10 @@ export function ActivityParticipants({ activityId }: { activityId: string }): Re
   const fail = (error: unknown) => {
     toast.error(error instanceof ApiError ? errorMessage(error.code) : errorMessage("UNKNOWN"));
   };
+  const studentNameById = useMemo(
+    () => new Map((students.data?.data ?? []).map((s) => [s.id, s.name])),
+    [students.data],
+  );
   return (
     <div className="flex flex-col gap-4">
       <form
@@ -84,42 +91,52 @@ export function ActivityParticipants({ activityId }: { activityId: string }): Re
           {t("add")}
         </Button>
       </form>
-      {event.isError && <p role="alert">{t("loadError")}</p>}
-      {event.isLoading && <p>{t("loading")}</p>}
-      {!event.isLoading && !event.isError && (
-        <ul className="divide-y divide-border">
-          {(event.data?.participants ?? []).length === 0 && (
-            <li className="py-3 text-sm text-muted-foreground">{t("empty")}</li>
-          )}
-          {(event.data?.participants ?? []).map((participant) => (
-            <li
-              key={participant.id}
-              className="flex items-center justify-between gap-2 py-2 text-sm"
-            >
-              <span>
-                {t(participant.scope)}:{" "}
-                {participant.scope === "student" ? (
-                  <StudentName id={participant.student_user_id ?? ""} />
-                ) : (
-                  ((participant.scope === "class"
-                    ? classes.data?.data.find((item) => item.id === participant.class_id)?.name
-                    : grades.data?.data.find((item) => item.id === participant.grade_level_id)
-                        ?.name) ?? t("unknown"))
-                )}
-              </span>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => {
-                  setPendingRemove(participant.id);
-                }}
-              >
-                {t("remove")}
-              </Button>
-            </li>
-          ))}
-        </ul>
+      {event.isError && (
+        <p role="alert" className="text-[13px] text-status-absent">
+          {t("loadError")}
+        </p>
       )}
+      {event.isLoading && <p className="text-[13px] text-fg-muted">{t("loading")}</p>}
+      {!event.isLoading &&
+        !event.isError &&
+        ((event.data?.participants ?? []).length === 0 ? (
+          <EmptyState icon={<Users aria-hidden="true" />} title={t("empty")} />
+        ) : (
+          <ul className="divide-y divide-border">
+            {(event.data?.participants ?? []).map((participant) => {
+              const name =
+                participant.scope === "student"
+                  ? (studentNameById.get(participant.student_user_id ?? "") ?? t("unknown"))
+                  : ((participant.scope === "class"
+                      ? classes.data?.data.find((item) => item.id === participant.class_id)?.name
+                      : grades.data?.data.find((item) => item.id === participant.grade_level_id)
+                          ?.name) ?? t("unknown"));
+              return (
+                <li
+                  key={participant.id}
+                  className="flex items-center justify-between gap-2 py-2 text-[13px]"
+                >
+                  <div className="flex min-w-0 items-center gap-2">
+                    {participant.scope === "student" && <Avatar name={name} size="sm" />}
+                    <span className="truncate">
+                      <span className="text-fg-muted">{t(participant.scope)}: </span>
+                      {formatDisplayName(name)}
+                    </span>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      setPendingRemove(participant.id);
+                    }}
+                  >
+                    {t("remove")}
+                  </Button>
+                </li>
+              );
+            })}
+          </ul>
+        ))}
       <ConfirmDialog
         open={pendingRemove !== null}
         onOpenChange={(open) => {

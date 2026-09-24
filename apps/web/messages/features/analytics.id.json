@@ -14,7 +14,10 @@
     "unknownStudent": "Siswa tidak dikenal",
     "emptyTitle": "Tidak ada siswa yang perlu diperhatikan",
     "emptyBody": "Belum ada siswa di kelas ini yang mencapai ambang siaga atau berisiko.",
-    "policy": "Atur kebijakan"
+    "policy": "Atur kebijakan",
+    "summary": {
+      "chartLabel": "Dari {total} siswa: {none} aman, {watch} siaga, {at_risk} berisiko."
+    }
   },
   "level": {
     "none": "Aman",
@@ -30,15 +33,20 @@
     "reasonsTitle": "Alasan",
     "noReasonsTitle": "Tidak ada alasan tercatat",
     "noReasonsBody": "Tidak ada sinyal yang melewati ambang siaga.",
+    "reasonWeight": "{weight} poin",
     "signalsTitle": "Sinyal",
     "signals": {
       "attendance": "Kehadiran",
       "attendanceValue": "Absen {absent} dari {considered} hari sekolah terakhir",
+      "attendancePresentTooltip": "Hadir {count} hari",
+      "attendanceAbsentTooltip": "Absen {count} hari",
       "discipline": "Pelanggaran",
       "disciplineValue": "{points} poin pelanggaran aktif",
       "warningLetters": "Surat peringatan diterbitkan",
       "gradeTrend": "Tren nilai rapor",
-      "gradeTrendValue": "Rata-rata turun dari {previous} ke {current}",
+      "gradeTrendValue": "Rata-rata nilai rapor dari {previous} ke {current}",
+      "gradeTrendPrevious": "Sebelumnya",
+      "gradeTrendCurrent": "Saat ini",
       "noData": "Belum ada data"
     },
     "reasons": {

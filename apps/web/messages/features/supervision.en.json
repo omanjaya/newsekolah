@@ -46,8 +46,12 @@
     "schedule": "Schedule observation",
     "emptyTitle": "No observations scheduled yet",
     "emptyBody": "Schedule an observation against one of a teacher's lessons to start this cycle.",
-    "scheduleTitle": "Schedule an observation",
-    "completeTitle": "Complete observation"
+    "scheduleTitle": "Schedule an observation"
+  },
+  "completeObservation": {
+    "backToCycle": "Back to cycle",
+    "notFoundTitle": "Scheduled observation not found",
+    "notFoundBody": "This observation may already be completed or its schedule was removed. Go back to the cycle to check."
   },
   "cycleReport": {
     "title": "Cycle report: {cycle}",
@@ -75,12 +79,20 @@
   },
   "observationForm": {
     "observedAt": "Observed at",
-    "scores": "Score per criterion (scale {min}–{max})",
+    "scoresHeading": "Score per criterion",
+    "scoresHint": "Scale {min}–{max}",
+    "progress": "{scored} of {total} criteria scored",
     "observerNotes": "Observer notes",
     "observerNotesPlaceholder": "What was observed during the lesson",
     "cancel": "Cancel",
-    "submit": "Save",
-    "saved": "Observation saved"
+    "submit": "Save observation",
+    "retry": "Retry",
+    "savedAt": "Saved at {time}",
+    "discardChanges": "Your unsaved observation will be lost. Continue?",
+    "draftFoundTitle": "There is an unsaved observation draft",
+    "draftFoundBody": "The last draft was auto-saved at {time} on this device.",
+    "draftRestore": "Restore draft",
+    "draftDismiss": "Dismiss"
   },
   "teacherReport": {
     "export": "Download",
@@ -99,6 +111,7 @@
     }
   },
   "observationDetail": {
+    "backToCycle": "Back to cycle",
     "scores": "Scores",
     "observerNotes": "Observer notes",
     "teacherResponse": "Teacher response",
@@ -110,6 +123,7 @@
     "submit": "Save",
     "saved": "Response saved",
     "noResponseYet": "No response yet.",
+    "noFollowUpYet": "No follow-up has been agreed yet.",
     "editResponse": "Edit response",
     "addResponse": "Add response"
   },

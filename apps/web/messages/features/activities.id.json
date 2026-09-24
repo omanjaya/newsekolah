@@ -75,7 +75,10 @@
       "join": "Daftarkan",
       "joined": "Siswa terdaftar sebagai anggota",
       "includeLeft": "Tampilkan yang sudah keluar",
+      "searchPlaceholder": "Cari nama anggota",
       "empty": "Belum ada anggota.",
+      "noMatch": "Tidak ada anggota yang cocok dengan pencarian.",
+      "unknownStudent": "Nama siswa tidak tersedia",
       "status": {
         "active": "Aktif",
         "left": "Keluar"
@@ -89,9 +92,18 @@
       "scheduled": "Pertemuan dijadwalkan",
       "empty": "Belum ada pertemuan yang dijadwalkan.",
       "roster": {
-        "studentId": "Siswa",
-        "status": "Status kehadiran",
-        "save": "Simpan",
+        "loading": "Memuat presensi…",
+        "loadError": "Presensi gagal dimuat.",
+        "noMembers": "Belum ada anggota aktif untuk dicatat kehadirannya.",
+        "unknownStudent": "Nama siswa tidak tersedia",
+        "searchPlaceholder": "Cari nama anggota",
+        "filterByStatus": "Saring menurut status",
+        "markAllPresent": "Tandai semua hadir",
+        "noMatch": "Tidak ada anggota yang cocok.",
+        "rowChanged": "Belum disimpan",
+        "unsavedChanges": "{count, plural, other {# perubahan belum disimpan}}",
+        "saveHint": "Semua perubahan tersimpan",
+        "save": "Simpan presensi",
         "recorded": "Kehadiran tersimpan",
         "statuses": {
           "H": "Hadir",

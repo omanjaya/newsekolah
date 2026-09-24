@@ -128,9 +128,20 @@
   },
   "studentView": {
     "eyebrow": "Mentoring",
+    "backToGroup": "Kembali ke kelompok",
     "attendance": {
       "title": "Presensi bulan ini",
-      "empty": "Belum ada data presensi bulan ini."
+      "empty": "Belum ada data presensi bulan ini.",
+      "codes": {
+        "H": "Hadir",
+        "S": "Sakit",
+        "I": "Izin",
+        "D": "Dispensasi",
+        "A": "Alpha",
+        "INCOMPLETE": "Belum lengkap",
+        "MIXED": "Campuran",
+        "NONE": "Tidak ada jadwal"
+      }
     },
     "discipline": {
       "title": "Disiplin",
