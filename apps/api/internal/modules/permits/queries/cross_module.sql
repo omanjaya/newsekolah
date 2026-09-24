@@ -136,9 +136,15 @@ select starts_on, ends_on from academic_years where tenant_id = $1 and id = $2;
 
 -- name: GetStudentNISAndAddress :one
 -- The leave-letter template's {{nis}} and {{address}} placeholders.
+-- address lives on user_profiles (the generic per-user profile table),
+-- not on users itself or on student_profiles (which only carries
+-- student-specific columns like nis) -- both are left-joined so a student
+-- missing either row still resolves, with empty placeholders instead of
+-- failing the whole issuance.
 select
   coalesce(sp.nis, '')::text as nis,
-  coalesce(u.address, '')::text as address
+  coalesce(up.address, '')::text as address
 from users u
 left join student_profiles sp on sp.user_id = u.id and sp.tenant_id = u.tenant_id
+left join user_profiles up on up.user_id = u.id and up.tenant_id = u.tenant_id
 where u.tenant_id = $1 and u.id = $2;

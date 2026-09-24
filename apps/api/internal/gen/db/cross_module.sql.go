@@ -578,9 +578,10 @@ func (q *Queries) GetStudentGuardianName(ctx context.Context, arg GetStudentGuar
 const getStudentNISAndAddress = `-- name: GetStudentNISAndAddress :one
 select
   coalesce(sp.nis, '')::text as nis,
-  coalesce(u.address, '')::text as address
+  coalesce(up.address, '')::text as address
 from users u
 left join student_profiles sp on sp.user_id = u.id and sp.tenant_id = u.tenant_id
+left join user_profiles up on up.user_id = u.id and up.tenant_id = u.tenant_id
 where u.tenant_id = $1 and u.id = $2
 `
 
@@ -595,6 +596,11 @@ type GetStudentNISAndAddressRow struct {
 }
 
 // The leave-letter template's {{nis}} and {{address}} placeholders.
+// address lives on user_profiles (the generic per-user profile table),
+// not on users itself or on student_profiles (which only carries
+// student-specific columns like nis) -- both are left-joined so a student
+// missing either row still resolves, with empty placeholders instead of
+// failing the whole issuance.
 func (q *Queries) GetStudentNISAndAddress(ctx context.Context, arg GetStudentNISAndAddressParams) (GetStudentNISAndAddressRow, error) {
 	row := q.db.QueryRow(ctx, getStudentNISAndAddress, arg.TenantID, arg.ID)
 	var i GetStudentNISAndAddressRow
