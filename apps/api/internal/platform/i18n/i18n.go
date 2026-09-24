@@ -78,6 +78,19 @@ func Message(code, acceptLanguage string) string {
 	return entry[DefaultLocale]
 }
 
+// FromTenantLocale normalizes a tenants.locale column value ("id", "en",
+// or empty on an old/never-set row) to a locale Message/Resolve
+// understand, defaulting to DefaultLocale. Generated documents (reports,
+// letters) use a tenant's own configured locale rather than the
+// requester's Accept-Language: the document is the school's, not the
+// browser's.
+func FromTenantLocale(locale string) string {
+	if supported[locale] {
+		return locale
+	}
+	return DefaultLocale
+}
+
 // Resolve picks the best supported locale for an Accept-Language header,
 // e.g. "en-US,en;q=0.9,id;q=0.8" resolves to "en".
 func Resolve(acceptLanguage string) string {

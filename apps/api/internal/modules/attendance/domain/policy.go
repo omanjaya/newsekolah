@@ -78,6 +78,19 @@ func (p StatusPolicy) priority(code string) int {
 	return int(^uint(0) >> 1)
 }
 
+// Label returns code's tenant-configured display label (e.g. "H" ->
+// "Hadir"), for a report or screen that must not print the raw status
+// code. Only ok reports whether code is part of this policy; the special
+// codes StatusNone/StatusIncomplete/StatusMixed never are (a report
+// translates those itself, since they are not tenant content).
+func (p StatusPolicy) Label(code string) (string, bool) {
+	def, ok := p.lookup(code)
+	if !ok {
+		return "", false
+	}
+	return def.Label, true
+}
+
 func (p StatusPolicy) lookup(code string) (StatusDef, bool) {
 	for _, s := range p.Statuses {
 		if s.Code == code {

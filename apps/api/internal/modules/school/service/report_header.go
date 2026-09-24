@@ -24,6 +24,7 @@ const reportHeaderSettingKey = "report_header.config"
 type reportHeaderJSON struct {
 	ShowLogo bool                     `json:"show_logo"`
 	Lines    []string                 `json:"lines"`
+	Emphasis int                      `json:"emphasis"`
 	Place    string                   `json:"place"`
 	Signers  []reportHeaderSignerJSON `json:"signers"`
 }
@@ -40,7 +41,7 @@ func toReportHeaderJSON(h domain.ReportHeader) reportHeaderJSON {
 	for i, s := range h.Signers {
 		signers[i] = reportHeaderSignerJSON{RoleLabel: s.RoleLabel, Name: s.Name, IDLabel: s.IDLabel, IDNumber: s.IDNumber}
 	}
-	return reportHeaderJSON{ShowLogo: h.ShowLogo, Lines: h.Lines, Place: h.Place, Signers: signers}
+	return reportHeaderJSON{ShowLogo: h.ShowLogo, Lines: h.Lines, Emphasis: h.Emphasis, Place: h.Place, Signers: signers}
 }
 
 func (j reportHeaderJSON) toDomain() domain.ReportHeader {
@@ -48,11 +49,12 @@ func (j reportHeaderJSON) toDomain() domain.ReportHeader {
 	for i, s := range j.Signers {
 		signers[i] = domain.ReportHeaderSigner{RoleLabel: s.RoleLabel, Name: s.Name, IDLabel: s.IDLabel, IDNumber: s.IDNumber}
 	}
-	return domain.ReportHeader{ShowLogo: j.ShowLogo, Lines: j.Lines, Place: j.Place, Signers: signers}
+	return domain.ReportHeader{ShowLogo: j.ShowLogo, Lines: j.Lines, Emphasis: j.Emphasis, Place: j.Place, Signers: signers}
 }
 
-// ReportHeader returns tenantID's configured kop laporan, or a zero value
-// (no logo, no lines, no signers) when it has not configured one yet.
+// ReportHeader returns tenantID's configured kop laporan, or
+// domain.EmphasisAuto/no logo/no lines/no signers when it has not
+// configured one yet.
 func (s *Service) ReportHeader(ctx context.Context, tenantID uuid.UUID) (domain.ReportHeader, error) {
 	var raw json.RawMessage
 	var found bool
@@ -65,7 +67,7 @@ func (s *Service) ReportHeader(ctx context.Context, tenantID uuid.UUID) (domain.
 		return domain.ReportHeader{}, err
 	}
 	if !found {
-		return domain.ReportHeader{}, nil
+		return domain.ReportHeader{Emphasis: domain.EmphasisAuto}, nil
 	}
 	var j reportHeaderJSON
 	if err := json.Unmarshal(raw, &j); err != nil {
@@ -129,7 +131,12 @@ func (s *Service) ReportLetterhead(ctx context.Context, tenantID uuid.UUID) (*re
 
 	var lh *reportdoc.Letterhead
 	if len(logo) > 0 || len(header.Lines) > 0 {
-		lh = &reportdoc.Letterhead{Logo: logo, Lines: header.Lines}
+		tenantName := ""
+		if t, err := s.repo.GetTenantByID(ctx, tenantID); err == nil {
+			tenantName = t.Name
+		}
+		emphasis := domain.ResolveEmphasis(header.Emphasis, header.Lines, tenantName)
+		lh = &reportdoc.Letterhead{Logo: logo, Lines: header.Lines, Emphasis: emphasis}
 	}
 
 	var sig *reportdoc.Signature

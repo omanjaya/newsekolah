@@ -21,6 +21,18 @@ const (
 	pdfLandscapeContentMM = 297 - 2*pdfMarginMM
 	pdfLogoHeightMM       = 16.0
 	pdfMinColWidthMM      = 14.0
+	// pdfContentBottomMM is how far from the page's bottom edge table
+	// rows and the signature block must stop -- deliberately not
+	// pdf.GetMargins()'s own bottom value, since RenderPDF calls
+	// SetAutoPageBreak(false, 0), which zeroes that value (fpdf's
+	// bMargin backs both). Tall enough to clear the page-number footer,
+	// drawn at pageH-10 (see the SetFooterFunc closure in RenderPDF).
+	pdfContentBottomMM = 20.0
+	// pdfSingleSignerWidthFraction is how much of the printable width a
+	// lone signer's block occupies, right-aligned -- roomy enough for a
+	// role line, a name, and "NIP. ..." without wrapping, narrow enough
+	// to visibly sit on the right rather than spanning the page.
+	pdfSingleSignerWidthFraction = 0.45
 )
 
 var (
@@ -70,7 +82,7 @@ func RenderPDF(doc Document) ([]byte, error) {
 		if i > 0 {
 			pdf.AddPage()
 		}
-		writePDFSection(pdf, doc.Columns, widths, section)
+		writePDFSection(pdf, doc.Columns, widths, section, doc.EmptyRowsLabel)
 	}
 
 	if doc.Signature != nil {
@@ -130,16 +142,26 @@ func pdfColumnWidths(columns []Column) (string, []float64) {
 	return orientation, widths
 }
 
+// pdfEmphasisSize/pdfPlainLineSize are the letterhead's two font sizes:
+// the school name (Letterhead.Emphasis) is visibly dominant, matching
+// RenderXLSX's 14pt emphasis style; every other line is small and plain.
+const (
+	pdfEmphasisSize  = 14.0
+	pdfPlainLineSize = 10.0
+)
+
 // writePDFLetterhead draws the logo (scaled to a fixed height, natural
-// aspect ratio) at the top-left and the text lines beside it (first line
-// bold/larger, the school name), then a rule line under the block.
+// aspect ratio, natural width) pinned to the left margin and the text
+// lines as a centered block spanning the full page width below it --
+// the emphasised line (the school name) bold and visibly larger than the
+// rest -- then a double rule line under the block, the standard
+// Indonesian kop surat layout.
 func writePDFLetterhead(pdf *fpdf.Fpdf, lh *Letterhead) {
 	if lh == nil {
 		return
 	}
 	left, top, right, _ := pdf.GetMargins()
 	pageW, _ := pdf.GetPageSize()
-	textX := left
 	blockBottom := top
 
 	if len(lh.Logo) > 0 {
@@ -148,27 +170,34 @@ func writePDFLetterhead(pdf *fpdf.Fpdf, lh *Letterhead) {
 			pdf.RegisterImageOptionsReader(imageID, fpdf.ImageOptions{ImageType: imgType}, bytes.NewReader(lh.Logo))
 			w := pdfLogoNaturalWidth(lh.Logo, pdfLogoHeightMM)
 			pdf.ImageOptions(imageID, left, top, w, pdfLogoHeightMM, false, fpdf.ImageOptions{ImageType: imgType}, 0, "")
-			textX = left + w + 4
 			blockBottom = top + pdfLogoHeightMM
 		}
 	}
 
+	emphasis := lh.Emphasis
+	if emphasis < 0 || emphasis >= len(lh.Lines) {
+		emphasis = 0
+	}
+	width := pageW - left - right
 	y := top
 	for i, line := range lh.Lines {
-		if i == 0 {
-			pdf.SetFont("Helvetica", "B", 13)
+		if i == emphasis {
+			pdf.SetFont("Helvetica", "B", pdfEmphasisSize)
 		} else {
-			pdf.SetFont("Helvetica", "", 9)
+			pdf.SetFont("Helvetica", "", pdfPlainLineSize)
 		}
-		pdf.SetXY(textX, y)
-		pdf.CellFormat(pageW-textX-right, pdfCellLineHeightMM, line, "", 2, "L", false, 0, "")
+		pdf.SetXY(left, y)
+		pdf.CellFormat(width, pdfCellLineHeightMM, line, "", 2, "C", false, 0, "")
 		y = pdf.GetY()
 	}
 	blockBottom = math.Max(blockBottom, y)
 
+	// A double rule -- two close horizontal lines -- is the kop surat
+	// convention for closing the letterhead block, not a single line.
 	pdf.SetDrawColor(pdfBorder[0], pdfBorder[1], pdfBorder[2])
 	pdf.Line(left, blockBottom+2, pageW-right, blockBottom+2)
-	pdf.SetXY(left, blockBottom+6)
+	pdf.Line(left, blockBottom+2.8, pageW-right, blockBottom+2.8)
+	pdf.SetXY(left, blockBottom+7)
 	pdf.SetFont("Helvetica", "", 10)
 }
 
@@ -210,8 +239,10 @@ func writePDFTitleScope(pdf *fpdf.Fpdf, title string, scope []ScopeLine) {
 
 // writePDFSection draws one section's heading (when named), table header
 // row, data rows and footer rows, breaking to a new page -- with the
-// header row redrawn -- whenever a row would not fit.
-func writePDFSection(pdf *fpdf.Fpdf, columns []Column, widths []float64, section Section) {
+// header row redrawn -- whenever a row would not fit. A section with no
+// rows (and no footer) prints a single emptyLabel row instead of just a
+// bare header, when emptyLabel is non-empty.
+func writePDFSection(pdf *fpdf.Fpdf, columns []Column, widths []float64, section Section, emptyLabel string) {
 	left, _, _, _ := pdf.GetMargins()
 
 	if section.Name != "" {
@@ -231,6 +262,10 @@ func writePDFSection(pdf *fpdf.Fpdf, columns []Column, widths []float64, section
 	}
 	drawHeader()
 
+	if len(section.Rows) == 0 && len(section.Footer) == 0 && emptyLabel != "" {
+		writePDFEmptyRow(pdf, left, widths, emptyLabel)
+	}
+
 	for i, values := range section.Rows {
 		style := pdfRowStyle{}
 		if i%2 == 1 {
@@ -247,14 +282,34 @@ func writePDFSection(pdf *fpdf.Fpdf, columns []Column, widths []float64, section
 	pdf.Ln(2)
 }
 
+// writePDFEmptyRow draws one bordered row spanning every column's
+// combined width, centered italic text -- "Tidak ada data" and
+// equivalents -- in place of a section that has nothing to show.
+func writePDFEmptyRow(pdf *fpdf.Fpdf, left float64, widths []float64, label string) {
+	total := 0.0
+	for _, w := range widths {
+		total += w
+	}
+	pdf.SetFont("Helvetica", "I", 9)
+	height := pdfCellLineHeightMM + 2*pdfCellPadMM
+	y := pdf.GetY()
+	pdf.SetDrawColor(pdfBorder[0], pdfBorder[1], pdfBorder[2])
+	pdf.Rect(left, y, total, height, "D")
+	pdf.SetTextColor(107, 114, 128)
+	pdf.SetXY(left, y+pdfCellPadMM)
+	pdf.CellFormat(total, pdfCellLineHeightMM, label, "", 0, "C", false, 0, "")
+	pdf.SetTextColor(0, 0, 0)
+	pdf.SetXY(left, y+height)
+}
+
 // ensurePDFRowSpace adds a page (redrawing the table header via
 // redrawHeader) when the row about to be drawn would not fit above the
 // page's bottom margin.
 func ensurePDFRowSpace(pdf *fpdf.Fpdf, columns []Column, widths []float64, values []any, style pdfRowStyle, redrawHeader func()) {
-	height := pdfRowHeight(pdf, columns, widths, values)
+	setRowFont(pdf, style)
+	height := pdfRowHeight(pdf, widths, rowTexts(columns, values, style.isHeader))
 	_, pageH := pdf.GetPageSize()
-	_, _, _, bottom := pdf.GetMargins()
-	if pdf.GetY()+height > pageH-bottom {
+	if pdf.GetY()+height > pageH-pdfContentBottomMM {
 		pdf.AddPage()
 		redrawHeader()
 	}
@@ -269,23 +324,47 @@ type pdfRowStyle struct {
 
 func (s pdfRowStyle) hasFill() bool { return s.fill != [3]int{} }
 
-// pdfRowHeight computes how tall a row must be to fit every cell's
-// word-wrapped text, using the current font metrics (so callers must set
-// the row's font before calling this and before drawing).
-func pdfRowHeight(pdf *fpdf.Fpdf, columns []Column, widths []float64, values []any) float64 {
-	pdf.SetFont("Helvetica", "", 9)
-	maxLines := 1
+func setRowFont(pdf *fpdf.Fpdf, style pdfRowStyle) {
+	weight := ""
+	if style.bold {
+		weight = "B"
+	}
+	pdf.SetFont("Helvetica", weight, 9)
+}
+
+// rowTexts resolves the display text for every column of one row: the
+// column's Label for a header row, otherwise its typed cell value. Both
+// pdfRowHeight (sizing) and pdfDrawRow (drawing) call this so the two can
+// never disagree about what text a row holds -- the header-clipping bug
+// this replaced came from sizing off blank text while drawing the real,
+// often multi-line, label.
+func rowTexts(columns []Column, values []any, isHeader bool) []string {
+	texts := make([]string, len(columns))
 	for i, c := range columns {
+		if isHeader {
+			texts[i] = c.Label
+		} else {
+			texts[i] = cellText(c.Kind, valueAt(values, i))
+		}
+	}
+	return texts
+}
+
+// pdfRowHeight computes how tall a row must be to fit every cell's
+// word-wrapped text, using the current font metrics -- callers must
+// SetFont (see setRowFont) before calling this and before drawing with
+// the same texts, so sizing and drawing always agree.
+func pdfRowHeight(pdf *fpdf.Fpdf, widths []float64, texts []string) float64 {
+	maxLines := 1
+	for i, text := range texts {
 		if i >= len(widths) {
 			break
 		}
-		text := cellText(c.Kind, valueAt(values, i))
 		w := widths[i] - 2*pdfCellPadMM
 		if w < 5 {
 			w = 5
 		}
-		lines := pdf.SplitLines([]byte(text), w)
-		if n := len(lines); n > maxLines {
+		if n := len(pdf.SplitLines([]byte(text), w)); n > maxLines {
 			maxLines = n
 		}
 	}
@@ -293,15 +372,12 @@ func pdfRowHeight(pdf *fpdf.Fpdf, columns []Column, widths []float64, values []a
 }
 
 // pdfDrawRow draws one row of cells at the current Y: a filled/bordered
-// rectangle per cell sized to the row's full height, then the cell's
-// (possibly wrapped) text on top.
+// rectangle per cell sized to the row's full (wrap-aware) height, then
+// the cell's possibly-wrapped text on top.
 func pdfDrawRow(pdf *fpdf.Fpdf, left float64, columns []Column, widths []float64, values []any, style pdfRowStyle) {
-	weight := ""
-	if style.bold {
-		weight = "B"
-	}
-	pdf.SetFont("Helvetica", weight, 9)
-	height := pdfRowHeight(pdf, columns, widths, values)
+	setRowFont(pdf, style)
+	texts := rowTexts(columns, values, style.isHeader)
+	height := pdfRowHeight(pdf, widths, texts)
 	y := pdf.GetY()
 
 	pdf.SetDrawColor(pdfBorder[0], pdfBorder[1], pdfBorder[2])
@@ -323,12 +399,8 @@ func pdfDrawRow(pdf *fpdf.Fpdf, left float64, columns []Column, widths []float64
 		}
 		w := widths[i]
 		pdf.Rect(x, y, w, height, rectStyle)
-		text := c.Label
-		if !style.isHeader {
-			text = cellText(c.Kind, valueAt(values, i))
-		}
 		pdf.SetXY(x+pdfCellPadMM, y+pdfCellPadMM)
-		pdf.MultiCell(w-2*pdfCellPadMM, pdfCellLineHeightMM, text, "", pdfAlign(c.Kind), false)
+		pdf.MultiCell(w-2*pdfCellPadMM, pdfCellLineHeightMM, texts[i], "", pdfAlign(c.Kind), false)
 		x += w
 	}
 	if style.textWhite {
@@ -405,14 +477,13 @@ func toFloat64(v any) (float64, bool) {
 func writePDFSignature(pdf *fpdf.Fpdf, sig *Signature, widths []float64) {
 	left, _, right, _ := pdf.GetMargins()
 	pageW, pageH := pdf.GetPageSize()
-	_, _, _, bottom := pdf.GetMargins()
 
 	signerRows := 0
 	if len(sig.Signers) > 0 {
 		signerRows = 1
 	}
 	blockHeight := 8.0 + float64(signerRows)*(6+22+6)
-	if pdf.GetY()+blockHeight > pageH-bottom {
+	if pdf.GetY()+blockHeight > pageH-pdfContentBottomMM {
 		pdf.AddPage()
 	}
 	pdf.Ln(4)
@@ -426,11 +497,21 @@ func writePDFSignature(pdf *fpdf.Fpdf, sig *Signature, widths []float64) {
 		return
 	}
 
+	// One signer stays a single block aligned to the right (the standard
+	// Indonesian layout for a single Kepala Sekolah signature); two or
+	// more split the width evenly into side-by-side columns, e.g. Wali
+	// Kelas on the left and Kepala Sekolah on the right.
 	total := pageW - left - right
-	colW := total / float64(len(sig.Signers))
+	n := len(sig.Signers)
+	colW := total / float64(n)
+	startX := left
+	if n == 1 {
+		colW = total * pdfSingleSignerWidthFraction
+		startX = left + total - colW
+	}
 	y := pdf.GetY() + 2
 	for i, signer := range sig.Signers {
-		x := left + float64(i)*colW
+		x := startX + float64(i)*colW
 		pdf.SetXY(x, y)
 		pdf.SetFont("Helvetica", "", 10)
 		pdf.CellFormat(colW, 6, signer.RoleLabel+",", "", 0, "C", false, 0, "")
