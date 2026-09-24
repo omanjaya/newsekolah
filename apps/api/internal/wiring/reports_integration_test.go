@@ -253,6 +253,58 @@ func TestPermitsLeaveRequestRowsClassScope(t *testing.T) {
 	requireOpensAsWorkbookWithSheets(t, xlsx, []string{"X-A"})
 }
 
+// TestDisciplineWarningLetterRowsGradeLevelScope proves warning letters'
+// grade-level scope resolves the same way points does: one section per
+// class in the grade level, both renderers producing non-empty output
+// even with zero letters issued yet.
+func TestDisciplineWarningLetterRowsGradeLevelScope(t *testing.T) {
+	pg := dbtest.Start(t)
+	fx := seedGradeLevelFixture(t, pg.AdminPool)
+	disciplineReports, _, _ := buildReportsAdapters(pg.AppPool)
+
+	doc, err := disciplineReports.WarningLetterRows(context.Background(), fx.tenantID, uuid.NullUUID{}, uuid.NullUUID{UUID: fx.gradeLevelID, Valid: true})
+	require.NoError(t, err)
+	require.Equal(t, "Surat Peringatan", doc.Title)
+	require.Len(t, doc.Sections, 2)
+	require.Equal(t, "X-A", doc.Sections[0].Name)
+	require.Equal(t, "X-B", doc.Sections[1].Name)
+
+	xlsx, err := reportdoc.RenderXLSX(doc)
+	require.NoError(t, err)
+	requireOpensAsWorkbookWithSheets(t, xlsx, []string{"X-A", "X-B"})
+
+	pdf, err := reportdoc.RenderPDF(doc)
+	require.NoError(t, err)
+	require.True(t, bytes.HasPrefix(pdf, []byte("%PDF")))
+}
+
+// TestPermitsExitPermitYearlyRowsRenders proves the yearly export (no
+// class/grade-level scope of its own) still names the active year and
+// renders as a single unnamed section in both formats.
+func TestPermitsExitPermitYearlyRowsRenders(t *testing.T) {
+	pg := dbtest.Start(t)
+	fx := seedGradeLevelFixture(t, pg.AdminPool)
+	_, _, permitsReports := buildReportsAdapters(pg.AppPool)
+
+	doc, err := permitsReports.ExitPermitYearlyRows(context.Background(), fx.tenantID)
+	require.NoError(t, err)
+	require.Equal(t, "Rekap Izin Keluar Tahunan Siswa", doc.Title)
+	require.Len(t, doc.Sections, 1)
+	require.Equal(t, "", doc.Sections[0].Name)
+	require.NotEmpty(t, doc.Scope, "must name the active academic year")
+
+	xlsx, err := reportdoc.RenderXLSX(doc)
+	require.NoError(t, err)
+	f, err := excelize.OpenReader(bytes.NewReader(xlsx))
+	require.NoError(t, err)
+	defer f.Close() //nolint:errcheck
+	require.Len(t, f.GetSheetList(), 1)
+
+	pdf, err := reportdoc.RenderPDF(doc)
+	require.NoError(t, err)
+	require.True(t, bytes.HasPrefix(pdf, []byte("%PDF")))
+}
+
 // requireOpensAsWorkbookWithSheets re-opens a rendered XLSX with excelize
 // and asserts its sheet names match wantSheets, in order -- this is the
 // "look at it" step for an export that never leaves the test process: a
