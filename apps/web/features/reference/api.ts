@@ -77,6 +77,35 @@ export function usePeriodsQuery(enabled = true) {
   });
 }
 
+/**
+ * Every period across every template, keyed by id, not just the default
+ * template `usePeriodsQuery` reads. A school with more than one timetable
+ * template (e.g. a bulk-imported one alongside the hand-built default)
+ * has schedules whose periods `usePeriodsQuery` alone cannot resolve --
+ * this is for a screen that only needs to look a period id up by id
+ * (a session header's "Jam 3 (08:30-09:15)"), not render one template's
+ * periods in sequence.
+ */
+export function useAllPeriodsQuery(enabled = true) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: ["academic", "periods", "all"] as const,
+    queryFn: async () => {
+      const templates = await client.GET("/v1/academic/period-templates");
+      const perTemplate = await Promise.all(
+        templates.data.map((template) =>
+          client.GET("/v1/academic/period-templates/{templateId}/periods", {
+            params: { path: { templateId: template.id } },
+          }),
+        ),
+      );
+      return { data: perTemplate.flatMap((response) => response.data) };
+    },
+    enabled,
+    staleTime: REFERENCE_STALE_MS,
+  });
+}
+
 export type DirectoryUser = components["schemas"]["DirectoryUser"];
 export type ProfileKind = components["schemas"]["ProfileKind"];
 

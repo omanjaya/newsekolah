@@ -37,7 +37,21 @@ export function AttendanceStatusFilterChips({
 }): ReactElement {
   const t = useTranslations("app.attendance.session");
   return (
-    <div className="flex flex-wrap gap-2" role="group" aria-label={t("filterByStatus")}>
+    // One horizontally scrollable line on a phone (flex-wrap would make
+    // this bar two lines tall, eating into the roster's scroll budget)
+    // with snap points so a swipe lands on a whole chip, and the
+    // scrollbar hidden since touch scrolling doesn't need a visible one.
+    // The caller's own sticky wrapper already bleeds to the screen edge
+    // and pads back, so this only needs to fill that width.
+    <div
+      role="group"
+      aria-label={t("filterByStatus")}
+      className={cn(
+        "flex snap-x snap-mandatory gap-2 overflow-x-auto py-0.5",
+        "[scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+        "md:flex-wrap md:overflow-visible",
+      )}
+    >
       {statuses.map((status) => {
         const selected = active.has(status.code);
         const token = statusToken(status.code);
@@ -51,7 +65,7 @@ export function AttendanceStatusFilterChips({
             }}
             style={token ? undefined : { borderColor: status.color, color: status.color }}
             className={cn(
-              "flex min-h-8 items-center gap-1.5 rounded-full border px-3 py-1 text-[13px] font-medium transition-colors",
+              "flex min-h-8 shrink-0 snap-start items-center gap-1.5 rounded-full border px-3 py-1 text-[13px] font-medium transition-colors",
               token
                 ? selected
                   ? CHIP_ACTIVE_CLASS[token]

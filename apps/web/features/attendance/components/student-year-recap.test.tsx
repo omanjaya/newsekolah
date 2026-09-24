@@ -17,9 +17,16 @@ describe("StudentYearRecap", () => {
     expect(screen.getByLabelText("Sakit 1, Izin 0, Dispensasi 3, Alpha 0")).toBeInTheDocument();
   });
 
-  it("treats a missing yearCounts as all zero", () => {
-    render(<StudentYearRecap statuses={STATUSES} />);
-    expect(screen.getByLabelText("Sakit 0, Izin 0, Dispensasi 0, Alpha 0")).toBeInTheDocument();
+  it("renders nothing when yearCounts is missing (nothing recorded yet)", () => {
+    const { container } = render(<StudentYearRecap statuses={STATUSES} />);
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it("renders nothing when every count is zero", () => {
+    const { container } = render(
+      <StudentYearRecap statuses={STATUSES} yearCounts={{ S: 0, I: 0, D: 0, A: 0 }} />,
+    );
+    expect(container).toBeEmptyDOMElement();
   });
 
   it("renders nothing when the policy has no exception statuses", () => {

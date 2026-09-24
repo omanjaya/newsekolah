@@ -2,19 +2,28 @@
 
 import type { Locale } from "@newsekolah/i18n";
 import { formatDate } from "@newsekolah/i18n";
-import { Badge, PageHeader } from "@newsekolah/ui";
+import { Badge, Button, PageHeader } from "@newsekolah/ui";
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
-import { useLookup, usePeriodsQuery } from "../../reference/api";
+import { useAllPeriodsQuery, useLookup } from "../../reference/api";
 import type { SessionDetail } from "../api";
 
 /**
- * The roster's identity: class, subject, date spelled out, lesson period
- * and time, meeting number, and the back link -- everything a teacher
- * needs to confirm "this is the right lesson" before touching a single
- * status (docs/07-ui-ux.md's roster problems: "tidak ada date/time... dan
- * tidak ada back link").
+ * The roster's identity: a clearly visible back link, class, subject,
+ * date spelled out, lesson period and time, meeting number
+ * (docs/07-ui-ux.md's roster problems: "tidak ada date/time... dan tidak
+ * ada back link" -- a breadcrumb-style eyebrow alone was not visible
+ * enough, hence the standalone button above it).
+ *
+ * Periods come from `useAllPeriodsQuery` (every template), not
+ * `usePeriodsQuery` (the tenant's default template only): a schedule
+ * built on a second, non-default timetable template -- e.g. a
+ * bulk-imported one alongside a hand-built default -- has periods the
+ * default-only lookup cannot resolve, which used to leave this line
+ * blank instead of showing the actual period/time.
  */
 export function SessionRosterHeader({
   session,
@@ -31,7 +40,7 @@ export function SessionRosterHeader({
 }): ReactElement {
   const t = useTranslations("app.attendance.session");
   const locale = useLocale() as Locale;
-  const periods = usePeriodsQuery();
+  const periods = useAllPeriodsQuery();
   const periodMap = useLookup(periods.data?.data);
   const start = periodMap.get(session.start_period_id);
   const end = periodMap.get(session.end_period_id);
@@ -44,6 +53,12 @@ export function SessionRosterHeader({
 
   return (
     <div className="flex flex-col gap-2">
+      <Button asChild variant="secondary" size="sm" className="self-start">
+        <Link href="/attendance">
+          <ArrowLeft className="size-4" aria-hidden="true" />
+          {t("backToList")}
+        </Link>
+      </Button>
       <PageHeader
         eyebrow={t("eyebrow", { meeting: session.meeting_number })}
         title={`${className} ${subjectName}`.trim() || t("title")}
