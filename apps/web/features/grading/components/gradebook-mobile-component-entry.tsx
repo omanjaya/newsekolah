@@ -18,6 +18,7 @@ export interface GradebookMobileComponentEntryProps {
   savingComponentId: string | null;
   scaleMin: number;
   scaleMax: number;
+  rangeHint: string;
   missingByComponent: Map<string, number>;
   invalidComponentIds: Set<string>;
   activeComponentId: string;
@@ -51,6 +52,7 @@ export function GradebookMobileComponentEntry({
   savingComponentId,
   scaleMin,
   scaleMax,
+  rangeHint,
   missingByComponent,
   invalidComponentIds,
   activeComponentId,
@@ -81,12 +83,22 @@ export function GradebookMobileComponentEntry({
         {components.map((component) => {
           const componentMissing = missingByComponent.get(component.id) ?? 0;
           const selected = component.id === active.id;
+          // The visible chip stays compact ("TG1 5"), but that bare number
+          // is ambiguous out of context (how many were entered? how many
+          // points?) -- the accessible name always spells it out, and a
+          // sighted user gets the same "kosong" word via the tooltip.
+          const missingLabel =
+            componentMissing > 0 ? t("missingCount", { count: componentMissing }) : "";
           return (
             <button
               key={component.id}
               type="button"
               role="tab"
               aria-selected={selected}
+              aria-label={
+                componentMissing > 0 ? `${component.code}, ${missingLabel}` : component.code
+              }
+              title={componentMissing > 0 ? missingLabel : undefined}
               onClick={() => {
                 onActiveComponentChange(component.id);
               }}
@@ -97,8 +109,15 @@ export function GradebookMobileComponentEntry({
                   : "border-border text-fg-muted hover:bg-bg",
               )}
             >
-              <span>{component.code}</span>
-              {componentMissing > 0 && <span className="tabular-nums">{componentMissing}</span>}
+              <span aria-hidden="true">{component.code}</span>
+              {componentMissing > 0 && (
+                <span
+                  aria-hidden="true"
+                  className="rounded-full bg-status-absent/15 px-1.5 py-0.5 text-[11px] tabular-nums text-status-absent"
+                >
+                  {componentMissing}
+                </span>
+              )}
             </button>
           );
         })}
@@ -155,6 +174,7 @@ export function GradebookMobileComponentEntry({
                 size="lg"
                 min={scaleMin}
                 max={scaleMax}
+                rangeHint={rangeHint}
                 changed={changed}
                 onCommit={onCommit}
                 onRegisterRef={onRegisterRef}

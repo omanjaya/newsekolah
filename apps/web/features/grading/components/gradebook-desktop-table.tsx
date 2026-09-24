@@ -1,12 +1,13 @@
 "use client";
 
-import { Button, IconButton, cn } from "@newsekolah/ui";
-import { Pencil, Star } from "lucide-react";
+import { cn } from "@newsekolah/ui";
+import { Star } from "lucide-react";
 import type { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
 import type { AssessmentComponent, GradebookStudent } from "../api";
 
+import { GradebookColumnMenu } from "./gradebook-column-menu";
 import { GradebookScoreCell } from "./gradebook-score-cell";
 import type { Edits } from "./gradebook-types";
 
@@ -21,6 +22,8 @@ export interface GradebookDesktopTableProps {
   starBalances: Map<string, number>;
   scaleMin: number;
   scaleMax: number;
+  /** "Nilai {min}-{max}", precomputed once and reused on every out-of-range cell's inline hint. */
+  rangeHint: string;
   liveByStudent: Map<string, { average: number | undefined; missing: number }>;
   missingByComponent: Map<string, number>;
   invalidComponentIds: Set<string>;
@@ -45,6 +48,12 @@ export interface GradebookDesktopTableProps {
  * directions (Tab already reaches the next cell in reading order for
  * free, since each row's inputs sit in DOM order), and pasting a copied
  * Excel range fills the block starting at the focused cell.
+ *
+ * Each column's own save action lives in its "..." menu
+ * (`GradebookColumnMenu`), not as a standalone button sitting in every
+ * header at once -- the sticky bottom bar already saves every changed
+ * column in one tap, so a permanently visible per-column button duplicated
+ * that action five, six, seven times over.
  */
 export function GradebookDesktopTable({
   t,
@@ -57,6 +66,7 @@ export function GradebookDesktopTable({
   starBalances,
   scaleMin,
   scaleMax,
+  rangeHint,
   liveByStudent,
   missingByComponent,
   invalidComponentIds,
@@ -94,12 +104,17 @@ export function GradebookDesktopTable({
                     <div className="flex items-center gap-1">
                       <span className="text-fg">{component.code}</span>
                       {canManage && (
-                        <IconButton
-                          icon={<Pencil className="size-3.5" />}
-                          aria-label={t("editComponent", { code: component.code })}
-                          className="size-8 md:size-6 [&>svg]:size-3.5"
-                          onClick={() => {
+                        <GradebookColumnMenu
+                          t={t}
+                          code={component.code}
+                          hasEdits={Object.keys(edits[component.id] ?? {}).length > 0}
+                          saving={savingComponentId === component.id}
+                          disabled={hasInvalid}
+                          onEditComponent={() => {
                             onEditComponent(component);
+                          }}
+                          onSaveColumn={() => {
+                            onSaveColumn(component.id);
                           }}
                         />
                       )}
@@ -112,20 +127,6 @@ export function GradebookDesktopTable({
                       <span className="text-[12px] font-normal text-fg-muted">
                         {t("missingCount", { count: missing })}
                       </span>
-                    )}
-                    {canManage && (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="secondary"
-                        loading={savingComponentId === component.id}
-                        disabled={Object.keys(edits[component.id] ?? {}).length === 0 || hasInvalid}
-                        onClick={() => {
-                          onSaveColumn(component.id);
-                        }}
-                      >
-                        {t("saveColumn")}
-                      </Button>
                     )}
                   </div>
                 </th>
@@ -172,6 +173,7 @@ export function GradebookDesktopTable({
                       className="w-20 text-right [font-variant-numeric:tabular-nums]"
                       min={scaleMin}
                       max={scaleMax}
+                      rangeHint={rangeHint}
                       changed={edits[component.id]?.[student.student_user_id] !== undefined}
                       onCommit={onCommit}
                       onRegisterRef={onRegisterRef}
