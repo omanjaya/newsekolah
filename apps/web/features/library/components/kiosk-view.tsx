@@ -2,7 +2,13 @@
 
 import { ApiError } from "@newsekolah/api-client";
 import type { Locale } from "@newsekolah/i18n";
-import { BarcodeScannerField, Button, PageHeader, domainIcons } from "@newsekolah/ui";
+import {
+  BarcodeScannerField,
+  Button,
+  PageHeader,
+  domainIcons,
+  useScanFeedback,
+} from "@newsekolah/ui";
 import type { BarcodeScanEvent } from "@newsekolah/ui";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -27,6 +33,7 @@ export function KioskView(): ReactElement {
   const t = useTranslations("app.library.kiosk");
   const locale = useLocale() as Locale;
   const apiErrorMessage = useApiErrorMessage();
+  const scanFeedback = useScanFeedback();
 
   const [memberUserId, setMemberUserId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<KioskFeedback | null>(null);
@@ -58,6 +65,7 @@ export function KioskView(): ReactElement {
   }, []);
 
   const showError = (error: unknown) => {
+    scanFeedback.playError();
     setFeedback({
       kind: "refusal",
       message: error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
@@ -66,10 +74,12 @@ export function KioskView(): ReactElement {
 
   const handleCardScan = (event: BarcodeScanEvent) => {
     if (!looksLikeMemberCard(event.code)) {
+      scanFeedback.playError();
       setFeedback({ kind: "refusal", message: t("feedback.unknownCard") });
       scheduleReset();
       return;
     }
+    scanFeedback.playSuccess();
     setMemberUserId(event.code);
     setFeedback(null);
     scheduleReset();
@@ -83,6 +93,7 @@ export function KioskView(): ReactElement {
         { loanId: existingLoan.id },
         {
           onSuccess: () => {
+            scanFeedback.playSuccess();
             setFeedback({ kind: "success", message: t("feedback.returned") });
           },
           onError: showError,
@@ -93,6 +104,7 @@ export function KioskView(): ReactElement {
         { barcode: event.code, member_user_id: memberUserId },
         {
           onSuccess: () => {
+            scanFeedback.playSuccess();
             setFeedback({ kind: "success", message: t("feedback.borrowed") });
           },
           onError: showError,

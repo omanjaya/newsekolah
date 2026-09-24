@@ -11,11 +11,12 @@ import {
   DialogContent,
   EmptyState,
   PageHeader,
+  RowActionsMenu,
   Select,
   useToast,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Plus, UsersRound } from "lucide-react";
+import { Plus, Printer, UsersRound } from "lucide-react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -24,6 +25,7 @@ import { useMemo, useState } from "react";
 import { useCan } from "../../../lib/session/session-provider";
 import { useRememberedViewState } from "../../../lib/view-state/view-state-provider";
 import { useDirectoryQuery, useLookup } from "../../reference/api";
+import { printMemberCard } from "../api";
 import {
   type LibraryMember,
   type LibraryMemberStatus,
@@ -111,20 +113,23 @@ export function MembersView(): ReactElement {
         id: "lateReturns",
         header: t("columns.lateReturns"),
         enableSorting: false,
-        cell: ({ row }) => row.original.late_return_count,
+        cell: ({ row }) =>
+          row.original.late_return_count > 0 ? (
+            <Badge variant="neutral" className="border-status-late/40 text-status-late">
+              {row.original.late_return_count}
+            </Badge>
+          ) : (
+            <span className="text-fg-muted">0</span>
+          ),
       },
       {
         id: "actions",
         header: t("columns.actions"),
         enableSorting: false,
-        cell: ({ row }) => (
-          <Link
-            href={`/library/members/${row.original.user_id}`}
-            className="text-[13px] font-medium text-accent hover:underline"
-          >
-            {t("viewDetail")}
-          </Link>
-        ),
+        cell: ({ row }) => {
+          const name = directoryMap.get(row.original.user_id)?.name ?? t("unknownUser");
+          return <MemberRowActionsMenu userId={row.original.user_id} memberName={name} />;
+        },
       },
     ],
     [t, locale, directoryMap, memberTypeMap],
@@ -247,6 +252,46 @@ export function MembersView(): ReactElement {
       </Dialog>
 
       <MemberBulkRegisterDialog open={bulkRegistering} onOpenChange={setBulkRegistering} />
+    </div>
+  );
+}
+
+/**
+ * A member row's secondary actions collapsed behind one "..." button
+ * (docs/07-ui-ux.md: secondary actions in a labelled "..." menu, never
+ * bare icons) -- the row itself keeps only the "lihat detail" link, since
+ * that is the one action taken on almost every row.
+ */
+function MemberRowActionsMenu({
+  userId,
+  memberName,
+}: {
+  userId: string;
+  memberName: string;
+}): ReactElement {
+  const t = useTranslations("app.library.members");
+  const tHistory = useTranslations("app.library.memberHistory");
+
+  return (
+    <div className="flex items-center gap-1">
+      <Link
+        href={`/library/members/${userId}`}
+        className="text-[13px] font-medium text-accent hover:underline"
+      >
+        {t("viewDetail")}
+      </Link>
+      <RowActionsMenu
+        ariaLabel={t("rowActions", { member: memberName })}
+        items={[
+          {
+            label: tHistory("printCard"),
+            icon: <Printer className="size-4" aria-hidden="true" />,
+            onClick: () => {
+              void printMemberCard(userId);
+            },
+          },
+        ]}
+      />
     </div>
   );
 }

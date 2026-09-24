@@ -11,10 +11,12 @@ import {
   Skeleton,
   Stat,
   StatGrid,
+  cn,
+  useScanFeedback,
   useToast,
 } from "@newsekolah/ui";
 import type { BarcodeScanEvent } from "@newsekolah/ui";
-import { Download } from "lucide-react";
+import { CheckCircle2, Download, XCircle } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useState } from "react";
@@ -34,6 +36,15 @@ import {
 /** How many barcodes a result list shows before pointing to the XLSX report. */
 const BARCODE_PREVIEW_LIMIT = 30;
 
+/** How many recent scans the on-screen feed keeps -- a running receipt, not a full log. */
+const SCAN_FEED_LIMIT = 6;
+
+interface ScanFeedEntry {
+  barcode: string;
+  outcome: "found" | "rejected";
+  at: number;
+}
+
 export function StocktakeSessionView({ stocktakeId }: { stocktakeId: string }): ReactElement {
   const t = useTranslations("app.library.stocktake");
   const locale = useLocale() as Locale;
@@ -43,8 +54,10 @@ export function StocktakeSessionView({ stocktakeId }: { stocktakeId: string }): 
   const session = useLibraryStocktakeQuery(stocktakeId);
   const scan = useScanStocktakeMutation();
   const close = useCloseStocktakeMutation();
+  const feedback = useScanFeedback();
 
   const [scannedCount, setScannedCount] = useState(0);
+  const [scanFeed, setScanFeed] = useState<ScanFeedEntry[]>([]);
   const [closedResult, setClosedResult] = useState<LibraryStocktakeResult | null>(null);
   const [downloading, setDownloading] = useState(false);
   const [confirmingClose, setConfirmingClose] = useState(false);
@@ -64,11 +77,25 @@ export function StocktakeSessionView({ stocktakeId }: { stocktakeId: string }): 
     scan.mutate(
       { stocktakeId, barcode: event.code },
       {
-        onSuccess: () => {
-          setScannedCount((count) => count + 1);
-          void progress.refetch();
+        onSuccess: (response) => {
+          // The batch endpoint takes one code here, so exactly one scan
+          // comes back; a code matching nothing is still HTTP 200 but
+          // outcome "rejected" (see scanLibraryStocktake), so success and
+          // failure feedback both have to read it, not just the status.
+          const outcome = response.data[0]?.outcome ?? "rejected";
+          setScanFeed((feed) =>
+            [{ barcode: event.code, outcome, at: Date.now() }, ...feed].slice(0, SCAN_FEED_LIMIT),
+          );
+          if (outcome === "found") {
+            feedback.playSuccess();
+            setScannedCount((count) => count + 1);
+            void progress.refetch();
+          } else {
+            feedback.playError();
+          }
         },
         onError: (error) => {
+          feedback.playError();
           toast.error(errorMessage(error));
         },
       },
@@ -135,9 +162,10 @@ export function StocktakeSessionView({ stocktakeId }: { stocktakeId: string }): 
               submitLabel={t("scan.submit")}
               disabled={scan.isPending}
             />
-            <p className="text-[13px] text-fg-muted" aria-live="polite">
+            <p className="text-[13px] text-fg-muted">
               {t("scan.thisDevice", { count: scannedCount })}
             </p>
+            <ScanFeedList entries={scanFeed} />
           </section>
 
           <Button
@@ -204,6 +232,51 @@ export function StocktakeSessionView({ stocktakeId }: { stocktakeId: string }): 
         }}
       />
     </div>
+  );
+}
+
+/**
+ * The last few scans, most recent first, with the same immediate
+ * sound-plus-color feedback as the circulation desk (docs/07-ui-ux.md
+ * "Scanner: ... umpan balik getar/bunyi/warna"). `aria-live` carries the
+ * result to screen readers since a librarian scanning a shelf is not
+ * watching this panel between codes.
+ */
+function ScanFeedList({ entries }: { entries: ScanFeedEntry[] }): ReactElement | null {
+  const t = useTranslations("app.library.stocktake.scan.recent");
+  if (entries.length === 0) return null;
+  return (
+    <ul className="flex flex-col gap-1.5" aria-live="polite">
+      {entries.map((entry) => {
+        const isFound = entry.outcome === "found";
+        return (
+          <li
+            key={entry.at}
+            className={cn(
+              "flex items-center gap-2.5 rounded-sm border px-3 py-2 text-[13px]",
+              isFound
+                ? "border-status-present/40 bg-status-present/5"
+                : "border-status-absent/40 bg-status-absent/5",
+            )}
+          >
+            {isFound ? (
+              <CheckCircle2 className="size-4 shrink-0 text-status-present" aria-hidden="true" />
+            ) : (
+              <XCircle className="size-4 shrink-0 text-status-absent" aria-hidden="true" />
+            )}
+            <span className="min-w-0 flex-1 truncate font-mono text-fg">{entry.barcode}</span>
+            <span
+              className={cn(
+                "shrink-0 font-medium",
+                isFound ? "text-status-present" : "text-status-absent",
+              )}
+            >
+              {isFound ? t("found") : t("rejected")}
+            </span>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 

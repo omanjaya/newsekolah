@@ -1,6 +1,8 @@
 "use client";
 
 import { ApiError } from "@newsekolah/api-client";
+import { formatCurrency } from "@newsekolah/i18n";
+import type { Locale } from "@newsekolah/i18n";
 import {
   Button,
   ConfirmDialog,
@@ -8,14 +10,14 @@ import {
   Dialog,
   DialogContent,
   EmptyState,
-  IconButton,
   PageHeader,
+  RowActionsMenu,
   domainIcons,
   useToast,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Pencil, Plus, Trash2 } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
@@ -33,6 +35,7 @@ import { MemberTypeForm } from "./member-type-form";
 export function MemberTypesView(): ReactElement {
   const t = useTranslations("app.library.memberTypes");
   const tRole = useTranslations("app.library.members.roles");
+  const locale = useLocale() as Locale;
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const canManage = useCan("manage_library_settings");
@@ -78,7 +81,7 @@ export function MemberTypesView(): ReactElement {
           row.original.fine_per_tenor === 0
             ? t("fineNone")
             : t(`fineValue.${row.original.fine_type}`, {
-                amount: row.original.fine_per_tenor,
+                amount: formatCurrency(row.original.fine_per_tenor, "IDR", { locale }),
                 tenor: row.original.tenor_days,
               }),
       },
@@ -95,26 +98,30 @@ export function MemberTypesView(): ReactElement {
         enableSorting: false,
         cell: ({ row }) =>
           canManage ? (
-            <div className="flex gap-2">
-              <IconButton
-                icon={<Pencil />}
-                aria-label={t("edit")}
-                onClick={() => {
-                  setEditing(row.original);
-                }}
-              />
-              <IconButton
-                icon={<Trash2 />}
-                aria-label={t("delete")}
-                onClick={() => {
-                  setDeleting(row.original);
-                }}
-              />
-            </div>
+            <RowActionsMenu
+              ariaLabel={t("rowActions", { name: row.original.name })}
+              items={[
+                {
+                  label: t("edit"),
+                  icon: <Pencil className="size-4" aria-hidden="true" />,
+                  onClick: () => {
+                    setEditing(row.original);
+                  },
+                },
+                {
+                  label: t("delete"),
+                  icon: <Trash2 className="size-4" aria-hidden="true" />,
+                  tone: "danger",
+                  onClick: () => {
+                    setDeleting(row.original);
+                  },
+                },
+              ]}
+            />
           ) : null,
       },
     ],
-    [t, tRole, canManage],
+    [t, tRole, canManage, locale],
   );
 
   return (
