@@ -9,8 +9,8 @@ import {
   Dialog,
   DialogContent,
   EmptyState,
-  IconButton,
   Input,
+  RowActionsMenu,
   Switch,
   domainIcons,
   useToast,
@@ -77,22 +77,26 @@ export function MaterialTypesTab(): ReactElement {
         enableSorting: false,
         cell: ({ row }) =>
           canManage ? (
-            <div className="flex gap-2">
-              <IconButton
-                icon={<Pencil />}
-                aria-label={t("edit")}
-                onClick={() => {
-                  setEditing(row.original);
-                }}
-              />
-              <IconButton
-                icon={<Trash2 />}
-                aria-label={t("delete")}
-                onClick={() => {
-                  setDeleting(row.original);
-                }}
-              />
-            </div>
+            <RowActionsMenu
+              ariaLabel={t("rowActions", { name: row.original.name })}
+              items={[
+                {
+                  label: t("edit"),
+                  icon: <Pencil className="size-4" aria-hidden="true" />,
+                  onClick: () => {
+                    setEditing(row.original);
+                  },
+                },
+                {
+                  label: t("delete"),
+                  icon: <Trash2 className="size-4" aria-hidden="true" />,
+                  tone: "danger",
+                  onClick: () => {
+                    setDeleting(row.original);
+                  },
+                },
+              ]}
+            />
           ) : null,
       },
     ],

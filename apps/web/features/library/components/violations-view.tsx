@@ -1,6 +1,6 @@
 "use client";
 
-import { formatDate } from "@newsekolah/i18n";
+import { formatCurrency, formatDate } from "@newsekolah/i18n";
 import type { Locale } from "@newsekolah/i18n";
 import {
   Badge,
@@ -8,11 +8,13 @@ import {
   DataTable,
   EmptyState,
   PageHeader,
+  RowActionsMenu,
   Select,
   domainIcons,
+  useToast,
 } from "@newsekolah/ui";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Plus } from "lucide-react";
+import { BadgeCheck, HandCoins, Plus } from "lucide-react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement } from "react";
@@ -38,10 +40,14 @@ export function ViolationsView(): ReactElement {
   const locale = useLocale() as Locale;
   const canRecord = useCan("manage_library_circulation");
 
+  const toast = useToast();
   const [status, setStatus] = useState<LibraryViolationStatus | "">("");
   const [kind, setKind] = useState<LibraryViolationKind | "">("");
   const [recording, setRecording] = useState(false);
-  const [settling, setSettling] = useState<LibraryViolation | null>(null);
+  const [settling, setSettling] = useState<{
+    violation: LibraryViolation;
+    status: "paid" | "waived";
+  } | null>(null);
 
   const { data, isLoading } = useLibraryViolationsQuery({ status, kind });
   const directory = useDirectoryQuery();
@@ -80,7 +86,7 @@ export function ViolationsView(): ReactElement {
             <span>{t(`penalties.${row.original.penalty}`)}</span>
             {row.original.penalty === "fine" && row.original.amount > 0 && (
               <span className="text-[12px] text-fg-muted">
-                {t("amountValue", { amount: row.original.amount })}
+                {formatCurrency(row.original.amount, "IDR", { locale })}
               </span>
             )}
             {row.original.penalty === "suspend" && row.original.suspend_days > 0 && (
@@ -114,15 +120,15 @@ export function ViolationsView(): ReactElement {
         enableSorting: false,
         cell: ({ row }) =>
           canRecord && row.original.status === "unpaid" ? (
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => {
-                setSettling(row.original);
+            <ViolationRowActionsMenu
+              memberName={directoryMap.get(row.original.member_user_id)?.name ?? t("unknownMember")}
+              onMarkPaid={() => {
+                setSettling({ violation: row.original, status: "paid" });
               }}
-            >
-              {t("settleAction")}
-            </Button>
+              onWaive={() => {
+                setSettling({ violation: row.original, status: "waived" });
+              }}
+            />
           ) : null,
       },
     ],
@@ -220,11 +226,58 @@ export function ViolationsView(): ReactElement {
       />
 
       <ViolationSettleDialog
-        violation={settling}
+        violation={settling?.violation ?? null}
+        status={settling?.status ?? null}
+        memberName={
+          settling
+            ? (directoryMap.get(settling.violation.member_user_id)?.name ?? t("unknownMember"))
+            : ""
+        }
         onOpenChange={(open) => {
           if (!open) setSettling(null);
         }}
+        onSettled={(status) => {
+          toast.success(status === "paid" ? t("settle.settledPaid") : t("settle.settledWaived"));
+          setSettling(null);
+        }}
       />
     </div>
+  );
+}
+
+/**
+ * A violation row's two settlement outcomes collapsed behind one "..."
+ * button instead of a bare "Selesaikan" that then asked again which
+ * outcome -- one tap fewer, and the row never grows a second button
+ * (docs/07-ui-ux.md: secondary actions in a labelled "..." menu).
+ */
+function ViolationRowActionsMenu({
+  memberName,
+  onMarkPaid,
+  onWaive,
+}: {
+  memberName: string;
+  onMarkPaid: () => void;
+  onWaive: () => void;
+}): ReactElement {
+  const t = useTranslations("app.library.violations.settle");
+  const tRow = useTranslations("app.library.violations");
+
+  return (
+    <RowActionsMenu
+      ariaLabel={tRow("rowActions", { member: memberName })}
+      items={[
+        {
+          label: t("markPaid"),
+          icon: <HandCoins className="size-4" aria-hidden="true" />,
+          onClick: onMarkPaid,
+        },
+        {
+          label: t("waive"),
+          icon: <BadgeCheck className="size-4" aria-hidden="true" />,
+          onClick: onWaive,
+        },
+      ]}
+    />
   );
 }

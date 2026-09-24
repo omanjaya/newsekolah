@@ -84,6 +84,11 @@ export {
   DropdownMenuTrigger,
 } from "./components/dropdown-menu.js";
 export { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from "./components/popover.js";
+export {
+  RowActionsMenu,
+  type RowActionsMenuItem,
+  type RowActionsMenuProps,
+} from "./components/row-actions-menu.js";
 export { Progress, type ProgressProps } from "./components/progress.js";
 export { Kbd } from "./components/kbd.js";
 export { StickySaveBar, type StickySaveBarProps } from "./components/sticky-save-bar.js";
