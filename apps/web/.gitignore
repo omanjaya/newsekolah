@@ -16,6 +16,7 @@ node_modules/
 /coverage
 /playwright-report
 /smoke-report
+/sim-report
 /test-results
 /blob-report
 /playwright/.cache

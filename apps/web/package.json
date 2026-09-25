@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:e2e": "NEXT_PUBLIC_API_URL=http://localhost:3177 API_INTERNAL_URL=http://127.0.0.1:9 next build && API_INTERNAL_URL=http://127.0.0.1:9 playwright test",
-    "e2e:smoke": "playwright test --config=playwright.smoke.config.ts"
+    "e2e:smoke": "playwright test --config=playwright.smoke.config.ts",
+    "e2e:sim": "playwright test --config=playwright.sim.config.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
