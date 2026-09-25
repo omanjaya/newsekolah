@@ -53,7 +53,21 @@ var systemUsers = []userSeed{
 	{"guru", "Guru Contoh", "teacher"},
 	{"gurubk", "Guru BK Contoh", "teacher"},
 	{"kepsek", "Kepala Sekolah Contoh", "principal"},
+	// gurupiket/wakepsek/satpam/pustakawan exist so the multi-actor "school
+	// day" simulation (apps/web/e2e/simulation) has one dedicated account
+	// per duty the exit-permit chain and the library desk exercise --
+	// see docs/analysis/realtime-plan-2026-09-25.md section 4.4/5 for which
+	// duty each stage and screen expects.
+	{"gurupiket", "Guru Piket Contoh", "teacher"},
+	{"wakepsek", "Wakil Kepala Sekolah Contoh", "teacher"},
+	{"satpam", "Satpam Contoh", "staff"},
+	{"pustakawan", "Pustakawan Contoh", "librarian"},
 	{"siswa", "Siswa Contoh", "student"},
+	// siswa2: a second homeroom-class student, so a leave request opened
+	// by one student (simulation scenario a) and one opened later on the
+	// same class (scenario f) never collide on permits' one-in-progress-
+	// per-kind-per-student rule.
+	{"siswa2", "Siswa Dua Contoh", "student"},
 }
 
 func main() {
@@ -110,6 +124,10 @@ func run(logger *slog.Logger) error {
 	}
 
 	if err := seedOperations(ctx, pool, q, tenant.ID, year.ID, users, logger); err != nil {
+		return err
+	}
+
+	if err := seedWorkflowDefinitions(ctx, pool, tenant.ID, users["admin"].ID, logger); err != nil {
 		return err
 	}
 
@@ -269,7 +287,7 @@ func seedUsers(ctx context.Context, q *db.Queries, tenantID uuid.UUID, roleIDs m
 	}
 
 	profileKindByRole := map[string]string{
-		"admin": "staff", "teacher": "teacher", "student": "student",
+		"admin": "staff", "teacher": "teacher", "student": "student", "staff": "staff",
 		// A "Kepala Sekolah" is drawn from the teaching staff (Indonesian
 		// regulation requires a principal to hold a teaching
 		// certification), matching the "leadership" duty type's usual
@@ -277,6 +295,10 @@ func seedUsers(ctx context.Context, q *db.Queries, tenantID uuid.UUID, roleIDs m
 		// makes profileKinds: ["teacher", "staff"] nav items (journal,
 		// check-in, the class/student roster) visible to the principal.
 		"principal": "teacher",
+		// The librarian role is profile_kind "staff" like any other
+		// Pegawai (apps/web/lib/navigation.ts's comment on the "journal"
+		// nav entry explains why it is not "teacher").
+		"librarian": "staff",
 	}
 
 	users := make(map[string]db.User, len(systemUsers))
@@ -328,7 +350,10 @@ func seedDetailedProfiles(ctx context.Context, q *db.Queries, tenantID uuid.UUID
 	text := func(s string) pgtype.Text { return pgtype.Text{String: s, Valid: true} }
 	year := pgtype.Int2{Int16: 2020, Valid: true}
 
-	teachers := map[string]string{"guru": "Matematika", "gurubk": "Bimbingan Konseling", "kepsek": "Kepemimpinan Sekolah"}
+	teachers := map[string]string{
+		"guru": "Matematika", "gurubk": "Bimbingan Konseling", "kepsek": "Kepemimpinan Sekolah",
+		"gurupiket": "Ketertiban Siswa", "wakepsek": "Manajemen Sekolah",
+	}
 	for username, specialization := range teachers {
 		u, ok := users[username]
 		if !ok {
@@ -341,20 +366,39 @@ func seedDetailedProfiles(ctx context.Context, q *db.Queries, tenantID uuid.UUID
 			return fmt.Errorf("upsert teacher profile %s: %w", username, err)
 		}
 	}
-	if u, ok := users["siswa"]; ok {
+
+	students := map[string]struct{ nis, nisn string }{
+		"siswa":  {"2026001", "0091234567"},
+		"siswa2": {"2026002", "0091234568"},
+	}
+	for username, ids := range students {
+		u, ok := users[username]
+		if !ok {
+			continue
+		}
 		if err := q.UpsertStudentProfile(ctx, db.UpsertStudentProfileParams{
-			UserID: u.ID, TenantID: tenantID, Nis: text("2026001"), Nisn: text("0091234567"),
+			UserID: u.ID, TenantID: tenantID, Nis: text(ids.nis), Nisn: text(ids.nisn),
 			EntryYear: pgtype.Int2{Int16: 2026, Valid: true}, GuardianName: text("Orang Tua Contoh"),
 		}); err != nil {
-			return fmt.Errorf("upsert student profile: %w", err)
+			return fmt.Errorf("upsert student profile %s: %w", username, err)
 		}
 	}
-	if u, ok := users["admin"]; ok {
+
+	staff := map[string]struct{ number, position string }{
+		"admin":      {"ADM001", "Tata Usaha"},
+		"satpam":     {"STP001", "Satuan Pengamanan"},
+		"pustakawan": {"PST001", "Pustakawan"},
+	}
+	for username, info := range staff {
+		u, ok := users[username]
+		if !ok {
+			continue
+		}
 		if err := q.UpsertStaffProfile(ctx, db.UpsertStaffProfileParams{
-			UserID: u.ID, TenantID: tenantID, EmployeeNumber: text("ADM001"), Position: text("Tata Usaha"),
+			UserID: u.ID, TenantID: tenantID, EmployeeNumber: text(info.number), Position: text(info.position),
 			EmploymentStatus: text("tetap"), JoinedYear: year,
 		}); err != nil {
-			return fmt.Errorf("upsert staff profile: %w", err)
+			return fmt.Errorf("upsert staff profile %s: %w", username, err)
 		}
 	}
 	return nil

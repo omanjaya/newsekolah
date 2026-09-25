@@ -199,6 +199,7 @@ func ensureLibraryMemberTypes(ctx context.Context, svc *libraryservice.Service, 
 func ensureLibraryMembers(ctx context.Context, svc *libraryservice.Service, tenantID uuid.UUID, users map[string]db.User, memberTypes map[string]librarydomain.MemberType) error {
 	registrations := []struct{ username, memberTypeName string }{
 		{"siswa", "Siswa"},
+		{"siswa2", "Siswa"},
 		{"guru", "Guru & Staf"},
 	}
 	for _, r := range registrations {
@@ -299,6 +300,14 @@ func ensureLibraryActivity(ctx context.Context, svc *libraryservice.Service, ten
 	}
 	if err := ensureDemoLoan(ctx, svc, tenantID, teacher.ID, admin.ID, copiesByTitle["Negeri 5 Menara"], true); err != nil {
 		return fmt.Errorf("returned loan: %w", err)
+	}
+	// "Sapiens" has a single copy; checking it out and never returning it
+	// leaves zero copies available, which is what Service.Reserve requires
+	// (ErrCopyAvailableForLoan otherwise) -- the multi-actor simulation's
+	// library scenario (apps/web/e2e/simulation) needs one title a student
+	// can actually reserve.
+	if err := ensureDemoLoan(ctx, svc, tenantID, teacher.ID, admin.ID, copiesByTitle["Sapiens: Riwayat Singkat Umat Manusia"], false); err != nil {
+		return fmt.Errorf("fully checked out loan: %w", err)
 	}
 
 	for _, v := range []db.User{student, teacher} {

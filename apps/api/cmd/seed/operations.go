@@ -27,7 +27,15 @@ const (
 	periodTemplateName = "Reguler"
 	demoClassName      = "X-A"
 	demoSubjectCode    = "MAT"
-	schoolDaysPerWeek  = 5
+	// schoolDaysPerWeek is 7, not the usual 5, so this demo/dev tenant is
+	// always "in session": the e2e simulation (apps/web/e2e/simulation)
+	// runs whatever day someone happens to trigger it, including a
+	// weekend, and both the attendance session list and the exit-permit/
+	// late-arrival flows need at least one school day with a live
+	// timetable to exist "today" regardless of that. A real school's own
+	// tenant is unaffected -- this only shapes cmd/seed's own synthetic
+	// calendar.
+	schoolDaysPerWeek = 7
 )
 
 type periodSeed struct {
@@ -67,6 +75,7 @@ var subjectSeeds = []struct{ code, name string }{
 // timetable block on each school day.
 func seedOperations(ctx context.Context, pool *pgxpool.Pool, q *db.Queries, tenantID, yearID uuid.UUID, users map[string]db.User, logger *slog.Logger) error {
 	teacher, student := users["guru"], users["siswa"]
+	student2 := users["siswa2"]
 	academicSvc := academic.Register(pool, clock.Real{}).Service
 	schedulingSvc := scheduling.Register(pool, events.NewBus(), nil).Service
 
@@ -96,11 +105,36 @@ func seedOperations(ctx context.Context, pool *pgxpool.Pool, q *db.Queries, tena
 	if err := ensureEnrollment(ctx, academicSvc, tenantID, yearID, student.ID, class.ID); err != nil {
 		return err
 	}
+	if student2.ID != uuid.Nil {
+		if err := ensureEnrollment(ctx, academicSvc, tenantID, yearID, student2.ID, class.ID); err != nil {
+			return err
+		}
+	}
 	if err := ensureHomeroom(ctx, q, academicSvc, tenantID, yearID, teacher.ID, class); err != nil {
 		return err
 	}
-	if err := ensureDuty(ctx, q, tenantID, yearID, users["gurubk"].ID, "counselor", uuid.NullUUID{}); err != nil {
-		return err
+	// Duty holders the multi-actor simulation (apps/web/e2e/simulation)
+	// needs one account per stage/screen for: counselor and homeroom
+	// review the leave-request chain, picket/counselor/leadership review
+	// the exit-permit chain (seedWorkflowDefinitions below trims that
+	// chain to just these three duty-scoped stages), security scans the
+	// gate, and librarian staffs the library desk.
+	for _, d := range []struct {
+		username, slug string
+	}{
+		{"gurubk", "counselor"},
+		{"gurupiket", "picket"},
+		{"wakepsek", "leadership"},
+		{"satpam", "security"},
+		{"pustakawan", "librarian"},
+	} {
+		user, ok := users[d.username]
+		if !ok {
+			continue
+		}
+		if err := ensureDuty(ctx, q, tenantID, yearID, user.ID, d.slug, uuid.NullUUID{}); err != nil {
+			return err
+		}
 	}
 	if err := ensureTeaching(ctx, academicSvc, tenantID, yearID, teacher.ID, subjects[demoSubjectCode].ID, class.ID); err != nil {
 		return err
@@ -315,8 +349,14 @@ func ensureTeaching(ctx context.Context, svc *academicservice.Service, tenantID,
 	return nil
 }
 
-// ensureTimetable gives the teacher a two-period mathematics block in X-A
-// on every school day so "today's schedule" is never empty in the demo.
+// ensureTimetable gives the teacher a mathematics block spanning every
+// lesson period of the day (Jam 1 to the last lesson period, breaks
+// excluded) in X-A on every school day, so "today's schedule" is never
+// empty in the demo and the "currently in session" window the admin
+// dashboard's attendance-progress figure depends on
+// (attendance/service/monitor.go's ListCurrentPeriodScheduleCards) covers
+// the whole school day, not just its first 90 minutes -- the e2e
+// simulation (apps/web/e2e/simulation) can then run at any daytime hour.
 func ensureTimetable(ctx context.Context, svc *schedulingservice.Service, tenantID, yearID, teacherID, subjectID, classID uuid.UUID, periods []academicdomain.Period) error {
 	existing, err := svc.ListByTeacher(ctx, tenantID, yearID, teacherID)
 	if err != nil {
@@ -325,13 +365,10 @@ func ensureTimetable(ctx context.Context, svc *schedulingservice.Service, tenant
 	if len(existing) > 0 {
 		return nil
 	}
-	lessons := make([]academicdomain.Period, 0, 2)
+	lessons := make([]academicdomain.Period, 0, len(periods))
 	for _, p := range periods {
 		if !p.IsBreak {
 			lessons = append(lessons, p)
-		}
-		if len(lessons) == 2 {
-			break
 		}
 	}
 	if len(lessons) < 2 {
@@ -341,7 +378,7 @@ func ensureTimetable(ctx context.Context, svc *schedulingservice.Service, tenant
 	for dow := int16(1); dow <= schoolDaysPerWeek; dow++ {
 		_, err := svc.CreateSchedule(ctx, tenantID, schedulingservice.ScheduleInput{
 			AcademicYearID: yearID, ClassID: classID, SubjectID: subjectID, TeacherUserID: teacherID,
-			DayOfWeek: dow, StartPeriodID: lessons[0].ID, EndPeriodID: lessons[1].ID, Source: schedulingdomain.SourceAdmin,
+			DayOfWeek: dow, StartPeriodID: lessons[0].ID, EndPeriodID: lessons[len(lessons)-1].ID, Source: schedulingdomain.SourceAdmin,
 		}, actor)
 		if err != nil {
 			return fmt.Errorf("create schedule for weekday %d: %w", dow, err)
