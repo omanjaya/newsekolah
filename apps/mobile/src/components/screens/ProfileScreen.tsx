@@ -1,4 +1,4 @@
-import { ScrollView, Text, View } from "react-native";
+import { Alert, ScrollView, Text, View } from "react-native";
 import { router } from "expo-router";
 import { useSessions, useRevokeSession } from "@newsekolah/api-client/react";
 import { Smartphone } from "lucide-react-native";
@@ -43,9 +43,25 @@ export function ProfileScreen(): React.JSX.Element {
   }
 
   function revoke(sessionId: string): void {
-    revokeMutation.mutate(sessionId, {
-      onError: () => showToast(tShared("common.states.error"), "error"),
-    });
+    // Ends another device's session -- confirm first, same as web's
+    // sessions-table.tsx ConfirmDialog.
+    Alert.alert(
+      tShared("auth.sessions.revokeConfirmTitle"),
+      tShared("auth.sessions.revokeConfirmBody"),
+      [
+        { text: t("common.no"), style: "cancel" },
+        {
+          text: tShared("auth.sessions.revoke"),
+          style: "destructive",
+          onPress: () => {
+            revokeMutation.mutate(sessionId, {
+              onSuccess: () => showToast(t("profile.revoke_success"), "success"),
+              // Error feedback comes from the mutation cache default now.
+            });
+          },
+        },
+      ],
+    );
   }
 
   return (

@@ -28,7 +28,6 @@ import {
   useTodaySessions,
   useUnreadCount,
 } from "@/lib/api/hooks";
-import { showToast } from "@/components/ui/Toast";
 import { t } from "@/i18n/t";
 
 function Section({
@@ -122,7 +121,6 @@ export function HomeScreen(): React.JSX.Element {
                                 pathname: "/attendance/[sessionId]",
                                 params: { sessionId: detail.id },
                               }),
-                            onError: () => showToast(t("common.error"), "error"),
                           },
                         );
                       }}

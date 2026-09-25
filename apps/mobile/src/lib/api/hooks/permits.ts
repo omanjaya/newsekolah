@@ -5,6 +5,7 @@ import { ApiError, queryKeys } from "@newsekolah/api-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getApiClient } from "@/lib/api/client";
 import { useLiveInvalidate } from "@/lib/realtime";
+import { t } from "@/i18n/t";
 import type { LeaveCategory, ScanPurpose } from "./types";
 
 /**
@@ -36,10 +37,18 @@ export function useIssueScanToken() {
   });
 }
 
+// Every hook below through useScanGate is called from exactly one place
+// (app/scan.tsx's `act()`), which already wraps all of them in one
+// try/catch with its own per-action success message and a shared,
+// deliberately generic failure one -- errorToast: false so the mutation
+// cache's own (also generic, since a scanned QR rarely carries a specific
+// ApiError code worth surfacing) default does not show a second toast on
+// top of that.
 export function useScanClassroomEntry() {
   return useMutation({
     mutationFn: (token: string) =>
       getApiClient().POST("/v1/classroom-entry/scan", { body: { token } }),
+    meta: { errorToast: false },
   });
 }
 
@@ -69,6 +78,7 @@ export function useCreateExitPermit() {
     mutationFn: (body: { destination: string; start_period_id: string; end_period_id: string }) =>
       getApiClient().POST("/v1/exit-permits", { body }),
     onSuccess: invalidate,
+    meta: { successMessage: t("permits.created") },
   });
 }
 
@@ -81,6 +91,7 @@ export function useScanExitPermitStage() {
         body: { token },
       }),
     onSuccess: invalidate,
+    meta: { errorToast: false }, // app/scan.tsx, see useScanClassroomEntry's comment
   });
 }
 
@@ -92,6 +103,7 @@ export function useCancelExitPermit() {
         params: { path: { instanceId: id } },
       }),
     onSuccess: invalidate,
+    meta: { successMessage: t("permits.cancelled") },
   });
 }
 
@@ -113,6 +125,7 @@ export function useScanGate() {
         body: { token },
       }),
     onSuccess: invalidate,
+    meta: { errorToast: false }, // app/scan.tsx, see useScanClassroomEntry's comment
   });
 }
 
@@ -140,6 +153,7 @@ export function useOpenLateArrival() {
     mutationFn: (body: { token: string; reason?: string }) =>
       getApiClient().POST("/v1/late-arrivals/open", { body }),
     onSuccess: invalidate,
+    meta: { errorToast: false }, // app/scan.tsx, see useScanClassroomEntry's comment
   });
 }
 
@@ -152,6 +166,7 @@ export function useScanLateArrivalStage() {
         body: { token },
       }),
     onSuccess: invalidate,
+    meta: { errorToast: false }, // app/scan.tsx, see useScanClassroomEntry's comment
   });
 }
 
@@ -186,5 +201,6 @@ export function useSubmitLeaveRequest() {
       ends_on: string;
     }) => getApiClient().POST("/v1/leave-requests", { body }),
     onSuccess: invalidate,
+    meta: { successMessage: t("leave.sent") },
   });
 }

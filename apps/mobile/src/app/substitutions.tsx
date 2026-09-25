@@ -5,7 +5,6 @@ import { ScreenHeader } from "@/components/ui/ScreenHeader";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { showToast } from "@/components/ui/Toast";
 import {
   useCancelSubstitution,
   useClasses,
@@ -104,23 +103,13 @@ function SubstitutionRow({
           <Button
             label={t("substitution.accept")}
             loading={respond.isPending}
-            onPress={() =>
-              respond.mutate(
-                { id: item.id, accept: true },
-                { onError: () => showToast(t("common.error"), "error") },
-              )
-            }
+            onPress={() => respond.mutate({ id: item.id, accept: true })}
           />
           <Button
             label={t("substitution.decline")}
             variant="secondary"
             loading={respond.isPending}
-            onPress={() =>
-              respond.mutate(
-                { id: item.id, accept: false },
-                { onError: () => showToast(t("common.error"), "error") },
-              )
-            }
+            onPress={() => respond.mutate({ id: item.id, accept: false })}
           />
         </View>
       ) : null}
@@ -129,9 +118,7 @@ function SubstitutionRow({
           label={t("permits.cancel")}
           variant="ghost"
           loading={cancel.isPending}
-          onPress={() =>
-            cancel.mutate(item.id, { onError: () => showToast(t("common.error"), "error") })
-          }
+          onPress={() => cancel.mutate(item.id)}
         />
       ) : null}
     </View>
@@ -290,13 +277,7 @@ function SubstitutionForm({
                 substitute_user_id: substitute?.id ?? "",
                 ...(note.trim() ? { note: note.trim() } : {}),
               },
-              {
-                onSuccess: () => {
-                  showToast(t("substitution.sent"), "success");
-                  onDone();
-                },
-                onError: () => showToast(t("common.error"), "error"),
-              },
+              { onSuccess: onDone },
             )
           }
         />

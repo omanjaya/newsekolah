@@ -5,7 +5,6 @@ import { ScreenHeader } from "@/components/ui/ScreenHeader";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { showToast } from "@/components/ui/Toast";
 import { WorkflowSteps } from "@/components/screens/WorkflowSteps";
 import {
   useLeaveRequest,
@@ -156,13 +155,7 @@ function LeaveForm({
           onPress={() =>
             submit.mutate(
               { category, reason: reason.trim(), starts_on: startsOn, ends_on: endsOn },
-              {
-                onSuccess: (d) => {
-                  showToast(t("leave.sent"), "success");
-                  onDone(d.instance.id);
-                },
-                onError: () => showToast(t("common.error"), "error"),
-              },
+              { onSuccess: (d) => onDone(d.instance.id) },
             )
           }
         />

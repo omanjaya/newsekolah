@@ -20,7 +20,7 @@ jest.mock("@/lib/api/auth-redirect-flag", () => ({
 import { createMutationCache } from "@/lib/api/mutation-cache";
 
 function mutationWithMeta(meta?: { successMessage?: string; errorToast?: false }) {
-  return { meta } as Mutation;
+  return { meta } as Mutation<unknown, unknown>;
 }
 
 describe("createMutationCache (mobile)", () => {

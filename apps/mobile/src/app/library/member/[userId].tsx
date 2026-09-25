@@ -6,7 +6,6 @@ import { ScreenHeader } from "@/components/ui/ScreenHeader";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { showToast } from "@/components/ui/Toast";
 import { useLibraryTitle, useMemberLoans, useResolveCopyBarcode } from "@/lib/api/hooks";
 import type { LibraryLoan } from "@/lib/api/hooks";
 import { t } from "@/i18n/t";
@@ -36,7 +35,8 @@ function LoanRow({ loan }: { loan: LibraryLoan }): React.JSX.Element {
         params: { mode: "library_return", loanId: loan.id, expectedBarcode: barcode },
       });
     } catch {
-      showToast(t("common.error"), "error");
+      // Error feedback comes from the mutation cache default now; this
+      // only needs to stop the navigation above.
     }
   }
 

@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/Button";
 import { ListRow } from "@/components/ui/ListRow";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { showToast } from "@/components/ui/Toast";
 import { useLibraryStocktakes, useStartStocktake } from "@/lib/api/hooks";
 import { t } from "@/i18n/t";
 
@@ -31,7 +30,6 @@ export default function LibraryOpnameListRoute(): React.JSX.Element {
           setName("");
           router.push(`/library/opname/${created.id}`);
         },
-        onError: () => showToast(t("common.error"), "error"),
       },
     );
   }

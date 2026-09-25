@@ -3,6 +3,7 @@ import { queryKeys } from "@newsekolah/api-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getApiClient } from "@/lib/api/client";
 import { useActiveYearId } from "./reference";
+import { t } from "@/i18n/t";
 import type { JournalWriteRequest, SubstitutionCreateRequest } from "./types";
 
 // Journals: a teacher's own class/subject/day log, independent of the
@@ -27,6 +28,7 @@ export function useUpsertJournal() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["journals"] });
     },
+    meta: { successMessage: t("journal.saved") },
   });
 }
 
@@ -38,6 +40,7 @@ export function useDeleteJournal() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["journals"] });
     },
+    meta: { successMessage: t("journal.deleted") },
   });
 }
 
@@ -64,6 +67,7 @@ export function useCreateSubstitution() {
     mutationFn: (body: SubstitutionCreateRequest) =>
       getApiClient().POST("/v1/substitutions", { body }),
     onSuccess: invalidate,
+    meta: { successMessage: t("substitution.sent") },
   });
 }
 
@@ -76,6 +80,8 @@ export function useRespondSubstitution() {
         body: { accept, ...(note ? { note } : {}) },
       }),
     onSuccess: invalidate,
+    // Previously showed nothing at all on success (docs/analysis/feedback-audit-2026-09-25.md).
+    meta: { successMessage: t("substitution.responded") },
   });
 }
 
@@ -87,5 +93,7 @@ export function useCancelSubstitution() {
         params: { path: { substitutionId: id } },
       }),
     onSuccess: invalidate,
+    // Previously showed nothing at all on success (docs/analysis/feedback-audit-2026-09-25.md).
+    meta: { successMessage: t("substitution.request_cancelled") },
   });
 }
