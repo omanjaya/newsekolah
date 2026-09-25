@@ -78,6 +78,7 @@ func TestPrincipalRoleDefault(t *testing.T) {
 			PermViewAcademicData,
 			PermViewAuditLogs,
 			PermPublishAnnouncements,
+			PermViewGrades,
 		} {
 			if !containsCode(rd.Permissions, required) {
 				t.Errorf("principal role default must include %q", required)
@@ -86,4 +87,41 @@ func TestPrincipalRoleDefault(t *testing.T) {
 		return
 	}
 	t.Fatal("principal is not in RoleDefaults()")
+}
+
+// TestTeacherRoleDefaultIncludesViewGrades proves manage_grades implies
+// view_grades: a teacher who can edit grades must also be able to just
+// read them (the read-only split, e.g. the gradebook/e-Rapor endpoints
+// switched from manage_grades to view_grades in openapi/modules/
+// grading.yaml), so introducing view_grades never removes read access
+// from a role that already had it through manage_grades.
+func TestTeacherRoleDefaultIncludesViewGrades(t *testing.T) {
+	for _, rd := range RoleDefaults() {
+		if rd.Slug != RoleSlugTeacher {
+			continue
+		}
+		if !containsCode(rd.Permissions, PermManageGrades) {
+			t.Fatal("teacher role default must include manage_grades (test assumption broke)")
+		}
+		if !containsCode(rd.Permissions, PermViewGrades) {
+			t.Fatal("teacher role default must include view_grades alongside manage_grades")
+		}
+		return
+	}
+	t.Fatal("teacher is not in RoleDefaults()")
+}
+
+// TestEveryRoleHoldingManageGradesAlsoHoldsViewGrades generalises the
+// teacher-specific check above across every system role RoleDefaults()
+// returns, so a future role gaining manage_grades cannot forget the
+// read-only counterpart.
+func TestEveryRoleHoldingManageGradesAlsoHoldsViewGrades(t *testing.T) {
+	for _, rd := range RoleDefaults() {
+		if !containsCode(rd.Permissions, PermManageGrades) {
+			continue
+		}
+		if !containsCode(rd.Permissions, PermViewGrades) {
+			t.Errorf("role %q holds manage_grades but not view_grades", rd.Slug)
+		}
+	}
 }

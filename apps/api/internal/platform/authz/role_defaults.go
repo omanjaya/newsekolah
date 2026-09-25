@@ -38,7 +38,11 @@ func RoleDefaults() []RoleDefault {
 		{RoleSlugTeacher, "Guru", []string{
 			PermViewDashboard, PermViewAnnouncements, PermViewSchedules, PermViewAcademicData,
 			PermViewAttendance, PermManageAttendance, PermViewNotifications,
-			PermManageGrades, PermViewLibrary, PermViewOwnLibraryLoans, PermIssueScanTokens,
+			// PermViewGrades rides alongside PermManageGrades: every role
+			// that can edit grades can also just read them (the read-only
+			// permission is additive, never a downgrade -- see its
+			// migration, 0121_grading_view_grades_permission.up.sql).
+			PermManageGrades, PermViewGrades, PermViewLibrary, PermViewOwnLibraryLoans, PermIssueScanTokens,
 			PermCreateAnnouncements, PermEditAnnouncements, PermPublishAnnouncements,
 			PermViewDiscipline, PermRecordViolations, PermViewEarlyWarning,
 		}},
@@ -160,6 +164,17 @@ func RoleDefaults() []RoleDefault {
 			PermViewSupervision, PermManageSupervision,
 
 			PermViewVisitors, PermViewVisitorIncidents, PermViewVisitorReports, // not manage_visitors/manage_visitor_incidents (gate/front-desk operations)
+
+			// Grading: view_grades is the read-only split the exclusion note
+			// below used to flag as missing -- the gradebook, report
+			// scores/report cards, grade ranges, TP mappings and the e-Rapor
+			// exports all now accept it (openapi/modules/grading.yaml),
+			// scoped school-wide the same way view_reports already scopes
+			// attendance for this role (grading/transport/http/handler.go's
+			// canViewAny). Never manage_grades: that still edits every
+			// score, component, weight and publication, which stays an
+			// operator-only action.
+			PermViewGrades,
 		}},
 		// Deliberately excluded from every entry above, as a group:
 		//   - manage_settings, manage_permissions, manage_master_data,
@@ -170,14 +185,13 @@ func RoleDefaults() []RoleDefault {
 		//     through view_staff_attendance, view_academic_data (teaching
 		//     assignments/rosters) and view_journals_all, just not the raw
 		//     account-management screen.
-		//   - manage_grades / view_own_grades: no read-only "view grades"
-		//     permission exists in the catalog (openapi/modules/grading.yaml
-		//     gates the gradebook, the class-subject report and the
-		//     reports-catalogue KindGradingReport all behind manage_grades,
-		//     which also edits every score); granting it to see grades would
-		//     also grant editing them, which the product brief explicitly
-		//     excludes. Same class of gap as counseling/mentoring above --
-		//     flagged in the report as missing a view_grades split.
+		//   - manage_grades / view_own_grades: manage_grades still edits
+		//     every score, component, weight and publication, which stays
+		//     an operator-only action; view_own_grades is the student's
+		//     own permission, not an oversight one. The principal instead
+		//     gets view_grades above -- the read-only split this comment
+		//     used to flag as a gap (see grading.yaml and the migration
+		//     that backfilled it for existing tenants).
 		//   - review_leave_requests, issue_leave_letters,
 		//     approve_child_leave_requests, submit_leave_requests,
 		//     issue_scan_tokens, scan_exit_permits, manage_workflows: every
