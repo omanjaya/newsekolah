@@ -15,7 +15,7 @@ export async function GET(): Promise<Response> {
   const branding = await getTenantBrandingServer();
   const name = branding?.name ?? PRODUCT_NAME_FALLBACK;
   const shortName = branding?.short_name ?? name.slice(0, 12);
-  const accentColor = branding?.accent_color ?? "#1F3A5F";
+  const accentColor = branding?.accent_color ?? "#0F7A5F";
 
   const icons = branding?.logo_url
     ? [{ src: branding.logo_url, sizes: "any", type: "image/png", purpose: "any" }]
@@ -34,7 +34,7 @@ export async function GET(): Promise<Response> {
     scope: "/",
     display: "standalone",
     lang: branding?.locale ?? "id",
-    background_color: "#F7F6F3",
+    background_color: "#F7F6F2",
     theme_color: accentColor,
     icons,
   };

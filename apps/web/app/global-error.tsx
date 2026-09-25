@@ -32,14 +32,14 @@ export default function GlobalError({
           alignItems: "center",
           justifyContent: "center",
           fontFamily:
-            "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
-          backgroundColor: "#F7F6F3",
-          color: "#333333",
+            "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
+          backgroundColor: "#F7F6F2",
+          color: "#1B1D1A",
         }}
       >
         <div style={{ maxWidth: 360, textAlign: "center", padding: 24 }}>
           <p style={{ fontSize: 16, fontWeight: 500, margin: "0 0 8px" }}>Aplikasi gagal dimuat</p>
-          <p style={{ fontSize: 13, color: "#635F57", margin: "0 0 16px" }}>
+          <p style={{ fontSize: 13, color: "#5E625B", margin: "0 0 16px" }}>
             Coba muat ulang halaman. Bila terus terjadi, hubungi dukungan sekolah.
             {error.digest ? ` Kode: ${error.digest}` : ""}
           </p>
@@ -49,9 +49,9 @@ export default function GlobalError({
             style={{
               height: 40,
               padding: "0 16px",
-              borderRadius: 8,
+              borderRadius: 14,
               border: "none",
-              backgroundColor: "#1F3A5F",
+              backgroundColor: "#0F7A5F",
               color: "#FFFFFF",
               fontSize: 13,
               fontWeight: 500,

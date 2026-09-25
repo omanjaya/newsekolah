@@ -13,6 +13,7 @@ import { getTenantBrandingServer } from "../lib/tenant/get-branding.server";
 import { PRODUCT_NAME_FALLBACK } from "../lib/tenant/tenant-provider";
 import { getThemeBootstrapScript } from "../lib/theme/theme-script";
 
+import { manrope, plusJakartaSans } from "./fonts";
 import { AppProviders } from "./providers";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -36,7 +37,7 @@ export function generateViewport(): Viewport {
   return {
     width: "device-width",
     initialScale: 1,
-    themeColor: "#F7F6F3",
+    themeColor: "#F7F6F2",
   };
 }
 
@@ -54,7 +55,11 @@ export default async function RootLayout({
   const nonce = (await headers()).get("x-nonce") ?? undefined;
 
   return (
-    <html lang={locale} suppressHydrationWarning>
+    <html
+      lang={locale}
+      className={`${manrope.variable} ${plusJakartaSans.variable}`}
+      suppressHydrationWarning
+    >
       <head>
         {/* Sets data-theme before paint from localStorage, so a forced light/dark
             choice never flashes the system theme first (see lib/theme/theme-script.ts). */}

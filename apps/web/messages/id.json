@@ -308,7 +308,7 @@
         "taglinePlaceholder": "Kalimat pendek di bawah nama sekolah",
         "accentColorLabel": "Warna aksen",
         "accentColorHint": "Dipakai untuk tombol utama, tautan, dan fokus di seluruh aplikasi.",
-        "accentColorError": "Warna aksen harus kode heksadesimal 6 digit, contoh #1F3A5F.",
+        "accentColorError": "Warna aksen harus kode heksadesimal 6 digit, contoh #0F7A5F.",
         "saved": "Perubahan merek tersimpan",
         "save": "Simpan perubahan",
         "logo": {

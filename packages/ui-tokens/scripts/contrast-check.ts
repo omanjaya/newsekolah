@@ -1,13 +1,13 @@
 // Asserts the token palette meets WCAG 2.x AA before it ships: 4.5:1 for
-// text/background pairs, 3:1 for status colors used as non-text indicators
-// against a surface. Run via `pnpm test` (see package.json) and standalone
-// via `pnpm contrast-check`. See docs/09-tech-stack.md and DESIGN.md for the
-// source palette; wcag-contrast.js implements the contrast formula.
+// text/background pairs, 3:1 for status/category colors used as non-text
+// indicators against a surface. Run via `pnpm test` (see package.json) and
+// standalone via `pnpm contrast-check`. See docs/07-ui-ux.md ("Hijau Segar")
+// for the source palette; wcag-contrast.js implements the contrast formula.
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import type { StatusName, TokensSource } from "./types.js";
+import type { CategoryName, StatusName, TokensSource } from "./types.js";
 import { AA_NON_TEXT, AA_NORMAL_TEXT, contrastRatio } from "./wcag-contrast.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -23,6 +23,7 @@ interface Check {
 }
 
 const STATUS_ORDER: StatusName[] = ["present", "sick", "excused", "dispensation", "absent", "late"];
+const CATEGORY_ORDER: CategoryName[] = ["green", "amber", "purple", "blue", "red"];
 
 function buildChecks(): Check[] {
   const checks: Check[] = [];
@@ -58,7 +59,60 @@ function buildChecks(): Check[] {
         background: theme.accent,
         minimum: AA_NORMAL_TEXT,
       },
+      {
+        label: `${themeName}: accent on bg (icon/link, non-text)`,
+        foreground: theme.accent,
+        background: theme.bg,
+        minimum: AA_NON_TEXT,
+      },
+      {
+        label: `${themeName}: accent on surface (icon/link, non-text)`,
+        foreground: theme.accent,
+        background: theme.surface,
+        minimum: AA_NON_TEXT,
+      },
+      {
+        label: `${themeName}: accent-soft-fg on accent-soft (text on tint)`,
+        foreground: theme.accentSoftFg,
+        background: theme.accentSoft,
+        minimum: AA_NORMAL_TEXT,
+      },
+      {
+        label: `${themeName}: accent-fg on accent-strong (button hover/pressed)`,
+        foreground: theme.accentFg,
+        background: theme.accentStrong,
+        minimum: AA_NORMAL_TEXT,
+      },
     );
+    for (const name of CATEGORY_ORDER) {
+      const category = theme.category[name];
+      checks.push(
+        {
+          label: `${themeName}: category ${name} fg on bg (icon, non-text)`,
+          foreground: category.fg,
+          background: theme.bg,
+          minimum: AA_NON_TEXT,
+        },
+        {
+          label: `${themeName}: category ${name} fg on surface (icon, non-text)`,
+          foreground: category.fg,
+          background: theme.surface,
+          minimum: AA_NON_TEXT,
+        },
+        {
+          label: `${themeName}: category ${name} fg on surface (as text/link)`,
+          foreground: category.fg,
+          background: theme.surface,
+          minimum: AA_NORMAL_TEXT,
+        },
+        {
+          label: `${themeName}: category ${name} soft-fg on soft (text on tint)`,
+          foreground: category.softFg,
+          background: category.soft,
+          minimum: AA_NORMAL_TEXT,
+        },
+      );
+    }
     for (const name of STATUS_ORDER) {
       const status = theme.status[name];
       checks.push(

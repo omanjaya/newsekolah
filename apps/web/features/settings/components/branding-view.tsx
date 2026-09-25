@@ -135,7 +135,7 @@ function BrandingForm({ initial }: { initial: TenantBranding }): ReactElement {
             <div className="flex items-center gap-2">
               <input
                 type="color"
-                value={ACCENT_PATTERN.test(accentColor) ? accentColor : "#1f3a5f"}
+                value={ACCENT_PATTERN.test(accentColor) ? accentColor : "#0f7a5f"}
                 onChange={(e) => {
                   setAccentColor(e.target.value);
                 }}
@@ -147,7 +147,7 @@ function BrandingForm({ initial }: { initial: TenantBranding }): ReactElement {
                 onChange={(e) => {
                   setAccentColor(e.target.value);
                 }}
-                placeholder="#1F3A5F"
+                placeholder="#0F7A5F"
                 className="w-32"
               />
             </div>

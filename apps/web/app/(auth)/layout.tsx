@@ -112,7 +112,7 @@ export default function AuthLayout({ children }: { children: ReactNode }): React
           <div className="mb-8 flex justify-center lg:hidden">
             <TenantBrand />
           </div>
-          <div className="rounded-xl border border-border bg-surface p-8 shadow-[0_24px_70px_-32px_rgba(0,0,0,0.35)] sm:p-10">
+          <div className="rounded-lg border border-border bg-surface p-8 shadow-[0_24px_70px_-32px_rgba(0,0,0,0.35)] sm:p-10">
             {children}
           </div>
         </div>
