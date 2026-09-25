@@ -23,9 +23,11 @@ services:
     ports:
       - "127.0.0.1:3011:3000"
 
-  # quay.io mirrors of the MinIO images: Docker Hub rate-limits anonymous
-  # pulls, which a shared VPS running several projects' compose stacks can
-  # hit during `docker compose pull`/`build`. Functionally identical images.
+  # The base file already points at the community-maintained pgsty/silo and
+  # pgsty/mc images (neither Docker Hub's minio/minio nor the now-archived,
+  # license-gated quay.io/minio/* images serve a usable free image any
+  # more); the image lines here just keep this override in sync with the
+  # base file explicitly rather than relying on it silently.
   #
   # Also published on loopback: presigned URLs are signed for
   # S3_PUBLIC_ENDPOINT (infra/README.md "Object storage through the shared
@@ -35,12 +37,12 @@ services:
   # 9011 is arbitrary; pick any free loopback port and match it in both the
   # system Caddy vhost and this line.
   minio:
-    image: quay.io/minio/minio:latest
+    image: docker.io/pgsty/silo:latest
     ports:
       - "127.0.0.1:9011:9000"
 
   minio-init:
-    image: quay.io/minio/mc:latest
+    image: docker.io/pgsty/mc:latest
 
   # The bundled caddy service assumes it owns ports 80/443 on the host,
   # which is false here (the system Caddy already does). Moving it behind a
