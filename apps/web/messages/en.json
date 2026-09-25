@@ -1047,6 +1047,7 @@
           "evidence": "Evidence (optional)",
           "evidenceAdd": "Take or upload an evidence photo",
           "evidenceRemove": "Remove selected evidence",
+          "evidenceCompressed": "Compressed to {size}",
           "evidenceHint": "Doctor's note, invitation, or other evidence. Can also be attached later from the detail screen.",
           "evidenceUploadFailed": "Request sent, but the evidence upload failed. Try again from the detail screen.",
           "requiredError": "Dates and details are required.",

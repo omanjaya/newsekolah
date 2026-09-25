@@ -10,6 +10,7 @@ import type { ChangeEvent, ReactElement } from "react";
 import { useRef } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { compressImage } from "../../../lib/media/compress-image";
 import { useSession } from "../../../lib/session/session-provider";
 import {
   COUNSELING_ATTACHMENT_MAX_BYTES,
@@ -18,6 +19,11 @@ import {
   useCounselingAttachmentsQuery,
   useUploadCounselingAttachmentMutation,
 } from "../api";
+
+// Matches leave-request evidence and violation attachments: apps/api's
+// reencodeAttachmentImage only decodes JPEG/PNG, so the compressed output
+// must stay JPEG (the default compressImage produces) rather than WebP.
+const ATTACHMENT_MAX_LONG_EDGE = 1600;
 
 /**
  * Attachments on one counseling note: JPEG or PNG up to 10 MB, uploaded
@@ -45,7 +51,7 @@ export function CounselingAttachments({
 
   const items = attachments.data?.data ?? [];
 
-  function handleFile(e: ChangeEvent<HTMLInputElement>) {
+  async function handleFile(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
@@ -53,12 +59,19 @@ export function CounselingAttachments({
       toast.error(t("invalidType"));
       return;
     }
-    if (file.size > COUNSELING_ATTACHMENT_MAX_BYTES) {
+    // The size check runs after compression, not before: a phone photo
+    // routinely starts well above the limit and compressImage brings it
+    // back under it, so rejecting on the original's size here would
+    // block uploads compression was meant to rescue.
+    const { file: attachment } = await compressImage(file, {
+      maxLongEdge: ATTACHMENT_MAX_LONG_EDGE,
+    });
+    if (attachment.size > COUNSELING_ATTACHMENT_MAX_BYTES) {
       toast.error(t("tooLarge"));
       return;
     }
     upload.mutate(
-      { counselingId, file },
+      { counselingId, file: attachment },
       {
         onSuccess: () => {
           toast.success(t("uploaded"));
@@ -111,7 +124,9 @@ export function CounselingAttachments({
           type="file"
           accept="image/jpeg,image/png"
           className="hidden"
-          onChange={handleFile}
+          onChange={(e) => {
+            void handleFile(e);
+          }}
         />
       </div>
       {items.length === 0 ? (

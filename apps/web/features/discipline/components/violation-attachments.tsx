@@ -8,6 +8,7 @@ import type { ChangeEvent, ReactElement } from "react";
 import { useEffect, useRef, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { compressImage } from "../../../lib/media/compress-image";
 import {
   VIOLATION_ATTACHMENT_MAX_BYTES,
   VIOLATION_ATTACHMENT_MAX_COUNT,
@@ -16,6 +17,11 @@ import {
   useViolationAttachmentUrlMutation,
   useViolationAttachmentsQuery,
 } from "../api-violation-extras";
+
+// apps/api's reencodeAttachmentImage only decodes JPEG/PNG, so the
+// compressed output must stay JPEG (compressImage's default) rather than
+// WebP -- mirrors counseling-attachments and leave-request evidence.
+const ATTACHMENT_MAX_LONG_EDGE = 1600;
 
 /**
  * Photo evidence on one violation record: 1-3 JPEG/PNG photos, uploaded
@@ -72,7 +78,7 @@ export function ViolationAttachments({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- refetch per new attachment id only
   }, [items.map((i) => i.id).join(",")]);
 
-  function handleFile(e: ChangeEvent<HTMLInputElement>) {
+  async function handleFile(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
@@ -80,12 +86,19 @@ export function ViolationAttachments({
       toast.error(t("invalidType"));
       return;
     }
-    if (file.size > VIOLATION_ATTACHMENT_MAX_BYTES) {
+    // The size check runs after compression, not before: a phone photo
+    // routinely starts well above the limit and compressImage brings it
+    // back under it, so rejecting on the original's size here would
+    // block uploads compression was meant to rescue.
+    const { file: attachment } = await compressImage(file, {
+      maxLongEdge: ATTACHMENT_MAX_LONG_EDGE,
+    });
+    if (attachment.size > VIOLATION_ATTACHMENT_MAX_BYTES) {
       toast.error(t("tooLarge"));
       return;
     }
     upload.mutate(
-      { recordId, file },
+      { recordId, file: attachment },
       {
         onSuccess: () => {
           toast.success(t("uploaded"));
@@ -123,7 +136,9 @@ export function ViolationAttachments({
           accept="image/jpeg,image/png"
           capture="environment"
           className="hidden"
-          onChange={handleFile}
+          onChange={(e) => {
+            void handleFile(e);
+          }}
         />
       </div>
       {canUpload && atMax && <p className="text-[13px] text-fg-muted">{t("maxReached")}</p>}

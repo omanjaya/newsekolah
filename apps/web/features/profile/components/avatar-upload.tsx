@@ -8,6 +8,7 @@ import { useRef, useState } from "react";
 
 import { uploadToPresignedUrl } from "../../../lib/api/presigned-upload";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { compressImage } from "../../../lib/media/compress-image";
 import { useSession } from "../../../lib/session/session-provider";
 import { useConfirmAvatarUploadMutation, useRequestAvatarUploadMutation } from "../api";
 
@@ -17,6 +18,10 @@ import { useConfirmAvatarUploadMutation, useRequestAvatarUploadMutation } from "
 // re-validates the uploaded bytes -- this is a courtesy, not the guard.
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_BYTES = 2 * 1024 * 1024;
+// Avatars render as a small circle, so a long edge well below the
+// original photo is plenty -- keeps the presigned PUT small on mobile
+// data without visible quality loss.
+const AVATAR_MAX_LONG_EDGE = 512;
 
 export function AvatarUpload(): ReactElement | null {
   const { me } = useSession();
@@ -41,7 +46,13 @@ export function AvatarUpload(): ReactElement | null {
       toast.error(apiErrorMessage("UPLOAD_INVALID_FILE_TYPE"));
       return;
     }
-    if (file.size > MAX_BYTES) {
+
+    // The size check runs after compression, not before: a phone photo
+    // routinely starts well above MAX_BYTES and compressImage brings it
+    // back under the limit, so rejecting on the original's size here
+    // would block uploads compression was meant to rescue.
+    const { file: upload } = await compressImage(file, { maxLongEdge: AVATAR_MAX_LONG_EDGE });
+    if (upload.size > MAX_BYTES) {
       toast.error(apiErrorMessage("UPLOAD_FILE_TOO_LARGE"));
       return;
     }
@@ -49,7 +60,7 @@ export function AvatarUpload(): ReactElement | null {
     setProgress(0);
     try {
       const target = await requestUpload.mutateAsync();
-      await uploadToPresignedUrl(target.upload_url, file, setProgress);
+      await uploadToPresignedUrl(target.upload_url, upload, setProgress);
       await confirmUpload.mutateAsync(target.object_key);
       toast.success(t("updated"));
     } catch (error) {
