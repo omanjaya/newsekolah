@@ -1,5 +1,6 @@
 "use client";
 
+import { Skeleton } from "@newsekolah/ui";
 import { BookOpen, CalendarCheck, GraduationCap } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ComponentType, ReactElement, ReactNode } from "react";
@@ -16,7 +17,7 @@ import { useTenant } from "../../lib/tenant/tenant-provider";
  * card. On narrow screens the hero drops away and the brand sits above the card.
  */
 export default function AuthLayout({ children }: { children: ReactNode }): ReactElement {
-  const { displayName } = useTenant();
+  const { displayName, isLoading } = useTenant();
   const t = useTranslations("auth.login");
   const initials = initialsFor(displayName);
 
@@ -86,12 +87,18 @@ export default function AuthLayout({ children }: { children: ReactNode }): React
 
         <p className="relative z-10 text-[13px] opacity-70">{t("panelFootnote")}</p>
 
-        <span
-          aria-hidden="true"
-          className="pointer-events-none absolute -bottom-16 -right-6 z-0 select-none text-[280px] font-bold leading-none opacity-[0.06]"
-        >
-          {initials}
-        </span>
+        {/* Decorative watermark of the tenant's initials — left out entirely
+            while branding is loading rather than showing the "SION" fallback's
+            initials first, since a wrong identity flashing here (even faint)
+            is exactly what this layout is meant to avoid. */}
+        {!isLoading && (
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute -bottom-16 -right-6 z-0 select-none text-[280px] font-bold leading-none opacity-[0.06]"
+          >
+            {initials}
+          </span>
+        )}
       </aside>
 
       <main className="relative flex min-h-dvh items-center justify-center overflow-hidden px-6 py-12">
@@ -115,9 +122,21 @@ export default function AuthLayout({ children }: { children: ReactNode }): React
 }
 
 /** Brand lockup for the accent hero: logo chip on a light plate, or the
- * school's initials, next to the name in the hero's foreground colour. */
+ * school's initials, next to the name in the hero's foreground colour.
+ * While branding is loading, renders a same-sized neutral skeleton instead
+ * of the "SION" product-name fallback, so the hero never shows the wrong
+ * school name for a moment before the real one arrives. */
 function BrandLockup({ name }: { name: string }): ReactElement {
-  const { branding } = useTenant();
+  const { branding, isLoading } = useTenant();
+
+  if (isLoading) {
+    return (
+      <div className="relative z-10 flex min-w-0 items-center gap-3">
+        <Skeleton className="size-10 shrink-0 rounded-sm bg-accent-fg/15" />
+        <Skeleton className="h-4 w-32 bg-accent-fg/15" />
+      </div>
+    );
+  }
 
   return (
     <div className="relative z-10 flex min-w-0 items-center gap-3">

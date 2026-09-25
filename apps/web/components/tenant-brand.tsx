@@ -1,3 +1,4 @@
+import { Skeleton } from "@newsekolah/ui";
 import type { ReactElement } from "react";
 
 import { initialsFor } from "../lib/tenant/initials";
@@ -10,6 +11,11 @@ import { useTenant } from "../lib/tenant/tenant-provider";
  * see docs/05 section 9's promotion rule). Falls back to a generated
  * initials mark, matching the manifest icon fallback in
  * app/branding-icon/route.ts, so the two never disagree.
+ *
+ * While branding is still loading, this renders a neutral skeleton at the
+ * same footprint instead of the "SION" product-name fallback — otherwise
+ * every school briefly flashes the platform name before its own name loads
+ * in (docs/analysis/ux-audit-2026-09-25.md, "Login" finding).
  */
 export function TenantBrand({
   size = "md",
@@ -19,8 +25,17 @@ export function TenantBrand({
   /** Logo only, for the collapsed sidebar rail where there is no room for the name. */
   mark?: boolean;
 }): ReactElement {
-  const { branding, displayName } = useTenant();
+  const { branding, displayName, isLoading } = useTenant();
   const dimension = size === "sm" ? "size-6" : "size-8";
+
+  if (isLoading) {
+    return (
+      <div className="flex min-w-0 items-center gap-2">
+        <Skeleton className={`${dimension} shrink-0 rounded-sm`} />
+        {!mark && <Skeleton className="h-4 w-24" />}
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-w-0 items-center gap-2">
