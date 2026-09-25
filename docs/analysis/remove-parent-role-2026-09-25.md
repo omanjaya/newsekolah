@@ -349,3 +349,50 @@ ter-build lebih dulu, memunculkan puluhan error tambahan
 (masalah urutan build workspace) -- jalankan lewat `pnpm typecheck` di
 root (pakai turbo, yang membangun dependency dulu) untuk sinyal yang
 bersih.
+
+## 9. Mobile (agen lanjutan, sesi 25 Sep 2026)
+
+Bagian mobile dari daftar di atas (bagian 8) sudah dikerjakan, hanya
+`apps/mobile`:
+
+- Dihapus: `src/components/screens/ParentHome.tsx`,
+  `src/app/(parent)/` (seluruh route group), `src/app/children/
+[studentId].tsx`.
+- `src/lib/api/hooks/family.ts`/`types.ts`: hook dan tipe khusus anak
+  tertaut (`useMyChildren`, `useChildAttendance`, `useChildGrades`,
+  `useChildDiscipline`, `LinkedChild`, `ChildCalendarDay`, `ChildGrades`,
+  `ChildDiscipline`) dihapus; `useMyGrades`/`useStarLedger`/
+  `useMyDiscipline` (catatan milik sendiri, dipakai layar nilai/disiplin
+  siswa) **dipertahankan**.
+- `src/lib/auth/roles.ts`: `"parent"` dihapus dari `TAB_GROUP_KINDS` dan
+  `ROLE_SLUG_TO_KIND`. `resolveTabGroups` tidak lagi memaksa fallback ke
+  `"staff"` saat tidak ada kind yang cocok -- bisa mengembalikan array
+  kosong. `resolveDefaultTabGroup` kini bertipe kembalian
+  `ProfileKind | null`, mengembalikan `null` untuk kasus itu (bukan
+  memilih staff secara diam-diam, yang bisa membawa pengguna ke layar
+  yang izinnya tidak ia punya).
+- `src/app/index.tsx`: kasus defensif ditangani lewat `NoHomeScreen` baru
+  (pakai `EmptyState` yang sudah ada, ikon `UserX`, tombol keluar) saat
+  `activeTabGroup` bernilai `null` setelah sign-in -- bukan redirect ke
+  rute yang mungkin tidak valid atau layar kosong.
+- `src/components/screens/ProfileScreen.tsx`: entri `parent` di
+  `HOME_ROUTE_BY_GROUP`/`GROUP_LABEL_KEY` dihapus.
+- `src/i18n/en.json`/`id.json`: `profile.role.parent`,
+  `home.parent_pending_link` (sudah mati sebelum sesi ini, tidak dipakai
+  kode manapun), `home.children`, dan seluruh `children.*` (11 kunci,
+  dipakai eksklusif oleh `ParentHome`/`children/[studentId]` yang sudah
+  dihapus) dihapus; kunci baru `noHome.title`/`noHome.description`
+  ditambahkan untuk `NoHomeScreen`. Kedua katalog tetap sinkron (290 kunci
+  masing-masing).
+- `__tests__/roles.test.ts`: kasus uji yang memakai `profile_kind`/role
+  `parent` diganti (mis. multi-role kini `teacher` + `librarian`); kasus
+  fallback lama ("falls back to staff when nothing resolves") diganti dua
+  kasus baru yang mengharapkan array/​`null` kosong untuk kasus defensif.
+- Terverifikasi: `pnpm --filter @newsekolah/mobile typecheck`, `lint`,
+  `test` (43 test, 5 suite) semua bersih. `grep -rniE
+"parent|orang tua|ortu" apps/mobile/src apps/mobile/app` hanya
+  menyisakan potongan kata "transparent" (`border-transparent`,
+  `bg-transparent`, prop `transparent` React Native `Modal`) -- tidak
+  ada referensi orang tua yang tersisa.
+- Tidak disentuh (di luar cakupan): offline queue (`lib/offline/*`),
+  push (`lib/push/*`), dan alur peran lain (student/teacher/staff).

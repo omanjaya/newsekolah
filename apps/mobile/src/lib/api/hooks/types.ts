@@ -24,10 +24,6 @@ export type JournalWriteRequest = components["schemas"]["JournalWriteRequest"];
 export type Substitution = components["schemas"]["Substitution"];
 export type SubstitutionCreateRequest = components["schemas"]["SubstitutionCreateRequest"];
 export type LateArrivalSummary = components["schemas"]["LateArrivalSummary"];
-export type LinkedChild = components["schemas"]["LinkedChild"];
-export type ChildCalendarDay = components["schemas"]["ChildCalendarDay"];
-export type ChildGrades = components["schemas"]["ChildGrades"];
-export type ChildDiscipline = components["schemas"]["ChildDiscipline"];
 
 export type LibraryTitle = components["schemas"]["LibraryTitle"];
 export type LibraryCopy = components["schemas"]["LibraryCopy"];

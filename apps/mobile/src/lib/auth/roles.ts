@@ -1,21 +1,19 @@
 // Me carries a single `profile_kind` plus a list of granted `roles`. A user
 // can hold roles that belong to more than one tab group (e.g. a teacher who
-// is also a parent), so the app derives every group the account can switch
-// into rather than trusting profile_kind alone. This mapping is mobile-only
-// for now (web has no tab groups); @newsekolah/api-client only provides the
-// `Me`/`Role` shapes, not this derivation.
+// is also a librarian), so the app derives every group the account can
+// switch into rather than trusting profile_kind alone. This mapping is
+// mobile-only for now (web has no tab groups); @newsekolah/api-client only
+// provides the `Me`/`Role` shapes, not this derivation.
 
 import type { Me, ProfileKind, Role } from "@/lib/api/types";
 
-export const TAB_GROUP_KINDS: readonly ProfileKind[] = ["student", "teacher", "staff", "parent"];
+export const TAB_GROUP_KINDS: readonly ProfileKind[] = ["student", "teacher", "staff"];
 
 const ROLE_SLUG_TO_KIND: Record<string, ProfileKind> = {
   student: "student",
   teacher: "teacher",
   homeroom_teacher: "teacher",
   substitute_teacher: "teacher",
-  parent: "parent",
-  guardian: "parent",
   staff: "staff",
   admin: "staff",
   librarian: "staff",
@@ -28,7 +26,10 @@ function kindFromRole(role: Role): ProfileKind | null {
   return ROLE_SLUG_TO_KIND[role.slug] ?? null;
 }
 
-/** Every tab group this account can switch into, most relevant first. */
+/** Every tab group this account can switch into, most relevant first. Can be
+ * empty -- an account whose profile_kind and every role slug are unrecognized
+ * maps to no home; the caller (see app/index.tsx) shows a clear message
+ * instead of guessing a group the account may have no permission for. */
 export function resolveTabGroups(me: Pick<Me, "roles" | "profile_kind">): ProfileKind[] {
   const found = new Set<ProfileKind>();
 
@@ -39,22 +40,21 @@ export function resolveTabGroups(me: Pick<Me, "roles" | "profile_kind">): Profil
     if (kind) found.add(kind);
   }
 
-  if (found.size === 0) found.add("staff");
-
   return TAB_GROUP_KINDS.filter((kind) => found.has(kind));
 }
 
 /** The tab group shown right after login: the primary role's group when it
  * resolves to a known kind, otherwise profile_kind, otherwise the first
- * available group. */
-export function resolveDefaultTabGroup(me: Pick<Me, "roles" | "profile_kind">): ProfileKind {
+ * available group -- or null when nothing resolves at all (see
+ * resolveTabGroups). */
+export function resolveDefaultTabGroup(me: Pick<Me, "roles" | "profile_kind">): ProfileKind | null {
   const groups = resolveTabGroups(me);
   const primaryRole = me.roles.find((role) => role.is_primary);
   const primaryKind = primaryRole ? kindFromRole(primaryRole) : null;
 
   if (primaryKind && groups.includes(primaryKind)) return primaryKind;
   if (me.profile_kind && groups.includes(me.profile_kind)) return me.profile_kind;
-  return groups[0] ?? "staff";
+  return groups[0] ?? null;
 }
 
 export function hasMultipleTabGroups(me: Pick<Me, "roles" | "profile_kind">): boolean {

@@ -1,17 +1,37 @@
 import { useState } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
 import { Redirect } from "expo-router";
-import { Fingerprint } from "lucide-react-native";
+import { Fingerprint, UserX } from "lucide-react-native";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { Button } from "@/components/ui/Button";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { getTenantSlug } from "@/lib/tenant/tenant-store";
+import { t, tShared } from "@/i18n/t";
 
 const HOME_ROUTE_BY_GROUP = {
   student: "/(student)/home",
   teacher: "/(teacher)/home",
   staff: "/(staff)/home",
-  parent: "/(parent)/home",
 } as const;
+
+/** Shown when a signed-in account's roles map to no known tab group -- e.g.
+ * every role granted to it was retired from the product. A clear message
+ * beats a crash from an undefined route or a blank screen. */
+function NoHomeScreen(): React.JSX.Element {
+  const { signOut } = useAuth();
+
+  return (
+    <View className="flex-1 items-center justify-center bg-bg dark:bg-bg-dark">
+      <EmptyState
+        icon={UserX}
+        title={t("noHome.title")}
+        description={t("noHome.description")}
+        actionLabel={tShared("common.actions.logout")}
+        onAction={() => void signOut()}
+      />
+    </View>
+  );
+}
 
 function UnlockScreen(): React.JSX.Element {
   const { unlock } = useAuth();
@@ -61,6 +81,9 @@ export default function Index(): React.JSX.Element {
     return <Redirect href="/(auth)/change-password" />;
   }
 
-  const group = activeTabGroup ?? "staff";
-  return <Redirect href={HOME_ROUTE_BY_GROUP[group]} />;
+  if (!activeTabGroup) {
+    return <NoHomeScreen />;
+  }
+
+  return <Redirect href={HOME_ROUTE_BY_GROUP[activeTabGroup]} />;
 }

@@ -17,17 +17,15 @@ const HOME_ROUTE_BY_GROUP: Record<ProfileKind, string> = {
   student: "/(student)/home",
   teacher: "/(teacher)/home",
   staff: "/(staff)/home",
-  parent: "/(parent)/home",
 };
 
 const GROUP_LABEL_KEY: Record<
   ProfileKind,
-  "profile.role.student" | "profile.role.teacher" | "profile.role.staff" | "profile.role.parent"
+  "profile.role.student" | "profile.role.teacher" | "profile.role.staff"
 > = {
   student: "profile.role.student",
   teacher: "profile.role.teacher",
   staff: "profile.role.staff",
-  parent: "profile.role.parent",
 };
 
 export function ProfileScreen(): React.JSX.Element {
