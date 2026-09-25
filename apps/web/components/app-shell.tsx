@@ -46,10 +46,12 @@ function AppShellBody({ children }: { children: ReactNode }): ReactElement {
   const t = useTranslations("app.shell");
   const pathname = usePathname();
   useNotificationsSocket();
+  const roleSlugs = (me?.roles ?? []).map((role) => role.slug);
   const items = filterNavigation(
     navigation,
     (permission) => me?.permissions.includes(permission) ?? false,
     me?.profile_kind,
+    roleSlugs,
   );
 
   // A page the reader cannot use would otherwise render its own empty
@@ -62,6 +64,7 @@ function AppShellBody({ children }: { children: ReactNode }): ReactElement {
     pathname,
     (permission) => me?.permissions.includes(permission) ?? false,
     me?.profile_kind,
+    roleSlugs,
   );
 
   return (

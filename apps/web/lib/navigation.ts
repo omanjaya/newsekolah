@@ -79,6 +79,18 @@ export interface NavItem {
    * an account the permission alone would still let through.
    */
   excludeProfileKinds?: NavProfileKind[];
+  /**
+   * System role slugs excluded from this item even though it passes the
+   * permission and profile-kind checks -- for a role that shares its
+   * account's `profileKind` with other, unrelated roles (e.g. `librarian`
+   * is seeded with `profile_kind: "staff"`, same as the generic "Pegawai"
+   * staff role and every other staff role), so `excludeProfileKinds`
+   * cannot single it out. Checked against the reader's `me.roles[].slug`;
+   * a reader who holds any other role alongside the excluded one is still
+   * excluded (the item's permission is granted by a role they should not
+   * see this particular screen through).
+   */
+  excludeRoles?: string[];
   /** Shown in the mobile bottom tab bar in addition to the sidebar. */
   showInTabBar?: boolean;
   /**
@@ -179,6 +191,14 @@ export const navigation: NavItem[] = [
     // the reader's own teaching; parents and students have no journal.
     permission: "view_academic_data",
     profileKinds: ["teacher", "staff"],
+    // The librarian role now also carries view_academic_data (so the bulk
+    // member registration dialog can filter by class, docs/analysis/
+    // audit-pra-deploy-2026-09-23.md's "sidebar per peran" section), but a
+    // librarian is still profile_kind "staff" like any other Pegawai, so
+    // profileKinds/excludeProfileKinds alone cannot keep this teaching
+    // screen away from them. Excluded by role instead -- library staff
+    // never write a class journal.
+    excludeRoles: ["librarian"],
     group: GROUP.academic,
   },
   {
@@ -393,6 +413,7 @@ export function filterNavigation(
   items: NavItem[],
   can: (permission: string) => boolean,
   profileKind?: NavProfileKind,
+  roleSlugs: string[] = [],
 ): NavItem[] {
   return items.filter((item) => {
     if (item.permission && !can(item.permission)) return false;
@@ -401,6 +422,9 @@ export function filterNavigation(
       return false;
     }
     if (item.excludeProfileKinds && profileKind && item.excludeProfileKinds.includes(profileKind)) {
+      return false;
+    }
+    if (item.excludeRoles?.some((slug) => roleSlugs.includes(slug))) {
       return false;
     }
     return true;

@@ -111,6 +111,28 @@ func TestTeacherRoleDefaultIncludesViewGrades(t *testing.T) {
 	t.Fatal("teacher is not in RoleDefaults()")
 }
 
+// TestLibrarianRoleDefaultIncludesViewAcademicData proves the librarian
+// system role carries view_academic_data (added 25 September 2026, see
+// role_defaults.go's comment on RoleSlugLibrarian): the narrowest
+// permission GET /v1/academic/classes requires, so the bulk member
+// registration dialog's class filter works for a librarian without
+// granting them anything broader (e.g. manage_master_data).
+func TestLibrarianRoleDefaultIncludesViewAcademicData(t *testing.T) {
+	for _, rd := range RoleDefaults() {
+		if rd.Slug != RoleSlugLibrarian {
+			continue
+		}
+		if !containsCode(rd.Permissions, PermViewAcademicData) {
+			t.Fatal("librarian role default must include view_academic_data")
+		}
+		if containsCode(rd.Permissions, PermManageMasterData) {
+			t.Fatal("librarian role default must not include manage_master_data")
+		}
+		return
+	}
+	t.Fatal("librarian is not in RoleDefaults()")
+}
+
 // TestEveryRoleHoldingManageGradesAlsoHoldsViewGrades generalises the
 // teacher-specific check above across every system role RoleDefaults()
 // returns, so a future role gaining manage_grades cannot forget the
