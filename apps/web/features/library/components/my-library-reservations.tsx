@@ -40,7 +40,9 @@ export function MyLibraryReservations({
       <h2 className="text-[15px] font-semibold text-fg">{t("heading")}</h2>
 
       {reservations.length === 0 ? (
-        <p className="text-[13px] text-fg-muted">{t("emptyBody")}</p>
+        <p className="text-[13px] text-fg-muted">
+          {bookingEnabled ? t("emptyBody") : t("emptyBodyDisabled")}
+        </p>
       ) : (
         <ul className="flex flex-col gap-2">
           {reservations.map((reservation) => (

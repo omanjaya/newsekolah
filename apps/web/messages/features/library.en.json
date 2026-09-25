@@ -1306,6 +1306,7 @@
     "reserve": {
       "heading": "Reservations",
       "emptyBody": "No reservations yet. Search a title below to reserve one.",
+      "emptyBodyDisabled": "No reservations yet.",
       "queuePosition": "Queue position {position}",
       "status": {
         "waiting": "Waiting",
