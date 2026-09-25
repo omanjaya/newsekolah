@@ -108,8 +108,7 @@
         "kinds": {
           "teacher": "Teachers",
           "staff": "Staff",
-          "student": "Students",
-          "parent": "Parents"
+          "student": "Students"
         },
         "loadError": "The summary could not load. Try reloading the page.",
         "pendingTitle": "School queues",
@@ -991,7 +990,6 @@
         "title": "Planned leave",
         "tabQueue": "Queue",
         "tabMine": "My requests",
-        "tabGuardianQueue": "My children",
         "noAccessTitle": "No access",
         "noAccessBody": "Your role is not part of the planned leave flow.",
         "issuerQueueUnavailableTitle": "Requests to issue arrive as notifications",
@@ -1035,16 +1033,6 @@
         "bulkApproveHint": "This bulk action approves without a note. Requests that need a rejection or a note go one at a time.",
         "bulkApproved": "{count, plural, one {# request approved} other {# requests approved}}",
         "bulkApprovedPartial": "{count} requests approved, {failed} failed. Try again for the rest.",
-        "guardian": {
-          "reviewNote": "Reason (required when rejecting)",
-          "reject": "Reject",
-          "approve": "Approve",
-          "rejected": "Request rejected",
-          "approved": "Request approved",
-          "reasonRequired": "A reason is required to reject.",
-          "queueEmptyTitle": "Nothing awaiting your decision",
-          "queueEmptyBody": "A child's leave request shows up here when it reaches the stage that needs your approval."
-        },
         "form": {
           "category": "Leave type",
           "startsOn": "From",
@@ -1094,8 +1082,7 @@
           "all": "All kinds",
           "teacher": "Teacher",
           "staff": "Staff",
-          "student": "Student",
-          "parent": "Parent"
+          "student": "Student"
         },
         "status": {
           "active": "Active",

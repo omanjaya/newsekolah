@@ -33,7 +33,7 @@ import {
 } from "../api";
 import { describeAudience } from "../lib/describe-audience";
 
-const ROLE_SLUGS = ["student", "teacher", "parent", "staff"] as const;
+const ROLE_SLUGS = ["student", "teacher", "staff"] as const;
 type AudienceType = "all" | "roles" | "classes";
 
 /** Plain text from the editor becomes one paragraph per blank-line block. */

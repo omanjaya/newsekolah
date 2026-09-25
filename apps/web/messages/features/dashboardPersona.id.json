@@ -15,11 +15,6 @@
       "description": "Buka pemindai untuk tugas yang ditugaskan kepada Anda.",
       "action": "Buka pemindai"
     },
-    "children": {
-      "title": "Anak saya",
-      "description": "Lihat presensi, nilai, dan informasi anak Anda.",
-      "action": "Buka data anak"
-    },
     "grades": {
       "title": "Nilai saya",
       "description": "Lihat nilai yang sudah diterbitkan guru.",
@@ -30,15 +25,5 @@
       "description": "Kelola kelas dan siswa untuk kegiatan hari ini.",
       "action": "Buka data sekolah"
     }
-  },
-  "parentSummary": {
-    "title": "Status anak hari ini",
-    "open": "Buka data anak",
-    "emptyTitle": "Belum ada anak yang tertaut",
-    "emptyBody": "Hubungi tata usaha untuk menautkan akun Anda ke data siswa.",
-    "sessionsRecorded": "{submitted} dari {expected} sesi tercatat",
-    "noAttendanceToday": "Belum ada presensi tercatat hari ini.",
-    "loadError": "Status presensi tidak bisa dimuat.",
-    "retry": "Coba lagi"
   }
 }

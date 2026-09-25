@@ -396,8 +396,7 @@
     "roles": {
       "student": "Siswa",
       "teacher": "Guru",
-      "staff": "Staf",
-      "parent": "Orang tua"
+      "staff": "Staf"
     },
     "registerForm": {
       "role": "Peran",

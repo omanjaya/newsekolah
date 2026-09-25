@@ -8,7 +8,6 @@ const noPermissions = {
   canIssueScanTokens: false,
   canViewAcademicData: false,
   canViewOwnGrades: false,
-  canViewChildren: false,
 };
 
 describe("selectDailyTask", () => {
@@ -21,12 +20,7 @@ describe("selectDailyTask", () => {
   it("only offers operational shortcuts with their required permission", () => {
     expect(selectDailyTask({ ...noPermissions, canManageCirculation: true })).toBe("circulation");
     expect(selectDailyTask({ ...noPermissions, canIssueScanTokens: true })).toBe("duty");
-    expect(
-      selectDailyTask({ ...noPermissions, profileKind: "parent", canViewChildren: true }),
-    ).toBe("children");
-    expect(
-      selectDailyTask({ ...noPermissions, profileKind: "staff", canViewChildren: true }),
-    ).toBeNull();
+    expect(selectDailyTask({ ...noPermissions, profileKind: "staff" })).toBeNull();
     expect(
       selectDailyTask({ ...noPermissions, profileKind: "student", canViewOwnGrades: true }),
     ).toBe("grades");

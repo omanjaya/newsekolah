@@ -3,8 +3,7 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import type { ReactElement } from "react";
 
-export type DailyTask =
-  "attendance" | "children" | "circulation" | "duty" | "grades" | "schoolData";
+export type DailyTask = "attendance" | "circulation" | "duty" | "grades" | "schoolData";
 
 export function selectDailyTask({
   canManageAttendance,
@@ -12,7 +11,6 @@ export function selectDailyTask({
   canIssueScanTokens,
   canViewAcademicData,
   canViewOwnGrades,
-  canViewChildren,
   profileKind,
 }: {
   canManageAttendance: boolean;
@@ -20,13 +18,11 @@ export function selectDailyTask({
   canIssueScanTokens: boolean;
   canViewAcademicData: boolean;
   canViewOwnGrades: boolean;
-  canViewChildren: boolean;
-  profileKind?: "parent" | "staff" | "student" | "teacher";
+  profileKind?: "staff" | "student" | "teacher";
 }): DailyTask | null {
   if (canManageAttendance) return "attendance";
   if (canManageCirculation) return "circulation";
   if (canIssueScanTokens) return "duty";
-  if (profileKind === "parent" && canViewChildren) return "children";
   if (profileKind === "student" && canViewOwnGrades) return "grades";
   if (profileKind === "staff" && canViewAcademicData) return "schoolData";
   return null;
@@ -36,7 +32,6 @@ const TASKS: Record<DailyTask, { href: string; icon: keyof typeof domainIcons }>
   attendance: { href: "/attendance", icon: "attendance" },
   circulation: { href: "/library/desk", icon: "library" },
   duty: { href: "/duty", icon: "qr" },
-  children: { href: "/children", icon: "users" },
   grades: { href: "/my-grades", icon: "grades" },
   schoolData: { href: "/school/classes", icon: "users" },
 };

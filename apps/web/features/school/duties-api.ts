@@ -83,8 +83,7 @@ export function useReplaceDutyPermissionsMutation() {
 /**
  * GET /v1/staff-options: active teachers and staff, matched by `search`.
  * Backs the duty-assignment form's assignee field instead of the whole
- * directory (which also lists students and parents, filtered out
- * client-side today).
+ * directory (which also lists students, filtered out client-side today).
  */
 export function useStaffOptionsQuery(search: string) {
   const client = useApiClient();

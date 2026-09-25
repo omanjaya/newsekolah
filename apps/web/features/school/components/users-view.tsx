@@ -38,17 +38,14 @@ import {
 } from "../api";
 import { useImpersonateUserMutation } from "../duties-api";
 
-import { GuardiansDialog } from "./guardians-dialog";
-import { ManageChildrenDialog } from "./manage-children-dialog";
 import { UserForm } from "./user-form";
 import { UsersCursorPagination } from "./users-cursor-pagination";
 import { UsersTableEmptyState } from "./users-table-empty-state";
 
-const KINDS: ProfileKind[] = ["teacher", "staff", "student", "parent"];
+const KINDS: ProfileKind[] = ["teacher", "staff", "student"];
 
 export function UsersView(): ReactElement {
   const t = useTranslations("app.school.users");
-  const tFamily = useTranslations("app.family.guardianLinks");
   const toast = useToast();
   const apiErrorMessage = useApiErrorMessage();
   const router = useRouter();
@@ -78,8 +75,6 @@ export function UsersView(): ReactElement {
   const reset = useResetPasswordMutation();
   const [editing, setEditing] = useState<AdminUser | "new" | null>(null);
   const [resetToken, setResetToken] = useState<string | null>(null);
-  const [managingChildrenFor, setManagingChildrenFor] = useState<AdminUser | null>(null);
-  const [guardiansFor, setGuardiansFor] = useState<AdminUser | null>(null);
 
   const fail = (error: unknown) => {
     toast.error(
@@ -157,24 +152,6 @@ export function UsersView(): ReactElement {
                     {t("actions.edit")}
                   </DropdownMenuItem>
                 )}
-                {user.profile_kind === "parent" && (
-                  <DropdownMenuItem
-                    onSelect={() => {
-                      setManagingChildrenFor(user);
-                    }}
-                  >
-                    {tFamily("menu.manageChildren")}
-                  </DropdownMenuItem>
-                )}
-                {user.profile_kind === "student" && (
-                  <DropdownMenuItem
-                    onSelect={() => {
-                      setGuardiansFor(user);
-                    }}
-                  >
-                    {tFamily("menu.guardians")}
-                  </DropdownMenuItem>
-                )}
                 {canEdit && (
                   <DropdownMenuItem
                     onSelect={() => {
@@ -223,7 +200,7 @@ export function UsersView(): ReactElement {
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps -- fail/reset/archive are stable enough per render
-    [t, tFamily, canEdit, canArchive, canImpersonate, me?.id],
+    [t, canEdit, canArchive, canImpersonate, me?.id],
   );
 
   const items = data?.data ?? [];
@@ -365,23 +342,6 @@ export function UsersView(): ReactElement {
         </DialogContent>
       </Dialog>
 
-      <ManageChildrenDialog
-        open={managingChildrenFor !== null}
-        onOpenChange={(open) => {
-          if (!open) setManagingChildrenFor(null);
-        }}
-        parentUserId={managingChildrenFor?.id ?? ""}
-        parentName={managingChildrenFor?.name ?? ""}
-        canEdit={canEdit}
-      />
-      <GuardiansDialog
-        open={guardiansFor !== null}
-        onOpenChange={(open) => {
-          if (!open) setGuardiansFor(null);
-        }}
-        studentUserId={guardiansFor?.id ?? ""}
-        studentName={guardiansFor?.name ?? ""}
-      />
       <ConfirmDialog
         open={impersonating !== null}
         onOpenChange={(open) => {

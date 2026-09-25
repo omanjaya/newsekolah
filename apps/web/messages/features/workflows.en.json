@@ -29,7 +29,6 @@
       "any_teacher": "Any teacher",
       "teacher_of_class_now": "Teacher currently teaching this class",
       "homeroom_of_student": "Student's homeroom teacher",
-      "guardian_of_student": "Student's guardian (parent)",
       "duty": "A specific duty officer"
     },
     "verification": {

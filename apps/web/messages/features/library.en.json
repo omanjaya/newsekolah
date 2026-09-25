@@ -396,8 +396,7 @@
     "roles": {
       "student": "Student",
       "teacher": "Teacher",
-      "staff": "Staff",
-      "parent": "Parent"
+      "staff": "Staff"
     },
     "registerForm": {
       "role": "Role",

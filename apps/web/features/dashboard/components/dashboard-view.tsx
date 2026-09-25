@@ -17,7 +17,6 @@ import { useDashboardData } from "../api";
 import { ActionTiles, type ActionTile } from "./action-tiles";
 import { AdminDashboardPanel } from "./admin-dashboard-panel";
 import { DailyTaskShortcut, selectDailyTask } from "./daily-task-shortcut";
-import { ParentChildSummary } from "./parent-child-summary";
 import { SectionCard } from "./section-card";
 import { TodaySessionsCard } from "./today-sessions-card";
 
@@ -30,7 +29,6 @@ export function DashboardView(): ReactElement {
   const canReviewLeave = useCan("review_leave_requests");
   const canManageCirculation = useCan("manage_library_circulation");
   const canIssueScanTokens = useCan("issue_scan_tokens");
-  const canViewChildren = useCan("view_child_attendance");
   const canViewAcademicData = useCan("view_academic_data");
   const canViewOwnGrades = useCan("view_own_grades");
   const sessions = useTodaySessionsQuery(
@@ -81,7 +79,6 @@ export function DashboardView(): ReactElement {
     canManageAttendance,
     canManageCirculation,
     canIssueScanTokens,
-    canViewChildren,
     canViewAcademicData,
     canViewOwnGrades,
     profileKind: me.profile_kind,
@@ -162,9 +159,6 @@ export function DashboardView(): ReactElement {
       <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
         <div className="flex min-w-0 flex-col gap-4">
           {dailyTask && dailyTask !== "attendance" && <DailyTaskShortcut task={dailyTask} />}
-          {me.profile_kind === "parent" && canViewChildren && (
-            <ParentChildSummary timeZone={me.tenant.timezone} />
-          )}
           <SectionCard title={t("tasksTitle")} note={t("tasksNote")}>
             {tasksFailed ? (
               <QueryError retry={() => Promise.all(taskQueries.map((query) => query.refetch()))} />

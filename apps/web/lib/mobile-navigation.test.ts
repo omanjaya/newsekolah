@@ -4,17 +4,6 @@ import { mobileNavigation } from "./mobile-navigation";
 import { filterNavigation, navigation } from "./navigation";
 
 describe("mobile daily destinations", () => {
-  it("gives parents child and leave destinations without unauthorized teacher controls", () => {
-    const permitted = filterNavigation(
-      navigation,
-      (permission) => permission === "view_child_attendance",
-      "parent",
-    );
-    const keys = mobileNavigation(permitted, "parent").map((item) => item.key);
-    expect(keys).toContain("children");
-    expect(keys).not.toContain("attendance");
-    expect(keys.length).toBeLessThanOrEqual(4);
-  });
   it("only selects existing authorized staff routes", () => {
     const permitted = filterNavigation(
       navigation,
@@ -25,6 +14,29 @@ describe("mobile daily destinations", () => {
     expect(mobileNavigation(permitted, "staff").every((item) => permitted.includes(item))).toBe(
       true,
     );
+  });
+  it("gives an admin account (view_users, view_schedules) its office shortcuts, not the gate-duty pair", () => {
+    const permitted = filterNavigation(
+      navigation,
+      (permission) => ["view_users", "view_schedules", "issue_scan_tokens"].includes(permission),
+      "staff",
+    );
+    const keys = mobileNavigation(permitted, "staff").map((item) => item.key);
+    expect(keys).toContain("school-users");
+    expect(keys).toContain("schedule");
+    expect(keys).not.toContain("exit-permits");
+    expect(keys).not.toContain("duty");
+  });
+  it("gives office/gate-duty staff without view_users the exit-permit and visitor shortcuts", () => {
+    const permitted = filterNavigation(
+      navigation,
+      (permission) => ["issue_scan_tokens", "view_visitors"].includes(permission),
+      "staff",
+    );
+    const keys = mobileNavigation(permitted, "staff").map((item) => item.key);
+    expect(keys).toContain("exit-permits");
+    expect(keys).toContain("visitors-board");
+    expect(keys).not.toContain("school-users");
   });
   it("gives a student their schedule and classroom-entry scan, not the occasional exit permit", () => {
     const permitted = filterNavigation(

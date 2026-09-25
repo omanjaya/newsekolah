@@ -14,7 +14,7 @@ import { LoginActivityChart } from "./login-activity-chart";
 import { SectionCard } from "./section-card";
 
 type Role = components["schemas"]["Role"];
-const PROFILE_KINDS = ["student", "teacher", "staff", "parent"] as const;
+const PROFILE_KINDS = ["student", "teacher", "staff"] as const;
 const PENDING_LINKS = [
   { key: "leave_request", href: "/leave-requests" },
   { key: "exit_permit", href: "/exit-permits" },

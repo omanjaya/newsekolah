@@ -29,8 +29,6 @@ import disciplineEn from "./discipline.en.json";
 import disciplineId from "./discipline.id.json";
 import documentsEn from "./documents.en.json";
 import documentsId from "./documents.id.json";
-import familyEn from "./family.en.json";
-import familyId from "./family.id.json";
 import gradingEn from "./grading.en.json";
 import gradingId from "./grading.id.json";
 import integrationsEn from "./integrations.en.json";
@@ -90,7 +88,6 @@ registerFeatureMessages({
 });
 registerFeatureMessages({ namespace: "billing", id: billingId, en: billingEn });
 registerFeatureMessages({ namespace: "discipline", id: disciplineId, en: disciplineEn });
-registerFeatureMessages({ namespace: "family", id: familyId, en: familyEn });
 registerFeatureMessages({ namespace: "documents", id: documentsId, en: documentsEn });
 registerFeatureMessages({ namespace: "grading", id: gradingId, en: gradingEn });
 registerFeatureMessages({ namespace: "integrations", id: integrationsId, en: integrationsEn });

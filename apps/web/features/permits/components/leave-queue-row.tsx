@@ -21,13 +21,13 @@ import { formatDisplayName } from "../../../lib/text/format-name";
 import type { LeaveRequestSummary } from "../api";
 
 /**
- * A quick-decision row shared by the homeroom queue and the guardian
- * queue: every item returned by either endpoint is already scoped to the
- * caller's own pending stage (see the queries' comments), so "Setujui" acts
- * immediately and "Tolak" only needs a small reason prompt -- neither has
- * to open the full detail dialog for the common case. The row body still
- * opens that dialog, for the times a reviewer wants the full context
- * (evidence, letter, prior notes) before deciding.
+ * A quick-decision row shared by the homeroom queue: every item returned
+ * by the review-queue endpoint is already scoped to the caller's own
+ * pending stage (see the query's comment), so "Setujui" acts immediately
+ * and "Tolak" only needs a small reason prompt -- neither has to open the
+ * full detail dialog for the common case. The row body still opens that
+ * dialog, for the times a reviewer wants the full context (evidence,
+ * letter, prior notes) before deciding.
  */
 export function QueueRow({
   item,
@@ -38,7 +38,6 @@ export function QueueRow({
   rejecting,
   onApprove,
   onReject,
-  rejectReasonRequired,
   onOpenDetail,
 }: {
   item: LeaveRequestSummary;
@@ -49,7 +48,6 @@ export function QueueRow({
   rejecting: boolean;
   onApprove: () => void;
   onReject: (reason: string) => void;
-  rejectReasonRequired: boolean;
   onOpenDetail: () => void;
 }): ReactElement {
   const t = useTranslations("app.permits.leave");
@@ -57,7 +55,6 @@ export function QueueRow({
   const { me } = useSession();
   const [rejectOpen, setRejectOpen] = useState(false);
   const [reason, setReason] = useState("");
-  const [reasonError, setReasonError] = useState(false);
   const range = `${formatDate(item.starts_on, { locale, timeZone: me?.tenant.timezone })} - ${formatDate(item.ends_on, { locale, timeZone: me?.tenant.timezone })}`;
   const busy = approving || rejecting;
 
@@ -112,24 +109,16 @@ export function QueueRow({
           <PopoverContent align="end" className="w-72">
             <div className="flex flex-col gap-2">
               <label className="flex flex-col gap-1 text-[13px]">
-                <span className="font-medium">
-                  {rejectReasonRequired ? t("guardian.reviewNote") : t("reviewNote")}
-                </span>
+                <span className="font-medium">{t("reviewNote")}</span>
                 <Textarea
                   rows={2}
                   value={reason}
                   onChange={(e) => {
                     setReason(e.target.value);
-                    setReasonError(false);
                   }}
                   maxLength={500}
                 />
               </label>
-              {reasonError && (
-                <p role="alert" className="text-[12px] text-status-absent">
-                  {t("guardian.reasonRequired")}
-                </p>
-              )}
               <div className="flex justify-end gap-2">
                 <Button
                   type="button"
@@ -146,12 +135,7 @@ export function QueueRow({
                   size="sm"
                   loading={rejecting}
                   onClick={() => {
-                    const trimmed = reason.trim();
-                    if (rejectReasonRequired && !trimmed) {
-                      setReasonError(true);
-                      return;
-                    }
-                    onReject(trimmed);
+                    onReject(reason.trim());
                     setRejectOpen(false);
                     setReason("");
                   }}

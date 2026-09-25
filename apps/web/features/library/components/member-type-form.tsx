@@ -15,7 +15,7 @@ import {
 } from "../members-api";
 
 const FINE_TYPES: LibraryMemberTypeWrite["fine_type"][] = ["constant", "per_tenor"];
-const ROLES = ["", "student", "teacher", "staff", "parent"] as const;
+const ROLES = ["", "student", "teacher", "staff"] as const;
 
 function numberField(value: string, fallback = 0): number {
   const n = Number(value);

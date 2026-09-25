@@ -17,7 +17,7 @@ import {
   useUpdateUserMutation,
 } from "../api";
 
-const KINDS: ProfileKind[] = ["teacher", "staff", "student", "parent"];
+const KINDS: ProfileKind[] = ["teacher", "staff", "student"];
 const SUPER_ADMIN_SLUG = "super_admin";
 
 export function UserForm({

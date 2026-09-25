@@ -1,9 +1,8 @@
 import type { StatusName } from "@newsekolah/ui";
 
-// The code-to-token mapping moved to lib/attendance-status.ts once the
-// parent view (family feature) needed the same status colours for its
-// "is my child OK today" summary; re-exported here so every existing
-// import in this feature keeps working unchanged.
+// The code-to-token mapping moved to lib/attendance-status.ts once another
+// screen needed the same status colours; re-exported here so every
+// existing import in this feature keeps working unchanged.
 export { statusToken } from "../../../lib/attendance-status";
 
 /**

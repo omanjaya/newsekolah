@@ -6,9 +6,9 @@ import type { StatusName } from "@newsekolah/ui";
  * (`apps/api/internal/modules/attendance/domain/policy.go`'s
  * `DefaultStatusPolicy`) plus the daily report's synthetic "INCOMPLETE"
  * aggregate. Every tenant starts on these five codes. Shared across
- * features (attendance's own roster and status controls, and the parent
- * view's "is my child OK today" summary) so the code-to-colour mapping
- * never drifts between screens.
+ * features (attendance's own roster and status controls, and other
+ * screens that show a student's attendance status) so the code-to-colour
+ * mapping never drifts between screens.
  *
  * A tenant that reconfigures its status policy (custom codes) has no
  * design token here; callers fall back to the status's own `color` hex

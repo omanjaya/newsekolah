@@ -18,7 +18,7 @@ export const academicNavItems: NavItem[] = [
     // Same reasoning as "school-classes" in navigation.ts: view_academic_data
     // is also a student's own permission, but year/term setup is a
     // master-data screen for staff.
-    excludeProfileKinds: ["student", "parent"],
+    excludeProfileKinds: ["student"],
     group: NAV_GROUP.masterData,
   },
   {

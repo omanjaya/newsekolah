@@ -92,11 +92,10 @@ describe("filterNavigation", () => {
         href: "/x",
         icon: Home,
         permission: "view_academic_data",
-        excludeProfileKinds: ["student", "parent"],
+        excludeProfileKinds: ["student"],
       },
     ];
     expect(filterNavigation(scoped, () => true, "student")).toEqual([]);
-    expect(filterNavigation(scoped, () => true, "parent")).toEqual([]);
     expect(filterNavigation(scoped, () => true, "teacher").map((i) => i.key)).toEqual([
       "staff-master-data",
     ]);
@@ -165,28 +164,6 @@ describe("navigation registry: per-role audiences", () => {
     expect(keys).toContain("leave-requests");
     expect(keys).toContain("exit-permits");
     expect(keys).toContain("late-arrivals");
-    expect(keys).not.toContain("school-classes");
-    expect(keys).not.toContain("academic-years");
-  });
-
-  it("gives a parent the guardian approval queue but no exit-permit or late-arrival screen", () => {
-    // authz.RoleDefaults()'s parent: approve_child_leave_requests only,
-    // never submit_leave_requests or issue_scan_tokens (verified against
-    // the seeded "ortu" account, e2e/smoke/roles/ortu.spec.ts).
-    const can = has(
-      "view_dashboard",
-      "view_announcements",
-      "view_notifications",
-      "view_child_attendance",
-      "view_child_grades",
-      "approve_child_leave_requests",
-      "view_child_billing",
-      "view_own_library_loans",
-    );
-    const keys = filterNavigation(navigation, can, "parent").map((item) => item.key);
-    expect(keys).toContain("leave-requests");
-    expect(keys).not.toContain("exit-permits");
-    expect(keys).not.toContain("late-arrivals");
     expect(keys).not.toContain("school-classes");
     expect(keys).not.toContain("academic-years");
   });
@@ -269,7 +246,7 @@ describe("navigation registry: per-role audiences", () => {
     // Sees everything the school runs: attendance, staff attendance,
     // discipline, reports, library, billing, visitors, supervision,
     // academic structure, journals -- and the late-arrivals queue every
-    // non-parent account reaches regardless of permission.
+    // account reaches regardless of permission.
     for (const key of [
       "schedule",
       "attendance",

@@ -15,7 +15,7 @@ import {
   useLibraryMemberTypesQuery,
 } from "../members-api";
 
-const ROLES = ["student", "teacher", "staff", "parent"] as const;
+const ROLES = ["student", "teacher", "staff"] as const;
 type Role = (typeof ROLES)[number];
 
 /** Registers every user of one role (optionally one class) not already a member. */

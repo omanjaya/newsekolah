@@ -153,7 +153,6 @@ export function ReviewQueue(): ReactElement {
                   (pendingId === item.instance_id && review.variables?.approve === false) ||
                   bulkPending
                 }
-                rejectReasonRequired={false}
                 onApprove={() => {
                   approve(item.instance_id);
                 }}

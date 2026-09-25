@@ -16,7 +16,6 @@ import {
   useIssueLeaveLetterMutation,
   useLeaveDocumentUrlMutation,
   useLeaveRequestQuery,
-  useReviewLeaveRequestAsGuardianMutation,
   useReviewLeaveRequestMutation,
   useUploadEvidenceMutation,
 } from "../api";
@@ -31,17 +30,13 @@ export function LeaveRequestDetail({ id }: { id: string }): ReactElement {
   const apiErrorMessage = useApiErrorMessage();
   const canReview = useCan("review_leave_requests");
   const canIssue = useCan("issue_leave_letters");
-  const canApproveAsGuardian = useCan("approve_child_leave_requests");
   const { data, isLoading, error, refetch } = useLeaveRequestQuery(id);
   const review = useReviewLeaveRequestMutation();
-  const guardianReview = useReviewLeaveRequestAsGuardianMutation();
   const issue = useIssueLeaveLetterMutation();
   const upload = useUploadEvidenceMutation();
   const docUrl = useLeaveDocumentUrlMutation();
   const fileRef = useRef<HTMLInputElement>(null);
   const [note, setNote] = useState("");
-  const [guardianNote, setGuardianNote] = useState("");
-  const [guardianError, setGuardianError] = useState<string | null>(null);
 
   if (isLoading) return <Skeleton className="h-64 w-full" aria-busy="true" />;
   if (error instanceof ApiError && (error.status === 404 || error.status === 403)) {
@@ -203,69 +198,6 @@ export function LeaveRequestDetail({ id }: { id: string }): ReactElement {
           </div>
         </div>
       )}
-      {inst.status === "in_progress" &&
-        canApproveAsGuardian &&
-        inst.current_stage?.approver_rule === "guardian_of_student" &&
-        !isOwner && (
-          <div className="flex flex-col gap-3 border-t border-border pt-4">
-            <label className="flex flex-col gap-1 text-[13px]">
-              <span className="font-medium">{t("guardian.reviewNote")}</span>
-              <Input
-                value={guardianNote}
-                onChange={(e) => {
-                  setGuardianNote(e.target.value);
-                  setGuardianError(null);
-                }}
-                maxLength={500}
-              />
-            </label>
-            {guardianError && (
-              <p role="alert" className="text-[13px] text-status-absent">
-                {guardianError}
-              </p>
-            )}
-            <div className="flex justify-end gap-2">
-              <Button
-                variant="secondary"
-                loading={guardianReview.isPending && !guardianReview.variables.approve}
-                onClick={() => {
-                  const trimmed = guardianNote.trim();
-                  if (!trimmed) {
-                    setGuardianError(t("guardian.reasonRequired"));
-                    return;
-                  }
-                  guardianReview.mutate(
-                    { id, approve: false, note: trimmed },
-                    {
-                      onError: fail,
-                      onSuccess: () => {
-                        toast.success(t("guardian.rejected"));
-                      },
-                    },
-                  );
-                }}
-              >
-                {t("guardian.reject")}
-              </Button>
-              <Button
-                loading={guardianReview.isPending && guardianReview.variables.approve}
-                onClick={() => {
-                  guardianReview.mutate(
-                    { id, approve: true, note: guardianNote.trim() || undefined },
-                    {
-                      onError: fail,
-                      onSuccess: () => {
-                        toast.success(t("guardian.approved"));
-                      },
-                    },
-                  );
-                }}
-              >
-                {t("guardian.approve")}
-              </Button>
-            </div>
-          </div>
-        )}
       {inst.status === "in_progress" && canIssue && stageKey === "counselor" && (
         <div className="flex justify-end border-t border-border pt-4">
           <Button

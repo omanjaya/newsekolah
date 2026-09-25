@@ -211,6 +211,7 @@ export type MessageKey =
   | "nav.compact.permits"
   | "nav.compact.profile"
   | "nav.discipline.items.counseling"
+  | "nav.discipline.items.myDiscipline"
   | "nav.discipline.items.reports"
   | "nav.discipline.items.violations"
   | "nav.discipline.items.warningLetters"
@@ -487,6 +488,7 @@ export const MESSAGE_KEYS: readonly MessageKey[] = [
   "nav.compact.permits",
   "nav.compact.profile",
   "nav.discipline.items.counseling",
+  "nav.discipline.items.myDiscipline",
   "nav.discipline.items.reports",
   "nav.discipline.items.violations",
   "nav.discipline.items.warningLetters",
