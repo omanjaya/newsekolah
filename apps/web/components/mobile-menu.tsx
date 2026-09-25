@@ -62,8 +62,10 @@ export function MobileMenu({ items, scope }: { items: NavItem[]; scope?: string 
                           if (!event.defaultPrevented) setOpen(false);
                         }}
                         className={cn(
-                          "flex min-h-11 min-w-0 flex-1 items-center gap-3 rounded-sm px-3 py-2 text-[14px]",
-                          active ? "bg-accent/10 font-medium text-fg" : "text-fg hover:bg-bg",
+                          "flex min-h-11 min-w-0 flex-1 items-center gap-3 rounded-md px-3 py-2 text-[14px]",
+                          active
+                            ? "bg-accent-soft font-medium text-accent-soft-fg"
+                            : "text-fg hover:bg-bg",
                         )}
                       >
                         <item.icon className="size-5 shrink-0" aria-hidden="true" />
@@ -81,7 +83,7 @@ export function MobileMenu({ items, scope }: { items: NavItem[]; scope?: string 
                           onClick={() => {
                             preferences.toggleFavorite(item.key);
                           }}
-                          className="flex size-11 shrink-0 items-center justify-center rounded-sm text-fg-muted hover:bg-bg"
+                          className="flex size-11 shrink-0 items-center justify-center rounded-full text-fg-muted hover:bg-bg"
                         >
                           <Star
                             aria-hidden="true"

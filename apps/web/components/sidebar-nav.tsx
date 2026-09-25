@@ -69,16 +69,17 @@ export function NavLink({
           // height a flex child will happily be squeezed below. Without it,
           // opening a group compresses every row instead of scrolling the
           // list, and a 36px row renders at 20px.
-          "group/link relative flex h-9 shrink-0 items-center gap-3 rounded-sm px-3 text-[13px]",
+          "group/link relative flex h-9 shrink-0 items-center gap-3 rounded-md px-3 text-[13px]",
           animate &&
             "transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)]",
           // Colour carries the state, but never alone: the active row is also
-          // the only one at full text weight and full foreground colour.
-          // TenantProvider writes a single accent for both themes, so on a
-          // dark surface the school's colour can fall under the contrast
-          // floor -- a tint is safe to lean on, a label colour is not.
+          // the only one at full text weight. `accent-soft`/`accent-soft-fg`
+          // are the platform's own Hijau Segar pair (packages/ui-tokens),
+          // pre-checked for AA on each other -- unlike raw `--color-accent`,
+          // which TenantProvider can replace with an arbitrary school colour
+          // not guaranteed to clear contrast against a tint of itself.
           active
-            ? "bg-accent/12 font-medium text-fg"
+            ? "bg-accent-soft font-medium text-accent-soft-fg"
             : "text-fg-muted hover:bg-accent/8 hover:text-fg active:bg-accent/15",
         )}
       >
@@ -194,12 +195,12 @@ export function GroupFlyout({
             if (event.key === "Enter" || event.key === " ") openedByHover.current = false;
           }}
           className={cn(
-            "relative flex h-9 shrink-0 items-center gap-3 rounded-sm px-3 text-[13px]",
+            "relative flex h-9 shrink-0 items-center gap-3 rounded-md px-3 text-[13px]",
             rail && "justify-center",
             animate &&
               "transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)]",
             hasActivePage || open
-              ? "bg-accent/12 text-fg"
+              ? "bg-accent-soft font-medium text-accent-soft-fg"
               : "text-fg-muted hover:bg-accent/8 hover:text-fg active:bg-accent/15",
           )}
         >

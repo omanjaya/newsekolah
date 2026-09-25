@@ -76,7 +76,7 @@ export default function AuthLayout({ children }: { children: ReactNode }): React
           <ul className="mt-9 flex flex-col gap-4">
             {features.map(({ icon: Icon, label }) => (
               <li key={label} className="flex items-center gap-3">
-                <span className="grid size-9 shrink-0 place-items-center rounded-sm bg-accent-fg/10 ring-1 ring-inset ring-accent-fg/15">
+                <span className="grid size-9 shrink-0 place-items-center rounded-full bg-accent-fg/10 ring-1 ring-inset ring-accent-fg/15">
                   <Icon className="size-[18px]" />
                 </span>
                 <span className="text-[14px] opacity-90">{label}</span>
@@ -132,7 +132,7 @@ function BrandLockup({ name }: { name: string }): ReactElement {
   if (isLoading) {
     return (
       <div className="relative z-10 flex min-w-0 items-center gap-3">
-        <Skeleton className="size-10 shrink-0 rounded-sm bg-accent-fg/15" />
+        <Skeleton className="size-10 shrink-0 rounded-full bg-accent-fg/15" />
         <Skeleton className="h-4 w-32 bg-accent-fg/15" />
       </div>
     );
@@ -144,12 +144,12 @@ function BrandLockup({ name }: { name: string }): ReactElement {
         <img
           src={branding.logo_url}
           alt=""
-          className="size-10 shrink-0 rounded-sm bg-surface object-contain p-1"
+          className="size-10 shrink-0 rounded-full bg-surface object-contain p-1"
         />
       ) : (
         <span
           aria-hidden="true"
-          className="grid size-10 shrink-0 place-items-center rounded-sm bg-accent-fg/15 text-[15px] font-medium leading-none ring-1 ring-inset ring-accent-fg/20"
+          className="grid size-10 shrink-0 place-items-center rounded-full bg-accent-fg/15 text-[15px] font-medium leading-none ring-1 ring-inset ring-accent-fg/20"
         >
           {initialsFor(name)}
         </span>

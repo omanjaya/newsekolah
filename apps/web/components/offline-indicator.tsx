@@ -38,9 +38,9 @@ export function OfflineIndicator(): ReactElement | null {
   return (
     <div
       role="status"
-      className="flex items-center gap-2 border-b border-border bg-status-late/10 px-4 py-2 text-[13px] text-fg md:px-6"
+      className="flex items-center gap-2 border-b border-line bg-warning-soft px-4 py-2 text-[13px] text-warning-soft-fg md:px-6"
     >
-      <WifiOff className="size-4 shrink-0 text-status-late" aria-hidden="true" />
+      <WifiOff className="size-4 shrink-0" aria-hidden="true" />
       {t("banner")}
     </div>
   );
