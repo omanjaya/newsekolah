@@ -24,6 +24,11 @@ export type JournalWriteRequest = components["schemas"]["JournalWriteRequest"];
 export type Substitution = components["schemas"]["Substitution"];
 export type SubstitutionCreateRequest = components["schemas"]["SubstitutionCreateRequest"];
 export type LateArrivalSummary = components["schemas"]["LateArrivalSummary"];
+export type ScheduleBlock = components["schemas"]["ScheduleBlock"];
+export type Room = components["schemas"]["Room"];
+export type DirectoryUser = components["schemas"]["DirectoryUser"];
+export type MyGrades = components["schemas"]["MyGrades"];
+export type MySubjectGrade = components["schemas"]["MySubjectGrade"];
 
 export type LibraryTitle = components["schemas"]["LibraryTitle"];
 export type LibraryCopy = components["schemas"]["LibraryCopy"];

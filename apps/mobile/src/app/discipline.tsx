@@ -46,7 +46,7 @@ export default function DisciplineRoute(): React.JSX.Element {
                   key={letter.id}
                   className="flex-row items-center gap-3 rounded-input border border-line bg-surface p-3 dark:border-line-dark dark:bg-surface-dark"
                 >
-                  <FileText size={20} strokeWidth={1.75} color="#1F3A5F" />
+                  <FileText size={20} strokeWidth={1.75} color="#0F7A5F" />
                   <View className="flex-1">
                     <Text className="text-base text-ink dark:text-ink-dark">
                       {letter.letter_number}

@@ -19,10 +19,12 @@ export function EmptyState({
 }: EmptyStateProps): React.JSX.Element {
   return (
     <View className="flex-1 items-center justify-center gap-2 px-8 py-12">
-      <Icon size={32} strokeWidth={1.75} color="#8A8A8A" importantForAccessibility="no" />
-      <Text className="text-center text-md font-medium text-ink dark:text-ink-dark">{title}</Text>
+      <Icon size={32} strokeWidth={1.75} color="#5E625B" importantForAccessibility="no" />
+      <Text className="font-heading-semibold text-center text-md text-ink dark:text-ink-dark">
+        {title}
+      </Text>
       {description ? (
-        <Text className="text-center text-sm text-ink/70 dark:text-ink-dark/70">{description}</Text>
+        <Text className="text-center text-sm text-muted dark:text-muted-dark">{description}</Text>
       ) : null}
       {actionLabel && onAction ? (
         <View className="mt-2">

@@ -37,9 +37,9 @@ interface StatusBadgeProps {
  * for colorblind users (DESIGN.md). */
 export function StatusBadge({ status }: StatusBadgeProps): React.JSX.Element {
   return (
-    <View className="flex-row items-center gap-1.5 self-start rounded-chip border border-line px-2 py-1 dark:border-line-dark">
+    <View className="flex-row items-center gap-1.5 self-start rounded-chip border border-hairline px-2.5 py-1 dark:border-hairline-dark">
       <View className={`h-2 w-2 rounded-full ${STATUS_DOT_CLASS[status]}`} />
-      <Text className={`text-xs font-medium ${STATUS_TEXT_CLASS[status]}`}>
+      <Text className={`font-body-semibold text-xs ${STATUS_TEXT_CLASS[status]}`}>
         {STATUS_LABEL[status]}
       </Text>
     </View>

@@ -15,12 +15,12 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
 
   return (
     <View className="gap-1.5">
-      <Text className="text-sm font-medium text-ink dark:text-ink-dark">{label}</Text>
+      <Text className="font-body-semibold text-sm text-ink dark:text-ink-dark">{label}</Text>
       <TextInput
         ref={ref}
         accessibilityLabel={accessibilityLabel ?? label}
         accessibilityHint={error ?? accessibilityHint}
-        placeholderTextColor="#8A8A8A"
+        placeholderTextColor="#5E625B"
         onBlur={(event) => {
           onBlur?.(event);
         }}

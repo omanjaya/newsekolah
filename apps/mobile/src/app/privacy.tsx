@@ -25,7 +25,7 @@ function Item({
 }): React.JSX.Element {
   return (
     <View className="flex-row gap-3 rounded-input border border-line bg-surface p-4 dark:border-line-dark dark:bg-surface-dark">
-      <Icon size={20} strokeWidth={1.75} color="#1F3A5F" />
+      <Icon size={20} strokeWidth={1.75} color="#0F7A5F" />
       <View className="flex-1 gap-1">
         <Text className="text-base font-medium text-ink dark:text-ink-dark">{title}</Text>
         <Text className="text-sm text-ink/70 dark:text-ink-dark/70">{body}</Text>

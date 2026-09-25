@@ -16,8 +16,8 @@ interface RaisedTabBarProps extends BottomTabBarProps {
   centerAction?: CenterAction;
 }
 
-const ACCENT = "#1F3A5F";
-const INACTIVE = "#8A8A8A";
+const ACCENT = "#0F7A5F";
+const INACTIVE = "#5E625B";
 
 /**
  * Standard bottom tabs plus an optional raised center button (docs/07-ui-ux.md:
@@ -71,7 +71,9 @@ export function RaisedTabBar({
               <Text
                 className={cn(
                   "text-xs",
-                  isFocused ? "font-medium text-accent" : "text-ink/60 dark:text-ink-dark/60",
+                  isFocused
+                    ? "font-body-bold text-accent"
+                    : "font-body-medium text-muted dark:text-muted-dark",
                 )}
               >
                 {label}

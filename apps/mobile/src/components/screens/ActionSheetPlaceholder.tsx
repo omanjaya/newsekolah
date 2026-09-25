@@ -17,7 +17,7 @@ export function ActionSheetPlaceholder({
 }: ActionSheetPlaceholderProps): React.JSX.Element {
   return (
     <View className="items-center gap-3 pb-6 pt-2">
-      <Icon size={32} strokeWidth={1.75} color="#1F3A5F" />
+      <Icon size={32} strokeWidth={1.75} color="#0F7A5F" />
       <Text className="text-center text-md font-medium text-ink dark:text-ink-dark">{title}</Text>
       <Text className="text-center text-sm text-ink/70 dark:text-ink-dark/70">{description}</Text>
     </View>

@@ -141,7 +141,7 @@ function Editor({ session }: { session: SessionDetail }): React.JSX.Element {
               <View className="flex-row items-center gap-2">
                 <Text className="w-6 text-right text-xs text-ink/50">{index + 1}</Text>
                 <Text className="flex-1 text-base text-ink dark:text-ink-dark">{item.name}</Text>
-                {item.blocked ? <Lock size={14} color="#8A8A8A" /> : null}
+                {item.blocked ? <Lock size={14} color="#5E625B" /> : null}
               </View>
               {item.blocked ? (
                 <Text className="pl-8 text-xs text-ink/60 dark:text-ink-dark/60">

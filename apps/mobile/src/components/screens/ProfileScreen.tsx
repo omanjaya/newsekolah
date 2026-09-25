@@ -88,7 +88,7 @@ export function ProfileScreen(): React.JSX.Element {
           {(sessionsQuery.data?.data ?? []).map((session) => (
             <ListRow
               key={session.id}
-              leading={<Smartphone size={20} strokeWidth={1.75} color="#8A8A8A" />}
+              leading={<Smartphone size={20} strokeWidth={1.75} color="#5E625B" />}
               title={session.device_name ?? session.client}
               subtitle={
                 session.is_current ? tShared("auth.sessions.currentDevice") : session.last_seen_at

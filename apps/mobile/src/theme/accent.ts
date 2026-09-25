@@ -1,8 +1,17 @@
 import { vars } from "nativewind";
 
-// DESIGN.md: default accent #1F3A5F, overridable per tenant at runtime.
-const DEFAULT_ACCENT_HEX = "#1F3A5F";
-const LIGHT_SURFACE = [247, 246, 243] as const;
+// Hijau Segar (docs/design-reference-hijau-segar.html, mirrored in
+// theme/tokens.json): default accent #0F7A5F, overridable per tenant at
+// runtime through GET /v1/tenant/branding. Each surface below is the
+// *harder* of that theme's two backgrounds (bg and card) to clear 4.5:1
+// against -- light mode darkens the accent toward black, so its harder
+// target is the darker of the two (bg, #F7F6F2); dark mode brightens the
+// accent toward white, so its harder target is the lighter of the two
+// (card, #1C1C1C) -- kept as literal RGB triplets here (rather than
+// importing tokens.json) so this module's contrast search has no
+// dependency on the theme layer's own shape.
+const DEFAULT_ACCENT_HEX = "#0F7A5F";
+const LIGHT_SURFACE = [247, 246, 242] as const;
 const DARK_SURFACE = [28, 28, 28] as const;
 
 function hexToRgb(hex: string): [number, number, number] {

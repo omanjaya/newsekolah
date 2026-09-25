@@ -39,7 +39,7 @@ function UnlockScreen(): React.JSX.Element {
 
   return (
     <View className="flex-1 items-center justify-center gap-4 bg-bg px-8 dark:bg-bg-dark">
-      <Fingerprint size={40} strokeWidth={1.75} color="#1F3A5F" />
+      <Fingerprint size={40} strokeWidth={1.75} color="#0F7A5F" />
       <Text className="text-center text-md font-medium text-ink dark:text-ink-dark">
         Buka akses untuk melanjutkan
       </Text>

@@ -36,7 +36,7 @@ export default function GradesRoute(): React.JSX.Element {
               <Text className="text-base text-ink dark:text-ink-dark">{t("grades.stars")}</Text>
             </View>
             <View className="flex-row items-center gap-1.5">
-              <Star size={18} strokeWidth={1.75} color="#1F3A5F" />
+              <Star size={18} strokeWidth={1.75} color="#0F7A5F" />
               <Text className="text-md font-medium text-ink dark:text-ink-dark">
                 {data?.stars ?? 0}
               </Text>

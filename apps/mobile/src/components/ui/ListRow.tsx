@@ -29,7 +29,7 @@ export function ListRow({
       <View className="flex-1">
         <Text
           className={cn(
-            "text-base",
+            "font-body-semibold text-base",
             destructive ? "text-status-absent" : "text-ink dark:text-ink-dark",
           )}
           numberOfLines={1}
@@ -37,13 +37,13 @@ export function ListRow({
           {title}
         </Text>
         {subtitle ? (
-          <Text className="text-sm text-ink/60 dark:text-ink-dark/60" numberOfLines={1}>
+          <Text className="text-sm text-muted dark:text-muted-dark" numberOfLines={1}>
             {subtitle}
           </Text>
         ) : null}
       </View>
       {trailing}
-      {showChevron ? <ChevronRight size={16} strokeWidth={1.75} color="#8A8A8A" /> : null}
+      {showChevron ? <ChevronRight size={16} strokeWidth={1.75} color="#5E625B" /> : null}
     </View>
   );
 

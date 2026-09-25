@@ -55,7 +55,9 @@ export function Sheet({
           </View>
           {title ? (
             <View className="px-4 pt-3" accessibilityRole="header">
-              <Text className="text-md font-medium text-ink dark:text-ink-dark">{title}</Text>
+              <Text className="font-heading-semibold text-md text-ink dark:text-ink-dark">
+                {title}
+              </Text>
             </View>
           ) : null}
           <View className="px-4 pt-3">{children}</View>
