@@ -186,12 +186,24 @@ type FlagReader interface {
 	IsModuleEnabled(ctx context.Context, tenantID uuid.UUID) (bool, error)
 }
 
+// RealtimePublisher pushes a live update straight to one student's own
+// WebSocket topic once their class-subject's grades are published
+// (docs/analysis/realtime-plan-2026-09-25.md section 2, opportunity #10),
+// over realtime.TopicUser, without this package importing platform/
+// realtime directly (mirrors permits/service.RealtimePublisher's
+// rationale). A nil RealtimePublisher (no Hub wired) makes every push a
+// no-op.
+type RealtimePublisher interface {
+	PublishToUser(ctx context.Context, tenantID, userID uuid.UUID, eventType string, payload any) error
+}
+
 type Service struct {
-	pool  *pgxpool.Pool
-	repo  Repository
-	years AcademicYearReader
-	flags FlagReader
-	clock clock.Clock
+	pool     *pgxpool.Pool
+	repo     Repository
+	years    AcademicYearReader
+	flags    FlagReader
+	realtime RealtimePublisher
+	clock    clock.Clock
 	// letterheads is optional (set via SetLetterheadSource after
 	// construction, mirroring attendance/scheduling's identically named
 	// setter): nil means the gradebook export renders without a tenant
@@ -199,11 +211,11 @@ type Service struct {
 	letterheads reportdoc.LetterheadSource
 }
 
-func New(pool *pgxpool.Pool, repo Repository, years AcademicYearReader, flags FlagReader, clk clock.Clock) *Service {
+func New(pool *pgxpool.Pool, repo Repository, years AcademicYearReader, flags FlagReader, realtime RealtimePublisher, clk clock.Clock) *Service {
 	if clk == nil {
 		clk = clock.Real{}
 	}
-	return &Service{pool: pool, repo: repo, years: years, flags: flags, clock: clk}
+	return &Service{pool: pool, repo: repo, years: years, flags: flags, realtime: realtime, clock: clk}
 }
 
 func (s *Service) withTx(ctx context.Context, tenantID uuid.UUID, fn func(ctx context.Context) error) error {

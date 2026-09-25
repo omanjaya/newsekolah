@@ -6,17 +6,28 @@
 package staffattendance
 
 import (
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/staffattendance/repository"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/staffattendance/service"
 	transporthttp "github.com/omanjaya/newsekolah/apps/api/internal/modules/staffattendance/transport/http"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/realtime"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 )
 
 type Module struct {
 	Service *service.Service
 	Handler *transporthttp.StaffAttendanceHandler
+}
+
+// hubPublisher adapts platform/realtime's Hub to
+// service.RealtimePublisher over realtime.TopicRole, mirroring permits/
+// module.go's identically-shaped adapter.
+type hubPublisher struct{ hub *realtime.Hub }
+
+func (p hubPublisher) PublishRole(tenantID uuid.UUID, role, eventType string, payload any) error {
+	return p.hub.PublishEvent(realtime.TopicRole(tenantID, role), eventType, payload)
 }
 
 // Dependencies is everything Register needs from other modules, per
@@ -30,6 +41,9 @@ type Dependencies struct {
 	Years    service.AcademicYearReader
 	Calendar service.CalendarReader
 	Leave    service.LeaveReader
+	// Hub is optional: nil disables the staff_attendance.scanned live
+	// push (Scan, records.go) without failing the scan itself.
+	Hub *realtime.Hub
 	// Letterhead loads a tenant's configured kop laporan for the
 	// recap.export reportdoc exports; nil is fine (those exports just
 	// never show one).
@@ -38,7 +52,11 @@ type Dependencies struct {
 
 func Register(deps Dependencies) *Module {
 	repo := repository.New(deps.Pool)
-	svc := service.New(deps.Pool, repo, deps.Years, deps.Calendar, deps.Leave, deps.Letterhead)
+	var realtimePublisher service.RealtimePublisher
+	if deps.Hub != nil {
+		realtimePublisher = hubPublisher{hub: deps.Hub}
+	}
+	svc := service.New(deps.Pool, repo, deps.Years, deps.Calendar, deps.Leave, deps.Letterhead, realtimePublisher)
 	handler := transporthttp.New(svc)
 	return &Module{Service: svc, Handler: handler}
 }

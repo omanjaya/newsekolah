@@ -224,7 +224,7 @@ func run(logger *slog.Logger) error {
 	libraryModule := library.Register(library.Dependencies{
 		Pool: pool, Members: wiring.LibraryMembers{Svc: identityModule.Service},
 		Flags: wiring.LibraryFlags{Platform: platformModule.Service}, Permissions: wiring.LibraryPermissions{Identity: identityModule.Service},
-		Events: wiring.LibraryEvents{Bus: eventBus}, ScanTokens: wiring.LibraryScanTokens{Permits: permitsModule.Service},
+		Events: wiring.LibraryEvents{Bus: eventBus}, Hub: hub, ScanTokens: wiring.LibraryScanTokens{Permits: permitsModule.Service},
 		Storage: sharedStorage, Bucket: cfg.S3Bucket, Clock: clock.Real{},
 	})
 

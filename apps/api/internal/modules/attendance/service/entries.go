@@ -225,8 +225,27 @@ func (s *Service) SaveEntries(ctx context.Context, tenantID uuid.UUID, actor Act
 		_ = s.realtime.PublishMonitor(tenantID, MonitorUpdate{
 			ClassID: detail.Session.ClassID, SessionID: detail.Session.ID, SubmittedAt: detail.Session.SubmittedAt,
 		})
+		// Admin/principal dashboards get a live nudge too (docs/analysis/
+		// realtime-plan-2026-09-25.md section 2, opportunity #6): the
+		// first screen a principal opens every morning, previously with
+		// no live signal at all. Role topics are cheap to authorize
+		// (claims.Roles, no DB round trip), unlike the duty topics
+		// permits publishes to.
+		roleEventPayload := attendanceSubmittedRolePayload{SessionID: detail.Session.ID, ClassID: detail.Session.ClassID}
+		for _, role := range []string{"admin", "principal"} {
+			_ = s.realtime.PublishRole(tenantID, role, "attendance.submitted", roleEventPayload)
+		}
 	}
 	return detail, nil
+}
+
+// attendanceSubmittedRolePayload is the minimal payload pushed to
+// role:<tenant>:admin/principal after a session is submitted -- ids only,
+// per the platform-wide payload rule; the dashboard re-fetches its own
+// aggregates through its already-authorized REST endpoint.
+type attendanceSubmittedRolePayload struct {
+	SessionID uuid.UUID `json:"session_id"`
+	ClassID   uuid.UUID `json:"class_id"`
 }
 
 // recomputeDailySummaryForClassDate materializes attendance_daily_summary

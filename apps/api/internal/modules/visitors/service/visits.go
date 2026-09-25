@@ -79,7 +79,11 @@ func (s *Service) CheckIn(ctx context.Context, tenantID, guardUserID uuid.UUID, 
 		out = created
 		return nil
 	})
-	return out, err
+	if err != nil {
+		return domain.Visit{}, err
+	}
+	s.publishBoardEvent(tenantID, "visitor.checked_in", out.ID)
+	return out, nil
 }
 
 // issueBadge numbers and renders the badge through the permits pipeline, or
@@ -141,7 +145,39 @@ func (s *Service) CheckOut(ctx context.Context, tenantID, id, guardUserID uuid.U
 		out = updated
 		return nil
 	})
-	return out, err
+	if err != nil {
+		return domain.Visit{}, err
+	}
+	s.publishBoardEvent(tenantID, "visitor.checked_out", out.ID)
+	return out, nil
+}
+
+// visitorBoardPayload is the minimal payload pushed to the gate board --
+// the visit id only; the board re-fetches through its already-authorized
+// REST endpoint.
+type visitorBoardPayload struct {
+	VisitID uuid.UUID `json:"visit_id"`
+}
+
+// visitorBoardRoles lists every role that default-holds "view_visitors"
+// (openapi/modules/visitors.yaml's GET /v1/visitors/board x-permission),
+// per authz.RoleDefaults: "staff" (front-desk/office role, explicit view+
+// manage), "principal" (explicit, view only), "admin" (implicit -- "every
+// permission except manage_permissions and platform_superadmin"). No duty
+// type holds view_visitors, so there is no duty topic to push to here.
+var visitorBoardRoles = []string{"staff", "principal", "admin"}
+
+// publishBoardEvent is a nil-safe wrapper over RealtimePublisher.
+// PublishRole that fans one event out to every role in visitorBoardRoles,
+// so CheckIn/CheckOut do not repeat the nil-check or the role loop.
+func (s *Service) publishBoardEvent(tenantID uuid.UUID, eventType string, visitID uuid.UUID) {
+	if s.realtime == nil {
+		return
+	}
+	payload := visitorBoardPayload{VisitID: visitID}
+	for _, role := range visitorBoardRoles {
+		_ = s.realtime.PublishRole(tenantID, role, eventType, payload)
+	}
 }
 
 // BadgeURL presigns the printable badge for one visit, if one was issued.

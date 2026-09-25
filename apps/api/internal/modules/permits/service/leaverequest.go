@@ -111,6 +111,10 @@ func (s *Service) SubmitLeaveRequest(ctx context.Context, in SubmitLeaveRequestI
 		return LeaveRequestDetail{}, err
 	}
 	s.publish(ctx, LeaveRequestSubmitted{TenantID: in.TenantID, InstanceID: detail.Instance.ID, StudentUserID: in.StudentUserID, ClassID: detail.Instance.ClassID})
+	// Live push to the homeroom teacher's review queue (docs/analysis/
+	// realtime-plan-2026-09-25.md section 2, opportunity #3) -- every
+	// default definition's leave-request flow opens on "homeroom".
+	s.publishToDutyStage(ctx, in.TenantID, detail.Instance.ClassID, "homeroom", "leave_request.submitted", instanceEventPayload{InstanceID: detail.Instance.ID})
 	return detail, nil
 }
 
@@ -290,6 +294,16 @@ func (s *Service) ReviewLeaveRequest(ctx context.Context, tenantID, instanceID, 
 		return LeaveRequestDetail{}, err
 	}
 	s.publish(ctx, LeaveRequestReviewed{TenantID: tenantID, InstanceID: instanceID, StudentUserID: detail.Instance.SubjectUserID, Approved: approve, ReviewerID: reviewerUserID})
+	// The requester waits on the outcome either way (plan section 2,
+	// opportunity #3's "requester's user topic").
+	s.publishToUserTopic(ctx, tenantID, detail.Instance.SubjectUserID, "leave_request.reviewed", instanceEventPayload{InstanceID: instanceID})
+	if approve {
+		// Approving the only non-final stage always hands the request to
+		// the counselor next (ErrLeaveRequestNotReviewable refuses approving
+		// the final stage above), so this is unconditional, unlike exit
+		// permits' stage-derived duty.
+		s.publishToDutyStage(ctx, tenantID, uuid.NullUUID{}, "counselor", "leave_request.reviewed", instanceEventPayload{InstanceID: instanceID})
+	}
 	return detail, nil
 }
 
@@ -423,6 +437,7 @@ func (s *Service) IssueLeaveLetter(ctx context.Context, tenantID, instanceID, is
 		return LeaveRequestDetail{}, err
 	}
 	s.publish(ctx, LeaveRequestIssued{TenantID: tenantID, InstanceID: instanceID, StudentUserID: detail.Instance.SubjectUserID, LetterNumber: detail.LeaveRequest.LetterNumber})
+	s.publishToUserTopic(ctx, tenantID, detail.Instance.SubjectUserID, "leave_request.issued", instanceEventPayload{InstanceID: instanceID})
 	return detail, nil
 }
 

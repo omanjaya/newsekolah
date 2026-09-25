@@ -374,6 +374,17 @@ type EventPublisher interface {
 	Publish(ctx context.Context, evt Event) error
 }
 
+// RealtimePublisher pushes a live update to every holder of a fixed role
+// -- the librarian desk (docs/analysis/realtime-plan-2026-09-25.md
+// section 2, opportunity #7: a reservation placed, or a held copy ready
+// for pickup) -- over realtime.TopicRole, without this package importing
+// platform/realtime directly (mirrors permits/service.RealtimePublisher's
+// rationale). A nil RealtimePublisher (no Hub wired) makes every push a
+// no-op.
+type RealtimePublisher interface {
+	PublishRole(tenantID uuid.UUID, role, eventType string, payload any) error
+}
+
 // Event is the minimal shape EventPublisher needs; platform/events.Envelope
 // satisfies it.
 type Event interface {
@@ -432,6 +443,7 @@ type Service struct {
 	flags         FlagReader
 	permissions   PermissionChecker
 	events        EventPublisher
+	realtime      RealtimePublisher
 	scanTokens    ScanTokens
 	renderer      documents.Renderer
 	clock         clock.Clock
@@ -449,6 +461,7 @@ type Deps struct {
 	Flags         FlagReader
 	Permissions   PermissionChecker
 	Events        EventPublisher
+	Realtime      RealtimePublisher
 	ScanTokens    ScanTokens
 	Storage       Storage // nil: cover download is disabled
 	StorageBucket string
@@ -469,6 +482,7 @@ func New(pool *pgxpool.Pool, repo Repository, members MemberDirectory, settings 
 	if len(deps) > 0 {
 		d := deps[0]
 		s.flags, s.permissions, s.events, s.scanTokens = d.Flags, d.Permissions, d.Events, d.ScanTokens
+		s.realtime = d.Realtime
 		s.storage, s.storageBucket = d.Storage, d.StorageBucket
 		s.letterhead = d.Letterhead
 	}

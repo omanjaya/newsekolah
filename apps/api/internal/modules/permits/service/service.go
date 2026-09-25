@@ -103,16 +103,29 @@ type EventPublisher interface {
 	Publish(ctx context.Context, evt events.Event) error
 }
 
-// RealtimePublisher pushes a live event straight to one user's own
-// WebSocket topic ("user:<tenantID>:<userID>", the same one cmd/api/ws.go's
-// wsMeHandler opens per session), bypassing the persisted notification
+// RealtimePublisher pushes a live event to one of two realtime topic
+// kinds this module publishes to, bypassing the persisted notification
 // inbox the platform-wide events.Bus feeds -- appropriate for
-// classroom_entry_scanned, which a teacher's live "who just walked in"
-// view wants immediately and which would otherwise flood the inbox with
-// one row per scan. Implemented in module.go over platform/realtime.Hub,
-// mirroring attendance/service.RealtimePublisher's PublishMonitor.
+// classroom_entry_scanned (a teacher's live "who just walked in" view) and
+// the permits/late-arrival/exit-permit/leave-request workflow queues
+// (docs/analysis/realtime-plan-2026-09-25.md section 2, opportunities
+// #1-#3), which would otherwise flood the inbox with one row per event:
+//
+//   - PublishToUser targets one user's own socket
+//     ("user:<tenantID>:<userID>", the same topic cmd/api/ws.go's
+//     wsMeHandler opens per session).
+//   - PublishToDuty targets every holder of a duty assignment
+//     ("duty:<tenantID>:<slug>[:<classID>]"), e.g. the picket teacher's
+//     late-arrival queue or a class's homeroom teacher.
+//
+// Both mirror platform/realtime.TopicUser/TopicDuty without this package
+// importing platform/realtime directly (docs/03-layered-architecture.md
+// section 1: a service may not import platform/realtime). Implemented in
+// module.go over platform/realtime.Hub, mirroring
+// attendance/service.RealtimePublisher's PublishMonitor.
 type RealtimePublisher interface {
-	PublishToUser(ctx context.Context, tenantID, userID uuid.UUID, event any) error
+	PublishToUser(ctx context.Context, tenantID, userID uuid.UUID, eventType string, payload any) error
+	PublishToDuty(ctx context.Context, tenantID uuid.UUID, dutySlug string, classID uuid.NullUUID, eventType string, payload any) error
 }
 
 // Storage is the narrow slice of platform/storage.Client permits' leave

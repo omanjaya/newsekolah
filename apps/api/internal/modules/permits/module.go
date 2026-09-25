@@ -66,22 +66,32 @@ func (noDiscipline) RecordLateArrivalViolation(context.Context, uuid.UUID, uuid.
 	return fmt.Errorf("%w: discipline module is not wired", domain.ErrViolationInvalid)
 }
 
-// hubPublisher adapts platform/realtime's Hub to service.RealtimePublisher,
-// owning the "user:<tenantID>:<userID>" topic-naming convention
-// cmd/api/ws.go's wsMeHandler also uses (mirrors attendance/module.go's
-// identically-shaped hubPublisher for "monitor:<tenantID>").
+// hubPublisher adapts platform/realtime's Hub to service.RealtimePublisher
+// over realtime.TopicUser/TopicDuty -- the topic-naming convention
+// cmd/api/ws.go's wsMeHandler also relies on (mirrors attendance/module.go's
+// identically-shaped hubPublisher for "monitor:<tenantID>"). Every publish
+// goes through Hub.PublishEvent, so every message this module puts on the
+// wire is the shared Envelope shape (envelope.go), not one this package
+// shapes itself.
 type hubPublisher struct{ hub *realtime.Hub }
 
-func (p hubPublisher) PublishToUser(_ context.Context, tenantID, userID uuid.UUID, event any) error {
-	return p.hub.Publish("user:"+tenantID.String()+":"+userID.String(), event)
+func (p hubPublisher) PublishToUser(_ context.Context, tenantID, userID uuid.UUID, eventType string, payload any) error {
+	return p.hub.PublishEvent(realtime.TopicUser(tenantID, userID), eventType, payload)
 }
 
-// noRealtime stands in until a realtime hub is wired: the
-// classroom_entry_scanned push is then silently dropped rather than
-// failing the scan itself.
+func (p hubPublisher) PublishToDuty(_ context.Context, tenantID uuid.UUID, dutySlug string, classID uuid.NullUUID, eventType string, payload any) error {
+	return p.hub.PublishEvent(realtime.TopicDuty(tenantID, dutySlug, classID), eventType, payload)
+}
+
+// noRealtime stands in until a realtime hub is wired: every live push is
+// then silently dropped rather than failing the use case it happened
+// alongside.
 type noRealtime struct{}
 
-func (noRealtime) PublishToUser(context.Context, uuid.UUID, uuid.UUID, any) error { return nil }
+func (noRealtime) PublishToUser(context.Context, uuid.UUID, uuid.UUID, string, any) error { return nil }
+func (noRealtime) PublishToDuty(context.Context, uuid.UUID, string, uuid.NullUUID, string, any) error {
+	return nil
+}
 
 func Register(deps Dependencies) *Module {
 	clk := deps.Clock

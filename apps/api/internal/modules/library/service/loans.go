@@ -240,6 +240,8 @@ func (s *Service) Return(ctx context.Context, tenantID uuid.UUID, in ReturnInput
 		return domain.Loan{}, err
 	}
 	var loan domain.Loan
+	var ready domain.Reservation
+	var hasReady bool
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		var existing domain.Loan
 		var found bool
@@ -292,9 +294,17 @@ func (s *Service) Return(ctx context.Context, tenantID uuid.UUID, in ReturnInput
 		}); err != nil {
 			return err
 		}
-		return s.releaseCopyAfterReturn(ctx, tenantID, existing.CopyID, existing.TitleID, in.Condition)
+		var err2 error
+		ready, hasReady, err2 = s.releaseCopyAfterReturn(ctx, tenantID, existing.CopyID, existing.TitleID, in.Condition)
+		return err2
 	})
-	return loan, err
+	if err != nil {
+		return domain.Loan{}, err
+	}
+	if hasReady {
+		s.publishReservationReady(tenantID, ready)
+	}
+	return loan, nil
 }
 
 // recordLateOutcome applies the old app's late-return decision
@@ -343,30 +353,38 @@ func (s *Service) recordLateOutcome(ctx context.Context, tenantID uuid.UUID, loa
 // releaseCopyAfterReturn puts a returned copy back into circulation: if a
 // member is waiting for the title it goes straight to them (status
 // reserved, held for the policy's hold window, notified), otherwise it
-// becomes available again.
-func (s *Service) releaseCopyAfterReturn(ctx context.Context, tenantID, copyID, titleID uuid.UUID, condition *domain.CopyCondition) error {
+// becomes available again. Returns the reservation marked ready, if any
+// (ok=false when the copy simply went back to available) -- callers
+// publish the live "library.reservation_ready" hub push themselves, after
+// their own outer transaction commits (docs/analysis/
+// realtime-plan-2026-09-25.md: "Publish AFTER the transaction commits"),
+// instead of this shared helper doing it mid-transaction.
+func (s *Service) releaseCopyAfterReturn(ctx context.Context, tenantID, copyID, titleID uuid.UUID, condition *domain.CopyCondition) (domain.Reservation, bool, error) {
 	waiting, err := s.repo.ListReservationsForTitle(ctx, tenantID, titleID)
 	if err != nil {
-		return err
+		return domain.Reservation{}, false, err
 	}
 	next, hasNext := domain.NextWaiting(waiting)
 	if !hasNext {
 		_, err := s.repo.UpdateCopyStatus(ctx, tenantID, copyID, domain.CopyAvailable, condition)
-		return err
+		return domain.Reservation{}, false, err
 	}
 	if _, err := s.repo.UpdateCopyStatus(ctx, tenantID, copyID, domain.CopyReserved, condition); err != nil {
-		return err
+		return domain.Reservation{}, false, err
 	}
 	policy, err := s.loadPolicy(ctx, tenantID)
 	if err != nil {
-		return err
+		return domain.Reservation{}, false, err
 	}
 	now := s.clock.Now()
 	ready, _, err := s.repo.MarkReservationReady(ctx, tenantID, next.ID, copyID, now, now.AddDate(0, 0, policy.ReservationHoldDays))
 	if err != nil {
-		return err
+		return domain.Reservation{}, false, err
 	}
-	return s.publish(ctx, ReservationReadyEvent{TenantID: tenantID, ReservationID: ready.ID, TitleID: titleID, MemberUserID: ready.MemberUserID})
+	if err := s.publish(ctx, ReservationReadyEvent{TenantID: tenantID, ReservationID: ready.ID, TitleID: titleID, MemberUserID: ready.MemberUserID}); err != nil {
+		return domain.Reservation{}, false, err
+	}
+	return ready, true, nil
 }
 
 // ReservationReadyEvent is published when a hold becomes ready for pickup,

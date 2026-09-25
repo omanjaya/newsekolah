@@ -34,7 +34,15 @@ func (s *Service) Reserve(ctx context.Context, tenantID, titleID, memberUserID u
 		})
 		return err
 	})
-	return reservation, err
+	if err != nil {
+		return domain.Reservation{}, err
+	}
+	// Desk queue push (docs/analysis/realtime-plan-2026-09-25.md section 2,
+	// opportunity #7's "library.reserved (baru, saat anggota memesan)"):
+	// ReserveForSelf (me.go) delegates to this method, so both paths cover
+	// it in one place.
+	s.publishReservationEvent(tenantID, "library.reserved", reservation.ID, reservation.TitleID)
+	return reservation, nil
 }
 
 // CancelReservation cancels a waiting or ready reservation. Cancelling a
@@ -47,6 +55,8 @@ func (s *Service) CancelReservation(ctx context.Context, tenantID, reservationID
 		return domain.Reservation{}, err
 	}
 	var reservation domain.Reservation
+	var ready domain.Reservation
+	var hasReady bool
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		existing, found, err := s.repo.GetReservation(ctx, tenantID, reservationID)
 		if err != nil {
@@ -66,11 +76,19 @@ func (s *Service) CancelReservation(ctx context.Context, tenantID, reservationID
 			return domain.ErrReservationNotWaiting
 		}
 		if heldCopy.Valid {
-			return s.releaseCopyAfterReturn(ctx, tenantID, heldCopy.UUID, existing.TitleID, nil)
+			var err2 error
+			ready, hasReady, err2 = s.releaseCopyAfterReturn(ctx, tenantID, heldCopy.UUID, existing.TitleID, nil)
+			return err2
 		}
 		return nil
 	})
-	return reservation, err
+	if err != nil {
+		return domain.Reservation{}, err
+	}
+	if hasReady {
+		s.publishReservationReady(tenantID, ready)
+	}
+	return reservation, nil
 }
 
 // QueuedReservation is one waiting reservation annotated with its 1-based
@@ -118,6 +136,7 @@ func (s *Service) MemberReservations(ctx context.Context, tenantID, memberID uui
 // reservation (or released to available), for one tenant.
 func (s *Service) ExpireReadyReservations(ctx context.Context, tenantID uuid.UUID) (int, error) {
 	n := 0
+	var newlyReady []domain.Reservation
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		expired, err := s.repo.ExpireReadyReservations(ctx, tenantID, s.clock.Now())
 		if err != nil {
@@ -127,14 +146,29 @@ func (s *Service) ExpireReadyReservations(ctx context.Context, tenantID uuid.UUI
 			if !r.HeldCopyID.Valid {
 				continue
 			}
-			if err := s.releaseCopyAfterReturn(ctx, tenantID, r.HeldCopyID.UUID, r.TitleID, nil); err != nil {
+			ready, hasReady, err := s.releaseCopyAfterReturn(ctx, tenantID, r.HeldCopyID.UUID, r.TitleID, nil)
+			if err != nil {
 				return err
+			}
+			if hasReady {
+				newlyReady = append(newlyReady, ready)
 			}
 			n++
 		}
 		return nil
 	})
-	return n, err
+	if err != nil {
+		return n, err
+	}
+	// Job-triggered publish (this runs from the periodic River job, both
+	// in cmd/api's inline worker and cmd/worker's split process): tenantID
+	// is passed explicitly through every call in this chain, never
+	// inferred from ctx, so the publish-only Hub in cmd/worker's process
+	// still targets the right tenant's topic.
+	for _, ready := range newlyReady {
+		s.publishReservationReady(tenantID, ready)
+	}
+	return n, nil
 }
 
 // ExpireReadyReservationsAllTenants runs ExpireReadyReservations for every

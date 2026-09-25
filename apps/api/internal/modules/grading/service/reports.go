@@ -240,6 +240,7 @@ func (s *Service) Publish(ctx context.Context, tenantID, actorID uuid.UUID, canM
 		return Publication{}, err
 	}
 	var out Publication
+	var studentIDs []uuid.UUID
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		yearID, err := s.activeYear(ctx, tenantID)
 		if err != nil {
@@ -265,11 +266,54 @@ func (s *Service) Publish(ctx context.Context, tenantID, actorID uuid.UUID, canM
 		if err != nil {
 			return err
 		}
-		return audit.Record(ctx, tenantID, "grading.report_publish", "report_publication", classID, nil, map[string]any{
+		if err := audit.Record(ctx, tenantID, "grading.report_publish", "report_publication", classID, nil, map[string]any{
 			"term_id": term.ID, "subject_id": subjectID, "published": published,
-		})
+		}); err != nil {
+			return err
+		}
+		if published {
+			// Resolved inside the same tenant transaction (docs/analysis/
+			// realtime-plan-2026-09-25.md section 4, C4's brief: "resolving
+			// the class roster inside the same tenant transaction") so the
+			// roster this publishes to is exactly the one the publication
+			// just committed against, not a second, possibly-stale read
+			// after the transaction closes.
+			studentIDs, err = s.repo.ClassStudentIDs(ctx, tenantID, yearID, classID)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
 	})
-	return out, err
+	if err != nil {
+		return Publication{}, err
+	}
+	if published {
+		payload := gradingPublishedPayload{ClassID: classID, SubjectID: subjectID, TermID: out.TermID}
+		for _, studentID := range studentIDs {
+			s.publishToStudent(ctx, tenantID, studentID, payload)
+		}
+	}
+	return out, nil
+}
+
+// gradingPublishedPayload is the minimal payload pushed to each student
+// once a class-subject's grades are published -- ids only; the client
+// re-fetches through its already-authorized MyGrades endpoint.
+type gradingPublishedPayload struct {
+	ClassID   uuid.UUID `json:"class_id"`
+	SubjectID uuid.UUID `json:"subject_id"`
+	TermID    uuid.UUID `json:"term_id"`
+}
+
+// publishToStudent is a nil-safe wrapper over RealtimePublisher.
+// PublishToUser, so Publish does not repeat the nil-check (no Hub wired
+// must not fail publication itself).
+func (s *Service) publishToStudent(ctx context.Context, tenantID, studentID uuid.UUID, payload gradingPublishedPayload) {
+	if s.realtime == nil {
+		return
+	}
+	_ = s.realtime.PublishToUser(ctx, tenantID, studentID, "grading.published", payload)
 }
 
 // MySubjectGrade is what a student (or their parent) sees per subject.
