@@ -196,6 +196,19 @@ jobs:
         if: steps.changes.outputs.mobile == 'true'
         run: pnpm install --frozen-lockfile
 
+      # apps/mobile imports @newsekolah/api-client, @newsekolah/schemas and
+      # @newsekolah/i18n by their built dist/ output (see each package's
+      # "exports" field), not their TypeScript sources. `pnpm --filter
+      # @newsekolah/mobile <script>` below runs each script directly,
+      # bypassing turbo's dependency graph, so those packages' dist/ output
+      # is never produced first -- typecheck then fails with "Cannot find
+      # module '@newsekolah/api-client'". Build just mobile's workspace
+      # dependencies (not mobile itself: its own build script is `expo
+      # export`, exercised by the web-packages job's scoped build instead).
+      - name: Build workspace dependencies
+        if: steps.changes.outputs.mobile == 'true'
+        run: pnpm exec turbo run build --filter=@newsekolah/mobile^...
+
       - name: typecheck
         if: steps.changes.outputs.mobile == 'true'
         run: pnpm --filter @newsekolah/mobile typecheck
