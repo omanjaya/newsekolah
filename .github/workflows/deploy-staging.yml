@@ -31,9 +31,16 @@ jobs:
     # workflow_run always fires, win or lose -- only proceed on a green CI
     # run. workflow_dispatch has no such gate: a human asked for this ref
     # directly.
+    # The repo is public: workflow_run's `branches` filter only matches the
+    # head branch NAME, so a fork PR from a branch called "main" would match
+    # too and run here with the deploy secrets. Require a push event from
+    # this repository itself.
     if: >-
       github.event_name == 'workflow_dispatch' ||
-      github.event.workflow_run.conclusion == 'success'
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_branch == 'main' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
     outputs:
       sha: ${{ steps.sha.outputs.sha }}
     steps:
