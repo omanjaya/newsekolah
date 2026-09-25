@@ -7,6 +7,8 @@ import type { ReactElement, ReactNode } from "react";
 import { useNotificationsSocket } from "../features/notifications/realtime";
 import { navigation, filterNavigation } from "../lib/navigation";
 import { canOpenPath } from "../lib/navigation-permissions";
+import { ConnectionStatusIndicator } from "../lib/realtime/connection-status-indicator";
+import { LiveSocketProvider } from "../lib/realtime/live-socket-provider";
 import { useSession } from "../lib/session/session-provider";
 
 import { CommandPaletteProvider } from "./command-palette-provider";
@@ -22,12 +24,28 @@ import { UpdateAvailable } from "./update-available";
  * Single layout for the `(app)` route group (docs/03-layered-architecture.md
  * section 3): sidebar on desktop, bottom tab bar on mobile, one header, all
  * reading from the same `navigation` registry.
+ *
+ * `LiveSocketProvider` wraps the whole shell so every screen under it can
+ * call `useLiveInvalidate`/`useLiveTopic`
+ * (docs/analysis/realtime-plan-2026-09-25.md chunk D) against the one
+ * multiplexed `/ws/me` connection it owns; `AppShellBody` below is a
+ * separate component only so `useNotificationsSocket` (which itself calls
+ * `useLiveInvalidate`) runs inside that provider rather than above it.
  */
 export function AppShell({ children }: { children: ReactNode }): ReactElement {
   const { me } = useSession();
+  return (
+    <LiveSocketProvider userId={me?.id}>
+      <AppShellBody>{children}</AppShellBody>
+    </LiveSocketProvider>
+  );
+}
+
+function AppShellBody({ children }: { children: ReactNode }): ReactElement {
+  const { me } = useSession();
   const t = useTranslations("app.shell");
   const pathname = usePathname();
-  useNotificationsSocket(me?.id);
+  useNotificationsSocket();
   const items = filterNavigation(
     navigation,
     (permission) => me?.permissions.includes(permission) ?? false,
@@ -61,6 +79,18 @@ export function AppShell({ children }: { children: ReactNode }): ReactElement {
           */}
           <div className="sticky top-0 z-(--z-sticky)">
             <Header />
+            {/*
+              Not inside components/header.tsx itself: that file is
+              outside this chunk's scope
+              (docs/analysis/realtime-plan-2026-09-25.md chunk D). A thin
+              right-aligned row under the header keeps it close to where
+              the notification bell lives without touching that file, and
+              renders nothing (ConnectionStatusIndicator returns null)
+              except during a sustained disconnect.
+            */}
+            <div className="flex justify-end px-4 md:px-6">
+              <ConnectionStatusIndicator />
+            </div>
           </div>
           <ImpersonationBanner />
           <OfflineIndicator />
