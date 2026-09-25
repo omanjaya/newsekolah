@@ -14,15 +14,32 @@ import { ACTORS, assertNoNavigation, closeAll, expect, loginAs, test } from "./f
 test("leave request: submit -> homeroom queue live -> approve -> student status live", async ({
   browser,
 }) => {
-  const student = await loginAs(browser, ACTORS.student);
-  const homeroom = await loginAs(browser, ACTORS.homeroom);
-  const counselor = await loginAs(browser, ACTORS.counselor);
+  const [student, homeroom, counselor] = await Promise.all([
+    loginAs(browser, ACTORS.student),
+    loginAs(browser, ACTORS.homeroom),
+    loginAs(browser, ACTORS.counselor),
+  ]);
 
   try {
     // Homeroom opens the review queue first, before the student submits --
-    // the whole point is to watch it update without a reload.
+    // the whole point is to watch it update without a reload. Waiting for
+    // the queue's own settled state (not just the heading) matters here:
+    // the realtime subscription to this class's "duty:homeroom:<classID>"
+    // topic (features/permits/realtime.ts's useLeaveReviewQueueLive) only
+    // subscribes once `me.duties` has loaded, a moment after the page
+    // renders -- an event published before that subscribe call lands is
+    // simply missed (there is no replay), so the student must not submit
+    // until this has had a chance to settle.
     await homeroom.page.goto("/leave-requests");
-    await expect(homeroom.page.getByRole("heading", { level: 1 })).toBeVisible();
+    // Waits for the query to settle (not specifically an empty queue -- a
+    // previous failed run can leave an unrelated item behind) by waiting
+    // out the loading skeleton, matching apps/web/e2e/smoke/fixtures.ts's
+    // waitForSkeletonsGone.
+    await expect(homeroom.page.locator(".animate-pulse")).toHaveCount(0, { timeout: 20_000 });
+    // A small margin past the query settling, for the WS topic subscribe
+    // message (fired once `me.duties` resolves) to actually reach the
+    // server -- see the comment above.
+    await homeroom.page.waitForTimeout(1_000);
 
     await student.page.goto("/leave-requests");
     await expect(student.page.getByRole("heading", { level: 1 })).toBeVisible();
@@ -49,14 +66,16 @@ test("leave request: submit -> homeroom queue live -> approve -> student status 
     // first stage ("Wali kelas") is what it is waiting on.
     await expect(student.page.getByText("Menunggu: Wali kelas")).toBeVisible({ timeout: 20_000 });
 
-    // Homeroom's already-open queue picks the new request up live.
+    // Homeroom's already-open queue picks the new request up live. Scoped
+    // to this student's own row (not the whole list, and not assuming the
+    // queue becomes fully empty after approving) since an unrelated
+    // leftover item from an earlier failed run may still be in it.
+    const queueRow = homeroom.page.getByRole("listitem").filter({ hasText: "Siswa Contoh" });
     await assertNoNavigation(homeroom.page, async () => {
-      await expect(homeroom.page.getByText("Siswa Contoh")).toBeVisible({ timeout: 20_000 });
+      await expect(queueRow).toBeVisible({ timeout: 20_000 });
     });
-    await homeroom.page.getByRole("button", { name: "Setujui" }).click();
-    await expect(homeroom.page.getByText("Belum ada pengajuan menunggu")).toBeVisible({
-      timeout: 20_000,
-    });
+    await queueRow.getByRole("button", { name: "Setujui" }).click();
+    await expect(queueRow).toBeHidden({ timeout: 20_000 });
 
     // The student's still-open detail dialog moves to the next stage live,
     // with no navigation on their page at all.

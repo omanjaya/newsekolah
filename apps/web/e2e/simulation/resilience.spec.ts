@@ -19,13 +19,22 @@ import { ACTORS, assertNoNavigation, closeAll, expect, loginAs, test } from "./f
 test("resilience: homeroom offline -> student submits -> resync on reconnect", async ({
   browser,
 }) => {
-  const homeroom = await loginAs(browser, ACTORS.homeroom);
-  const student2 = await loginAs(browser, ACTORS.student2);
-  const counselor = await loginAs(browser, ACTORS.counselor);
+  const [homeroom, student2, counselor] = await Promise.all([
+    loginAs(browser, ACTORS.homeroom),
+    loginAs(browser, ACTORS.student2),
+    loginAs(browser, ACTORS.counselor),
+  ]);
 
   try {
+    // See leave-request.spec.ts's comment on why this waits for the
+    // queue's settled empty state (not just the heading) before anyone
+    // acts: the realtime topic subscribe only fires once `me.duties`
+    // resolves, a moment after the page renders.
     await homeroom.page.goto("/leave-requests");
-    await expect(homeroom.page.getByRole("heading", { level: 1 })).toBeVisible();
+    // Waits for the query to settle, not specifically an empty queue --
+    // see leave-request.spec.ts's identical comment.
+    await expect(homeroom.page.locator(".animate-pulse")).toHaveCount(0, { timeout: 20_000 });
+    await homeroom.page.waitForTimeout(1_000);
 
     await homeroom.context.setOffline(true);
 
@@ -60,14 +69,13 @@ test("resilience: homeroom offline -> student submits -> resync on reconnect", a
     // It hides itself again once the socket is back, and the queue
     // catches up on its own resync -- no reload of homeroom's page at all.
     await expect(connectionStatus).toBeHidden({ timeout: 15_000 });
+    const queueRow = homeroom.page.getByRole("listitem").filter({ hasText: "Siswa Dua Contoh" });
     await assertNoNavigation(homeroom.page, async () => {
-      await expect(homeroom.page.getByText("Siswa Dua Contoh")).toBeVisible({ timeout: 20_000 });
+      await expect(queueRow).toBeVisible({ timeout: 20_000 });
     });
 
-    await homeroom.page.getByRole("button", { name: "Setujui" }).click();
-    await expect(homeroom.page.getByText("Belum ada pengajuan menunggu")).toBeVisible({
-      timeout: 20_000,
-    });
+    await queueRow.getByRole("button", { name: "Setujui" }).click();
+    await expect(queueRow).toBeHidden({ timeout: 20_000 });
 
     await counselor.page.goto(`/leave-requests/${instanceId}`);
     await counselor.page.getByRole("button", { name: "Terbitkan surat" }).click();

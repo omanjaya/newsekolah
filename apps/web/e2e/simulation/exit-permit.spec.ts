@@ -20,11 +20,18 @@ import { ACTORS, assertNoNavigation, closeAll, expect, loginAs, test } from "./f
 test("exit permit: request -> picket -> counselor -> leadership -> security gate -> exited", async ({
   browser,
 }) => {
-  const student = await loginAs(browser, ACTORS.student);
-  const picket = await loginAs(browser, ACTORS.picket);
-  const counselor = await loginAs(browser, ACTORS.counselor);
-  const leadership = await loginAs(browser, ACTORS.leadership);
-  const security = await loginAs(browser, ACTORS.security);
+  // Five actors: logging them in one at a time (each up to ~16s with its
+  // own retry) risks the default test timeout before the chain itself
+  // even starts, so these run concurrently instead -- independent
+  // browser contexts, nothing shared between them.
+  test.setTimeout(150_000);
+  const [student, picket, counselor, leadership, security] = await Promise.all([
+    loginAs(browser, ACTORS.student),
+    loginAs(browser, ACTORS.picket),
+    loginAs(browser, ACTORS.counselor),
+    loginAs(browser, ACTORS.leadership),
+    loginAs(browser, ACTORS.security),
+  ]);
 
   try {
     await student.page.goto("/exit-permits");
@@ -38,7 +45,16 @@ test("exit permit: request -> picket -> counselor -> leadership -> security gate
       (res) => res.request().method() === "POST" && res.url().includes("/v1/exit-permits"),
     );
     await dialog.getByLabel("Dari jam").click();
-    await dialog.getByRole("option").first().click();
+    // The Select's option listbox renders through a portal, as a sibling
+    // of the dialog in the DOM/accessibility tree, not a descendant of it
+    // -- scoping this to `dialog` (as the other locators here do) finds
+    // nothing. With 11 periods (cmd/seed's Jam 1-11) the list overflows a
+    // default viewport, and Radix positions it such that Playwright's
+    // pointer-actionability check ("element is outside of the viewport")
+    // never resolves even after scrolling; the first item is already
+    // highlighted on open (Radix default), so selecting it via keyboard
+    // sidesteps the pointer/visibility check entirely.
+    await student.page.keyboard.press("Enter");
     await dialog.getByRole("button", { name: "Ajukan", exact: true }).click();
     const created = (await (await createResponse).json()) as { instance: { id: string } };
     const permitId = created.instance.id;

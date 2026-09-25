@@ -29,7 +29,13 @@ test("library: student reserves -> librarian member page live", async ({ browser
     await librarian.page.goto("/library/members");
     await expect(librarian.page.getByRole("heading", { level: 1 })).toBeVisible();
     await librarian.page.getByPlaceholder("Cari nama atau nomor anggota").fill("Siswa Dua Contoh");
-    await librarian.page.getByRole("link", { name: "Lihat detail" }).click();
+    // The search box's onGlobalFilterChange is debounced 300ms
+    // (packages/ui/src/components/data-table/data-table.tsx) before the
+    // server-backed query it drives even fires; wait for the result to
+    // actually narrow to the one match instead of racing that debounce.
+    const detailLink = librarian.page.getByRole("link", { name: "Lihat detail" });
+    await expect(detailLink).toHaveCount(1, { timeout: 20_000 });
+    await detailLink.click();
     await librarian.page.waitForURL(/\/library\/members\/[^/?]+/);
     await expect(librarian.page.getByRole("heading", { level: 1 })).toBeVisible();
 
@@ -45,7 +51,11 @@ test("library: student reserves -> librarian member page live", async ({ browser
         timeout: 20_000,
       });
     });
-    await expect(librarian.page.getByText("Sapiens")).toBeVisible();
+    // .first() -- Reserve has no "already reserved" guard (this file's own
+    // doc comment), so a rerun that finds a prior run's own reservation
+    // for the same title still on file adds a second row instead of
+    // replacing it.
+    await expect(librarian.page.getByText("Sapiens").first()).toBeVisible();
   } finally {
     await closeAll(librarian, student2);
   }

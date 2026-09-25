@@ -28,7 +28,14 @@ test("grades: teacher publishes -> student grades page live", async ({ browser }
 
     const scoreCell = teacher.page.getByLabel("Nilai TG1 untuk Siswa Contoh");
     await expect(scoreCell).toBeVisible({ timeout: 20_000 });
-    await scoreCell.fill("88");
+    // A rerun on the same seeded data may find this cell already at 88
+    // from a prior pass; entering the identical value again is not a
+    // change, so the cell never turns dirty and "Simpan semua" stays
+    // disabled. Toggling between two values guarantees a real change
+    // every time, regardless of the starting value.
+    const current = await scoreCell.inputValue();
+    const nextValue = current.trim() === "88" ? "90" : "88";
+    await scoreCell.fill(nextValue);
     await scoreCell.press("Tab");
 
     await teacher.page.getByRole("button", { name: "Simpan semua" }).click();
