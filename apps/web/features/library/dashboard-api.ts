@@ -5,11 +5,14 @@ import { useQuery } from "@tanstack/react-query";
 
 import { useApiClient } from "../../lib/api/client";
 
+import { useLibraryDashboardLive } from "./realtime";
+
 export type LibraryDashboard = components["schemas"]["LibraryDashboard"];
 
 /** Summary counts, latest activity, longest overdue, popular titles, and a 30-day trend. */
 export function useLibraryDashboardQuery() {
   const client = useApiClient();
+  useLibraryDashboardLive();
   return useQuery({
     queryKey: ["library", "dashboard"],
     queryFn: () => client.GET("/v1/library/dashboard"),
