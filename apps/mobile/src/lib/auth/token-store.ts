@@ -12,6 +12,29 @@ const REFRESH_TOKEN_KEY = "newsekolah.refresh_token";
 let accessToken: string | null = null;
 let refreshToken: string | null = null;
 
+/**
+ * Notified every time the in-memory access token changes -- login, a
+ * single-flight refresh (packages/api-client/src/client.ts calls
+ * `tokenStore.setTokens` on every refresh), or sign-out. The realtime
+ * connection (lib/realtime/live-socket-provider.tsx) is the reason this
+ * exists: a socket opened with a token that then expires or gets refreshed
+ * must reconnect with the new one rather than keep retrying a token the API
+ * has already moved past, mirroring apps/web/lib/api/access-token.ts's
+ * subscribeAccessToken for the same purpose.
+ */
+const accessTokenListeners = new Set<() => void>();
+
+function notifyAccessTokenListeners(): void {
+  for (const listener of [...accessTokenListeners]) listener();
+}
+
+export function subscribeAccessToken(listener: () => void): () => void {
+  accessTokenListeners.add(listener);
+  return () => {
+    accessTokenListeners.delete(listener);
+  };
+}
+
 export async function loadStoredTokens(): Promise<{ accessToken: string | null }> {
   const [storedAccess, storedRefresh] = await Promise.all([
     SecureStore.getItemAsync(ACCESS_TOKEN_KEY),
@@ -43,6 +66,7 @@ export const secureTokenStore: TokenStore = {
       writes.push(SecureStore.setItemAsync(REFRESH_TOKEN_KEY, tokens.refreshToken));
     }
     await Promise.all(writes);
+    notifyAccessTokenListeners();
   },
   clear: async () => {
     accessToken = null;
@@ -51,5 +75,6 @@ export const secureTokenStore: TokenStore = {
       SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY),
       SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY),
     ]);
+    notifyAccessTokenListeners();
   },
 };

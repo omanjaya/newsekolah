@@ -11,6 +11,8 @@ import { AuthProvider, useAuth } from "@/lib/auth/AuthProvider";
 import { ToastHost } from "@/components/ui/Toast";
 import { accentVars } from "@/theme/accent";
 import { useOfflineSyncLoop } from "@/lib/offline/sync";
+import { LiveSocketProvider } from "@/lib/realtime/live-socket-provider";
+import { NotificationsRealtimeBridge } from "@/lib/realtime/notifications-bridge";
 
 // One shared query client for the whole app; screens define their own query
 // keys under features/*/keys.ts once that layer exists.
@@ -40,9 +42,22 @@ function AccentRoot({ children }: { children: React.ReactNode }): React.JSX.Elem
     return <View className="flex-1 bg-bg dark:bg-bg-dark" />;
   }
 
+  // The realtime connection (lib/realtime) only makes sense once there is a
+  // session to authenticate it with -- mounting/unmounting LiveSocketProvider
+  // here is how it starts and fully tears down across sign-in/sign-out,
+  // rather than the connection itself watching auth state.
+  const body = me ? (
+    <LiveSocketProvider>
+      <NotificationsRealtimeBridge />
+      {children}
+    </LiveSocketProvider>
+  ) : (
+    children
+  );
+
   return (
     <View style={style} className="flex-1 bg-bg dark:bg-bg-dark">
-      {children}
+      {body}
       <ToastHost />
     </View>
   );

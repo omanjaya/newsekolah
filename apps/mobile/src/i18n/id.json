@@ -90,6 +90,8 @@
   "qr.expired": "Kedaluwarsa",
   "qr.renew": "Buat kode baru",
   "qr.gate": "QR gerbang",
+  "qr.entry_scanned_in_class": "{name} baru masuk kelas {class}",
+  "qr.entry_scanned": "{name} baru masuk kelas",
   "permits.exit_title": "Izin keluar",
   "permits.request": "Ajukan",
   "permits.destination": "Tujuan",
