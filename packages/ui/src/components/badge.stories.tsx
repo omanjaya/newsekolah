@@ -11,3 +11,7 @@ type Story = StoryObj<typeof Badge>;
 
 export const Neutral: Story = { args: { children: "Draf", variant: "neutral" } };
 export const Accent: Story = { args: { children: "Baru", variant: "accent" } };
+export const Success: Story = { args: { children: "Lunas", variant: "success" } };
+export const Warning: Story = { args: { children: "Menunggu", variant: "warning" } };
+export const Danger: Story = { args: { children: "Ditolak", variant: "danger" } };
+export const Info: Story = { args: { children: "Info", variant: "info" } };

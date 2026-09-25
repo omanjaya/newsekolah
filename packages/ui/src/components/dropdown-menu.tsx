@@ -14,7 +14,7 @@ export const DropdownMenuSeparator = forwardRef<
   return (
     <DropdownMenuPrimitive.Separator
       ref={ref}
-      className={cn("my-1 h-px bg-border", className)}
+      className={cn("my-1 h-px bg-line", className)}
       {...props}
     />
   );
@@ -30,7 +30,7 @@ export const DropdownMenuContent = forwardRef<
         ref={ref}
         sideOffset={sideOffset}
         className={cn(
-          "z-(--z-dropdown) min-w-40 rounded-sm border border-border bg-surface p-1",
+          "z-(--z-dropdown) min-w-40 rounded-md border border-border bg-surface p-1",
           "shadow-(--shadow-float) data-[state=open]:animate-overlay-in",
           className,
         )}

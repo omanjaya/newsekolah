@@ -336,7 +336,7 @@ export function DataTable<TData>({
       </div>
       <div
         className={cn(
-          "hidden overflow-x-auto rounded-sm border border-border md:block",
+          "hidden overflow-x-auto rounded-lg border border-border bg-surface shadow-(--shadow-card) md:block",
           fillHeight && "md:min-h-0 md:flex-1 md:overflow-y-auto",
         )}
       >
@@ -346,10 +346,10 @@ export function DataTable<TData>({
             so the separator rides along as a shadow on the header itself.
           */}
           <thead
-            className={cn(fillHeight && "sticky top-0 z-10 shadow-[0_1px_0_0_var(--color-border)]")}
+            className={cn(fillHeight && "sticky top-0 z-10 shadow-[0_1px_0_0_var(--color-line)]")}
           >
             {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id} className="border-b border-border bg-bg">
+              <tr key={headerGroup.id} className="border-b border-line bg-bg">
                 {headerGroup.headers.map((header) => (
                   <th
                     key={header.id}
@@ -385,7 +385,7 @@ export function DataTable<TData>({
               Array.from({ length: skeletonRowCount }).map((_, index) => (
                 <tr
                   key={index}
-                  className={cn("animate-pulse border-b border-border", ROW_HEIGHT[density])}
+                  className={cn("animate-pulse border-b border-line", ROW_HEIGHT[density])}
                 >
                   {columns.map((_column, columnIndex) => (
                     <td key={columnIndex} className="px-3">
@@ -418,10 +418,10 @@ export function DataTable<TData>({
                     setFocusedRowIndex(rowIndex);
                   }}
                   className={cn(
-                    "border-b border-border last:border-b-0",
+                    "border-b border-line last:border-b-0",
                     ROW_HEIGHT[density],
-                    "data-[focused=true]:bg-bg",
-                    "data-[state=selected]:bg-accent/10",
+                    "hover:bg-bg data-[focused=true]:bg-bg",
+                    "data-[state=selected]:bg-accent-soft",
                   )}
                 >
                   {row.getVisibleCells().map((cell) => (

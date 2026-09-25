@@ -12,7 +12,7 @@ export const TabsList = forwardRef<
   return (
     <TabsPrimitive.List
       ref={ref}
-      className={cn("flex gap-4 border-b border-border", className)}
+      className={cn("inline-flex w-fit items-center gap-1 rounded-full bg-bg p-1", className)}
       {...props}
     />
   );
@@ -26,13 +26,14 @@ export const TabsTrigger = forwardRef<
     <TabsPrimitive.Trigger
       ref={ref}
       className={cn(
-        // Tall enough for a thumb on a phone; the underline still sits
-        // where it did, because only the space above it grows.
-        "border-b-2 border-transparent px-1 pb-2 text-[13px] font-medium text-fg-muted",
-        "min-h-11 md:min-h-0",
+        // Pill-style active tab (docs/07-ui-ux.md, "Hijau Segar"): the
+        // whole trigger is the target, not just an underline, so it clears
+        // 44px tall on a phone the same way Button does.
+        "flex min-h-11 items-center justify-center rounded-full px-4 text-[13px] font-medium text-fg-muted",
+        "md:min-h-0 md:h-8",
         "transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)]",
         "hover:text-fg",
-        "data-[state=active]:border-accent data-[state=active]:text-fg",
+        "data-[state=active]:bg-surface data-[state=active]:text-fg data-[state=active]:shadow-(--shadow-card)",
         className,
       )}
       {...props}

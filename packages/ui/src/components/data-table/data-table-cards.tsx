@@ -61,7 +61,7 @@ export function DataTableCards<TData>({
   }
 
   if (rows.length === 0) {
-    return <div className="rounded-sm border border-border">{emptyState}</div>;
+    return <div className="rounded-lg border border-border">{emptyState}</div>;
   }
 
   return (
@@ -134,7 +134,7 @@ export function DataTableCards<TData>({
               key={row.id}
               data-state={row.getIsSelected() ? "selected" : undefined}
               className={cn(
-                "relative rounded-sm border border-border bg-surface",
+                "relative rounded-lg border border-border bg-surface",
                 "data-[state=selected]:border-accent",
               )}
             >
@@ -162,7 +162,7 @@ export function DataTableCards<TData>({
                   type="button"
                   onClick={activate}
                   aria-labelledby={title ? titleId : undefined}
-                  className="absolute inset-0 rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                  className="absolute inset-0 rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                 />
               )}
             </li>

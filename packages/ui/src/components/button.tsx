@@ -5,24 +5,27 @@ import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
 
 import { cn } from "../utils/cn.js";
 
-// Radius 8 (not the DESIGN.md 999 pill radius) so buttons read as the same
-// clickable-surface language as cards and dialogs. Border, not shadow, since
-// DESIGN.md reserves shadow for floating elements only.
+// Radius 14 (controls, docs/07-ui-ux.md's "Hijau Segar" scale; not the 999
+// pill radius, which stays for pills/avatars) so buttons read as the same
+// soft clickable-surface language as inputs, cards, and dialogs. Border, not
+// shadow, since shadow is reserved for floating elements only.
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 rounded-sm text-[13px] font-medium " +
+  "inline-flex items-center justify-center gap-2 rounded-md text-[13px] font-medium " +
     "transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)] " +
     "disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
-        primary: "bg-accent text-accent-fg hover:shadow-[inset_0_0_0_1px_currentColor]",
-        secondary: "border border-border bg-surface text-fg hover:bg-bg",
-        ghost: "text-fg hover:bg-bg",
-        // status-absent-fg equals the fill, so the label uses the page
-        // background instead: light on the dark red of the light theme and
-        // dark on the lighter red of the dark theme, independent of the
-        // tenant accent that drives accent-fg.
-        danger: "bg-status-absent text-bg hover:opacity-90",
+        primary: "bg-accent text-accent-fg hover:bg-accent-strong active:bg-accent-strong",
+        secondary: "border border-border bg-surface text-fg hover:bg-bg active:bg-bg",
+        ghost: "text-fg hover:bg-bg active:bg-bg",
+        // `danger`'s fg is calibrated to sit on `bg`/`surface`, not to be a
+        // solid fill with white text (it fails contrast in dark mode, where
+        // the fg is deliberately light). `bg` itself, though, is exactly
+        // the page background the fill needs to read against in both
+        // themes: near-white on the dark-red light-theme fill, near-black
+        // on the light-red dark-theme fill.
+        danger: "bg-danger text-bg hover:opacity-90 active:opacity-90",
       },
       size: {
         // Both sizes clear 44px on a touch screen and shrink once there is

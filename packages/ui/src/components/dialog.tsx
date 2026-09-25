@@ -59,7 +59,7 @@ export const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(func
           // the dialog is centred rather than anchored. Cap it and let its
           // own body scroll.
           "flex max-h-[calc(100dvh-2rem)] flex-col overflow-hidden",
-          "rounded-sm border border-border bg-surface shadow-(--shadow-float)",
+          "rounded-lg border border-border bg-surface shadow-(--shadow-float)",
           "data-[state=open]:animate-dialog-in data-[state=closed]:animate-dialog-out",
           className,
         )}
@@ -70,7 +70,7 @@ export const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(func
         ) : (
           <div className="flex shrink-0 items-start justify-between gap-4 px-4 py-4 md:px-6">
             <div className="flex flex-col gap-1">
-              <DialogPrimitive.Title className="text-[16px] font-medium text-fg">
+              <DialogPrimitive.Title className="font-heading text-[16px] font-bold tracking-tight text-fg">
                 {title}
               </DialogPrimitive.Title>
               {description && (
@@ -81,7 +81,7 @@ export const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(func
             </div>
             <DialogPrimitive.Close
               aria-label={resolvedCloseLabel}
-              className="flex min-h-11 min-w-11 items-center justify-center rounded-xs text-fg-muted hover:bg-bg"
+              className="flex min-h-11 min-w-11 items-center justify-center rounded-full text-fg-muted hover:bg-bg"
             >
               <X className="size-4" aria-hidden="true" />
             </DialogPrimitive.Close>
@@ -91,7 +91,7 @@ export const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(func
           {children}
         </div>
         {footer && (
-          <div className="flex shrink-0 justify-end gap-2 border-t border-border px-4 py-4 md:px-6">
+          <div className="flex shrink-0 justify-end gap-2 border-t border-line px-4 py-4 md:px-6">
             {footer}
           </div>
         )}

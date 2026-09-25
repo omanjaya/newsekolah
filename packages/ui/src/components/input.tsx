@@ -17,12 +17,12 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
       className={cn(
         // 44px on a touch screen, 36 once there is a cursor, matching how
         // Button sizes itself. A field is tapped as often as a button is.
-        "h-11 md:h-9 w-full rounded-xs border border-border bg-surface px-3 text-[14px] text-fg",
+        "h-11 md:h-9 w-full rounded-md border border-border bg-surface px-3 text-[14px] text-fg",
         "placeholder:text-fg-muted",
         "transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)]",
         "focus-visible:border-accent",
         "disabled:cursor-not-allowed disabled:opacity-50",
-        invalid && "border-status-absent",
+        invalid && "border-danger",
         className,
       )}
       {...props}

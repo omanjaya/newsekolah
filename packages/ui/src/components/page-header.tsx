@@ -16,10 +16,10 @@ export interface PageHeaderProps {
   className?: string;
 }
 
-/** Page title 24 medium, per DESIGN.md typography. */
+/** Page title in Manrope 700, with a muted eyebrow above it (docs/07-ui-ux.md, "Hijau Segar"). */
 export function PageHeader({ eyebrow, title, actions, breadcrumb, className }: PageHeaderProps) {
   return (
-    <div className={cn("flex flex-col gap-2 border-b border-border pb-4", className)}>
+    <div className={cn("flex flex-col gap-2 border-b border-line pb-4", className)}>
       {breadcrumb && breadcrumb.length > 0 && (
         <nav
           aria-label="Navigasi halaman"
@@ -42,7 +42,7 @@ export function PageHeader({ eyebrow, title, actions, breadcrumb, className }: P
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex flex-col gap-1">
           {eyebrow && <p className="text-[13px] font-medium text-fg-muted">{eyebrow}</p>}
-          <h1 className="text-[24px] font-medium text-fg">{title}</h1>
+          <h1 className="font-heading text-[24px] font-bold tracking-tight text-fg">{title}</h1>
         </div>
         {/* Wraps on a phone so two long action labels never push the page sideways. */}
         {actions && <div className="flex flex-wrap items-center gap-2 md:shrink-0">{actions}</div>}
