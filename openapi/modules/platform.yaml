@@ -223,6 +223,94 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { $ref: "#/components/responses/Conflict" }
 
+  /v1/platform/operator-alerts:
+    get:
+      tags: [platform]
+      operationId: getPlatformOperatorAlertSettings
+      x-permission: platform_superadmin
+      summary: Platform-wide operator alerting settings (Telegram), never the bot token
+      responses:
+        "200":
+          description: Operator alert settings
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PlatformOperatorAlertSettings" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    put:
+      tags: [platform]
+      operationId: updatePlatformOperatorAlertSettings
+      x-permission: platform_superadmin
+      summary: Partially update operator alerting settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PlatformOperatorAlertSettingsUpdate" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PlatformOperatorAlertSettings" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /v1/platform/operator-alerts/detect-chat:
+    post:
+      tags: [platform]
+      operationId: detectPlatformOperatorAlertChat
+      x-permission: platform_superadmin
+      summary: List candidate Telegram chats from the bot's recent updates
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                telegram_token:
+                  type: string
+                  description: >-
+                    Test a token that has not been saved yet. Omitted:
+                    uses the currently stored token.
+      responses:
+        "200":
+          description: Candidate chats
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    {
+                      type: array,
+                      items: { $ref: "#/components/schemas/PlatformOperatorAlertChatCandidate" },
+                    }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /v1/platform/operator-alerts/test:
+    post:
+      tags: [platform]
+      operationId: testPlatformOperatorAlert
+      x-permission: platform_superadmin
+      summary: Send a test message to the configured Telegram chat
+      responses:
+        "200":
+          description: >-
+            Result of the attempt. Always 200: success=false with an error
+            description is not a request failure, it is Telegram's answer.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PlatformOperatorAlertTestResult" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
 components:
   schemas:
     PlatformEducationLevel:
@@ -303,3 +391,86 @@ components:
         error_message: { type: string }
         created_at: { type: string, format: date-time }
         completed_at: { type: string, format: date-time }
+    PlatformOperatorAlertSettings:
+      type: object
+      required:
+        [
+          enabled,
+          telegram_chat_id,
+          telegram_token_set,
+          check_health,
+          check_containers,
+          check_disk,
+          check_memory,
+          check_backup,
+          check_certificate,
+          check_errors_5xx,
+          disk_threshold_percent,
+          memory_threshold_mb,
+          backup_max_age_hours,
+          cert_expiry_days,
+          daily_summary_enabled,
+          daily_summary_hour,
+          updated_at,
+        ]
+      properties:
+        enabled: { type: boolean }
+        telegram_chat_id: { type: string }
+        telegram_token_set: { type: boolean }
+        telegram_token_hint:
+          type: string
+          description: Masked hint of the stored token (e.g. "****1234"); absent when no token is stored.
+        check_health: { type: boolean }
+        check_containers: { type: boolean }
+        check_disk: { type: boolean }
+        check_memory: { type: boolean }
+        check_backup: { type: boolean }
+        check_certificate: { type: boolean }
+        check_errors_5xx: { type: boolean }
+        disk_threshold_percent: { type: integer, minimum: 1, maximum: 100 }
+        memory_threshold_mb: { type: integer, minimum: 1 }
+        backup_max_age_hours: { type: integer, minimum: 1 }
+        cert_expiry_days: { type: integer, minimum: 1 }
+        daily_summary_enabled: { type: boolean }
+        daily_summary_hour: { type: integer, minimum: 0, maximum: 23 }
+        updated_at: { type: string, format: date-time }
+        updated_by: { type: string, format: uuid }
+    PlatformOperatorAlertSettingsUpdate:
+      type: object
+      properties:
+        enabled: { type: boolean }
+        telegram_token:
+          type: string
+          description: A new token to seal and store, replacing any existing one.
+        telegram_token_clear:
+          type: boolean
+          description: Set true to remove the stored token. Mutually exclusive with telegram_token.
+        telegram_chat_id: { type: string }
+        check_health: { type: boolean }
+        check_containers: { type: boolean }
+        check_disk: { type: boolean }
+        check_memory: { type: boolean }
+        check_backup: { type: boolean }
+        check_certificate: { type: boolean }
+        check_errors_5xx: { type: boolean }
+        disk_threshold_percent: { type: integer, minimum: 1, maximum: 100 }
+        memory_threshold_mb: { type: integer, minimum: 1 }
+        backup_max_age_hours: { type: integer, minimum: 1 }
+        cert_expiry_days: { type: integer, minimum: 1 }
+        daily_summary_enabled: { type: boolean }
+        daily_summary_hour: { type: integer, minimum: 0, maximum: 23 }
+    PlatformOperatorAlertChatCandidate:
+      type: object
+      required: [id, type, title]
+      properties:
+        id: { type: integer, format: int64 }
+        type: { type: string }
+        title: { type: string }
+    PlatformOperatorAlertTestResult:
+      type: object
+      required: [success]
+      properties:
+        success: { type: boolean }
+        error:
+          type: string
+          description: Telegram's own error description when success is false. Never the token.

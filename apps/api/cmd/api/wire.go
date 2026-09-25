@@ -284,7 +284,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 
 	platformDeps := platform.Dependencies{
 		Pool: pool, Admin: wiring.PlatformIdentity{Identity: identityModule.Service, Pool: pool}, Jobs: jobInserter,
-		Clock: clock.Real{}, Mode: cfg.TenancyMode, Bucket: cfg.S3Bucket,
+		Clock: clock.Real{}, Mode: cfg.TenancyMode, Bucket: cfg.S3Bucket, Sealer: sealer,
 	}
 	if sharedStorage != nil {
 		platformDeps.Storage = wiring.PlatformStorage{Client: sharedStorage}
@@ -460,6 +460,15 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	// uses for the notification bridge, so this introduces no new
 	// dependency, only a second caller of an existing one.
 	mountRealtimeRoutes(router, pool, tokenIssuer, identityModule.Service, identityModule.Service, hub, presence, attendanceModule.Service, cfg.AppOrigins, logger)
+
+	// Outside openapi/openapi.yaml and /v1 entirely -- see
+	// monitor_config.go's package doc comment for why, and how
+	// MONITOR_API_TOKEN gates it. Mounted last for the same reason
+	// mountRealtimeRoutes is: it still runs behind every middleware
+	// already attached to router (tenant.Middleware special-cases
+	// "/internal/*" to skip tenant resolution, the same way it already
+	// does for "/health").
+	mountMonitorConfigRoute(router, platformModule.Service, cfg.MonitorAPIToken)
 
 	return router, bg, nil
 }

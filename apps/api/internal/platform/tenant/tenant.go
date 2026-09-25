@@ -73,7 +73,14 @@ func Middleware(mode Mode, loader Loader, baseDomain string) func(http.Handler) 
 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/health" {
+			// /health and /internal/* carry no tenant of their own:
+			// /health is a bare liveness probe, and /internal/* (the host
+			// monitor endpoint, cmd/api/monitor_config.go) authenticates
+			// with its own shared-secret header, not a tenant-scoped
+			// session. Resolving a tenant for either only introduces a
+			// failure mode neither needs (e.g. multi-tenant mode rejecting
+			// a loopback request with no matching Host).
+			if r.URL.Path == "/health" || strings.HasPrefix(r.URL.Path, "/internal/") {
 				next.ServeHTTP(w, r)
 				return
 			}

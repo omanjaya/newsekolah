@@ -119,6 +119,20 @@ type Config struct {
 	OTelExporterEndpoint string
 
 	SeedPassword string
+
+	// MonitorAPIToken gates GET /internal/monitor-config (cmd/api/monitor_config.go),
+	// the endpoint infra/scripts/monitor.sh reads its operator-alert
+	// configuration (including the decrypted Telegram bot token) from.
+	// That route is deliberately outside openapi/openapi.yaml's /v1 tree
+	// and the system Caddy on a shared VPS only proxies /v1, /health and
+	// /ws (infra/README.md "Shared system Caddy (VPS)"), so it is
+	// reachable only through the API's own loopback-published port, never
+	// the public internet -- this token is the second layer, checked with
+	// a constant-time comparison against the request's X-Monitor-Token
+	// header. Empty (the default) disables the endpoint entirely (404),
+	// so a deployment that never runs the host monitor script carries no
+	// extra attack surface. Generate with `openssl rand -hex 32`.
+	MonitorAPIToken string
 }
 
 // IsProduction reports whether the process is running with production
@@ -189,6 +203,8 @@ func Load() (Config, error) {
 		OTelExporterEndpoint: lookup("OTEL_EXPORTER_OTLP_ENDPOINT"),
 
 		SeedPassword: orDefault(lookup("SEED_PASSWORD"), "Password123!"),
+
+		MonitorAPIToken: lookup("MONITOR_API_TOKEN"),
 	}
 
 	if c.TenancyMode != TenancySingle && c.TenancyMode != TenancyMulti {

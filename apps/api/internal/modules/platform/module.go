@@ -13,6 +13,7 @@ import (
 	transporthttp "github.com/omanjaya/newsekolah/apps/api/internal/modules/platform/transport/http"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/config"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/crypto"
 )
 
 type Dependencies struct {
@@ -31,6 +32,11 @@ type Dependencies struct {
 	Clock   clock.Clock
 	Mode    config.TenancyMode
 	Bucket  string
+	// Sealer seals/opens the operator alerts Telegram bot token
+	// (service/operator_alerts.go); the same instance every other module
+	// that encrypts a field uses (cmd/api/wire.go builds it once from
+	// config.EncryptionSecret()).
+	Sealer *crypto.Sealer
 }
 
 type Module struct {
@@ -39,7 +45,7 @@ type Module struct {
 }
 
 func Register(deps Dependencies) *Module {
-	svc := service.New(deps.Pool, repository.New(deps.Pool), deps.Admin, deps.Jobs, deps.Storage, deps.Clock, deps.Mode, deps.Bucket)
+	svc := service.New(deps.Pool, repository.New(deps.Pool), deps.Admin, deps.Jobs, deps.Storage, deps.Clock, deps.Mode, deps.Bucket, deps.Sealer)
 	return &Module{Service: svc, Handler: transporthttp.New(svc)}
 }
 
