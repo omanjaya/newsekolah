@@ -1700,6 +1700,10 @@
           "label": "View early warning",
           "description": "See the early-warning list and a student's detail"
         },
+        "view_grades": {
+          "label": "View grades",
+          "description": "View the gradebook, recap, report cards and exports, read-only"
+        },
         "view_integrations": {
           "label": "View integrations",
           "description": "See API keys, webhooks and delivery logs"

@@ -1700,6 +1700,10 @@
           "label": "Lihat peringatan dini",
           "description": "Lihat daftar siswa berisiko dan rinciannya"
         },
+        "view_grades": {
+          "label": "Lihat nilai",
+          "description": "Lihat buku nilai, rekap, rapor, dan ekspor tanpa bisa mengubah"
+        },
         "view_integrations": {
           "label": "Lihat integrasi",
           "description": "Lihat kunci API, webhook, dan log pengiriman"

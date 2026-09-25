@@ -192,7 +192,11 @@ export const navigation: NavItem[] = [
     labelKey: "nav.academic.items.grading",
     href: "/grading",
     icon: domainIcons.grades,
-    permission: "manage_grades",
+    // manage_grades (edit) or view_grades (read-only, e.g. the principal
+    // oversight role) -- features/grading/components/grading-view.tsx
+    // renders the same screen for either, hiding every edit/save/publish
+    // control for a reader who only has view_grades.
+    anyPermission: ["manage_grades", "view_grades"],
     group: GROUP.academic,
   },
   {
