@@ -116,6 +116,10 @@ jobs:
         if: steps.check.outputs.present == 'true'
         run: pnpm install --frozen-lockfile
 
+      - name: Install Playwright browsers
+        if: steps.check.outputs.present == 'true'
+        run: pnpm --filter @newsekolah/web exec playwright install --with-deps chromium
+
       - name: Run the multi-actor simulation suite against staging
         if: steps.check.outputs.present == 'true'
         env:
