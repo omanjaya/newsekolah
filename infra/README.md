@@ -337,6 +337,42 @@ the same value as `NEXT_PUBLIC_S3_PUBLIC_ORIGIN` for the `web` build/runtime so
 origin as the site itself (already covered by `'self'`), but required if `S3_PUBLIC_ENDPOINT` is
 ever a different origin than the web app.
 
+## Staging (shared VPS)
+
+`https://staging.sion.nouma.id` runs the same images and topology as
+production (system Caddy, HTTPS/WSS, Redis, app_rw with RLS,
+OPENAPI_VALIDATION=enforce) with demo data only. Use it to run the
+simulation suite and to try a change before it reaches production.
+
+- Checkout: `/root/sion-staging` (branch `fix/schedule-grid-alignment`), its
+  own `infra/docker/.env` with its own secrets. Never copy production's
+  `.env`: the base compose file loads `env_file: .env`, so staging must run
+  from its own directory.
+- Compose: `docker-compose.prod.yml` + `compose.staging.yml` (project
+  `newsekolah-staging`, images `newsekolah-*:staging`, loopback ports api
+  8082, web 3012, MinIO 9012). Do not add `compose.vps.yml`.
+- Outbound messaging is off: no SMTP, WhatsApp `noop`, no push keys.
+- DNS: `staging.sion` A record in the `nouma.id` zone (Hostinger) to the VPS.
+  Caddy vhost `staging.sion.nouma.id` sends `X-Robots-Tag: noindex, nofollow`.
+- Demo accounts come from `cmd/seed` with the staging `SEED_PASSWORD`
+  (kept on the maintainer's machine in `~/.config/newsekolah/staging.env`).
+
+Update and reseed:
+
+```bash
+cd /root/sion-staging && git pull --ff-only
+cd infra/docker
+C="docker compose -f docker-compose.prod.yml -f compose.staging.yml"
+$C build api web
+$C up -d --no-build postgres redis minio minio-init migrate api worker web
+SU=$(grep ^DATABASE_URL= .env | cut -d= -f2-)
+$C run --rm --no-deps -e APP_ENV=development -e DATABASE_URL="$SU" --entrypoint /seed api
+```
+
+The seed runs with `APP_ENV=development` only for that one-off command
+because `cmd/seed` refuses production; the long-running services stay in
+production mode.
+
 ## Development
 
 Hot-reload stack for day-to-day work: see [docker/README.dev.md](docker/README.dev.md).
