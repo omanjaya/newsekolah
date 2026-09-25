@@ -324,6 +324,41 @@ dipindahkan** karena algoritmanya berbeda. Setiap user yang dimigrasikan:
 Ini dicatat di laporan sebagai bagian dari setiap baris `users`, bukan
 sebagai gap terpisah, karena berlaku untuk semua user tanpa kecuali.
 
+## Tiga perbaikan dari gladi bersih 25 September 2026
+
+Ditemukan menjalankan `docs/analysis/etl-rehearsal-2026-09-25.md`
+(migrasi penuh dua semester riwayat SION sekolah sungguhan):
+
+- **Nama kelas dengan awalan "Kelas"**: sekolah yang sama menamai
+  kelasnya "X-1".."XII-12" di satu tahun ajaran tapi
+  "Kelas X1".."Kelas XII-12" di tahun ajaran lain.
+  `mapping.ParseGradeFromClassName` dulu hanya pernah melihat token
+  pertama nama kelas; begitu token itu "Kelas" (bukan kode grade), semua
+  kelas tahun ajaran itu gagal dimigrasikan, yang lalu menjatuhkan setiap
+  enrollment, jadwal, teaching assignment, dan sesi presensi tahun ajaran
+  itu juga (kegagalan berantai). Diperbaiki dengan membuang token pembuka
+  "Kelas" (case-insensitive) dan mengenali token grade yang digabung
+  langsung dengan angka bagian ("X1", "XI2") selain yang sudah dipisah
+  dengan "-"/spasi ("X-1"). Diuji lewat `TestParseGradeFromClassName`
+  (`apps/api/cmd/etl/mapping/naturalkey_test.go`).
+- **`workflow_instances.local_date` tidak diisi**: migrasi 0120
+  (`0120_workflow_instances_local_date`) menambah kolom `local_date`
+  NOT NULL pada `workflow_instances` setelah exit permit dan leave
+  request ETL ditulis, jadi insert-nya belum pernah diperbarui --
+  setiap baris exit permit/leave request gagal dengan pelanggaran
+  not-null. Diperbaiki di `migrateExitPermits`/`migrateLeaveRequests`
+  (`apps/api/cmd/etl/migrate_permits.go`) dengan mengisi `local_date`
+  dari `mapping.LocalDate(p.CreatedAt)` -- tanggal kalender lokal tenant
+  milik baris sumber, persis cara aplikasi sendiri menghitungnya saat
+  runtime (`service.tenantNow`).
+- **Semester tanpa exit permit yang belum final menghentikan seluruh
+  run**: `CountExitPermitsNotFinal` (`apps/api/cmd/etl/source_permits.go`)
+  memakai `sum(...)` MySQL yang mengembalikan NULL (bukan 0) saat tak ada
+  baris `student_permits` cocok sama sekali dalam rentang tanggal semester
+  itu -- `Scan` ke `int` gagal, dan seluruh run ETL gagal sebelum
+  menyentuh database target sama sekali. Diperbaiki dengan
+  `coalesce(..., 0)`.
+
 ## Dua perbaikan dari pass sebelumnya
 
 - **Nomor HP dobel**: dua user di data sekolah ini berbagi satu nomor HP
@@ -679,6 +714,19 @@ count(*) ...`). Jumlah harus sama persis dikurangi baris yang memang
    sudah mengomunikasikan `must_change_password` ke semua user, matikan
    akses tulis ke sistem lama (read-only atau nonaktif), lakukan satu run
    ETL terakhir, lalu sekolah pindah sepenuhnya ke newsekolah.
+7. **Aktifkan tahun ajaran dan term yang berjalan**
+   (`academic_years.is_active`, `terms.is_active`) -- ETL sengaja tidak
+   pernah menyentuh kolom ini (keputusan operasional sekolah, lihat
+   "Tahun ajaran dan semester"), tapi tanpanya layar presensi harian
+   (`/v1/attendance/me/today`, `/v1/attendance/me/calendar`) langsung
+   gagal dengan `ATTENDANCE_NO_ACTIVE_YEAR` untuk semua pengguna begitu
+   sekolah pindah ke sistem baru -- terlihat lewat login end-to-end di
+   `docs/analysis/etl-rehearsal-2026-09-25.md`. Lakukan langkah ini
+   sebelum mengumumkan cutover ke pengguna, bukan sesudah.
+
+Rincian gladi bersih penuh (jumlah baris sumber vs target per entitas,
+tiga bug yang ditemukan dan diperbaiki, waktu run dua semester penuh, dan
+checklist go/no-go) ada di `docs/analysis/etl-rehearsal-2026-09-25.md`.
 
 ## Waktu run
 
