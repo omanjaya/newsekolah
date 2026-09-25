@@ -31,6 +31,9 @@
       "offline": {
         "banner": "Tidak ada koneksi, perubahan disimpan sementara di perangkat"
       },
+      "realtime": {
+        "reconnecting": "Menyambungkan kembali pembaruan langsung..."
+      },
       "updateAvailable": {
         "title": "Versi baru tersedia",
         "body": "Muat ulang untuk memakai versi terbaru aplikasi",

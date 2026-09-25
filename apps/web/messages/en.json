@@ -31,6 +31,9 @@
       "offline": {
         "banner": "No connection, changes are saved on this device for now"
       },
+      "realtime": {
+        "reconnecting": "Reconnecting live updates..."
+      },
       "updateAvailable": {
         "title": "New version available",
         "body": "Reload to use the latest version of the app",
