@@ -50,11 +50,18 @@ func (s *Service) Scan(ctx context.Context, tenantID, employeeUserID uuid.UUID) 
 	}
 	if s.realtime != nil {
 		// Roster board (docs/analysis/realtime-plan-2026-09-25.md section 2,
-		// opportunity #8): both HR staff and the picket duty watch this
-		// board, so the push goes to both topics rather than picking one.
+		// opportunity #8): there is no "hr" role (authz.RoleDefaults has
+		// admin, teacher, staff, student, librarian, principal, super_admin)
+		// and no duty type holds view_staff_attendance/manage_staff_
+		// attendance (authz.DutyTypeDefaults), so a duty push would never
+		// reach anyone -- push only to the two roles that default-hold a
+		// staff-attendance permission: admin (manage, implicit "all minus
+		// two") and principal (view, "HR/piket operations" per its own
+		// PermViewStaffAttendance comment).
 		payload := staffAttendanceScannedPayload{EmployeeID: employeeUserID}
-		_ = s.realtime.PublishRole(tenantID, "hr", "staff_attendance.scanned", payload)
-		_ = s.realtime.PublishDuty(tenantID, "duty_teacher", uuid.NullUUID{}, "staff_attendance.scanned", payload)
+		for _, role := range []string{"admin", "principal"} {
+			_ = s.realtime.PublishRole(tenantID, role, "staff_attendance.scanned", payload)
+		}
 	}
 	return out, nil
 }

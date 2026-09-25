@@ -22,16 +22,12 @@ type Module struct {
 }
 
 // hubPublisher adapts platform/realtime's Hub to
-// service.RealtimePublisher over realtime.TopicRole/TopicDuty, mirroring
-// permits/module.go's identically-shaped adapter.
+// service.RealtimePublisher over realtime.TopicRole, mirroring permits/
+// module.go's identically-shaped adapter.
 type hubPublisher struct{ hub *realtime.Hub }
 
 func (p hubPublisher) PublishRole(tenantID uuid.UUID, role, eventType string, payload any) error {
 	return p.hub.PublishEvent(realtime.TopicRole(tenantID, role), eventType, payload)
-}
-
-func (p hubPublisher) PublishDuty(tenantID uuid.UUID, dutySlug string, classID uuid.NullUUID, eventType string, payload any) error {
-	return p.hub.PublishEvent(realtime.TopicDuty(tenantID, dutySlug, classID), eventType, payload)
 }
 
 // Dependencies is everything Register needs from other modules, per

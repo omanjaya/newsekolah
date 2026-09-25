@@ -24,17 +24,28 @@ type instanceStageEventPayload struct {
 	Stage      string    `json:"stage"`
 }
 
-// dutySlugForStage maps a workflow stage key to the duty slug whose
-// holders should be pushed a live update when the workflow reaches or
-// leaves it. "class_teacher" (approver_rule teacher_of_class_now) is
-// intentionally left unmapped: eligibility there is whichever specific
-// teacher currently has the class on their schedule, not a duty a fixed
-// group of people hold, and the realtime plan does not list a live screen
-// for it (docs/analysis/realtime-plan-2026-09-25.md section 2).
+// dutySlugForStage maps a workflow stage key to the real duty_types.slug
+// (authz.DutyTypeDefaults) whose holders should be pushed a live update
+// when the workflow reaches or leaves it. A stage's Key is not itself a
+// duty slug -- "duty_teacher" is the workflow's stage name for the
+// picket-duty teacher, but the actual duty type default seeds is named
+// "picket" (authz.DutyTypeDefaults, "Guru Piket"); publishing to a duty
+// slug that duty_types never seeds means nobody can ever hold it, so no
+// one could ever subscribe (docs/analysis/realtime-plan-2026-09-25.md
+// section 3.2: subscribing to "duty:<tenant>:<slug>" requires
+// DutyLookup.UsersWithDuty to actually return someone for that slug).
+// "counselor"/"homeroom"/"leadership"/"security" already match their
+// stage Key verbatim (domain.DefaultStages' approver_rule strings
+// "duty:counselor"/"duty:leadership" already name the real slug).
+// "class_teacher" (approver_rule teacher_of_class_now) stays intentionally
+// unmapped: eligibility there is whichever specific teacher currently has
+// the class on their schedule, not a duty a fixed group of people hold,
+// and the realtime plan does not list a live screen for it (docs/
+// analysis/realtime-plan-2026-09-25.md section 2).
 func dutySlugForStage(stageKey string) (slug string, ok bool) {
 	switch stageKey {
 	case "duty_teacher":
-		return "duty_teacher", true
+		return "picket", true
 	case "leadership":
 		return "leadership", true
 	case "counselor":

@@ -73,18 +73,17 @@ type LeaveReader interface {
 }
 
 // RealtimePublisher pushes a live update after a self-service QR scan
-// (Scan, records.go), to every holder of a fixed role (PublishRole, e.g.
-// "hr") and to every holder of a duty assignment (PublishDuty, e.g. the
-// picket teacher covering the front desk) -- docs/analysis/
-// realtime-plan-2026-09-25.md section 2, opportunity #8's "role:<tenant>:
-// hr / duty piket". Both mirror platform/realtime.TopicRole/TopicDuty
-// without this package importing platform/realtime directly, the same
-// pattern permits/service.RealtimePublisher and attendance/service.
-// RealtimePublisher use. A nil RealtimePublisher (no Hub wired) makes
-// every push a no-op rather than failing the scan itself.
+// (Scan, records.go) to every holder of a fixed role -- docs/analysis/
+// realtime-plan-2026-09-25.md section 2, opportunity #8. There is no "hr"
+// role and no duty type holds a staff-attendance permission by default
+// (authz.RoleDefaults/DutyTypeDefaults), so this pushes to role topics
+// only (admin, principal), over realtime.TopicRole without this package
+// importing platform/realtime directly, the same pattern permits/
+// service.RealtimePublisher and attendance/service.RealtimePublisher use.
+// A nil RealtimePublisher (no Hub wired) makes every push a no-op rather
+// than failing the scan itself.
 type RealtimePublisher interface {
 	PublishRole(tenantID uuid.UUID, role, eventType string, payload any) error
-	PublishDuty(tenantID uuid.UUID, dutySlug string, classID uuid.NullUUID, eventType string, payload any) error
 }
 
 type Service struct {

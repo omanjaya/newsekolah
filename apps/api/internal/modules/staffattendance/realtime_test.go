@@ -17,10 +17,10 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/dbtest"
 )
 
-// recordedRealtimePublish captures one PublishRole or PublishDuty call.
+// recordedRealtimePublish captures one PublishRole call.
 type recordedRealtimePublish struct {
 	tenantID  uuid.UUID
-	target    string // "role:hr" or "duty:duty_teacher"
+	role      string
 	eventType string
 	payload   any
 }
@@ -39,14 +39,7 @@ type fakeRealtimeHub struct {
 func (f *fakeRealtimeHub) PublishRole(tenantID uuid.UUID, role, eventType string, payload any) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	f.published = append(f.published, recordedRealtimePublish{tenantID: tenantID, target: "role:" + role, eventType: eventType, payload: payload})
-	return nil
-}
-
-func (f *fakeRealtimeHub) PublishDuty(tenantID uuid.UUID, dutySlug string, _ uuid.NullUUID, eventType string, payload any) error {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	f.published = append(f.published, recordedRealtimePublish{tenantID: tenantID, target: "duty:" + dutySlug, eventType: eventType, payload: payload})
+	f.published = append(f.published, recordedRealtimePublish{tenantID: tenantID, role: role, eventType: eventType, payload: payload})
 	return nil
 }
 
@@ -75,11 +68,12 @@ func buildServiceWithRealtime(pool *pgxpool.Pool, hub service.RealtimePublisher)
 	return service.New(pool, repository.New(pool), stubYears{}, stubCalendar{}, stubLeave{}, nil, hub)
 }
 
-// TestScanPublishesToHrRoleAndDutyTeacherTopics covers opportunity #8
+// TestScanPublishesToAdminAndPrincipalRoleTopics covers opportunity #8
 // (docs/analysis/realtime-plan-2026-09-25.md section 2): a self-service QR
-// scan must push a live update to both the HR role topic and the picket
-// duty topic, carrying only the employee id.
-func TestScanPublishesToHrRoleAndDutyTeacherTopics(t *testing.T) {
+// scan must push a live update to every role that default-holds a
+// staff-attendance permission -- admin and principal (there is no "hr"
+// role, and no duty type holds one) -- carrying only the employee id.
+func TestScanPublishesToAdminAndPrincipalRoleTopics(t *testing.T) {
 	pg := dbtest.Start(t)
 	ctx := context.Background()
 	adminQ := db.New(pg.AdminPool)
@@ -102,14 +96,14 @@ func TestScanPublishesToHrRoleAndDutyTeacherTopics(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Len(t, hub.published, 2)
-	byTarget := map[string]recordedRealtimePublish{}
+	byRole := map[string]recordedRealtimePublish{}
 	for _, p := range hub.published {
-		byTarget[p.target] = p
+		byRole[p.role] = p
 	}
-	require.Contains(t, byTarget, "role:hr")
-	require.Contains(t, byTarget, "duty:duty_teacher")
-	for _, target := range []string{"role:hr", "duty:duty_teacher"} {
-		got := byTarget[target]
+	require.Contains(t, byRole, "admin")
+	require.Contains(t, byRole, "principal")
+	for _, role := range []string{"admin", "principal"} {
+		got := byRole[role]
 		require.Equal(t, tn.ID, got.tenantID)
 		require.Equal(t, "staff_attendance.scanned", got.eventType)
 		requireStaffAttendanceScannedPayload(t, got.payload, employee.ID)

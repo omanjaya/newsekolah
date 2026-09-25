@@ -4,8 +4,6 @@
 package visitors
 
 import (
-	"context"
-
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -39,23 +37,15 @@ type Module struct {
 	Handler *transporthttp.VisitorsHandler
 }
 
-// visitorBoardTopic is this module's own public, tenant-wide topic --
-// "tenant:<tenantID>:visitor-board" -- built the same way permits/
-// module.go and attendance/module.go inline their own topic strings
-// rather than adding a new helper to platform/realtime/topic.go (owned by
-// chunk A/B, not touched here): mirrors "monitor:<tenantID>"'s shape for a
-// public, non-user-scoped screen (docs/analysis/
-// realtime-plan-2026-09-25.md section 2, opportunity #5).
-func visitorBoardTopic(tenantID uuid.UUID) string {
-	return "tenant:" + tenantID.String() + ":visitor-board"
-}
-
 // hubPublisher adapts platform/realtime's Hub to service.RealtimePublisher
-// over visitorBoardTopic.
+// over realtime.TopicRole -- chunk B's subscribe authorization only
+// accepts "user:"/"role:"/"duty:" topics (internal/platform/realtime/
+// subscribe.go), so this reuses the same role topic every other module's
+// hubPublisher does rather than a bespoke public topic string.
 type hubPublisher struct{ hub *realtime.Hub }
 
-func (p hubPublisher) PublishBoard(_ context.Context, tenantID uuid.UUID, eventType string, payload any) error {
-	return p.hub.PublishEvent(visitorBoardTopic(tenantID), eventType, payload)
+func (p hubPublisher) PublishRole(tenantID uuid.UUID, role, eventType string, payload any) error {
+	return p.hub.PublishEvent(realtime.TopicRole(tenantID, role), eventType, payload)
 }
 
 func Register(deps Dependencies) *Module {

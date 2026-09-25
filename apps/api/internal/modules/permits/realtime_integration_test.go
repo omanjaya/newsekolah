@@ -289,8 +289,8 @@ func TestOpenLateArrivalPublishesToDutyTeacherTopic(t *testing.T) {
 	require.Len(t, hub.dutyPublishes, 1)
 	got := hub.dutyPublishes[0]
 	require.Equal(t, w.tenantID, got.tenantID)
-	require.Equal(t, "duty_teacher", got.dutySlug)
-	require.False(t, got.classID.Valid, "duty_teacher is tenant-wide, not class-scoped")
+	require.Equal(t, "picket", got.dutySlug, "the duty_teacher stage maps to duty_types.slug \"picket\" (authz.DutyTypeDefaults), not the stage key itself")
+	require.False(t, got.classID.Valid, "picket is tenant-wide, not class-scoped")
 	require.Equal(t, "late_arrival.opened", got.eventType)
 	requireInstancePayload(t, got.payload, detail.Instance.ID)
 }
@@ -342,7 +342,7 @@ func TestReviewLateArrivalPublishesToDutyTeacherTopic(t *testing.T) {
 
 	require.Len(t, hub.dutyPublishes, 2)
 	got := hub.dutyPublishes[1]
-	require.Equal(t, "duty_teacher", got.dutySlug)
+	require.Equal(t, "picket", got.dutySlug)
 	require.Equal(t, "late_arrival.updated", got.eventType)
 	requireInstancePayload(t, got.payload, opened.Instance.ID)
 }
@@ -384,7 +384,7 @@ func TestExitPermitLifecyclePublishesStageAndUserTopics(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.Len(t, hub.dutyPublishes, 1, "creating the permit must push the duty teacher's queue")
-	require.Equal(t, "duty_teacher", hub.dutyPublishes[0].dutySlug)
+	require.Equal(t, "picket", hub.dutyPublishes[0].dutySlug, "the duty_teacher stage maps to duty_types.slug \"picket\"")
 	require.Equal(t, "exit_permit.stage_changed", hub.dutyPublishes[0].eventType)
 	requireStagePayload(t, hub.dutyPublishes[0].payload, inst.ID, "duty_teacher")
 

@@ -18,27 +18,28 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/dbtest"
 )
 
-// recordedBoardPublish captures one RealtimePublisher.PublishBoard call.
-type recordedBoardPublish struct {
+// recordedRolePublish captures one RealtimePublisher.PublishRole call.
+type recordedRolePublish struct {
 	tenantID  uuid.UUID
+	role      string
 	eventType string
 	payload   any
 }
 
 // fakeRealtimeHub implements visitors/service.RealtimePublisher without a
-// real platform/realtime.Hub, so a test can assert exactly which event
-// type and payload CheckIn/CheckOut published -- the plan's "fake hub
-// asserting topic, type, and payload" (docs/analysis/
+// real platform/realtime.Hub, so a test can assert exactly which roles,
+// event type, and payload CheckIn/CheckOut published -- the plan's "fake
+// hub asserting topic, type, and payload" (docs/analysis/
 // realtime-plan-2026-09-25.md section 4, chunk C3's test row).
 type fakeRealtimeHub struct {
 	mu        sync.Mutex
-	published []recordedBoardPublish
+	published []recordedRolePublish
 }
 
-func (f *fakeRealtimeHub) PublishBoard(_ context.Context, tenantID uuid.UUID, eventType string, payload any) error {
+func (f *fakeRealtimeHub) PublishRole(tenantID uuid.UUID, role, eventType string, payload any) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	f.published = append(f.published, recordedBoardPublish{tenantID: tenantID, eventType: eventType, payload: payload})
+	f.published = append(f.published, recordedRolePublish{tenantID: tenantID, role: role, eventType: eventType, payload: payload})
 	return nil
 }
 
@@ -46,6 +47,18 @@ func (f *fakeRealtimeHub) count() int {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	return len(f.published)
+}
+
+func (f *fakeRealtimeHub) rolesFor(eventType string) []string {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	var roles []string
+	for _, p := range f.published {
+		if p.eventType == eventType {
+			roles = append(roles, p.role)
+		}
+	}
+	return roles
 }
 
 func requireVisitorBoardPayload(t *testing.T, payload any, wantVisitID uuid.UUID) {
@@ -97,10 +110,16 @@ func seedVisitorsWorld(t *testing.T, ctx context.Context, pool *pgxpool.Pool, sl
 	return tenantID, hostUserID, guardUserID
 }
 
-// TestCheckInPublishesToVisitorBoard covers opportunity #5 (docs/analysis/
-// realtime-plan-2026-09-25.md section 2): signing a guest in must push a
-// live update to the gate board, carrying only the visit id.
-func TestCheckInPublishesToVisitorBoard(t *testing.T) {
+// wantVisitorBoardRoles mirrors service.visitorBoardRoles (unexported):
+// every role that default-holds "view_visitors" per authz.RoleDefaults.
+var wantVisitorBoardRoles = []string{"staff", "principal", "admin"}
+
+// TestCheckInPublishesToVisitorBoardRoles covers opportunity #5 (docs/
+// analysis/realtime-plan-2026-09-25.md section 2): signing a guest in
+// must push a live update to every role that can see the gate board
+// (staff, principal, admin -- no duty type holds view_visitors), carrying
+// only the visit id.
+func TestCheckInPublishesToVisitorBoardRoles(t *testing.T) {
 	pg := dbtest.Start(t)
 	ctx := context.Background()
 	tenantID, hostUserID, guardUserID := seedVisitorsWorld(t, ctx, pg.AdminPool, "visitor-checkin-"+uuid.NewString())
@@ -113,11 +132,13 @@ func TestCheckInPublishesToVisitorBoard(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	require.Len(t, hub.published, 1)
-	got := hub.published[0]
-	require.Equal(t, tenantID, got.tenantID)
-	require.Equal(t, "visitor.checked_in", got.eventType)
-	requireVisitorBoardPayload(t, got.payload, visit.ID)
+	require.Len(t, hub.published, len(wantVisitorBoardRoles))
+	require.ElementsMatch(t, wantVisitorBoardRoles, hub.rolesFor("visitor.checked_in"))
+	for _, p := range hub.published {
+		require.Equal(t, tenantID, p.tenantID)
+		require.Equal(t, "visitor.checked_in", p.eventType)
+		requireVisitorBoardPayload(t, p.payload, visit.ID)
+	}
 }
 
 // TestCheckInPublishesNothingOnInvalidInput is the negative case: an
@@ -138,9 +159,10 @@ func TestCheckInPublishesNothingOnInvalidInput(t *testing.T) {
 	require.Equal(t, 0, hub.count())
 }
 
-// TestCheckOutPublishesToVisitorBoard covers the other half of
-// opportunity #5: signing a guest back out must also push the board.
-func TestCheckOutPublishesToVisitorBoard(t *testing.T) {
+// TestCheckOutPublishesToVisitorBoardRoles covers the other half of
+// opportunity #5: signing a guest back out must also push the board's
+// roles.
+func TestCheckOutPublishesToVisitorBoardRoles(t *testing.T) {
 	pg := dbtest.Start(t)
 	ctx := context.Background()
 	tenantID, hostUserID, guardUserID := seedVisitorsWorld(t, ctx, pg.AdminPool, "visitor-checkout-"+uuid.NewString())
@@ -152,15 +174,19 @@ func TestCheckOutPublishesToVisitorBoard(t *testing.T) {
 		FullName: "Tamu Test", HostUserID: hostUserID, Purpose: "Rapat", IDType: domain.IDTypeNone,
 	})
 	require.NoError(t, err)
-	require.Len(t, hub.published, 1, "check-in above already published once")
+	require.Len(t, hub.published, len(wantVisitorBoardRoles), "check-in above already published once per role")
 
 	_, err = svc.CheckOut(ctx, tenantID, visit.ID, guardUserID)
 	require.NoError(t, err)
 
-	require.Len(t, hub.published, 2)
-	got := hub.published[1]
-	require.Equal(t, "visitor.checked_out", got.eventType)
-	requireVisitorBoardPayload(t, got.payload, visit.ID)
+	require.Len(t, hub.published, 2*len(wantVisitorBoardRoles))
+	require.ElementsMatch(t, wantVisitorBoardRoles, hub.rolesFor("visitor.checked_out"))
+	for _, p := range hub.published {
+		if p.eventType != "visitor.checked_out" {
+			continue
+		}
+		requireVisitorBoardPayload(t, p.payload, visit.ID)
+	}
 }
 
 // TestCheckOutPublishesNothingWhenAlreadyCheckedOut is the negative case:

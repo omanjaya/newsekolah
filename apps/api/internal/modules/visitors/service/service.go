@@ -89,12 +89,19 @@ type AuditRecorder interface {
 }
 
 // RealtimePublisher pushes a live update to the tenant's gate board
-// (docs/analysis/realtime-plan-2026-09-25.md section 2, opportunity #5) --
-// a public, tenant-wide topic like the existing "monitor:<tenantID>", not
-// tied to any one user or role. A nil RealtimePublisher (no Hub wired)
-// makes every push a no-op.
+// (docs/analysis/realtime-plan-2026-09-25.md section 2, opportunity #5),
+// to every holder of a fixed role -- over realtime.TopicRole, without this
+// package importing platform/realtime directly (mirrors permits/service.
+// RealtimePublisher's rationale). Unlike "monitor:<tenantID>" (gated by a
+// per-tenant display token, not a claim), the gate board has no such
+// token: chunk B's subscribe authorization only ever accepts "user:",
+// "role:", or "duty:" topics (internal/platform/realtime/subscribe.go), so
+// this pushes to the roles that default-hold the board's own
+// "view_visitors" permission (openapi/modules/visitors.yaml's
+// GET /v1/visitors/board) instead of an unauthenticated tenant-wide
+// topic. A nil RealtimePublisher (no Hub wired) makes every push a no-op.
 type RealtimePublisher interface {
-	PublishBoard(ctx context.Context, tenantID uuid.UUID, eventType string, payload any) error
+	PublishRole(tenantID uuid.UUID, role, eventType string, payload any) error
 }
 
 type Service struct {
