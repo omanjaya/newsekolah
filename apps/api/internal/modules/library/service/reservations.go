@@ -41,7 +41,7 @@ func (s *Service) Reserve(ctx context.Context, tenantID, titleID, memberUserID u
 	// opportunity #7's "library.reserved (baru, saat anggota memesan)"):
 	// ReserveForSelf (me.go) delegates to this method, so both paths cover
 	// it in one place.
-	s.publishReservationEvent(tenantID, "library.reserved", reservation.ID, reservation.TitleID)
+	s.publishReservationEvent(ctx, tenantID, "library.reserved", reservation.ID, reservation.TitleID)
 	return reservation, nil
 }
 
@@ -86,7 +86,7 @@ func (s *Service) CancelReservation(ctx context.Context, tenantID, reservationID
 		return domain.Reservation{}, err
 	}
 	if hasReady {
-		s.publishReservationReady(tenantID, ready)
+		s.publishReservationReady(ctx, tenantID, ready)
 	}
 	return reservation, nil
 }
@@ -166,7 +166,7 @@ func (s *Service) ExpireReadyReservations(ctx context.Context, tenantID uuid.UUI
 	// inferred from ctx, so the publish-only Hub in cmd/worker's process
 	// still targets the right tenant's topic.
 	for _, ready := range newlyReady {
-		s.publishReservationReady(tenantID, ready)
+		s.publishReservationReady(ctx, tenantID, ready)
 	}
 	return n, nil
 }

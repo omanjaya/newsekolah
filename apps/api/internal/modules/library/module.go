@@ -6,6 +6,8 @@
 package library
 
 import (
+	"context"
+
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -44,12 +46,16 @@ type Module struct {
 }
 
 // hubPublisher adapts platform/realtime's Hub to service.RealtimePublisher
-// over realtime.TopicRole, mirroring permits/module.go's identically-
-// shaped adapter.
+// over realtime.TopicRole/TopicDuty, mirroring permits/module.go's
+// identically-shaped adapter.
 type hubPublisher struct{ hub *realtime.Hub }
 
 func (p hubPublisher) PublishRole(tenantID uuid.UUID, role, eventType string, payload any) error {
 	return p.hub.PublishEvent(realtime.TopicRole(tenantID, role), eventType, payload)
+}
+
+func (p hubPublisher) PublishToDuty(_ context.Context, tenantID uuid.UUID, dutySlug string, classID uuid.NullUUID, eventType string, payload any) error {
+	return p.hub.PublishEvent(realtime.TopicDuty(tenantID, dutySlug, classID), eventType, payload)
 }
 
 func Register(deps Dependencies) *Module {

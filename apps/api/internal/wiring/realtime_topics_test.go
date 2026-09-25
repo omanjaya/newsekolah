@@ -66,8 +66,13 @@ var publishedTopics = []publishedTopic{
 	{"staffattendance", "staff_attendance.scanned", "role", "principal", false},
 
 	// library (C3) -- apps/api/internal/modules/library/service/*.go
+	// Also published to duty:librarian (authz.DutyTypeDefaults' "Petugas
+	// Perpustakaan") since 25 September 2026, so a duty holder without the
+	// librarian role also reaches the desk's live queue.
 	{"library", "library.reserved", "role", "librarian", false},
 	{"library", "library.reservation_ready", "role", "librarian", false},
+	{"library", "library.reserved", "duty", "librarian", false},
+	{"library", "library.reservation_ready", "duty", "librarian", false},
 
 	// visitors (C3) -- apps/api/internal/modules/visitors/service/visits.go
 	{"visitors", "visitor.checked_in", "role", "staff", false},
