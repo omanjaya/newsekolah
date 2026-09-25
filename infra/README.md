@@ -20,6 +20,8 @@ infra/
     backup.sh                 pg_dump + MinIO mirror to an S3 target
     restore.sh                restore from a backup.sh archive
     update.sh                 pull, migrate, rolling restart, rollback on failure
+    deploy.sh                 CI/CD entry point: fetch a ref, build, migrate, deploy, health-gate, roll back
+    deploy-ssh-wrapper.sh     authorized_keys forced command for the CI deploy key (only runs deploy.sh)
     check-no-emoji.sh         CI: no pictographic emoji outside reference/
     check-migrations.sh       CI: migrations are sequential and paired
 ```
@@ -372,6 +374,182 @@ $C run --rm --no-deps -e APP_ENV=development -e DATABASE_URL="$SU" --entrypoint 
 The seed runs with `APP_ENV=development` only for that one-off command
 because `cmd/seed` refuses production; the long-running services stay in
 production mode.
+
+## Continuous deployment
+
+Two GitHub Actions workflows drive deploys; both end up SSHing into the VPS and
+running `infra/scripts/deploy.sh` there (see that script's header comment for
+exactly what it does -- fetch, build, pre-deploy dump, migrate, bring up,
+health-gate, roll back on failure):
+
+- **`.github/workflows/deploy-staging.yml`** runs automatically once the `CI`
+  workflow finishes successfully on `main` (or on demand via
+  `workflow_dispatch`): `deploy.sh staging <sha>`, then, if
+  `apps/web/package.json` already has an `e2e:sim` script, the multi-actor
+  simulation suite against `https://staging.sion.nouma.id` (skipped with a
+  `::notice::` otherwise). The Playwright report is uploaded as a workflow
+  artifact either way.
+- **`.github/workflows/deploy-production.yml`** is `workflow_dispatch` only
+  (input: the git ref to deploy, default `main`). It refuses to run unless the
+  _same resolved commit_ already has a successful `Deploy staging` run, then
+  deploys behind the `production` GitHub Environment -- add required reviewers
+  there to gate it on human approval -- and posts a one-line result to
+  Telegram afterwards if the bot secrets are configured.
+
+Both workflows connect with a deploy key that is restricted, on the VPS side,
+to running nothing but `deploy.sh staging <sha>` or `deploy.sh production
+<sha>` with a 40-hex commit SHA (`infra/scripts/deploy-ssh-wrapper.sh`, forced
+via `authorized_keys`) -- a compromised workflow run cannot use this key for
+anything else, including deploying a ref that was never actually pushed.
+
+### One-time setup
+
+Run these from an operator machine with `ssh`, `gh`, and admin access on both
+the VPS and the GitHub repo.
+
+1. Generate a deploy keypair dedicated to CI -- never reuse an operator's own
+   key:
+
+   ```bash
+   ssh-keygen -t ed25519 -f ~/.ssh/newsekolah-deploy -C "newsekolah-ci-deploy" -N ""
+   ```
+
+2. Install the public key on the VPS, forced to the wrapper script and with
+   every other SSH feature it does not need turned off. Run this on the VPS
+   (as the user the deploy stacks run under, e.g. `root`), pasting the
+   contents of `~/.ssh/newsekolah-deploy.pub` from step 1:
+
+   ```bash
+   umask 077
+   mkdir -p ~/.ssh
+   printf 'command="/root/sion/infra/scripts/deploy-ssh-wrapper.sh",no-agent-forwarding,no-X11-forwarding,no-port-forwarding,no-pty %s\n' \
+     "<paste the newsekolah-deploy.pub contents here>" >>~/.ssh/authorized_keys
+   chmod 600 ~/.ssh/authorized_keys
+   ```
+
+   `deploy-ssh-wrapper.sh` always runs from the **production** checkout
+   (`/root/sion`) regardless of which target is being deployed -- it only
+   parses `$SSH_ORIGINAL_COMMAND` and execs `deploy.sh` with the two validated
+   arguments, and `deploy.sh` itself `cd`s into the right checkout
+   (`/root/sion` or `/root/sion-staging`) based on the target argument. This
+   means a change to `deploy.sh` only takes effect once it has been deployed
+   to production (`git pull` in `/root/sion`) -- deploying a `deploy.sh` fix
+   to staging alone does not update what the wrapper runs.
+
+3. Make sure both checkouts actually have these scripts before wiring up the
+   workflows (a fresh `/root/sion`/`/root/sion-staging` created before this
+   change was merged will not): `cd /root/sion && git pull --ff-only` and the
+   same in `/root/sion-staging`, then confirm
+   `infra/scripts/deploy.sh` and `infra/scripts/deploy-ssh-wrapper.sh` are
+   present and executable in both (`chmod +x` if `git pull` did not preserve
+   the mode bit).
+
+4. Capture the VPS host key for `known_hosts` (run from the operator machine,
+   not the VPS):
+
+   ```bash
+   ssh-keyscan -t ed25519 <vps-host-or-ip> > /tmp/newsekolah-vps-known-hosts
+   ```
+
+   Inspect the fingerprint against what you already trust for this host before
+   using it -- `ssh-keyscan` does not itself verify anything.
+
+5. Set the repository secrets (from the operator machine, `gh` authenticated
+   against this repo):
+
+   ```bash
+   gh secret set VPS_SSH_KEY < ~/.ssh/newsekolah-deploy
+   gh secret set VPS_KNOWN_HOSTS < /tmp/newsekolah-vps-known-hosts
+   gh secret set VPS_HOST --body "deploy@<vps-host-or-ip>"
+   # staging simulation suite login:
+   gh secret set STAGING_SEED_PASSWORD --body "<the staging SEED_PASSWORD, from ~/.config/newsekolah/staging.env>"
+   # optional -- production deploy notifications:
+   gh secret set TELEGRAM_BOT_TOKEN --body "<bot token>"
+   gh secret set TELEGRAM_CHAT_ID --body "<chat id>"
+   ```
+
+   `VPS_HOST` is passed straight to `ssh` (`ssh -o IdentitiesOnly=yes "$VPS_HOST" ...`),
+   so it must be `user@host`, not just the hostname. Create a dedicated,
+   non-`root` deploy user restricted to that key if the VPS setup allows it;
+   the forced command in step 2 already limits what the key can run
+   regardless.
+
+6. Create the `production` GitHub Environment and add required reviewers
+   (replace `<reviewer-login>` with each approver's GitHub username; repeat
+   the `reviewers` entry for more than one):
+   ```bash
+   gh api --method PUT "repos/{owner}/{repo}/environments/production" \
+     --input - <<'EOF'
+   {
+     "reviewers": [{ "type": "User", "id": null }],
+     "deployment_branch_policy": null
+   }
+   EOF
+   ```
+   `id` must be a numeric GitHub user ID, not a login -- look it up first:
+   ```bash
+   gh api users/<reviewer-login> --jq .id
+   ```
+   then substitute it into the `reviewers` payload above. Repeat
+   `gh api users/<login> --jq .id` for each reviewer and add one
+   `{ "type": "User", "id": <id> }` entry per reviewer to the array.
+
+### Manual fallback
+
+The workflows are a thin wrapper around `deploy.sh`; the same deploy can
+always be run by hand, either from the operator machine through the same
+forced-command key:
+
+```bash
+ssh deploy@<vps-host-or-ip> "deploy.sh staging <sha>"
+ssh deploy@<vps-host-or-ip> "deploy.sh production <sha>"
+```
+
+or directly on the VPS with an operator's own login, which is not restricted
+to the wrapper and so also accepts a branch or tag name, not just a SHA:
+
+```bash
+cd /root/sion-staging && bash infra/scripts/deploy.sh staging main
+cd /root/sion && bash infra/scripts/deploy.sh production main
+```
+
+Sanity-check any change to `deploy.sh` itself with `DRY_RUN=1` first, from any
+checkout, before trusting it against a real target:
+
+```bash
+DRY_RUN=1 bash infra/scripts/deploy.sh staging <sha>
+DRY_RUN=1 bash infra/scripts/deploy.sh production <sha>
+```
+
+### Rollback
+
+`deploy.sh` already rolls the `api`/`web` image tags back to their pre-deploy
+state and restarts the services automatically if the build, the health check
+on `/health`, or the check on `/login` fails -- see the script's own summary
+output for what it did. Two things that automatic rollback does **not**
+cover:
+
+- **A deploy that "succeeds" (passes health checks) but is wrong in some other
+  way.** Redeploy the previous known-good commit the same way as any other
+  deploy: `deploy.sh production <previous-sha>` (or the workflow with that
+  ref). `migrate up` is idempotent, so re-running it against an already
+  fast-forwarded schema is a no-op.
+- **A migration that already ran and broke something.** Migrations are never
+  rolled back automatically (repo policy: only forward, additive migrations
+  are supposed to ship, so an image rollback should never need a schema
+  rollback to match). If one does turn out to be destructive, restore the
+  pre-deploy dump `deploy.sh` took before running it (production only --
+  staging holds demo data, so reseed instead):
+  ```bash
+  cd /root/sion/infra/docker
+  docker compose -f docker-compose.prod.yml -f compose.vps.yml stop api worker
+  docker compose -f docker-compose.prod.yml -f compose.vps.yml exec -T postgres \
+    pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" --clean --if-exists --no-owner \
+    < /root/sion-backups/predeploy-<stamp>.dump
+  docker compose -f docker-compose.prod.yml -f compose.vps.yml up -d --no-build api worker
+  ```
+  (`predeploy-<stamp>.dump` is printed in the failure summary `deploy.sh`
+  prints, and the last 10 are always kept in `/root/sion-backups/`.)
 
 ## Development
 
