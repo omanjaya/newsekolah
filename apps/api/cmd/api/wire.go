@@ -312,7 +312,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	})
 	visitorsModule := visitors.Register(visitors.Dependencies{
 		Pool: pool, Years: schoolModule.Service, Docs: wiring.VisitorsDocuments{Permits: permitsModule.Service},
-		Flags: wiring.VisitorsFlags{Platform: platformModule.Service}, Audit: wiring.VisitorsAudit{},
+		Flags: wiring.VisitorsFlags{Platform: platformModule.Service}, Audit: wiring.VisitorsAudit{}, Hub: hub,
 		Letterhead: wiring.ReportHeaderReports{Svc: schoolModule.Service}, Clock: clock.Real{},
 	})
 	billingModule := billing.Register(billing.Dependencies{
@@ -323,7 +323,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	libraryModule := library.Register(library.Dependencies{
 		Pool: pool, Members: wiring.LibraryMembers{Svc: identityModule.Service},
 		Flags: wiring.LibraryFlags{Platform: platformModule.Service}, Permissions: wiring.LibraryPermissions{Identity: identityModule.Service},
-		Events: wiring.LibraryEvents{Bus: eventBus}, ScanTokens: wiring.LibraryScanTokens{Permits: permitsModule.Service},
+		Events: wiring.LibraryEvents{Bus: eventBus}, Hub: hub, ScanTokens: wiring.LibraryScanTokens{Permits: permitsModule.Service},
 		Storage: sharedStorage, Bucket: cfg.S3Bucket,
 		Letterhead: wiring.ReportHeaderReports{Svc: schoolModule.Service},
 		Clock:      clock.Real{},

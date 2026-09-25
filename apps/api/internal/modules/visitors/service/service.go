@@ -88,6 +88,15 @@ type AuditRecorder interface {
 	Record(ctx context.Context, tenantID uuid.UUID, action, entityType string, entityID uuid.UUID) error
 }
 
+// RealtimePublisher pushes a live update to the tenant's gate board
+// (docs/analysis/realtime-plan-2026-09-25.md section 2, opportunity #5) --
+// a public, tenant-wide topic like the existing "monitor:<tenantID>", not
+// tied to any one user or role. A nil RealtimePublisher (no Hub wired)
+// makes every push a no-op.
+type RealtimePublisher interface {
+	PublishBoard(ctx context.Context, tenantID uuid.UUID, eventType string, payload any) error
+}
+
 type Service struct {
 	pool       *pgxpool.Pool
 	repo       Repository
@@ -95,17 +104,19 @@ type Service struct {
 	docs       DocumentIssuer
 	flags      FlagReader
 	audit      AuditRecorder
+	realtime   RealtimePublisher
 	letterhead reportdoc.LetterheadSource
 	clock      clock.Clock
 }
 
 // New wires a Service. letterhead may be nil (a tenant's kop laporan
-// simply never shows on the recap exports then).
-func New(pool *pgxpool.Pool, repo Repository, years AcademicYearReader, docs DocumentIssuer, flags FlagReader, auditor AuditRecorder, letterhead reportdoc.LetterheadSource, clk clock.Clock) *Service {
+// simply never shows on the recap exports then); realtime may be nil (no
+// Hub wired), in which case every live push silently no-ops.
+func New(pool *pgxpool.Pool, repo Repository, years AcademicYearReader, docs DocumentIssuer, flags FlagReader, auditor AuditRecorder, realtime RealtimePublisher, letterhead reportdoc.LetterheadSource, clk clock.Clock) *Service {
 	if clk == nil {
 		clk = clock.Real{}
 	}
-	return &Service{pool: pool, repo: repo, years: years, docs: docs, flags: flags, audit: auditor, letterhead: letterhead, clock: clk}
+	return &Service{pool: pool, repo: repo, years: years, docs: docs, flags: flags, audit: auditor, realtime: realtime, letterhead: letterhead, clock: clk}
 }
 
 func (s *Service) withTx(ctx context.Context, tenantID uuid.UUID, fn func(ctx context.Context) error) error {

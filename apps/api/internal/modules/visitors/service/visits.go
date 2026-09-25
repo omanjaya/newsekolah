@@ -79,7 +79,11 @@ func (s *Service) CheckIn(ctx context.Context, tenantID, guardUserID uuid.UUID, 
 		out = created
 		return nil
 	})
-	return out, err
+	if err != nil {
+		return domain.Visit{}, err
+	}
+	s.publishBoardEvent(ctx, tenantID, "visitor.checked_in", out.ID)
+	return out, nil
 }
 
 // issueBadge numbers and renders the badge through the permits pipeline, or
@@ -141,7 +145,27 @@ func (s *Service) CheckOut(ctx context.Context, tenantID, id, guardUserID uuid.U
 		out = updated
 		return nil
 	})
-	return out, err
+	if err != nil {
+		return domain.Visit{}, err
+	}
+	s.publishBoardEvent(ctx, tenantID, "visitor.checked_out", out.ID)
+	return out, nil
+}
+
+// visitorBoardPayload is the minimal payload pushed to the gate board --
+// the visit id only; the board re-fetches through its already-authorized
+// REST endpoint.
+type visitorBoardPayload struct {
+	VisitID uuid.UUID `json:"visit_id"`
+}
+
+// publishBoardEvent is a nil-safe wrapper over RealtimePublisher.
+// PublishBoard, so CheckIn/CheckOut do not repeat the nil-check.
+func (s *Service) publishBoardEvent(ctx context.Context, tenantID uuid.UUID, eventType string, visitID uuid.UUID) {
+	if s.realtime == nil {
+		return
+	}
+	_ = s.realtime.PublishBoard(ctx, tenantID, eventType, visitorBoardPayload{VisitID: visitID})
 }
 
 // BadgeURL presigns the printable badge for one visit, if one was issued.
