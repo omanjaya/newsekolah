@@ -126,7 +126,7 @@ func (s *Service) confirmBrandingUpload(ctx context.Context, tenantID, actorID u
 		if _, err := s.repo.CreateAssetRecord(ctx, NewAsset{
 			TenantID: tenantID, Bucket: s.storage.Bucket(), ObjectKey: objectKey,
 			Mime: contentType, SizeBytes: int64(len(data)), SHA256: hex.EncodeToString(sum[:]),
-			Kind: "branding_" + assetType, Visibility: "public", CreatedBy: actorID,
+			Kind: "branding", Visibility: "tenant_public", CreatedBy: actorID,
 		}); err != nil {
 			return fmt.Errorf("record %s asset: %w", assetType, err)
 		}
