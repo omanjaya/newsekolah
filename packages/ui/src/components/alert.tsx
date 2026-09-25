@@ -4,11 +4,11 @@ import type { ComponentPropsWithoutRef, ReactNode } from "react";
 
 import { cn } from "../utils/cn.js";
 
-const alertVariants = cva("flex gap-3 rounded-sm border p-4 text-[13px]", {
+const alertVariants = cva("flex gap-3 rounded-lg border p-4 text-[13px]", {
   variants: {
     variant: {
       info: "border-border bg-surface text-fg",
-      warning: "border-status-late/40 bg-surface text-fg",
+      warning: "border-warning/40 bg-surface text-fg",
     },
   },
   defaultVariants: { variant: "info" },
@@ -26,10 +26,7 @@ export function Alert({ className, variant, title, icon, children, ...props }: A
   return (
     <div role="status" className={cn(alertVariants({ variant }), className)} {...props}>
       <span
-        className={cn(
-          "mt-0.5 shrink-0",
-          variant === "warning" ? "text-status-late" : "text-fg-muted",
-        )}
+        className={cn("mt-0.5 shrink-0", variant === "warning" ? "text-warning" : "text-fg-muted")}
         aria-hidden="true"
       >
         {icon ?? <Icon className="size-4" />}

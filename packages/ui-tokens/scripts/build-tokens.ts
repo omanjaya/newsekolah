@@ -2,13 +2,15 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import type { StatusName, ThemeColors, TokensSource } from "./types.js";
+import type { CategoryName, SemanticName, StatusName, ThemeColors, TokensSource } from "./types.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, "..");
 const tokens = JSON.parse(readFileSync(resolve(root, "tokens.json"), "utf-8")) as TokensSource;
 
 const STATUS_ORDER: StatusName[] = ["present", "sick", "excused", "dispensation", "absent", "late"];
+const CATEGORY_ORDER: CategoryName[] = ["green", "amber", "purple", "blue", "red"];
+const SEMANTIC_ORDER: SemanticName[] = ["success", "warning", "danger", "info"];
 
 function colorVars(theme: ThemeColors, indent = "  "): string[] {
   const lines = [
@@ -17,9 +19,27 @@ function colorVars(theme: ThemeColors, indent = "  "): string[] {
     `${indent}--color-fg: ${theme.fg};`,
     `${indent}--color-fg-muted: ${theme.fgMuted};`,
     `${indent}--color-border: ${theme.border};`,
+    `${indent}--color-line: ${theme.line};`,
     `${indent}--color-accent: ${theme.accent};`,
     `${indent}--color-accent-fg: ${theme.accentFg};`,
+    `${indent}--color-accent-soft: ${theme.accentSoft};`,
+    `${indent}--color-accent-soft-fg: ${theme.accentSoftFg};`,
+    `${indent}--color-accent-strong: ${theme.accentStrong};`,
   ];
+  for (const name of CATEGORY_ORDER) {
+    const category = theme.category[name];
+    lines.push(`${indent}--color-category-${name}: ${category.fg};`);
+    lines.push(`${indent}--color-category-${name}-soft: ${category.soft};`);
+    lines.push(`${indent}--color-category-${name}-soft-fg: ${category.softFg};`);
+  }
+  for (const semantic of SEMANTIC_ORDER) {
+    const categoryName = tokens.semantic[semantic];
+    lines.push(`${indent}--color-${semantic}: var(--color-category-${categoryName});`);
+    lines.push(`${indent}--color-${semantic}-soft: var(--color-category-${categoryName}-soft);`);
+    lines.push(
+      `${indent}--color-${semantic}-soft-fg: var(--color-category-${categoryName}-soft-fg);`,
+    );
+  }
   for (const name of STATUS_ORDER) {
     const status = theme.status[name];
     lines.push(`${indent}--color-status-${name}: ${status.indicator};`);
@@ -79,6 +99,14 @@ ${colorVars(dark, "    ").join("\n")}
 `;
 }
 
+function categoryObjectLiteral(theme: ThemeColors): string {
+  const entries = CATEGORY_ORDER.map(
+    (name) =>
+      `      ${name}: { fg: "${theme.category[name].fg}", soft: "${theme.category[name].soft}", softFg: "${theme.category[name].softFg}" }`,
+  ).join(",\n");
+  return `{\n${entries},\n    }`;
+}
+
 function themeObjectLiteral(theme: ThemeColors): string {
   const statusEntries = STATUS_ORDER.map(
     (name) =>
@@ -90,8 +118,13 @@ function themeObjectLiteral(theme: ThemeColors): string {
     fg: "${theme.fg}",
     fgMuted: "${theme.fgMuted}",
     border: "${theme.border}",
+    line: "${theme.line}",
     accent: "${theme.accent}",
     accentFg: "${theme.accentFg}",
+    accentSoft: "${theme.accentSoft}",
+    accentSoftFg: "${theme.accentSoftFg}",
+    accentStrong: "${theme.accentStrong}",
+    category: ${categoryObjectLiteral(theme)},
     status: {
 ${statusEntries},
     },
@@ -104,10 +137,18 @@ function buildTs(): string {
 // Typed token object for NativeWind / React Native, mirroring dist/tokens.css.
 
 export type StatusName = "present" | "sick" | "excused" | "dispensation" | "absent" | "late";
+export type CategoryName = "green" | "amber" | "purple" | "blue" | "red";
+export type SemanticName = "success" | "warning" | "danger" | "info";
 
 export interface StatusColor {
   indicator: string;
   fg: string;
+}
+
+export interface CategoryColor {
+  fg: string;
+  soft: string;
+  softFg: string;
 }
 
 export interface ThemeColors {
@@ -116,12 +157,19 @@ export interface ThemeColors {
   fg: string;
   fgMuted: string;
   border: string;
+  line: string;
   accent: string;
   accentFg: string;
+  accentSoft: string;
+  accentSoftFg: string;
+  accentStrong: string;
+  category: Record<CategoryName, CategoryColor>;
   status: Record<StatusName, StatusColor>;
 }
 
 export const statusNames: Record<StatusName, string> = ${JSON.stringify(tokens.statusNames, null, 2).replace(/\n/g, "\n  ")};
+
+export const semantic: Record<SemanticName, CategoryName> = ${JSON.stringify(tokens.semantic, null, 2).replace(/\n/g, "\n  ")};
 
 export const colors = {
   light: ${themeObjectLiteral(light)},

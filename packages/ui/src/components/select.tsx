@@ -53,13 +53,13 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select
         className={cn(
           // Matches Input and Button: thumb-sized on a phone, compact once
           // there is a cursor.
-          "flex h-11 md:h-9 w-full items-center justify-between gap-2 rounded-xs border border-border",
+          "flex h-11 md:h-9 w-full items-center justify-between gap-2 rounded-md border border-border",
           "bg-surface px-3 text-[14px] text-fg",
           "transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)]",
           "focus-visible:border-accent",
           "disabled:cursor-not-allowed disabled:opacity-50",
           "data-[placeholder]:text-fg-muted",
-          invalid && "border-status-absent",
+          invalid && "border-danger",
           className,
         )}
       >
@@ -77,7 +77,7 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select
           position="popper"
           sideOffset={4}
           className={cn(
-            "z-(--z-popover) overflow-hidden rounded-sm border border-border bg-surface",
+            "z-(--z-popover) overflow-hidden rounded-md border border-border bg-surface",
             "shadow-(--shadow-float)",
           )}
         >

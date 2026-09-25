@@ -63,7 +63,7 @@ export function UpdateAvailable(): ReactElement | null {
   return (
     <div
       role="status"
-      className="fixed inset-x-4 bottom-20 z-(--z-toast) mx-auto flex max-w-sm items-center gap-3 rounded-sm border border-border bg-surface p-4 shadow-(--shadow-float) md:bottom-4 md:left-auto md:right-4 md:mx-0"
+      className="fixed inset-x-4 bottom-20 z-(--z-toast) mx-auto flex max-w-sm items-center gap-3 rounded-lg border border-border bg-surface p-4 shadow-(--shadow-float) md:bottom-4 md:left-auto md:right-4 md:mx-0"
     >
       <div className="flex-1">
         <p className="text-[13px] font-medium text-fg">{t("title")}</p>

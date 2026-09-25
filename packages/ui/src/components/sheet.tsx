@@ -38,16 +38,16 @@ export const SheetContent = forwardRef<HTMLDivElement, SheetContentProps>(functi
         ref={ref}
         className={cn(
           "fixed inset-x-0 bottom-0 z-(--z-modal) flex max-h-[85dvh] flex-col overflow-hidden",
-          "rounded-t-sm border-t border-border bg-surface shadow-(--shadow-float)",
+          "rounded-t-lg border-t border-border bg-surface shadow-(--shadow-float)",
           "data-[state=open]:animate-sheet-in data-[state=closed]:animate-sheet-out",
           className,
         )}
         {...props}
       >
-        <div className="mx-auto mt-3 h-1 w-10 shrink-0 rounded-xs bg-border" aria-hidden="true" />
+        <div className="mx-auto mt-3 h-1 w-10 shrink-0 rounded-full bg-border" aria-hidden="true" />
         <div className="flex shrink-0 items-start justify-between gap-4 px-4 py-4 md:px-6">
           <div className="flex flex-col gap-1">
-            <DialogPrimitive.Title className="text-[16px] font-medium text-fg">
+            <DialogPrimitive.Title className="font-heading text-[16px] font-bold tracking-tight text-fg">
               {title}
             </DialogPrimitive.Title>
             {description && (
@@ -58,7 +58,7 @@ export const SheetContent = forwardRef<HTMLDivElement, SheetContentProps>(functi
           </div>
           <DialogPrimitive.Close
             aria-label={resolvedCloseLabel}
-            className="flex min-h-11 min-w-11 items-center justify-center rounded-xs text-fg-muted hover:bg-bg"
+            className="flex min-h-11 min-w-11 items-center justify-center rounded-full text-fg-muted hover:bg-bg"
           >
             <X className="size-4" aria-hidden="true" />
           </DialogPrimitive.Close>

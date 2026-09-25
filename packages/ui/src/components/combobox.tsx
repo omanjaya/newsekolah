@@ -91,7 +91,7 @@ export const Combobox = forwardRef<HTMLButtonElement, ComboboxProps>(function Co
           align="start"
           sideOffset={4}
           className={cn(
-            "z-(--z-popover) w-72 overflow-hidden rounded-sm border border-border bg-surface",
+            "z-(--z-popover) w-72 overflow-hidden rounded-md border border-border bg-surface",
             "shadow-(--shadow-float) data-[state=open]:animate-overlay-in",
           )}
         >

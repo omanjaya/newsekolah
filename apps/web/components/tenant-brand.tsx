@@ -51,7 +51,7 @@ export function TenantBrand({
         <span
           className={`${dimension} shrink-0 rounded-sm text-center text-[11px] font-medium leading-none text-accent-fg`}
           style={{
-            backgroundColor: branding?.accent_color ?? "#1F3A5F",
+            backgroundColor: branding?.accent_color ?? "#0F7A5F",
             display: "grid",
             placeItems: "center",
           }}

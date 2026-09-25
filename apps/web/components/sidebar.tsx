@@ -209,7 +209,7 @@ export function Sidebar({
       <aside
         style={{ width: rail ? WIDTH_RAIL : WIDTH_EXPANDED }}
         className={cn(
-          "sticky top-0 h-dvh shrink-0 flex-col self-start overflow-hidden border-r border-border bg-surface",
+          "sticky top-0 h-dvh shrink-0 flex-col self-start overflow-hidden border-r border-line bg-surface",
           // The width transition below reflows layout on every frame; contain
           // it to this subtree so the toggle does not re-layout the rest of
           // the page. Both flyout (GroupFlyout) and tooltip content render
@@ -221,7 +221,7 @@ export function Sidebar({
           className,
         )}
       >
-        <div className="flex h-14 shrink-0 items-center border-b border-border px-4">
+        <div className="flex h-14 shrink-0 items-center border-b border-line px-4">
           <TenantBrand mark={rail} />
         </div>
 
@@ -264,7 +264,7 @@ export function Sidebar({
                         }}
                         aria-expanded={open}
                         className={cn(
-                          "mt-2 flex h-8 shrink-0 items-center justify-between rounded-sm px-3 text-[12px] font-medium text-fg-muted hover:text-fg",
+                          "mt-2 flex h-8 shrink-0 items-center justify-between rounded-md px-3 text-[12px] font-medium text-fg-muted hover:text-fg",
                           animate &&
                             "transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)]",
                         )}
@@ -298,7 +298,7 @@ export function Sidebar({
                             The guide rule is what makes these rows read as the
                             group's children rather than its siblings.
                           */}
-                          <div className="ml-5 flex flex-col gap-0.5 border-l border-border pl-2">
+                          <div className="ml-5 flex flex-col gap-0.5 border-l border-line pl-2">
                             {groupItems.map((item, index) => (
                               <NavLink
                                 key={item.key}
@@ -338,7 +338,7 @@ export function Sidebar({
           />
         </div>
 
-        <div className="flex shrink-0 flex-col gap-0.5 border-t border-border p-2">
+        <div className="flex shrink-0 flex-col gap-0.5 border-t border-line p-2">
           {[...footerGroups.entries()].map(([group, groupItems]) => (
             <GroupFlyout
               key={group}
@@ -356,7 +356,7 @@ export function Sidebar({
               aria-label={rail ? tShell("sidebar.expand") : tShell("sidebar.collapse")}
               aria-expanded={!rail}
               className={cn(
-                "flex h-9 w-full items-center gap-3 rounded-sm px-3 text-[13px] text-fg-muted",
+                "flex h-9 w-full items-center gap-3 rounded-md px-3 text-[13px] text-fg-muted",
                 "hover:bg-accent/8 hover:text-fg active:bg-accent/15",
                 animate &&
                   "transition-colors duration-[var(--duration-fast)] ease-[var(--ease-standard)]",

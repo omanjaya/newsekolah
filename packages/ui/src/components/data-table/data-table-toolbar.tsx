@@ -77,7 +77,7 @@ export function DataTableToolbar<TData>({
 
   if (selectedCount > 0 && bulkActions) {
     return (
-      <div className="flex items-center justify-between gap-4 rounded-sm border border-border bg-bg px-3 py-2">
+      <div className="flex items-center justify-between gap-4 rounded-md border border-border bg-bg px-3 py-2">
         <span className="text-[13px] font-medium text-fg">
           {uiLabels.tableSelectedRows(selectedCount)}
         </span>

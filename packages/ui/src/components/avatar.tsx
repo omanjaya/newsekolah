@@ -5,17 +5,15 @@ import { cn } from "../utils/cn.js";
 
 // A fixed, deterministic palette (not a rainbow of every hue) so two people
 // with the same initials are still distinguishable at a glance without
-// introducing colors DESIGN.md's status/accent system doesn't already own.
-// Each entry is a light tint behind the status color used as text: the
-// `status-*-fg` tokens ARE the status colors (text on a surface), so putting
-// them on a solid `bg-status-*` circle would render the initials invisible.
+// introducing colors outside the token set's own category hues
+// (docs/07-ui-ux.md, "Hijau Segar"). Each entry is a category's AA-checked
+// `*-soft`/`*-soft-fg` pair, the same tint-plus-text combination Badge uses.
 const INITIAL_PALETTE = [
-  "bg-status-excused/15 text-status-excused-fg",
-  "bg-status-present/15 text-status-present-fg",
-  "bg-status-dispensation/15 text-status-dispensation-fg",
-  "bg-status-late/15 text-status-late-fg",
-  "bg-status-sick/15 text-status-sick-fg",
-  "bg-accent/15 text-accent",
+  "bg-category-blue-soft text-category-blue-soft-fg",
+  "bg-category-green-soft text-category-green-soft-fg",
+  "bg-category-purple-soft text-category-purple-soft-fg",
+  "bg-category-amber-soft text-category-amber-soft-fg",
+  "bg-category-red-soft text-category-red-soft-fg",
 ] as const;
 
 function paletteClassFor(seed: string): string {

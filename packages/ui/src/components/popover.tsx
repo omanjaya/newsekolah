@@ -17,7 +17,7 @@ export const PopoverContent = forwardRef<
         ref={ref}
         sideOffset={sideOffset}
         className={cn(
-          "z-(--z-popover) w-72 rounded-sm border border-border bg-surface p-4",
+          "z-(--z-popover) w-72 rounded-md border border-border bg-surface p-4",
           "shadow-(--shadow-float) data-[state=open]:animate-overlay-in",
           className,
         )}

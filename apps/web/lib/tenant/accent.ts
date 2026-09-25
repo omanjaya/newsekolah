@@ -1,13 +1,12 @@
 /**
  * A tenant supplies one accent colour, chosen against a white page. Used
- * unchanged on the dark surface it usually fails: the default `#1F3A5F`
- * measures 1.48:1 against `#1C1C1C`, so links, focus rings and active
- * markers painted with it disappear. This derives the dark-theme sibling
- * the school never supplied.
+ * unchanged on the dark surface it usually fails: the default `#0F7A5F`
+ * measures 3.11:1 against `#211F1B`, under the 4.5:1 text threshold. This
+ * derives the dark-theme sibling the school never supplied.
  */
 
-/** DESIGN.md's dark surface; the colour every derived accent is judged against. */
-const DARK_SURFACE = { r: 0x1c, g: 0x1c, b: 0x1c };
+/** The Hijau Segar dark surface (docs/07-ui-ux.md); the colour every derived accent is judged against. */
+const DARK_SURFACE = { r: 0x21, g: 0x1f, b: 0x1b };
 
 /**
  * 4.5:1, the text threshold rather than the 3:1 graphic one, because the
@@ -19,7 +18,7 @@ const TARGET_CONTRAST = 4.5;
 /**
  * A fully saturated accent reads as neon once it is lightened this far, so
  * saturation is capped on the way. The token set's own pair does the same:
- * `#1F3A5F` (51% saturation) is answered by `#62758F` (19%).
+ * `#0F7A5F` (79% saturation) is answered by `#409680` (32%).
  */
 const MAX_DARK_SATURATION = 0.4;
 
@@ -79,8 +78,8 @@ export function contrastRatio(a: Rgb, b: Rgb): number {
 /** Keep accent text readable on both light page backgrounds and white surfaces. */
 export function lightVariantOf(hex: string): string {
   const rgb = parseHex(hex);
-  if (!rgb) return "#1F3A5F";
-  const background = { r: 0xf7, g: 0xf6, b: 0xf3 };
+  if (!rgb) return "#0F7A5F";
+  const background = { r: 0xf7, g: 0xf6, b: 0xf2 };
   for (let factor = 1; factor >= 0; factor -= 0.01) {
     const candidate = roundChannels({ r: rgb.r * factor, g: rgb.g * factor, b: rgb.b * factor });
     if (contrastRatio(candidate, background) >= TARGET_CONTRAST) return toHex(candidate);

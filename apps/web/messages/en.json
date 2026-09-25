@@ -308,7 +308,7 @@
         "taglinePlaceholder": "A short line under the school name",
         "accentColorLabel": "Accent color",
         "accentColorHint": "Used for primary buttons, links, and focus across the whole app.",
-        "accentColorError": "Accent color must be a 6-digit hex code, e.g. #1F3A5F.",
+        "accentColorError": "Accent color must be a 6-digit hex code, e.g. #0F7A5F.",
         "saved": "Branding changes saved",
         "save": "Save changes",
         "logo": {

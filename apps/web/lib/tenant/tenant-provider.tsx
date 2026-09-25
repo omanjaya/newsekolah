@@ -38,8 +38,8 @@ export function TenantProvider({ children }: { children: ReactNode }): ReactElem
   const branding = data;
 
   useEffect(() => {
-    const supplied = branding?.accent_color ?? "#1F3A5F";
-    const accent = parseHex(supplied) ? supplied : "#1F3A5F";
+    const supplied = branding?.accent_color ?? "#0F7A5F";
+    const accent = parseHex(supplied) ? supplied : "#0F7A5F";
     const light = lightVariantOf(accent);
     const dark = darkVariantOf(accent);
     const root = document.documentElement;

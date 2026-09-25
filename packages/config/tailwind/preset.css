@@ -3,9 +3,10 @@
  *
  * Tailwind v4 theme registration. Values are re-exported from
  * @newsekolah/ui-tokens/dist/tokens.css (the single source of truth, see
- * DESIGN.md) so utility classes such as `bg-bg`, `text-status-present`, or
- * `rounded-sm` resolve to the same CSS custom properties the tokens package
- * generates, including their dark-mode overrides.
+ * docs/07-ui-ux.md's "Hijau Segar" section) so utility classes such as
+ * `bg-bg`, `text-status-present`, `bg-category-amber-soft`, or `rounded-lg`
+ * resolve to the same CSS custom properties the tokens package generates,
+ * including their dark-mode overrides.
  *
  * Consumers import this file once, after `@import "tailwindcss"`:
  *   @import "tailwindcss";
@@ -19,8 +20,43 @@
   --color-fg: var(--color-fg);
   --color-fg-muted: var(--color-fg-muted);
   --color-border: var(--color-border);
+  --color-line: var(--color-line);
   --color-accent: var(--color-accent);
   --color-accent-fg: var(--color-accent-fg);
+  --color-accent-soft: var(--color-accent-soft);
+  --color-accent-soft-fg: var(--color-accent-soft-fg);
+  --color-accent-strong: var(--color-accent-strong);
+
+  /* Category hues: icon-in-soft-circle chips, topic coding (not severity). */
+  --color-category-green: var(--color-category-green);
+  --color-category-green-soft: var(--color-category-green-soft);
+  --color-category-green-soft-fg: var(--color-category-green-soft-fg);
+  --color-category-amber: var(--color-category-amber);
+  --color-category-amber-soft: var(--color-category-amber-soft);
+  --color-category-amber-soft-fg: var(--color-category-amber-soft-fg);
+  --color-category-purple: var(--color-category-purple);
+  --color-category-purple-soft: var(--color-category-purple-soft);
+  --color-category-purple-soft-fg: var(--color-category-purple-soft-fg);
+  --color-category-blue: var(--color-category-blue);
+  --color-category-blue-soft: var(--color-category-blue-soft);
+  --color-category-blue-soft-fg: var(--color-category-blue-soft-fg);
+  --color-category-red: var(--color-category-red);
+  --color-category-red-soft: var(--color-category-red-soft);
+  --color-category-red-soft-fg: var(--color-category-red-soft-fg);
+
+  /* Semantic feedback: aliases onto the category hues above. */
+  --color-success: var(--color-success);
+  --color-success-soft: var(--color-success-soft);
+  --color-success-soft-fg: var(--color-success-soft-fg);
+  --color-warning: var(--color-warning);
+  --color-warning-soft: var(--color-warning-soft);
+  --color-warning-soft-fg: var(--color-warning-soft-fg);
+  --color-danger: var(--color-danger);
+  --color-danger-soft: var(--color-danger-soft);
+  --color-danger-soft-fg: var(--color-danger-soft-fg);
+  --color-info: var(--color-info);
+  --color-info-soft: var(--color-info-soft);
+  --color-info-soft-fg: var(--color-info-soft-fg);
 
   --color-status-present: var(--color-status-present);
   --color-status-present-fg: var(--color-status-present-fg);
@@ -48,6 +84,8 @@
 
   --radius-xs: var(--radius-xs);
   --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
   --radius-full: var(--radius-full);
 
   --text-xs: var(--text-12);
@@ -56,16 +94,28 @@
   --text-md: var(--text-16);
   --text-lg: var(--text-20);
   --text-xl: var(--text-24);
-  --text-2xl: var(--text-32);
+  --text-2xl: var(--text-28);
+  --text-3xl: var(--text-32);
 
+  --shadow-card: var(--shadow-card);
   --shadow-float: var(--shadow-float);
 
   --ease-standard: var(--ease-standard);
   --default-transition-duration: var(--duration-fast);
 
+  /*
+   * Body copy: Plus Jakarta Sans. Headings and display numbers use
+   * `font-heading` (Manrope) instead, see docs/07-ui-ux.md. Both are loaded
+   * self-hosted via next/font in apps/web/app/fonts.ts, which sets
+   * --font-plus-jakarta-sans/--font-manrope on <html>; the system stack
+   * here is only the fallback before that CSS variable resolves.
+   */
   --font-sans:
-    Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
-    sans-serif;
+    var(--font-plus-jakarta-sans, "Plus Jakarta Sans"), -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-heading:
+    var(--font-manrope, Manrope), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
 }
 
 @layer base {

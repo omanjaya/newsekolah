@@ -43,10 +43,10 @@ body {
  * (or any paint before branding arrives) still renders DESIGN.md's colours.
  */
 :root {
-  --tenant-accent: #1f3a5f;
-  --tenant-accent-dark: #62758f;
+  --tenant-accent: #0f7a5f;
+  --tenant-accent-dark: #409680;
   --tenant-accent-fg: #ffffff;
-  --tenant-accent-dark-fg: #ffffff;
+  --tenant-accent-dark-fg: #000000;
   --shell-sidebar-width: 15rem;
   --shell-mobile-tab-offset: calc(4rem + env(safe-area-inset-bottom));
 }

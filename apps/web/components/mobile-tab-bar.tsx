@@ -61,7 +61,7 @@ export function MobileTabBar({
     <nav
       aria-label={t("app.shell.sidebar.label")}
       className={cn(
-        "fixed inset-x-0 bottom-0 z-(--z-sticky) flex min-h-[var(--shell-mobile-tab-offset)] items-center border-t border-border bg-surface",
+        "fixed inset-x-0 bottom-0 z-(--z-sticky) flex min-h-[var(--shell-mobile-tab-offset)] items-center border-t border-line bg-surface",
         className,
       )}
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}

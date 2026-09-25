@@ -67,7 +67,7 @@ export function Header(): ReactElement {
   }
 
   return (
-    <header className="flex h-14 items-center gap-2 border-b border-border bg-surface px-4 md:gap-4 md:px-6">
+    <header className="flex h-14 items-center gap-2 border-b border-line bg-surface px-4 md:gap-4 md:px-6">
       <div className="flex min-w-0 flex-1 items-center gap-3 md:hidden">
         <TenantBrand size="sm" />
       </div>
@@ -80,7 +80,7 @@ export function Header(): ReactElement {
         type="button"
         onClick={commandPalette.open}
         aria-keyshortcuts="Meta+K Control+K"
-        className="hidden h-9 w-full max-w-md items-center gap-2 rounded-xs border border-border bg-bg px-3 text-[13px] text-fg-muted transition-colors hover:border-fg-muted/40 md:flex"
+        className="hidden h-9 w-full max-w-md items-center gap-2 rounded-full border border-border bg-bg px-4 text-[13px] text-fg-muted transition-colors hover:border-fg-muted/40 md:flex"
       >
         <Search className="size-4 shrink-0" aria-hidden="true" />
         <span className="truncate">{tPalette("trigger")}</span>
@@ -104,13 +104,13 @@ export function Header(): ReactElement {
       <div className="flex shrink-0 items-center gap-1">
         <ThemeToggle />
         <NotificationBell />
-        <span aria-hidden="true" className="mx-1 hidden h-5 w-px bg-border md:block" />
+        <span aria-hidden="true" className="mx-1 hidden h-5 w-px bg-line md:block" />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
               type="button"
               aria-label={t("profileMenu.label")}
-              className="flex size-11 items-center justify-center rounded-full md:size-8"
+              className="flex size-11 items-center justify-center rounded-full transition-colors hover:bg-bg md:size-8"
             >
               <Avatar name={me?.name ?? "?"} src={me?.avatar_url} size="sm" />
             </button>
