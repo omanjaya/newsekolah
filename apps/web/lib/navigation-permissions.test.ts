@@ -20,6 +20,16 @@ describe("canOpenPath", () => {
     expect(canOpenPath("/journal", grants("view_academic_data"), "teacher")).toBe(true);
   });
 
+  it("opens the teaching journal for staff who are not librarians", () => {
+    expect(canOpenPath("/journal", grants("view_academic_data"), "staff", ["staff"])).toBe(true);
+  });
+
+  it("refuses the teaching journal to a librarian even though their staff profile and view_academic_data would otherwise open it", () => {
+    expect(canOpenPath("/journal", grants("view_academic_data"), "staff", ["librarian"])).toBe(
+      false,
+    );
+  });
+
   it("allows paths the registry does not know", () => {
     expect(canOpenPath("/not-in-the-registry", grants(), undefined)).toBe(true);
   });

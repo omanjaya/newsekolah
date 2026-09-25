@@ -27,6 +27,7 @@ export function canOpenPath(
   pathname: string,
   can: (permission: string) => boolean,
   profileKind: NavProfileKind | undefined,
+  roleSlugs: string[] = [],
 ): boolean {
   const best = navItemForPath(pathname);
   if (!best) return true;
@@ -37,6 +38,9 @@ export function canOpenPath(
     return false;
   }
   if (best.excludeProfileKinds && profileKind && best.excludeProfileKinds.includes(profileKind)) {
+    return false;
+  }
+  if (best.excludeRoles?.some((slug) => roleSlugs.includes(slug))) {
     return false;
   }
   return true;

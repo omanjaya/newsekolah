@@ -60,6 +60,21 @@ func RoleDefaults() []RoleDefault {
 			PermViewDashboard, PermViewNotifications, PermViewLibrary, PermViewOwnLibraryLoans,
 			PermManageLibraryCatalog, PermManageLibraryCirculation,
 			PermManageLibraryMembers, PermManageLibrarySettings, PermViewLibraryReports,
+			// view_academic_data: the narrowest existing read permission
+			// GET /v1/academic/classes requires (openapi/modules/
+			// academic.yaml's x-permission), so the bulk member
+			// registration dialog (apps/web/features/library/components/
+			// member-bulk-register-dialog.tsx) can filter by class --
+			// added 25 September 2026 per the owner decision recorded in
+			// docs/analysis/audit-pra-deploy-2026-09-23.md. It also
+			// unlocks two read-only master-data screens in the sidebar
+			// (class/student roster, academic year list -- accepted, the
+			// librarian still never gets manage_master_data so neither
+			// offers an edit action); the teaching journal, which the same
+			// permission would otherwise also unlock for any staff-profile
+			// account, is kept hidden from this role specifically via
+			// apps/web/lib/navigation.ts's "journal" entry's excludeRoles.
+			PermViewAcademicData,
 		}},
 		// RoleSlugPrincipal ("Kepala Sekolah"): an overseer role, not an
 		// operator. It gets essentially every view_* permission in Catalog

@@ -375,14 +375,19 @@ type EventPublisher interface {
 }
 
 // RealtimePublisher pushes a live update to every holder of a fixed role
-// -- the librarian desk (docs/analysis/realtime-plan-2026-09-25.md
+// or duty -- the librarian desk (docs/analysis/realtime-plan-2026-09-25.md
 // section 2, opportunity #7: a reservation placed, or a held copy ready
-// for pickup) -- over realtime.TopicRole, without this package importing
-// platform/realtime directly (mirrors permits/service.RealtimePublisher's
-// rationale). A nil RealtimePublisher (no Hub wired) makes every push a
-// no-op.
+// for pickup) -- over realtime.TopicRole/TopicDuty, without this package
+// importing platform/realtime directly (mirrors
+// permits/service.RealtimePublisher's rationale). PublishToDuty was added
+// 25 September 2026 so the same event also reaches a holder of the
+// "librarian" duty (authz.DutyTypeDefaults, "Petugas Perpustakaan") who
+// does not carry the librarian role itself -- e.g. a teacher or other
+// staff member rostered onto library circulation duty. A nil
+// RealtimePublisher (no Hub wired) makes every push a no-op.
 type RealtimePublisher interface {
 	PublishRole(tenantID uuid.UUID, role, eventType string, payload any) error
+	PublishToDuty(ctx context.Context, tenantID uuid.UUID, dutySlug string, classID uuid.NullUUID, eventType string, payload any) error
 }
 
 // Event is the minimal shape EventPublisher needs; platform/events.Envelope

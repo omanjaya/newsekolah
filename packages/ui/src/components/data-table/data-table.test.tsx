@@ -59,12 +59,13 @@ function Harness(props: {
   );
 }
 
-function LocalHarness({ data }: { data: Row[] }) {
+function LocalHarness({ data, defaultPageSize }: { data: Row[]; defaultPageSize?: number }) {
   return (
     <DataTable
       mode="local"
       data={data}
       columns={columns}
+      defaultPageSize={defaultPageSize}
       emptyState={<EmptyState title="Belum ada data" />}
     />
   );
@@ -238,6 +239,34 @@ describe("DataTable", () => {
     expect(screen.getByRole("searchbox", { name: "Cari" })).toHaveValue("");
     expect(screen.getAllByText("Siswa 0").length).toBeGreaterThan(0);
     vi.useRealTimers();
+  });
+
+  it("uses defaultPageSize as the first local page size instead of the 50-row default", () => {
+    const rows = Array.from({ length: 12 }, (_, index) => ({
+      id: String(index),
+      name: `Siswa ${index}`,
+    }));
+    render(<LocalHarness data={rows} defaultPageSize={10} />);
+
+    expect(screen.getAllByText("Siswa 0").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Siswa 9").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Siswa 10")).not.toBeInTheDocument();
+    expect(screen.getByText("Halaman 1 dari 2")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Ke halaman berikutnya" }));
+    expect(screen.getAllByText("Siswa 10").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Siswa 0")).not.toBeInTheDocument();
+  });
+
+  it("keeps the 50-row default page size when defaultPageSize is not set", () => {
+    const rows = Array.from({ length: 12 }, (_, index) => ({
+      id: String(index),
+      name: `Siswa ${index}`,
+    }));
+    render(<LocalHarness data={rows} />);
+
+    expect(screen.getAllByText("Siswa 11").length).toBeGreaterThan(0);
+    expect(screen.getByText("Halaman 1 dari 1")).toBeInTheDocument();
   });
 
   it("does not render offset pagination for cursor data", () => {

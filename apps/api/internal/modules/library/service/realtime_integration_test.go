@@ -25,14 +25,27 @@ type recordedRolePublish struct {
 	payload   any
 }
 
+// recordedDutyPublish captures one RealtimePublisher.PublishToDuty call
+// (added 25 September 2026, so the librarian desk's live push also
+// reaches a holder of the "librarian" duty who does not carry the
+// librarian role itself).
+type recordedDutyPublish struct {
+	tenantID  uuid.UUID
+	dutySlug  string
+	classID   uuid.NullUUID
+	eventType string
+	payload   any
+}
+
 // fakeRealtimeHub implements library/service.RealtimePublisher without a
-// real platform/realtime.Hub, so a test can assert exactly which role
+// real platform/realtime.Hub, so a test can assert exactly which role/duty
 // topic, event type, and payload were published -- the plan's "fake hub
 // asserting topic, type, and payload" (docs/analysis/
 // realtime-plan-2026-09-25.md section 4, chunk C3's test row).
 type fakeRealtimeHub struct {
-	mu        sync.Mutex
-	published []recordedRolePublish
+	mu            sync.Mutex
+	published     []recordedRolePublish
+	dutyPublished []recordedDutyPublish
 }
 
 func (f *fakeRealtimeHub) PublishRole(tenantID uuid.UUID, role, eventType string, payload any) error {
@@ -42,10 +55,23 @@ func (f *fakeRealtimeHub) PublishRole(tenantID uuid.UUID, role, eventType string
 	return nil
 }
 
+func (f *fakeRealtimeHub) PublishToDuty(_ context.Context, tenantID uuid.UUID, dutySlug string, classID uuid.NullUUID, eventType string, payload any) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.dutyPublished = append(f.dutyPublished, recordedDutyPublish{tenantID: tenantID, dutySlug: dutySlug, classID: classID, eventType: eventType, payload: payload})
+	return nil
+}
+
 func (f *fakeRealtimeHub) count() int {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	return len(f.published)
+}
+
+func (f *fakeRealtimeHub) dutyCount() int {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return len(f.dutyPublished)
 }
 
 func requireReservationPayload(t *testing.T, payload any, wantReservationID, wantTitleID uuid.UUID) {
@@ -139,6 +165,14 @@ func TestReservePublishesToLibrarianRole(t *testing.T) {
 	require.Equal(t, "librarian", got.role)
 	require.Equal(t, "library.reserved", got.eventType)
 	requireReservationPayload(t, got.payload, reservation.ID, w.titleID)
+
+	require.Len(t, hub.dutyPublished, 1, "must also reach a holder of the librarian duty, not only the librarian role")
+	gotDuty := hub.dutyPublished[0]
+	require.Equal(t, w.tenantID, gotDuty.tenantID)
+	require.Equal(t, "librarian", gotDuty.dutySlug)
+	require.False(t, gotDuty.classID.Valid, "the librarian duty is tenant-wide, never class-scoped")
+	require.Equal(t, "library.reserved", gotDuty.eventType)
+	requireReservationPayload(t, gotDuty.payload, reservation.ID, w.titleID)
 }
 
 // TestReservePublishesNothingWhenACopyIsAvailable is the negative case:
@@ -156,6 +190,7 @@ func TestReservePublishesNothingWhenACopyIsAvailable(t *testing.T) {
 	_, err := svc.Reserve(ctx, w.tenantID, w.titleID, w.reserverID)
 	require.ErrorIs(t, err, domain.ErrCopyAvailableForLoan, "the seeded copy is still available")
 	require.Equal(t, 0, hub.count())
+	require.Equal(t, 0, hub.dutyCount())
 }
 
 // TestReturnPublishesReservationReadyToLibrarianRole covers opportunity
@@ -192,6 +227,14 @@ func TestReturnPublishesReservationReadyToLibrarianRole(t *testing.T) {
 	require.Equal(t, "librarian", got.role)
 	require.Equal(t, "library.reservation_ready", got.eventType)
 	requireReservationPayload(t, got.payload, reservation.ID, w.titleID)
+
+	require.Len(t, hub.dutyPublished, 2, "must also reach a holder of the librarian duty, not only the librarian role")
+	gotDuty := hub.dutyPublished[1]
+	require.Equal(t, w.tenantID, gotDuty.tenantID)
+	require.Equal(t, "librarian", gotDuty.dutySlug)
+	require.False(t, gotDuty.classID.Valid, "the librarian duty is tenant-wide, never class-scoped")
+	require.Equal(t, "library.reservation_ready", gotDuty.eventType)
+	requireReservationPayload(t, gotDuty.payload, reservation.ID, w.titleID)
 }
 
 // TestReturnPublishesNothingWhenTheLoanDoesNotExist is the negative case:
@@ -208,4 +251,5 @@ func TestReturnPublishesNothingWhenTheLoanDoesNotExist(t *testing.T) {
 	_, err := svc.Return(ctx, w.tenantID, service.ReturnInput{Barcode: "does-not-exist", CheckedInBy: w.borrowerID})
 	require.ErrorIs(t, err, domain.ErrLoanNotFound)
 	require.Equal(t, 0, hub.count())
+	require.Equal(t, 0, hub.dutyCount())
 }

@@ -53,6 +53,7 @@ export function Header(): ReactElement {
     navigation,
     (permission) => me?.permissions.includes(permission) ?? false,
     me?.profile_kind,
+    (me?.roles ?? []).map((role) => role.slug),
   ).filter((item) => item.accountMenu);
   const tPalette = useTranslations("app.shell.commandPalette");
   const commandPalette = useCommandPalette();

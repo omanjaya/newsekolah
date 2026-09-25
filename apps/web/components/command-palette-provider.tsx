@@ -60,6 +60,7 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }): R
       navigation,
       (permission) => me?.permissions.includes(permission) ?? false,
       me?.profile_kind,
+      (me?.roles ?? []).map((role) => role.slug),
     );
     return groupNavigation(items).map((group) => ({
       heading: tNav(group.labelKey),
@@ -74,7 +75,7 @@ export function CommandPaletteProvider({ children }: { children: ReactNode }): R
         },
       })),
     }));
-  }, [me?.permissions, me?.profile_kind, router, tNav]);
+  }, [me?.permissions, me?.profile_kind, me?.roles, router, tNav]);
 
   const open = useCallback(() => {
     setHasOpened(true);

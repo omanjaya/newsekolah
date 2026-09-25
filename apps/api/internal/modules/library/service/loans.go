@@ -302,7 +302,7 @@ func (s *Service) Return(ctx context.Context, tenantID uuid.UUID, in ReturnInput
 		return domain.Loan{}, err
 	}
 	if hasReady {
-		s.publishReservationReady(tenantID, ready)
+		s.publishReservationReady(ctx, tenantID, ready)
 	}
 	return loan, nil
 }

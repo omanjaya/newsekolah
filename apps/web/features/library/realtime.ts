@@ -6,20 +6,28 @@ import { useSession } from "../../lib/session/session-provider";
 
 /**
  * `library.reserved` / `library.reservation_ready` -> `role:<tenant>:librarian`
- * (docs/analysis/realtime-plan-2026-09-25.md section 4.4 rows 13-14): the
+ * and, since 25 September 2026, also `duty:<tenant>:librarian` (docs/
+ * analysis/realtime-plan-2026-09-25.md section 4.4 rows 13-14): the
  * circulation desk (plan section 2 row 7), which has no live signal to
  * staff today -- only the member who placed the reservation gets pushed
- * to (through `notification_created`). Query keys are local literals here
- * (not `queryKeys`, matching this feature's own `keys` object in api.ts --
- * see docs/analysis/realtime-plan-2026-09-25.md section 2's note that
- * library/grading/visitors have not moved to the centralized key module).
+ * to (through `notification_created`). The duty topic covers a holder of
+ * the "Petugas Perpustakaan" duty (authz.DutyTypeDefaults) whose account
+ * does not carry the librarian role itself (e.g. a teacher or other staff
+ * member rostered onto library circulation duty) -- the event now reaches
+ * whichever of role or duty (or both) the reader actually holds. Query
+ * keys are local literals here (not `queryKeys`, matching this feature's
+ * own `keys` object in api.ts -- see docs/analysis/
+ * realtime-plan-2026-09-25.md section 2's note that library/grading/
+ * visitors have not moved to the centralized key module).
  */
 const LIBRARY_RESERVATION_EVENTS = ["library.reserved", "library.reservation_ready"] as const;
 
 function useLibrarianTopic(enabled: boolean): void {
   const { me } = useSession();
   const holdsLibrarianRole = (me?.roles ?? []).some((role) => role.slug === "librarian");
+  const holdsLibrarianDuty = (me?.duties ?? []).some((duty) => duty.slug === "librarian");
   useLiveTopic(enabled && holdsLibrarianRole ? "role:librarian" : undefined);
+  useLiveTopic(enabled && holdsLibrarianDuty ? "duty:librarian" : undefined);
 }
 
 /** The circulation desk's landing dashboard (`/library`), which today's activity feeds through. */

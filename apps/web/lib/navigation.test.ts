@@ -105,6 +105,30 @@ describe("filterNavigation", () => {
       "staff-master-data",
     ]);
   });
+
+  it("excludes a role slug listed in excludeRoles even though permission and profile kind pass", () => {
+    const scoped: NavItem[] = [
+      {
+        key: "teaching-only",
+        labelKey: "nav.home",
+        href: "/x",
+        icon: Home,
+        permission: "view_academic_data",
+        profileKinds: ["staff"],
+        excludeRoles: ["librarian"],
+      },
+    ];
+    expect(filterNavigation(scoped, () => true, "staff", ["librarian"])).toEqual([]);
+    expect(filterNavigation(scoped, () => true, "staff", ["staff"]).map((i) => i.key)).toEqual([
+      "teaching-only",
+    ]);
+    // No roles array at all (a caller that has not been updated yet)
+    // defaults to excluding nobody, matching every other optional filter
+    // here degrading to "not checked" rather than "hide everything".
+    expect(filterNavigation(scoped, () => true, "staff").map((i) => i.key)).toEqual([
+      "teaching-only",
+    ]);
+  });
 });
 
 /**
@@ -121,12 +145,16 @@ describe("navigation registry: per-role audiences", () => {
     (permission: string) =>
       codes.includes(permission);
 
-  it("hides leave-requests, exit-permits and school master data from a librarian", () => {
-    // authz.RoleDefaults()'s librarian: library permissions only, no
-    // permit or academic-data codes.
+  it("gives a librarian the read-only class/year lists (for the bulk member registration filter) but not leave/exit or the teaching journal", () => {
+    // authz.RoleDefaults()'s librarian, 25 September 2026: library
+    // permissions plus view_academic_data (docs/analysis/
+    // audit-pra-deploy-2026-09-23.md's "sidebar per peran" -- the bulk
+    // member registration dialog filters students by class, which needs
+    // GET /v1/academic/classes's own view_academic_data).
     const can = has(
       "view_dashboard",
       "view_notifications",
+      "view_academic_data",
       "view_library",
       "view_own_library_loans",
       "manage_library_catalog",
@@ -135,11 +163,19 @@ describe("navigation registry: per-role audiences", () => {
       "manage_library_settings",
       "view_library_reports",
     );
-    const keys = filterNavigation(navigation, can, "staff").map((item) => item.key);
+    const keys = filterNavigation(navigation, can, "staff", ["librarian"]).map((item) => item.key);
     expect(keys).not.toContain("leave-requests");
     expect(keys).not.toContain("exit-permits");
-    expect(keys).not.toContain("school-classes");
-    expect(keys).not.toContain("academic-years");
+    // view_academic_data now also unlocks the read-only class/year rosters
+    // -- explicitly accepted (a librarian never gets manage_master_data,
+    // so neither screen offers an edit action to them).
+    expect(keys).toContain("school-classes");
+    expect(keys).toContain("academic-years");
+    // The teaching journal stays hidden: a librarian is profile_kind
+    // "staff" like any other Pegawai, so profileKinds/excludeProfileKinds
+    // cannot single them out -- excludeRoles does (navigation.ts's
+    // "journal" entry).
+    expect(keys).not.toContain("journal");
     // A librarian's profile kind is "staff" like any other staff account,
     // so the deliberately duty-agnostic late-arrivals review queue
     // (features/permits/components/late-arrivals-view.tsx) still reaches

@@ -63,6 +63,33 @@ describe("useLibraryDashboardLive", () => {
     });
 
     expect(state.topicCalls).not.toContain("role:librarian");
+    expect(state.topicCalls).not.toContain("duty:librarian");
+  });
+
+  it("also subscribes duty:librarian for a holder of the Petugas Perpustakaan duty", () => {
+    state.me = {
+      roles: [{ id: "1", slug: "teacher", name: "Guru", is_primary: true }],
+      duties: [{ slug: "librarian", scope_kind: "school" }],
+    };
+    renderHook(() => {
+      useLibraryDashboardLive();
+    });
+
+    expect(state.topicCalls).toContain("duty:librarian");
+    expect(state.topicCalls).not.toContain("role:librarian");
+  });
+
+  it("subscribes both topics for someone who holds the role and the duty", () => {
+    state.me = {
+      roles: [{ id: "1", slug: "librarian", name: "Pustakawan", is_primary: true }],
+      duties: [{ slug: "librarian", scope_kind: "school" }],
+    };
+    renderHook(() => {
+      useLibraryDashboardLive();
+    });
+
+    expect(state.topicCalls).toContain("role:librarian");
+    expect(state.topicCalls).toContain("duty:librarian");
   });
 });
 
