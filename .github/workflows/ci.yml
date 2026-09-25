@@ -412,6 +412,12 @@ jobs:
         working-directory: apps/web
         run: pnpm exec playwright install --with-deps chromium
 
+      - name: Build the web app's workspace packages
+        if: steps.changes.outputs.sim == 'true'
+        # The dev web container mounts the repo and imports these packages
+        # from their dist/ output, which a fresh checkout does not have.
+        run: pnpm turbo run build --filter=@newsekolah/web^...
+
       - name: Start the dev stack
         if: steps.changes.outputs.sim == 'true'
         run: docker compose -f infra/docker/docker-compose.dev.yml up --build -d postgres redis minio mailpit api web
