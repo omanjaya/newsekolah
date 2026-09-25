@@ -69,12 +69,15 @@ type AdminResult struct {
 type IdentityProvisioner interface {
 	ProvisionAdmin(ctx context.Context, tenantID uuid.UUID, in AdminInput) (AdminResult, error)
 
-	// SeedDefaultDuties creates the tenant's standard duty types
-	// (homeroom, counselor, leadership, security, and the rest of
-	// authz.DutyTypeDefaults) with their default permissions, so a new
-	// tenant can name a homeroom teacher from day one instead of only
-	// after someone runs the module's duty-type admin UI by hand.
-	SeedDefaultDuties(ctx context.Context, tenantID uuid.UUID) error
+	// EnsureTenantDefaults creates every system role (teacher, staff,
+	// student, parent, librarian, principal -- ProvisionAdmin above
+	// already created "admin"), default duty type (homeroom, counselor,
+	// leadership, security, picket, librarian), and default library
+	// member type the tenant does not already have, from
+	// internal/platform/migrator.EnsureTenantDefaults, so a new tenant is
+	// immediately usable instead of only after someone runs the relevant
+	// admin UI by hand for each one, or waits for a deploy's migrate run.
+	EnsureTenantDefaults(ctx context.Context, tenantID uuid.UUID) error
 }
 
 // JobInserter is the slice of *river.Client[pgx.Tx] RequestExport needs:
