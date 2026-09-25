@@ -78,10 +78,13 @@ export function AttendanceCalendar(): ReactElement {
     const counts: Record<string, number> = {};
     for (const day of data?.data ?? []) {
       if (day.status_code === "NONE") continue;
+      // A day that has not happened yet cannot be "incomplete": exclude it
+      // from the tally so the legend matches what the grid actually shows.
+      if (day.date > today) continue;
       counts[day.status_code] = (counts[day.status_code] ?? 0) + 1;
     }
     return counts;
-  }, [data]);
+  }, [data, today]);
 
   return (
     <section className="flex flex-col gap-4">
@@ -122,9 +125,14 @@ export function AttendanceCalendar(): ReactElement {
           {cells.map((date, index) => {
             if (!date) return <div key={`empty-${index}`} />;
             const day = byDate.get(date);
-            const code = day?.status_code ?? "NONE";
             const isToday = date === today;
-            const sessions = day?.sessions ?? [];
+            // A day that has not happened yet has no attendance status to
+            // show -- the API still returns "belum lengkap" for it (no
+            // sessions submitted), which would otherwise scare a student
+            // into thinking they missed a day that has not started.
+            const isFuture = date > today;
+            const code = isFuture ? "NONE" : (day?.status_code ?? "NONE");
+            const sessions = isFuture ? [] : (day?.sessions ?? []);
             const cellClassName = cn(
               "flex min-h-14 w-full flex-col items-center justify-center gap-1 rounded-xs border text-[13px]",
               isToday ? "border-accent" : "border-transparent",
@@ -151,7 +159,7 @@ export function AttendanceCalendar(): ReactElement {
                   key={date}
                   className={cellClassName}
                   title={
-                    day
+                    day && !isFuture
                       ? t("dayTitle", {
                           expected: day.expected_sessions,
                           submitted: day.submitted_sessions,
