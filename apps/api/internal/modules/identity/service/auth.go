@@ -201,6 +201,9 @@ func (s *Service) refresh(ctx context.Context, tenantID uuid.UUID, refreshToken 
 // back; without this, the audit trail of failed attempts would vanish
 // along with everything else in that transaction.
 func (s *Service) recordLoginAttemptDurably(ctx context.Context, tenantID uuid.UUID, username, ip string, success bool) {
+	if !success && s.limiter != nil {
+		_ = s.limiter.RecordFailure(ctx, tenantID.String(), username, ip)
+	}
 	_ = s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		return s.repo.RecordLoginAttempt(ctx, tenantID, username, ip, success)
 	})

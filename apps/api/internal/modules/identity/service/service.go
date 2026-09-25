@@ -113,10 +113,13 @@ type AcademicYearReader interface {
 	ActiveAcademicYearLabel(ctx context.Context, tenantID, academicYearID uuid.UUID) (string, error)
 }
 
-// RateLimiter matches platform/auth.LoginRateLimiter's Allow signature
-// structurally, so this package does not need to import platform/auth.
+// RateLimiter matches platform/auth.LoginRateLimiter structurally, so this
+// package does not need to import platform/auth. Allow checks without
+// counting; only RecordFailure counts, so successful logins never use up
+// the budget.
 type RateLimiter interface {
 	Allow(ctx context.Context, tenantID, username, ip string) (bool, error)
+	RecordFailure(ctx context.Context, tenantID, username, ip string) error
 }
 
 // TokenIssuer matches platform/auth.TokenIssuer's IssueAccessToken

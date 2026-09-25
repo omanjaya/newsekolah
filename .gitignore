@@ -27,3 +27,6 @@ apps/web/playwright-report/
 apps/web/test-results/
 .claude/scheduled_tasks.lock
 .claude/launch.json
+
+# Local UX audit screenshots (too large for git)
+docs/analysis/ux-audit-2026-09-25/

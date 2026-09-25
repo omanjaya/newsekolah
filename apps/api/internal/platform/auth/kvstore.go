@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"strconv"
 	"sync"
 	"time"
 
@@ -97,6 +98,8 @@ func (s *MemoryStore) Incr(_ context.Context, key string, ttl time.Duration) (in
 		e = memEntry{count: 0, expires: now.Add(ttl)}
 	}
 	e.count++
+	// Mirror Redis, where INCR leaves the counter readable through GET.
+	e.value = strconv.FormatInt(e.count, 10)
 	s.entries[key] = e
 	return e.count, nil
 }
