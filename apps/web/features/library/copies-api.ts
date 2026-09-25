@@ -27,6 +27,8 @@ export function useBulkSetLibraryCopyStatusMutation() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["library"] });
     },
+
+    meta: { errorToast: false },
   });
 }
 

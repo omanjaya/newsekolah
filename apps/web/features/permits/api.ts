@@ -62,6 +62,8 @@ export function useIssueScanTokenMutation() {
   return useMutation({
     mutationFn: (body: { purpose: ScanPurpose; context_id?: string }) =>
       client.POST("/v1/scan-tokens", { body }),
+
+    meta: { errorToast: false },
   });
 }
 
@@ -124,6 +126,8 @@ export function useCreateExitPermitMutation() {
     mutationFn: (body: { destination: string; start_period_id: string; end_period_id: string }) =>
       client.POST("/v1/exit-permits", { body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -145,6 +149,8 @@ export function useRecordExitPermitByStaffMutation() {
       end_period_id: string;
     }) => client.POST("/v1/exit-permits/staff-record", { body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -158,6 +164,8 @@ export function useScanExitPermitStageMutation() {
         body: { token },
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -168,6 +176,8 @@ export function useCancelExitPermitMutation() {
     mutationFn: (id: string) =>
       client.POST("/v1/exit-permits/{instanceId}/cancel", { params: { path: { instanceId: id } } }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -178,6 +188,8 @@ export function useIssueGateTokenMutation() {
       client.POST("/v1/exit-permits/{instanceId}/gate-token", {
         params: { path: { instanceId: id } },
       }),
+
+    meta: { errorToast: false },
   });
 }
 
@@ -191,6 +203,8 @@ export function useScanGateMutation() {
         body: { token },
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -255,6 +269,8 @@ export function useRecordLateArrivalByStaffMutation() {
       violation_ids?: string[];
     }) => client.POST("/v1/late-arrivals/staff-record", { body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -265,6 +281,8 @@ export function useOpenLateArrivalMutation() {
     mutationFn: (body: { token: string; reason?: string }) =>
       client.POST("/v1/late-arrivals/open", { body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -278,6 +296,8 @@ export function useReviewLateArrivalMutation() {
         body,
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -291,6 +311,8 @@ export function useScanLateArrivalStageMutation() {
         body: { token },
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -342,6 +364,8 @@ export function useSubmitLeaveRequestMutation() {
       ends_on: string;
     }) => client.POST("/v1/leave-requests", { body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -355,6 +379,8 @@ export function useReviewLeaveRequestMutation() {
         body: { approve, ...(note ? { note } : {}) },
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -367,6 +393,8 @@ export function useIssueLeaveLetterMutation() {
         params: { path: { instanceId: id } },
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -391,6 +419,8 @@ export function useUploadEvidenceMutation() {
       });
     },
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -401,5 +431,7 @@ export function useLeaveDocumentUrlMutation() {
       client.GET("/v1/leave-requests/{instanceId}/documents/{kind}", {
         params: { path: { instanceId: id, kind } },
       }),
+
+    meta: { errorToast: false },
   });
 }

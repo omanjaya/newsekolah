@@ -76,6 +76,8 @@ export function useSuspendTenantMutation() {
     mutationFn: (tenantId: string) =>
       client.POST("/v1/platform/tenants/{tenantId}/suspend", { params: { path: { tenantId } } }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -86,6 +88,8 @@ export function useResumeTenantMutation() {
     mutationFn: (tenantId: string) =>
       client.POST("/v1/platform/tenants/{tenantId}/resume", { params: { path: { tenantId } } }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -99,6 +103,8 @@ export function useUpdateTenantDomainMutation() {
         body: { domain },
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -131,6 +137,8 @@ export function useSetTenantFlagMutation() {
         body: { enabled },
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -139,6 +147,8 @@ export function useRequestExportMutation() {
   return useMutation({
     mutationFn: (tenantId: string) =>
       client.POST("/v1/platform/tenants/{tenantId}/exports", { params: { path: { tenantId } } }),
+
+    meta: { errorToast: false },
   });
 }
 
@@ -178,6 +188,8 @@ export function useUpdateOperatorAlertSettingsMutation() {
     mutationFn: (body: PlatformOperatorAlertSettingsUpdate) =>
       client.PUT("/v1/platform/operator-alerts", { body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -189,6 +201,8 @@ export function useDetectOperatorAlertChatMutation() {
       client.POST("/v1/platform/operator-alerts/detect-chat", {
         body: telegramToken ? { telegram_token: telegramToken } : {},
       }),
+
+    meta: { errorToast: false },
   });
 }
 
@@ -202,5 +216,7 @@ export function useTestOperatorAlertMutation() {
           ...(draft.telegramChatId ? { telegram_chat_id: draft.telegramChatId } : {}),
         },
       }),
+
+    meta: { errorToast: false },
   });
 }

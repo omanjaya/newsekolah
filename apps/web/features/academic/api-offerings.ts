@@ -44,6 +44,8 @@ export function useCreateSubjectOfferingMutation(yearId: string) {
         body,
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -57,6 +59,8 @@ export function useUpdateSubjectOfferingMutation(yearId: string) {
         body,
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -69,6 +73,8 @@ export function useDeleteSubjectOfferingMutation(yearId: string) {
         params: { path: { offeringId: id } },
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -123,5 +129,7 @@ export function useSyncTeacherAssignmentsMutation(yearId: string, teacherUserId:
         queryKey: ["academic", "years", yearId, "teaching-assignments", teacherUserId],
       });
     },
+
+    meta: { errorToast: false },
   });
 }

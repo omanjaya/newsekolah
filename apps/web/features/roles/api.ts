@@ -34,6 +34,8 @@ export function useCreateRoleMutation() {
   return useMutation({
     mutationFn: (body: components["schemas"]["RoleWrite"]) => client.POST("/v1/roles", { body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -47,6 +49,8 @@ export function useReplaceRolePermissionsMutation() {
         body: { permissions },
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -57,5 +61,7 @@ export function useDeleteRoleMutation() {
     mutationFn: (id: string) =>
       client.DELETE("/v1/roles/{roleId}", { params: { path: { roleId: id } } }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }

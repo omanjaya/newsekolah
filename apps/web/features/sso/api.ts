@@ -30,6 +30,8 @@ export function useSaveGoogleSSOConfigMutation() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: keys.googleConfig() });
     },
+
+    meta: { errorToast: false },
   });
 }
 
@@ -42,5 +44,7 @@ export function useRemoveGoogleSSOConfigMutation() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: keys.googleConfig() });
     },
+
+    meta: { errorToast: false },
   });
 }

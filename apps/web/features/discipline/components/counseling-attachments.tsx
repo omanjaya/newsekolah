@@ -17,7 +17,7 @@ import {
   useCounselingAttachmentUrlMutation,
   useCounselingAttachmentsQuery,
   useUploadCounselingAttachmentMutation,
-} from "../api";
+} from "../api-counseling-extras";
 
 /**
  * Attachments on one counseling note: JPEG or PNG up to 10 MB, uploaded

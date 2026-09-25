@@ -29,7 +29,8 @@ import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useCan } from "../../../lib/session/session-provider";
 import { useDirectoryQuery, useLookup } from "../../reference/api";
-import { type Counseling, useDeleteCounselingMutation, useMyCounselingsQuery } from "../api";
+import { type Counseling } from "../api";
+import { useDeleteCounselingMutation, useMyCounselingsQuery } from "../api-counseling-extras";
 
 import { CounselingBKTeamPanel } from "./counseling-bk-team-panel";
 import { CounselingDetailDialog } from "./counseling-detail-dialog";

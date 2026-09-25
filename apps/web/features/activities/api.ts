@@ -75,6 +75,8 @@ export function useCreateExtracurricularMutation() {
     mutationFn: (body: ExtracurricularWrite) =>
       client.POST("/v1/activities/extracurriculars", { body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -88,6 +90,8 @@ export function useUpdateExtracurricularMutation() {
         body,
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -100,6 +104,8 @@ export function useDeleteExtracurricularMutation() {
         params: { path: { clubId: id } },
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -120,6 +126,8 @@ export function useUpdateMembershipPolicyMutation() {
         body: { max_clubs_per_student: maxClubsPerStudent },
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -147,6 +155,8 @@ export function useJoinClubMutation(clubId: string) {
         body,
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -160,6 +170,8 @@ export function useLeaveClubMutation() {
         body: { left_on: leftOn },
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -207,6 +219,8 @@ export function useCreateMeetingMutation(clubId: string) {
         body,
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -236,6 +250,8 @@ export function useRecordAttendanceMutation(meetingId: string) {
         body,
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -277,6 +293,8 @@ export function useCreateActivityEventMutation() {
   return useMutation({
     mutationFn: (body: ActivityEventWrite) => client.POST("/v1/activities/events", { body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -290,6 +308,8 @@ export function useUpdateActivityEventMutation() {
         body,
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -300,6 +320,8 @@ export function useDeleteActivityEventMutation() {
     mutationFn: (id: string) =>
       client.DELETE("/v1/activities/events/{activityId}", { params: { path: { activityId: id } } }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -313,6 +335,8 @@ export function useAddActivityParticipantMutation(activityId: string) {
         body,
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -325,6 +349,8 @@ export function useRemoveActivityParticipantMutation() {
         params: { path: { participantId } },
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -347,6 +373,8 @@ export function useCreateAchievementMutation() {
   return useMutation({
     mutationFn: (body: AchievementWrite) => client.POST("/v1/activities/achievements", { body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -360,6 +388,8 @@ export function useUpdateAchievementMutation() {
         body,
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -372,5 +402,7 @@ export function useDeleteAchievementMutation() {
         params: { path: { achievementId: id } },
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }

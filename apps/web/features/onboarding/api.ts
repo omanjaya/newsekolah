@@ -74,6 +74,8 @@ export function useApplyFullLevelTemplateMutation() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: onboardingKeys.checklist() });
     },
+
+    meta: { errorToast: false },
   });
 }
 

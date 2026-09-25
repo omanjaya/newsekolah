@@ -38,10 +38,19 @@ export function useStartMfaEnrolmentMutation() {
   const client = useApiClient();
   return useMutation({
     mutationFn: () => client.POST("/v1/me/mfa/enroll"),
+
+    meta: { errorToast: false },
   });
 }
 
 /** POST /v1/me/mfa/confirm: turns a started enrolment into an active one. */
+// The three mutations below are all driven through MfaCodeForm
+// (components/mfa-code-form.tsx), which already catches the mutation's
+// error and shows it inline (form.setError("root")), and security-view.tsx
+// already toasts its own success message once the confirm handler
+// resolves -- errorToast: false avoids a second, generic error toast on
+// top of the inline one.
+
 export function useConfirmMfaEnrolmentMutation() {
   const client = useApiClient();
   const queryClient = useQueryClient();
@@ -50,6 +59,7 @@ export function useConfirmMfaEnrolmentMutation() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: keys.mfaStatus() });
     },
+    meta: { errorToast: false },
   });
 }
 
@@ -62,6 +72,7 @@ export function useDisableMfaMutation() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: keys.mfaStatus() });
     },
+    meta: { errorToast: false },
   });
 }
 
@@ -74,6 +85,7 @@ export function useRegenerateMfaRecoveryCodesMutation() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: keys.mfaStatus() });
     },
+    meta: { errorToast: false },
   });
 }
 
@@ -109,6 +121,8 @@ export function useRegisterPasskeyMutation() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: keys.passkeys() });
     },
+
+    meta: { errorToast: false },
   });
 }
 
@@ -125,6 +139,8 @@ export function useRenamePasskeyMutation() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: keys.passkeys() });
     },
+
+    meta: { errorToast: false },
   });
 }
 
@@ -138,5 +154,7 @@ export function useDeletePasskeyMutation() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: keys.passkeys() });
     },
+
+    meta: { errorToast: false },
   });
 }

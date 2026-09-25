@@ -54,6 +54,8 @@ export function useCreateSubstitutionMutation() {
   return useMutation({
     mutationFn: (body: SubstitutionCreate) => client.POST("/v1/substitutions", { body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -67,6 +69,8 @@ export function useRespondSubstitutionMutation() {
         body: { accept, ...(note ? { note } : {}) },
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -79,5 +83,7 @@ export function useCancelSubstitutionMutation() {
         params: { path: { substitutionId: id } },
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }

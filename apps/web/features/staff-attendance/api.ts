@@ -53,6 +53,8 @@ export function useReplaceStaffAttendanceScheduleMutation(employeeId: string) {
       });
       void queryClient.invalidateQueries({ queryKey: queryKeys.staffAttendanceRoster() });
     },
+
+    meta: { errorToast: false },
   });
 }
 
@@ -79,6 +81,8 @@ export function useScanStaffAttendanceMutation() {
       void queryClient.invalidateQueries({ queryKey: ["staff-attendance", "today"] });
       void queryClient.invalidateQueries({ queryKey: ["staff-attendance", "my-history"] });
     },
+
+    meta: { errorToast: false },
   });
 }
 
@@ -90,6 +94,8 @@ export function useRecordStaffAttendanceManualMutation() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["staff-attendance"] });
     },
+
+    meta: { errorToast: false },
   });
 }
 
@@ -146,6 +152,8 @@ export function useCorrectStaffAttendanceRecordMutation() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["staff-attendance"] });
     },
+
+    meta: { errorToast: false },
   });
 }
 
@@ -232,5 +240,7 @@ export function useImportStaffAttendanceMutation() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["staff-attendance"] });
     },
+
+    meta: { errorToast: false },
   });
 }

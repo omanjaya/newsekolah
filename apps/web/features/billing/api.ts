@@ -65,6 +65,8 @@ export function useCreateFeeTypeMutation() {
   return useMutation({
     mutationFn: (body: FeeTypeWrite) => client.POST("/v1/billing/fee-types", { body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -78,6 +80,8 @@ export function useUpdateFeeTypeMutation() {
         body,
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -88,6 +92,8 @@ export function useDeleteFeeTypeMutation() {
     mutationFn: (id: string) =>
       client.DELETE("/v1/billing/fee-types/{feeTypeId}", { params: { path: { feeTypeId: id } } }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -123,6 +129,8 @@ export function useCreateDiscountMutation() {
   return useMutation({
     mutationFn: (body: DiscountWrite) => client.POST("/v1/billing/discounts", { body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -136,6 +144,8 @@ export function useUpdateDiscountMutation() {
         body,
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -148,6 +158,8 @@ export function useDeleteDiscountMutation() {
         params: { path: { discountId: id } },
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -158,6 +170,8 @@ export function usePreviewGenerationMutation() {
   return useMutation({
     mutationFn: (period: string) =>
       client.POST("/v1/billing/generation/preview", { body: { period } }),
+
+    meta: { errorToast: false },
   });
 }
 
@@ -167,6 +181,8 @@ export function useRunGenerationMutation() {
   return useMutation({
     mutationFn: (period: string) => client.POST("/v1/billing/generation/run", { body: { period } }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -230,6 +246,8 @@ export function useRecordPaymentMutation() {
   return useMutation({
     mutationFn: (body: PaymentWrite) => client.POST("/v1/billing/payments", { body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -243,6 +261,8 @@ export function useVoidPaymentMutation() {
         body: { reason },
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -253,6 +273,8 @@ export function usePaymentReceiptUrlMutation() {
       client.GET("/v1/billing/payments/{paymentId}/receipt", {
         params: { path: { paymentId } },
       }),
+
+    meta: { errorToast: false },
   });
 }
 

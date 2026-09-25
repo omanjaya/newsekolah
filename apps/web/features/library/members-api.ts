@@ -67,6 +67,8 @@ export function useDeleteLibraryMemberTypeMutation() {
         params: { path: { memberTypeId } },
       }),
     onSuccess: () => invalidate(keys.memberTypes()),
+
+    meta: { errorToast: false },
   });
 }
 
@@ -158,6 +160,8 @@ export function useUpdateLibraryMemberMutation() {
         body,
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -171,6 +175,8 @@ export function useUpdateLibraryMemberStatusMutation() {
         body: { status },
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 

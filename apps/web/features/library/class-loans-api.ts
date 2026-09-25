@@ -21,6 +21,8 @@ export function usePreviewClassLoansMutation() {
   return useMutation({
     mutationFn: (body: { class_id: string; title_id: string }) =>
       client.POST("/v1/library/class-loans/preview", { body }),
+
+    meta: { errorToast: false },
   });
 }
 
@@ -32,6 +34,8 @@ export function useCommitClassLoansMutation() {
     mutationFn: (body: { pairs: { student_user_id: string; barcode: string }[] }) =>
       client.POST("/v1/library/class-loans", { body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -43,5 +47,7 @@ export function useCommitClassReturnsMutation() {
     mutationFn: (body: { class_id: string; title_id: string }) =>
       client.POST("/v1/library/class-returns", { body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }

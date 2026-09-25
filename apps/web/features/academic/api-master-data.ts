@@ -36,6 +36,8 @@ export function useCreateGradeLevelMutation() {
   return useMutation({
     mutationFn: (body: GradeLevelInput) => client.POST("/v1/academic/grade-levels", { body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -49,6 +51,8 @@ export function useUpdateGradeLevelMutation() {
         body,
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -61,6 +65,8 @@ export function useDeleteGradeLevelMutation() {
         params: { path: { gradeLevelId: id } },
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -71,6 +77,8 @@ export function useApplyGradeLevelTemplateMutation() {
     mutationFn: (template: GradeLevelTemplate) =>
       client.POST("/v1/academic/grade-levels/apply-template", { body: { template } }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -94,6 +102,8 @@ export function useCreateTrackMutation() {
   return useMutation({
     mutationFn: (body: TrackInput) => client.POST("/v1/academic/tracks", { body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -104,6 +114,8 @@ export function useUpdateTrackMutation() {
     mutationFn: ({ id, body }: { id: string; body: TrackInput }) =>
       client.PUT("/v1/academic/tracks/{trackId}", { params: { path: { trackId: id } }, body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -114,6 +126,8 @@ export function useDeleteTrackMutation() {
     mutationFn: (id: string) =>
       client.DELETE("/v1/academic/tracks/{trackId}", { params: { path: { trackId: id } } }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -143,6 +157,8 @@ export function useCreateRoomMutation() {
   return useMutation({
     mutationFn: (body: RoomInput) => client.POST("/v1/academic/rooms", { body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -153,6 +169,8 @@ export function useUpdateRoomMutation() {
     mutationFn: ({ id, body }: { id: string; body: RoomInput }) =>
       client.PUT("/v1/academic/rooms/{roomId}", { params: { path: { roomId: id } }, body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -163,5 +181,7 @@ export function useDeleteRoomMutation() {
     mutationFn: (id: string) =>
       client.DELETE("/v1/academic/rooms/{roomId}", { params: { path: { roomId: id } } }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }

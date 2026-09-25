@@ -30,6 +30,8 @@ export function useCreateAPIKeyMutation() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.apiKeys() });
     },
+
+    meta: { errorToast: false },
   });
 }
 
@@ -44,6 +46,8 @@ export function useRevokeAPIKeyMutation() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.apiKeys() });
     },
+
+    meta: { errorToast: false },
   });
 }
 
@@ -80,6 +84,8 @@ export function useCreateWebhookEndpointMutation() {
     mutationFn: (body: WebhookEndpointCreate) =>
       client.POST("/v1/integrations/webhook-endpoints", { body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -93,6 +99,8 @@ export function useUpdateWebhookEndpointMutation() {
         body,
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -105,6 +113,8 @@ export function useDeleteWebhookEndpointMutation() {
         params: { path: { webhookEndpointId: id } },
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -138,5 +148,7 @@ export function useRetryWebhookDeliveryMutation() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["integrations", "webhook-deliveries"] });
     },
+
+    meta: { errorToast: false },
   });
 }

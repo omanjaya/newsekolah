@@ -64,6 +64,8 @@ export function useOpenSessionMutation() {
       queryClient.setQueryData(queryKeys.attendanceSession(detail.id), detail);
       void queryClient.invalidateQueries({ queryKey: ["attendance", "today"] });
     },
+
+    meta: { errorToast: false },
   });
 }
 

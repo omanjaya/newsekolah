@@ -35,6 +35,8 @@ export function useCreateDutyTypeMutation() {
       scope_kind: components["schemas"]["DutyScopeKind"];
     }) => client.POST("/v1/duties", { body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -54,6 +56,8 @@ export function useUpdateDutyTypeMutation() {
       };
     }) => client.PUT("/v1/duties/{dutyId}", { params: { path: { dutyId: id } }, body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -64,6 +68,8 @@ export function useDeleteDutyTypeMutation() {
     mutationFn: (id: string) =>
       client.DELETE("/v1/duties/{dutyId}", { params: { path: { dutyId: id } } }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -77,6 +83,8 @@ export function useReplaceDutyPermissionsMutation() {
         body: { permissions },
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -112,6 +120,8 @@ export function useCreateDutyAssignmentMutation() {
     mutationFn: (body: components["schemas"]["DutyAssignmentWrite"]) =>
       client.POST("/v1/duty-assignments", { body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -126,6 +136,8 @@ export function useUpdateDutyAssignmentMutation() {
         body,
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -138,6 +150,8 @@ export function useEndDutyAssignmentMutation() {
         params: { path: { assignmentId: id } },
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -162,5 +176,7 @@ export function useImpersonateUserMutation() {
       queryClient.setQueryData(queryKeys.me(), data.user);
       void queryClient.invalidateQueries({ queryKey: queryKeys.me() });
     },
+
+    meta: { errorToast: false },
   });
 }

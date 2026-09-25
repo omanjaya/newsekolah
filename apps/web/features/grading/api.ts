@@ -77,6 +77,8 @@ export function useUpdateGradingScaleMutation() {
   return useMutation({
     mutationFn: (body: GradingScaleWrite) => client.PUT("/v1/grading/scale", { body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -116,6 +118,8 @@ export function useCreateComponentMutation() {
   return useMutation({
     mutationFn: (body: AssessmentComponentWrite) => client.POST("/v1/grading/components", { body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -129,6 +133,8 @@ export function useUpdateComponentMutation() {
         body,
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -141,6 +147,8 @@ export function useDeleteComponentMutation() {
         params: { path: { componentId: id } },
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -179,6 +187,8 @@ export function useSetManualReportScoreMutation() {
       manual_score?: number | null;
     }) => client.PUT("/v1/grading/report-scores/manual", { body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -193,6 +203,8 @@ export function useSetGradePublicationMutation() {
       is_published: boolean;
     }) => client.PUT("/v1/grading/publications", { body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -227,6 +239,8 @@ export function useReplaceGradeRangesMutation() {
       ranges: GradeRangeEntry[];
     }) => client.PUT("/v1/grading/grade-ranges", { body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -256,6 +270,8 @@ export function useSaveTPMappingMutation() {
   return useMutation({
     mutationFn: (body: TPMappingWrite) => client.POST("/v1/grading/tp-mappings", { body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -266,6 +282,8 @@ export function useDeleteTPMappingMutation() {
     mutationFn: (id: string) =>
       client.DELETE("/v1/grading/tp-mappings/{mappingId}", { params: { path: { mappingId: id } } }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -312,6 +330,8 @@ export function useGiveStarMutation() {
         queryKey: gradingKeys.starLedger(variables.student_user_id),
       });
     },
+
+    meta: { errorToast: false },
   });
 }
 

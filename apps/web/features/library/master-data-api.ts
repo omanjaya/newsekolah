@@ -43,6 +43,8 @@ export function useCreateLibraryMaterialTypeMutation() {
     mutationFn: (body: LibraryMaterialTypeWrite) =>
       client.POST("/v1/library/material-types", { body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -53,6 +55,8 @@ export function useUpdateLibraryMaterialTypeMutation() {
     mutationFn: ({ id, ...body }: LibraryMaterialTypeWrite & { id: string }) =>
       client.PUT("/v1/library/material-types/{id}", { params: { path: { id } }, body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -63,6 +67,8 @@ export function useDeleteLibraryMaterialTypeMutation() {
     mutationFn: (id: string) =>
       client.DELETE("/v1/library/material-types/{id}", { params: { path: { id } } }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -122,6 +128,8 @@ export function useCreateLibraryPartnerMutation() {
   return useMutation({
     mutationFn: (body: LibraryPartnerWrite) => client.POST("/v1/library/partners", { body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -132,6 +140,8 @@ export function useUpdateLibraryPartnerMutation() {
     mutationFn: ({ id, ...body }: LibraryPartnerWrite & { id: string }) =>
       client.PUT("/v1/library/partners/{id}", { params: { path: { id } }, body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -142,6 +152,8 @@ export function useDeleteLibraryPartnerMutation() {
     mutationFn: (id: string) =>
       client.DELETE("/v1/library/partners/{id}", { params: { path: { id } } }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 

@@ -47,6 +47,8 @@ export function useCreateAcademicYearMutation() {
   return useMutation({
     mutationFn: (body: AcademicYearInput) => client.POST("/v1/academic/years", { body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -57,6 +59,8 @@ export function useUpdateAcademicYearMutation() {
     mutationFn: ({ id, body }: { id: string; body: AcademicYearInput }) =>
       client.PUT("/v1/academic/years/{yearId}", { params: { path: { yearId: id } }, body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -67,6 +71,8 @@ export function useActivateAcademicYearMutation() {
     mutationFn: (id: string) =>
       client.POST("/v1/academic/years/{yearId}/activate", { params: { path: { yearId: id } } }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -77,6 +83,8 @@ export function useArchiveAcademicYearMutation() {
     mutationFn: (id: string) =>
       client.POST("/v1/academic/years/{yearId}/archive", { params: { path: { yearId: id } } }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -104,6 +112,8 @@ export function useCreateTermMutation(yearId: string) {
     mutationFn: (body: TermInput) =>
       client.POST("/v1/academic/years/{yearId}/terms", { params: { path: { yearId } }, body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -114,6 +124,8 @@ export function useUpdateTermMutation(yearId: string) {
     mutationFn: ({ id, body }: { id: string; body: TermUpdateInput }) =>
       client.PUT("/v1/academic/terms/{termId}", { params: { path: { termId: id } }, body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -124,6 +136,8 @@ export function useDeleteTermMutation(yearId: string) {
     mutationFn: (id: string) =>
       client.DELETE("/v1/academic/terms/{termId}", { params: { path: { termId: id } } }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -134,5 +148,7 @@ export function useActivateTermMutation(yearId: string) {
     mutationFn: (id: string) =>
       client.POST("/v1/academic/terms/{termId}/activate", { params: { path: { termId: id } } }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }

@@ -16,9 +16,8 @@ import {
   type CounselingKind,
   type CounselingTopic,
   type CounselingVisibility,
-  useCreateCounselingMutation,
-  useUpdateCounselingMutation,
 } from "../api";
+import { useCreateCounselingMutation, useUpdateCounselingMutation } from "../api-counseling-extras";
 import {
   clearCounselingDraft,
   loadCounselingDraft,

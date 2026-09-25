@@ -52,6 +52,8 @@ export function useRequestAvatarUploadMutation() {
   const client = useApiClient();
   return useMutation({
     mutationFn: () => client.POST("/v1/me/avatar/upload-url"),
+
+    meta: { errorToast: false },
   });
 }
 
@@ -65,5 +67,7 @@ export function useConfirmAvatarUploadMutation() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.me() });
     },
+
+    meta: { errorToast: false },
   });
 }

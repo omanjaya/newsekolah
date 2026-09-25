@@ -102,6 +102,8 @@ export function useArchiveUserMutation() {
         ? client.POST("/v1/users/{userId}/restore", { params: { path: { userId: id } } })
         : client.POST("/v1/users/{userId}/archive", { params: { path: { userId: id } } }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -110,6 +112,8 @@ export function useResetPasswordMutation() {
   return useMutation({
     mutationFn: (id: string) =>
       client.POST("/v1/users/{userId}/reset-password", { params: { path: { userId: id } } }),
+
+    meta: { errorToast: false },
   });
 }
 
@@ -136,6 +140,8 @@ export function usePreviewImportMutation() {
       client.POST("/v1/users/import/preview", {
         body: { rows, mode, update_roles: updateRoles },
       }),
+
+    meta: { errorToast: false },
   });
 }
 
@@ -148,6 +154,8 @@ export function useCommitImportMutation() {
         body: { rows, mode, update_roles: updateRoles },
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -225,6 +233,8 @@ export function useBulkAssignMutation(classId: string) {
       void queryClient.invalidateQueries({ queryKey: queryKeys.enrollments(classId) });
       void queryClient.invalidateQueries({ queryKey: ["academic", "unassigned"] });
     },
+
+    meta: { errorToast: false },
   });
 }
 
@@ -237,6 +247,8 @@ export function useCreateSubjectMutation() {
     mutationFn: (body: components["schemas"]["SubjectInput"]) =>
       client.POST("/v1/academic/subjects", { body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -250,6 +262,8 @@ export function useUpdateSubjectMutation() {
         body,
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -260,6 +274,8 @@ export function useDeleteSubjectMutation() {
     mutationFn: (id: string) =>
       client.DELETE("/v1/academic/subjects/{subjectId}", { params: { path: { subjectId: id } } }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -292,6 +308,8 @@ export function useCreatePeriodTemplateMutation() {
     mutationFn: (body: components["schemas"]["PeriodTemplateInput"]) =>
       client.POST("/v1/academic/period-templates", { body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -305,6 +323,8 @@ export function useCreatePeriodMutation(templateId: string) {
         body,
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -315,6 +335,8 @@ export function useUpdatePeriodMutation() {
     mutationFn: ({ id, body }: { id: string; body: components["schemas"]["PeriodInput"] }) =>
       client.PUT("/v1/academic/periods/{periodId}", { params: { path: { periodId: id } }, body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -325,6 +347,8 @@ export function useDeletePeriodMutation() {
     mutationFn: (id: string) =>
       client.DELETE("/v1/academic/periods/{periodId}", { params: { path: { periodId: id } } }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -370,6 +394,8 @@ export function useSetWeekdayMutation() {
           : []),
       ]),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -401,6 +427,8 @@ export function useCreateTeachingAssignmentMutation() {
     mutationFn: (body: components["schemas"]["TeachingAssignmentInput"]) =>
       client.POST("/v1/academic/teaching-assignments", { body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -413,6 +441,8 @@ export function useDeleteTeachingAssignmentMutation() {
         params: { path: { assignmentId: id } },
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -431,5 +461,7 @@ export function useUpdateTeachingAssignmentMutation() {
         body: { is_active: isActive },
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }

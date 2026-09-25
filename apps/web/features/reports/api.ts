@@ -231,6 +231,8 @@ export function useCreateReportScheduleMutation() {
   return useMutation({
     mutationFn: (body: ReportScheduleWrite) => client.POST("/v1/reports/schedules", { body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -244,6 +246,8 @@ export function useUpdateReportScheduleMutation() {
         body,
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -256,6 +260,8 @@ export function useDeleteReportScheduleMutation() {
         params: { path: { scheduleId: id } },
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -269,6 +275,8 @@ export function useSetReportScheduleEnabledMutation() {
         body: { enabled },
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 

@@ -40,6 +40,8 @@ export function useCreateCalendarEventMutation() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: calendarKey(year.id) });
     },
+
+    meta: { errorToast: false },
   });
 }
 
@@ -56,6 +58,8 @@ export function useUpdateCalendarEventMutation() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: calendarKey(year.id) });
     },
+
+    meta: { errorToast: false },
   });
 }
 
@@ -71,5 +75,7 @@ export function useDeleteCalendarEventMutation() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: calendarKey(year.id) });
     },
+
+    meta: { errorToast: false },
   });
 }

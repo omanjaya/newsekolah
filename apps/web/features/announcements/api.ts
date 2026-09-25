@@ -112,6 +112,8 @@ export function useAnnouncementTransitionMutation() {
       }
     },
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -124,5 +126,7 @@ export function useDeleteAnnouncementMutation() {
         params: { path: { announcementId: id } },
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }

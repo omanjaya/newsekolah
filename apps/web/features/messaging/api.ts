@@ -30,6 +30,8 @@ export function useSetWhatsAppProviderConfigMutation() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.whatsAppProviderConfig() });
     },
+
+    meta: { errorToast: false },
   });
 }
 
@@ -52,6 +54,8 @@ export function useCreateWhatsAppTemplateMutation() {
   return useMutation({
     mutationFn: (body: WhatsAppTemplateInput) => client.POST("/v1/whatsapp/templates", { body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -62,6 +66,8 @@ export function useUpdateWhatsAppTemplateMutation() {
     mutationFn: ({ templateId, body }: { templateId: string; body: WhatsAppTemplateInput }) =>
       client.PUT("/v1/whatsapp/templates/{templateId}", { params: { path: { templateId } }, body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -72,6 +78,8 @@ export function useDeleteWhatsAppTemplateMutation() {
     mutationFn: (templateId: string) =>
       client.DELETE("/v1/whatsapp/templates/{templateId}", { params: { path: { templateId } } }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -89,6 +97,8 @@ export function usePreviewWhatsAppTemplateMutation() {
         params: { path: { templateId } },
         body: { variables },
       }),
+
+    meta: { errorToast: false },
   });
 }
 
@@ -120,5 +130,7 @@ export function useResendWhatsAppDeliveryMutation() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["whatsapp", "deliveries"] });
     },
+
+    meta: { errorToast: false },
   });
 }

@@ -61,6 +61,8 @@ export function useCheckInVisitMutation() {
   return useMutation({
     mutationFn: (body: CheckInInput) => client.POST("/v1/visitors/visits", { body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -71,6 +73,8 @@ export function useCheckOutVisitMutation() {
     mutationFn: (visitId: string) =>
       client.POST("/v1/visitors/visits/{visitId}/check-out", { params: { path: { visitId } } }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -114,6 +118,8 @@ export function useCreateExpectedGuestMutation() {
   return useMutation({
     mutationFn: (body: ExpectedGuestWrite) => client.POST("/v1/visitors/expected-guests", { body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -126,6 +132,8 @@ export function useCancelExpectedGuestMutation() {
         params: { path: { expectedGuestId } },
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -159,6 +167,8 @@ export function useCreateIncidentMutation() {
   return useMutation({
     mutationFn: (body: IncidentWrite) => client.POST("/v1/visitors/incidents", { body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -172,6 +182,8 @@ export function useUpdateIncidentMutation() {
         body,
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -184,6 +196,8 @@ export function useCloseIncidentMutation() {
         params: { path: { incidentId } },
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 

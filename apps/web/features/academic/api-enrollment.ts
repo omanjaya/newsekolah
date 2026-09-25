@@ -35,6 +35,8 @@ export function useEnrollmentImportMutation(step: "preview" | "commit") {
         void queryClient.invalidateQueries({ queryKey: ["academic"] });
       }
     },
+
+    meta: { errorToast: false },
   });
 }
 
@@ -46,6 +48,8 @@ export function usePreviewNewYearSetupMutation() {
   return useMutation({
     mutationFn: (body: { from_year_id: string; to_year_id: string }) =>
       client.POST("/v1/academic/new-year-setup/preview", { body }),
+
+    meta: { errorToast: false },
   });
 }
 
@@ -58,6 +62,8 @@ export function useCommitNewYearSetupMutation() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["academic"] });
     },
+
+    meta: { errorToast: false },
   });
 }
 

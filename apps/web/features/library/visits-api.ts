@@ -72,5 +72,7 @@ export function useStartLibraryReadInPlaceMutation(copyId: string) {
         queryKey: ["library", "copies", copyId, "read-in-place"],
       });
     },
+
+    meta: { errorToast: false },
   });
 }
