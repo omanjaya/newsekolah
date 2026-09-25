@@ -284,6 +284,46 @@ describe("LiveSocketProvider: resync on reconnect", () => {
     // Resync invalidates the cache, it never re-runs the event's own side effect.
     expect(onEvent).not.toHaveBeenCalled();
   });
+
+  // Regression test: a handshake rejected before ever reaching `onopen`
+  // (e.g. the post-login refresh-token-rotation window this file's own
+  // connect() doc comment describes) must still count as "an attempt was
+  // made" for resync purposes on the NEXT hello, even though no hello was
+  // ever produced by that failed attempt. A `seenHello`-only flag (this
+  // provider's previous implementation) undercounts exactly this case: the
+  // eventual first successful connection's hello would wrongly be treated
+  // as "the very first ever", skipping resync and silently losing
+  // whatever was published during the failed-handshake gap forever (no
+  // replay log on the server). Caught by apps/web/e2e/simulation's
+  // leave-request scenario against a real stack, not by this file's
+  // existing unit tests -- see live-socket-provider.tsx's connect().
+  it("resyncs on the first hello when an earlier handshake failed before ever opening", () => {
+    const { Wrapper, queryClient } = createHarness();
+    const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
+
+    renderHook(
+      () => {
+        useLiveInvalidate(["foo_event"], [["foo"]]);
+      },
+      { wrapper: Wrapper },
+    );
+
+    // First attempt: the handshake is rejected outright, never reaching
+    // onopen -- no hello is ever produced by it.
+    firstConnect();
+    act(() => {
+      MockWebSocket.latest().close();
+    });
+    act(() => {
+      vi.advanceTimersByTime(5_000);
+    });
+
+    // Second attempt is this tab's first hello it will ever actually see.
+    const ws2 = MockWebSocket.latest();
+    sayHello(ws2, "connection-2");
+
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["foo"] });
+  });
 });
 
 describe("LiveSocketProvider: backoff with jitter and no give-up", () => {

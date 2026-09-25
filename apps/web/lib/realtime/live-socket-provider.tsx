@@ -190,7 +190,13 @@ export function LiveSocketProvider({
     let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
     let hiddenTimer: ReturnType<typeof setTimeout> | null = null;
     let unsubscribeToken: (() => void) | null = null;
-    let seenHello = false;
+    /**
+     * Counts every dispatched connect() call, including ones that never
+     * reach `onopen` -- unlike a "has a hello ever arrived" flag, this
+     * still advances when a handshake is rejected before producing one
+     * (see connect()'s own comment on why that matters for resync).
+     */
+    let totalConnectAttempts = 0;
     let paused = false;
 
     function setStatusSafe(next: LiveSocketStatus) {
@@ -249,7 +255,26 @@ export function LiveSocketProvider({
         return;
       }
 
-      setStatusSafe(seenHello ? "reconnecting" : "connecting");
+      // Captured per-call, not read from the shared counter inside the
+      // closures below: this specific connection is "the first attempt"
+      // (skip resync -- nothing could have been missed before a page's
+      // very first connection even started dialing) only if no earlier
+      // connect() call has been dispatched yet. A `seenHello`-style flag
+      // that only advances once a hello actually arrives undercounts this:
+      // a handshake rejected during the post-login refresh-token-rotation
+      // window (this function's own doc comment) never reaches `onopen`,
+      // so it never produces a hello either -- but real time still passed,
+      // and a "leave_request.reviewed" or similar published during that
+      // gap would otherwise be silently missed forever, since the eventual
+      // successful connection's hello would still count as "the first"
+      // and skip resync. Observed against a real stack (apps/web/e2e/
+      // simulation's leave-request scenario): the homeroom teacher's
+      // approval, published within roughly a second of the student's page
+      // load, landed in exactly this gap.
+      totalConnectAttempts += 1;
+      const isFirstAttempt = totalConnectAttempts === 1;
+
+      setStatusSafe(isFirstAttempt ? "connecting" : "reconnecting");
       let openedAt = 0;
       const current = new WebSocket(wsMeUrl(), [`bearer.${token}`]);
       socket = current;
@@ -265,8 +290,7 @@ export function LiveSocketProvider({
         if (envelope.type === "hello") {
           setStatusSafe("open");
           resubscribeAllTopics();
-          if (seenHello) resyncAllListeners();
-          seenHello = true;
+          if (!isFirstAttempt) resyncAllListeners();
           return;
         }
 
