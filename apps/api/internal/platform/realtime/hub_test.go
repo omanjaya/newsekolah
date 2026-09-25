@@ -256,6 +256,53 @@ func TestPublishOnlyHubReachesSubscriberOnSeparateHub(t *testing.T) {
 	assert.Equal(t, 0, workerHub.TopicSize("user:tenant-1:user-1"))
 }
 
+// TestHubPublishEventDeliversEnvelope proves PublishEvent (envelope.go,
+// hub.go) reaches a local subscriber wrapped in the standard Envelope,
+// instead of each call site shaping its own JSON (docs/analysis/
+// realtime-plan-2026-09-25.md section 3.1) -- deliverLocal's local-delivery
+// path is the same one Publish already exercises in
+// TestHubDeliversToSubscriber above; this only adds the Envelope wrapping.
+func TestHubPublishEventDeliversEnvelope(t *testing.T) {
+	hub := realtime.NewHub(nil)
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, err := realtime.Upgrade(w, r, hub, "duty:tenant-1:duty_teacher", nil, nil)
+		require.NoError(t, err)
+	}))
+	defer server.Close()
+
+	wsURL := "ws" + strings.TrimPrefix(server.URL, "http")
+	conn, resp, err := websocket.DefaultDialer.Dial(wsURL, nil) //nolint:bodyclose // closed below
+	require.NoError(t, err)
+	if resp != nil && resp.Body != nil {
+		_ = resp.Body.Close()
+	}
+	defer func() { _ = conn.Close() }()
+
+	require.Eventually(t, func() bool {
+		return hub.TopicSize("duty:tenant-1:duty_teacher") == 1
+	}, time.Second, 10*time.Millisecond)
+
+	type instancePayload struct {
+		InstanceID string `json:"instance_id"`
+	}
+	require.NoError(t, hub.PublishEvent("duty:tenant-1:duty_teacher", "late_arrival.opened", instancePayload{InstanceID: "inst-1"}))
+
+	require.NoError(t, conn.SetReadDeadline(time.Now().Add(2*time.Second)))
+	_, wire, err := conn.ReadMessage()
+	require.NoError(t, err)
+
+	var got realtime.Envelope
+	require.NoError(t, json.Unmarshal(wire, &got))
+	require.Equal(t, "late_arrival.opened", got.Type)
+	require.Equal(t, "duty:tenant-1:duty_teacher", got.Topic)
+	require.False(t, got.At.IsZero())
+
+	var payload instancePayload
+	require.NoError(t, json.Unmarshal(got.Payload, &payload))
+	require.Equal(t, "inst-1", payload.InstanceID)
+}
+
 func TestExtractBearer(t *testing.T) {
 	t.Run("authorization header", func(t *testing.T) {
 		r := httptest.NewRequest(http.MethodGet, "/ws/me", nil)
