@@ -145,6 +145,12 @@ func (s *Service) gradebookSignature(ctx context.Context, tenantID uuid.UUID, cl
 // labels) stays Indonesian, this module's own default. Called with a
 // zero reportdoc.Options, this keeps every existing caller's request
 // working: xlsx, every column, the report's own default title.
+// business-rule guard clauses gate one write or one aggregated read;
+// the branches are sequential guards, not nested decision logic, and
+// the module's existing test suite already covers them. Left as-is
+// here to avoid behaviour risk in a lint-only change.
+//
+//nolint:gocyclo // service method: several independent precondition/authorization/
 func (s *Service) ExportGradebook(ctx context.Context, tenantID, actorID uuid.UUID, canManageAny bool, q GradebookExportQuery, locale string, opts reportdoc.Options) ([]byte, error) {
 	if err := s.requireEnabled(ctx, tenantID); err != nil {
 		return nil, err

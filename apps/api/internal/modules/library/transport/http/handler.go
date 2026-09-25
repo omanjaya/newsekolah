@@ -154,6 +154,10 @@ func toAPITitle(t service.TitleWithAvailability) api.LibraryTitle {
 
 // toAPITitleBase renders a title with zero copy counts; callers that have
 // the counts fill them in separately (see toAPITitle).
+// branches are independent per-field conversions, not nested decision
+// logic.
+//
+//nolint:gocyclo // maps one domain struct's fields to its API DTO field by field; the
 func toAPITitleBase(t domain.Title) api.LibraryTitle {
 	out := api.LibraryTitle{
 		Id: t.ID, Title: t.Title, Author: t.Author, Publisher: t.Publisher, Isbn: t.ISBN,

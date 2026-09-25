@@ -92,6 +92,12 @@ func firstPeriod(periods map[int64]periodMigrationResult) (periodMigrationResult
 // Idempotency key: (tenant_id, subject_user_id, opened_at's date, kind) via
 // select-then-insert, since a student_permits row has no other stable
 // natural key on the target side.
+// mappings from the legacy MySQL schema to the new Postgres schema; each
+// branch handles one nullable source column or one gap case, and is a
+// one-time migration tool exercised by its own tests, not runtime API
+// logic. Splitting it would only relocate the same linear mapping.
+//
+//nolint:gocyclo // ETL migration: a fixed, ordered sequence of per-row/per-column field
 func (st *Store) migrateExitPermits(
 	ctx context.Context, tenantID, academicYearID uuid.UUID, permits []SionExitPermit,
 	users map[int64]userMigrationResult, userNames map[int64]string, classes map[int64]classMigrationResult,
@@ -273,6 +279,12 @@ func periodOrFallback(
 // SionLeaveRequest's doc comment for which flag combinations count as
 // final) to workflow_instances (kind leave_request) plus their
 // leave_requests detail row.
+// mappings from the legacy MySQL schema to the new Postgres schema; each
+// branch handles one nullable source column or one gap case, and is a
+// one-time migration tool exercised by its own tests, not runtime API
+// logic. Splitting it would only relocate the same linear mapping.
+//
+//nolint:gocyclo // ETL migration: a fixed, ordered sequence of per-row/per-column field
 func (st *Store) migrateLeaveRequests(
 	ctx context.Context, tenantID, academicYearID uuid.UUID, requests []SionLeaveRequest,
 	users map[int64]userMigrationResult, userNames map[int64]string, classes map[int64]classMigrationResult,

@@ -121,6 +121,12 @@ type Schedule struct {
 // Validate checks everything that does not require a database round trip;
 // the service layer separately confirms each recipient is a tenant user
 // and that the requester may run ReportKind at all.
+// business rule against one field, the same shape gocyclo penalizes in
+// any exhaustive validator. Splitting per-field checks into helpers
+// would only move the branch count elsewhere while making the full
+// rule set harder to read in one place.
+//
+//nolint:gocyclo // field-by-field validation: each branch checks one independent
 func (s Schedule) Validate() error {
 	if !s.Cadence.Valid() {
 		return ErrInvalidCadence

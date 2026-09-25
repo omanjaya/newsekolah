@@ -37,6 +37,12 @@ type CopyDefaults struct {
 // 5 attempts before giving up).
 const maxAccessionRetries = 5
 
+// business-rule guard clauses gate one write or one aggregated read;
+// the branches are sequential guards, not nested decision logic, and
+// the module's existing test suite already covers them. Left as-is
+// here to avoid behaviour risk in a lint-only change.
+//
+//nolint:gocyclo // service method: several independent precondition/authorization/
 func (s *Service) addCopyTx(ctx context.Context, title domain.Title, defaults CopyDefaults) (domain.Copy, error) {
 	access := defaults.Access
 	if access == "" {

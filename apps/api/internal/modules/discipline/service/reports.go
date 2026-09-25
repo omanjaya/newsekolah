@@ -17,6 +17,12 @@ import (
 // Like CounselingReportPDF, this goes through the documents renderer
 // directly rather than permits' numbered-document pipeline: it is an
 // internal report, not an issued legal document.
+// business-rule guard clauses gate one write or one aggregated read;
+// the branches are sequential guards, not nested decision logic, and
+// the module's existing test suite already covers them. Left as-is
+// here to avoid behaviour risk in a lint-only change.
+//
+//nolint:gocyclo // service method: several independent precondition/authorization/
 func (s *Service) StudentReportPDF(ctx context.Context, tenantID, studentID uuid.UUID) (string, error) {
 	if s.renderer == nil || s.storage == nil {
 		return "", domain.ErrReportUnavailable

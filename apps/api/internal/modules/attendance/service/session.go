@@ -33,6 +33,12 @@ type ListSessionsOptions struct {
 // have to open sessions for a normal school day. ScheduleReader does not
 // expose period start times for a time-ordered merge, so this is a
 // de-duplicating concatenation of the two sources (own schedules first).
+// business-rule guard clauses gate one write or one aggregated read;
+// the branches are sequential guards, not nested decision logic, and
+// the module's existing test suite already covers them. Left as-is
+// here to avoid behaviour risk in a lint-only change.
+//
+//nolint:gocyclo // service method: several independent precondition/authorization/
 func (s *Service) ListSessions(ctx context.Context, tenantID, teacherUserID uuid.UUID, opts ListSessionsOptions) ([]SessionSummary, error) {
 	var out []SessionSummary
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {

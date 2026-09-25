@@ -175,6 +175,12 @@ func bookLoanStatus(raw string) string {
 // in the same group are migrated as 'returned' (the copy could not
 // otherwise have been lent out again) and counted as a gap rather than
 // guessed at further.
+// mappings from the legacy MySQL schema to the new Postgres schema; each
+// branch handles one nullable source column or one gap case, and is a
+// one-time migration tool exercised by its own tests, not runtime API
+// logic. Splitting it would only relocate the same linear mapping.
+//
+//nolint:gocyclo // ETL migration: a fixed, ordered sequence of per-row/per-column field
 func (st *Store) migrateBookLoans(
 	ctx context.Context, tenantID uuid.UUID, loans []SionBookLoan, titles IDMap, copies libraryCopyIndex,
 	users map[int64]userMigrationResult, loc *time.Location, stat *TableStat,

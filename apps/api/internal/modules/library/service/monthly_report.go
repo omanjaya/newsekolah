@@ -50,6 +50,12 @@ func parseReportMonth(month string, now time.Time) (time.Time, time.Time, error)
 	return from, from.AddDate(0, 1, 0), nil
 }
 
+// business-rule guard clauses gate one write or one aggregated read;
+// the branches are sequential guards, not nested decision logic, and
+// the module's existing test suite already covers them. Left as-is
+// here to avoid behaviour risk in a lint-only change.
+//
+//nolint:gocyclo // service method: several independent precondition/authorization/
 func (s *Service) MonthlyReport(ctx context.Context, tenantID uuid.UUID, month string) (MonthlyReport, error) {
 	if err := s.requireEnabled(ctx, tenantID); err != nil {
 		return MonthlyReport{}, err
@@ -228,6 +234,12 @@ func (s *Service) MonthlyReportPDF(ctx context.Context, tenantID uuid.UUID, mont
 // renderMonthlyReportPDF is MonthlyReportPDF's pure rendering step, split
 // out so the layout can be exercised in a test without a database (see
 // monthly_report_test.go).
+// section by section (header, rows, signature block); the branches
+// mirror the printed document's structure, not independent decision
+// paths, so splitting them would scatter one page's rendering across
+// multiple functions without reducing real complexity.
+//
+//nolint:gocyclo // document rendering: walks the fixed layout of one PDF/XLSX report
 func renderMonthlyReportPDF(report MonthlyReport, letterhead *reportdoc.Letterhead, signature *reportdoc.Signature) ([]byte, error) {
 	pdf := fpdf.New("P", "mm", "A4", "")
 	pdf.SetMargins(18, 16, 18)

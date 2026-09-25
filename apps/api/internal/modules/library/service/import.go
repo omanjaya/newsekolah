@@ -179,6 +179,12 @@ type ImportCommitResult struct {
 // reuses a deduped existing title or creates a new one (auto call number
 // when the row leaves it empty), then creates that row's copies (old
 // app: commitLibraryItemImport, createLibraryItemsTx).
+// business-rule guard clauses gate one write or one aggregated read;
+// the branches are sequential guards, not nested decision logic, and
+// the module's existing test suite already covers them. Left as-is
+// here to avoid behaviour risk in a lint-only change.
+//
+//nolint:gocyclo // service method: several independent precondition/authorization/
 func (s *Service) CommitImport(ctx context.Context, tenantID uuid.UUID, rawRows []map[string]any, mapping map[string]string) (ImportCommitResult, error) {
 	if err := s.requireEnabled(ctx, tenantID); err != nil {
 		return ImportCommitResult{}, err

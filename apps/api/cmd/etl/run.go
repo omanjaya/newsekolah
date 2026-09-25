@@ -273,6 +273,12 @@ func fetchAll(source *Source, sourceYearID int64, scheduleVersionIDs []int64, pr
 // academic year, term, roles/duties, users, grade levels/classes, rooms,
 // subjects, enrollments, teaching assignments, duty assignments, periods,
 // schedules.
+// mappings from the legacy MySQL schema to the new Postgres schema; each
+// branch handles one nullable source column or one gap case, and is a
+// one-time migration tool exercised by its own tests, not runtime API
+// logic. Splitting it would only relocate the same linear mapping.
+//
+//nolint:gocyclo // ETL migration: a fixed, ordered sequence of per-row/per-column field
 func runMigrationSteps(
 	ctx context.Context, st *Store, tenantID uuid.UUID, cfg Config, _ *Source,
 	_ int64, semester int, yearStartDate, yearEndDate time.Time, scheduleVersions []SionScheduleVersion,

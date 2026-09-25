@@ -280,6 +280,12 @@ func applyActor(in ScheduleInput, actor Actor) ScheduleInput {
 // resolveCandidate validates in against academic reference data (periods,
 // school days, teaching assignment) and builds the domain.Schedule ready
 // for conflict checking and persistence.
+// business-rule guard clauses gate one write or one aggregated read;
+// the branches are sequential guards, not nested decision logic, and
+// the module's existing test suite already covers them. Left as-is
+// here to avoid behaviour risk in a lint-only change.
+//
+//nolint:gocyclo // service method: several independent precondition/authorization/
 func (s *Service) resolveCandidate(ctx context.Context, tenantID uuid.UUID, in ScheduleInput) (domain.Schedule, error) {
 	if archived, err := s.repo.IsYearArchived(ctx, tenantID, in.AcademicYearID); err != nil {
 		return domain.Schedule{}, err

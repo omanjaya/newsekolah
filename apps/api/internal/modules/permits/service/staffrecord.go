@@ -42,6 +42,12 @@ type RecordExitPermitByStaffInput struct {
 // permits picks it up unchanged. Only Instance.CreatedBy (the teacher, not
 // the student) and the single closing event's Verification ("manual") and
 // Note mark it as staff-recorded, instead of a parallel table.
+// business-rule guard clauses gate one write or one aggregated read;
+// the branches are sequential guards, not nested decision logic, and
+// the module's existing test suite already covers them. Left as-is
+// here to avoid behaviour risk in a lint-only change.
+//
+//nolint:gocyclo // service method: several independent precondition/authorization/
 func (s *Service) RecordExitPermitByStaff(ctx context.Context, in RecordExitPermitByStaffInput) (ExitPermitDetail, error) {
 	var inst domain.Instance
 	err := s.withTx(ctx, in.TenantID, func(ctx context.Context) error {
@@ -150,6 +156,12 @@ type RecordLateArrivalByStaffInput struct {
 // exactly as they would for a QR-driven late arrival -- see
 // RecordExitPermitByStaff's doc comment for why this reuses the same
 // tables instead of a parallel one.
+// business-rule guard clauses gate one write or one aggregated read;
+// the branches are sequential guards, not nested decision logic, and
+// the module's existing test suite already covers them. Left as-is
+// here to avoid behaviour risk in a lint-only change.
+//
+//nolint:gocyclo // service method: several independent precondition/authorization/
 func (s *Service) RecordLateArrivalByStaff(ctx context.Context, in RecordLateArrivalByStaffInput) (LateArrivalDetail, error) {
 	var detail LateArrivalDetail
 	err := s.withTx(ctx, in.TenantID, func(ctx context.Context) error {

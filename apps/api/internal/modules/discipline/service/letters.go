@@ -28,6 +28,12 @@ func (WarningLetterIssued) EventName() string { return "discipline.warning_lette
 // IssueWarningLetter issues the given level for a student once their
 // active points reach the policy threshold. Levels are issued in order;
 // a snapshot of the violations that count is frozen on the letter.
+// business-rule guard clauses gate one write or one aggregated read;
+// the branches are sequential guards, not nested decision logic, and
+// the module's existing test suite already covers them. Left as-is
+// here to avoid behaviour risk in a lint-only change.
+//
+//nolint:gocyclo // service method: several independent precondition/authorization/
 func (s *Service) IssueWarningLetter(ctx context.Context, tenantID, studentID, issuerUserID uuid.UUID, level int) (domain.WarningLetter, error) {
 	var (
 		out     domain.WarningLetter

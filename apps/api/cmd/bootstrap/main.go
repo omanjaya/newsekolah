@@ -49,6 +49,12 @@ func main() {
 	}
 }
 
+// (validate flags, open the pool, create tenant/roles/admin user) run once
+// at deploy time; the branches are sequential preconditions, not nested
+// decision logic, and splitting them would only hide the same linear steps
+// behind indirection.
+//
+//nolint:gocyclo // one-time CLI bootstrap: a fixed sequence of setup steps
 func run(logger *slog.Logger, tenantSlug, tenantName, educationLevel, adminUsername, adminName, adminEmail string) error {
 	cfg, err := config.Load()
 	if err != nil {

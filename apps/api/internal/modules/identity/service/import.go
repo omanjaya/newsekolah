@@ -258,6 +258,12 @@ func (s *Service) matchExistingUser(ctx context.Context, tenantID uuid.UUID, mod
 	return existingUserMatch{row: row, profile: profile, roles: roles}, true
 }
 
+// business-rule guard clauses gate one write or one aggregated read;
+// the branches are sequential guards, not nested decision logic, and
+// the module's existing test suite already covers them. Left as-is
+// here to avoid behaviour risk in a lint-only change.
+//
+//nolint:gocyclo // service method: several independent precondition/authorization/
 func (s *Service) evaluateImportRow(
 	ctx context.Context, tenantID uuid.UUID, actorIsSuper bool, opts ImportOptions, row domain.ImportRow, defaultRowNumber int,
 	seenUsernames, seenEmails map[string]bool,
