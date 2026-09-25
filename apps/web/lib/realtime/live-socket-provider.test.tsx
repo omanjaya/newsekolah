@@ -252,8 +252,17 @@ describe("LiveSocketProvider: ref-counted topic subscriptions", () => {
   });
 });
 
-describe("LiveSocketProvider: resync on reconnect", () => {
-  it("does not resync on the very first hello, but does on every hello after that", () => {
+describe("LiveSocketProvider: resync on every hello, including the first", () => {
+  // A useLiveInvalidate listener's query is fetched on mount, well before
+  // this provider's deliberately delayed first connection attempt even
+  // starts (INITIAL_CONNECT_DELAY_MS alone is 1.5s) -- anything published
+  // in that gap must not be silently lost, so even this tab's very first
+  // hello resyncs. An earlier implementation special-cased the first hello
+  // to skip resync (reasoning: nothing could have been missed before the
+  // tab's first connection even started) which missed exactly this gap;
+  // caught by apps/web/e2e/simulation/leave-request.spec.ts against a real
+  // stack, not by this file's previous version of this test.
+  it("resyncs on the very first hello", () => {
     const { Wrapper, queryClient } = createHarness();
     const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
     const onEvent = vi.fn();
@@ -269,7 +278,26 @@ describe("LiveSocketProvider: resync on reconnect", () => {
 
     const ws1 = firstConnect();
     sayHello(ws1);
-    expect(invalidateSpy).not.toHaveBeenCalled();
+
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["foo"] });
+    // Resync invalidates the cache, it never re-runs the event's own side effect.
+    expect(onEvent).not.toHaveBeenCalled();
+  });
+
+  it("resyncs again on every hello after a reconnect", () => {
+    const { Wrapper, queryClient } = createHarness();
+    const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
+
+    renderHook(
+      () => {
+        useLiveInvalidate(["foo_event"], [["foo"]]);
+      },
+      { wrapper: Wrapper },
+    );
+
+    const ws1 = firstConnect();
+    sayHello(ws1);
+    invalidateSpy.mockClear();
 
     act(() => {
       ws1.close();
@@ -281,23 +309,13 @@ describe("LiveSocketProvider: resync on reconnect", () => {
     sayHello(ws2, "connection-2");
 
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["foo"] });
-    // Resync invalidates the cache, it never re-runs the event's own side effect.
-    expect(onEvent).not.toHaveBeenCalled();
   });
 
-  // Regression test: a handshake rejected before ever reaching `onopen`
-  // (e.g. the post-login refresh-token-rotation window this file's own
-  // connect() doc comment describes) must still count as "an attempt was
-  // made" for resync purposes on the NEXT hello, even though no hello was
-  // ever produced by that failed attempt. A `seenHello`-only flag (this
-  // provider's previous implementation) undercounts exactly this case: the
-  // eventual first successful connection's hello would wrongly be treated
-  // as "the very first ever", skipping resync and silently losing
-  // whatever was published during the failed-handshake gap forever (no
-  // replay log on the server). Caught by apps/web/e2e/simulation's
-  // leave-request scenario against a real stack, not by this file's
-  // existing unit tests -- see live-socket-provider.tsx's connect().
-  it("resyncs on the first hello when an earlier handshake failed before ever opening", () => {
+  // A handshake rejected before ever reaching `onopen` (e.g. the post-
+  // login refresh-token-rotation window connect()'s own doc comment
+  // describes) produces no hello of its own -- the eventual successful
+  // connection's hello must still resync, same as any other hello.
+  it("resyncs on the first hello even when an earlier handshake failed before ever opening", () => {
     const { Wrapper, queryClient } = createHarness();
     const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
 

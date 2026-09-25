@@ -101,11 +101,16 @@ export function useLiveSocketStatus(): LiveSocketStatus {
  * ConnectionStatusIndicator) can tell the difference between "briefly
  * reconnecting" and "long enough to be worth telling the reader about".
  *
- * Resync on reconnect: every `hello` after the first triggers `resync()`
- * on every currently registered useLiveInvalidate listener, not only the
- * ones whose event types match something that just happened -- section
- * 3.4's point: an event that fired while this tab was disconnected is
- * otherwise lost forever, since the hub keeps no replay log.
+ * Resync on every hello, including the tab's very first one: `resync()`
+ * runs on every currently registered useLiveInvalidate listener, not only
+ * the ones whose event types match something that just happened -- section
+ * 3.4's point: an event that fired while this tab was disconnected (or,
+ * for the first hello, in the gap between a query's on-mount fetch and
+ * this connection actually opening -- INITIAL_CONNECT_DELAY_MS alone is
+ * 1.5s) is otherwise lost forever, since the hub keeps no replay log. A
+ * screen whose data genuinely has not changed just re-fetches the same
+ * thing once more; the cost of that is worth never silently missing a
+ * real update.
  *
  * Topic subscriptions (useLiveTopic) are ref-counted here, not per
  * hook instance, so N components asking for the same topic only ever
@@ -190,12 +195,7 @@ export function LiveSocketProvider({
     let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
     let hiddenTimer: ReturnType<typeof setTimeout> | null = null;
     let unsubscribeToken: (() => void) | null = null;
-    /**
-     * Counts every dispatched connect() call, including ones that never
-     * reach `onopen` -- unlike a "has a hello ever arrived" flag, this
-     * still advances when a handshake is rejected before producing one
-     * (see connect()'s own comment on why that matters for resync).
-     */
+    /** Counts every dispatched connect() call, only to pick the status label (connect()'s isFirstAttempt) -- resync no longer depends on this, see the hello handler below. */
     let totalConnectAttempts = 0;
     let paused = false;
 
@@ -256,21 +256,9 @@ export function LiveSocketProvider({
       }
 
       // Captured per-call, not read from the shared counter inside the
-      // closures below: this specific connection is "the first attempt"
-      // (skip resync -- nothing could have been missed before a page's
-      // very first connection even started dialing) only if no earlier
-      // connect() call has been dispatched yet. A `seenHello`-style flag
-      // that only advances once a hello actually arrives undercounts this:
-      // a handshake rejected during the post-login refresh-token-rotation
-      // window (this function's own doc comment) never reaches `onopen`,
-      // so it never produces a hello either -- but real time still passed,
-      // and a "leave_request.reviewed" or similar published during that
-      // gap would otherwise be silently missed forever, since the eventual
-      // successful connection's hello would still count as "the first"
-      // and skip resync. Observed against a real stack (apps/web/e2e/
-      // simulation's leave-request scenario): the homeroom teacher's
-      // approval, published within roughly a second of the student's page
-      // load, landed in exactly this gap.
+      // closures below. Only used for the status label now (see
+      // resyncAllListeners()'s call below for why resync itself no longer
+      // special-cases this).
       totalConnectAttempts += 1;
       const isFirstAttempt = totalConnectAttempts === 1;
 
@@ -290,7 +278,24 @@ export function LiveSocketProvider({
         if (envelope.type === "hello") {
           setStatusSafe("open");
           resubscribeAllTopics();
-          if (!isFirstAttempt) resyncAllListeners();
+          // Unconditional, including this tab's very first hello: a
+          // useLiveInvalidate listener's query is fetched on mount, well
+          // before this connection opens (INITIAL_CONNECT_DELAY_MS alone
+          // is 1.5s, on top of the handshake itself, and a rejected
+          // handshake during the post-login refresh-token-rotation window
+          // this function's own doc comment describes can push the first
+          // real connection out further still) -- anything published in
+          // that gap is otherwise lost forever (the hub keeps no replay
+          // log), and there is no way to distinguish "nothing happened
+          // before this hello" from "something did" from here. A stale-
+          // but-unchanged screen just re-fetches the same data once more;
+          // a screen that missed a real update gets it. Caught by
+          // apps/web/e2e/simulation/leave-request.spec.ts against a real
+          // stack: the previous "skip resync on the very first hello"
+          // special case (isFirstAttempt, still used below only for the
+          // status label) missed an approval published well inside that
+          // window on a from-cold-login page load.
+          resyncAllListeners();
           return;
         }
 
