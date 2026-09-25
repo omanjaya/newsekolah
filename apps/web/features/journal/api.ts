@@ -57,6 +57,8 @@ export function useUpsertJournalMutation() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["journals"] });
     },
+
+    meta: { errorToast: false },
   });
 }
 
@@ -69,6 +71,8 @@ export function useDeleteJournalMutation() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["journals"] });
     },
+
+    meta: { errorToast: false },
   });
 }
 

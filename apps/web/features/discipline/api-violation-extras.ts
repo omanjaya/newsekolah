@@ -82,6 +82,8 @@ export function useUploadViolationAttachmentMutation() {
         queryKey: keys.violationAttachments(variables.recordId),
       });
     },
+
+    meta: { errorToast: false },
   });
 }
 
@@ -92,5 +94,7 @@ export function useViolationAttachmentUrlMutation() {
       client.GET("/v1/discipline/violations/{recordId}/attachments/{attachmentId}/url", {
         params: { path: { recordId, attachmentId } },
       }),
+
+    meta: { errorToast: false },
   });
 }

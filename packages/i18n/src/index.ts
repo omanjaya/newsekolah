@@ -1,5 +1,6 @@
 export type { MessageKey } from "./message-keys.gen.js";
 export { MESSAGE_KEYS } from "./message-keys.gen.js";
+export { apiErrorMessageKey } from "./api-error.js";
 export {
   createTranslator,
   DEFAULT_LOCALE,

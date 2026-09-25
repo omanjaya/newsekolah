@@ -114,6 +114,8 @@ export function useSetPreferenceMutation() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["notifications", "preferences"] });
     },
+
+    meta: { errorToast: false },
   });
 }
 
@@ -141,6 +143,8 @@ export function useUpdateNotificationSettingsMutation() {
     onSuccess: (data) => {
       queryClient.setQueryData(queryKeys.notificationSettings(), data);
     },
+
+    meta: { errorToast: false },
   });
 }
 
@@ -169,5 +173,7 @@ export function useSetTenantNotificationDefaultMutation() {
         queryKey: queryKeys.tenantNotificationDefault(variables.kind),
       });
     },
+
+    meta: { errorToast: false },
   });
 }

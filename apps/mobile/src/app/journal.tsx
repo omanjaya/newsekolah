@@ -1,11 +1,10 @@
 import { useMemo, useState } from "react";
-import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Alert, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { NotebookPen } from "lucide-react-native";
 import { ScreenHeader } from "@/components/ui/ScreenHeader";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { showToast } from "@/components/ui/Toast";
 import {
   useClasses,
   useDeleteJournal,
@@ -130,6 +129,8 @@ function JournalForm({
     topic.trim() !== "";
 
   function save(): void {
+    // Success/error feedback comes from the mutation cache default now
+    // (useUpsertJournal's meta.successMessage / the translated error toast).
     upsert.mutate(
       {
         academic_year_id: yearId,
@@ -140,25 +141,25 @@ function JournalForm({
         activities: activities.trim(),
         ...(reflection.trim() ? { reflection: reflection.trim() } : {}),
       },
-      {
-        onSuccess: () => {
-          showToast(t("journal.saved"), "success");
-          onDone();
-        },
-        onError: () => showToast(t("common.error"), "error"),
-      },
+      { onSuccess: onDone },
     );
   }
 
   function del(): void {
     if (!journal) return;
-    remove.mutate(journal.id, {
-      onSuccess: () => {
-        showToast(t("journal.deleted"), "success");
-        onDone();
+    // Deleting a journal entry is permanent; confirm before it fires.
+    Alert.alert(t("journal.delete_confirm_title"), t("journal.delete_confirm_body"), [
+      { text: t("common.no"), style: "cancel" },
+      {
+        text: t("journal.delete"),
+        style: "destructive",
+        onPress: () => {
+          // Success/error feedback comes from the mutation cache default now
+          // (useDeleteJournal's meta.successMessage / the translated error toast).
+          remove.mutate(journal.id, { onSuccess: onDone });
+        },
       },
-      onError: () => showToast(t("common.error"), "error"),
-    });
+    ]);
   }
 
   return (

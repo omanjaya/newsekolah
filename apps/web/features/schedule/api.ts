@@ -97,6 +97,8 @@ export function useCreateScheduleMutation() {
   return useMutation({
     mutationFn: (body: ScheduleWrite) => client.POST("/v1/schedules", { body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -132,6 +134,8 @@ export function useDeleteScheduleBlockMutation() {
       });
     },
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -154,5 +158,7 @@ export function useClearSchedulesMutation() {
     mutationFn: (academicYearId: string) =>
       client.POST("/v1/schedules/clear", { body: { academic_year_id: academicYearId } }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }

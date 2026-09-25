@@ -42,10 +42,8 @@ export function QrSheet(): React.JSX.Element {
   function mint(next: ScanPurpose) {
     const contextId = next === "approve_stage" ? permitCode.trim() : undefined;
     if (next === "approve_stage" && !contextId) return;
-    issue.mutate(
-      { purpose: next, ...(contextId ? { context_id: contextId } : {}) },
-      { onError: () => showToast(t("common.error"), "error") },
-    );
+    // Error feedback comes from the mutation cache default now.
+    issue.mutate({ purpose: next, ...(contextId ? { context_id: contextId } : {}) });
   }
 
   useEffect(() => {

@@ -43,6 +43,8 @@ export function useCreateLibraryMaterialTypeMutation() {
     mutationFn: (body: LibraryMaterialTypeWrite) =>
       client.POST("/v1/library/material-types", { body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -53,6 +55,8 @@ export function useUpdateLibraryMaterialTypeMutation() {
     mutationFn: ({ id, ...body }: LibraryMaterialTypeWrite & { id: string }) =>
       client.PUT("/v1/library/material-types/{id}", { params: { path: { id } }, body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -63,6 +67,8 @@ export function useDeleteLibraryMaterialTypeMutation() {
     mutationFn: (id: string) =>
       client.DELETE("/v1/library/material-types/{id}", { params: { path: { id } } }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -76,6 +82,11 @@ export function useLibraryAcquisitionSourcesQuery() {
   });
 }
 
+// The three mutations below are all passed into the shared
+// MasterEntryTab (components/master-entry-tab.tsx), which already toasts
+// its own success/error -- errorToast: false avoids a second, generic
+// error toast on top of that.
+
 export function useCreateLibraryAcquisitionSourceMutation() {
   const client = useApiClient();
   const invalidate = useInvalidate("acquisition-sources");
@@ -83,6 +94,7 @@ export function useCreateLibraryAcquisitionSourceMutation() {
     mutationFn: (body: LibraryMasterEntryWrite) =>
       client.POST("/v1/library/acquisition-sources", { body }),
     onSuccess: invalidate,
+    meta: { errorToast: false },
   });
 }
 
@@ -93,6 +105,7 @@ export function useUpdateLibraryAcquisitionSourceMutation() {
     mutationFn: ({ id, ...body }: LibraryMasterEntryWrite & { id: string }) =>
       client.PUT("/v1/library/acquisition-sources/{id}", { params: { path: { id } }, body }),
     onSuccess: invalidate,
+    meta: { errorToast: false },
   });
 }
 
@@ -103,6 +116,7 @@ export function useDeleteLibraryAcquisitionSourceMutation() {
     mutationFn: (id: string) =>
       client.DELETE("/v1/library/acquisition-sources/{id}", { params: { path: { id } } }),
     onSuccess: invalidate,
+    meta: { errorToast: false },
   });
 }
 
@@ -122,6 +136,8 @@ export function useCreateLibraryPartnerMutation() {
   return useMutation({
     mutationFn: (body: LibraryPartnerWrite) => client.POST("/v1/library/partners", { body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -132,6 +148,8 @@ export function useUpdateLibraryPartnerMutation() {
     mutationFn: ({ id, ...body }: LibraryPartnerWrite & { id: string }) =>
       client.PUT("/v1/library/partners/{id}", { params: { path: { id } }, body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -142,6 +160,8 @@ export function useDeleteLibraryPartnerMutation() {
     mutationFn: (id: string) =>
       client.DELETE("/v1/library/partners/{id}", { params: { path: { id } } }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 

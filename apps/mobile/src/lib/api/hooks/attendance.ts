@@ -47,6 +47,12 @@ export function useSaveEntries(sessionId: string) {
       queryClient.setQueryData(queryKeys.attendanceSession(sessionId), detail);
       void queryClient.invalidateQueries({ queryKey: queryKeys.attendanceToday("today") });
     },
+    // app/attendance/[sessionId].tsx's submit() already handles both its
+    // own success toast and a specific 409-conflict message, and treats a
+    // raw network failure as a soft success (queues it offline instead of
+    // an error) -- the generic default toast would be wrong there, not
+    // just redundant.
+    meta: { errorToast: false },
   });
 }
 

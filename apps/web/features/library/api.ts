@@ -61,6 +61,8 @@ export function useUpdateLibraryPolicyMutation() {
   return useMutation({
     mutationFn: (body: LibraryPolicyWrite) => client.PUT("/v1/library/policy", { body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -108,6 +110,8 @@ export function useCreateLibraryTitleMutation() {
   return useMutation({
     mutationFn: (body: LibraryTitleWrite) => client.POST("/v1/library/titles", { body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -118,6 +122,8 @@ export function useUpdateLibraryTitleMutation() {
     mutationFn: ({ titleId, ...body }: LibraryTitleWrite & { titleId: string }) =>
       client.PUT("/v1/library/titles/{titleId}", { params: { path: { titleId } }, body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -129,6 +135,8 @@ export function useDeleteLibraryTitleMutation() {
     mutationFn: (titleId: string) =>
       client.DELETE("/v1/library/titles/{titleId}", { params: { path: { titleId } } }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -149,6 +157,8 @@ export function useCreateLibraryCopyMutation() {
     mutationFn: ({ titleId, ...body }: LibraryCopyWrite & { titleId: string }) =>
       client.POST("/v1/library/titles/{titleId}/copies", { params: { path: { titleId } }, body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -187,6 +197,8 @@ export function useDeleteLibraryCopyMutation() {
     mutationFn: (copyId: string) =>
       client.DELETE("/v1/library/copies/{copyId}", { params: { path: { copyId } } }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -205,6 +217,8 @@ export function useSetLibraryCopyStatusMutation() {
       note?: string;
     }) => client.PUT("/v1/library/copies/{copyId}/status", { params: { path: { copyId } }, body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -241,6 +255,8 @@ export function useReturnLoanMutation() {
         body: condition ? { condition } : undefined,
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -254,6 +270,8 @@ export function useMarkLoanLostMutation() {
         body: { replacement_cost: replacementCost },
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -264,6 +282,8 @@ export function useRenewLoanMutation() {
     mutationFn: (loanId: string) =>
       client.POST("/v1/library/loans/{loanId}/renew", { params: { path: { loanId } } }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 

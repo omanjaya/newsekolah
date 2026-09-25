@@ -18,7 +18,10 @@ export function useSessionsQuery() {
 
 export function useRevokeSessionMutation() {
   const client = useApiClient();
-  return useRevokeSessionBase(client);
+  // sessions-table.tsx already shows its own success/error toast (a
+  // ConfirmDialog precedes the call) -- opt out to avoid a second, generic
+  // error toast on top of that.
+  return useRevokeSessionBase(client, { meta: { errorToast: false } });
 }
 
 export interface UpdateProfileInput {
@@ -49,6 +52,8 @@ export function useRequestAvatarUploadMutation() {
   const client = useApiClient();
   return useMutation({
     mutationFn: () => client.POST("/v1/me/avatar/upload-url"),
+
+    meta: { errorToast: false },
   });
 }
 
@@ -62,5 +67,7 @@ export function useConfirmAvatarUploadMutation() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.me() });
     },
+
+    meta: { errorToast: false },
   });
 }

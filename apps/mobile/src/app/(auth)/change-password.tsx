@@ -21,7 +21,12 @@ export default function ChangePassword(): React.JSX.Element {
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const changePasswordMutation = useChangePassword(getApiClient());
+  // This screen already shows a failure inline (setErrorMessage below) --
+  // opt out of the mutation cache's default error toast to avoid a second,
+  // generic one on top of that.
+  const changePasswordMutation = useChangePassword(getApiClient(), {
+    meta: { errorToast: false },
+  });
 
   const canSubmit =
     currentPassword.length > 0 && newPassword.length >= MIN_PASSWORD_LENGTH && !submitting;

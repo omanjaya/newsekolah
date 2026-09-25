@@ -6,7 +6,6 @@ import { ScreenHeader } from "@/components/ui/ScreenHeader";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { showToast } from "@/components/ui/Toast";
 import { WorkflowSteps } from "@/components/screens/WorkflowSteps";
 import { TokenQr } from "@/components/screens/QrSheet";
 import {
@@ -133,13 +132,7 @@ function CreatePermit({
           onPress={() =>
             create.mutate(
               { destination: destination.trim(), start_period_id: startId, end_period_id: endId },
-              {
-                onSuccess: (d) => {
-                  showToast(t("permits.created"), "success");
-                  onDone(d.instance.id);
-                },
-                onError: () => showToast(t("common.error"), "error"),
-              },
+              { onSuccess: (d) => onDone(d.instance.id) },
             )
           }
         />
@@ -229,9 +222,7 @@ function PermitDetail({ id, onBack }: { id: string; onBack: () => void }): React
               label={t("permits.show_gate")}
               fullWidth
               loading={gate.isPending}
-              onPress={() =>
-                gate.mutate(id, { onError: () => showToast(t("common.error"), "error") })
-              }
+              onPress={() => gate.mutate(id)}
             />
           )
         ) : null}
@@ -243,12 +234,7 @@ function PermitDetail({ id, onBack }: { id: string; onBack: () => void }): React
             label={t("permits.cancel")}
             variant="ghost"
             loading={cancel.isPending}
-            onPress={() =>
-              cancel.mutate(id, {
-                onSuccess: () => showToast(t("permits.cancelled")),
-                onError: () => showToast(t("common.error"), "error"),
-              })
-            }
+            onPress={() => cancel.mutate(id)}
           />
         ) : null}
       </ScrollView>

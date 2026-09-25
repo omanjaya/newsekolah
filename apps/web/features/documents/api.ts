@@ -38,6 +38,8 @@ export function useCreateDocumentTemplateMutation() {
   return useMutation({
     mutationFn: (body: DocumentTemplateWrite) => client.POST("/v1/documents/templates", { body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -59,6 +61,8 @@ export function useUpdateDocumentTemplateMutation() {
         body,
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -71,6 +75,8 @@ export function useSetDefaultDocumentTemplateMutation() {
         params: { path: { templateId } },
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 

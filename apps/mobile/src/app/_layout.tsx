@@ -13,6 +13,7 @@ import { useLoadThemeFonts } from "@/theme/typography";
 import { useOfflineSyncLoop } from "@/lib/offline/sync";
 import { LiveSocketProvider } from "@/lib/realtime/live-socket-provider";
 import { NotificationsRealtimeBridge } from "@/lib/realtime/notifications-bridge";
+import { createMutationCache } from "@/lib/api/mutation-cache";
 
 // Kept visible until the Hijau Segar fonts (Manrope, Plus Jakarta Sans) have
 // loaded -- see AccentRoot below -- so the app never flashes an unstyled
@@ -25,7 +26,10 @@ void SplashScreen.preventAutoHideAsync();
 
 // One shared query client for the whole app; screens define their own query
 // keys under features/*/keys.ts once that layer exists.
+// mutationCache: every mutation's default success/error toast, see
+// lib/api/mutation-cache.ts.
 const queryClient = new QueryClient({
+  mutationCache: createMutationCache(),
   defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
 });
 

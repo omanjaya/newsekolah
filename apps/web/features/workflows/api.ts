@@ -52,5 +52,7 @@ export function useReplaceWorkflowDefinitionMutation() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.workflowDefinitions() });
     },
+
+    meta: { errorToast: false },
   });
 }

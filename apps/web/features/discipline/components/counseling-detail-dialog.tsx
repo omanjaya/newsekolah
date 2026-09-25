@@ -12,7 +12,7 @@ import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useSession } from "../../../lib/session/session-provider";
 import { useDirectoryQuery, useLookup } from "../../reference/api";
-import { useCounselingQuery, useCounselingReportMutation } from "../api";
+import { useCounselingQuery, useCounselingReportMutation } from "../api-counseling-extras";
 
 import { CounselingAttachments } from "./counseling-attachments";
 

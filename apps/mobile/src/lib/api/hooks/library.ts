@@ -57,6 +57,11 @@ export function useBorrowLoan() {
     mutationFn: (body: { barcode: string; member_user_id: string }) =>
       getApiClient().POST("/v1/library/loans/borrow", { body }),
     onSuccess: invalidate,
+    // features/scan/library-scan.ts's useLibraryScanHandler already maps
+    // known failure codes (unknown barcode, copy unavailable, loan limit)
+    // to a specific message -- more useful than the mutation cache's
+    // generic default, so this opts out to avoid showing both.
+    meta: { errorToast: false },
   });
 }
 
@@ -69,6 +74,7 @@ export function useReturnLoan() {
         body: condition ? { condition } : {},
       }),
     onSuccess: invalidate,
+    meta: { errorToast: false }, // see useBorrowLoan's comment
   });
 }
 

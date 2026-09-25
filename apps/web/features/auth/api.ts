@@ -26,6 +26,8 @@ export function useLoginMutation() {
     onTokens: (data) => {
       setAccessToken(data.access_token);
     },
+    // login-form.tsx already shows a failure inline (form.setError("root")).
+    meta: { errorToast: false },
   });
 
   return {
@@ -99,6 +101,8 @@ export function useGoogleLoginMutation() {
     onSuccess: (data) => {
       setAccessToken(data.access_token);
     },
+    // google-sign-in-button.tsx's onError prop shows a failure inline.
+    meta: { errorToast: false },
   });
   return mutation;
 }
@@ -126,6 +130,8 @@ export function usePasskeyLoginMutation() {
     onSuccess: (data) => {
       setAccessToken(data.access_token);
     },
+    // passkey-login-button.tsx's onError prop shows a failure inline.
+    meta: { errorToast: false },
   });
   return mutation;
 }
@@ -143,6 +149,8 @@ export function useRequestPasswordResetMutation() {
       client.POST("/v1/auth/password-reset/request", {
         body: { username_or_email: usernameOrEmail },
       }),
+    // forgot-password-form.tsx shows a failure inline (form.setError("root")).
+    meta: { errorToast: false },
   });
 }
 
@@ -157,13 +165,18 @@ export function useConfirmPasswordResetMutation() {
   return useMutation({
     mutationFn: (body: { token: string; new_password: string }) =>
       client.POST("/v1/auth/password-reset/confirm", { body }),
+    // reset-password-form.tsx shows a failure inline (form.setError("root")).
+    meta: { errorToast: false },
   });
 }
 
 export function useChangePasswordMutation() {
   const client = useApiClient();
   const queryClient = useQueryClient();
-  const mutation = useChangePasswordBase(client);
+  // change-password-form.tsx shows a failure inline (form.setError("root"))
+  // and already toasts its own success -- opt out to avoid a second,
+  // generic error toast on top of the inline one.
+  const mutation = useChangePasswordBase(client, { meta: { errorToast: false } });
 
   return {
     ...mutation,

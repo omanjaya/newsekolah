@@ -27,6 +27,8 @@ export function useUpdatePeriodTemplateMutation() {
         body,
       }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["academic"] }),
+
+    meta: { errorToast: false },
   });
 }
 
@@ -39,6 +41,8 @@ export function useDeletePeriodTemplateMutation() {
         params: { path: { templateId: id } },
       }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["academic"] }),
+
+    meta: { errorToast: false },
   });
 }
 
@@ -55,6 +59,8 @@ export function useMoveStudentMutation(classId: string) {
       void queryClient.invalidateQueries({ queryKey: queryKeys.enrollments(classId) });
       void queryClient.invalidateQueries({ queryKey: ["academic", "unassigned"] });
     },
+
+    meta: { errorToast: false },
   });
 }
 
@@ -72,6 +78,8 @@ export function useRemoveStudentMutation(classId: string) {
       void queryClient.invalidateQueries({ queryKey: queryKeys.enrollments(classId) });
       void queryClient.invalidateQueries({ queryKey: ["academic", "unassigned"] });
     },
+
+    meta: { errorToast: false },
   });
 }
 
@@ -83,5 +91,7 @@ export function useDeleteClassMutation() {
     mutationFn: (classId: string) =>
       client.DELETE("/v1/academic/classes/{classId}", { params: { path: { classId } } }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["academic"] }),
+
+    meta: { errorToast: false },
   });
 }

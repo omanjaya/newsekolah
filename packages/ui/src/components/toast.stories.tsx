@@ -9,14 +9,20 @@ function ToastDemo() {
     <>
       <Toaster />
       <div className="flex gap-2">
-        <Button onClick={() => toast.success("Presensi tersimpan")}>Sukses</Button>
+        <Button
+          onClick={() => {
+            toast.success("Presensi tersimpan");
+          }}
+        >
+          Sukses
+        </Button>
         <Button
           variant="danger"
-          onClick={() =>
+          onClick={() => {
             toast.error("Gagal menyimpan presensi", {
               retry: { label: "Coba lagi", onClick: () => undefined },
-            })
-          }
+            });
+          }}
         >
           Gagal
         </Button>

@@ -76,6 +76,8 @@ export function useStartStocktakeMutation() {
     mutationFn: (body: { name: string; notes?: string }) =>
       client.POST("/v1/library/stocktakes", { body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -87,6 +89,8 @@ export function useScanStocktakeMutation() {
         params: { path: { stocktakeId } },
         body: { codes: [barcode] },
       }),
+
+    meta: { errorToast: false },
   });
 }
 
@@ -100,6 +104,8 @@ export function useCloseStocktakeMutation() {
         body: notes ? { notes } : undefined,
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 

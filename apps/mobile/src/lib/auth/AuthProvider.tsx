@@ -3,6 +3,7 @@ import type { PropsWithChildren } from "react";
 import { Platform } from "react-native";
 import * as SecureStore from "expo-secure-store";
 import { getApiClient, setOnUnauthorized } from "@/lib/api/client";
+import { markAuthRedirect } from "@/lib/api/auth-redirect-flag";
 import type { ClientKind, Me, ProfileKind } from "@/lib/api/types";
 import { loadTenantConfig } from "@/lib/tenant/tenant-store";
 import { loadStoredTokens, secureTokenStore } from "@/lib/auth/token-store";
@@ -49,6 +50,10 @@ export function AuthProvider({ children }: PropsWithChildren): React.JSX.Element
   }, []);
 
   const handleSessionExpired = useCallback(() => {
+    // Before the state change below, so any mutation already in flight that
+    // rejects with the same 401 in this tick skips its own "session
+    // expired" toast (see auth-redirect-flag.ts).
+    markAuthRedirect();
     setMe(null);
     setActiveTabGroupState(null);
     setStatus("signed-out");

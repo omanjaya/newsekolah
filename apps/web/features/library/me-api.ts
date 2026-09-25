@@ -29,6 +29,8 @@ export function useRenewMyLoanMutation() {
     mutationFn: (loanId: string) =>
       client.POST("/v1/library/me/loans/{loanId}/renew", { params: { path: { loanId } } }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -40,6 +42,8 @@ export function useReserveMyLibraryTitleMutation() {
     mutationFn: (titleId: string) =>
       client.POST("/v1/library/me/reservations", { body: { title_id: titleId } }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -52,5 +56,7 @@ export function useCancelMyLibraryReservationMutation() {
         params: { path: { reservationId } },
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }

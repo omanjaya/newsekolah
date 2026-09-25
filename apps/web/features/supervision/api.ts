@@ -65,6 +65,8 @@ export function useCreateSupervisionCycleMutation() {
   return useMutation({
     mutationFn: (body: SupervisionCycleWrite) => client.POST("/v1/supervision/cycles", { body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -75,6 +77,8 @@ export function useUpdateSupervisionCycleMutation() {
     mutationFn: ({ cycleId, ...body }: SupervisionCycleWrite & { cycleId: string }) =>
       client.PUT("/v1/supervision/cycles/{cycleId}", { params: { path: { cycleId } }, body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -116,6 +120,8 @@ export function useScheduleObservationMutation(cycleId: string) {
         body,
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -166,6 +172,8 @@ export function useRespondToObservationMutation() {
         body,
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 

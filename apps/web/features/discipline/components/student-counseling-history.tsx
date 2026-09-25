@@ -20,7 +20,8 @@ import { useMemo, useState } from "react";
 
 import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
-import { type Counseling, useDeleteCounselingMutation, useStudentCounselingsQuery } from "../api";
+import { type Counseling } from "../api";
+import { useDeleteCounselingMutation, useStudentCounselingsQuery } from "../api-counseling-extras";
 
 import { CounselingDetailDialog } from "./counseling-detail-dialog";
 import { CounselingForm } from "./counseling-form";

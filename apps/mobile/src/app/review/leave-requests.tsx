@@ -4,7 +4,6 @@ import { ScreenHeader } from "@/components/ui/ScreenHeader";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { showToast } from "@/components/ui/Toast";
 import { useLeaveReviewQueue, useReviewLeaveRequest } from "@/lib/api/hooks";
 import { t, type MobileMessageKey } from "@/i18n/t";
 
@@ -52,13 +51,10 @@ function LeaveRequestRow({
   const review = useReviewLeaveRequest();
 
   function decide(approve: boolean) {
-    review.mutate(
-      { id: item.instance_id, approve },
-      {
-        onSuccess: () => showToast(t("review.reviewed"), "success"),
-        onError: () => showToast(t("common.error"), "error"),
-      },
-    );
+    // Success/error feedback comes from the mutation cache default now
+    // (useReviewLeaveRequest's meta.successMessage / the translated error
+    // toast) -- nothing left for this call site to add.
+    review.mutate({ id: item.instance_id, approve });
   }
 
   return (

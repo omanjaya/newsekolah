@@ -27,6 +27,8 @@ export function useCreateLibraryLoanRuleMutation() {
   return useMutation({
     mutationFn: (body: LibraryLoanRuleWrite) => client.POST("/v1/library/loan-rules", { body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -37,5 +39,7 @@ export function useDeleteLibraryLoanRuleMutation() {
     mutationFn: (loanRuleId: string) =>
       client.DELETE("/v1/library/loan-rules/{loanRuleId}", { params: { path: { loanRuleId } } }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }

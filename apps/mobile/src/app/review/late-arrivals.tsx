@@ -5,7 +5,6 @@ import { ScreenHeader } from "@/components/ui/ScreenHeader";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { showToast } from "@/components/ui/Toast";
 import { useLateArrivalReviewQueue, useReviewLateArrival } from "@/lib/api/hooks";
 import { t } from "@/i18n/t";
 
@@ -62,13 +61,10 @@ function LateArrivalRow({
   const [homeroomReported, setHomeroomReported] = useState(false);
 
   function submit() {
-    review.mutate(
-      { id: instanceId, homeroomReported },
-      {
-        onSuccess: () => showToast(t("review.reviewed"), "success"),
-        onError: () => showToast(t("common.error"), "error"),
-      },
-    );
+    // Success/error feedback comes from the mutation cache default now
+    // (useReviewLateArrival's meta.successMessage / the translated error
+    // toast) -- nothing left for this call site to add.
+    review.mutate({ id: instanceId, homeroomReported });
   }
 
   return (

@@ -8,6 +8,7 @@ import { getApiClient } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import type { Duty } from "@/lib/api/types";
 import { useLiveInvalidate, useLiveTopic, useLiveTopics } from "@/lib/realtime";
+import { t } from "@/i18n/t";
 
 /**
  * One `duty:homeroom:<classID>` topic per class this account is homeroom
@@ -62,6 +63,7 @@ export function useReviewLateArrival() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["permits"] });
     },
+    meta: { successMessage: t("review.reviewed") },
   });
 }
 
@@ -107,5 +109,6 @@ export function useReviewLeaveRequest() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["permits"] });
     },
+    meta: { successMessage: t("review.reviewed") },
   });
 }

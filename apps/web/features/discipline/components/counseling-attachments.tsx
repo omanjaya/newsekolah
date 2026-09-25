@@ -18,7 +18,7 @@ import {
   useCounselingAttachmentUrlMutation,
   useCounselingAttachmentsQuery,
   useUploadCounselingAttachmentMutation,
-} from "../api";
+} from "../api-counseling-extras";
 
 // Matches leave-request evidence and violation attachments: apps/api's
 // reencodeAttachmentImage only decodes JPEG/PNG, so the compressed output

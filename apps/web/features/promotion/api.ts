@@ -17,6 +17,8 @@ export function usePreviewPromotionMutation() {
       to_year_id: string;
       overrides?: PromotionOverride[];
     }) => client.POST("/v1/academic/promotion/preview", { body }),
+
+    meta: { errorToast: false },
   });
 }
 
@@ -33,6 +35,8 @@ export function useCommitPromotionMutation() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["academic"] });
     },
+
+    meta: { errorToast: false },
   });
 }
 

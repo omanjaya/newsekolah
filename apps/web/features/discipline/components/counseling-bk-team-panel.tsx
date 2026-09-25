@@ -9,7 +9,8 @@ import type { ReactElement } from "react";
 import { useMemo, useState } from "react";
 
 import { useDirectoryQuery, useLookup } from "../../reference/api";
-import { type Counseling, type CounselingTopic, useBKTeamCounselingsQuery } from "../api";
+import { type Counseling, type CounselingTopic } from "../api";
+import { useBKTeamCounselingsQuery } from "../api-counseling-extras";
 
 const TOPICS: CounselingTopic[] = ["career", "problem", "personal", "learning", "social", "other"];
 

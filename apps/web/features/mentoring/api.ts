@@ -53,6 +53,8 @@ export function useSetGroupSizeLimitMutation() {
     mutationFn: (limit: number) =>
       client.PUT("/v1/mentoring/settings/group-size-limit", { body: { limit } }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -89,6 +91,8 @@ export function useCreateMentorGroupMutation() {
   return useMutation({
     mutationFn: (body: MentorGroupWrite) => client.POST("/v1/mentoring/groups", { body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -99,6 +103,8 @@ export function useUpdateMentorGroupMutation() {
     mutationFn: ({ groupId, ...body }: MentorGroupWrite & { groupId: string }) =>
       client.PUT("/v1/mentoring/groups/{groupId}", { params: { path: { groupId } }, body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -109,6 +115,8 @@ export function useDeleteMentorGroupMutation() {
     mutationFn: (groupId: string) =>
       client.DELETE("/v1/mentoring/groups/{groupId}", { params: { path: { groupId } } }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -134,6 +142,8 @@ export function useAssignMentorGroupMemberMutation(groupId: string) {
         body: { student_user_id: studentUserId },
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -146,6 +156,8 @@ export function useRemoveMentorGroupMemberMutation(groupId: string) {
         params: { path: { groupId, studentId } },
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -182,6 +194,8 @@ export function useCreateMentorMeetingNoteMutation(groupId: string) {
         body,
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -192,6 +206,8 @@ export function useUpdateMentorMeetingNoteMutation() {
     mutationFn: ({ noteId, ...body }: MentorMeetingNoteWrite & { noteId: string }) =>
       client.PUT("/v1/mentoring/notes/{noteId}", { params: { path: { noteId } }, body }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -202,6 +218,8 @@ export function useDeleteMentorMeetingNoteMutation() {
     mutationFn: (noteId: string) =>
       client.DELETE("/v1/mentoring/notes/{noteId}", { params: { path: { noteId } } }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -250,5 +268,7 @@ export function useWriteMentorTermSummaryMutation(
         body: { summary },
       }),
     onSuccess: invalidate,
+
+    meta: { errorToast: false },
   });
 }

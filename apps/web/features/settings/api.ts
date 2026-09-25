@@ -59,6 +59,8 @@ export function useRequestLogoUploadMutation() {
   const client = useApiClient();
   return useMutation({
     mutationFn: () => client.POST("/v1/tenant/branding/logo/upload-url"),
+
+    meta: { errorToast: false },
   });
 }
 
@@ -69,6 +71,8 @@ export function useConfirmLogoUploadMutation() {
     mutationFn: (objectKey: string) =>
       client.POST("/v1/tenant/branding/logo/confirm", { body: { object_key: objectKey } }),
     onSuccess: setBranding,
+
+    meta: { errorToast: false },
   });
 }
 
@@ -76,6 +80,8 @@ export function useRequestFaviconUploadMutation() {
   const client = useApiClient();
   return useMutation({
     mutationFn: () => client.POST("/v1/tenant/branding/favicon/upload-url"),
+
+    meta: { errorToast: false },
   });
 }
 
@@ -86,6 +92,8 @@ export function useConfirmFaviconUploadMutation() {
     mutationFn: (objectKey: string) =>
       client.POST("/v1/tenant/branding/favicon/confirm", { body: { object_key: objectKey } }),
     onSuccess: setBranding,
+
+    meta: { errorToast: false },
   });
 }
 

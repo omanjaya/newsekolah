@@ -4,7 +4,6 @@ import { router, useLocalSearchParams } from "expo-router";
 import { ScreenHeader } from "@/components/ui/ScreenHeader";
 import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { showToast } from "@/components/ui/Toast";
 import { OfflineQueueBanner } from "@/components/screens/OfflineQueueBanner";
 import { useCloseStocktake, useStocktake } from "@/lib/api/hooks";
 import type { LibraryStocktakeResult } from "@/lib/api/hooks";
@@ -32,13 +31,7 @@ export default function LibraryStocktakeSessionRoute(): React.JSX.Element {
   const canClose = isOpen && counts.pending === 0;
 
   function closeSession() {
-    close.mutate(
-      { id: stocktakeId },
-      {
-        onSuccess: (closed) => setResult(closed),
-        onError: () => showToast(t("common.error"), "error"),
-      },
-    );
+    close.mutate({ id: stocktakeId }, { onSuccess: (closed) => setResult(closed) });
   }
 
   if (session.isLoading) {

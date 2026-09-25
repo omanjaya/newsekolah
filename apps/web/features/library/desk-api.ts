@@ -117,5 +117,7 @@ export function useSendLibraryDueRemindersMutation() {
   const client = useApiClient();
   return useMutation({
     mutationFn: () => client.POST("/v1/library/reminders/send"),
+
+    meta: { errorToast: false },
   });
 }

@@ -54,8 +54,10 @@ export {
 } from "./components/sheet.js";
 export {
   Toaster,
+  toast,
   useToast,
   type ToastActionOptions,
+  type ToastApi,
   type ToasterProps,
 } from "./components/toast.js";
 export { Alert, type AlertProps } from "./components/alert.js";
