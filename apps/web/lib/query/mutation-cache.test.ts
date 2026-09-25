@@ -19,7 +19,7 @@ vi.mock("../session/auth-redirect-flag", () => ({ isAuthRedirecting: vi.fn(() =>
 /** The cache's callbacks only read `mutation.meta`; nothing else about the
  * mutation matters to them, so a minimal stand-in is enough. */
 function mutationWithMeta(meta?: { successMessage?: string; errorToast?: false }) {
-  return { meta } as Mutation;
+  return { meta } as Mutation<unknown, unknown>;
 }
 
 describe("createMutationCache", () => {

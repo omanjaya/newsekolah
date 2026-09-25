@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, type MutationMeta } from "@tanstack/react-query";
 
 import type { NewsekolahApiClient } from "../client.js";
 import type { components } from "../gen/schema.js";
@@ -14,6 +14,16 @@ export interface UseLoginOptions {
    * unauthenticated and flip the session back to anonymous.
    */
   onTokens?: (data: LoginResponse) => void;
+  /**
+   * Forwarded to `useMutation` as-is. This package has no i18n of its own
+   * and cannot know whether the caller's mutation cache should show its
+   * default error toast, so it leaves that decision to whichever app calls
+   * this hook -- web's login form already shows a failure inline next to
+   * the field, so it passes `{ errorToast: false }` here (mobile's login
+   * screen calls the API client directly through AuthProvider.signIn
+   * instead of this hook, so it never goes through a mutation cache).
+   */
+  meta?: MutationMeta;
 }
 
 /**
@@ -41,5 +51,6 @@ export function useLogin(client: NewsekolahApiClient, options: UseLoginOptions =
       queryClient.clear();
       queryClient.setQueryData(queryKeys.me(), data.user);
     },
+    meta: options.meta,
   });
 }
