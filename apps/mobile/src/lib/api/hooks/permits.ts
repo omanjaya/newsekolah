@@ -4,7 +4,23 @@
 import { ApiError, queryKeys } from "@newsekolah/api-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getApiClient } from "@/lib/api/client";
+import { useLiveInvalidate } from "@/lib/realtime";
 import type { LeaveCategory, ScanPurpose } from "./types";
+
+/**
+ * The student's own exit permit / leave request status
+ * (docs/analysis/realtime-plan-2026-09-25.md chunk E/F, section 4.4 rows
+ * 3-9): every one of these events already lands on the automatic
+ * `user:<tenant>:<user>` topic every /ws/me connection subscribes to on
+ * connect, so no useLiveTopic call is needed here -- same as web's
+ * equivalent (apps/web/features/permits/realtime.ts).
+ */
+const EXIT_PERMIT_SELF_EVENTS = [
+  "exit_permit.stage_changed",
+  "exit_permit.issued",
+  "exit_permit.exited",
+] as const;
+const LEAVE_REQUEST_SELF_EVENTS = ["leave_request.reviewed", "leave_request.issued"] as const;
 
 export function useInvalidatePermits() {
   const queryClient = useQueryClient();
@@ -28,6 +44,7 @@ export function useScanClassroomEntry() {
 }
 
 export function useMyExitPermits(enabled: boolean) {
+  useLiveInvalidate(EXIT_PERMIT_SELF_EVENTS, [queryKeys.exitPermits()]);
   return useQuery({
     queryKey: queryKeys.exitPermits(),
     queryFn: () => getApiClient().GET("/v1/exit-permits", { params: { query: { limit: 20 } } }),
@@ -36,6 +53,7 @@ export function useMyExitPermits(enabled: boolean) {
 }
 
 export function useExitPermit(id: string) {
+  useLiveInvalidate(EXIT_PERMIT_SELF_EVENTS, [queryKeys.exitPermit(id)]);
   return useQuery({
     queryKey: queryKeys.exitPermit(id),
     queryFn: () =>
@@ -138,6 +156,7 @@ export function useScanLateArrivalStage() {
 }
 
 export function useMyLeaveRequests(enabled: boolean) {
+  useLiveInvalidate(LEAVE_REQUEST_SELF_EVENTS, [queryKeys.leaveRequests()]);
   return useQuery({
     queryKey: queryKeys.leaveRequests(),
     queryFn: () => getApiClient().GET("/v1/leave-requests", { params: { query: { limit: 20 } } }),
@@ -146,6 +165,7 @@ export function useMyLeaveRequests(enabled: boolean) {
 }
 
 export function useLeaveRequest(id: string) {
+  useLiveInvalidate(LEAVE_REQUEST_SELF_EVENTS, [queryKeys.leaveRequest(id)]);
   return useQuery({
     queryKey: queryKeys.leaveRequest(id),
     queryFn: () =>
