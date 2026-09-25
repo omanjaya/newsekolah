@@ -18,12 +18,19 @@ infra/
   scripts/
     bootstrap.sh              first install on a fresh VPS
     backup.sh                 pg_dump + MinIO mirror to an S3 target
+    backup-local.sh           daily encrypted local backup (single-host installs)
     restore.sh                restore from a backup.sh archive
     update.sh                 pull, migrate, rolling restart, rollback on failure
     deploy.sh                 CI/CD entry point: fetch a ref, build, migrate, deploy, health-gate, roll back
     deploy-ssh-wrapper.sh     authorized_keys forced command for the CI deploy key (only runs deploy.sh)
+    monitor.sh                host-side uptime monitoring, Telegram alerts + daily summary
+    monitor.env.example       template for /etc/newsekolah/monitor.env
+    lib/monitor-lib.sh        monitor.sh's shared helpers (config, Telegram, alert state)
+    tests/monitor.bats        bats tests for monitor.sh (faked df/free/docker/openssl/curl)
     check-no-emoji.sh         CI: no pictographic emoji outside reference/
     check-migrations.sh       CI: migrations are sequential and paired
+  logrotate/
+    newsekolah-monitor        logrotate config for monitor.sh's cron log
 ```
 
 ## Self-host install (single school)
@@ -550,6 +557,154 @@ cover:
   ```
   (`predeploy-<stamp>.dump` is printed in the failure summary `deploy.sh`
   prints, and the last 10 are always kept in `/root/sion-backups/`.)
+
+## Monitoring
+
+`infra/scripts/monitor.sh`, run from cron on the shared VPS, checks production
+and staging every minute and sends a daily summary; a separate GitHub Actions
+workflow (`.github/workflows/uptime.yml`) checks both sites from _outside_
+the VPS every 5 minutes, since `monitor.sh` cannot see the VPS itself being
+unreachable. Both post to a Telegram chat.
+
+### What it checks
+
+Every minute (`monitor.sh`, no flags):
+
+- Production and staging API `/health`, both over loopback (`127.0.0.1:8081`/
+  `8082`) and over the public HTTPS site.
+- Every container of both compose projects (`newsekolah`, `newsekolah-staging`):
+  not running, reported unhealthy, or restarting repeatedly.
+- Disk usage of `/` above `DISK_THRESHOLD_PERCENT` (default 85%).
+- Memory available below `MEM_AVAILABLE_THRESHOLD_MB` (default 256 MB).
+- The local backup's `LAST_SUCCESS` file (infra/README.md "Local encrypted
+  backup") older than `BACKUP_MAX_AGE_HOURS` (default 26h) or missing.
+- A burst of HTTP 5xx or panics in the production `api` container's logs
+  over the last 5 minutes (parses the JSON `http_request` log lines plus
+  chi's `Recoverer` panic output), threshold `ERROR_BURST_THRESHOLD`
+  (default 20).
+- The TLS certificate of both sites expiring in under `CERT_EXPIRY_DAYS`
+  (default 14 days) -- checked once per UTC calendar day, not every minute.
+
+Once an hour (`monitor.sh --daily-summary`, gated internally to only actually
+send at `DAILY_SUMMARY_HOUR_WITA`, default 7 -- see "Config precedence"
+below): uptime status of both sites, last backup time and size, disk and
+memory, both certificates' days left, and the count of 5xx/panics in the
+last 24 hours.
+
+Every 5 minutes, from GitHub Actions (`uptime.yml`): both public health URLs,
+from outside the VPS. Only posts on a state change (up -> down or back), not
+on every run.
+
+Each check has its own alert state under `/var/lib/newsekolah-monitor/`: an
+alert fires once when a check goes bad, repeats at most every
+`ALERT_REPEAT_SECONDS` (default 6h) while it stays bad, and a recovery
+message is sent once when it clears.
+
+### Config precedence
+
+`monitor.sh` reads config from three layers, highest precedence first:
+
+1. `/etc/newsekolah/monitor.env` -- anything set here always wins.
+2. The platform console's `GET /internal/monitor-config` API (apps/api,
+   loopback only, not proxied by Caddy): Telegram credentials, the
+   `checks.*` on/off toggles, the four thresholds, and the daily summary's
+   `enabled`/`hour_wita`, all editable from the console. On any failure
+   other than an explicit HTTP 404 (monitoring switched off), `monitor.sh`
+   falls back to the last good response cached at
+   `/var/lib/newsekolah-monitor/config.json` (mode 600) -- and raises its
+   own alert (check `monitor_api`) so an operator is told the config API
+   itself is unreachable, using whatever Telegram credentials the cache (or
+   monitor.env) already has. A 404 disables the whole run (no checks, no
+   daily summary) until the console re-enables it, or until monitor.env
+   forces `MONITOR_ENABLED=1`.
+3. Hardcoded defaults (see `infra/scripts/monitor.env.example`).
+
+Set `MONITOR_API_TOKEN` in `monitor.env` to the same value as
+`MONITOR_API_TOKEN` in `/root/sion/infra/docker/.env` to wire this up; leave
+it empty to run purely from `monitor.env` (then set the Telegram credentials,
+thresholds, and toggles there instead).
+
+### Install
+
+On the VPS, as root:
+
+```bash
+apt-get install -y curl jq openssl age logrotate  # age/jq/openssl likely already present
+cp infra/scripts/monitor.env.example /etc/newsekolah/monitor.env
+chmod 600 /etc/newsekolah/monitor.env
+$EDITOR /etc/newsekolah/monitor.env   # at least MONITOR_API_TOKEN, or TELEGRAM_BOT_TOKEN/TELEGRAM_CHAT_ID
+
+infra/scripts/monitor.sh --test   # confirm delivery before relying on cron
+
+( crontab -l 2>/dev/null;
+  echo "* * * * * /root/sion/infra/scripts/monitor.sh >> /var/log/newsekolah-monitor.log 2>&1";
+  echo "0 * * * * /root/sion/infra/scripts/monitor.sh --daily-summary >> /var/log/newsekolah-monitor.log 2>&1"
+) | crontab -
+
+cp infra/logrotate/newsekolah-monitor /etc/logrotate.d/newsekolah-monitor
+```
+
+The daily summary's cron line runs every hour, on the hour; `monitor.sh`
+itself only actually sends once the current WITA hour matches
+`DAILY_SUMMARY_HOUR_WITA` (default 7, i.e. 23:00 UTC), so changing that
+setting from the platform console takes effect without touching this
+crontab.
+
+### Creating the Telegram bot and chat id
+
+1. Message [@BotFather](https://t.me/BotFather) on Telegram, `/newbot`,
+   follow the prompts. It replies with the bot token
+   (`TELEGRAM_BOT_TOKEN`).
+2. Add the bot to the chat that should receive alerts (a group works well
+   for a small ops team), or message it directly for a personal chat.
+3. Get the chat id: send any message to the bot/group, then
+   `curl -s "https://api.telegram.org/bot<TOKEN>/getUpdates" | jq '.result[].message.chat.id'`.
+   For a group chat this is a negative number -- keep the sign.
+
+### Testing
+
+```bash
+infra/scripts/monitor.sh --test              # sends a real Telegram message
+infra/scripts/monitor.sh --dry-run           # runs every check, prints instead of sending
+infra/scripts/monitor.sh --daily-summary --dry-run   # same, for the daily summary
+```
+
+`bats infra/scripts/tests/monitor.bats` runs the automated test suite (fakes
+`df`/`free`/`docker`/`openssl`/`curl` via `PATH`, never touches a real host);
+install bats with `brew install bats-core` or `apt-get install -y bats`.
+
+### What each alert means, and the first thing to check
+
+- **API produksi/staging (loopback atau publik)** -- the api container isn't
+  answering `/health`. Loopback failing but public still up (or vice versa)
+  points at the system Caddy vhost rather than the api itself. Start with
+  `docker compose -f docker-compose.prod.yml -f compose.vps.yml logs --tail 100 api`
+  (or the staging equivalent).
+- **Container `<name>` (produksi/staging)** -- that container is stopped,
+  unhealthy, or crash-looping. `docker compose ps` and
+  `docker logs <container>` first.
+- **Disk `/`** -- usually old Docker images/volumes or backups outside the
+  retention window. `docker system df`, then `docker system prune`
+  (carefully -- never `--volumes` without checking what's in them first).
+- **Memori tersedia** -- check `docker stats` for a runaway container before
+  assuming the VPS itself needs upsizing.
+- **Backup lokal** -- `backup-local.sh` hasn't succeeded recently; check
+  `/var/log/newsekolah-backup.log` and confirm its cron line is still
+  installed (`crontab -l`).
+- **Sertifikat TLS** -- the system Caddy should be auto-renewing well before
+  14 days out; if it hasn't, check the system Caddy's own logs for ACME
+  errors (rate limits, DNS issues) rather than this repo.
+- **Error 5xx/panic api produksi** -- something is actively breaking for
+  users right now. `docker compose logs --since 15m api` and treat as an
+  incident, not routine noise.
+- **API konfigurasi monitor** -- `monitor.sh` cannot reach
+  `/internal/monitor-config` on the api container; monitoring itself keeps
+  running from cache, but check why that endpoint is down (it shares a
+  container with the health checks above, so this often accompanies an API
+  produksi alert).
+- **PERUBAHAN STATUS newsekolah (dicek dari luar VPS)** -- from the GitHub
+  Actions workflow, not `monitor.sh`: the whole VPS may be unreachable
+  (network, firewall, host down), not just one container.
 
 ## Development
 

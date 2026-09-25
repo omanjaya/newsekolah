@@ -1,0 +1,11 @@
+# logrotate config for infra/scripts/monitor.sh's cron log. Install at
+# /etc/logrotate.d/newsekolah-monitor (infra/README.md "Monitoring").
+/var/log/newsekolah-monitor.log {
+    daily
+    rotate 14
+    compress
+    delaycompress
+    missingok
+    notifempty
+    copytruncate
+}

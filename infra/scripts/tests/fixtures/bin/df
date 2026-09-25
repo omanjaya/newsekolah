@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Fake `df -P /`, used by monitor.sh's disk check. Percentage used comes
+# from FAKE_DISK_PERCENT (default 10, i.e. healthy).
+pct="${FAKE_DISK_PERCENT:-10}"
+cat <<EOF
+Filesystem     1024-blocks     Used Available Capacity Mounted on
+/dev/sda1         10000000  1000000   9000000      ${pct}% /
+EOF
