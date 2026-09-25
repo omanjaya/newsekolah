@@ -1,0 +1,592 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <title>Arah E: Hijau Segar</title>
+    <script src="./support.js"></script>
+  </head>
+  <body>
+    <x-dc>
+      <helmet>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap"
+          rel="stylesheet"
+        />
+        <style>
+          body {
+            margin: 0;
+            font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+            background: #f7f6f2;
+            color: #1b1d1a;
+          }
+          a {
+            color: #0f7a5f;
+          }
+          a:hover {
+            color: #0f7a5f;
+          }
+        </style>
+      </helmet>
+      <div
+        style="
+          width: 390px;
+          height: 844px;
+          box-sizing: border-box;
+          background: #f7f6f2;
+          display: flex;
+          flex-direction: column;
+          position: relative;
+          overflow: hidden;
+        "
+      >
+        <div
+          role="status"
+          style="
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            right: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
+            background: #ffffff;
+            color: #1b1d1a;
+            border-radius: 14px;
+            box-shadow:
+              0 12px 28px rgba(16, 24, 40, 0.12),
+              0 0 0 1px #e6e4dd;
+            z-index: 2;
+          "
+        >
+          <div
+            style="
+              width: 32px;
+              height: 32px;
+              border-radius: 999px;
+              background: #ddf2ea;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            "
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#0F7A5F"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M7.5 12.5l3 3 6-6"></path>
+            </svg>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 1px; flex-grow: 1">
+            <span style="font-weight: 700; font-size: 14px">Izin berhasil dikirim</span>
+            <span style="font-size: 12px; color: #5e625b">Wali kelas akan meninjau hari ini</span>
+          </div>
+        </div>
+        <div
+          style="
+            padding: 92px 20px 0 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+          "
+        >
+          <div style="display: flex; flex-direction: column; gap: 4px">
+            <span style="font-size: 13px; color: #5e625b">SMA Contoh · Kamis, 25 Sep</span>
+            <h1
+              style="
+                margin: 0;
+                font-family: Manrope, sans-serif;
+                font-weight: 700;
+                font-size: 28px;
+                line-height: 1.1;
+                letter-spacing: -0.02em;
+              "
+            >
+              Halo, Nadia
+            </h1>
+          </div>
+          <div style="display: flex; gap: 10px; align-items: center">
+            <button
+              type="button"
+              aria-label="Notifikasi"
+              style="
+                width: 44px;
+                height: 44px;
+                border-radius: 999px;
+                border: 0;
+                background: #ffffff;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                box-shadow: 0 0 0 1px #eae8e1;
+              "
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#1B1D1A"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8"></path>
+                <path d="M10 20a2 2 0 0 0 4 0"></path>
+              </svg>
+            </button>
+            <div
+              aria-label="Profil"
+              style="
+                width: 44px;
+                height: 44px;
+                border-radius: 999px;
+                background: #ddf2ea;
+                color: #0f7a5f;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-weight: 700;
+                font-size: 15px;
+              "
+            >
+              NA
+            </div>
+          </div>
+        </div>
+        <div
+          style="
+            margin: 20px 20px 0 20px;
+            padding: 18px 20px;
+            background: #ddf2ea;
+            color: #0b3b2e;
+            border-radius: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+          "
+        >
+          <div style="display: flex; justify-content: space-between; align-items: center">
+            <span style="font-size: 13px; font-weight: 600; color: #2d5c4f"
+              >Pelajaran berikutnya</span
+            >
+            <span
+              style="
+                font-size: 12px;
+                font-weight: 700;
+                color: #ffffff;
+                background: #0f7a5f;
+                padding: 5px 10px;
+                border-radius: 999px;
+              "
+              >12 menit lagi</span
+            >
+          </div>
+          <span
+            style="
+              font-family: Manrope, sans-serif;
+              font-size: 26px;
+              font-weight: 700;
+              letter-spacing: -0.02em;
+            "
+            >Matematika</span
+          >
+          <span style="font-size: 14px; color: #2d5c4f">08.40 - 10.00 · Ruang X-A · Bu Rina</span>
+        </div>
+        <div
+          style="
+            margin: 14px 20px 0 20px;
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+          "
+        >
+          <a
+            href="#"
+            style="
+              text-decoration: none;
+              color: #1b1d1a;
+              background: #ffffff;
+              border-radius: 20px;
+              padding: 16px;
+              display: flex;
+              flex-direction: column;
+              gap: 14px;
+              min-height: 104px;
+              box-sizing: border-box;
+              box-shadow: 0 0 0 1px #eae8e1;
+            "
+          >
+            <div
+              style="
+                width: 38px;
+                height: 38px;
+                border-radius: 999px;
+                background: #ddf2ea;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+              "
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#0F7A5F"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <rect x="3" y="4" width="18" height="17" rx="3"></rect>
+                <path d="M8 2v4M16 2v4M3 10h18M8.5 15l2 2 4-4"></path>
+              </svg>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 1px">
+              <span
+                style="
+                  font-family: Manrope, sans-serif;
+                  font-size: 22px;
+                  font-weight: 700;
+                  letter-spacing: -0.01em;
+                "
+                >96%</span
+              ><span style="font-size: 13px; color: #5e625b">Kehadiran</span>
+            </div> </a
+          ><a
+            href="#"
+            style="
+              text-decoration: none;
+              color: #1b1d1a;
+              background: #ffffff;
+              border-radius: 20px;
+              padding: 16px;
+              display: flex;
+              flex-direction: column;
+              gap: 14px;
+              min-height: 104px;
+              box-sizing: border-box;
+              box-shadow: 0 0 0 1px #eae8e1;
+            "
+          >
+            <div
+              style="
+                width: 38px;
+                height: 38px;
+                border-radius: 999px;
+                background: #fcebd2;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+              "
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#A15C00"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path>
+                <path d="M14 3v5h5M9 13h6M9 17h4"></path>
+              </svg>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 1px">
+              <span
+                style="
+                  font-family: Manrope, sans-serif;
+                  font-size: 22px;
+                  font-weight: 700;
+                  letter-spacing: -0.01em;
+                "
+                >1</span
+              ><span style="font-size: 13px; color: #5e625b">Izin menunggu</span>
+            </div> </a
+          ><a
+            href="#"
+            style="
+              text-decoration: none;
+              color: #1b1d1a;
+              background: #ffffff;
+              border-radius: 20px;
+              padding: 16px;
+              display: flex;
+              flex-direction: column;
+              gap: 14px;
+              min-height: 104px;
+              box-sizing: border-box;
+              box-shadow: 0 0 0 1px #eae8e1;
+            "
+          >
+            <div
+              style="
+                width: 38px;
+                height: 38px;
+                border-radius: 999px;
+                background: #f3e6fa;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+              "
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#7A3E9D"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path
+                  d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8L3.5 9.2l5.9-.9z"
+                ></path>
+              </svg>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 1px">
+              <span
+                style="
+                  font-family: Manrope, sans-serif;
+                  font-size: 22px;
+                  font-weight: 700;
+                  letter-spacing: -0.01em;
+                "
+                >3</span
+              ><span style="font-size: 13px; color: #5e625b">Nilai baru</span>
+            </div> </a
+          ><a
+            href="#"
+            style="
+              text-decoration: none;
+              color: #1b1d1a;
+              background: #ffffff;
+              border-radius: 20px;
+              padding: 16px;
+              display: flex;
+              flex-direction: column;
+              gap: 14px;
+              min-height: 104px;
+              box-sizing: border-box;
+              box-shadow: 0 0 0 1px #eae8e1;
+            "
+          >
+            <div
+              style="
+                width: 38px;
+                height: 38px;
+                border-radius: 999px;
+                background: #e1eefa;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+              "
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#1F6FB2"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M4 19.5V5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"></path>
+                <path d="M8 7h7"></path>
+              </svg>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 1px">
+              <span
+                style="
+                  font-family: Manrope, sans-serif;
+                  font-size: 22px;
+                  font-weight: 700;
+                  letter-spacing: -0.01em;
+                "
+                >2 buku</span
+              ><span style="font-size: 13px; color: #5e625b">Kembali Sabtu</span>
+            </div>
+          </a>
+        </div>
+        <div style="margin: 20px 20px 0 20px; display: flex; flex-direction: column; gap: 10px">
+          <div style="display: flex; justify-content: space-between; align-items: baseline">
+            <span style="font-family: Manrope, sans-serif; font-size: 17px; font-weight: 700"
+              >Hari ini</span
+            ><a href="#" style="font-size: 13px; font-weight: 600; text-decoration: none"
+              >Lihat semua</a
+            >
+          </div>
+          <div style="background: #ffffff; border-radius: 20px; box-shadow: 0 0 0 1px #eae8e1">
+            <div
+              style="
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 13px 16px;
+                border-bottom: 1px solid #e6e4dd;
+              "
+            >
+              <span style="font-weight: 600; font-size: 13px; color: #0f7a5f; width: 44px"
+                >10.15</span
+              >
+              <span style="font-weight: 600; font-size: 14px; flex-grow: 1">Bahasa Indonesia</span>
+              <span style="font-size: 12px; color: #5e625b">Ruang X-A</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px; padding: 13px 16px">
+              <span style="font-weight: 600; font-size: 13px; color: #0f7a5f; width: 44px"
+                >12.30</span
+              >
+              <span style="font-weight: 600; font-size: 14px; flex-grow: 1">Fisika</span>
+              <span style="font-size: 12px; color: #5e625b">Lab IPA</span>
+            </div>
+          </div>
+        </div>
+        <nav
+          aria-label="Navigasi utama"
+          style="
+            margin-top: auto;
+            background: #ffffff;
+            border-top: 1px solid #e6e4dd;
+            padding: 8px 16px 24px 16px;
+            display: flex;
+            justify-content: space-between;
+          "
+        >
+          <a
+            href="#"
+            style="
+              text-decoration: none;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              gap: 3px;
+              padding: 6px 12px;
+              color: #0f7a5f;
+              font-size: 12px;
+              font-weight: 700;
+            "
+            ><svg
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"></path></svg
+            >Beranda</a
+          ><a
+            href="#"
+            style="
+              text-decoration: none;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              gap: 3px;
+              padding: 6px 12px;
+              color: #5e625b;
+              font-size: 12px;
+              font-weight: 500;
+            "
+            ><svg
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <rect x="3" y="4" width="18" height="17" rx="3"></rect>
+              <path d="M3 10h18"></path></svg
+            >Jadwal</a
+          ><a
+            href="#"
+            style="
+              text-decoration: none;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              gap: 3px;
+              padding: 6px 12px;
+              color: #5e625b;
+              font-size: 12px;
+              font-weight: 500;
+            "
+            ><svg
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path>
+              <path d="M14 3v5h5"></path></svg
+            >Izin</a
+          ><a
+            href="#"
+            style="
+              text-decoration: none;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              gap: 3px;
+              padding: 6px 12px;
+              color: #5e625b;
+              font-size: 12px;
+              font-weight: 500;
+            "
+            ><svg
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="8" r="4"></circle>
+              <path d="M4 21a8 8 0 0 1 16 0"></path></svg
+            >Profil</a
+          >
+        </nav>
+      </div>
+    </x-dc>
+    <script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+      class Component extends DCLogic {
+      renderVals() {
+      return {};
+      }
+      }
+    </script>
+  </body>
+</html>
