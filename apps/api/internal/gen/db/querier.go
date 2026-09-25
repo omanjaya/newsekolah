@@ -406,6 +406,11 @@ type Querier interface {
 	CreateWebhookEndpoint(ctx context.Context, arg CreateWebhookEndpointParams) (IntegrationWebhookEndpoint, error)
 	CreateWorkflowDefinition(ctx context.Context, arg CreateWorkflowDefinitionParams) (WorkflowDefinition, error)
 	CreateWorkflowEvent(ctx context.Context, arg CreateWorkflowEventParams) (WorkflowEvent, error)
+	// local_date is the tenant-local calendar day the caller computed at
+	// creation time (service.tenantNow), stored explicitly so
+	// ux_workflow_instances_one_exit_permit_per_day (migration 0120) and
+	// GetExitPermitInstanceForSubjectToday below agree on "today" with the
+	// tenant's own calendar, not the server's UTC one.
 	CreateWorkflowInstance(ctx context.Context, arg CreateWorkflowInstanceParams) (WorkflowInstance, error)
 	DailyLoansSeries(ctx context.Context, arg DailyLoansSeriesParams) ([]DailyLoansSeriesRow, error)
 	DailyReturnsSeries(ctx context.Context, arg DailyReturnsSeriesParams) ([]DailyReturnsSeriesRow, error)
@@ -584,11 +589,13 @@ type Querier interface {
 	// Regression fix (docs/analysis/backend-inventory.md 1.15): the old app
 	// capped a student at one exit-permit request per day "apa pun
 	// statusnya" -- including ones that already exited. sqlc.arg('today') is
-	// the tenant-local date (s.tenantNow), so this pre-check turns the common
-	// case into a friendly 409 in the timezone the school actually operates
-	// in; opened_date itself stays the fixed-UTC approximation
-	// ux_workflow_instances_one_exit_permit_per_day enforces (see that
-	// migration), which still backstops the race this pre-check cannot close.
+	// the tenant-local date (s.tenantNow), matched here against local_date,
+	// the same tenant-local day the column stores at creation and
+	// ux_workflow_instances_one_exit_permit_per_day now indexes (migration
+	// 0120) -- this pre-check and the DB backstop agree on what "today"
+	// means for the tenant, so this only turns the common case into a
+	// friendly 409; the index still backstops the race this pre-check cannot
+	// close.
 	GetExitPermitInstanceForSubjectToday(ctx context.Context, arg GetExitPermitInstanceForSubjectTodayParams) (WorkflowInstance, error)
 	GetExpectedGuest(ctx context.Context, arg GetExpectedGuestParams) (VisitorExpectedGuest, error)
 	GetExtracurricular(ctx context.Context, arg GetExtracurricularParams) (Extracurricular, error)
@@ -1076,7 +1083,7 @@ type Querier interface {
 	// span multiple days (migrations/0060_academic_calendar.up.sql end_date),
 	// the caller expands it into individual dates.
 	ListLibraryHolidaysInRange(ctx context.Context, arg ListLibraryHolidaysInRangeParams) ([]ListLibraryHolidaysInRangeRow, error)
-	// Users of one role (student|teacher|staff|parent) not yet registered as a
+	// Users of one role (student|teacher|staff) not yet registered as a
 	// library member, optionally narrowed to one class (role must be student
 	// when class_id is set) -- the bulk-register candidate list (old app
 	// library_members.go:783-859).

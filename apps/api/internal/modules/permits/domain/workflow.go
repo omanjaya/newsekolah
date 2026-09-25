@@ -128,10 +128,16 @@ type Instance struct {
 	Status            Status
 	Payload           map[string]any
 	OpenedAt          time.Time
-	ClosedAt          *time.Time
-	CreatedBy         uuid.NullUUID
-	CreatedAt         time.Time
-	UpdatedAt         time.Time
+	// LocalDate is the tenant-local calendar day OpenedAt fell on, set by
+	// the service from the tenant's own timezone at creation
+	// (service.tenantNow), not the server's UTC one -- see migration
+	// 0120 and queries/workflow_instances.sql's CreateWorkflowInstance
+	// and GetExitPermitInstanceForSubjectToday.
+	LocalDate time.Time
+	ClosedAt  *time.Time
+	CreatedBy uuid.NullUUID
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 // Event is one immutable workflow_events row: a recorded transition.
