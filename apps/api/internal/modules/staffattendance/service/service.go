@@ -72,21 +72,38 @@ type LeaveReader interface {
 	OnApprovedLeave(ctx context.Context, tenantID, employeeUserID uuid.UUID, date time.Time) (bool, error)
 }
 
+// RealtimePublisher pushes a live update after a self-service QR scan
+// (Scan, records.go), to every holder of a fixed role (PublishRole, e.g.
+// "hr") and to every holder of a duty assignment (PublishDuty, e.g. the
+// picket teacher covering the front desk) -- docs/analysis/
+// realtime-plan-2026-09-25.md section 2, opportunity #8's "role:<tenant>:
+// hr / duty piket". Both mirror platform/realtime.TopicRole/TopicDuty
+// without this package importing platform/realtime directly, the same
+// pattern permits/service.RealtimePublisher and attendance/service.
+// RealtimePublisher use. A nil RealtimePublisher (no Hub wired) makes
+// every push a no-op rather than failing the scan itself.
+type RealtimePublisher interface {
+	PublishRole(tenantID uuid.UUID, role, eventType string, payload any) error
+	PublishDuty(tenantID uuid.UUID, dutySlug string, classID uuid.NullUUID, eventType string, payload any) error
+}
+
 type Service struct {
 	pool       *pgxpool.Pool
 	repo       Repository
 	years      AcademicYearReader
 	calendar   CalendarReader
 	leave      LeaveReader
+	realtime   RealtimePublisher
 	letterhead reportdoc.LetterheadSource
 	clock      clock.Clock
 }
 
 // New wires a Service. letterhead may be nil (a tenant's kop laporan
 // simply never shows on this module's exports then) -- most tests have
-// no reason to fake it.
-func New(pool *pgxpool.Pool, repo Repository, years AcademicYearReader, calendar CalendarReader, leave LeaveReader, letterhead reportdoc.LetterheadSource) *Service {
-	return &Service{pool: pool, repo: repo, years: years, calendar: calendar, leave: leave, letterhead: letterhead, clock: clock.Real{}}
+// no reason to fake it. realtime may be nil (no Hub wired): every live
+// push then silently no-ops.
+func New(pool *pgxpool.Pool, repo Repository, years AcademicYearReader, calendar CalendarReader, leave LeaveReader, letterhead reportdoc.LetterheadSource, realtime RealtimePublisher) *Service {
+	return &Service{pool: pool, repo: repo, years: years, calendar: calendar, leave: leave, realtime: realtime, letterhead: letterhead, clock: clock.Real{}}
 }
 
 func (s *Service) withTx(ctx context.Context, tenantID uuid.UUID, fn func(ctx context.Context) error) error {

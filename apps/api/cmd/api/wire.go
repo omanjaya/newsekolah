@@ -185,6 +185,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		Pool: pool, Years: schoolModule.Service,
 		Calendar:   wiring.StaffAttendanceCalendar{Academic: academicModule.Service},
 		Leave:      wiring.StaffAttendanceLeave{Permits: permitsModule.Service},
+		Hub:        hub,
 		Letterhead: wiring.ReportHeaderReports{Svc: schoolModule.Service},
 	})
 

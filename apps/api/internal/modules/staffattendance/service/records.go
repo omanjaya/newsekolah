@@ -45,7 +45,25 @@ func (s *Service) Scan(ctx context.Context, tenantID, employeeUserID uuid.UUID) 
 		out = saved
 		return nil
 	})
-	return out, err
+	if err != nil {
+		return RecordView{}, err
+	}
+	if s.realtime != nil {
+		// Roster board (docs/analysis/realtime-plan-2026-09-25.md section 2,
+		// opportunity #8): both HR staff and the picket duty watch this
+		// board, so the push goes to both topics rather than picking one.
+		payload := staffAttendanceScannedPayload{EmployeeID: employeeUserID}
+		_ = s.realtime.PublishRole(tenantID, "hr", "staff_attendance.scanned", payload)
+		_ = s.realtime.PublishDuty(tenantID, "duty_teacher", uuid.NullUUID{}, "staff_attendance.scanned", payload)
+	}
+	return out, nil
+}
+
+// staffAttendanceScannedPayload is the minimal payload pushed after a
+// self-service QR scan -- ids only; the board re-fetches the roster
+// through its already-authorized REST endpoint.
+type staffAttendanceScannedPayload struct {
+	EmployeeID uuid.UUID `json:"employee_id"`
 }
 
 // RecordManual is an administrator entering or updating one employee's day

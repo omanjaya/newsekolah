@@ -273,12 +273,17 @@ type ViolationSummary struct {
 }
 
 // RealtimePublisher lets the service push a live update to the monitor
-// display's WebSocket topic after a session is submitted, without this
-// package importing platform/realtime for anything but this one method
-// (the hub's topic-naming convention -- "monitor:<tenantID>" -- is owned by
-// cmd/api/ws.go, which module.go's adapter mirrors at the wiring boundary).
+// display's WebSocket topic after a session is submitted (PublishMonitor)
+// and, separately, to every holder of a fixed role -- admin, principal --
+// after a session is submitted (PublishRole, docs/analysis/
+// realtime-plan-2026-09-25.md section 2, opportunity #6), without this
+// package importing platform/realtime for anything but these two topic-
+// naming conventions ("monitor:<tenantID>", "role:<tenantID>:<role>"),
+// both owned by cmd/api/ws.go and mirrored at the wiring boundary by
+// module.go's adapter.
 type RealtimePublisher interface {
 	PublishMonitor(tenantID uuid.UUID, event any) error
+	PublishRole(tenantID uuid.UUID, role, eventType string, payload any) error
 }
 
 // PresenceReader backs GetMonitorPresence: an adapter over

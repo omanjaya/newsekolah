@@ -68,6 +68,13 @@ func (p hubPublisher) PublishMonitor(tenantID uuid.UUID, event any) error {
 	return p.hub.Publish("monitor:"+tenantID.String(), event)
 }
 
+// PublishRole pushes an envelope-shaped event to every holder of role
+// (admin, principal), over realtime.TopicRole -- the same topic-naming
+// convention cmd/api/ws.go's subscribe-request authorization uses.
+func (p hubPublisher) PublishRole(tenantID uuid.UUID, role, eventType string, payload any) error {
+	return p.hub.PublishEvent(realtime.TopicRole(tenantID, role), eventType, payload)
+}
+
 // hubPresence is the fallback PresenceReader ("hub connection counts")
 // used when no realtime.Presence tracker is wired in. This simply counts
 // open sockets on the tenant's monitor topic; it has no per-role
