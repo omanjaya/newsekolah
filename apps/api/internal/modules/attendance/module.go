@@ -38,25 +38,20 @@ type Module struct {
 // cannot satisfy service.EventPublisher directly.
 type busPublisher struct{ bus *events.Bus }
 
-// Publish wraps service.Submitted into the events.Envelope shape
-// notifications/service/events.go's subscriber requires (a bare struct
-// satisfying service.Event fails its type assertion to events.Envelope, so
-// the subscriber's handler always errored and notifications for a
-// submitted session never fired). Subject is left empty now that a
-// submitted session no longer has any parent/guardian account to notify;
-// notifications' handler treats an empty Subject as a no-op.
+// Publish is a plain passthrough, matching every other module's busPublisher: the
+// raw service.Submitted struct goes on the bus under its own
+// EventName() ("attendance.session_submitted", service/events.go),
+// where wiring/eventbridge.go's bridge is the one subscriber that
+// consumes it, computes the real recipients (the class's homeroom
+// teacher, minus the submitter), and republishes an events.Envelope
+// under the notification-facing events.AttendanceSubmitted name for
+// notifications/service/events.go to pick up. An earlier version of this
+// method wrapped Submitted into an events.Envelope here directly, which
+// broke that bridge subscriber (a panic, not just a missed notification
+// -- see eventbridge_test.go and service/events.go's EventName doc
+// comment for the full story).
 func (p busPublisher) Publish(ctx context.Context, evt service.Event) error {
-	submitted, ok := evt.(service.Submitted)
-	if !ok {
-		return p.bus.Publish(ctx, evt)
-	}
-	return p.bus.Publish(ctx, events.Envelope{
-		Name: submitted.EventName(), Tenant: submitted.TenantID, Actor: submitted.SubmittedBy,
-		Payload: map[string]any{
-			"session_id": submitted.SessionID.String(), "class_id": submitted.ClassID.String(),
-			"date": submitted.Date.Format("2006-01-02"), "student_count": submitted.StudentCount,
-		},
-	})
+	return p.bus.Publish(ctx, evt)
 }
 
 // hubPublisher adapts platform/realtime's Hub to
