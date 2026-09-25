@@ -79,11 +79,17 @@ export interface ToastActionOptions {
   onClick: () => void;
 }
 
+// Arrow-function-typed properties, not method shorthand (`error(...): void`):
+// callers tear these off the object often (`const { error } = useToast()`,
+// or a react-query MutationCache default importing `toast` directly), and
+// method shorthand would make every one of those sites trip
+// @typescript-eslint/unbound-method for a `this` binding these functions
+// never actually use.
 export interface ToastApi {
-  success(message: string, options?: { description?: string }): void;
-  error(message: string, options?: { description?: string; retry?: ToastActionOptions }): void;
-  info(message: string, options?: { description?: string }): void;
-  dismiss(id?: string | number): void;
+  success: (message: string, options?: { description?: string }) => void;
+  error: (message: string, options?: { description?: string; retry?: ToastActionOptions }) => void;
+  info: (message: string, options?: { description?: string }) => void;
+  dismiss: (id?: string | number) => void;
 }
 
 /**
