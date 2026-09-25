@@ -116,7 +116,7 @@ jobs:
               - "turbo.json"
               - "package.json"
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         if: steps.changes.outputs.packages == 'true'
         with:
           node-version: ${{ env.NODE_VERSION }}
@@ -125,7 +125,7 @@ jobs:
         if: steps.changes.outputs.packages == 'true'
         run: corepack enable
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         if: steps.changes.outputs.packages == 'true'
         with:
           node-version: ${{ env.NODE_VERSION }}
@@ -169,7 +169,7 @@ jobs:
               - "packages/**"
               - "pnpm-lock.yaml"
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         if: steps.changes.outputs.mobile == 'true'
         with:
           node-version: ${{ env.NODE_VERSION }}
@@ -178,7 +178,7 @@ jobs:
         if: steps.changes.outputs.mobile == 'true'
         run: corepack enable
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         if: steps.changes.outputs.mobile == 'true'
         with:
           node-version: ${{ env.NODE_VERSION }}
@@ -219,7 +219,7 @@ jobs:
             openapi:
               - "openapi/**"
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         if: steps.changes.outputs.openapi == 'true'
         with:
           node-version: ${{ env.NODE_VERSION }}
@@ -296,13 +296,13 @@ jobs:
           go install github.com/securego/gosec/v2/cmd/gosec@latest
           gosec -exclude-dir=internal/gen -exclude-generated -exclude=G115 ./...
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
 
       - run: corepack enable
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
@@ -362,7 +362,7 @@ jobs:
               - "infra/docker/**"
               - "pnpm-lock.yaml"
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         if: steps.changes.outputs.sim == 'true'
         with:
           node-version: ${{ env.NODE_VERSION }}
@@ -371,7 +371,7 @@ jobs:
         if: steps.changes.outputs.sim == 'true'
         run: corepack enable
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         if: steps.changes.outputs.sim == 'true'
         with:
           node-version: ${{ env.NODE_VERSION }}
