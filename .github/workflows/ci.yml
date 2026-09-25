@@ -147,9 +147,17 @@ jobs:
         if: steps.changes.outputs.packages == 'true'
         run: pnpm test
 
+      # Unscoped (`pnpm build` = `turbo run build` with no filter) also
+      # builds @newsekolah/mobile, whose `build` script is `expo export`;
+      # that needs react-native-web, which this job never installs (mobile
+      # is neither a web app dependency nor anything CI or deploys build
+      # from its own `build` script -- see the mobile job's typecheck/
+      # lint/test steps and apps/web/Dockerfile's scoped
+      # `pnpm --filter "@newsekolah/web..." build`). Scope this job's build
+      # the same way: web and every package it depends on, nothing else.
       - name: build
         if: steps.changes.outputs.packages == 'true'
-        run: pnpm build
+        run: pnpm exec turbo run build --filter=...@newsekolah/web
 
   mobile:
     name: mobile
