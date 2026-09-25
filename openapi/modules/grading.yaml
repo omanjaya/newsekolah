@@ -36,7 +36,7 @@ paths:
     get:
       tags: [grading]
       operationId: getGradebook
-      x-permission: manage_grades
+      x-permission: view_grades
       summary: One class-subject sheet with components, students and scores
       parameters:
         - { name: class_id, in: query, required: true, schema: { type: string, format: uuid } }
@@ -56,7 +56,7 @@ paths:
     get:
       tags: [grading]
       operationId: exportGradebook
-      x-permission: manage_grades
+      x-permission: view_grades
       summary:
         The gradebook as an XLSX or PDF file, for one class or every class of a grade level -- one section per
         class, using the same data GET /v1/grading/gradebook shows (NOT the e-Rapor export, which stays separate).
@@ -244,7 +244,7 @@ paths:
     get:
       tags: [grading]
       operationId: listGradeRanges
-      x-permission: manage_grades
+      x-permission: view_grades
       summary: Report-score increase ranges for this year
       responses:
         "200":
@@ -338,7 +338,7 @@ paths:
     get:
       tags: [grading]
       operationId: listTPMappings
-      x-permission: manage_grades
+      x-permission: view_grades
       summary: TP export-code mappings of one class-subject-term
       parameters:
         - { name: class_id, in: query, required: true, schema: { type: string, format: uuid } }
@@ -522,7 +522,7 @@ paths:
     get:
       tags: [grading]
       operationId: previewEraporExport
-      x-permission: manage_grades
+      x-permission: view_grades
       summary: What an e-Rapor export for one class and term would contain, before downloading it
       parameters:
         - { name: class_id, in: query, required: true, schema: { type: string, format: uuid } }
@@ -541,7 +541,7 @@ paths:
     get:
       tags: [grading]
       operationId: exportErapor
-      x-permission: manage_grades
+      x-permission: view_grades
       summary: Download the e-Rapor import file for one class and term
       description: >-
         Refuses with GRADES_NOT_PUBLISHED (403) when none of the class's
@@ -573,7 +573,7 @@ paths:
     get:
       tags: [grading]
       operationId: exportEraporLegacy
-      x-permission: manage_grades
+      x-permission: view_grades
       summary: Download the old per-subject e-Rapor sheet
       description: >-
         The legacy layout: No / NIS / Nama / Nilai Rapor / one column per

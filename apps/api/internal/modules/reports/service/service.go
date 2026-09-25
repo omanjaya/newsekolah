@@ -95,7 +95,7 @@ func Catalog() []Definition {
 		{KindAttendanceDaily, "view_reports", []Argument{{"class_id", ArgClass, false}, {"grade_level_id", ArgGradeLevel, false}, {"date", ArgDate, true}}},
 		{KindDisciplinePoints, "view_discipline", []Argument{{"class_id", ArgClass, false}, {"grade_level_id", ArgGradeLevel, false}}},
 		{KindWarningLetters, "view_discipline", []Argument{{"class_id", ArgClass, false}, {"grade_level_id", ArgGradeLevel, false}}},
-		{KindGradingReport, "manage_grades", []Argument{{"class_id", ArgClass, true}, {"grade_level_id", ArgGradeLevel, false}, {"subject_id", ArgSubject, true}, {"term_id", ArgTerm, false}}},
+		{KindGradingReport, "view_grades", []Argument{{"class_id", ArgClass, true}, {"grade_level_id", ArgGradeLevel, false}, {"subject_id", ArgSubject, true}, {"term_id", ArgTerm, false}}},
 		{KindLeaveRequests, "view_reports", []Argument{{"class_id", ArgClass, false}, {"grade_level_id", ArgGradeLevel, false}}},
 		{KindExitPermitsYearly, "view_reports", nil},
 	}
