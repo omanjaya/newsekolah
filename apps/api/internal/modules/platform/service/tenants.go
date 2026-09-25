@@ -99,19 +99,20 @@ func (s *Service) health(ctx context.Context, t domain.Tenant) (domain.TenantHea
 // except the platform console itself, and its password is generated here
 // and returned exactly once (docs/08-security.md never persists it).
 //
-// All three steps -- create the tenant row, provision its admin user, seed
-// its default duty types -- run in one transaction (withPlatformTx) rather
-// than each committing independently. Without that, a failure in the last
-// step (say, seeding duty types) would leave a tenant and its admin already
-// committed but with no "homeroom" duty type, which SeedDefaultDuties's own
-// doc comment calls out as the thing that leaves a school unable to name a
-// homeroom teacher at all -- a half-provisioned tenant with no compensating
-// cleanup. One transaction was chosen over explicit cleanup-on-failure
-// because every step here already goes through the ordinary tenant-scoped
-// repository calls (no external side effects like sending an email that a
-// rollback could not undo), so there is nothing a transaction can't clean
-// up on its own, and it avoids a second failure mode (cleanup itself
-// failing and leaving the same half-provisioned tenant behind).
+// All three steps -- create the tenant row, provision its admin user,
+// create every other system role/duty type/library member type it is
+// missing -- run in one transaction (withPlatformTx) rather than each
+// committing independently. Without that, a failure in the last step (say,
+// creating duty types) would leave a tenant and its admin already
+// committed but with no "homeroom" duty type, which leaves a school unable
+// to name a homeroom teacher at all -- a half-provisioned tenant with no
+// compensating cleanup. One transaction was chosen over explicit
+// cleanup-on-failure because every step here already goes through the
+// ordinary tenant-scoped repository calls (no external side effects like
+// sending an email that a rollback could not undo), so there is nothing a
+// transaction can't clean up on its own, and it avoids a second failure
+// mode (cleanup itself failing and leaving the same half-provisioned
+// tenant behind).
 func (s *Service) CreateTenant(ctx context.Context, in domain.TenantInput) (CreateTenantResult, error) {
 	if err := s.guard(); err != nil {
 		return CreateTenantResult{}, err
@@ -134,7 +135,7 @@ func (s *Service) CreateTenant(ctx context.Context, in domain.TenantInput) (Crea
 			return err
 		}
 
-		if err := s.admin.SeedDefaultDuties(ctx, tenant.ID); err != nil {
+		if err := s.admin.EnsureTenantDefaults(ctx, tenant.ID); err != nil {
 			return err
 		}
 

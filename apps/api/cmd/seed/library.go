@@ -47,18 +47,10 @@ var librarySourceSeeds = []libraryMasterDataSeed{
 	{code: "BELI", name: "Pembelian"},
 }
 
-// libraryMemberTypeSeed is one library_member_types row.
-type libraryMemberTypeSeed struct {
-	name                                                string
-	maxLoanItems, maxLoanDays, renewalDays, maxRenewals int
-	suspendDays, validityMonths                         int
-	defaultForRole                                      string
-}
-
-var libraryMemberTypeSeeds = []libraryMemberTypeSeed{
-	{name: "Siswa", maxLoanItems: 2, maxLoanDays: 7, renewalDays: 7, maxRenewals: 1, suspendDays: 3, validityMonths: 12, defaultForRole: "student"},
-	{name: "Guru & Staf", maxLoanItems: 5, maxLoanDays: 14, renewalDays: 14, maxRenewals: 2, suspendDays: 0, validityMonths: 24, defaultForRole: "teacher"},
-}
+// Default library member types come from librarydomain.MemberTypeDefaults
+// so seed and a real tenant's bootstrap (migrator.EnsureTenantDefaults)
+// never disagree.
+var libraryMemberTypeSeeds = librarydomain.MemberTypeDefaults()
 
 // libraryTitleSeed is one bibliography plus the master-data codes and copy
 // count its copies are created with.
@@ -185,19 +177,19 @@ func ensureLibraryMemberTypes(ctx context.Context, svc *libraryservice.Service, 
 		byName[t.Name] = t
 	}
 	for _, seed := range libraryMemberTypeSeeds {
-		if _, ok := byName[seed.name]; ok {
+		if _, ok := byName[seed.Name]; ok {
 			continue
 		}
 		created, err := svc.CreateMemberType(ctx, tenantID, librarydomain.MemberType{
-			Name: seed.name, MaxLoanItems: seed.maxLoanItems, MaxLoanDays: seed.maxLoanDays,
-			RenewalDays: seed.renewalDays, MaxRenewals: seed.maxRenewals, FineType: librarydomain.FineConstant,
-			FinePerTenor: 500, TenorDays: 1, SuspendDays: seed.suspendDays, ValidityMonths: seed.validityMonths,
-			DefaultForRole: seed.defaultForRole,
+			Name: seed.Name, MaxLoanItems: seed.MaxLoanItems, MaxLoanDays: seed.MaxLoanDays,
+			RenewalDays: seed.RenewalDays, MaxRenewals: seed.MaxRenewals, FineType: librarydomain.FineConstant,
+			FinePerTenor: 500, TenorDays: 1, SuspendDays: seed.SuspendDays, ValidityMonths: seed.ValidityMonths,
+			DefaultForRole: seed.DefaultForRole,
 		})
 		if err != nil {
-			return nil, fmt.Errorf("create member type %s: %w", seed.name, err)
+			return nil, fmt.Errorf("create member type %s: %w", seed.Name, err)
 		}
-		byName[seed.name] = created
+		byName[seed.Name] = created
 	}
 	return byName, nil
 }

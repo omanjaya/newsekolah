@@ -10,18 +10,21 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/db"
+	librarydomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/library/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/authz"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
 )
 
 // EnsureTenantDefaults creates whatever a tenant is missing from
-// authz.RoleDefaults and authz.DutyTypeDefaults: every system role and
-// every default duty type. It is idempotent and strictly add-only -- a
-// role or duty type that already exists (system or custom, default name or
-// renamed, default permissions or an admin's own edit) is never touched;
-// only one that does not exist yet is created, and only a freshly created
-// one has its full default permission set granted immediately, so it is
-// usable the moment it exists.
+// authz.RoleDefaults, authz.DutyTypeDefaults, and
+// librarydomain.MemberTypeDefaults: every system role, every default duty
+// type, and every default library member type. It is idempotent and
+// strictly add-only -- anything that already exists (system or custom,
+// default name or renamed, default permissions/limits or an admin's own
+// edit) is never touched; only something that does not exist yet is
+// created, and only a freshly created one has its full default permission
+// set (or, for a member type, its default loan limits) applied
+// immediately, so it is usable the moment it exists.
 //
 // This is deliberately narrower than syncSystemRoleDefaults (migrator.go),
 // which keeps additively granting an EXISTING system role's defaults on
@@ -47,7 +50,10 @@ func EnsureTenantDefaults(ctx context.Context, pool *pgxpool.Pool, tenantID uuid
 		if err := ensureRoleDefaults(ctx, q, tenantID); err != nil {
 			return err
 		}
-		return ensureDutyDefaults(ctx, q, tenantID)
+		if err := ensureDutyDefaults(ctx, q, tenantID); err != nil {
+			return err
+		}
+		return ensureLibraryMemberTypeDefaults(ctx, q, tenantID)
 	})
 }
 
@@ -114,6 +120,38 @@ func ensureDutyDefaults(ctx context.Context, q *db.Queries, tenantID uuid.UUID) 
 			}); err != nil {
 				return fmt.Errorf("grant %s to new duty %s: %w", code, dd.Slug, err)
 			}
+		}
+	}
+	return nil
+}
+
+// ensureLibraryMemberTypeDefaults creates every library member type from
+// librarydomain.MemberTypeDefaults() the tenant does not already have one
+// for (matched by DefaultForRole, library_member_types' own idempotency
+// key -- see GetMemberTypeByRole). Library is a core module enabled by
+// default for every tenant (see librarydomain.MemberTypeDefault's doc
+// comment), and every member-registration path -- manual, bulk, or
+// auto-register on first borrow -- requires an existing member type, so a
+// tenant with none cannot register a single library member.
+func ensureLibraryMemberTypeDefaults(ctx context.Context, q *db.Queries, tenantID uuid.UUID) error {
+	for _, md := range librarydomain.MemberTypeDefaults() {
+		roleText := database.Text(md.DefaultForRole)
+		_, err := q.GetMemberTypeByRole(ctx, db.GetMemberTypeByRoleParams{TenantID: tenantID, DefaultForRole: roleText})
+		if err == nil {
+			continue // already exists -- never touched, per EnsureTenantDefaults's doc comment.
+		}
+		if !errors.Is(err, pgx.ErrNoRows) {
+			return fmt.Errorf("look up library member type for role %s: %w", md.DefaultForRole, err)
+		}
+		if _, err := q.CreateMemberType(ctx, db.CreateMemberTypeParams{
+			TenantID: tenantID, Name: md.Name,
+			MaxLoanItems: int32(md.MaxLoanItems), MaxLoanDays: int32(md.MaxLoanDays), //nolint:gosec // small, fixed default values
+			RenewalDays: int32(md.RenewalDays), MaxRenewals: int32(md.MaxRenewals), //nolint:gosec // small, fixed default values
+			FineType: string(librarydomain.FineConstant), FinePerTenor: 500, TenorDays: 1,
+			SuspendDays: int32(md.SuspendDays), ValidityMonths: int32(md.ValidityMonths), //nolint:gosec // small, fixed default values
+			DefaultForRole: roleText,
+		}); err != nil {
+			return fmt.Errorf("create library member type %s: %w", md.Name, err)
 		}
 	}
 	return nil

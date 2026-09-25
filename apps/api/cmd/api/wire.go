@@ -284,7 +284,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	authenticator.WithAPIKeys(integrationsModule.Service, store)
 
 	platformDeps := platform.Dependencies{
-		Pool: pool, Admin: wiring.PlatformIdentity{Identity: identityModule.Service}, Jobs: jobInserter,
+		Pool: pool, Admin: wiring.PlatformIdentity{Identity: identityModule.Service, Pool: pool}, Jobs: jobInserter,
 		Clock: clock.Real{}, Mode: cfg.TenancyMode, Bucket: cfg.S3Bucket,
 	}
 	if sharedStorage != nil {

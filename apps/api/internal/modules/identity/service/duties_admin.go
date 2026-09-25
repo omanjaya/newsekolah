@@ -112,12 +112,19 @@ func (s *Service) syncClassHomeroom(ctx context.Context, tenantID uuid.UUID, dut
 // SeedDefaultDuties creates the tenant's standard duty types (homeroom,
 // counselor, picket/duty-teacher, leadership, security, librarian) from
 // authz.DutyTypeDefaults, with their default permissions -- the same
-// catalog apps/api/cmd/seed builds for the local demo tenant, now also run
-// for every real tenant a platform admin provisions (attendance and
-// permits both hard-code the "homeroom" slug, so a tenant that never got
-// this seed would have no way to name a homeroom teacher at all). It is
-// idempotent: an existing duty type by that slug is left alone, and
+// catalog apps/api/cmd/seed builds for the local demo tenant (attendance
+// and permits both hard-code the "homeroom" slug, so a tenant that never
+// got this seed would have no way to name a homeroom teacher at all). It
+// is idempotent: an existing duty type by that slug is left alone, and
 // AddDutyPermissionRecord itself no-ops on a permission it already grants.
+//
+// The platform console's CreateTenant no longer calls this directly: it
+// (and cmd/migrate's PostUp, and cmd/bootstrap) instead go through
+// internal/platform/migrator.EnsureTenantDefaults, which also creates
+// missing system roles and default library member types and, unlike this
+// method, never re-grants a default permission to a duty type that
+// already existed. This method is kept as the identity module's own
+// standalone "reset this tenant's duty types to their defaults" use case.
 func (s *Service) SeedDefaultDuties(ctx context.Context, tenantID uuid.UUID) error {
 	return s.withTx(ctx, tenantID, func(ctx context.Context) error {
 		for _, d := range authz.DutyTypeDefaults() {

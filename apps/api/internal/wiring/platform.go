@@ -8,11 +8,14 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/jackc/pgx/v5/pgxpool"
+
 	identitydomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/identity/domain"
 	identityservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/identity/service"
 	platformservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/platform/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/auth"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/authz"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/migrator"
 )
 
 // adminRoleSlug is the role the platform console grants a freshly
@@ -27,8 +30,16 @@ const adminRoleSlug = "admin"
 // the identity module's own use cases (create role, grant every tenant
 // permission except the platform console itself, create the user) rather
 // than reaching into identity's repository directly, following the
-// pattern of DisciplineDocuments above.
-type PlatformIdentity struct{ Identity *identityservice.Service }
+// pattern of DisciplineDocuments above. Pool is used only for
+// EnsureTenantDefaults below, which calls into internal/platform/migrator
+// directly (a package no module's service layer may import, per
+// docs/03-layered-architecture.md's dependency table) -- wiring is the
+// composition root, not bound by that table, so the cross-cutting call
+// lives here instead of inside the platform module.
+type PlatformIdentity struct {
+	Identity *identityservice.Service
+	Pool     *pgxpool.Pool
+}
 
 func (p PlatformIdentity) ProvisionAdmin(ctx context.Context, tenantID uuid.UUID, in platformservice.AdminInput) (platformservice.AdminResult, error) {
 	role, err := p.Identity.CreateRole(ctx, tenantID, adminRoleSlug, "Administrator", "Tenant administrator provisioned by the platform console")
@@ -58,8 +69,8 @@ func (p PlatformIdentity) ProvisionAdmin(ctx context.Context, tenantID uuid.UUID
 	return platformservice.AdminResult{UserID: user.ID, Username: user.Username, Password: password}, nil
 }
 
-func (p PlatformIdentity) SeedDefaultDuties(ctx context.Context, tenantID uuid.UUID) error {
-	return p.Identity.SeedDefaultDuties(ctx, tenantID)
+func (p PlatformIdentity) EnsureTenantDefaults(ctx context.Context, tenantID uuid.UUID) error {
+	return migrator.EnsureTenantDefaults(ctx, p.Pool, tenantID)
 }
 
 // tenantPermissionCodes is every permission code except the platform
