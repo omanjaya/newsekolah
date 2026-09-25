@@ -171,4 +171,4 @@ Langkah manual di VPS sebelum deploy: isi `APP_DB_PASSWORD`, `DATA_ENCRYPTION_KE
 
 Keputusan 25 September: TOTP admin tetap opsional (pemilik produk menguji dulu di live), kepala sekolah mendapat peran `principal` sendiri sebagai pengawas, dan celah nomor migrasi diisi placeholder no-op.
 
-Risiko terbuka per 25 September: database produksi belum punya backup (profile backup belum aktif, tujuan penyimpanan belum dipilih). Pemilik produk memilih menunda selama masa uji; wajib dipasang sebelum pengguna sungguhan mengisi data.
+Per 25 September malam: backup lokal harian terenkripsi aktif di VPS (`infra/scripts/backup-local.sh`, cron 02:00 WITA, simpan 14 hari, uji restore lulus). Belum ada salinan di luar VPS.

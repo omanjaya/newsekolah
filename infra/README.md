@@ -134,6 +134,57 @@ Any of those checks failing prints `SMOKE CHECK FAILED: ...` and exits non-zero 
 `--with-storage` restores MinIO, so a bad Postgres restore is caught before it can be compounded by
 overwriting object storage too. `--dry-run` only prints the checks it would run.
 
+### Local encrypted backup (single host)
+
+`infra/scripts/backup-local.sh` is the backup the shared VPS runs today. It
+dumps Postgres (`pg_dump --format=custom` through the compose `postgres`
+service) and archives the MinIO data volume, encrypts both with `age`, and
+keeps them in `/root/backups/newsekolah` for 14 days. `LAST_SUCCESS` in that
+directory holds the time of the last good run. It protects against deleted
+data, a bad migration, or an application bug; it does not survive losing the
+host, so add the offsite `backup.sh` target before production data matters
+for more than one school.
+
+Only the age public key lives on the server
+(`/etc/newsekolah/backup-age-recipient.txt`). The private key stays with the
+operator (on the maintainer's machine at `~/.config/newsekolah/backup-age-key.txt`,
+with a copy in a password manager). Without it the backups cannot be read,
+so never copy it to the server.
+
+Setup on a host:
+
+```bash
+apt-get install -y age
+mkdir -p /etc/newsekolah
+echo "age1..." > /etc/newsekolah/backup-age-recipient.txt   # public key only
+/root/sion/infra/scripts/backup-local.sh                      # first run
+( crontab -l; echo "0 18 * * * /root/sion/infra/scripts/backup-local.sh >> /var/log/newsekolah-backup.log 2>&1" ) | crontab -
+```
+
+`0 18 * * *` is 02:00 WITA (the VPS clock is UTC). Check health with
+`cat /root/backups/newsekolah/LAST_SUCCESS` and
+`tail /var/log/newsekolah-backup.log`.
+
+Restore from a local backup:
+
+```bash
+# on the operator machine, which holds the private key
+scp root@HOST:/root/backups/newsekolah/postgres-<STAMP>.dump.age .
+age -d -i ~/.config/newsekolah/backup-age-key.txt -o pg.dump postgres-<STAMP>.dump.age
+scp pg.dump root@HOST:/tmp/pg.dump
+# on the host, with the api and worker stopped
+docker compose -f docker-compose.prod.yml -f compose.vps.yml stop api worker
+docker compose -f docker-compose.prod.yml -f compose.vps.yml exec -T postgres \
+  pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" --clean --if-exists --no-owner < /tmp/pg.dump
+docker compose -f docker-compose.prod.yml -f compose.vps.yml up -d --no-build api worker
+```
+
+A restore drill on 25 September 2026 decrypted the first backup on the
+operator machine and restored it into a throwaway Postgres 16: schema
+version, roles, users, duty types and permissions matched production. The
+only restore errors were grants to `app_rw`/`app_platform`, which do not
+exist in a bare container and do exist on the real host.
+
 ### Restore drill
 
 docs/08-security.md section 9 requires a monthly automated restore test; this is how to run one
