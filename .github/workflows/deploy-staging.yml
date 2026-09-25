@@ -1,0 +1,126 @@
+name: Deploy staging
+
+# Fires once the CI workflow finishes on main (workflow_run, so this never
+# needs ci.yml itself to change), or manually for a specific commit. Either
+# way the commit actually deployed is always resolved to a full SHA before
+# anything touches the VPS, since infra/scripts/deploy-ssh-wrapper.sh only
+# accepts a 40-hex SHA.
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      git_ref:
+        description: "Commit SHA (or branch/tag) to deploy to staging; defaults to the tip of main"
+        required: false
+        default: main
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: deploy
+    runs-on: ubuntu-latest
+    # workflow_run always fires, win or lose -- only proceed on a green CI
+    # run. workflow_dispatch has no such gate: a human asked for this ref
+    # directly.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+    outputs:
+      sha: ${{ steps.sha.outputs.sha }}
+    steps:
+      - name: Resolve the ref to deploy
+        id: resolve
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            echo "sha=${{ github.event.workflow_run.head_sha }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "sha=${{ inputs.git_ref }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.resolve.outputs.sha }}
+          fetch-depth: 1
+
+      - name: Pin the resolved ref to a full commit SHA
+        id: sha
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Install the staging deploy key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
+
+      - name: Trust the VPS host key
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "${{ secrets.VPS_KNOWN_HOSTS }}" >> ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Deploy to staging
+        run: |
+          ssh -o IdentitiesOnly=yes "${{ secrets.VPS_HOST }}" \
+            "deploy.sh staging ${{ steps.sha.outputs.sha }}"
+
+  simulate:
+    name: simulate
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.deploy.outputs.sha }}
+
+      - name: Check whether the multi-actor simulation suite exists yet
+        id: check
+        run: |
+          has_script=$(node -e "console.log(require('./apps/web/package.json').scripts?.['e2e:sim'] ? 'true' : 'false')")
+          echo "present=$has_script" >> "$GITHUB_OUTPUT"
+          if [ "$has_script" = "false" ]; then
+            echo "::notice::apps/web has no e2e:sim script yet -- skipping the staging simulation suite."
+          fi
+
+      - uses: actions/setup-node@v4
+        if: steps.check.outputs.present == 'true'
+        with:
+          node-version: "24"
+
+      - name: Enable corepack (pnpm 10)
+        if: steps.check.outputs.present == 'true'
+        run: corepack enable
+
+      - uses: actions/setup-node@v4
+        if: steps.check.outputs.present == 'true'
+        with:
+          node-version: "24"
+          cache: pnpm
+
+      - name: pnpm install
+        if: steps.check.outputs.present == 'true'
+        run: pnpm install --frozen-lockfile
+
+      - name: Run the multi-actor simulation suite against staging
+        if: steps.check.outputs.present == 'true'
+        env:
+          SIM_BASE_URL: https://staging.sion.nouma.id
+          STAGING_SEED_PASSWORD: ${{ secrets.STAGING_SEED_PASSWORD }}
+        run: pnpm --filter @newsekolah/web e2e:sim
+
+      - name: Upload the simulation report
+        if: always() && steps.check.outputs.present == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-simulation-report
+          path: apps/web/playwright-report/
+          retention-days: 14
+          if-no-files-found: ignore
