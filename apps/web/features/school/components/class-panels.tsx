@@ -78,10 +78,11 @@ export function EnrollmentPanel({
       return name.toLocaleLowerCase().includes(query);
     });
   }, [rosterSearch, rows, studentMap]);
-  const fail = (error: unknown) =>
+  const fail = (error: unknown) => {
     toast.error(
       error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
     );
+  };
   return (
     <div className="flex flex-col gap-3 md:h-full md:min-h-0">
       <div className="flex items-center justify-between">

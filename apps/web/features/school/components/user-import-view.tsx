@@ -57,10 +57,11 @@ export function UserImportView(): ReactElement {
   const preview = usePreviewImportMutation();
   const commit = useCommitImportMutation();
 
-  const fail = (error: unknown) =>
+  const fail = (error: unknown) => {
     toast.error(
       error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
     );
+  };
 
   const errorCount = (results ?? []).filter((r) => r.errors.length > 0).length;
   const createCount = (results ?? []).filter((r) => r.action === "create").length;

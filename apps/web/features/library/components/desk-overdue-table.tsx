@@ -92,26 +92,32 @@ export function DeskOverdueTable(): ReactElement {
               renewing={renew.isPending && renew.variables === loan.id}
               onRenew={() => {
                 renew.mutate(loan.id, {
-                  onSuccess: () => toast.success(t("renewed")),
-                  onError: (error) =>
+                  onSuccess: () => {
+                    toast.success(t("renewed"));
+                  },
+                  onError: (error) => {
                     toast.error(
                       error instanceof ApiError
                         ? apiErrorMessage(error.code)
                         : apiErrorMessage("UNKNOWN"),
-                    ),
+                    );
+                  },
                 });
               }}
               onReturn={() => {
                 returnLoan.mutate(
                   { loanId: loan.id },
                   {
-                    onSuccess: () => toast.success(t("returned")),
-                    onError: (error) =>
+                    onSuccess: () => {
+                      toast.success(t("returned"));
+                    },
+                    onError: (error) => {
                       toast.error(
                         error instanceof ApiError
                           ? apiErrorMessage(error.code)
                           : apiErrorMessage("UNKNOWN"),
-                      ),
+                      );
+                    },
                   },
                 );
               }}

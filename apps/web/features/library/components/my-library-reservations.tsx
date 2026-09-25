@@ -68,13 +68,16 @@ export function MyLibraryReservations({
                   loading={cancel.isPending && cancel.variables === reservation.id}
                   onClick={() => {
                     cancel.mutate(reservation.id, {
-                      onSuccess: () => toast.success(t("cancelled")),
-                      onError: (error) =>
+                      onSuccess: () => {
+                        toast.success(t("cancelled"));
+                      },
+                      onError: (error) => {
                         toast.error(
                           error instanceof ApiError
                             ? apiErrorMessage(error.code)
                             : apiErrorMessage("UNKNOWN"),
-                        ),
+                        );
+                      },
                     });
                   }}
                 >

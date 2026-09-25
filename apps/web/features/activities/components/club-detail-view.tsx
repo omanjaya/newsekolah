@@ -200,13 +200,16 @@ function MembersPanel({ clubId, canManage }: { clubId: string; canManage: boolea
                       leave.mutate(
                         { membershipId: m.id, leftOn: new Date().toISOString().slice(0, 10) },
                         {
-                          onSuccess: () => toast.success(t("left")),
-                          onError: (error) =>
+                          onSuccess: () => {
+                            toast.success(t("left"));
+                          },
+                          onError: (error) => {
                             toast.error(
                               error instanceof ApiError
                                 ? apiErrorMessage(error.code)
                                 : apiErrorMessage("UNKNOWN"),
-                            ),
+                            );
+                          },
                         },
                       );
                     }}
@@ -244,13 +247,16 @@ function MeetingsPanel({ clubId }: { clubId: string }): ReactElement {
           createMeeting.mutate(
             { meeting_date: meetingDate },
             {
-              onSuccess: () => toast.success(t("scheduled")),
-              onError: (error) =>
+              onSuccess: () => {
+                toast.success(t("scheduled"));
+              },
+              onError: (error) => {
                 toast.error(
                   error instanceof ApiError
                     ? apiErrorMessage(error.code)
                     : apiErrorMessage("UNKNOWN"),
-                ),
+                );
+              },
             },
           );
         }}

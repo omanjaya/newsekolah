@@ -63,10 +63,11 @@ export function TeachingPanel({
     () => (assignments.data?.data ?? []).filter((a) => !a.is_active),
     [assignments.data],
   );
-  const fail = (error: unknown) =>
+  const fail = (error: unknown) => {
     toast.error(
       error instanceof ApiError ? apiErrorMessage(error.code) : apiErrorMessage("UNKNOWN"),
     );
+  };
   return (
     <div className="flex flex-col gap-3 md:h-full md:min-h-0">
       {assignments.isLoading ? (
@@ -108,7 +109,9 @@ export function TeachingPanel({
                         setActive.mutate(
                           { id: a.id, isActive: false },
                           {
-                            onSuccess: () => toast.success(t("teachingDeactivated")),
+                            onSuccess: () => {
+                              toast.success(t("teachingDeactivated"));
+                            },
                             onError: fail,
                           },
                         );
@@ -170,7 +173,9 @@ export function TeachingPanel({
                             setActive.mutate(
                               { id: a.id, isActive: true },
                               {
-                                onSuccess: () => toast.success(t("teachingReactivated")),
+                                onSuccess: () => {
+                                  toast.success(t("teachingReactivated"));
+                                },
                                 onError: fail,
                               },
                             );
