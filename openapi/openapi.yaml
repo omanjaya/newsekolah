@@ -5718,8 +5718,9 @@ paths:
                         type: string
                         format: uuid
                       score:
-                        type: number
-                        nullable: true
+                        type:
+                          - number
+                          - "null"
       responses:
         "200":
           description: Sheet after saving
@@ -5766,8 +5767,9 @@ paths:
                   type: string
                   format: uuid
                 manual_score:
-                  type: number
-                  nullable: true
+                  type:
+                    - number
+                    - "null"
       responses:
         "200":
           description: Score
@@ -26626,9 +26628,10 @@ components:
         object_key:
           type: string
         ran_at:
-          type: string
+          type:
+            - string
+            - "null"
           format: date-time
-          nullable: true
         created_at:
           type: string
           format: date-time
@@ -27045,9 +27048,10 @@ components:
         - source
       properties:
         record_id:
-          type: string
+          type:
+            - string
+            - "null"
           format: uuid
-          nullable: true
         employee_user_id:
           type: string
           format: uuid
@@ -27057,13 +27061,15 @@ components:
           type: string
           format: date
         arrival_at:
-          type: string
+          type:
+            - string
+            - "null"
           format: date-time
-          nullable: true
         departure_at:
-          type: string
+          type:
+            - string
+            - "null"
           format: date-time
-          nullable: true
         status_code:
           $ref: "#/components/schemas/StaffAttendanceStatusCode"
         late_minutes:
@@ -27089,13 +27095,15 @@ components:
           type: string
           format: date
         arrival_at:
-          type: string
+          type:
+            - string
+            - "null"
           format: date-time
-          nullable: true
         departure_at:
-          type: string
+          type:
+            - string
+            - "null"
           format: date-time
-          nullable: true
         notes:
           type: string
     StaffAttendanceImportRequest:
@@ -27113,20 +27121,23 @@ components:
         - reason
       properties:
         arrival_at:
-          type: string
+          type:
+            - string
+            - "null"
           format: date-time
-          nullable: true
         clear_arrival:
           type: boolean
         departure_at:
-          type: string
+          type:
+            - string
+            - "null"
           format: date-time
-          nullable: true
         clear_departure:
           type: boolean
         notes:
-          type: string
-          nullable: true
+          type:
+            - string
+            - "null"
         reason:
           type: string
           minLength: 1

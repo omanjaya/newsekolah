@@ -253,7 +253,12 @@ jobs:
 
       - name: Lint contract
         if: steps.changes.outputs.openapi == 'true'
-        run: npx --yes @redocly/cli@latest lint openapi/openapi.yaml
+        # Pinned exact version, not @latest: an unpinned redocly upgrade can
+        # add or change rules (e.g. the `struct` rule rejecting OpenAPI 3.0's
+        # `nullable: true` in a 3.1 document, which broke this step even
+        # though nothing in openapi/ had changed) and turn this step red
+        # without any change in this repository to explain it.
+        run: npx --yes @redocly/cli@2.54.3 lint openapi/openapi.yaml
 
       - name: Fetch base branch for diffing
         if: steps.changes.outputs.openapi == 'true' && github.event_name == 'pull_request'
