@@ -36,6 +36,25 @@ alter table workflow_instances alter column local_date set not null;
 -- day. Same status filter 0081 left it at ('in_progress', 'approved',
 -- 'completed') -- an already-exited permit still counts as "today's
 -- permit" for this guard.
+-- Two exit permits on the same local day could exist before this
+-- migration if they straddled midnight UTC. Stop with a readable message
+-- instead of a bare unique-index failure, so an operator can resolve them.
+do $$
+declare
+  dupes int;
+begin
+  select count(*) into dupes from (
+    select 1 from workflow_instances
+    where kind = 'exit_permit' and status in ('in_progress', 'approved', 'completed')
+    group by tenant_id, subject_user_id, local_date
+    having count(*) > 1
+  ) d;
+  if dupes > 0 then
+    raise exception 'migration 0120: % student-days have more than one active exit permit on the same local day; cancel the extra permits, then rerun', dupes;
+  end if;
+end
+$$;
+
 drop index if exists ux_workflow_instances_one_exit_permit_per_day;
 
 create unique index ux_workflow_instances_one_exit_permit_per_day
