@@ -1,6 +1,15 @@
 # Optional backup sidecar: runs infra/scripts/backup.sh on a cron schedule.
 # Build context is the repo root (see docker-compose.prod.yml) so the script
 # stays a single source of truth shared with manual/CLI use.
+#
+# The mc binary is copied out of docker.io/pgsty/mc rather than downloaded
+# from dl.min.io/client/mc/release/... : MinIO Inc archived the open-source
+# MinIO Server/Client on 2026-09-24, and that download URL now returns 410
+# Gone. pgsty/mc is the community-maintained continuation of the mc client
+# (same CLI); see the minio service in docker-compose.prod.yml for the
+# matching server image.
+FROM docker.io/pgsty/mc:latest AS mc
+
 FROM alpine:3.20
 
 RUN apk add --no-cache \
@@ -10,10 +19,9 @@ RUN apk add --no-cache \
         curl \
         tzdata \
         age \
-        gzip \
-    && curl -fsSL -o /usr/local/bin/mc \
-        https://dl.min.io/client/mc/release/linux-amd64/mc \
-    && chmod +x /usr/local/bin/mc
+        gzip
+
+COPY --from=mc /usr/bin/mc /usr/local/bin/mc
 
 COPY infra/scripts/backup.sh /usr/local/bin/backup.sh
 RUN chmod +x /usr/local/bin/backup.sh

@@ -256,8 +256,10 @@ or export `COMPOSE_EXTRA_FILES=infra/docker/compose.vps.yml` before running
 
 - Publishes `api` on `127.0.0.1:8081` and `web` on `127.0.0.1:3011` (matching ports already in use
   for this project's production deployment — see the team's VPS runbook for the current host).
-- Uses `quay.io/minio/minio` and `quay.io/minio/mc` instead of the Docker Hub images, to avoid
-  anonymous pull rate limits on a shared host.
+- Uses `docker.io/pgsty/silo` and `docker.io/pgsty/mc`, the community-maintained continuation of
+  open-source MinIO, since neither Docker Hub's `minio/minio` nor the now-archived, license-gated
+  `quay.io/minio/*` images serve a usable free image any more (the base file already points at
+  these; this override just keeps port bindings alongside them).
 - Moves the bundled `caddy` service behind a `bundled-caddy` profile that nothing activates, so
   `docker compose up -d` never starts it or binds 80/443.
 

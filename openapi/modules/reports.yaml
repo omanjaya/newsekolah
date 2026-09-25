@@ -317,5 +317,5 @@ components:
         status: { $ref: "#/components/schemas/ReportScheduleRunStatus" }
         error_message: { type: string }
         object_key: { type: string }
-        ran_at: { type: string, format: date-time, nullable: true }
+        ran_at: { type: [string, "null"], format: date-time }
         created_at: { type: string, format: date-time }

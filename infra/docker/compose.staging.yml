@@ -28,13 +28,19 @@ services:
     ports:
       - "127.0.0.1:3012:3000"
 
+  # See infra/docker/compose.vps.yml: the base file already points at
+  # docker.io/pgsty/silo and docker.io/pgsty/mc, the community-maintained
+  # continuation of open-source MinIO (neither Docker Hub's minio/minio nor
+  # the now-archived, license-gated quay.io/minio/* images serve a usable
+  # free image any more). The image lines here just keep this override in
+  # sync with the base file explicitly.
   minio:
-    image: quay.io/minio/minio:latest
+    image: docker.io/pgsty/silo:latest
     ports:
       - "127.0.0.1:9012:9000"
 
   minio-init:
-    image: quay.io/minio/mc:latest
+    image: docker.io/pgsty/mc:latest
 
   caddy:
     profiles: ["bundled-caddy"]

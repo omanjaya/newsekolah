@@ -381,12 +381,12 @@ components:
           source,
         ]
       properties:
-        record_id: { type: string, format: uuid, nullable: true }
+        record_id: { type: [string, "null"], format: uuid }
         employee_user_id: { type: string, format: uuid }
         employee_name: { type: string }
         date: { type: string, format: date }
-        arrival_at: { type: string, format: date-time, nullable: true }
-        departure_at: { type: string, format: date-time, nullable: true }
+        arrival_at: { type: [string, "null"], format: date-time }
+        departure_at: { type: [string, "null"], format: date-time }
         status_code: { $ref: "#/components/schemas/StaffAttendanceStatusCode" }
         late_minutes: { type: integer }
         early_leave_minutes: { type: integer }
@@ -402,8 +402,8 @@ components:
       properties:
         employee_user_id: { type: string, format: uuid }
         date: { type: string, format: date }
-        arrival_at: { type: string, format: date-time, nullable: true }
-        departure_at: { type: string, format: date-time, nullable: true }
+        arrival_at: { type: [string, "null"], format: date-time }
+        departure_at: { type: [string, "null"], format: date-time }
         notes: { type: string }
     StaffAttendanceImportRequest:
       type: object
@@ -416,11 +416,11 @@ components:
       type: object
       required: [reason]
       properties:
-        arrival_at: { type: string, format: date-time, nullable: true }
+        arrival_at: { type: [string, "null"], format: date-time }
         clear_arrival: { type: boolean }
-        departure_at: { type: string, format: date-time, nullable: true }
+        departure_at: { type: [string, "null"], format: date-time }
         clear_departure: { type: boolean }
-        notes: { type: string, nullable: true }
+        notes: { type: [string, "null"] }
         reason:
           type: string
           minLength: 1

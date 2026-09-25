@@ -147,9 +147,17 @@ jobs:
         if: steps.changes.outputs.packages == 'true'
         run: pnpm test
 
+      # Unscoped (`pnpm build` = `turbo run build` with no filter) also
+      # builds @newsekolah/mobile, whose `build` script is `expo export`;
+      # that needs react-native-web, which this job never installs (mobile
+      # is neither a web app dependency nor anything CI or deploys build
+      # from its own `build` script -- see the mobile job's typecheck/
+      # lint/test steps and apps/web/Dockerfile's scoped
+      # `pnpm --filter "@newsekolah/web..." build`). Scope this job's build
+      # the same way: web and every package it depends on, nothing else.
       - name: build
         if: steps.changes.outputs.packages == 'true'
-        run: pnpm build
+        run: pnpm exec turbo run build --filter=...@newsekolah/web
 
   mobile:
     name: mobile
@@ -187,6 +195,19 @@ jobs:
       - name: pnpm install
         if: steps.changes.outputs.mobile == 'true'
         run: pnpm install --frozen-lockfile
+
+      # apps/mobile imports @newsekolah/api-client, @newsekolah/schemas and
+      # @newsekolah/i18n by their built dist/ output (see each package's
+      # "exports" field), not their TypeScript sources. `pnpm --filter
+      # @newsekolah/mobile <script>` below runs each script directly,
+      # bypassing turbo's dependency graph, so those packages' dist/ output
+      # is never produced first -- typecheck then fails with "Cannot find
+      # module '@newsekolah/api-client'". Build just mobile's workspace
+      # dependencies (not mobile itself: its own build script is `expo
+      # export`, exercised by the web-packages job's scoped build instead).
+      - name: Build workspace dependencies
+        if: steps.changes.outputs.mobile == 'true'
+        run: pnpm exec turbo run build --filter=@newsekolah/mobile^...
 
       - name: typecheck
         if: steps.changes.outputs.mobile == 'true'
@@ -232,7 +253,12 @@ jobs:
 
       - name: Lint contract
         if: steps.changes.outputs.openapi == 'true'
-        run: npx --yes @redocly/cli@latest lint openapi/openapi.yaml
+        # Pinned exact version, not @latest: an unpinned redocly upgrade can
+        # add or change rules (e.g. the `struct` rule rejecting OpenAPI 3.0's
+        # `nullable: true` in a 3.1 document, which broke this step even
+        # though nothing in openapi/ had changed) and turn this step red
+        # without any change in this repository to explain it.
+        run: npx --yes @redocly/cli@2.54.3 lint openapi/openapi.yaml
 
       - name: Fetch base branch for diffing
         if: steps.changes.outputs.openapi == 'true' && github.event_name == 'pull_request'

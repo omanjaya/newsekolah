@@ -170,7 +170,7 @@ paths:
                     required: [student_user_id]
                     properties:
                       student_user_id: { type: string, format: uuid }
-                      score: { type: number, nullable: true }
+                      score: { type: [number, "null"] }
       responses:
         "200":
           description: Sheet after saving
@@ -200,7 +200,7 @@ paths:
                 subject_id: { type: string, format: uuid }
                 student_user_id: { type: string, format: uuid }
                 term_id: { type: string, format: uuid }
-                manual_score: { type: number, nullable: true }
+                manual_score: { type: [number, "null"] }
       responses:
         "200":
           description: Score
