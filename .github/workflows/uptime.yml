@@ -1,0 +1,124 @@
+name: Uptime
+
+# Curls both public health endpoints from outside the VPS every 5 minutes.
+# This is the one check infra/scripts/monitor.sh (which runs on the VPS
+# itself) cannot do: catch the whole VPS being unreachable.
+#
+# Posts to Telegram only when the up/down state changes, not on every run.
+# The state (a small "prod=up staging=up" line) is persisted across runs
+# with actions/cache. GitHub Actions caches are immutable once written --
+# there is no "overwrite this key" operation -- so this uses the standard
+# workaround for state that must survive across scheduled runs: save under
+# a key that is unique to this run (so the save always succeeds), and
+# restore using a key prefix (restore-keys) that matches the most recent
+# previous run's cache entry.
+#
+# Requires the repository secrets TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID.
+# The health checks and state tracking still run without them (visible in
+# the job log); only the Telegram notification step is skipped, with a
+# message explaining why, so a fork or a repo that hasn't configured the
+# secrets yet does not get a failing required check.
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: uptime
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  PROD_HEALTH_URL: https://sion.nouma.id/health
+  STAGING_HEALTH_URL: https://staging.sion.nouma.id/health
+
+jobs:
+  check:
+    name: check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Restore previous state
+        uses: actions/cache/restore@v4
+        with:
+          path: uptime-state
+          key: uptime-state-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            uptime-state-
+
+      - name: Check health endpoints
+        id: check
+        run: |
+          mkdir -p uptime-state
+          state_file="uptime-state/status.txt"
+
+          prev="unknown"
+          if [ -f "$state_file" ]; then
+            prev="$(cat "$state_file")"
+          fi
+
+          prod_code="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 10 "$PROD_HEALTH_URL" || echo 000)"
+          staging_code="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 10 "$STAGING_HEALTH_URL" || echo 000)"
+
+          prod_status="down"
+          if [ "$prod_code" = "200" ]; then
+            prod_status="up"
+          fi
+          staging_status="down"
+          if [ "$staging_code" = "200" ]; then
+            staging_status="up"
+          fi
+
+          current="prod=${prod_status} staging=${staging_status}"
+          detail="prod=${prod_status} (HTTP ${prod_code}), staging=${staging_status} (HTTP ${staging_code})"
+
+          echo "previous state: $prev"
+          echo "current state:  $current"
+          echo "detail:         $detail"
+          echo "$current" >"$state_file"
+
+          changed=false
+          if [ "$prev" != "unknown" ] && [ "$prev" != "$current" ]; then
+            changed=true
+          fi
+
+          {
+            echo "current=$current"
+            echo "previous=$prev"
+            echo "detail=$detail"
+            echo "changed=$changed"
+          } >>"$GITHUB_OUTPUT"
+
+      # Always save, even if the check step above failed (e.g. both curls
+      # timed out): losing today's state would just make the next run
+      # compare against stale data, but never saving at all would make
+      # restore-keys fall further and further behind.
+      - name: Save state
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: uptime-state
+          key: uptime-state-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Notify Telegram on state change
+        if: steps.check.outputs.changed == 'true'
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          PREV_STATE: ${{ steps.check.outputs.previous }}
+          CURR_DETAIL: ${{ steps.check.outputs.detail }}
+        run: |
+          if [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then
+            echo "TELEGRAM_BOT_TOKEN/TELEGRAM_CHAT_ID not set in repository secrets; skipping notification."
+            echo "State change: $PREV_STATE -> $CURR_DETAIL"
+            exit 0
+          fi
+
+          text="$(printf 'PERUBAHAN STATUS newsekolah (dicek dari luar VPS)\nSebelumnya: %s\nSekarang: %s\nWaktu: %s WITA' \
+            "$PREV_STATE" "$CURR_DETAIL" "$(TZ=Asia/Makassar date +'%Y-%m-%d %H:%M')")"
+
+          curl -sS --max-time 10 "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "text=${text}" >/dev/null

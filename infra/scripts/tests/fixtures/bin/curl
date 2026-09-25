@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+# Fake curl for the bats harness. The only call shape the fixtures ever
+# make it handle is the monitor-config GET (identified by an Authorization
+# header and a URL containing "monitor-config"); its response is driven by
+# FAKE_CONFIG_MODE (live|404|down) and FAKE_CONFIG_BODY. Health checks and
+# Telegram delivery are never exercised for real in the test suite
+# (checks are disabled per-test via monitor.env, and --dry-run short-
+# circuits send_telegram before it would shell out to curl), so any other
+# call shape is an unexpected invocation and fails loudly rather than
+# hitting the real network or hanging.
+set -euo pipefail
+
+args=("$@")
+out_file=""
+has_auth=0
+url=""
+
+i=0
+while [[ $i -lt ${#args[@]} ]]; do
+    arg="${args[$i]}"
+    case "$arg" in
+        -o)
+            i=$((i + 1))
+            out_file="${args[$i]}"
+            ;;
+        -H)
+            i=$((i + 1))
+            [[ "${args[$i]}" == Authorization:* ]] && has_auth=1
+            ;;
+        http*://*)
+            url="$arg"
+            ;;
+    esac
+    i=$((i + 1))
+done
+
+if [[ "$has_auth" -eq 1 && "$url" == *monitor-config* ]]; then
+    mode="${FAKE_CONFIG_MODE:-live}"
+    case "$mode" in
+        live)
+            body="${FAKE_CONFIG_BODY:-}"
+            [[ -n "$body" ]] || body='{}'
+            printf '%s' "$body" >"$out_file"
+            printf '200'
+            exit 0
+            ;;
+        404)
+            : >"$out_file"
+            printf '404'
+            exit 0
+            ;;
+        down)
+            exit 7
+            ;;
+        *)
+            echo "fake curl: unknown FAKE_CONFIG_MODE=$mode" >&2
+            exit 1
+            ;;
+    esac
+fi
+
+echo "fake curl: unexpected invocation: ${args[*]}" >&2
+exit 1

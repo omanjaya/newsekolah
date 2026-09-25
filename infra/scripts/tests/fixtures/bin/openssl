@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Not exercised by the harness (the fixture monitor.env disables the
+# certificate check in every test); fails loudly instead of reaching the
+# real network if a test ever invokes it unexpectedly.
+echo "fake openssl: unexpected invocation: $*" >&2
+exit 1

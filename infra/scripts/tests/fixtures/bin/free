@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Fake `free -m`, used by monitor.sh's memory check. Available MB comes
+# from FAKE_MEM_AVAILABLE_MB (default 1024, i.e. healthy).
+avail="${FAKE_MEM_AVAILABLE_MB:-1024}"
+cat <<EOF
+              total        used        free      shared  buff/cache   available
+Mem:           4096        1000         500          50          800   ${avail}
+Swap:             0           0           0
+EOF
