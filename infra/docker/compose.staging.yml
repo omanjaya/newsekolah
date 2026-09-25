@@ -1,0 +1,40 @@
+# Staging stack on the shared VPS, next to production. It runs from its own
+# checkout (/root/sion-staging) with its own infra/docker/.env, because the
+# base file loads `env_file: .env` from the compose directory: running it
+# from production's checkout would hand production secrets to staging.
+# Combine with the base file only, never with compose.vps.yml (compose
+# appends `ports` lists, so stacking both would publish production's ports):
+#
+#   cd /root/sion-staging/infra/docker
+#   docker compose -f docker-compose.prod.yml -f compose.staging.yml up -d
+#
+# Isolation from production:
+# - its own compose project name, so containers, networks and named volumes
+#   (Postgres, Redis, MinIO) are separate;
+# - its own image tags, set in its .env (API_IMAGE, WEB_IMAGE), so a staging
+#   build never replaces the image production runs;
+# - its own loopback ports, proxied by the system Caddy vhost
+#   staging.sion.nouma.id (infra/README.md "Staging").
+# Staging holds demo data only; its .env must never reuse production
+# secrets, SMTP or WhatsApp credentials.
+name: newsekolah-staging
+
+services:
+  api:
+    ports:
+      - "127.0.0.1:8082:8080"
+
+  web:
+    ports:
+      - "127.0.0.1:3012:3000"
+
+  minio:
+    image: quay.io/minio/minio:latest
+    ports:
+      - "127.0.0.1:9012:9000"
+
+  minio-init:
+    image: quay.io/minio/mc:latest
+
+  caddy:
+    profiles: ["bundled-caddy"]
