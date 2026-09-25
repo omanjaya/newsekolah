@@ -102,6 +102,16 @@ Keputusan ini sengaja. Jangan diubah balik tanpa membaca alasannya.
 | Pembuatan tenant berjalan dalam satu transaksi                                                                                                                                                                                                                                                                             | Tanpa itu, tenant bisa tercipta tanpa tugas wali kelas dan tidak bisa menunjuk wali kelas                                                                                                                                                                                                                                                                                                                                                                                                   |
 | Tidak ada akun orang tua; data wali tetap di profil siswa                                                                                                                                                                                                                                                                  | Keputusan pemilik produk, 25 Sep 2026. Akun login orang tua, tautan akun orang tua-siswa, dan semua fitur untuk orang tua yang masuk (portal, persetujuan izin sebagai wali, antrean guardian) dihapus dari produk. Data kontak wali di profil siswa (nama, telepon, alamat, hubungan) tetap dipertahankan karena surat peringatan, surat izin, laporan, dan pesan WhatsApp ke wali masih memakainya -- lihat [remove-parent-role-2026-09-25.md](analysis/remove-parent-role-2026-09-25.md) |
 
+## Pembaruan 26 September: tampilan dan umpan balik
+
+- **Arah visual Hijau Segar** diterapkan sebagai fondasi di web dan mobile: token warna dan radius, font Manrope dan Plus Jakarta Sans, komponen bersama, navigasi. Rujukan: `docs/design-reference-hijau-segar.html` dan bagian Hijau Segar di `docs/07-ui-ux.md`. Beranda siswa mobile sudah mengikuti mockup; layar lain per peran belum.
+- **Umpan balik aksi**: setiap mutation yang gagal kini menampilkan toast error terjemahan secara default (web dan mobile), sukses bisa diaktifkan per mutation. Audit di `docs/analysis/feedback-audit-2026-09-25.md`.
+- **Kompresi foto di klien** sebelum upload (web; helper mobile siap, belum ada layar upload di mobile).
+- **Backup berkas inkremental** di `infra/scripts/backup-local.sh` (penyimpanan berbasis hash, manifest harian terenkripsi).
+- **Test upload branding** dan test lintas modul untuk pasangan `kind`/`visibility` aset.
+
+Sisa dari pekerjaan ini: redesain layar per peran di web, sekitar 20 layar mobile yang belum memakai font Plus Jakarta Sans, dan kebijakan retensi foto bukti yang menunggu keputusan.
+
 ## Yang tersisa
 
 Diurutkan dari yang paling berdampak bagi pengguna.
