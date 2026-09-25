@@ -42,14 +42,16 @@ type busPublisher struct{ bus *events.Bus }
 // notifications/service/events.go's subscriber requires (a bare struct
 // satisfying service.Event fails its type assertion to events.Envelope, so
 // the subscriber's handler always errored and notifications for a
-// submitted session never fired).
+// submitted session never fired). Subject is left empty now that a
+// submitted session no longer has any parent/guardian account to notify;
+// notifications' handler treats an empty Subject as a no-op.
 func (p busPublisher) Publish(ctx context.Context, evt service.Event) error {
 	submitted, ok := evt.(service.Submitted)
 	if !ok {
 		return p.bus.Publish(ctx, evt)
 	}
 	return p.bus.Publish(ctx, events.Envelope{
-		Name: submitted.EventName(), Tenant: submitted.TenantID, Actor: submitted.SubmittedBy, Subject: submitted.GuardianUserIDs,
+		Name: submitted.EventName(), Tenant: submitted.TenantID, Actor: submitted.SubmittedBy,
 		Payload: map[string]any{
 			"session_id": submitted.SessionID.String(), "class_id": submitted.ClassID.String(),
 			"date": submitted.Date.Format("2006-01-02"), "student_count": submitted.StudentCount,

@@ -137,13 +137,6 @@ from attendance_daily_summary
 where tenant_id = $1 and academic_year_id = $2 and date = $3
 group by status_code;
 
--- name: ListGuardianUserIDsForAttendance :many
--- Every parent/guardian linked to a student, for the attendance.submitted
--- event's Subject (docs/02-system-design.md:110).
-select parent_user_id
-from parent_students
-where tenant_id = $1 and student_user_id = $2;
-
 -- name: GetUserNameForAttendance :one
 select name from users where tenant_id = $1 and id = $2;
 

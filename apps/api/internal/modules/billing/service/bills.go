@@ -2,17 +2,11 @@ package service
 
 import (
 	"context"
-	"errors"
 
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/billing/domain"
 )
-
-// ErrNotLinked mirrors family/service.ErrNotLinked: a parent asking about
-// a child they are not linked to gets the same refusal family's own
-// endpoints give, mapped to the same FORBIDDEN response.
-var ErrNotLinked = errors.New("not a guardian of this student")
 
 func (s *Service) ListBills(ctx context.Context, tenantID uuid.UUID, f BillFilter) ([]domain.Bill, error) {
 	if err := s.guard(ctx, tenantID); err != nil {
@@ -83,21 +77,4 @@ func (s *Service) StudentBillHistory(ctx context.Context, tenantID, studentID uu
 		return nil
 	})
 	return out, err
-}
-
-// ChildBillHistory is the read-only view a parent reaches through the
-// family screens: the same StudentBillHistory a staff member sees, after
-// proving the caller is actually linked to this student.
-func (s *Service) ChildBillHistory(ctx context.Context, tenantID, parentUserID, studentID uuid.UUID) (StudentHistory, error) {
-	if s.links == nil {
-		return StudentHistory{}, ErrNotLinked
-	}
-	ok, err := s.links.IsParentOf(ctx, tenantID, parentUserID, studentID)
-	if err != nil {
-		return StudentHistory{}, err
-	}
-	if !ok {
-		return StudentHistory{}, ErrNotLinked
-	}
-	return s.StudentBillHistory(ctx, tenantID, studentID)
 }

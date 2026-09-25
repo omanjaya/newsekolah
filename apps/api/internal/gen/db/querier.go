@@ -857,7 +857,6 @@ type Querier interface {
 	// academic_scope.go); this is the merged model's equivalent guard.
 	IsActiveTeacherOrStaff(ctx context.Context, arg IsActiveTeacherOrStaffParams) (bool, error)
 	IsActiveTeacherRef(ctx context.Context, arg IsActiveTeacherRefParams) (bool, error)
-	IsParentOfStudent(ctx context.Context, arg IsParentOfStudentParams) (bool, error)
 	IsSchoolDayRef(ctx context.Context, arg IsSchoolDayRefParams) (bool, error)
 	IsSessionActive(ctx context.Context, arg IsSessionActiveParams) (pgtype.Bool, error)
 	// Missing rule: classroom-entry tokens may only be consumed by a student
@@ -867,7 +866,6 @@ type Querier interface {
 	IssueLeaveRequest(ctx context.Context, arg IssueLeaveRequestParams) (LeaveRequest, error)
 	ItemsByCategory(ctx context.Context, tenantID uuid.UUID) ([]ItemsByCategoryRow, error)
 	ItemsByMaterialType(ctx context.Context, tenantID uuid.UUID) ([]ItemsByMaterialTypeRow, error)
-	LinkParentStudent(ctx context.Context, arg LinkParentStudentParams) (ParentStudent, error)
 	ListAPIKeys(ctx context.Context, tenantID uuid.UUID) ([]IntegrationApiKey, error)
 	ListAcademicYears(ctx context.Context, tenantID uuid.UUID) ([]AcademicYear, error)
 	// Every schedule a teacher is standing in for on one date, accepted only --
@@ -965,7 +963,6 @@ type Querier interface {
 	ListBillKeysForPeriod(ctx context.Context, arg ListBillKeysForPeriodParams) ([]ListBillKeysForPeriodRow, error)
 	ListBills(ctx context.Context, arg ListBillsParams) ([]Bill, error)
 	ListBillsForStudent(ctx context.Context, arg ListBillsForStudentParams) ([]Bill, error)
-	ListChildrenForParent(ctx context.Context, arg ListChildrenForParentParams) ([]ListChildrenForParentRow, error)
 	// Every non-deleted class of the academic year in grade_level_id, ordered
 	// by name -- the grade-level ("angkatan") scope for attendance report
 	// exports: one section per class, matching
@@ -1040,9 +1037,6 @@ type Querier interface {
 	// Every grade of one student in a term, joined to its component; the
 	// service hides subjects whose publication is still off.
 	ListGradesForStudent(ctx context.Context, arg ListGradesForStudentParams) ([]ListGradesForStudentRow, error)
-	// Every parent/guardian linked to a student, for the attendance.submitted
-	// event's Subject (docs/02-system-design.md:110).
-	ListGuardianUserIDsForAttendance(ctx context.Context, arg ListGuardianUserIDsForAttendanceParams) ([]uuid.UUID, error)
 	ListIncidents(ctx context.Context, arg ListIncidentsParams) ([]VisitorIncident, error)
 	ListItemEvents(ctx context.Context, arg ListItemEventsParams) ([]LibraryItemEvent, error)
 	ListItemEventsForCopy(ctx context.Context, arg ListItemEventsForCopyParams) ([]LibraryItemEvent, error)
@@ -1128,7 +1122,6 @@ type Querier interface {
 	// as the schedule's own teacher or an accepted substitute, with the
 	// class/subject/period names a report needs.
 	ListOwnSubmittedSessionDetailsForAttendance(ctx context.Context, arg ListOwnSubmittedSessionDetailsForAttendanceParams) ([]ListOwnSubmittedSessionDetailsForAttendanceRow, error)
-	ListParentsForStudent(ctx context.Context, arg ListParentsForStudentParams) ([]ListParentsForStudentRow, error)
 	ListParticipants(ctx context.Context, arg ListParticipantsParams) ([]ActivityParticipant, error)
 	ListPartners(ctx context.Context, tenantID uuid.UUID) ([]LibraryPartner, error)
 	ListPaymentsForBill(ctx context.Context, arg ListPaymentsForBillParams) ([]Payment, error)
@@ -1446,7 +1439,6 @@ type Querier interface {
 	TouchAPIKeyLastUsed(ctx context.Context, arg TouchAPIKeyLastUsedParams) error
 	TouchPushDeviceUsed(ctx context.Context, arg TouchPushDeviceUsedParams) error
 	TouchSessionLastSeen(ctx context.Context, arg TouchSessionLastSeenParams) error
-	UnlinkParentStudent(ctx context.Context, arg UnlinkParentStudentParams) error
 	UpdateAchievement(ctx context.Context, arg UpdateAchievementParams) (StudentAchievement, error)
 	UpdateAcquisitionSource(ctx context.Context, arg UpdateAcquisitionSourceParams) (LibraryAcquisitionSource, error)
 	UpdateActivity(ctx context.Context, arg UpdateActivityParams) (SchoolActivity, error)

@@ -195,12 +195,6 @@ func (r *Repository) GetPeriodEndTime(ctx context.Context, tenantID, periodID uu
 	return time.Duration(period.EndsAt.Microseconds) * time.Microsecond, nil
 }
 
-func (r *Repository) ListGuardianUserIDs(ctx context.Context, tenantID, studentUserID uuid.UUID) ([]uuid.UUID, error) {
-	return r.queries(ctx).ListGuardianUserIDsForAttendance(ctx, db.ListGuardianUserIDsForAttendanceParams{
-		TenantID: tenantID, StudentUserID: studentUserID,
-	})
-}
-
 func (r *Repository) GetUserName(ctx context.Context, tenantID, userID uuid.UUID) (string, error) {
 	return r.queries(ctx).GetUserNameForAttendance(ctx, db.GetUserNameForAttendanceParams{TenantID: tenantID, ID: userID})
 }

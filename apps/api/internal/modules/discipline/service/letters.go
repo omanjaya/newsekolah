@@ -11,13 +11,12 @@ import (
 )
 
 // WarningLetterIssued is published after a letter commits so notifications
-// can reach the student, the homeroom teacher and the parent.
+// can reach the student and the homeroom teacher.
 type WarningLetterIssued struct {
 	TenantID      uuid.UUID
 	LetterID      uuid.UUID
 	StudentUserID uuid.UUID
 	ClassID       uuid.NullUUID
-	GuardianIDs   []uuid.UUID
 	Level         int
 	LevelLabel    string
 	LetterNumber  string
@@ -96,7 +95,7 @@ func (s *Service) IssueWarningLetter(ctx context.Context, tenantID, studentID, i
 	}
 	if s.events != nil {
 		_ = s.events.Publish(ctx, WarningLetterIssued{
-			TenantID: tenantID, LetterID: out.ID, StudentUserID: studentID, ClassID: classID, GuardianIDs: s.guardianIDs(ctx, tenantID, studentID),
+			TenantID: tenantID, LetterID: out.ID, StudentUserID: studentID, ClassID: classID,
 			Level: out.Level, LevelLabel: out.LevelLabel, LetterNumber: out.LetterNumber, IssuedBy: issuerUserID,
 		})
 	}
@@ -115,20 +114,6 @@ func (s *Service) lookupName(ctx context.Context, tenantID, userID uuid.UUID) st
 		return ""
 	}
 	return names[userID]
-}
-
-// guardianIDs resolves a student's guardians for the warning-letter
-// notification, tolerating a nil dependency or lookup error the same way
-// lookupName does.
-func (s *Service) guardianIDs(ctx context.Context, tenantID, studentID uuid.UUID) []uuid.UUID {
-	if s.guardians == nil {
-		return nil
-	}
-	ids, err := s.guardians.GuardianIDsOf(ctx, tenantID, studentID)
-	if err != nil {
-		return nil
-	}
-	return ids
 }
 
 // issueLetterDocument renders the PDF through the shared pipeline, or

@@ -678,7 +678,6 @@ components:
             - student
             - teacher
             - staff
-            - parent
         roles:
           type: array
           items:

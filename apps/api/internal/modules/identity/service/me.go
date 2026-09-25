@@ -32,6 +32,18 @@ type SessionView struct {
 	LastSeenAt time.Time
 }
 
+// ClassRef names a class without pulling in the academic module's types.
+type ClassRef struct {
+	ID   uuid.UUID
+	Name string
+}
+
+// StudentClassRepository resolves a student's own active class, so Me can
+// show it on the student's own /v1/me response.
+type StudentClassRepository interface {
+	ActiveClassForStudent(ctx context.Context, tenantID, studentID, yearID uuid.UUID) (ClassRef, bool, error)
+}
+
 // MeResult is identity's view of "who is this user"; it deliberately
 // excludes tenant branding, which belongs to the school module. The
 // transport layer for GET /v1/me composes the two.

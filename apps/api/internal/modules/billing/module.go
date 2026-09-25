@@ -19,7 +19,6 @@ type Dependencies struct {
 	Years service.AcademicYearReader
 	Docs  service.ReceiptIssuer // nil: payments record but no receipt PDF is issued
 	Flags service.FlagReader    // nil: billing is always enabled (feature_flags opt-out default)
-	Links service.ParentLinkChecker
 	Clock clock.Clock
 }
 
@@ -29,6 +28,6 @@ type Module struct {
 }
 
 func Register(deps Dependencies) *Module {
-	svc := service.New(deps.Pool, repository.New(deps.Pool), deps.Years, deps.Docs, deps.Flags, deps.Links, deps.Clock)
+	svc := service.New(deps.Pool, repository.New(deps.Pool), deps.Years, deps.Docs, deps.Flags, deps.Clock)
 	return &Module{Service: svc, Handler: transporthttp.New(svc)}
 }

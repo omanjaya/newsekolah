@@ -576,39 +576,6 @@ func (q *Queries) ListCurrentPeriodScheduleCardsForAttendance(ctx context.Contex
 	return items, nil
 }
 
-const listGuardianUserIDsForAttendance = `-- name: ListGuardianUserIDsForAttendance :many
-select parent_user_id
-from parent_students
-where tenant_id = $1 and student_user_id = $2
-`
-
-type ListGuardianUserIDsForAttendanceParams struct {
-	TenantID      uuid.UUID `json:"tenant_id"`
-	StudentUserID uuid.UUID `json:"student_user_id"`
-}
-
-// Every parent/guardian linked to a student, for the attendance.submitted
-// event's Subject (docs/02-system-design.md:110).
-func (q *Queries) ListGuardianUserIDsForAttendance(ctx context.Context, arg ListGuardianUserIDsForAttendanceParams) ([]uuid.UUID, error) {
-	rows, err := q.db.Query(ctx, listGuardianUserIDsForAttendance, arg.TenantID, arg.StudentUserID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []uuid.UUID{}
-	for rows.Next() {
-		var parent_user_id uuid.UUID
-		if err := rows.Scan(&parent_user_id); err != nil {
-			return nil, err
-		}
-		items = append(items, parent_user_id)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const listLibraryHolidaysInRange = `-- name: ListLibraryHolidaysInRange :many
 select date, end_date from academic_calendar_events
 where tenant_id = $1 and kind = 'holiday' and date <= $3 and end_date >= $2

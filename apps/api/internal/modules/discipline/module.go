@@ -18,16 +18,15 @@ import (
 )
 
 type Dependencies struct {
-	Pool      *pgxpool.Pool
-	Years     service.AcademicYearReader
-	Docs      service.DocumentIssuer // nil: letters are numbered locally without a PDF
-	Sealer    *crypto.Sealer
-	Bus       *events.Bus
-	Clock     clock.Clock
-	Names     service.NameLookup     // nil: reporter/issuer names blank on documents
-	Guardians service.GuardianReader // nil: warning letters do not notify parents
-	Storage   service.Storage        // nil: counseling attachments and ad hoc PDF reports disabled
-	Config    service.Config
+	Pool    *pgxpool.Pool
+	Years   service.AcademicYearReader
+	Docs    service.DocumentIssuer // nil: letters are numbered locally without a PDF
+	Sealer  *crypto.Sealer
+	Bus     *events.Bus
+	Clock   clock.Clock
+	Names   service.NameLookup // nil: reporter/issuer names blank on documents
+	Storage service.Storage    // nil: counseling attachments and ad hoc PDF reports disabled
+	Config  service.Config
 }
 
 type Module struct {
@@ -42,7 +41,7 @@ func Register(deps Dependencies) *Module {
 	}
 	svc := service.New(
 		deps.Pool, repository.New(deps.Pool), deps.Years, deps.Docs, deps.Sealer, publisher, deps.Clock,
-		deps.Names, deps.Guardians, deps.Storage, documents.NewHTMLPDFRenderer(), deps.Config,
+		deps.Names, deps.Storage, documents.NewHTMLPDFRenderer(), deps.Config,
 	)
 	return &Module{Service: svc, Handler: transporthttp.New(svc)}
 }

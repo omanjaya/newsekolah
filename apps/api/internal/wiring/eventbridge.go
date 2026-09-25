@@ -125,7 +125,6 @@ func RegisterNotificationBridge(bus *events.Bus, duties DutyLookup, logger *slog
 		homeroom, err := b.holders(ctx, e.TenantID, "homeroom", e.ClassID)
 		summary := fmt.Sprintf("%s nomor %s telah diterbitkan.", e.LevelLabel, e.LetterNumber)
 		recipients := append([]uuid.UUID{e.StudentUserID}, without(homeroom, e.IssuedBy)...)
-		recipients = append(recipients, without(e.GuardianIDs, e.IssuedBy)...)
 		return []events.Envelope{{
 			Name: events.WarningLetterIssued, Tenant: e.TenantID, Actor: e.IssuedBy, Subject: recipients,
 			Payload: map[string]any{"letter_id": e.LetterID.String(), "level": e.Level, "summary": summary, "href": "/discipline/letters/" + e.LetterID.String()},

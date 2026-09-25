@@ -109,7 +109,7 @@ func writeImportReferenceSheet(f *excelize.File) error {
 	}
 
 	if err := writeBlock("profile_kind", [][2]string{
-		{"student", "Siswa"}, {"teacher", "Guru"}, {"staff", "Pegawai"}, {"parent", "Orang tua"},
+		{"student", "Siswa"}, {"teacher", "Guru"}, {"staff", "Pegawai"},
 	}); err != nil {
 		return err
 	}
@@ -137,7 +137,6 @@ func roleAliasReferencePairs() [][2]string {
 		{"siswa", "student"}, {"murid", "student"},
 		{"guru", "teacher"}, {"pengajar", "teacher"},
 		{"pegawai", "staff"}, {"karyawan", "staff"}, {"staf", "staff"},
-		{"orangtua", "parent"}, {"wali", "parent"},
 		{"pustakawan", "librarian"},
 		{"admin", "admin"}, {"super_admin", "super_admin"},
 	}

@@ -625,7 +625,6 @@ type LeaveRequest struct {
 	LetterNumber         pgtype.Text        `json:"letter_number"`
 	IssuedAt             pgtype.Timestamptz `json:"issued_at"`
 	IssuedBy             pgtype.UUID        `json:"issued_by"`
-	ParentApprovedAt     pgtype.Timestamptz `json:"parent_approved_at"`
 	StudentNameSnapshot  string             `json:"student_name_snapshot"`
 	ClassNameSnapshot    string             `json:"class_name_snapshot"`
 	GuardianNameSnapshot pgtype.Text        `json:"guardian_name_snapshot"`
@@ -1114,15 +1113,6 @@ type NotificationsDefault struct {
 	AnnouncementID pgtype.UUID        `json:"announcement_id"`
 	ReadAt         pgtype.Timestamptz `json:"read_at"`
 	CreatedAt      pgtype.Timestamptz `json:"created_at"`
-}
-
-type ParentStudent struct {
-	ParentUserID    uuid.UUID          `json:"parent_user_id"`
-	StudentUserID   uuid.UUID          `json:"student_user_id"`
-	TenantID        uuid.UUID          `json:"tenant_id"`
-	Relation        string             `json:"relation"`
-	CanApproveLeave bool               `json:"can_approve_leave"`
-	CreatedAt       pgtype.Timestamptz `json:"created_at"`
 }
 
 type PasswordReset struct {

@@ -1,20 +1,4 @@
 paths:
-  /v1/children/{studentId}/billing:
-    get:
-      tags: [family]
-      operationId: getChildBilling
-      x-permission: view_child_billing
-      summary: One linked child's bills and payment history, read-only
-      parameters:
-        - { name: studentId, in: path, required: true, schema: { type: string, format: uuid } }
-      responses:
-        "200":
-          description: History
-          content:
-            application/json:
-              schema: { $ref: "#/components/schemas/StudentBillHistory" }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "403": { $ref: "#/components/responses/Forbidden" }
   /v1/billing/fee-types:
     get:
       tags: [billing]

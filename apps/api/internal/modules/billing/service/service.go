@@ -99,14 +99,6 @@ type ReceiptIssuer interface {
 	DocumentURL(ctx context.Context, tenantID, assetID uuid.UUID) (string, error)
 }
 
-// ParentLinkChecker is identity's parent-student link, used only to gate
-// the read-only child billing view a parent reaches through the family
-// screens; structurally identical to family/service.LinkChecker so
-// identity's own service satisfies it directly, no adapter needed.
-type ParentLinkChecker interface {
-	IsParentOf(ctx context.Context, tenantID, parentID, studentID uuid.UUID) (bool, error)
-}
-
 // FlagReader reports whether the platform console has billing turned on
 // for a tenant. A nil FlagReader (tests, or a deployment that has not
 // wired the platform module) leaves billing enabled, matching the
@@ -121,15 +113,14 @@ type Service struct {
 	years AcademicYearReader
 	docs  ReceiptIssuer
 	flags FlagReader
-	links ParentLinkChecker
 	clock clock.Clock
 }
 
-func New(pool *pgxpool.Pool, repo Repository, years AcademicYearReader, docs ReceiptIssuer, flags FlagReader, links ParentLinkChecker, clk clock.Clock) *Service {
+func New(pool *pgxpool.Pool, repo Repository, years AcademicYearReader, docs ReceiptIssuer, flags FlagReader, clk clock.Clock) *Service {
 	if clk == nil {
 		clk = clock.Real{}
 	}
-	return &Service{pool: pool, repo: repo, years: years, docs: docs, flags: flags, links: links, clock: clk}
+	return &Service{pool: pool, repo: repo, years: years, docs: docs, flags: flags, clock: clk}
 }
 
 func (s *Service) withTx(ctx context.Context, tenantID uuid.UUID, fn func(ctx context.Context) error) error {

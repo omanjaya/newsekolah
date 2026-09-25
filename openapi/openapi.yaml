@@ -54,8 +54,6 @@ tags:
     description: Assessment components, grades, report scores, stars
   - name: reports
     description: Report centre and exports
-  - name: family
-    description: Parent view of a linked child
   - name: platform
     description: Cross-tenant platform console (multi-tenant deployments only)
   - name: library
@@ -3611,31 +3609,6 @@ paths:
           description: Switching Protocols
         "401":
           $ref: "#/components/responses/Unauthorized"
-  /v1/children/{studentId}/billing:
-    get:
-      tags:
-        - family
-      operationId: getChildBilling
-      x-permission: view_child_billing
-      summary: One linked child's bills and payment history, read-only
-      parameters:
-        - name: studentId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        "200":
-          description: History
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/StudentBillHistory"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
   /v1/billing/fee-types:
     get:
       tags:
@@ -5489,158 +5462,6 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
-  /v1/children/{studentId}/attendance:
-    get:
-      tags:
-        - family
-      operationId: getChildAttendance
-      x-permission: view_child_attendance
-      summary: One linked child's attendance month
-      parameters:
-        - name: studentId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-        - name: month
-          in: query
-          required: true
-          schema:
-            type: string
-            pattern: ^[0-9]{4}-[0-9]{2}$
-      responses:
-        "200":
-          description: Days and totals
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                  - data
-                  - totals
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/ChildCalendarDay"
-                  totals:
-                    type: object
-                    additionalProperties:
-                      type: integer
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-  /v1/children/{studentId}/grades:
-    get:
-      tags:
-        - family
-      operationId: getChildGrades
-      x-permission: view_child_grades
-      summary: One linked child's published grades
-      parameters:
-        - name: studentId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        "200":
-          description: Grades
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ChildGrades"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-  /v1/children/{studentId}/leave-requests:
-    post:
-      tags:
-        - family
-      operationId: submitChildLeaveRequest
-      x-permission: approve_child_leave_requests
-      summary: Guardian submits a planned leave request for a linked child
-      parameters:
-        - name: studentId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - category
-                - reason
-                - starts_on
-                - ends_on
-              properties:
-                category:
-                  $ref: "#/components/schemas/LeaveCategory"
-                reason:
-                  type: string
-                  minLength: 1
-                  maxLength: 500
-                starts_on:
-                  type: string
-                  format: date
-                ends_on:
-                  type: string
-                  format: date
-      responses:
-        "201":
-          description: Submitted
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                  - instance_id
-                properties:
-                  instance_id:
-                    type: string
-                    format: uuid
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "409":
-          $ref: "#/components/responses/Conflict"
-  /v1/children/{studentId}/discipline:
-    get:
-      tags:
-        - family
-      operationId: getChildDiscipline
-      x-permission: view_child_attendance
-      summary: One linked child's violation points and warning letters
-      parameters:
-        - name: studentId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        "200":
-          description: Discipline
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ChildDiscipline"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
   /v1/grading/scale:
     get:
       tags:
@@ -7842,162 +7663,6 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
-  /v1/me/children:
-    get:
-      tags:
-        - users
-      operationId: listMyChildren
-      x-permission: authenticated
-      summary: Students linked to the signed-in parent account
-      responses:
-        "200":
-          description: Children
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                  - data
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/LinkedChild"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-  /v1/users/{userId}/children:
-    get:
-      tags:
-        - users
-      operationId: listUserChildren
-      x-permission: view_users
-      summary: Students linked to one parent account
-      parameters:
-        - name: userId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        "200":
-          description: Children
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                  - data
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/LinkedChild"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-    post:
-      tags:
-        - users
-      operationId: linkChild
-      x-permission: edit_users
-      summary: Link a parent account to a student
-      parameters:
-        - name: userId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - student_user_id
-                - relation
-              properties:
-                student_user_id:
-                  type: string
-                  format: uuid
-                relation:
-                  $ref: "#/components/schemas/ParentRelation"
-                can_approve_leave:
-                  type: boolean
-                  default: false
-      responses:
-        "204":
-          description: Linked
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "404":
-          $ref: "#/components/responses/NotFound"
-  /v1/users/{userId}/children/{studentId}:
-    delete:
-      tags:
-        - users
-      operationId: unlinkChild
-      x-permission: edit_users
-      summary: Remove a parent-student link
-      parameters:
-        - name: userId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-        - name: studentId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        "204":
-          description: Unlinked
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-  /v1/students/{studentId}/guardians:
-    get:
-      tags:
-        - users
-      operationId: listStudentGuardians
-      x-permission: view_users
-      summary: Parent accounts linked to one student
-      parameters:
-        - name: studentId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        "200":
-          description: Guardians
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                  - data
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/Guardian"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
   /v1/auth/login:
     post:
       tags:
@@ -9950,7 +9615,6 @@ paths:
                     - student
                     - teacher
                     - staff
-                    - parent
                 class_id:
                   type: string
                   format: uuid
@@ -14921,77 +14585,6 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
-  /v1/leave-requests/guardian-queue:
-    get:
-      tags:
-        - permits
-      operationId: listLeaveRequestsForGuardianReview
-      x-permission: approve_child_leave_requests
-      summary: Leave requests of the caller's children awaiting the caller's decision as guardian
-      responses:
-        "200":
-          description: Queue
-          content:
-            application/json:
-              schema:
-                type: object
-                required:
-                  - data
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/LeaveRequestSummary"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-  /v1/leave-requests/{instanceId}/guardian-review:
-    post:
-      tags:
-        - permits
-      operationId: reviewLeaveRequestAsGuardian
-      x-permission: approve_child_leave_requests
-      summary: Guardian approves or rejects a linked child's leave request at their stage
-      parameters:
-        - name: instanceId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - approve
-              properties:
-                approve:
-                  type: boolean
-                note:
-                  type: string
-                  maxLength: 500
-                  description: Required rejection reason when approve is false.
-      responses:
-        "200":
-          description: Reviewed
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/LeaveRequestDetail"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "409":
-          $ref: "#/components/responses/Conflict"
   /v1/leave-requests/{instanceId}:
     get:
       tags:
@@ -20055,7 +19648,7 @@ components:
       properties:
         active_users:
           type: object
-          description: Active user count per profile_kind (student/teacher/staff/parent); a kind with no active users is omitted.
+          description: Active user count per profile_kind (student/teacher/staff); a kind with no active users is omitted.
           additionalProperties:
             type: integer
         pending:
@@ -21720,105 +21313,6 @@ components:
           items:
             type: integer
           description: Warning-letter levels already issued to this student, so the client does not offer one already sent.
-    ChildCalendarDay:
-      type: object
-      required:
-        - date
-        - status_code
-        - expected_sessions
-        - submitted_sessions
-        - complete
-      properties:
-        date:
-          type: string
-          format: date
-        status_code:
-          type: string
-        expected_sessions:
-          type: integer
-        submitted_sessions:
-          type: integer
-        complete:
-          type: boolean
-    ChildSubjectGrade:
-      type: object
-      required:
-        - subject_id
-        - subject_name
-      properties:
-        subject_id:
-          type: string
-          format: uuid
-        subject_name:
-          type: string
-        average:
-          type: number
-        report_score:
-          type: number
-    ChildGrades:
-      type: object
-      required:
-        - term_id
-        - term_name
-        - subjects
-        - stars
-      properties:
-        term_id:
-          type: string
-          format: uuid
-        term_name:
-          type: string
-        subjects:
-          type: array
-          items:
-            $ref: "#/components/schemas/ChildSubjectGrade"
-        stars:
-          type: integer
-    ChildViolation:
-      type: object
-      required:
-        - type_name
-        - points
-        - occurred_on
-      properties:
-        type_name:
-          type: string
-        points:
-          type: integer
-        occurred_on:
-          type: string
-          format: date
-    ChildWarningLetter:
-      type: object
-      required:
-        - number
-        - level_label
-        - issued_at
-      properties:
-        number:
-          type: string
-        level_label:
-          type: string
-        issued_at:
-          type: string
-          format: date
-    ChildDiscipline:
-      type: object
-      required:
-        - total_points
-        - records
-        - letters
-      properties:
-        total_points:
-          type: integer
-        records:
-          type: array
-          items:
-            $ref: "#/components/schemas/ChildViolation"
-        letters:
-          type: array
-          items:
-            $ref: "#/components/schemas/ChildWarningLetter"
     GradingScale:
       type: object
       required:
@@ -22365,8 +21859,7 @@ components:
           $ref: "#/components/schemas/ProfileKind"
         role_slug:
           type: string
-          description: A system role slug, or an alias (e.g. "siswa", "guru", "pegawai", "wali") -- see the template's reference
-            sheet
+          description: A system role slug, or an alias (e.g. "siswa", "guru", "pegawai") -- see the template's reference sheet
         nik:
           type: string
         name:
@@ -22530,53 +22023,6 @@ components:
           maximum: 365
         single_device:
           type: boolean
-    ParentRelation:
-      type: string
-      enum:
-        - father
-        - mother
-        - guardian
-    LinkedChild:
-      type: object
-      required:
-        - student_user_id
-        - student_name
-        - relation
-        - can_approve_leave
-      properties:
-        student_user_id:
-          type: string
-          format: uuid
-        student_name:
-          type: string
-        class_id:
-          type: string
-          format: uuid
-        class_name:
-          type: string
-        relation:
-          $ref: "#/components/schemas/ParentRelation"
-        can_approve_leave:
-          type: boolean
-    Guardian:
-      type: object
-      required:
-        - parent_user_id
-        - parent_name
-        - relation
-        - can_approve_leave
-      properties:
-        parent_user_id:
-          type: string
-          format: uuid
-        parent_name:
-          type: string
-        phone:
-          type: string
-        relation:
-          $ref: "#/components/schemas/ParentRelation"
-        can_approve_leave:
-          type: boolean
     MfaStatus:
       type: object
       required:
@@ -22642,7 +22088,6 @@ components:
         - student
         - teacher
         - staff
-        - parent
     DutyScopeKind:
       type: string
       enum:
@@ -23169,7 +22614,6 @@ components:
             - student
             - teacher
             - staff
-            - parent
         roles:
           type: array
           items:
@@ -24084,7 +23528,6 @@ components:
             - student
             - teacher
             - staff
-            - parent
     LibraryMemberTypeWrite:
       type: object
       required:
@@ -24135,7 +23578,6 @@ components:
             - student
             - teacher
             - staff
-            - parent
     LibraryLoanRule:
       type: object
       required:

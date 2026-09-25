@@ -9,7 +9,6 @@ const (
 	RoleSlugTeacher    = "teacher"
 	RoleSlugStaff      = "staff"
 	RoleSlugStudent    = "student"
-	RoleSlugParent     = "parent"
 	RoleSlugLibrarian  = "librarian"
 	RoleSlugPrincipal  = "principal"
 )
@@ -56,10 +55,6 @@ func RoleDefaults() []RoleDefault {
 		{RoleSlugStudent, "Siswa", []string{
 			PermViewDashboard, PermViewAnnouncements, PermViewNotifications, PermViewSchedules, PermViewAcademicData,
 			PermViewOwnGrades, PermSubmitLeaveRequests, PermViewAttendance, PermViewOwnLibraryLoans,
-		}},
-		{RoleSlugParent, "Orang Tua", []string{
-			PermViewDashboard, PermViewAnnouncements, PermViewNotifications,
-			PermViewChildAttendance, PermViewChildGrades, PermApproveChildLeaveRequests, PermViewChildBilling, PermViewOwnLibraryLoans,
 		}},
 		{RoleSlugLibrarian, "Pustakawan", []string{
 			PermViewDashboard, PermViewNotifications, PermViewLibrary, PermViewOwnLibraryLoans,
@@ -116,7 +111,7 @@ func RoleDefaults() []RoleDefault {
 			PermViewLibrary, PermViewLibraryReports,
 			// view_own_library_loans is the personal "I borrowed a book"
 			// permission every non-librarian role already carries (teacher,
-			// staff, student, parent); included for the same reason, not as
+			// staff, student); included for the same reason, not as
 			// an oversight permission.
 			PermViewOwnLibraryLoans,
 
@@ -193,11 +188,11 @@ func RoleDefaults() []RoleDefault {
 		//     used to flag as a gap (see grading.yaml and the migration
 		//     that backfilled it for existing tenants).
 		//   - review_leave_requests, issue_leave_letters,
-		//     approve_child_leave_requests, submit_leave_requests,
-		//     issue_scan_tokens, scan_exit_permits, manage_workflows: every
-		//     permits action permission is tied to one specific actor in the
-		//     workflow (submitter, homeroom/counselor duty reviewer, gate
-		//     duty, guardian) -- none of them mean "principal oversight".
+		//     submit_leave_requests, issue_scan_tokens, scan_exit_permits,
+		//     manage_workflows: every permits action permission is tied to
+		//     one specific actor in the workflow (submitter,
+		//     homeroom/counselor duty reviewer, gate duty) -- none of them
+		//     mean "principal oversight".
 		//     "Approving at the leadership stage" (the product brief's
 		//     phrasing) is gated purely by holding the "leadership" duty
 		//     (service-layer HasActiveDuty check on an "authenticated"-only

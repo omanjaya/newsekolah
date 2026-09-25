@@ -2,7 +2,6 @@ package wiring
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -13,7 +12,6 @@ import (
 	attendanceservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance/service"
 	disciplinedomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/discipline/domain"
 	disciplineservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/discipline/service"
-	familyservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/family/service"
 	gradingservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/grading/service"
 	identityservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/identity/service"
 	permitsdomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/domain"
@@ -826,116 +824,4 @@ func (n IdentityNames) Names(ctx context.Context, tenantID uuid.UUID, ids []uuid
 		}
 		filter.Cursor = result.NextCursor
 	}
-}
-
-// Family readers give the parent view read-only access to each child's
-// data without the family module importing those modules.
-
-type FamilyAttendance struct{ Svc *attendanceservice.Service }
-
-func (f FamilyAttendance) StudentMonth(ctx context.Context, tenantID, studentID uuid.UUID, month string) ([]familyservice.CalendarDay, map[string]int, error) {
-	days, totals, err := f.Svc.GetMonthlySummary(ctx, tenantID, studentID, month)
-	if err != nil {
-		return nil, nil, err
-	}
-	out := make([]familyservice.CalendarDay, len(days))
-	for i, d := range days {
-		out[i] = familyservice.CalendarDay{
-			Date: d.Date.Format("2006-01-02"), StatusCode: d.StatusCode,
-			ExpectedSessions: d.ExpectedSessions, SubmittedSessions: d.SubmittedSessions, Complete: d.Complete,
-		}
-	}
-	return out, totals, nil
-}
-
-type FamilyGrading struct{ Svc *gradingservice.Service }
-
-func (f FamilyGrading) StudentGrades(ctx context.Context, tenantID, studentID uuid.UUID) (familyservice.StudentGrades, error) {
-	grades, err := f.Svc.MyGrades(ctx, tenantID, studentID, uuid.NullUUID{})
-	if err != nil {
-		return familyservice.StudentGrades{}, err
-	}
-	out := familyservice.StudentGrades{TermID: grades.Term.ID, TermName: grades.Term.Name, Stars: grades.Stars}
-	out.Subjects = make([]familyservice.SubjectGrade, len(grades.Subjects))
-	for i, s := range grades.Subjects {
-		out.Subjects[i] = familyservice.SubjectGrade{SubjectID: s.SubjectID, Average: s.Average, ReportScore: s.ReportScore}
-	}
-	return out, nil
-}
-
-// FamilySubjects adapts academic's subject catalogue to the batched
-// subject-name lookup family needs to label a child's per-subject grades
-// -- parents cannot call /v1/academic/subjects themselves (they lack
-// view_academic_data), so the response must already carry the names.
-type FamilySubjects struct{ Svc *academicservice.Service }
-
-func (f FamilySubjects) SubjectNames(ctx context.Context, tenantID uuid.UUID, ids []uuid.UUID) (map[uuid.UUID]string, error) {
-	out := make(map[uuid.UUID]string, len(ids))
-	for _, id := range ids {
-		if _, ok := out[id]; ok {
-			continue
-		}
-		subject, err := f.Svc.GetSubject(ctx, tenantID, id)
-		if err != nil {
-			return nil, err
-		}
-		out[id] = subject.Name
-	}
-	return out, nil
-}
-
-type FamilyDiscipline struct{ Svc *disciplineservice.Service }
-
-func (f FamilyDiscipline) StudentDiscipline(ctx context.Context, tenantID, studentID uuid.UUID) (familyservice.StudentDiscipline, error) {
-	summary, err := f.Svc.StudentSummary(ctx, tenantID, studentID)
-	if err != nil {
-		return familyservice.StudentDiscipline{}, err
-	}
-	out := familyservice.StudentDiscipline{TotalPoints: summary.TotalPoints}
-	for _, r := range summary.Records {
-		if r.IsVoided() {
-			continue
-		}
-		out.Records = append(out.Records, familyservice.DisciplineRecord{TypeName: r.TypeName, Points: r.PointsSnapshot, OccurredOn: r.OccurredOn.Format("2006-01-02")})
-	}
-	out.Letters = make([]familyservice.DisciplineLetter, len(summary.Letters))
-	for i, l := range summary.Letters {
-		out.Letters[i] = familyservice.DisciplineLetter{Number: l.LetterNumber, LevelLabel: l.LevelLabel, IssuedAt: l.IssuedAt.Format("2006-01-02")}
-	}
-	return out, nil
-}
-
-// FamilyLeaveRequests lets a guardian open a planned leave request for a
-// linked child from the parent view, reusing permits' own submission path
-// (same validation: active enrollment, homeroom teacher present, category
-// and date range) instead of duplicating it here.
-type FamilyLeaveRequests struct{ Svc *permitsservice.Service }
-
-func (f FamilyLeaveRequests) SubmitChildLeaveRequest(
-	ctx context.Context, tenantID, guardianUserID, studentUserID uuid.UUID,
-	category, reason string, startsOn, endsOn time.Time,
-) (uuid.UUID, error) {
-	cat := permitsdomain.Category(category)
-	if !cat.Valid() {
-		return uuid.Nil, familyservice.ErrLeaveCategoryInvalid
-	}
-	detail, err := f.Svc.SubmitLeaveRequest(ctx, permitsservice.SubmitLeaveRequestInput{
-		TenantID: tenantID, ActorUserID: guardianUserID, StudentUserID: studentUserID,
-		Category: cat, Reason: reason, StartsOn: startsOn, EndsOn: endsOn,
-	})
-	if err != nil {
-		switch {
-		case errors.Is(err, permitsdomain.ErrLeaveRequestGuardianNotLinked):
-			return uuid.Nil, familyservice.ErrLeaveGuardianNotApproving
-		case errors.Is(err, permitsdomain.ErrLeaveRequestDateRangeInvalid):
-			return uuid.Nil, familyservice.ErrLeaveDateRangeInvalid
-		case errors.Is(err, permitsdomain.ErrHomeroomTeacherRequired):
-			return uuid.Nil, familyservice.ErrLeaveHomeroomRequired
-		case errors.Is(err, permitsdomain.ErrAlreadyInProgress):
-			return uuid.Nil, familyservice.ErrLeaveAlreadyInProgress
-		default:
-			return uuid.Nil, err
-		}
-	}
-	return detail.Instance.ID, nil
 }

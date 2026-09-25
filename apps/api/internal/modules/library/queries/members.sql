@@ -90,7 +90,7 @@ select
   (select count(*) from library_violations lv where lv.tenant_id = $1 and lv.member_user_id = $2 and lv.status = 'unpaid')::int as unpaid_violations;
 
 -- name: ListLibraryMemberCandidates :many
--- Users of one role (student|teacher|staff|parent) not yet registered as a
+-- Users of one role (student|teacher|staff) not yet registered as a
 -- library member, optionally narrowed to one class (role must be student
 -- when class_id is set) -- the bulk-register candidate list (old app
 -- library_members.go:783-859).

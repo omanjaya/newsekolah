@@ -28,7 +28,6 @@ type Dependencies struct {
 	Years      service.AcademicYearReader
 	Schedule   service.ScheduleLookup     // nil until scheduling is wired: teacher_of_class_now then never matches
 	Sync       service.AttendanceSync     // nil until attendance is wired
-	Guardians  service.GuardianLinks      // nil disables guardian_of_student: it then never matches
 	Discipline service.DisciplineRecorder // nil disables recording late-arrival violations: reviewing with violation_ids then fails
 	Bus        *events.Bus
 	Hub        *realtime.Hub   // nil disables the classroom_entry_scanned live push
@@ -56,19 +55,6 @@ type noSync struct{}
 
 func (noSync) ForceStatus(context.Context, uuid.UUID, uuid.UUID, time.Time, time.Time, string, string) error {
 	return nil
-}
-
-// noGuardians stands in when no identity adapter is wired: the
-// guardian_of_student rule then never matches (fails closed) and a
-// guardian's queue is always empty.
-type noGuardians struct{}
-
-func (noGuardians) IsApprovingGuardianOf(context.Context, uuid.UUID, uuid.UUID, uuid.UUID) (bool, error) {
-	return false, nil
-}
-
-func (noGuardians) ApprovingChildrenOf(context.Context, uuid.UUID, uuid.UUID) ([]uuid.UUID, error) {
-	return nil, nil
 }
 
 // noDiscipline stands in until the discipline module is wired: recording a
@@ -114,10 +100,6 @@ func Register(deps Dependencies) *Module {
 	if sync == nil {
 		sync = noSync{}
 	}
-	guardians := deps.Guardians
-	if guardians == nil {
-		guardians = noGuardians{}
-	}
 	discipline := deps.Discipline
 	if discipline == nil {
 		discipline = noDiscipline{}
@@ -126,7 +108,7 @@ func Register(deps Dependencies) *Module {
 	if deps.Hub != nil {
 		realtimePublisher = hubPublisher{hub: deps.Hub}
 	}
-	svc := service.New(deps.Pool, repository.New(deps.Pool), deps.Years, schedule, sync, guardians, discipline, publisher, realtimePublisher, deps.Storage,
+	svc := service.New(deps.Pool, repository.New(deps.Pool), deps.Years, schedule, sync, discipline, publisher, realtimePublisher, deps.Storage,
 		documents.NewHTMLPDFRenderer(), clk, deps.Config)
 	return &Module{Service: svc, Handler: transporthttp.New(svc, clk)}
 }

@@ -98,7 +98,6 @@ func (s *Service) SaveEntries(ctx context.Context, tenantID uuid.UUID, actor Act
 
 		wasSubmitted := session.IsSubmitted()
 		affected := make([]uuid.UUID, 0, len(in.Entries))
-		var guardianIDs []uuid.UUID
 
 		// A student whose late-arrival workflow is still open is skipped
 		// silently -- not rejected outright -- so a batch save for the
@@ -180,14 +179,6 @@ func (s *Service) SaveEntries(ctx context.Context, tenantID uuid.UUID, actor Act
 				return err
 			}
 
-			if statusCode == domain.StatusCodeAlpha {
-				ids, err := s.repo.ListGuardianUserIDs(ctx, tenantID, entryIn.StudentUserID)
-				if err != nil {
-					return err
-				}
-				guardianIDs = append(guardianIDs, ids...)
-			}
-
 			affected = append(affected, entryIn.StudentUserID)
 		}
 
@@ -221,7 +212,7 @@ func (s *Service) SaveEntries(ctx context.Context, tenantID uuid.UUID, actor Act
 		if s.events != nil {
 			_ = s.events.Publish(ctx, Submitted{
 				TenantID: tenantID, SessionID: session.ID, ScheduleID: session.ScheduleID, ClassID: session.ClassID,
-				Date: session.Date, SubmittedBy: actor.UserID, StudentCount: len(affected), GuardianUserIDs: guardianIDs,
+				Date: session.Date, SubmittedBy: actor.UserID, StudentCount: len(affected),
 			})
 		}
 		return nil

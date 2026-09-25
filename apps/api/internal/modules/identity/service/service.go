@@ -31,7 +31,7 @@ type Repository interface {
 	UsersAdminRepository
 	RolesRepository
 	DutiesRepository
-	ParentsRepository
+	StudentClassRepository
 	ImpersonationRepository
 	PasswordResetRepository
 	ProfileRepository

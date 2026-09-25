@@ -6,7 +6,7 @@ Platform sistem informasi sekolah yang:
 
 - dipakai banyak sekolah sekaligus (SaaS multi-tenant) **dan** bisa dipasang sendiri oleh satu sekolah (self-host) dari image yang sama;
 - melayani web, iOS, dan Android dari satu API;
-- mempertahankan seluruh fitur SION dan menambah onboarding, orang tua, WhatsApp, laporan terpusat;
+- mempertahankan seluruh fitur SION dan menambah onboarding, WhatsApp, laporan terpusat (tidak ada akun orang tua -- keputusan produk 25 Sep 2026, lihat [15-paritas-sion.md](15-paritas-sion.md));
 - aman untuk data anak (UU PDP) sejak hari pertama.
 
 Nama produk sementara: NouSchool (kode repo `newsekolah`). Nama akhir tidak memengaruhi desain karena semua branding per tenant.
@@ -52,7 +52,7 @@ Sistem eksternal: Dapodik (import Excel), e-Rapor (ekspor XLSX), Google Workspac
 
 Modular monolith, satu binary dengan dua mode proses: `api` dan `worker` (bisa digabung untuk sekolah kecil). Detail lapisan di [03-layered-architecture.md](03-layered-architecture.md).
 
-Modul: identity, school, academic, scheduling, attendance, permits, discipline, grading, journal, announcements, notifications, library, reporting, parent (baru), onboarding (baru), platform (konsol SaaS).
+Modul: identity, school, academic, scheduling, attendance, permits, discipline, grading, journal, announcements, notifications, library, reporting, onboarding (baru), platform (konsol SaaS).
 
 ### 4.2 Workflow engine ringan
 
@@ -95,7 +95,7 @@ Semua unggahan ke S3 privat lewat presigned upload dari API (klien tidak lewat A
 
 ```
 Tenant 1..* AcademicYear 1..* Term
-Tenant 1..* User *..* Role (per tenant) ; User 1..1 Profile (student|teacher|staff|parent)
+Tenant 1..* User *..* Role (per tenant) ; User 1..1 Profile (student|teacher|staff)
 AcademicYear 1..* Class (grade_level, track, homeroom_teacher) 1..* Enrollment (student, status, history)
 AcademicYear 1..* Subject, Room, Period (+ day overrides), DutyType 1..* DutyAssignment (user, scope)
 Schedule (class, subject, teacher, room?, day, period range) 1..* AttendanceSession (date) 1..* AttendanceEntry (student, status)
@@ -118,7 +118,7 @@ Skema lengkap di [06-database-schema.md](06-database-schema.md).
 2. Guru membuka sesi; service membuat `attendance_session` idempoten (`INSERT ... ON CONFLICT DO NOTHING RETURNING`).
 3. Guru mengubah status siswa; klien menyimpan draf lokal (offline) dan mengirim batch dengan Idempotency-Key.
 4. Service menerapkan policy: izin terbit menimpa, siswa dalam workflow terlambat aktif hari ini dilewati, validasi jendela waktu/koreksi.
-5. Event `AttendanceSubmitted` memicu pembaruan monitor, statistik harian, dan (bila diaktifkan) notifikasi orang tua untuk status A.
+5. Event `AttendanceSubmitted` memicu pembaruan monitor dan statistik harian.
 
 ### 6.2 Izin keluar dengan QR
 

@@ -56,7 +56,7 @@ func TestValidateImportRow(t *testing.T) {
 				r.ProfileKind = "alien"
 				return r
 			},
-			wantErrs: []string{"profile_kind must be one of student, teacher, staff, parent"},
+			wantErrs: []string{"profile_kind must be one of student, teacher, staff"},
 		},
 		{
 			name: "missing role slug",
@@ -174,7 +174,7 @@ func TestResolveRoleAlias(t *testing.T) {
 		{"siswa", "student"},
 		{"Guru", "teacher"},
 		{"PEGAWAI", "staff"},
-		{"wali", "parent"},
+		{"wali", "wali"},                   // no longer a known alias (parent accounts removed); passes through
 		{"wali_kelas_7a", "wali_kelas_7a"}, // unknown alias passes through as a custom slug
 	}
 	for _, tt := range tests {

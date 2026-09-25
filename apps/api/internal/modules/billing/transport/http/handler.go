@@ -33,7 +33,6 @@ var errorMap = map[error]*httpx.Error{
 	domain.ErrPaymentNotFound:           httpx.ErrPaymentNotFound,
 	domain.ErrPaymentAlreadyVoided:      httpx.ErrPaymentAlreadyVoided,
 	domain.ErrPaymentExceedsOutstanding: httpx.ErrPaymentExceedsOutstanding,
-	service.ErrNotLinked:                httpx.ErrForbidden,
 }
 
 func mapError(err error) error {
@@ -190,17 +189,6 @@ func (h *BillingHandler) GetStudentBillHistory(ctx context.Context, request api.
 		return nil, mapError(err)
 	}
 	return api.GetStudentBillHistory200JSONResponse(toAPIHistory(history)), nil
-}
-
-// GetChildBilling is the parent's read-only view, reached through the
-// family screens; the service proves the caller is linked to the
-// student before returning anything (service.ErrNotLinked maps to 403).
-func (h *BillingHandler) GetChildBilling(ctx context.Context, request api.GetChildBillingRequestObject) (api.GetChildBillingResponseObject, error) {
-	history, err := h.service.ChildBillHistory(ctx, tenantID(ctx), userID(ctx), request.StudentId)
-	if err != nil {
-		return nil, mapError(err)
-	}
-	return api.GetChildBilling200JSONResponse(toAPIHistory(history)), nil
 }
 
 // Payments.

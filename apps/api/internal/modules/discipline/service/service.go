@@ -200,14 +200,6 @@ type NameLookup interface {
 	Names(ctx context.Context, tenantID uuid.UUID, ids []uuid.UUID) (map[uuid.UUID]string, error)
 }
 
-// GuardianReader resolves a student's guardian user ids, so a warning
-// letter notifies the parent account the same way it notifies the
-// homeroom teacher (the old app's intent per letters.go comment; this
-// wiring makes it real).
-type GuardianReader interface {
-	GuardianIDsOf(ctx context.Context, tenantID, studentUserID uuid.UUID) ([]uuid.UUID, error)
-}
-
 // Storage is the narrow slice of platform/storage.Client discipline's
 // counseling-attachment upload and ad hoc PDF reports need.
 type Storage interface {
@@ -234,18 +226,17 @@ func DefaultConfig(bucket string) Config {
 }
 
 type Service struct {
-	pool      *pgxpool.Pool
-	repo      Repository
-	years     AcademicYearReader
-	docs      DocumentIssuer
-	sealer    *crypto.Sealer
-	events    EventPublisher
-	clock     clock.Clock
-	names     NameLookup
-	guardians GuardianReader
-	storage   Storage
-	renderer  documents.Renderer
-	cfg       Config
+	pool     *pgxpool.Pool
+	repo     Repository
+	years    AcademicYearReader
+	docs     DocumentIssuer
+	sealer   *crypto.Sealer
+	events   EventPublisher
+	clock    clock.Clock
+	names    NameLookup
+	storage  Storage
+	renderer documents.Renderer
+	cfg      Config
 }
 
 func New(
@@ -257,7 +248,6 @@ func New(
 	events EventPublisher,
 	clk clock.Clock,
 	names NameLookup,
-	guardians GuardianReader,
 	storage Storage,
 	renderer documents.Renderer,
 	cfg Config,
@@ -267,7 +257,7 @@ func New(
 	}
 	return &Service{
 		pool: pool, repo: repo, years: years, docs: docs, sealer: sealer, events: events, clock: clk,
-		names: names, guardians: guardians, storage: storage, renderer: renderer, cfg: cfg,
+		names: names, storage: storage, renderer: renderer, cfg: cfg,
 	}
 }
 
