@@ -7,6 +7,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"net/url"
 	"strings"
 	"time"
 
@@ -16,7 +17,6 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/school/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
-	"github.com/omanjaya/newsekolah/apps/api/internal/platform/storage"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/tenant"
 )
 
@@ -69,11 +69,26 @@ type AssetRecord struct {
 	Mime string
 }
 
+// Storage is the narrow slice of platform/storage.Client the school
+// module's branding logo/favicon upload and kop laporan logo embedding
+// need, per docs/03-layered-architecture.md (the consuming module owns the
+// interface it needs, not the concrete client). The real client satisfies
+// this without any change at the production wiring call site (module.go);
+// tests substitute an in-memory fake instead of a real MinIO.
+type Storage interface {
+	PresignedPutURL(ctx context.Context, objectKey string, ttl time.Duration) (*url.URL, error)
+	PresignedGetURL(ctx context.Context, objectKey string, ttl time.Duration) (*url.URL, error)
+	PresignedGetURLAsAttachment(ctx context.Context, objectKey string, ttl time.Duration, contentType, filename string) (*url.URL, error)
+	DownloadBounded(ctx context.Context, objectKey string, maxBytes int64) ([]byte, error)
+	RemoveObject(ctx context.Context, objectKey string) error
+	Bucket() string
+}
+
 type Service struct {
 	pool    *pgxpool.Pool
 	repo    Repository
 	mode    tenant.Mode
-	storage *storage.Client
+	storage Storage
 
 	// academic, identity, and clk back the onboarding wizard (level
 	// templates, Dapodik import): grade levels/subjects/periods/classes
@@ -89,7 +104,7 @@ type Service struct {
 	clk      clock.Clock
 }
 
-func New(pool *pgxpool.Pool, repo Repository, mode tenant.Mode, storageClient *storage.Client) *Service {
+func New(pool *pgxpool.Pool, repo Repository, mode tenant.Mode, storageClient Storage) *Service {
 	return &Service{pool: pool, repo: repo, mode: mode, storage: storageClient}
 }
 

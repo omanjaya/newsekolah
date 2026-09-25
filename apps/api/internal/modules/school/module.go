@@ -24,9 +24,24 @@ type Module struct {
 // storageClient is nil when S3 is not configured (dev without MinIO):
 // branding logo/favicon upload then returns ErrUploadNotConfigured, the
 // same degrade-gracefully convention identity's avatar upload uses.
+//
+// service.New takes the narrower service.Storage interface, not this
+// concrete type, so tests can substitute an in-memory fake. A nil
+// *storage.Client must not be assigned to that interface parameter
+// directly: doing so would box a non-nil interface value around a nil
+// pointer, and every `s.storage != nil` guard in the service package would
+// then see a non-nil interface and try to call through the nil client,
+// panicking instead of degrading gracefully. The explicit nil check below
+// keeps a genuinely nil interface when storage is not configured, exactly
+// like cmd/api's own storageClientFor/type-assertion guard for this same
+// value (see cmd/api/wire.go).
 func Register(pool *pgxpool.Pool, mode tenant.Mode, storageClient *storage.Client) *Module {
 	repo := repository.New(pool)
-	svc := service.New(pool, repo, mode, storageClient)
+	var st service.Storage
+	if storageClient != nil {
+		st = storageClient
+	}
+	svc := service.New(pool, repo, mode, st)
 	handler := transporthttp.New(svc)
 	return &Module{Service: svc, Handler: handler, Loader: repo}
 }
