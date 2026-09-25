@@ -164,6 +164,14 @@ export function DeskOverdueTable(): ReactElement {
         <DataTable
           stateKey="features/library/components/desk-overdue-table:1"
           mode="local"
+          // The overdue queue renders as tall stacked cards on a phone
+          // (packages/ui's DataTableCards), not dense table rows -- the
+          // shared component's 50-row default page is a long scroll there
+          // even on an ordinary day (docs/analysis/ux-audit-2026-09-25.md
+          // finding 8). Every page now holds 10 rows instead of 50;
+          // search/filter and the existing prev/next pagination controls
+          // are otherwise unchanged.
+          defaultPageSize={10}
           data={items}
           columns={columns}
           isLoading={isLoading}

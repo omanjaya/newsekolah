@@ -102,6 +102,40 @@ describe("DeskOverdueTable", () => {
     expect(screen.getAllByText("Biologi").length).toBeGreaterThan(0);
   });
 
+  it("paginates the overdue queue at 10 per page instead of rendering every card at once", async () => {
+    const loans = Array.from({ length: 12 }, (_, i) => loan(`loan-${i}`, `Judul ${i}`, `BC-${i}`));
+    mockedQuery.mockReturnValue({
+      data: { data: loans },
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    } as never);
+
+    const user = userEvent.setup();
+    render(<DeskOverdueTable />);
+
+    // Only the first 10 render up front (finding 8, docs/analysis/
+    // ux-audit-2026-09-25.md): the last 2 of 12 stay off-screen until the
+    // reader pages forward. Both the desktop table and the mobile card
+    // list render into the DOM at once (CSS media queries hide one of
+    // them, which jsdom does not evaluate), so a rendered title matches
+    // twice -- presence/absence per title is what actually distinguishes
+    // "on this page" from "not yet", not a total match count.
+    expect(screen.getAllByText("Judul 0").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Judul 9").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Judul 10")).not.toBeInTheDocument();
+    expect(screen.queryByText("Judul 11")).not.toBeInTheDocument();
+    expect(screen.getByText("Halaman 1 dari 2")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Ke halaman berikutnya" }));
+
+    await waitFor(() => {
+      expect(screen.getAllByText("Judul 11").length).toBeGreaterThan(0);
+    });
+    expect(screen.queryByText("Judul 0")).not.toBeInTheDocument();
+    expect(screen.getByText("Halaman 2 dari 2")).toBeInTheDocument();
+  });
+
   it("shows a retry action when the overdue query fails instead of the empty state", async () => {
     const refetch = vi.fn();
     mockedQuery.mockReturnValue({

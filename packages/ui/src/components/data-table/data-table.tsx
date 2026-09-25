@@ -77,9 +77,22 @@ export interface DataTableProps<TData> {
    * flex). Mobile keeps the card list and normal document scroll.
    */
   fillHeight?: boolean;
+  /**
+   * `mode="local"`'s first page size, before any remembered `stateKey`
+   * state exists. Defaults to 50, the size every screen used before this
+   * prop existed. Lower it for a list whose rows render as tall mobile
+   * cards rather than dense table rows -- 50 cards is a long scroll on a
+   * phone even though 50 table rows on desktop is not (e.g. the library
+   * circulation desk's overdue queue, docs/analysis/
+   * ux-audit-2026-09-25.md finding 8, set to 10). Ignored outside
+   * `mode="local"`: server/cursor pagination is the caller's own
+   * `pagination` prop.
+   */
+  defaultPageSize?: number;
 }
 
-const DEFAULT_PAGINATION: PaginationState = { pageIndex: 0, pageSize: 50 };
+const DEFAULT_PAGE_SIZE = 50;
+const DEFAULT_PAGINATION: PaginationState = { pageIndex: 0, pageSize: DEFAULT_PAGE_SIZE };
 
 const ROW_HEIGHT = { normal: "h-10", compact: "h-8" } as const;
 
@@ -114,12 +127,17 @@ export function DataTable<TData>({
   toolbarLabels,
   paginationLabels,
   fillHeight,
+  defaultPageSize,
 }: DataTableProps<TData>) {
   const rememberedState = useDataTableState(
     mode === "local" ? (stateKey ?? storageKey) : undefined,
   );
   const [internalPagination, setInternalPagination] = useState<PaginationState>(
-    () => rememberedState.initialState?.pagination ?? DEFAULT_PAGINATION,
+    () =>
+      rememberedState.initialState?.pagination ?? {
+        pageIndex: 0,
+        pageSize: defaultPageSize ?? DEFAULT_PAGE_SIZE,
+      },
   );
   const [internalSorting, setInternalSorting] = useState<SortingState>(
     () => rememberedState.initialState?.sorting ?? [],
