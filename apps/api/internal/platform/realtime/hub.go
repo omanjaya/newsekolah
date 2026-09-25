@@ -130,7 +130,28 @@ func (h *Hub) Publish(topic string, event any) error {
 	if err != nil {
 		return err
 	}
+	return h.publishRaw(topic, payload)
+}
 
+// PublishEvent wraps payload in the standard Envelope (envelope.go) and
+// publishes it under topic -- the one way every call site should publish
+// from now on, instead of shaping its own JSON per event type (docs/
+// analysis/realtime-plan-2026-09-25.md section 1.5 #1 and section 3.1).
+// eventType is the Envelope's Type field (e.g. "late_arrival.opened"),
+// separate from topic (which subscription it travels on).
+func (h *Hub) PublishEvent(topic, eventType string, payload any) error {
+	raw, err := newEnvelope(topic, eventType, payload)
+	if err != nil {
+		return err
+	}
+	return h.publishRaw(topic, raw)
+}
+
+// publishRaw delivers already-marshaled bytes to topic's local subscribers
+// and, in multi-replica mode, to every other replica's -- the shared tail
+// of Publish and PublishEvent above, which only differ in how they arrive
+// at payload.
+func (h *Hub) publishRaw(topic string, payload []byte) error {
 	h.deliverLocal(topic, payload)
 
 	if h.broadcaster != nil {

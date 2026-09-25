@@ -33,6 +33,14 @@ type Client struct {
 	outbox chan []byte
 	logger *slog.Logger
 
+	// onMessage, if set, receives every inbound text frame the client
+	// sends after the handshake -- today only /ws/me's multiplexed
+	// subscribe/unsubscribe messages (subscribe.go's Multiplexer); nil for
+	// every other connection (/ws/monitor never reads anything back). It
+	// is only ever set once, before this Client's read pump starts (see
+	// UpgradeWithHandler in http.go), so reading it from readPump's
+	// goroutine needs no further synchronization.
+	onMessage func(payload []byte)
 	// onClose, if set, runs once when the connection's pumps finish
 	// (either side closed, or a timeout), so the caller can unsubscribe
 	// from every topic and clear presence without repeating that on every
@@ -44,11 +52,11 @@ type Client struct {
 	closed chan struct{}
 }
 
-func newClient(conn *websocket.Conn, logger *slog.Logger, onClose func()) *Client {
+func newClient(conn *websocket.Conn, logger *slog.Logger, onMessage func(payload []byte), onClose func()) *Client {
 	if logger == nil {
 		logger = slog.Default()
 	}
-	return &Client{conn: conn, outbox: make(chan []byte, outboxSize), logger: logger, onClose: onClose, closed: make(chan struct{})}
+	return &Client{conn: conn, outbox: make(chan []byte, outboxSize), logger: logger, onMessage: onMessage, onClose: onClose, closed: make(chan struct{})}
 }
 
 // Done returns a channel that closes when this connection's pumps finish,
@@ -82,9 +90,10 @@ func (c *Client) serve() {
 	}
 }
 
-// readPump only exists to detect disconnects and keep the pong deadline
-// alive; the hub does not accept commands from clients over this
-// connection.
+// readPump detects disconnects, keeps the pong deadline alive, and -- when
+// onMessage is set -- hands every inbound text frame to it. The hub itself
+// never accepts commands from clients over this connection; onMessage is
+// how a caller (only /ws/me today) opts in to reading them.
 func (c *Client) readPump() {
 	c.conn.SetReadLimit(maxMessageBytes)
 	_ = c.conn.SetReadDeadline(time.Now().Add(pongWait)) //nolint:forbidigo // socket deadlines are wall-clock by definition
@@ -93,8 +102,12 @@ func (c *Client) readPump() {
 	})
 
 	for {
-		if _, _, err := c.conn.ReadMessage(); err != nil {
+		_, payload, err := c.conn.ReadMessage()
+		if err != nil {
 			return
+		}
+		if c.onMessage != nil {
+			c.onMessage(payload)
 		}
 	}
 }

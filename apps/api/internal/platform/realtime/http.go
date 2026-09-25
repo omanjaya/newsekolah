@@ -66,6 +66,23 @@ func OriginChecker(appOrigins []string) func(r *http.Request) bool {
 // pumps finish -- e.g. cmd/api/ws.go's wsMeHandler uses it to clear the
 // caller's presence heartbeat.
 func Upgrade(w http.ResponseWriter, r *http.Request, hub *Hub, topic string, appOrigins []string, logger *slog.Logger, onClose ...func()) (*Client, error) {
+	return upgrade(w, r, hub, topic, appOrigins, logger, nil, onClose...)
+}
+
+// UpgradeWithHandler is like Upgrade but also wires up onMessage, a
+// factory that receives the freshly-upgraded *Client -- before its read
+// pump starts -- and returns the function that will handle every inbound
+// frame it sends from then on. Receiving the client from the factory
+// (rather than the caller building a handler beforehand) matters because a
+// message handler for /ws/me's topic multiplexing (subscribe.go's
+// Multiplexer) needs that same *Client to call Hub.Subscribe/Unsubscribe
+// against; building it after Upgrade already returned would race the read
+// pump, which starts as soon as the handshake completes.
+func UpgradeWithHandler(w http.ResponseWriter, r *http.Request, hub *Hub, topic string, appOrigins []string, logger *slog.Logger, onMessage func(*Client) func([]byte), onClose ...func()) (*Client, error) {
+	return upgrade(w, r, hub, topic, appOrigins, logger, onMessage, onClose...)
+}
+
+func upgrade(w http.ResponseWriter, r *http.Request, hub *Hub, topic string, appOrigins []string, logger *slog.Logger, onMessage func(*Client) func([]byte), onClose ...func()) (*Client, error) {
 	upgrader := websocket.Upgrader{
 		CheckOrigin:     OriginChecker(appOrigins),
 		ReadBufferSize:  1024,
@@ -83,7 +100,10 @@ func Upgrade(w http.ResponseWriter, r *http.Request, hub *Hub, topic string, app
 		return nil, err
 	}
 
-	client := newClient(conn, logger, nil)
+	client := newClient(conn, logger, nil, nil)
+	if onMessage != nil {
+		client.onMessage = onMessage(client)
+	}
 	client.onClose = func() {
 		hub.Unsubscribe(topic, client)
 		for _, fn := range onClose {
