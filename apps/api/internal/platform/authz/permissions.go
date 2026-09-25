@@ -45,6 +45,7 @@ const (
 	PermViewNotifications = "view_notifications"
 
 	PermManageGrades  = "manage_grades"
+	PermViewGrades    = "view_grades"
 	PermViewOwnGrades = "view_own_grades"
 	PermViewReports   = "view_reports"
 
@@ -98,6 +99,7 @@ var Catalog = []Permission{
 	{PermViewNotifications, "notifications", "View notifications"},
 
 	{PermManageGrades, "grading", "Enter and edit grades"},
+	{PermViewGrades, "grading", "View grades, gradebooks, recap and export reports (read-only)"},
 	{PermViewOwnGrades, "grading", "View own grades (student)"},
 	{PermViewReports, "reporting", "View cross-module reports"},
 	{PermManageReportSchedules, "reporting", "Configure recurring report exports and their recipients"},

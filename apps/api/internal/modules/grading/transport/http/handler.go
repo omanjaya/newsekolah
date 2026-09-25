@@ -80,6 +80,29 @@ func (h *GradingHandler) canManageSettings(ctx context.Context) bool {
 	return set.Has(authz.PermManageSettings)
 }
 
+// canViewAny is the read-only counterpart of canManageAny: true for
+// callers holding view_reports, the same supervisory bypass attendance's
+// Actor.CanViewAll uses for GetAttendanceSession (transport/http/
+// handler.go), or manage_master_data (a curriculum lead already sees the
+// whole school for non-grading reasons). A plain teacher holds neither by
+// default, so gaining view_grades (role_defaults.go grants it alongside
+// manage_grades so nobody loses read access) never widens their own
+// requireTeaches scope -- only a role meant to oversee the whole school
+// (principal, admin) reads every class through this. Used only for the
+// read endpoints (GetGradebook, ExportGradebook, ListGradeRanges,
+// ListTPMappings, the e-Rapor previews/exports); every write endpoint
+// keeps canManageAny.
+func (h *GradingHandler) canViewAny(ctx context.Context) bool {
+	if h.perms == nil {
+		return false
+	}
+	set, err := h.perms.EffectivePermissions(ctx, tenantID(ctx), userID(ctx))
+	if err != nil {
+		return false
+	}
+	return set.Has(authz.PermViewReports) || set.Has(authz.PermManageMasterData)
+}
+
 var errorMap = map[error]*httpx.Error{
 	domain.ErrComponentNotFound:    httpx.ErrComponentNotFound,
 	domain.ErrComponentCodeExists:  httpx.ErrComponentCodeExists,
@@ -183,7 +206,7 @@ func (h *GradingHandler) UpdateGradingScale(ctx context.Context, request api.Upd
 // Gradebook.
 
 func (h *GradingHandler) GetGradebook(ctx context.Context, request api.GetGradebookRequestObject) (api.GetGradebookResponseObject, error) {
-	book, err := h.service.Gradebook(ctx, tenantID(ctx), userID(ctx), h.canManageAny(ctx), service.GradebookQuery{
+	book, err := h.service.Gradebook(ctx, tenantID(ctx), userID(ctx), h.canViewAny(ctx), service.GradebookQuery{
 		ClassID: request.Params.ClassId, SubjectID: request.Params.SubjectId, TermID: nullUUID(request.Params.TermId),
 	})
 	if err != nil {
@@ -198,7 +221,7 @@ func (h *GradingHandler) GetGradebook(ctx context.Context, request api.GetGradeb
 // is a completely separate export surface left untouched.
 func (h *GradingHandler) ExportGradebook(ctx context.Context, request api.ExportGradebookRequestObject) (api.ExportGradebookResponseObject, error) {
 	opts := reportdocOptions(request.Params.Format, request.Params.Title, request.Params.Letterhead, request.Params.Columns)
-	file, err := h.service.ExportGradebook(ctx, tenantID(ctx), userID(ctx), h.canManageAny(ctx), service.GradebookExportQuery{
+	file, err := h.service.ExportGradebook(ctx, tenantID(ctx), userID(ctx), h.canViewAny(ctx), service.GradebookExportQuery{
 		ClassID: request.Params.ClassId, GradeLevelID: request.Params.GradeLevelId,
 		SubjectID: request.Params.SubjectId, TermID: nullUUID(request.Params.TermId),
 	}, tenantLocale(ctx), opts)
@@ -285,7 +308,7 @@ func (h *GradingHandler) SetGradePublication(ctx context.Context, request api.Se
 // Grade ranges.
 
 func (h *GradingHandler) ListGradeRanges(ctx context.Context, _ api.ListGradeRangesRequestObject) (api.ListGradeRangesResponseObject, error) {
-	ranges, err := h.service.ListGradeRanges(ctx, tenantID(ctx), userID(ctx), h.canManageAny(ctx))
+	ranges, err := h.service.ListGradeRanges(ctx, tenantID(ctx), userID(ctx), h.canViewAny(ctx))
 	if err != nil {
 		return nil, mapError(err)
 	}
@@ -427,7 +450,7 @@ func (h *GradingHandler) ListClassStarBalances(ctx context.Context, request api.
 // TP mapping.
 
 func (h *GradingHandler) ListTPMappings(ctx context.Context, request api.ListTPMappingsRequestObject) (api.ListTPMappingsResponseObject, error) {
-	mappings, err := h.service.ListTPMappings(ctx, tenantID(ctx), userID(ctx), h.canManageAny(ctx), request.Params.ClassId, request.Params.SubjectId, nullUUID(request.Params.TermId))
+	mappings, err := h.service.ListTPMappings(ctx, tenantID(ctx), userID(ctx), h.canViewAny(ctx), request.Params.ClassId, request.Params.SubjectId, nullUUID(request.Params.TermId))
 	if err != nil {
 		return nil, mapError(err)
 	}
@@ -466,7 +489,7 @@ func toAPITPMapping(m domain.TPMapping) api.TPMapping {
 // e-Rapor export.
 
 func (h *GradingHandler) PreviewEraporExport(ctx context.Context, request api.PreviewEraporExportRequestObject) (api.PreviewEraporExportResponseObject, error) {
-	preview, err := h.service.PreviewErapor(ctx, tenantID(ctx), userID(ctx), h.canManageAny(ctx), request.Params.ClassId, nullUUID(request.Params.TermId))
+	preview, err := h.service.PreviewErapor(ctx, tenantID(ctx), userID(ctx), h.canViewAny(ctx), request.Params.ClassId, nullUUID(request.Params.TermId))
 	if err != nil {
 		return nil, mapError(err)
 	}
@@ -478,7 +501,7 @@ func (h *GradingHandler) ExportErapor(ctx context.Context, request api.ExportEra
 	if request.Params.Format != nil && *request.Params.Format == api.EraporFormat(service.EraporFormatCSV) {
 		format = service.EraporFormatCSV
 	}
-	file, err := h.service.ExportErapor(ctx, tenantID(ctx), userID(ctx), h.canManageAny(ctx), request.Params.ClassId, nullUUID(request.Params.TermId), format)
+	file, err := h.service.ExportErapor(ctx, tenantID(ctx), userID(ctx), h.canViewAny(ctx), request.Params.ClassId, nullUUID(request.Params.TermId), format)
 	if err != nil {
 		return nil, mapError(err)
 	}
@@ -493,7 +516,7 @@ func (h *GradingHandler) ExportErapor(ctx context.Context, request api.ExportEra
 }
 
 func (h *GradingHandler) ExportEraporLegacy(ctx context.Context, request api.ExportEraporLegacyRequestObject) (api.ExportEraporLegacyResponseObject, error) {
-	file, err := h.service.ExportEraporLegacy(ctx, tenantID(ctx), userID(ctx), h.canManageAny(ctx), request.Params.ClassId, request.Params.SubjectId, nullUUID(request.Params.TermId))
+	file, err := h.service.ExportEraporLegacy(ctx, tenantID(ctx), userID(ctx), h.canViewAny(ctx), request.Params.ClassId, request.Params.SubjectId, nullUUID(request.Params.TermId))
 	if err != nil {
 		return nil, mapError(err)
 	}

@@ -202,6 +202,7 @@ describe("navigation registry: per-role audiences", () => {
       "manage_attendance",
       "view_notifications",
       "manage_grades",
+      "view_grades",
       "view_library",
       "view_own_library_loans",
       "issue_scan_tokens",
@@ -227,7 +228,7 @@ describe("navigation registry: per-role audiences", () => {
     expect(keys).toContain("leave-requests");
   });
 
-  it("gives the principal (Kepala Sekolah) oversight of every module but no settings, grading, counseling or user-management screen", () => {
+  it("gives the principal (Kepala Sekolah) oversight of every module (grading read-only) but no settings, counseling or user-management screen", () => {
     // authz.RoleDefaults()'s principal (role_defaults.go); profile kind
     // "teacher" per cmd/seed's profileKindByRole["principal"].
     const can = has(
@@ -256,8 +257,14 @@ describe("navigation registry: per-role audiences", () => {
       "view_visitors",
       "view_visitor_incidents",
       "view_visitor_reports",
+      "view_grades",
     );
     const keys = filterNavigation(navigation, can, "teacher").map((item) => item.key);
+
+    // Sees the gradebook screen read-only (view_grades, no manage_grades):
+    // features/grading/components/grading-view.tsx hides every
+    // edit/save/publish control for this permission combination.
+    expect(keys).toContain("grading");
 
     // Sees everything the school runs: attendance, staff attendance,
     // discipline, reports, library, billing, visitors, supervision,
@@ -290,8 +297,10 @@ describe("navigation registry: per-role audiences", () => {
       expect(keys).toContain(key);
     }
 
-    // Never an operator/administrator: no settings, master data, grading,
-    // counseling, user management, workflow or permits-actor screen.
+    // Never an operator/administrator: no settings, master data,
+    // grade-editing (only the read-only "grading" entry itself, asserted
+    // above), counseling, user management, workflow or permits-actor
+    // screen.
     for (const key of [
       "settings-roles",
       "school-users",
@@ -312,7 +321,6 @@ describe("navigation registry: per-role audiences", () => {
       "settings-workflows",
       "settings-whatsapp",
       "platform-tenants",
-      "grading",
       "my-grades",
       "counseling",
       "substitutions",

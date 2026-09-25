@@ -35,12 +35,23 @@ type Tab = "gradebook" | "settings" | "erapor" | "tp";
 export function GradingView(): ReactElement {
   const t = useTranslations("app.grading");
   const canManageGrades = useCan("manage_grades");
+  // view_grades is the read-only split of manage_grades (e.g. the
+  // principal oversight role): every score/component/weight/publication
+  // control stays hidden (GradebookSheet's canManage prop, still driven
+  // by canManageGrades alone below), but the sheet itself, its export
+  // and the e-Rapor preview/download render with real values.
+  const canViewGrades = useCan("view_grades");
   const canManageSettings = useCan("manage_settings");
 
-  // The server lets only staff with manage_master_data open any sheet; a
-  // teacher gets the classes and subjects they are assigned to teach, so
-  // the pickers never offer a sheet that would come back forbidden.
-  const canOpenAny = useCan("manage_master_data");
+  // The server lets staff with manage_master_data open any sheet to
+  // manage it, or a view_reports holder read any sheet (grading/
+  // transport/http/handler.go's canViewAny -- the same supervisory
+  // bypass attendance's Actor.CanViewAll uses); a teacher gets the
+  // classes and subjects they are assigned to teach, so the pickers
+  // never offer a sheet that would come back forbidden.
+  const canManageAny = useCan("manage_master_data");
+  const canViewReports = useCan("view_reports");
+  const canOpenAny = canManageAny || canViewReports;
   const { me } = useSession();
   const year = useActiveYear();
   const assignments = useTeachingAssignmentsForTeacherQuery(
@@ -86,7 +97,8 @@ export function GradingView(): ReactElement {
     "tab",
     [
       "gradebook",
-      ...(canManageGrades ? (["tp", "erapor"] as const) : []),
+      ...(canManageGrades ? (["tp"] as const) : []),
+      ...(canManageGrades || canViewGrades ? (["erapor"] as const) : []),
       ...(canManageSettings || canManageGrades ? (["settings"] as const) : []),
     ],
     "gradebook",
@@ -140,7 +152,7 @@ export function GradingView(): ReactElement {
           aria-label={t("pickSubject")}
           className="w-full md:w-56"
         />
-        {(canManageSettings || canManageGrades) && (
+        {(canManageSettings || canManageGrades || canViewGrades) && (
           <Tabs
             value={tab}
             onValueChange={(value) => {
@@ -152,7 +164,9 @@ export function GradingView(): ReactElement {
             <TabsList>
               <TabsTrigger value="gradebook">{t("tabGradebook")}</TabsTrigger>
               {canManageGrades && <TabsTrigger value="tp">{t("tabTpMapping")}</TabsTrigger>}
-              {canManageGrades && <TabsTrigger value="erapor">{t("tabErapor")}</TabsTrigger>}
+              {(canManageGrades || canViewGrades) && (
+                <TabsTrigger value="erapor">{t("tabErapor")}</TabsTrigger>
+              )}
               {(canManageSettings || canManageGrades) && (
                 <TabsTrigger value="settings">{t("tabSettings")}</TabsTrigger>
               )}
@@ -163,7 +177,7 @@ export function GradingView(): ReactElement {
 
       {tab === "settings" && (canManageSettings || canManageGrades) ? (
         <GradingSettings canManageSettings={canManageSettings} />
-      ) : tab === "erapor" && canManageGrades ? (
+      ) : tab === "erapor" && (canManageGrades || canViewGrades) ? (
         <EraporExport />
       ) : tab === "tp" && canManageGrades && effectiveClassId && effectiveSubjectId ? (
         <TPMappingEditor
