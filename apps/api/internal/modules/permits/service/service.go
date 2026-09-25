@@ -73,22 +73,6 @@ type AttendanceBlocker interface {
 	HasBlockingLateArrival(ctx context.Context, tenantID, studentUserID uuid.UUID, date time.Time) (bool, error)
 }
 
-// GuardianLinks is what permits needs from the identity module to
-// evaluate the "guardian_of_student" approver rule and build a guardian's
-// review queue: whether a guardian is linked to a student with
-// leave-approval rights, and which students a guardian holds that right
-// for. Implemented in internal/wiring as an adapter over identity's own
-// service.Service (MyChildren, GuardiansOf) -- permits never queries
-// identity's tables directly, per docs/03-layered-architecture.md.
-type GuardianLinks interface {
-	// IsApprovingGuardianOf reports whether guardianUserID is linked to
-	// studentUserID with can_approve_leave set.
-	IsApprovingGuardianOf(ctx context.Context, tenantID, guardianUserID, studentUserID uuid.UUID) (bool, error)
-	// ApprovingChildrenOf returns the student user IDs guardianUserID
-	// holds leave-approval rights for.
-	ApprovingChildrenOf(ctx context.Context, tenantID, guardianUserID uuid.UUID) ([]uuid.UUID, error)
-}
-
 // DisciplineRecorder is what permits needs from the discipline module to
 // turn a late arrival's reviewed violation_ids into real
 // student_has_violations rows (docs/analysis/backend-inventory.md 1.16),
@@ -183,7 +167,6 @@ type Service struct {
 	years      AcademicYearReader
 	schedule   ScheduleLookup
 	sync       AttendanceSync
-	guardians  GuardianLinks
 	discipline DisciplineRecorder
 	events     EventPublisher
 	realtime   RealtimePublisher
@@ -199,7 +182,6 @@ func New(
 	years AcademicYearReader,
 	schedule ScheduleLookup,
 	sync AttendanceSync,
-	guardians GuardianLinks,
 	discipline DisciplineRecorder,
 	publisher EventPublisher,
 	realtime RealtimePublisher,
@@ -209,7 +191,7 @@ func New(
 	cfg Config,
 ) *Service {
 	return &Service{
-		pool: pool, repo: repo, years: years, schedule: schedule, sync: sync, guardians: guardians, discipline: discipline,
+		pool: pool, repo: repo, years: years, schedule: schedule, sync: sync, discipline: discipline,
 		events: publisher, realtime: realtime, storage: storage, renderer: renderer, clock: clk, cfg: cfg,
 	}
 }

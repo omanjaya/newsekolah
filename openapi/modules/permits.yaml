@@ -579,60 +579,6 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
 
-  /v1/leave-requests/guardian-queue:
-    get:
-      tags: [permits]
-      operationId: listLeaveRequestsForGuardianReview
-      x-permission: approve_child_leave_requests
-      summary: Leave requests of the caller's children awaiting the caller's decision as guardian
-      responses:
-        "200":
-          description: Queue
-          content:
-            application/json:
-              schema:
-                type: object
-                required: [data]
-                properties:
-                  data: { type: array, items: { $ref: "#/components/schemas/LeaveRequestSummary" } }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "403": { $ref: "#/components/responses/Forbidden" }
-
-  /v1/leave-requests/{instanceId}/guardian-review:
-    post:
-      tags: [permits]
-      operationId: reviewLeaveRequestAsGuardian
-      x-permission: approve_child_leave_requests
-      summary: Guardian approves or rejects a linked child's leave request at their stage
-      parameters:
-        - { name: instanceId, in: path, required: true, schema: { type: string, format: uuid } }
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [approve]
-              properties:
-                approve: { type: boolean }
-                note:
-                  {
-                    type: string,
-                    maxLength: 500,
-                    description: "Required rejection reason when approve is false.",
-                  }
-      responses:
-        "200":
-          description: Reviewed
-          content:
-            application/json:
-              schema: { $ref: "#/components/schemas/LeaveRequestDetail" }
-        "400": { $ref: "#/components/responses/BadRequest" }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "403": { $ref: "#/components/responses/Forbidden" }
-        "404": { $ref: "#/components/responses/NotFound" }
-        "409": { $ref: "#/components/responses/Conflict" }
-
   /v1/leave-requests/{instanceId}:
     get:
       tags: [permits]

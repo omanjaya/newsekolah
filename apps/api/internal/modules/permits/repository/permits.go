@@ -165,7 +165,6 @@ func toLeaveRequest(row db.LeaveRequest) domain.LeaveRequest {
 		InstanceID: row.InstanceID, TenantID: row.TenantID, Category: domain.Category(row.Category), Reason: row.Reason,
 		StartsOn: pdatabase.DateOrZero(row.StartsOn), EndsOn: pdatabase.DateOrZero(row.EndsOn),
 		LetterNumber: pdatabase.TextOrEmpty(row.LetterNumber), IssuedAt: pdatabase.TimePtr(row.IssuedAt), IssuedBy: pdatabase.UUIDOrNil(row.IssuedBy),
-		ParentApprovedAt:    pdatabase.TimePtr(row.ParentApprovedAt),
 		StudentNameSnapshot: row.StudentNameSnapshot, ClassNameSnapshot: row.ClassNameSnapshot, GuardianNameSnapshot: pdatabase.TextOrEmpty(row.GuardianNameSnapshot),
 	}
 }
@@ -248,7 +247,7 @@ func (r *Repository) ListLeaveRequestsForReview(ctx context.Context, tenantID, r
 			LeaveRequest: toLeaveRequest(db.LeaveRequest{
 				InstanceID: row.InstanceID, TenantID: row.TenantID, Category: row.Category, Reason: row.Reason,
 				StartsOn: row.StartsOn, EndsOn: row.EndsOn, LetterNumber: row.LetterNumber, IssuedAt: row.IssuedAt, IssuedBy: row.IssuedBy,
-				ParentApprovedAt: row.ParentApprovedAt, StudentNameSnapshot: row.StudentNameSnapshot, ClassNameSnapshot: row.ClassNameSnapshot,
+				StudentNameSnapshot: row.StudentNameSnapshot, ClassNameSnapshot: row.ClassNameSnapshot,
 				GuardianNameSnapshot: row.GuardianNameSnapshot,
 			}),
 			SubjectUserID: row.SubjectUserID, ClassID: pdatabase.UUIDOrNil(row.ClassID),
@@ -263,7 +262,7 @@ func leaveRequestColumns(row db.ListLeaveRequestsBySubjectRow) db.LeaveRequest {
 	return db.LeaveRequest{
 		InstanceID: row.InstanceID, TenantID: row.TenantID, Category: row.Category, Reason: row.Reason,
 		StartsOn: row.StartsOn, EndsOn: row.EndsOn, LetterNumber: row.LetterNumber, IssuedAt: row.IssuedAt, IssuedBy: row.IssuedBy,
-		ParentApprovedAt: row.ParentApprovedAt, StudentNameSnapshot: row.StudentNameSnapshot, ClassNameSnapshot: row.ClassNameSnapshot,
+		StudentNameSnapshot: row.StudentNameSnapshot, ClassNameSnapshot: row.ClassNameSnapshot,
 		GuardianNameSnapshot: row.GuardianNameSnapshot,
 	}
 }

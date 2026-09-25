@@ -58,9 +58,6 @@ const (
 	PermManageLibrarySettings    = "manage_library_settings"
 	PermViewLibraryReports       = "view_library_reports"
 	PermViewOwnLibraryLoans      = "view_own_library_loans"
-
-	PermViewChildAttendance = "view_child_attendance"
-	PermViewChildGrades     = "view_child_grades"
 )
 
 // Catalog is the ordered, static list of every permission in the system.
@@ -111,9 +108,6 @@ var Catalog = []Permission{
 	{PermManageLibrarySettings, "library", "Manage library loan rules and settings"},
 	{PermViewLibraryReports, "library", "View library reports"},
 	{PermViewOwnLibraryLoans, "library", "View own library loans, reservations, and fines"},
-
-	{PermViewChildAttendance, "parent", "View a linked child's attendance"},
-	{PermViewChildGrades, "parent", "View a linked child's grades"},
 }
 
 // Codes returns every permission code in Catalog, in declaration order.

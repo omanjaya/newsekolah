@@ -606,6 +606,17 @@ guardian_phone/parent_occupation/previous_school/entry_year`,
   `staff_profiles.last_education/joined_year` juga tidak punya sumber.
   Semua field ini selalu dibiarkan null; dicatat sebagai gap agregat tetap
   (bukan per user) karena berlaku untuk seluruh tabel, bukan kadang-kadang.
+  Ini tetap gap murni ETL (kolom kontak wali di `student_profiles` ada dan
+  dipakai target, hanya belum ada sumbernya di skema SION saat ini) --
+  tidak berkaitan dengan penghapusan akun orang tua di bawah.
+- **Akun orang tua tidak pernah, dan tidak akan pernah, diimpor**
+  (keputusan produk, 25 Sep 2026, lihat [15-paritas-sion.md](15-paritas-sion.md)):
+  `mapping/role.go`'s `ProfileKindForRole`/`MapIdentityRole` tidak pernah
+  meresolusi role Spatie manapun ke `parent` -- SION sendiri tidak
+  mengekspos entity "akun orang tua" terpisah yang bisa dipetakan (data
+  wali di SION sudah berupa kolom kontak pada `student_details`, bukan
+  akun login), jadi ini bukan gap, melainkan perilaku yang sudah benar
+  sejak awal dan sekarang juga selaras dengan keputusan produk.
 - **`user_details.no_id` dipakai dobel**: kolom "nomor identitas" generik
   ini dipakai sebagai `user_profiles.nik` untuk semua kind, DAN sebagai
   `teacher_profiles.nip` / `staff_profiles.employee_number` untuk kind yang

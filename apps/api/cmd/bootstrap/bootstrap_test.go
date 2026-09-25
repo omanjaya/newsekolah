@@ -20,7 +20,7 @@ import (
 // test in the same package) must come out of it with every system role,
 // every default duty type, and every default library member type --
 // not just the super_admin role this command creates by hand -- so an
-// admin can grant the teacher/student/parent/staff/librarian/admin roles
+// admin can grant the teacher/student/staff/librarian/admin roles
 // and name a homeroom/counselor/picket/leadership/security/librarian duty
 // immediately, without waiting for a later `migrate` run.
 //

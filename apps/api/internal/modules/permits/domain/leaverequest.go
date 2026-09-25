@@ -57,7 +57,6 @@ type LeaveRequest struct {
 	LetterNumber         string
 	IssuedAt             *time.Time
 	IssuedBy             uuid.NullUUID
-	ParentApprovedAt     *time.Time
 	StudentNameSnapshot  string
 	ClassNameSnapshot    string
 	GuardianNameSnapshot string

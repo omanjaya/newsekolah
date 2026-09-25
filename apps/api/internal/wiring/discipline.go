@@ -9,7 +9,6 @@ import (
 
 	disciplinedomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/discipline/domain"
 	disciplineservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/discipline/service"
-	identityservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/identity/service"
 	permitsdomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/domain"
 	permitsservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
@@ -38,24 +37,6 @@ func (d DisciplineDocuments) IssueWarningLetter(ctx context.Context, tenantID uu
 
 func (d DisciplineDocuments) DocumentURL(ctx context.Context, tenantID, assetID uuid.UUID) (string, error) {
 	return d.Permits.DocumentDownloadURLForAsset(ctx, tenantID, assetID)
-}
-
-// DisciplineGuardians resolves a warning letter's guardian recipients
-// through identity's existing parent-link reader, so a letter notifies
-// the parent account the same way it notifies the homeroom teacher (the
-// old app's intent per letters.go's WarningLetterIssued doc comment).
-type DisciplineGuardians struct{ Identity *identityservice.Service }
-
-func (g DisciplineGuardians) GuardianIDsOf(ctx context.Context, tenantID, studentUserID uuid.UUID) ([]uuid.UUID, error) {
-	guardians, err := g.Identity.GuardiansOf(ctx, tenantID, studentUserID)
-	if err != nil {
-		return nil, err
-	}
-	out := make([]uuid.UUID, len(guardians))
-	for i, guardian := range guardians {
-		out[i] = guardian.ParentUserID
-	}
-	return out, nil
 }
 
 // LateArrivalDiscipline implements permits/service.DisciplineRecorder over

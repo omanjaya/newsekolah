@@ -194,14 +194,6 @@ type Repository interface {
 	GetPeriodEndTime(ctx context.Context, tenantID, periodID uuid.UUID) (time.Duration, error)
 	GetPeriodStartTime(ctx context.Context, tenantID, periodID uuid.UUID) (time.Duration, error)
 
-	// ListGuardianUserIDs resolves the parent/guardian user IDs linked to
-	// studentUserID, so SaveEntries can address the attendance.submitted
-	// event's Subject to them for a student marked absent
-	// (docs/02-system-design.md:110's "notifikasi orang tua untuk A").
-	//
-	// -- cross-module read; replace with identity reader interface after merge --
-	ListGuardianUserIDs(ctx context.Context, tenantID, studentUserID uuid.UUID) ([]uuid.UUID, error)
-
 	// ListSessionDetailsForClassDate and ListOwnSubmittedSessionDetails
 	// back the daily report's per-session rows and the "own sessions"
 	// scope respectively -- both cross-module reads for the same reason

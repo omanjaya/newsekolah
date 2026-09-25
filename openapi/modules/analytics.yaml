@@ -100,7 +100,7 @@ components:
       properties:
         active_users:
           type: object
-          description: Active user count per profile_kind (student/teacher/staff/parent); a kind with no active users is omitted.
+          description: Active user count per profile_kind (student/teacher/staff); a kind with no active users is omitted.
           additionalProperties: { type: integer }
         pending:
           type: object

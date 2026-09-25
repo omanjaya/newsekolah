@@ -324,39 +324,6 @@ func (r *Repository) DeleteTOTP(ctx context.Context, tenantID, userID uuid.UUID)
 	return nil
 }
 
-// Parent-student links.
-
-func (r *Repository) LinkParentStudent(ctx context.Context, tenantID, parentID, studentID uuid.UUID, relation string, canApproveLeave bool) error {
-	if _, err := r.queries(ctx).LinkParentStudent(ctx, db.LinkParentStudentParams{
-		ParentUserID: parentID, StudentUserID: studentID, TenantID: tenantID, Relation: relation, CanApproveLeave: canApproveLeave,
-	}); err != nil {
-		return fmt.Errorf("link parent to student: %w", err)
-	}
-	return nil
-}
-
-func (r *Repository) UnlinkParentStudent(ctx context.Context, tenantID, parentID, studentID uuid.UUID) error {
-	if err := r.queries(ctx).UnlinkParentStudent(ctx, db.UnlinkParentStudentParams{TenantID: tenantID, ParentUserID: parentID, StudentUserID: studentID}); err != nil {
-		return fmt.Errorf("unlink parent from student: %w", err)
-	}
-	return nil
-}
-
-func (r *Repository) ListChildren(ctx context.Context, tenantID, parentID uuid.UUID, yearID uuid.NullUUID) ([]service.Child, error) {
-	rows, err := r.queries(ctx).ListChildrenForParent(ctx, db.ListChildrenForParentParams{TenantID: tenantID, ParentUserID: parentID, YearID: pdatabase.NullUUID(yearID)})
-	if err != nil {
-		return nil, fmt.Errorf("list children: %w", err)
-	}
-	out := make([]service.Child, len(rows))
-	for i, row := range rows {
-		out[i] = service.Child{
-			StudentUserID: row.StudentUserID, StudentName: row.StudentName, ClassID: pdatabase.UUIDOrNil(row.ClassID),
-			ClassName: row.ClassName, Relation: row.Relation, CanApproveLeave: row.CanApproveLeave,
-		}
-	}
-	return out, nil
-}
-
 // ActiveClassForStudent returns the student's class for the given year,
 // with found=false when the student has no active enrollment in it.
 func (r *Repository) ActiveClassForStudent(ctx context.Context, tenantID, studentID, yearID uuid.UUID) (service.ClassRef, bool, error) {
@@ -370,23 +337,4 @@ func (r *Repository) ActiveClassForStudent(ctx context.Context, tenantID, studen
 		return service.ClassRef{}, false, fmt.Errorf("get active class for student: %w", err)
 	}
 	return service.ClassRef{ID: row.ClassID, Name: row.ClassName}, true, nil
-}
-
-func (r *Repository) ListGuardians(ctx context.Context, tenantID, studentID uuid.UUID) ([]service.Guardian, error) {
-	rows, err := r.queries(ctx).ListParentsForStudent(ctx, db.ListParentsForStudentParams{TenantID: tenantID, StudentUserID: studentID})
-	if err != nil {
-		return nil, fmt.Errorf("list guardians: %w", err)
-	}
-	out := make([]service.Guardian, len(rows))
-	for i, row := range rows {
-		out[i] = service.Guardian{
-			ParentUserID: row.ParentUserID, ParentName: row.ParentName, Phone: pdatabase.TextOrEmpty(row.Phone),
-			Relation: row.Relation, CanApproveLeave: row.CanApproveLeave,
-		}
-	}
-	return out, nil
-}
-
-func (r *Repository) IsParentOf(ctx context.Context, tenantID, parentID, studentID uuid.UUID) (bool, error) {
-	return r.queries(ctx).IsParentOfStudent(ctx, db.IsParentOfStudentParams{TenantID: tenantID, ParentUserID: parentID, StudentUserID: studentID})
 }

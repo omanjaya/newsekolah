@@ -53,18 +53,18 @@ audit_logs (id, tenant_id null, actor_user_id null, acting_as_user_id null, acti
 
 ## 3. Domain: identitas dan akses
 
+Tidak ada akun login untuk orang tua/wali (keputusan produk, 25 Sep 2026): tidak ada `user_profiles.kind = 'parent'`, tidak ada tabel penghubung akun orang tua-siswa. Data kontak wali (nama, telepon, hubungan) tetap ada -- `student_profiles.guardian_name`/`guardian_phone`/`father_name`/`mother_name`/`parent_occupation` di bawah -- karena surat peringatan, surat izin, laporan, dan pesan WhatsApp ke wali masih memakainya.
+
 ```sql
 users (id, tenant_id, username, email null, phone null, password_hash, name, status text check in ('active','inactive','invited'),
        must_change_password bool, last_login_at, locale, avatar_asset_id, created_at, updated_at, deleted_at,
        unique (tenant_id, username), unique (tenant_id, email), unique (tenant_id, phone))
-user_profiles (user_id primary key, kind text check in ('student','teacher','staff','parent'), nik, gender, birth_place, birth_date,
+user_profiles (user_id primary key, kind text check in ('student','teacher','staff'), nik, gender, birth_place, birth_date,
                religion, address, district, city, blood_type, extra jsonb, created_at, updated_at)
 student_profiles (user_id primary key, tenant_id, nis, nisn, entry_year smallint, previous_school, father_name, mother_name,
                   guardian_name, guardian_phone, parent_occupation, unique (tenant_id, nis), unique (tenant_id, nisn))
 teacher_profiles (user_id primary key, tenant_id, nip, nuptk, employment_status, last_education, joined_year, specialization)
 staff_profiles (user_id primary key, tenant_id, employee_number, position, employment_status, last_education, joined_year)
-parent_students (parent_user_id, student_user_id, relation text check in ('father','mother','guardian'), can_approve_leave bool,
-                 primary key (parent_user_id, student_user_id))
 roles (id, tenant_id, slug, name, description, is_system bool, created_at, updated_at, unique (tenant_id, slug))
 permissions (code primary key, group_name, description)              -- katalog statis, di-seed dari kode
 role_permissions (role_id, permission_code, primary key (role_id, permission_code))
@@ -164,7 +164,7 @@ exit_permits (instance_id primary key, tenant_id, destination, start_period_id, 
 late_arrivals (instance_id primary key, tenant_id, reason, occurrence_number int, required_action text, homeroom_reported bool,
                completed_at)
 leave_requests (instance_id primary key, tenant_id, category text, reason, starts_on, ends_on, letter_number null, issued_at,
-                issued_by null, parent_approved_at null, student_name_snapshot, class_name_snapshot, guardian_name_snapshot,
+                issued_by null, student_name_snapshot, class_name_snapshot, guardian_name_snapshot,
                 check (ends_on >= starts_on))
 leave_documents (id, tenant_id, leave_request_id, kind text check in ('evidence','letter'), asset_id, created_by, created_at,
                  unique (leave_request_id, kind))
@@ -264,7 +264,6 @@ erDiagram
   duty_types ||--o{ duty_assignments : assigned
   users ||--o{ duty_assignments : holds
   users ||--o{ sessions : has
-  users ||--o{ parent_students : parent
   academic_years ||--o{ terms : has
   academic_years ||--o{ classes : has
   classes ||--o{ enrollments : enrolls

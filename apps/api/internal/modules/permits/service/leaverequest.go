@@ -31,9 +31,7 @@ type LeaveRequestDetail struct {
 }
 
 type SubmitLeaveRequestInput struct {
-	TenantID uuid.UUID
-	// ActorUserID is whoever is making the request: the student
-	// themselves, or a guardian submitting for a linked child.
+	TenantID      uuid.UUID
 	ActorUserID   uuid.UUID
 	StudentUserID uuid.UUID
 	Category      domain.Category
@@ -62,21 +60,6 @@ func (s *Service) SubmitLeaveRequest(ctx context.Context, in SubmitLeaveRequestI
 	}
 	if label, ok := domain.DefaultReasonFor(in.Category); ok {
 		in.Reason = label
-	}
-	// A guardian submitting for a child must hold the same approving link
-	// used for the guardian review queue (can_approve_leave) -- the same
-	// relationship that later lets them decide this exact request.
-	if in.ActorUserID != in.StudentUserID {
-		if s.guardians == nil {
-			return LeaveRequestDetail{}, domain.ErrLeaveRequestGuardianNotLinked
-		}
-		linked, err := s.guardians.IsApprovingGuardianOf(ctx, in.TenantID, in.ActorUserID, in.StudentUserID)
-		if err != nil {
-			return LeaveRequestDetail{}, fmt.Errorf("check guardian link: %w", err)
-		}
-		if !linked {
-			return LeaveRequestDetail{}, domain.ErrLeaveRequestGuardianNotLinked
-		}
 	}
 
 	var detail LeaveRequestDetail
@@ -308,19 +291,6 @@ func (s *Service) ReviewLeaveRequest(ctx context.Context, tenantID, instanceID, 
 	}
 	s.publish(ctx, LeaveRequestReviewed{TenantID: tenantID, InstanceID: instanceID, StudentUserID: detail.Instance.SubjectUserID, Approved: approve, ReviewerID: reviewerUserID})
 	return detail, nil
-}
-
-// ReviewLeaveRequestAsGuardian is a guardian's approve/reject at their
-// stage. It is a thin wrapper over ReviewLeaveRequest -- eligibility (is
-// guardianUserID actually a guardian of this request's subject) is
-// enforced the same way as any other stage, by evaluateApproverRule -- but
-// requires a reason on rejection, since a guardian declining a child's
-// planned absence is expected to say why.
-func (s *Service) ReviewLeaveRequestAsGuardian(ctx context.Context, tenantID, instanceID, guardianUserID uuid.UUID, approve bool, note string) (LeaveRequestDetail, error) {
-	if !approve && note == "" {
-		return LeaveRequestDetail{}, domain.ErrLeaveRejectionReasonRequired
-	}
-	return s.ReviewLeaveRequest(ctx, tenantID, instanceID, guardianUserID, approve, note)
 }
 
 // IssueLeaveLetter is the counselor's final approval: it numbers the
@@ -570,58 +540,6 @@ func (s *Service) ListLeaveRequestsForReview(ctx context.Context, tenantID, revi
 		var err error
 		out, err = s.repo.ListLeaveRequestsForReview(ctx, tenantID, reviewerUserID, classID, s.tenantNow(ctx, tenantID))
 		return err
-	})
-	return out, err
-}
-
-// ListLeaveRequestsForGuardianReview is a guardian's queue: the
-// in-progress leave request of each child they hold approval rights for,
-// but only when its current stage is actually "guardian_of_student" --
-// a tenant that has not opted a guardian stage into its workflow (see
-// domain.DefaultStages) leaves this queue empty rather than surfacing
-// requests the guardian has no say over.
-func (s *Service) ListLeaveRequestsForGuardianReview(ctx context.Context, tenantID, guardianUserID uuid.UUID) ([]LeaveRequestItem, error) {
-	var out []LeaveRequestItem
-	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {
-		if s.guardians == nil {
-			return nil
-		}
-		children, err := s.guardians.ApprovingChildrenOf(ctx, tenantID, guardianUserID)
-		if err != nil {
-			return err
-		}
-		for _, studentID := range children {
-			inst, ok, err := s.repo.GetInProgressInstance(ctx, tenantID, domain.KindLeaveRequest, studentID)
-			if err != nil {
-				return err
-			}
-			if !ok {
-				continue
-			}
-			def, ok, err := s.repo.GetDefinitionByID(ctx, tenantID, inst.DefinitionID)
-			if err != nil {
-				return err
-			}
-			if !ok {
-				continue
-			}
-			stage, err := def.StageAt(inst.CurrentStageIndex)
-			if err != nil || stage.ApproverRule != domain.RuleGuardianOfStudent {
-				continue
-			}
-			lr, ok, err := s.repo.GetLeaveRequest(ctx, tenantID, inst.ID)
-			if err != nil {
-				return err
-			}
-			if !ok {
-				continue
-			}
-			out = append(out, LeaveRequestItem{
-				LeaveRequest: lr, SubjectUserID: inst.SubjectUserID, ClassID: inst.ClassID,
-				Status: inst.Status, OpenedAt: inst.OpenedAt, CurrentStageIndex: inst.CurrentStageIndex,
-			})
-		}
-		return nil
 	})
 	return out, err
 }

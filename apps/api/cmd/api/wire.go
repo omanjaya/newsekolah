@@ -23,7 +23,6 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/billing"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/discipline"
 	disciplineservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/discipline/service"
-	"github.com/omanjaya/newsekolah/apps/api/internal/modules/family"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/grading"
 	gradingservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/grading/service"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/identity"
@@ -167,7 +166,6 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		Pool: pool, Years: schoolModule.Service, Bus: eventBus, Hub: hub, Storage: sharedStorage,
 		Schedule:   permitsScheduleLookup{schedules: schedulingModule.ScheduleReader, periods: academicModule.Service, years: schoolModule.Service},
 		Sync:       sync,
-		Guardians:  wiring.GuardianLinks{Identity: identityModule.Service},
 		Discipline: disc,
 		Clock:      clock.Real{}, Config: permitsservice.DefaultConfig([]byte(cfg.DocumentSigningKey), cfg.S3Bucket), Logger: logger,
 	})
@@ -203,7 +201,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	disciplineModule := discipline.Register(discipline.Dependencies{
 		Pool: pool, Years: schoolModule.Service, Docs: wiring.DisciplineDocuments{Permits: permitsModule.Service},
 		Sealer: sealer, Bus: eventBus, Clock: clock.Real{},
-		Names: wiring.IdentityNames{Svc: identityModule.Service}, Guardians: wiring.DisciplineGuardians{Identity: identityModule.Service},
+		Names:   wiring.IdentityNames{Svc: identityModule.Service},
 		Storage: sharedStorage, Config: disciplineservice.DefaultConfig(cfg.S3Bucket),
 	})
 	disc.inner = wiring.LateArrivalDiscipline{Discipline: disciplineModule.Service, Clock: clock.Real{}}
@@ -318,7 +316,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	})
 	billingModule := billing.Register(billing.Dependencies{
 		Pool: pool, Years: schoolModule.Service, Docs: wiring.BillingDocuments{Permits: permitsModule.Service},
-		Flags: wiring.BillingFlags{Platform: platformModule.Service}, Links: identityModule.Service, Clock: clock.Real{},
+		Flags: wiring.BillingFlags{Platform: platformModule.Service}, Clock: clock.Real{},
 	})
 
 	libraryModule := library.Register(library.Dependencies{
@@ -369,15 +367,6 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	jobInserter.client = riverClient
 	bg := &background{jobs: riverClient, runWorkers: cfg.WorkerInline, logger: logger}
 
-	familyModule := family.Register(family.Dependencies{
-		Links:         identityModule.Service,
-		Attendance:    wiring.FamilyAttendance{Svc: attendanceModule.Service},
-		Grading:       wiring.FamilyGrading{Svc: gradingModule.Service},
-		Subjects:      wiring.FamilySubjects{Svc: academicModule.Service},
-		Discipline:    wiring.FamilyDiscipline{Svc: disciplineModule.Service},
-		LeaveRequests: wiring.FamilyLeaveRequests{Svc: permitsModule.Service},
-	})
-
 	activitiesModule := activities.Register(activities.Dependencies{
 		Pool: pool, Years: schoolModule.Service, Clock: clock.Real{},
 	})
@@ -406,7 +395,6 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		DisciplineHandler:      disciplineModule.Handler,
 		GradingHandler:         gradingModule.Handler,
 		ReportsHandler:         reportsModule.Handler,
-		FamilyHandler:          familyModule.Handler,
 		PlatformHandler:        platformModule.Handler,
 		LibraryHandler:         libraryModule.Handler,
 		IntegrationsHandler:    integrationsModule.Handler,

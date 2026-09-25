@@ -54,7 +54,7 @@ insert into leave_requests (
   student_name_snapshot, class_name_snapshot, guardian_name_snapshot
 )
 values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-returning instance_id, tenant_id, category, reason, starts_on, ends_on, letter_number, issued_at, issued_by, parent_approved_at, student_name_snapshot, class_name_snapshot, guardian_name_snapshot
+returning instance_id, tenant_id, category, reason, starts_on, ends_on, letter_number, issued_at, issued_by, student_name_snapshot, class_name_snapshot, guardian_name_snapshot
 `
 
 type CreateLeaveRequestParams struct {
@@ -92,7 +92,6 @@ func (q *Queries) CreateLeaveRequest(ctx context.Context, arg CreateLeaveRequest
 		&i.LetterNumber,
 		&i.IssuedAt,
 		&i.IssuedBy,
-		&i.ParentApprovedAt,
 		&i.StudentNameSnapshot,
 		&i.ClassNameSnapshot,
 		&i.GuardianNameSnapshot,
@@ -101,7 +100,7 @@ func (q *Queries) CreateLeaveRequest(ctx context.Context, arg CreateLeaveRequest
 }
 
 const getIssuedLeaveCoveringDate = `-- name: GetIssuedLeaveCoveringDate :one
-select lr.instance_id, lr.tenant_id, lr.category, lr.reason, lr.starts_on, lr.ends_on, lr.letter_number, lr.issued_at, lr.issued_by, lr.parent_approved_at, lr.student_name_snapshot, lr.class_name_snapshot, lr.guardian_name_snapshot from leave_requests lr
+select lr.instance_id, lr.tenant_id, lr.category, lr.reason, lr.starts_on, lr.ends_on, lr.letter_number, lr.issued_at, lr.issued_by, lr.student_name_snapshot, lr.class_name_snapshot, lr.guardian_name_snapshot from leave_requests lr
 join workflow_instances wi on wi.id = lr.instance_id and wi.tenant_id = lr.tenant_id
 where lr.tenant_id = $1 and wi.subject_user_id = $2 and lr.issued_at is not null
   and lr.starts_on <= $3 and lr.ends_on >= $3
@@ -130,7 +129,6 @@ func (q *Queries) GetIssuedLeaveCoveringDate(ctx context.Context, arg GetIssuedL
 		&i.LetterNumber,
 		&i.IssuedAt,
 		&i.IssuedBy,
-		&i.ParentApprovedAt,
 		&i.StudentNameSnapshot,
 		&i.ClassNameSnapshot,
 		&i.GuardianNameSnapshot,
@@ -164,7 +162,7 @@ func (q *Queries) GetLeaveDocument(ctx context.Context, arg GetLeaveDocumentPara
 }
 
 const getLeaveRequest = `-- name: GetLeaveRequest :one
-select instance_id, tenant_id, category, reason, starts_on, ends_on, letter_number, issued_at, issued_by, parent_approved_at, student_name_snapshot, class_name_snapshot, guardian_name_snapshot from leave_requests where tenant_id = $1 and instance_id = $2
+select instance_id, tenant_id, category, reason, starts_on, ends_on, letter_number, issued_at, issued_by, student_name_snapshot, class_name_snapshot, guardian_name_snapshot from leave_requests where tenant_id = $1 and instance_id = $2
 `
 
 type GetLeaveRequestParams struct {
@@ -185,7 +183,6 @@ func (q *Queries) GetLeaveRequest(ctx context.Context, arg GetLeaveRequestParams
 		&i.LetterNumber,
 		&i.IssuedAt,
 		&i.IssuedBy,
-		&i.ParentApprovedAt,
 		&i.StudentNameSnapshot,
 		&i.ClassNameSnapshot,
 		&i.GuardianNameSnapshot,
@@ -196,7 +193,7 @@ func (q *Queries) GetLeaveRequest(ctx context.Context, arg GetLeaveRequestParams
 const issueLeaveRequest = `-- name: IssueLeaveRequest :one
 update leave_requests set letter_number = $3, issued_at = $4, issued_by = $5
 where tenant_id = $1 and instance_id = $2
-returning instance_id, tenant_id, category, reason, starts_on, ends_on, letter_number, issued_at, issued_by, parent_approved_at, student_name_snapshot, class_name_snapshot, guardian_name_snapshot
+returning instance_id, tenant_id, category, reason, starts_on, ends_on, letter_number, issued_at, issued_by, student_name_snapshot, class_name_snapshot, guardian_name_snapshot
 `
 
 type IssueLeaveRequestParams struct {
@@ -226,7 +223,6 @@ func (q *Queries) IssueLeaveRequest(ctx context.Context, arg IssueLeaveRequestPa
 		&i.LetterNumber,
 		&i.IssuedAt,
 		&i.IssuedBy,
-		&i.ParentApprovedAt,
 		&i.StudentNameSnapshot,
 		&i.ClassNameSnapshot,
 		&i.GuardianNameSnapshot,
@@ -272,7 +268,7 @@ func (q *Queries) ListLeaveDocuments(ctx context.Context, arg ListLeaveDocuments
 }
 
 const listLeaveRequestsBySubject = `-- name: ListLeaveRequestsBySubject :many
-select lr.instance_id, lr.tenant_id, lr.category, lr.reason, lr.starts_on, lr.ends_on, lr.letter_number, lr.issued_at, lr.issued_by, lr.parent_approved_at, lr.student_name_snapshot, lr.class_name_snapshot, lr.guardian_name_snapshot, wi.status, wi.opened_at, wi.current_stage_index
+select lr.instance_id, lr.tenant_id, lr.category, lr.reason, lr.starts_on, lr.ends_on, lr.letter_number, lr.issued_at, lr.issued_by, lr.student_name_snapshot, lr.class_name_snapshot, lr.guardian_name_snapshot, wi.status, wi.opened_at, wi.current_stage_index
 from leave_requests lr
 join workflow_instances wi on wi.id = lr.instance_id
 where lr.tenant_id = $1 and wi.subject_user_id = $2
@@ -297,7 +293,6 @@ type ListLeaveRequestsBySubjectRow struct {
 	LetterNumber         pgtype.Text        `json:"letter_number"`
 	IssuedAt             pgtype.Timestamptz `json:"issued_at"`
 	IssuedBy             pgtype.UUID        `json:"issued_by"`
-	ParentApprovedAt     pgtype.Timestamptz `json:"parent_approved_at"`
 	StudentNameSnapshot  string             `json:"student_name_snapshot"`
 	ClassNameSnapshot    string             `json:"class_name_snapshot"`
 	GuardianNameSnapshot pgtype.Text        `json:"guardian_name_snapshot"`
@@ -330,7 +325,6 @@ func (q *Queries) ListLeaveRequestsBySubject(ctx context.Context, arg ListLeaveR
 			&i.LetterNumber,
 			&i.IssuedAt,
 			&i.IssuedBy,
-			&i.ParentApprovedAt,
 			&i.StudentNameSnapshot,
 			&i.ClassNameSnapshot,
 			&i.GuardianNameSnapshot,
@@ -349,7 +343,7 @@ func (q *Queries) ListLeaveRequestsBySubject(ctx context.Context, arg ListLeaveR
 }
 
 const listLeaveRequestsForReview = `-- name: ListLeaveRequestsForReview :many
-select lr.instance_id, lr.tenant_id, lr.category, lr.reason, lr.starts_on, lr.ends_on, lr.letter_number, lr.issued_at, lr.issued_by, lr.parent_approved_at, lr.student_name_snapshot, lr.class_name_snapshot, lr.guardian_name_snapshot, wi.status, wi.opened_at, wi.current_stage_index, wi.class_id, wi.subject_user_id
+select lr.instance_id, lr.tenant_id, lr.category, lr.reason, lr.starts_on, lr.ends_on, lr.letter_number, lr.issued_at, lr.issued_by, lr.student_name_snapshot, lr.class_name_snapshot, lr.guardian_name_snapshot, wi.status, wi.opened_at, wi.current_stage_index, wi.class_id, wi.subject_user_id
 from leave_requests lr
 join workflow_instances wi on wi.id = lr.instance_id
 join workflow_definitions wd on wd.id = wi.definition_id
@@ -394,7 +388,6 @@ type ListLeaveRequestsForReviewRow struct {
 	LetterNumber         pgtype.Text        `json:"letter_number"`
 	IssuedAt             pgtype.Timestamptz `json:"issued_at"`
 	IssuedBy             pgtype.UUID        `json:"issued_by"`
-	ParentApprovedAt     pgtype.Timestamptz `json:"parent_approved_at"`
 	StudentNameSnapshot  string             `json:"student_name_snapshot"`
 	ClassNameSnapshot    string             `json:"class_name_snapshot"`
 	GuardianNameSnapshot pgtype.Text        `json:"guardian_name_snapshot"`
@@ -442,7 +435,6 @@ func (q *Queries) ListLeaveRequestsForReview(ctx context.Context, arg ListLeaveR
 			&i.LetterNumber,
 			&i.IssuedAt,
 			&i.IssuedBy,
-			&i.ParentApprovedAt,
 			&i.StudentNameSnapshot,
 			&i.ClassNameSnapshot,
 			&i.GuardianNameSnapshot,

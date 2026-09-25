@@ -44,9 +44,9 @@ var componentSeeds = []struct {
 }
 
 // seedPhase2 adds the data the discipline and grading modules need to be
-// usable in a demo: an active term, a violation catalogue, one assessment
-// component set for the demo class, and the parent-student link.
-func seedPhase2(ctx context.Context, pool *pgxpool.Pool, q *db.Queries, tenantID, yearID uuid.UUID, users map[string]db.User, encryptionSecret string, logger *slog.Logger) error {
+// usable in a demo: an active term, a violation catalogue, and one
+// assessment component set for the demo class.
+func seedPhase2(ctx context.Context, pool *pgxpool.Pool, tenantID, yearID uuid.UUID, users map[string]db.User, encryptionSecret string, logger *slog.Logger) error {
 	academicSvc := academic.Register(pool, clock.Real{}).Service
 	termID, err := ensureTerm(ctx, academicSvc, tenantID, yearID)
 	if err != nil {
@@ -76,9 +76,6 @@ func seedPhase2(ctx context.Context, pool *pgxpool.Pool, q *db.Queries, tenantID
 		return err
 	}
 
-	if err := ensureParentLink(ctx, q, tenantID, users["ortu"].ID, users["siswa"].ID); err != nil {
-		return err
-	}
 	logger.Info("phase 2 data ready", "term", termID, "violation_types", len(violationSeeds), "components", len(componentSeeds))
 	return nil
 }
@@ -150,18 +147,6 @@ func ensureComponents(ctx context.Context, module *grading.Module, tenantID, tea
 		}); err != nil {
 			return fmt.Errorf("create component %s: %w", seed.code, err)
 		}
-	}
-	return nil
-}
-
-func ensureParentLink(ctx context.Context, q *db.Queries, tenantID, parentID, studentID uuid.UUID) error {
-	if parentID == uuid.Nil || studentID == uuid.Nil {
-		return nil
-	}
-	if _, err := q.LinkParentStudent(ctx, db.LinkParentStudentParams{
-		ParentUserID: parentID, StudentUserID: studentID, TenantID: tenantID, Relation: "guardian", CanApproveLeave: true,
-	}); err != nil {
-		return fmt.Errorf("link parent to student: %w", err)
 	}
 	return nil
 }

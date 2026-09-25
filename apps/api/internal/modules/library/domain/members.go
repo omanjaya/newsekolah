@@ -35,7 +35,6 @@ const (
 	RoleStudent Role = "student"
 	RoleTeacher Role = "teacher"
 	RoleStaff   Role = "staff"
-	RoleParent  Role = "parent"
 )
 
 // MemberType is a library_member_types row: the per-type loan limits and

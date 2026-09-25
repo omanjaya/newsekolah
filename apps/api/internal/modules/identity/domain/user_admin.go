@@ -14,12 +14,11 @@ const (
 	ProfileStudent ProfileKind = "student"
 	ProfileTeacher ProfileKind = "teacher"
 	ProfileStaff   ProfileKind = "staff"
-	ProfileParent  ProfileKind = "parent"
 )
 
 func (k ProfileKind) Valid() bool {
 	switch k {
-	case ProfileStudent, ProfileTeacher, ProfileStaff, ProfileParent:
+	case ProfileStudent, ProfileTeacher, ProfileStaff:
 		return true
 	default:
 		return false

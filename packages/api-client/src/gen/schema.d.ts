@@ -1639,23 +1639,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/children/{studentId}/billing": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** One linked child's bills and payment history, read-only */
-        get: operations["getChildBilling"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/billing/fee-types": {
         parameters: {
             query?: never;
@@ -2400,74 +2383,6 @@ export interface paths {
         };
         /** Short-lived download URL for one attachment (visibility enforced server-side) */
         get: operations["getCounselingAttachmentUrl"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/children/{studentId}/attendance": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** One linked child's attendance month */
-        get: operations["getChildAttendance"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/children/{studentId}/grades": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** One linked child's published grades */
-        get: operations["getChildGrades"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/children/{studentId}/leave-requests": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Guardian submits a planned leave request for a linked child */
-        post: operations["submitChildLeaveRequest"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/children/{studentId}/discipline": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** One linked child's violation points and warning letters */
-        get: operations["getChildDiscipline"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3421,75 +3336,6 @@ export interface paths {
         put?: never;
         /** Replace the recovery codes (shown once) */
         post: operations["regenerateMfaRecoveryCodes"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/me/children": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Students linked to the signed-in parent account */
-        get: operations["listMyChildren"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/users/{userId}/children": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Students linked to one parent account */
-        get: operations["listUserChildren"];
-        put?: never;
-        /** Link a parent account to a student */
-        post: operations["linkChild"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/users/{userId}/children/{studentId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /** Remove a parent-student link */
-        delete: operations["unlinkChild"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/students/{studentId}/guardians": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Parent accounts linked to one student */
-        get: operations["listStudentGuardians"];
-        put?: never;
-        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -6472,40 +6318,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/leave-requests/guardian-queue": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Leave requests of the caller's children awaiting the caller's decision as guardian */
-        get: operations["listLeaveRequestsForGuardianReview"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/leave-requests/{instanceId}/guardian-review": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Guardian approves or rejects a linked child's leave request at their stage */
-        post: operations["reviewLeaveRequestAsGuardian"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/leave-requests/{instanceId}": {
         parameters: {
             query?: never;
@@ -8664,7 +8476,7 @@ export interface components {
             notes?: string;
         };
         AdminDashboard: {
-            /** @description Active user count per profile_kind (student/teacher/staff/parent); a kind with no active users is omitted. */
+            /** @description Active user count per profile_kind (student/teacher/staff); a kind with no active users is omitted. */
             active_users: {
                 [key: string]: number;
             };
@@ -9361,45 +9173,6 @@ export interface components {
             /** @description Warning-letter levels already issued to this student, so the client does not offer one already sent. */
             issued_levels: number[];
         };
-        ChildCalendarDay: {
-            /** Format: date */
-            date: string;
-            status_code: string;
-            expected_sessions: number;
-            submitted_sessions: number;
-            complete: boolean;
-        };
-        ChildSubjectGrade: {
-            /** Format: uuid */
-            subject_id: string;
-            subject_name: string;
-            average?: number;
-            report_score?: number;
-        };
-        ChildGrades: {
-            /** Format: uuid */
-            term_id: string;
-            term_name: string;
-            subjects: components["schemas"]["ChildSubjectGrade"][];
-            stars: number;
-        };
-        ChildViolation: {
-            type_name: string;
-            points: number;
-            /** Format: date */
-            occurred_on: string;
-        };
-        ChildWarningLetter: {
-            number: string;
-            level_label: string;
-            /** Format: date */
-            issued_at: string;
-        };
-        ChildDiscipline: {
-            total_points: number;
-            records: components["schemas"]["ChildViolation"][];
-            letters: components["schemas"]["ChildWarningLetter"][];
-        };
         GradingScale: {
             version: number;
             min: number;
@@ -9627,7 +9400,7 @@ export interface components {
             email?: string;
             password?: string;
             profile_kind: components["schemas"]["ProfileKind"];
-            /** @description A system role slug, or an alias (e.g. "siswa", "guru", "pegawai", "wali") -- see the template's reference sheet */
+            /** @description A system role slug, or an alias (e.g. "siswa", "guru", "pegawai") -- see the template's reference sheet */
             role_slug: string;
             nik?: string;
             name: string;
@@ -9705,26 +9478,6 @@ export interface components {
             session_days: number;
             single_device: boolean;
         };
-        /** @enum {string} */
-        ParentRelation: "father" | "mother" | "guardian";
-        LinkedChild: {
-            /** Format: uuid */
-            student_user_id: string;
-            student_name: string;
-            /** Format: uuid */
-            class_id?: string;
-            class_name?: string;
-            relation: components["schemas"]["ParentRelation"];
-            can_approve_leave: boolean;
-        };
-        Guardian: {
-            /** Format: uuid */
-            parent_user_id: string;
-            parent_name: string;
-            phone?: string;
-            relation: components["schemas"]["ParentRelation"];
-            can_approve_leave: boolean;
-        };
         MfaStatus: {
             enrolled: boolean;
             confirmed: boolean;
@@ -9748,7 +9501,7 @@ export interface components {
         /** @enum {string} */
         UserStatus: "active" | "inactive" | "invited";
         /** @enum {string} */
-        ProfileKind: "student" | "teacher" | "staff" | "parent";
+        ProfileKind: "student" | "teacher" | "staff";
         /** @enum {string} */
         DutyScopeKind: "school" | "class" | "student";
         /** @description Optional profile columns; which ones apply depends on profile_kind. */
@@ -9970,7 +9723,7 @@ export interface components {
             /** Format: uri */
             avatar_url?: string;
             /** @enum {string} */
-            profile_kind?: "student" | "teacher" | "staff" | "parent";
+            profile_kind?: "student" | "teacher" | "staff";
             roles: components["schemas"]["Role"][];
             /** @description Effective permission codes (role plus active duty permissions). */
             permissions: string[];
@@ -10330,7 +10083,7 @@ export interface components {
             suspend_days: number;
             validity_months: number;
             /** @enum {string} */
-            default_for_role?: "student" | "teacher" | "staff" | "parent";
+            default_for_role?: "student" | "teacher" | "staff";
         };
         LibraryMemberTypeWrite: {
             name: string;
@@ -10344,7 +10097,7 @@ export interface components {
             suspend_days: number;
             validity_months: number;
             /** @enum {string} */
-            default_for_role?: "student" | "teacher" | "staff" | "parent";
+            default_for_role?: "student" | "teacher" | "staff";
         };
         LibraryLoanRule: {
             /** Format: uuid */
@@ -15719,30 +15472,6 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
         };
     };
-    getChildBilling: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                studentId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description History */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["StudentBillHistory"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-        };
-    };
     listFeeTypes: {
         parameters: {
             query?: {
@@ -17288,125 +17017,6 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
-        };
-    };
-    getChildAttendance: {
-        parameters: {
-            query: {
-                month: string;
-            };
-            header?: never;
-            path: {
-                studentId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Days and totals */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        data: components["schemas"]["ChildCalendarDay"][];
-                        totals: {
-                            [key: string]: number;
-                        };
-                    };
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-        };
-    };
-    getChildGrades: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                studentId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Grades */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ChildGrades"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-        };
-    };
-    submitChildLeaveRequest: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                studentId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    category: components["schemas"]["LeaveCategory"];
-                    reason: string;
-                    /** Format: date */
-                    starts_on: string;
-                    /** Format: date */
-                    ends_on: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Submitted */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** Format: uuid */
-                        instance_id: string;
-                    };
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            409: components["responses"]["Conflict"];
-        };
-    };
-    getChildDiscipline: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                studentId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Discipline */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ChildDiscipline"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
         };
     };
     getGradingScale: {
@@ -19299,138 +18909,6 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
         };
     };
-    listMyChildren: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Children */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        data: components["schemas"]["LinkedChild"][];
-                    };
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-        };
-    };
-    listUserChildren: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                userId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Children */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        data: components["schemas"]["LinkedChild"][];
-                    };
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-        };
-    };
-    linkChild: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                userId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    /** Format: uuid */
-                    student_user_id: string;
-                    relation: components["schemas"]["ParentRelation"];
-                    /** @default false */
-                    can_approve_leave?: boolean;
-                };
-            };
-        };
-        responses: {
-            /** @description Linked */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    unlinkChild: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                userId: string;
-                studentId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Unlinked */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-        };
-    };
-    listStudentGuardians: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                studentId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Guardians */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        data: components["schemas"]["Guardian"][];
-                    };
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-        };
-    };
     login: {
         parameters: {
             query?: never;
@@ -21280,7 +20758,7 @@ export interface operations {
                     /** Format: uuid */
                     member_type_id: string;
                     /** @enum {string} */
-                    role: "student" | "teacher" | "staff" | "parent";
+                    role: "student" | "teacher" | "staff";
                     /** Format: uuid */
                     class_id?: string;
                 };
@@ -25561,65 +25039,6 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
-        };
-    };
-    listLeaveRequestsForGuardianReview: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Queue */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        data: components["schemas"]["LeaveRequestSummary"][];
-                    };
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-        };
-    };
-    reviewLeaveRequestAsGuardian: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                instanceId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    approve: boolean;
-                    /** @description Required rejection reason when approve is false. */
-                    note?: string;
-                };
-            };
-        };
-        responses: {
-            /** @description Reviewed */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["LeaveRequestDetail"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
         };
     };
     getLeaveRequest: {

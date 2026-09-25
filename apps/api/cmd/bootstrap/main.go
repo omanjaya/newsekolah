@@ -133,7 +133,7 @@ func run(logger *slog.Logger, tenantSlug, tenantName, educationLevel, adminUsern
 		// above) and the tenant row, a fresh install otherwise has none of
 		// the system roles or duty types every other provisioning path
 		// (platform console's CreateTenant, cmd/seed) creates -- an admin
-		// could not grant anyone the teacher/student/parent/staff/
+		// could not grant anyone the teacher/student/staff/
 		// librarian/admin roles, and no homeroom/counselor/picket/
 		// leadership/security/librarian duty existed until the next
 		// deploy's migrate ran (migrator.PostUp calls the same routine for

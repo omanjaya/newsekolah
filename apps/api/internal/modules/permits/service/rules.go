@@ -77,12 +77,6 @@ func (s *Service) checkApproverRule(ctx context.Context, rule string, rc ruleCon
 	case domain.RuleHomeroomOfStudent:
 		return s.repo.HasActiveDuty(ctx, rc.tenantID, rc.academicYearID, rc.actorUserID, "homeroom", rc.classID, rc.date)
 
-	case domain.RuleGuardianOfStudent:
-		if s.guardians == nil {
-			return false, nil
-		}
-		return s.guardians.IsApprovingGuardianOf(ctx, rc.tenantID, rc.actorUserID, rc.subjectUserID)
-
 	default:
 		if slug, ok := domain.ParseDutyRule(rule); ok {
 			return s.repo.HasActiveDuty(ctx, rc.tenantID, rc.academicYearID, rc.actorUserID, slug, uuid.NullUUID{}, rc.date)

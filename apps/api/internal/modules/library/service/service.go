@@ -348,7 +348,7 @@ type TitleLoanCount struct {
 type MemberDirectory interface {
 	UserDisplayName(ctx context.Context, tenantID, userID uuid.UUID) (string, error)
 	// UserRole returns the identity module's user kind (student, teacher,
-	// staff, parent), used to pick a member type's default_for_role at
+	// staff), used to pick a member type's default_for_role at
 	// auto-registration and to scope bulk registration.
 	UserRole(ctx context.Context, tenantID, userID uuid.UUID) (string, bool, error)
 }

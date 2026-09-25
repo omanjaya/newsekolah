@@ -54,7 +54,6 @@ var systemUsers = []userSeed{
 	{"gurubk", "Guru BK Contoh", "teacher"},
 	{"kepsek", "Kepala Sekolah Contoh", "principal"},
 	{"siswa", "Siswa Contoh", "student"},
-	{"ortu", "Orang Tua Contoh", "parent"},
 }
 
 func main() {
@@ -114,7 +113,7 @@ func run(logger *slog.Logger) error {
 		return err
 	}
 
-	if err := seedPhase2(ctx, pool, q, tenant.ID, year.ID, users, cfg.EncryptionSecret(), logger); err != nil {
+	if err := seedPhase2(ctx, pool, tenant.ID, year.ID, users, cfg.EncryptionSecret(), logger); err != nil {
 		return err
 	}
 
@@ -270,7 +269,7 @@ func seedUsers(ctx context.Context, q *db.Queries, tenantID uuid.UUID, roleIDs m
 	}
 
 	profileKindByRole := map[string]string{
-		"admin": "staff", "teacher": "teacher", "student": "student", "parent": "parent",
+		"admin": "staff", "teacher": "teacher", "student": "student",
 		// A "Kepala Sekolah" is drawn from the teaching staff (Indonesian
 		// regulation requires a principal to hold a teaching
 		// certification), matching the "leadership" duty type's usual

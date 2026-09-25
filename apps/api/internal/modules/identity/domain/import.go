@@ -105,7 +105,7 @@ func ValidateImportRow(row ImportRow, isUpdate bool) []string {
 	}
 
 	if !row.ProfileKind.Valid() {
-		errs = append(errs, "profile_kind must be one of student, teacher, staff, parent")
+		errs = append(errs, "profile_kind must be one of student, teacher, staff")
 	}
 	if row.RoleSlug == "" {
 		errs = append(errs, "role_slug is required")
@@ -174,7 +174,6 @@ var roleAliases = map[string]string{
 	"siswa": "student", "murid": "student", "student": "student",
 	"guru": "teacher", "pengajar": "teacher", "teacher": "teacher",
 	"pegawai": "staff", "karyawan": "staff", "staf": "staff", "staff": "staff",
-	"orangtua": "parent", "orang_tua": "parent", "ortu": "parent", "wali": "parent", "parent": "parent",
 	"pustakawan": "librarian", "librarian": "librarian",
 	"admin": "admin", "administrator": "admin",
 	"super_admin": "super_admin", "superadmin": "super_admin",

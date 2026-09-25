@@ -8,9 +8,8 @@ package domain
 
 // StatusCodeAlpha is the code the default (and every observed tenant)
 // policy uses for an unexcused absence. A few call sites need to single
-// out "absent" specifically rather than just "not present" -- e.g.
-// notifying guardians on submit -- so this is named rather than repeating
-// the literal "A".
+// out "absent" specifically rather than just "not present", so this is
+// named rather than repeating the literal "A".
 const StatusCodeAlpha = "A"
 
 // StatusDef is one attendance status code a tenant accepts, configured via

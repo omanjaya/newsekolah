@@ -136,7 +136,7 @@ func validateStages(stages []domain.Stage) error {
 
 func validApproverRule(rule string) bool {
 	switch rule {
-	case domain.RuleAnyTeacher, domain.RuleTeacherOfClassNow, domain.RuleHomeroomOfStudent, domain.RuleGuardianOfStudent:
+	case domain.RuleAnyTeacher, domain.RuleTeacherOfClassNow, domain.RuleHomeroomOfStudent:
 		return true
 	}
 	_, ok := domain.ParseDutyRule(rule)

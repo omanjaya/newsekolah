@@ -53,8 +53,6 @@ tags:
     description: Assessment components, grades, report scores, stars
   - name: reports
     description: Report centre and exports
-  - name: family
-    description: Parent view of a linked child
   - name: platform
     description: Cross-tenant platform console (multi-tenant deployments only)
   - name: library
