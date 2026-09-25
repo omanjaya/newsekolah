@@ -73,7 +73,7 @@ services:
     # the shared-Caddy VPS deployment; pinning it here too means a plain
     # (non-VPS) `docker compose -f docker-compose.prod.yml up` doesn't hit
     # the same failure.
-    image: docker.io/pgsty/silo:latest
+    image: docker.io/pgsty/silo:RELEASE.2026-09-16T00-00-00Z
     restart: unless-stopped
     env_file: .env
     environment:
@@ -97,7 +97,7 @@ services:
     # See the minio service above: pgsty/mc is the matching community mc
     # client for pgsty/silo (same CLI, ENTRYPOINT ["mc"] like the archived
     # minio/mc).
-    image: docker.io/pgsty/mc:latest
+    image: docker.io/pgsty/mc:RELEASE.2026-09-16T00-00-00Z
     depends_on:
       minio:
         condition: service_healthy

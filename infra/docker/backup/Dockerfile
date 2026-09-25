@@ -8,7 +8,7 @@
 # Gone. pgsty/mc is the community-maintained continuation of the mc client
 # (same CLI); see the minio service in docker-compose.prod.yml for the
 # matching server image.
-FROM docker.io/pgsty/mc:latest AS mc
+FROM docker.io/pgsty/mc:RELEASE.2026-09-16T00-00-00Z AS mc
 
 FROM alpine:3.20
 

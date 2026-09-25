@@ -62,7 +62,7 @@ services:
     # MINIO_ROOT_PASSWORD env vars, same on-disk format, no license gate --
     # verified by actually starting it and calling the S3 health endpoint.
     # Matches infra/docker/compose.vps.yml and docker-compose.prod.yml.
-    image: docker.io/pgsty/silo:latest
+    image: docker.io/pgsty/silo:RELEASE.2026-09-16T00-00-00Z
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: minioadmin

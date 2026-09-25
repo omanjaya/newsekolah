@@ -35,12 +35,12 @@ services:
   # free image any more). The image lines here just keep this override in
   # sync with the base file explicitly.
   minio:
-    image: docker.io/pgsty/silo:latest
+    image: docker.io/pgsty/silo:RELEASE.2026-09-16T00-00-00Z
     ports:
       - "127.0.0.1:9012:9000"
 
   minio-init:
-    image: docker.io/pgsty/mc:latest
+    image: docker.io/pgsty/mc:RELEASE.2026-09-16T00-00-00Z
 
   caddy:
     profiles: ["bundled-caddy"]
