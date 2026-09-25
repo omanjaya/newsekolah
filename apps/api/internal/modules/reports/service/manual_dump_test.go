@@ -53,7 +53,7 @@ func TestManualGradeLevelDump(t *testing.T) {
 
 	attendance := fakeAttendance{rows: rows, labels: map[string]string{"H": "Hadir", "S": "Sakit", "I": "Izin", "D": "Dispensasi", "A": "Alpha"}}
 	academic := fakeAcademic{byID: byID, byGradeLvl: byGradeLvl, gradeLevels: map[uuid.UUID]string{gradeLevel: "Kelas X"}}
-	svc := service.New(attendance, nil, nil, nil)
+	svc := service.New(attendance, nil, nil, nil, nil)
 	svc.SetReportDocDependencies(academic, fakeLetterhead{
 		lh: &reportdoc.Letterhead{
 			Lines:    []string{"Yayasan Pendidikan Dharma Praja", "SMA Negeri 1 Denpasar", "Jl. Kamboja No. 4, Denpasar", "Telp. (0361) 123456"},

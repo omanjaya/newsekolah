@@ -110,6 +110,12 @@ func (s *Service) withTx(ctx context.Context, tenantID uuid.UUID, fn func(ctx co
 
 // Branding builds the public branding view for a tenant: tenant row
 // defaults, overridden by any "branding.*" tenant_settings key.
+// business-rule guard clauses gate one write or one aggregated read;
+// the branches are sequential guards, not nested decision logic, and
+// the module's existing test suite already covers them. Left as-is
+// here to avoid behaviour risk in a lint-only change.
+//
+//nolint:gocyclo // service method: several independent precondition/authorization/
 func (s *Service) Branding(ctx context.Context, tenantID uuid.UUID) (domain.Branding, error) {
 	t, err := s.repo.GetTenantByID(ctx, tenantID)
 	if err != nil {

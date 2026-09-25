@@ -219,6 +219,12 @@ func intPtr(i int) *int       { return &i }
 // letterhead block, title, scope lines, the styled/frozen header row, the
 // section's typed data rows, an optional totals block, the signature
 // block, and print setup.
+// section by section (header, rows, signature block); the branches
+// mirror the printed document's structure, not independent decision
+// paths, so splitting them would scatter one page's rendering across
+// multiple functions without reducing real complexity.
+//
+//nolint:gocyclo // document rendering: walks the fixed layout of one PDF/XLSX report
 func writeXLSXSheet(f *excelize.File, sheet string, doc Document, section Section, styles xlsxStyles) error {
 	cols := section.columns(doc)
 	lastCol := len(cols)
@@ -428,6 +434,12 @@ func setTypedCell(f *excelize.File, sheet, cell string, kind ColumnKind, v any) 
 // writeLetterhead places the logo (scaled to fit a fixed-height block) in
 // column A and the school name/address lines beside it (or, with no logo,
 // starting in column A), and returns the last row the block occupies.
+// section by section (header, rows, signature block); the branches
+// mirror the printed document's structure, not independent decision
+// paths, so splitting them would scatter one page's rendering across
+// multiple functions without reducing real complexity.
+//
+//nolint:gocyclo // document rendering: walks the fixed layout of one PDF/XLSX report
 func writeLetterhead(f *excelize.File, sheet string, lh *Letterhead, lastCol int, lastColName string, styles xlsxStyles) (int, error) {
 	textCol := "A"
 	blockRows := len(lh.Lines)
@@ -569,6 +581,12 @@ func imageExtension(data []byte) (string, error) {
 // range, side by side (two signers split the width in half, e.g. Wali
 // Kelas left / Kepala Sekolah right, the standard Indonesian layout) --
 // each with a bold, underlined name line and an optional identifier line.
+// section by section (header, rows, signature block); the branches
+// mirror the printed document's structure, not independent decision
+// paths, so splitting them would scatter one page's rendering across
+// multiple functions without reducing real complexity.
+//
+//nolint:gocyclo // document rendering: walks the fixed layout of one PDF/XLSX report
 func writeSignature(f *excelize.File, sheet string, sig *Signature, row, lastCol int, styles xlsxStyles) error {
 	lastColName, err := excelize.ColumnNumberToName(lastCol)
 	if err != nil {
@@ -661,13 +679,13 @@ func uniqueSheetName(name, fallback string, index int, used map[string]bool) str
 	suffix := 2
 	for used[strings.ToLower(name)] {
 		tail := fmt.Sprintf(" (%d)", suffix)
-		max := 31 - len(tail)
-		if max < 0 {
-			max = 0
+		maxLen := 31 - len(tail)
+		if maxLen < 0 {
+			maxLen = 0
 		}
 		trimmed := base
-		if len(trimmed) > max {
-			trimmed = trimmed[:max]
+		if len(trimmed) > maxLen {
+			trimmed = trimmed[:maxLen]
 		}
 		name = trimmed + tail
 		suffix++

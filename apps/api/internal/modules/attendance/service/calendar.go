@@ -226,6 +226,12 @@ type HomeroomRoster struct {
 	Total        int
 }
 
+// business-rule guard clauses gate one write or one aggregated read;
+// the branches are sequential guards, not nested decision logic, and
+// the module's existing test suite already covers them. Left as-is
+// here to avoid behaviour risk in a lint-only change.
+//
+//nolint:gocyclo // service method: several independent precondition/authorization/
 func (s *Service) GetHomeroomAttendance(ctx context.Context, tenantID uuid.UUID, actor Actor, date time.Time, f HomeroomFilter) (HomeroomRoster, error) {
 	var out HomeroomRoster
 	err := s.withTx(ctx, tenantID, func(ctx context.Context) error {

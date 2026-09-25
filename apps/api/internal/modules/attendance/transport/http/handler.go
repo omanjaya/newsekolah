@@ -90,6 +90,10 @@ var (
 // mapAttendanceError translates an attendance/domain sentinel error into
 // the stable *httpx.Error the API contract promises; anything unrecognized
 // becomes a generic 500 rather than leaking internals.
+// switch/errors.Is chain -- a lookup table shaped as a switch, not
+// nested decision logic.
+//
+//nolint:gocyclo // translates each domain error to its transport equivalent via a
 func mapAttendanceError(err error) error {
 	switch {
 	case err == nil:

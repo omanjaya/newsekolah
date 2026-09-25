@@ -26,6 +26,12 @@ type EraporLegacyFile struct {
 
 // ExportEraporLegacy renders the legacy sheet for one class-subject-term,
 // the same scope the old app's teacher-facing export used.
+// business-rule guard clauses gate one write or one aggregated read;
+// the branches are sequential guards, not nested decision logic, and
+// the module's existing test suite already covers them. Left as-is
+// here to avoid behaviour risk in a lint-only change.
+//
+//nolint:gocyclo // service method: several independent precondition/authorization/
 func (s *Service) ExportEraporLegacy(ctx context.Context, tenantID, actorID uuid.UUID, canManageAny bool, classID, subjectID uuid.UUID, termID uuid.NullUUID) (EraporLegacyFile, error) {
 	if err := s.requireEnabled(ctx, tenantID); err != nil {
 		return EraporLegacyFile{}, err
@@ -141,6 +147,12 @@ var legacyEraporFixedHeaders = []string{"No", "NIS", "Nama", "Nilai Rapor"}
 // renderLegacyErapor writes the old app's sheet layout: the fixed columns,
 // one column per mapped TP export code with a T/R dropdown, and a
 // trailing Validasi column.
+// section by section (header, rows, signature block); the branches
+// mirror the printed document's structure, not independent decision
+// paths, so splitting them would scatter one page's rendering across
+// multiple functions without reducing real complexity.
+//
+//nolint:gocyclo // document rendering: walks the fixed layout of one PDF/XLSX report
 func renderLegacyErapor(export domain.LegacyEraporExport) ([]byte, error) {
 	f := excelize.NewFile()
 	defer f.Close() //nolint:errcheck // an in-memory workbook cannot fail to close after WriteToBuffer

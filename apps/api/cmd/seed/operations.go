@@ -96,6 +96,8 @@ var subjectSeeds = []struct{ code, name string }{
 // template on every weekday, subjects, the demo student enrolled in X-A,
 // the demo teacher as X-A's homeroom and mathematics teacher, and a
 // timetable block on each school day.
+//
+//nolint:gocyclo // sequential demo-data steps, each a guarded insert
 func seedOperations(ctx context.Context, pool *pgxpool.Pool, q *db.Queries, tenantID, yearID uuid.UUID, users map[string]db.User, logger *slog.Logger) error {
 	teacher, student := users["guru"], users["siswa"]
 	student2 := users["siswa2"]

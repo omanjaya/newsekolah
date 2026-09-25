@@ -85,7 +85,7 @@ func (s *Source) FetchExitPermits(yearID int64, semesterStart, semesterEnd time.
 // migrated semester's date range are not in a final state (status
 // 'approved' or 'out') or are permit_type 'late', for the report's gap
 // line -- see FetchExitPermits' doc comment.
-func (s *Source) CountExitPermitsNotFinal(yearID int64, semesterStart, semesterEnd time.Time) (notFinal, lateType int, err error) {
+func (s *Source) CountExitPermitsNotFinal(_ int64, semesterStart, semesterEnd time.Time) (notFinal, lateType int, err error) {
 	// coalesce(..., 0): MySQL's sum() over zero matching rows (e.g. a
 	// semester with no student_permits rows at all, or none matching the
 	// inner boolean condition) returns NULL, not 0 -- Scan into a plain

@@ -64,7 +64,9 @@ func (r *Repository) GetJournalByUnique(ctx context.Context, tenantID, academicY
 
 // journalFilterParams builds the shared narg set both ListJournalsFiltered
 // and CountJournalsFiltered take, so the two queries can never drift apart.
-func journalFilterParams(tenantID, academicYearID uuid.UUID, f service.JournalFilter) (teacherID, classID pgtype.UUID, from, to pgtype.Date, search pgtype.Text) {
+// It only maps f's optional fields -- tenant/academic-year scoping is
+// applied directly by the two callers, which already have those values.
+func journalFilterParams(f service.JournalFilter) (teacherID, classID pgtype.UUID, from, to pgtype.Date, search pgtype.Text) {
 	teacherID = pdatabase.NullUUID(f.TeacherUserID)
 	classID = pdatabase.NullUUID(f.ClassID)
 	if f.DateFrom != nil {
@@ -78,7 +80,7 @@ func journalFilterParams(tenantID, academicYearID uuid.UUID, f service.JournalFi
 }
 
 func (r *Repository) ListJournalsFiltered(ctx context.Context, tenantID, academicYearID uuid.UUID, f service.JournalFilter) ([]domain.Journal, error) {
-	teacherID, classID, from, to, search := journalFilterParams(tenantID, academicYearID, f)
+	teacherID, classID, from, to, search := journalFilterParams(f)
 	rows, err := r.queries(ctx).ListJournalsFiltered(ctx, db.ListJournalsFilteredParams{
 		TenantID: tenantID, AcademicYearID: academicYearID, TeacherUserID: teacherID, ClassID: classID,
 		DateFrom: from, DateTo: to, Search: search,
@@ -91,7 +93,7 @@ func (r *Repository) ListJournalsFiltered(ctx context.Context, tenantID, academi
 }
 
 func (r *Repository) CountJournalsFiltered(ctx context.Context, tenantID, academicYearID uuid.UUID, f service.JournalFilter) (int64, error) {
-	teacherID, classID, from, to, search := journalFilterParams(tenantID, academicYearID, f)
+	teacherID, classID, from, to, search := journalFilterParams(f)
 	return r.queries(ctx).CountJournalsFiltered(ctx, db.CountJournalsFilteredParams{
 		TenantID: tenantID, AcademicYearID: academicYearID, TeacherUserID: teacherID, ClassID: classID,
 		DateFrom: from, DateTo: to, Search: search,

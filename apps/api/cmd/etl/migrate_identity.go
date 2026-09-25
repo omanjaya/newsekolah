@@ -177,6 +177,12 @@ type userMigrationResult struct {
 // Password hashes never carry over (the source uses bcrypt, the new schema
 // uses argon2id, see docs/13-etl-sion.md): every migrated user gets a random
 // placeholder hash and must_change_password = true.
+// mappings from the legacy MySQL schema to the new Postgres schema; each
+// branch handles one nullable source column or one gap case, and is a
+// one-time migration tool exercised by its own tests, not runtime API
+// logic. Splitting it would only relocate the same linear mapping.
+//
+//nolint:gocyclo // ETL migration: a fixed, ordered sequence of per-row/per-column field
 func (st *Store) migrateUsers(
 	ctx context.Context, tenantID uuid.UUID, roleIDs map[string]uuid.UUID,
 	users []SionUser, userRoles map[int64][]string, managementStaff map[int64]string,

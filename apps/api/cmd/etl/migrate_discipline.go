@@ -52,6 +52,12 @@ func (st *Store) migrateViolationTypes(ctx context.Context, tenantID uuid.UUID, 
 // duplicating it, at the cost of collapsing a genuine same-day repeat of the
 // same violation type into one row -- rare in this school's data (4 such
 // groups) and reported as a gap rather than silently doubled on every run.
+// mappings from the legacy MySQL schema to the new Postgres schema; each
+// branch handles one nullable source column or one gap case, and is a
+// one-time migration tool exercised by its own tests, not runtime API
+// logic. Splitting it would only relocate the same linear mapping.
+//
+//nolint:gocyclo // ETL migration: a fixed, ordered sequence of per-row/per-column field
 func (st *Store) migrateViolationRecords(
 	ctx context.Context, tenantID, academicYearID uuid.UUID, records []SionViolationRecord,
 	users map[int64]userMigrationResult, violationTypes IDMap, stat *TableStat,

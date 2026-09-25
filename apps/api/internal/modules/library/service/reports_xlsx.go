@@ -22,13 +22,6 @@ func formatDate(t time.Time) string {
 	return t.Format(dateLayout)
 }
 
-func formatDatePtr(t *time.Time) string {
-	if t == nil {
-		return ""
-	}
-	return formatDate(*t)
-}
-
 // periodScope builds the "Periode" scope line every from/to-bounded
 // report shares, following locale (the caller's resolved tenant locale)
 // for the date text, and falling back to "Semua data" when the caller

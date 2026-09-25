@@ -70,7 +70,7 @@ func Record(ctx context.Context, tenantID uuid.UUID, action, entityType string, 
 		) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`
 
 	_, err = tx.Exec(ctx, stmt,
-		tenantID,
+		nullableUUID(tenantID),
 		nullableUUID(actorUserID),
 		actingAsUserID,
 		action,
@@ -86,6 +86,15 @@ func Record(ctx context.Context, tenantID uuid.UUID, action, entityType string, 
 		return fmt.Errorf("audit: insert %s %s: %w", action, entityType, err)
 	}
 	return nil
+}
+
+// RecordPlatform is Record for a platform-level action that belongs to no
+// tenant (the platform console's own settings): tenant_id is stored as
+// NULL. It must run inside a transaction opened with
+// database.WithPlatformTx, whose app.platform_admin flag is what the
+// audit_logs policy accepts for rows without a tenant.
+func RecordPlatform(ctx context.Context, action, entityType string, before, after any) error {
+	return Record(ctx, uuid.Nil, action, entityType, uuid.Nil, before, after)
 }
 
 // RecordSimple is Record for the common case of an action with no

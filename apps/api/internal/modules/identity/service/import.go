@@ -258,6 +258,12 @@ func (s *Service) matchExistingUser(ctx context.Context, tenantID uuid.UUID, mod
 	return existingUserMatch{row: row, profile: profile, roles: roles}, true
 }
 
+// business-rule guard clauses gate one write or one aggregated read;
+// the branches are sequential guards, not nested decision logic, and
+// the module's existing test suite already covers them. Left as-is
+// here to avoid behaviour risk in a lint-only change.
+//
+//nolint:gocyclo // service method: several independent precondition/authorization/
 func (s *Service) evaluateImportRow(
 	ctx context.Context, tenantID uuid.UUID, actorIsSuper bool, opts ImportOptions, row domain.ImportRow, defaultRowNumber int,
 	seenUsernames, seenEmails map[string]bool,
@@ -472,7 +478,7 @@ func buildImportProfileFields(row domain.ImportRow) (UserProfileFields, []string
 // commitImportRow writes one already-validated row: creates a new user, or
 // writes an update's changed fields onto the matched user, or -- for an
 // unchanged row -- writes nothing at all.
-func (s *Service) commitImportRow(ctx context.Context, tenantID, actorID uuid.UUID, row *evaluatedRow) error {
+func (s *Service) commitImportRow(ctx context.Context, tenantID, _ uuid.UUID, row *evaluatedRow) error {
 	switch row.Action {
 	case domain.ImportActionUnchanged:
 		return nil

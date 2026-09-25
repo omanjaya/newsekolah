@@ -16,6 +16,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/library/domain"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 )
 
 // externalHTTPClient is shared across every outbound ISBN-lookup and
@@ -47,15 +48,18 @@ type isbnCacheEntry struct {
 type isbnCache struct {
 	mu      sync.Mutex
 	entries map[string]isbnCacheEntry
+	clock   clock.Clock
 }
 
-func newISBNCache() *isbnCache { return &isbnCache{entries: make(map[string]isbnCacheEntry)} }
+func newISBNCache(clk clock.Clock) *isbnCache {
+	return &isbnCache{entries: make(map[string]isbnCacheEntry), clock: clk}
+}
 
 func (c *isbnCache) get(isbn string) (ISBNLookupResult, bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	entry, ok := c.entries[isbn]
-	if !ok || time.Now().After(entry.expiresAt) {
+	if !ok || c.clock.Now().After(entry.expiresAt) {
 		return ISBNLookupResult{}, false
 	}
 	return entry.result, true
@@ -73,7 +77,7 @@ func (c *isbnCache) set(isbn string, result ISBNLookupResult) {
 	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.entries[isbn] = isbnCacheEntry{result: result, expiresAt: time.Now().Add(ttl)}
+	c.entries[isbn] = isbnCacheEntry{result: result, expiresAt: c.clock.Now().Add(ttl)}
 }
 
 // LookupISBN resolves isbn against the local catalogue first, then Open

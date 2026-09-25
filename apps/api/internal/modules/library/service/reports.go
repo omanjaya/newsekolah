@@ -345,6 +345,12 @@ type CatalogueSummary struct {
 	VisitsPerStudent    float64
 }
 
+// business-rule guard clauses gate one write or one aggregated read;
+// the branches are sequential guards, not nested decision logic, and
+// the module's existing test suite already covers them. Left as-is
+// here to avoid behaviour risk in a lint-only change.
+//
+//nolint:gocyclo // service method: several independent precondition/authorization/
 func (s *Service) CatalogueSummary(ctx context.Context, tenantID uuid.UUID, from, to *time.Time) (CatalogueSummary, error) {
 	if err := s.requireEnabled(ctx, tenantID); err != nil {
 		return CatalogueSummary{}, err

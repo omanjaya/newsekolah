@@ -341,7 +341,7 @@ func TestExportReportExitPermitYearlyPDFHasLetterhead(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	svc := reportsservice.New(nil, nil, nil, permitsReports)
+	svc := reportsservice.New(nil, nil, nil, permitsReports, nil)
 	svc.SetReportDocDependencies(AcademicReports{Academic: academicModule.Service, School: schoolModule.Service}, ReportHeaderReports{Svc: schoolModule.Service})
 
 	xlsx, contentType, err := svc.RunDocument(context.Background(), fx.tenantID, reportsservice.KindExitPermitsYearly, reportsservice.RunArgs{}, reportdoc.Options{Format: reportdoc.FormatXLSX, ShowLetterhead: true}, reportdoc.LocaleID)

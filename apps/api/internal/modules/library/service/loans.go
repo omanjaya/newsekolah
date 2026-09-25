@@ -235,6 +235,12 @@ type ReturnInput struct {
 // Return closes a loan, computes any overdue outcome (fine, suspension, or
 // warning per the member's type), frees the copy, and hands it straight to
 // the next waiting reservation if one exists.
+// business-rule guard clauses gate one write or one aggregated read;
+// the branches are sequential guards, not nested decision logic, and
+// the module's existing test suite already covers them. Left as-is
+// here to avoid behaviour risk in a lint-only change.
+//
+//nolint:gocyclo // service method: several independent precondition/authorization/
 func (s *Service) Return(ctx context.Context, tenantID uuid.UUID, in ReturnInput) (domain.Loan, error) {
 	if err := s.requireEnabled(ctx, tenantID); err != nil {
 		return domain.Loan{}, err

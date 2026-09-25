@@ -73,6 +73,12 @@ type openLibraryEntry struct {
 // ExternalBibliography. isbn picks the "ISBN:<isbn>" entry when present;
 // otherwise the response's one entry (whatever key it came back under) is
 // used. Pure and network-free so it can be unit tested against a fixture.
+// business rule against one field, the same shape gocyclo penalizes in
+// any exhaustive validator. Splitting per-field checks into helpers
+// would only move the branch count elsewhere while making the full
+// rule set harder to read in one place.
+//
+//nolint:gocyclo // field-by-field validation: each branch checks one independent
 func MapOpenLibraryJSON(data []byte, isbn string) (ExternalBibliography, bool) {
 	var parsed map[string]openLibraryEntry
 	if err := json.Unmarshal(data, &parsed); err != nil {

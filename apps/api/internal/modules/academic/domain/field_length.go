@@ -25,10 +25,10 @@ const (
 	MaxPeriodNameLength         = 50
 )
 
-// ValidateMaxLength rejects a value longer than max, counted in runes --
+// ValidateMaxLength rejects a value longer than maxLen, counted in runes --
 // the same unit Postgres's length() uses against a UTF-8 text column.
-func ValidateMaxLength(value string, max int) error {
-	if utf8.RuneCountInString(value) > max {
+func ValidateMaxLength(value string, maxLen int) error {
+	if utf8.RuneCountInString(value) > maxLen {
 		return ErrFieldTooLong
 	}
 	return nil

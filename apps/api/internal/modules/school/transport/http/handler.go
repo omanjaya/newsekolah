@@ -11,16 +11,22 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/gen/api"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/school/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/school/service"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/tenant"
 )
 
 type TenantHandler struct {
 	service *service.Service
+	// clock backs the report header preview's "today" scope date; it is
+	// never injected from outside (the preview is cosmetic, not part of
+	// any deterministic business rule), but forbidigo still requires it
+	// to go through clock.Clock instead of a direct time.Now() call.
+	clock clock.Clock
 }
 
 func New(svc *service.Service) *TenantHandler {
-	return &TenantHandler{service: svc}
+	return &TenantHandler{service: svc, clock: clock.Real{}}
 }
 
 // Branding implements identity/transport/http.BrandingReader, letting the

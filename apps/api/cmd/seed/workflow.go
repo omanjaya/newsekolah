@@ -5,7 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
-	"time"
+
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -126,7 +127,7 @@ func seedPermitsPolicy(ctx context.Context, pool *pgxpool.Pool, tenantID, actorU
 	}
 	_, err = q.CreateTenantPolicyForPermits(ctx, db.CreateTenantPolicyForPermitsParams{
 		TenantID: tenantID, Kind: permitsPolicyKind, Version: nextVersion, Config: config,
-		EffectiveFrom: database.Date(time.Now()), CreatedBy: pgtype.UUID{Bytes: actorUserID, Valid: true},
+		EffectiveFrom: database.Date(clock.Real{}.Now()), CreatedBy: pgtype.UUID{Bytes: actorUserID, Valid: true},
 	})
 	if err != nil {
 		return fmt.Errorf("create permits policy: %w", err)

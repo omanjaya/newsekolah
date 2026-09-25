@@ -67,6 +67,7 @@ import (
 	attendanceservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance/service"
 	attendancehttp "github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance/transport/http"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/auth"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/realtime"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/tenant"
@@ -135,7 +136,7 @@ func watchSessionValidity(client *realtime.Client, sessions auth.SessionLookup, 
 // closed connection is never left heartbeating a key nothing will ever
 // clean up. Runs in its own goroutine for the life of one WebSocket
 // connection, mirroring watchSessionValidity above.
-func heartbeatPresence(client *realtime.Client, presence *realtime.Presence, key string, interval time.Duration) {
+func heartbeatPresence(client *realtime.Client, presence *realtime.Presence, key string, interval time.Duration, clk clock.Clock) {
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 	for {
@@ -143,7 +144,7 @@ func heartbeatPresence(client *realtime.Client, presence *realtime.Presence, key
 		case <-client.Done():
 			return
 		case <-ticker.C:
-			presence.Heartbeat(context.Background(), key, time.Now())
+			presence.Heartbeat(context.Background(), key, clk.Now())
 		}
 	}
 }
@@ -182,7 +183,7 @@ func watchDutySubscriptions(client *realtime.Client, mux *realtime.Multiplexer, 
 // behind every middleware already attached to router (tenant resolution
 // in particular, which both handlers below depend on).
 func mountRealtimeRoutes(router chi.Router, pool *pgxpool.Pool, tokenIssuer *auth.TokenIssuer, sessions auth.SessionLookup, duties realtime.DutyLookup, hub *realtime.Hub, presence *realtime.Presence, snapshots monitorSnapshotReader, appOrigins []string, logger *slog.Logger) {
-	router.Get("/ws/me", wsMeHandler(tokenIssuer, sessions, duties, hub, presence, appOrigins, logger))
+	router.Get("/ws/me", wsMeHandler(tokenIssuer, sessions, duties, hub, presence, appOrigins, logger, clock.Real{}))
 	router.Get("/ws/monitor", wsMonitorHandler(pool, hub, snapshots, appOrigins, logger))
 }
 
@@ -208,7 +209,7 @@ func mountRealtimeRoutes(router chi.Router, pool *pgxpool.Pool, tokenIssuer *aut
 // topics after connecting, each authorized against duties (a DutyLookup
 // re-checked periodically by watchDutySubscriptions) or the token's own
 // claims. See this file's package doc comment for the full wire contract.
-func wsMeHandler(tokenIssuer *auth.TokenIssuer, sessions auth.SessionLookup, duties realtime.DutyLookup, hub *realtime.Hub, presence *realtime.Presence, appOrigins []string, logger *slog.Logger) http.HandlerFunc {
+func wsMeHandler(tokenIssuer *auth.TokenIssuer, sessions auth.SessionLookup, duties realtime.DutyLookup, hub *realtime.Hub, presence *realtime.Presence, appOrigins []string, logger *slog.Logger, clk clock.Clock) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		token, _, ok := realtime.ExtractBearer(r)
 		if !ok {
@@ -248,7 +249,7 @@ func wsMeHandler(tokenIssuer *auth.TokenIssuer, sessions auth.SessionLookup, dut
 			role = claims.Roles[0]
 		}
 		presenceKey := claims.TenantID + ":" + role + ":" + claims.Subject
-		presence.Heartbeat(r.Context(), presenceKey, time.Now())
+		presence.Heartbeat(r.Context(), presenceKey, clk.Now())
 
 		topic := realtime.TopicUser(t.ID, userID)
 		// mux is built inside the UpgradeWithHandler factory, which runs
@@ -284,7 +285,7 @@ func wsMeHandler(tokenIssuer *auth.TokenIssuer, sessions auth.SessionLookup, dut
 		// heartbeatPresence uses context.Background() internally for the
 		// same reason watchSessionValidity does above.
 		// #nosec G118 -- see heartbeatPresence's doc comment
-		go heartbeatPresence(client, presence, presenceKey, presenceHeartbeatInterval) //nolint:gosec // see heartbeatPresence's doc comment
+		go heartbeatPresence(client, presence, presenceKey, presenceHeartbeatInterval, clk) //nolint:gosec // see heartbeatPresence's doc comment
 		// watchDutySubscriptions uses context.Background() internally for
 		// the same reason.
 		// #nosec G118 -- see watchDutySubscriptions's doc comment

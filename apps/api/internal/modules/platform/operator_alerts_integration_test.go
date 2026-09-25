@@ -39,7 +39,7 @@ type operatorAlertAuditRow struct {
 }
 
 // operatorAlertAuditLogs loads every audit_logs row this module's platform
-// actions wrote: tenant_id is NULL for all of them (recordPlatformAudit in
+// actions wrote: tenant_id is NULL for all of them (audit.RecordPlatform, called from
 // service/operator_alerts.go), so platform/identity's own ListAuditLogs
 // query (tenant_id = $1, a required equality) cannot find them -- this
 // reads audit_logs directly instead, the same way a one-off admin query

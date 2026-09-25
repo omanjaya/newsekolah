@@ -65,10 +65,11 @@ func (h *TenantHandler) PreviewTenantReportHeader(ctx context.Context, request a
 	if err != nil {
 		return nil, mapReportHeaderError(err)
 	}
+	now := h.clock.Now()
 	if sig != nil {
-		sig.Date = reportdoc.FormatDate(locale, time.Now())
+		sig.Date = reportdoc.FormatDate(locale, now)
 	}
-	doc := previewDocument(locale, lh, sig)
+	doc := previewDocument(locale, lh, sig, now)
 
 	switch request.Params.Format {
 	case api.PreviewTenantReportHeaderParamsFormatPdf:
@@ -116,13 +117,13 @@ func previewLabel(locale, key string) string {
 // previewDocument is a small, fixed sample -- the settings page's live
 // preview is about the letterhead/signature, not about any real report's
 // data, so three placeholder rows are enough to show the layout.
-func previewDocument(locale string, lh *reportdoc.Letterhead, sig *reportdoc.Signature) reportdoc.Document {
+func previewDocument(locale string, lh *reportdoc.Letterhead, sig *reportdoc.Signature, now time.Time) reportdoc.Document {
 	return reportdoc.Document{
 		Letterhead: lh,
 		Title:      previewLabel(locale, "title"),
 		Scope: []reportdoc.ScopeLine{
 			{Label: previewLabel(locale, "scopeClass"), Value: "X-1"},
-			{Label: previewLabel(locale, "scopePeriod"), Value: reportdoc.FormatDate(locale, time.Now())},
+			{Label: previewLabel(locale, "scopePeriod"), Value: reportdoc.FormatDate(locale, now)},
 		},
 		Columns: []reportdoc.Column{
 			{Key: "no", Label: previewLabel(locale, "no"), Kind: reportdoc.ColumnNumber, Width: 5},

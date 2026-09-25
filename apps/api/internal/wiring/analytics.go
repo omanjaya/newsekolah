@@ -3,7 +3,6 @@ package wiring
 import (
 	"context"
 	"strings"
-	"time"
 
 	"github.com/google/uuid"
 
@@ -13,6 +12,7 @@ import (
 	gradingservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/grading/service"
 	permitsdomain "github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/domain"
 	permitsservice "github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/service"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/realtime"
 )
 
@@ -119,12 +119,15 @@ func averageReportScore(subjects []gradingservice.MySubjectGrade) (float64, bool
 // panel. Every GET /ws/me connection heartbeats a key shaped
 // "<tenantID>:<role>:<userID>" (see cmd/api/ws.go's wsMeHandler), which is
 // the same convention attendance's monitor presence parses.
-type AnalyticsPresence struct{ Presence *realtime.Presence }
+type AnalyticsPresence struct {
+	Presence *realtime.Presence
+	Clock    clock.Clock
+}
 
 func (p AnalyticsPresence) OnlineByRole(ctx context.Context, tenantID uuid.UUID) (map[string]int, error) {
 	prefix := tenantID.String() + ":"
 	counts := map[string]int{}
-	for _, key := range p.Presence.Snapshot(ctx, time.Now()) {
+	for _, key := range p.Presence.Snapshot(ctx, p.Clock.Now()) {
 		rest, ok := strings.CutPrefix(key, prefix)
 		if !ok {
 			continue

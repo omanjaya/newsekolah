@@ -17,6 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/auth"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/realtime"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/tenant"
 )
@@ -39,7 +40,7 @@ func TestHeartbeatPresenceRefreshesWhileConnected(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		client, err := realtime.Upgrade(w, r, hub, "user:tenant-1:user-1", nil, nil)
 		require.NoError(t, err)
-		go heartbeatPresence(client, presence, key, interval)
+		go heartbeatPresence(client, presence, key, interval, clock.Real{})
 	}))
 	defer server.Close()
 
@@ -83,7 +84,7 @@ func TestHeartbeatPresenceStopsOnDisconnect(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		client, err := realtime.Upgrade(w, r, hub, "user:tenant-1:user-1", nil, nil)
 		require.NoError(t, err)
-		go heartbeatPresence(client, presence, key, interval)
+		go heartbeatPresence(client, presence, key, interval, clock.Real{})
 	}))
 	defer server.Close()
 
@@ -177,7 +178,7 @@ func newWsMeTestFixture(t *testing.T, hub *realtime.Hub, duties realtime.DutyLoo
 	logger := slog.New(slog.NewJSONHandler(io.Discard, nil))
 	tenantID := uuid.New()
 
-	handler := wsMeHandler(issuer, alwaysActiveSessions{}, duties, hub, presence, nil, logger)
+	handler := wsMeHandler(issuer, alwaysActiveSessions{}, duties, hub, presence, nil, logger, clock.Real{})
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := tenant.WithTenant(r.Context(), tenant.Tenant{ID: tenantID})
 		handler(w, r.WithContext(ctx))

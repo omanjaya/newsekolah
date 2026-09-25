@@ -36,9 +36,7 @@ func (h *AnalyticsHandler) GetAdminDashboard(ctx context.Context, _ api.GetAdmin
 	}
 
 	histogram := make([]int, 24)
-	for i, v := range dashboard.LoginHistogramByHour {
-		histogram[i] = v
-	}
+	copy(histogram, dashboard.LoginHistogramByHour[:])
 
 	return api.GetAdminDashboard200JSONResponse{
 		ActiveUsers: dashboard.ActiveUsersByProfileKind,

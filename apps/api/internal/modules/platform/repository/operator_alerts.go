@@ -62,13 +62,13 @@ func (r *Repository) UpdateOperatorAlertSettings(ctx context.Context, in service
 		CheckCertificate: in.CheckCertificate,
 		CheckErrors5xx:   in.CheckErrors5xx,
 
-		DiskThresholdPercent: int16(in.DiskThresholdPercent),
-		MemoryThresholdMb:    int32(in.MemoryThresholdMB),
-		BackupMaxAgeHours:    int32(in.BackupMaxAgeHours),
-		CertExpiryDays:       int32(in.CertExpiryDays),
+		DiskThresholdPercent: int16(in.DiskThresholdPercent), //nolint:gosec // bounded 1-100 by OperatorAlertSettingsPatch.Validate
+		MemoryThresholdMb:    int32(in.MemoryThresholdMB),    //nolint:gosec // positive, validated; far below int32 range in practice
+		BackupMaxAgeHours:    int32(in.BackupMaxAgeHours),    //nolint:gosec // positive hours, validated
+		CertExpiryDays:       int32(in.CertExpiryDays),       //nolint:gosec // positive days, validated
 
 		DailySummaryEnabled: in.DailySummaryEnabled,
-		DailySummaryHour:    int16(in.DailySummaryHour),
+		DailySummaryHour:    int16(in.DailySummaryHour), //nolint:gosec // 0-23, validated
 
 		UpdatedBy: pdatabase.NullUUID(in.UpdatedBy),
 	})

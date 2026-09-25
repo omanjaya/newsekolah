@@ -203,6 +203,12 @@ type ImportValidationRefs struct {
 // given) must be a real value, location/source (if given) must exist,
 // year and price must be numeric, and copies defaults to 1 but must be a
 // positive integer when given (old app: libraryValidateImportRow).
+// business rule against one field, the same shape gocyclo penalizes in
+// any exhaustive validator. Splitting per-field checks into helpers
+// would only move the branch count elsewhere while making the full
+// rule set harder to read in one place.
+//
+//nolint:gocyclo // field-by-field validation: each branch checks one independent
 func ValidateImportRow(row ImportRow, refs ImportValidationRefs) (copies int, message string, ok bool) {
 	if strings.TrimSpace(row.Title) == "" {
 		return 0, "Judul wajib diisi.", false

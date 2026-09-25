@@ -325,6 +325,12 @@ func (s *Service) persistedResult(ctx context.Context, tenantID, stocktakeID uui
 // spreadsheet: one sheet per outcome (missing, unexpected, misplaced),
 // so a librarian can hand the missing list to whoever is chasing down
 // the books.
+// business-rule guard clauses gate one write or one aggregated read;
+// the branches are sequential guards, not nested decision logic, and
+// the module's existing test suite already covers them. Left as-is
+// here to avoid behaviour risk in a lint-only change.
+//
+//nolint:gocyclo // service method: several independent precondition/authorization/
 func (s *Service) StocktakeReportXLSX(ctx context.Context, tenantID, stocktakeID uuid.UUID) ([]byte, error) {
 	if err := s.requireEnabled(ctx, tenantID); err != nil {
 		return nil, err

@@ -31,6 +31,7 @@ func TestLegacyRefreshCookieCleanupAppendsExpiryForNewPathCookie(t *testing.T) {
 		w.Header().Set("Set-Cookie", RefreshCookie("token-value", time.Now().Add(time.Hour), true))
 		w.WriteHeader(http.StatusOK)
 	})
+	defer func() { _ = response.Body.Close() }()
 
 	clears := legacyClearCookies(response)
 	if len(clears) != 1 {
@@ -51,6 +52,7 @@ func TestLegacyRefreshCookieCleanupHandlesImplicitWriteHeader(t *testing.T) {
 			t.Fatalf("write: %v", err)
 		}
 	})
+	defer func() { _ = response.Body.Close() }()
 
 	if len(legacyClearCookies(response)) != 1 {
 		t.Fatalf("want the legacy clear even without an explicit WriteHeader, got %v", response.Header.Values("Set-Cookie"))
@@ -62,6 +64,7 @@ func TestLegacyRefreshCookieCleanupLeavesOtherResponsesAlone(t *testing.T) {
 		w.Header().Set("Set-Cookie", "session_hint=abc; Path=/; HttpOnly")
 		w.WriteHeader(http.StatusOK)
 	})
+	defer func() { _ = response.Body.Close() }()
 
 	if len(legacyClearCookies(response)) != 0 {
 		t.Fatalf("must not touch responses without a refresh cookie, got %v", response.Header.Values("Set-Cookie"))
@@ -76,6 +79,7 @@ func TestLegacyRefreshCookieCleanupSkipsWhenLegacyPathAlreadyCleared(t *testing.
 		w.Header().Add("Set-Cookie", expiredLegacyRefreshCookie(false))
 		w.WriteHeader(http.StatusOK)
 	})
+	defer func() { _ = response.Body.Close() }()
 
 	if got := len(response.Header.Values("Set-Cookie")); got != 1 {
 		t.Fatalf("must not double-append the legacy clear, got %d headers", got)

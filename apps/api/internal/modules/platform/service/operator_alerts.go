@@ -12,7 +12,6 @@ package service
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -20,8 +19,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/platform/domain"
-	"github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
-	"github.com/omanjaya/newsekolah/apps/api/internal/platform/httpx"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/audit"
 )
 
 // errSealerNotConfigured is returned when an operator alert Telegram token
@@ -131,6 +129,8 @@ func maskToken(token string) string {
 // UpdateOperatorAlertSettings applies a partial update and records an
 // audit_logs entry describing the change, never the token (auditSnapshot
 // below only ever carries TelegramTokenSet, never the token or its hint).
+//
+//nolint:gocyclo // one flat optional-field patch: each nil check is independent and reads best inline
 func (s *Service) UpdateOperatorAlertSettings(ctx context.Context, actorUserID uuid.UUID, patch domain.OperatorAlertSettingsPatch) (domain.OperatorAlertSettingsView, error) {
 	if err := patch.Validate(); err != nil {
 		return domain.OperatorAlertSettingsView{}, err
@@ -214,7 +214,7 @@ func (s *Service) UpdateOperatorAlertSettings(ctx context.Context, actorUserID u
 		}
 		view = s.toOperatorAlertView(saved)
 
-		return recordPlatformAudit(ctx, "operator_alerts.update", "operator_alert_settings",
+		return audit.RecordPlatform(ctx, "operator_alerts.update", "operator_alert_settings",
 			auditSnapshot(before), auditSnapshot(view))
 	})
 	return view, err
@@ -252,49 +252,6 @@ func auditSnapshot(view domain.OperatorAlertSettingsView) operatorAlertAuditSnap
 		BackupMaxAgeHours: view.BackupMaxAgeHours, CertExpiryDays: view.CertExpiryDays,
 		DailySummaryEnabled: view.DailySummaryEnabled, DailySummaryHour: view.DailySummaryHour,
 	}
-}
-
-// recordPlatformAudit writes one audit_logs row with tenant_id NULL, for a
-// platform-level action with no owning tenant. platform/audit.Record
-// cannot be reused here: it takes a non-nullable uuid.UUID tenantID and
-// always writes it as a real value, which would violate audit_logs'
-// tenant_id foreign key for anything other than an existing tenant's id.
-// Must run inside a transaction opened by s.withPlatformTx (app.platform_admin
-// = true), the same as every other write to this table.
-func recordPlatformAudit(ctx context.Context, action, entityType string, before, after any) error {
-	tx, ok := txFromContext(ctx)
-	if !ok {
-		return fmt.Errorf("operator alerts: recordPlatformAudit called outside a transaction")
-	}
-
-	beforeJSON, err := json.Marshal(before)
-	if err != nil {
-		return fmt.Errorf("audit: marshal before: %w", err)
-	}
-	afterJSON, err := json.Marshal(after)
-	if err != nil {
-		return fmt.Errorf("audit: marshal after: %w", err)
-	}
-
-	actorUserID, _ := httpx.UserIDFromContext(ctx)
-	meta := httpx.RequestMetaFromContext(ctx)
-
-	const stmt = `
-		insert into audit_logs (
-			tenant_id, actor_user_id, action, entity_type,
-			before, after, ip, user_agent, request_id
-		) values (null, $1, $2, $3, $4, $5, $6, $7, $8)`
-
-	actor := database.NullUUID(uuid.NullUUID{UUID: actorUserID, Valid: actorUserID != uuid.Nil})
-
-	_, err = tx.Exec(ctx, stmt,
-		actor, action, entityType, beforeJSON, afterJSON,
-		database.Inet(meta.IP), database.Text(meta.UserAgent), database.Text(httpx.RequestIDFromContext(ctx)),
-	)
-	if err != nil {
-		return fmt.Errorf("audit: insert %s %s: %w", action, entityType, err)
-	}
-	return nil
 }
 
 // DetectOperatorAlertChats calls Telegram's getUpdates with the stored bot

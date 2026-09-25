@@ -11,7 +11,6 @@ package attendance
 import (
 	"context"
 	"strings"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -21,6 +20,7 @@ import (
 	transporthttp "github.com/omanjaya/newsekolah/apps/api/internal/modules/attendance/transport/http"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/scheduling"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/authz"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/events"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/realtime"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
@@ -91,11 +91,14 @@ func (p hubPresence) Snapshot(tenantID uuid.UUID) (int, []string) {
 // filters to tenantID's prefix and strips it back off before returning --
 // the "<role>:<userID>" remainder is what GetMonitorPresence parses for
 // its per-role counts.
-type livePresence struct{ presence *realtime.Presence }
+type livePresence struct {
+	presence *realtime.Presence
+	clock    clock.Clock
+}
 
 func (p livePresence) Snapshot(tenantID uuid.UUID) (int, []string) {
 	prefix := tenantID.String() + ":"
-	all := p.presence.Snapshot(context.Background(), time.Now())
+	all := p.presence.Snapshot(context.Background(), p.clock.Now())
 	out := make([]string, 0, len(all))
 	for _, key := range all {
 		if rest, ok := strings.CutPrefix(key, prefix); ok {
@@ -154,7 +157,7 @@ func Register(deps Dependencies) *Module {
 	}
 	var presence service.PresenceReader = hubPresence{hub: deps.Hub}
 	if deps.Presence != nil {
-		presence = livePresence{presence: deps.Presence}
+		presence = livePresence{presence: deps.Presence, clock: clock.Real{}}
 	}
 	svc := service.New(
 		deps.Pool, repo, deps.Years, deps.Schedules, deps.Access, deps.Journals,
