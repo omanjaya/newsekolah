@@ -1,3 +1,52 @@
+// Package main's ws.go mounts the two WebSocket upgrade endpoints. /ws/me's
+// wire contract, current as of docs/analysis/realtime-plan-2026-09-25.md
+// section 3.2/3.4 (chunk B):
+//
+// Every message either side sends is a realtime.Envelope
+// ({"type","topic","at","payload"}), JSON text frames. Server -> client:
+//
+//   - "hello": sent once, immediately after the handshake completes.
+//     Payload: {"connection_id": "<uuid>"}. A fresh id on every (re)connect
+//     lets a client tell a new connection apart from one it already
+//     resynced against and knows to treat anything it inferred about
+//     server state before as stale (resync-on-reconnect, plan section
+//     3.4) -- the client is expected to re-invalidate every query key it
+//     cares about on receiving this, not just on the browser's own
+//     `onopen`.
+//   - "notification_created", "classroom_entry_scanned", and every future
+//     domain event: delivered to whichever topic(s) the connection is
+//     subscribed to, unchanged in shape from today for
+//     notification_created (apps/web/features/notifications/realtime.ts
+//     keeps working against this contract without modification until
+//     chunk D replaces it).
+//   - "subscribed" / "unsubscribed": acks a client subscribe/unsubscribe
+//     request for one topic; Topic is the full, tenant-scoped topic name
+//     the client is now (or no longer) receiving events on. "unsubscribed"
+//     also fires server-initiated, with payload
+//     {"reason":"duty_no_longer_held"}, when a periodic recheck finds a
+//     granted duty topic no longer held (see watchDutySubscriptions
+//     below).
+//   - "subscribe_rejected": Topic echoes the client's own short request
+//     string (never resolved, since resolution is what failed); payload
+//     {"reason": "role_not_held" | "duty_not_held" | "not_self" |
+//     "unrecognized_topic"}.
+//
+// Client -> server (the only two messages the server reads; anything else
+// is dropped silently, mirroring readPump's existing "ignore what does not
+// parse" stance):
+//
+//	{"action": "subscribe",   "topics": ["role:admin", "duty:homeroom:<classID>", "user:<selfID>"]}
+//	{"action": "unsubscribe", "topics": ["role:admin"]}
+//
+// A topic in these messages is always the short, tenant-less form
+// (realtime.parseTopic): "user:<id>" (only the caller's own id),
+// "role:<slug>" (only a role the access token's claims already carry), or
+// "duty:<slug>[:<classID>]" (only confirmed, at request time and
+// periodically after, by the DutyLookup passed into mountRealtimeRoutes).
+// The connection's own user topic ("user:<tenant>:<user>") is always
+// subscribed automatically at connect time, exactly as before this chunk
+// -- a client that never sends a subscribe message keeps working
+// unchanged.
 package main
 
 import (
@@ -36,6 +85,13 @@ type monitorSnapshotReader interface {
 // takes to notice the close (docs/analysis/backend-inventory.md section
 // 1.6.1 -- the old app checked on connect only, never again).
 const sessionRevocationCheckInterval = 60 * time.Second
+
+// dutyRecheckInterval bounds how long a /ws/me connection can keep a duty-
+// scoped topic subscription after it no longer holds that duty (piket
+// teacher swapped at recess, homeroom reassigned mid-year): the same
+// tradeoff sessionRevocationCheckInterval makes for session revocation,
+// mirrored here per docs/analysis/realtime-plan-2026-09-25.md section 3.2.
+const dutyRecheckInterval = 60 * time.Second
 
 // presenceHeartbeatInterval is how often a live /ws/me connection refreshes
 // its own presence entry (see heartbeatPresence). It must stay well under
@@ -92,6 +148,25 @@ func heartbeatPresence(client *realtime.Client, presence *realtime.Presence, key
 	}
 }
 
+// watchDutySubscriptions re-verifies mux's currently granted duty topics
+// every interval and releases any DutyLookup no longer confirms, for as
+// long as client stays connected. Mirrors watchSessionValidity above,
+// mux.RecheckDuties, one goroutine per connection (plan section 3.2:
+// "watchSessionValidity's pola tiket 60 detik adalah preseden yang bisa
+// dipakai ulang").
+func watchDutySubscriptions(client *realtime.Client, mux *realtime.Multiplexer, interval time.Duration) {
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-client.Done():
+			return
+		case <-ticker.C:
+			mux.RecheckDuties(context.Background())
+		}
+	}
+}
+
 // mountRealtimeRoutes wires the two WebSocket upgrade endpoints directly
 // onto router, bypassing the strict handler chain entirely: a strict
 // handler can only ever write a JSON response body, never hijack the
@@ -106,8 +181,8 @@ func heartbeatPresence(client *realtime.Client, presence *realtime.Presence, key
 // the real upgrade -- no double registration, and the routes still run
 // behind every middleware already attached to router (tenant resolution
 // in particular, which both handlers below depend on).
-func mountRealtimeRoutes(router chi.Router, pool *pgxpool.Pool, tokenIssuer *auth.TokenIssuer, sessions auth.SessionLookup, hub *realtime.Hub, presence *realtime.Presence, snapshots monitorSnapshotReader, appOrigins []string, logger *slog.Logger) {
-	router.Get("/ws/me", wsMeHandler(tokenIssuer, sessions, hub, presence, appOrigins, logger))
+func mountRealtimeRoutes(router chi.Router, pool *pgxpool.Pool, tokenIssuer *auth.TokenIssuer, sessions auth.SessionLookup, duties realtime.DutyLookup, hub *realtime.Hub, presence *realtime.Presence, snapshots monitorSnapshotReader, appOrigins []string, logger *slog.Logger) {
+	router.Get("/ws/me", wsMeHandler(tokenIssuer, sessions, duties, hub, presence, appOrigins, logger))
 	router.Get("/ws/monitor", wsMonitorHandler(pool, hub, snapshots, appOrigins, logger))
 }
 
@@ -127,7 +202,13 @@ func mountRealtimeRoutes(router chi.Router, pool *pgxpool.Pool, tokenIssuer *aut
 // long-lived session stays "online" instead of aging out of the snapshot
 // after realtime.Presence's ttl from only the one heartbeat sent here at
 // connect time.
-func wsMeHandler(tokenIssuer *auth.TokenIssuer, sessions auth.SessionLookup, hub *realtime.Hub, presence *realtime.Presence, appOrigins []string, logger *slog.Logger) http.HandlerFunc {
+//
+// Beyond that one fixed topic, the connection is multiplexed
+// (realtime.Multiplexer, subscribe.go): the client may ask for more
+// topics after connecting, each authorized against duties (a DutyLookup
+// re-checked periodically by watchDutySubscriptions) or the token's own
+// claims. See this file's package doc comment for the full wire contract.
+func wsMeHandler(tokenIssuer *auth.TokenIssuer, sessions auth.SessionLookup, duties realtime.DutyLookup, hub *realtime.Hub, presence *realtime.Presence, appOrigins []string, logger *slog.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		token, _, ok := realtime.ExtractBearer(r)
 		if !ok {
@@ -151,6 +232,11 @@ func wsMeHandler(tokenIssuer *auth.TokenIssuer, sessions auth.SessionLookup, hub
 			http.Error(w, "invalid session", http.StatusUnauthorized)
 			return
 		}
+		userID, err := uuid.Parse(claims.Subject)
+		if err != nil {
+			http.Error(w, "invalid subject", http.StatusUnauthorized)
+			return
+		}
 		active, err := sessions.IsSessionActive(r.Context(), t.ID, sessionID)
 		if err != nil || !active {
 			http.Error(w, "session is no longer active", http.StatusUnauthorized)
@@ -164,13 +250,30 @@ func wsMeHandler(tokenIssuer *auth.TokenIssuer, sessions auth.SessionLookup, hub
 		presenceKey := claims.TenantID + ":" + role + ":" + claims.Subject
 		presence.Heartbeat(r.Context(), presenceKey, time.Now())
 
-		topic := "user:" + claims.TenantID + ":" + claims.Subject
-		client, err := realtime.Upgrade(w, r, hub, topic, appOrigins, logger, func() { presence.Remove(presenceKey) })
+		topic := realtime.TopicUser(t.ID, userID)
+		// mux is built inside the UpgradeWithHandler factory, which runs
+		// synchronously (before the read pump starts) with the freshly
+		// upgraded *Client -- see UpgradeWithHandler's doc comment for why
+		// that ordering, not building mux from the client Upgrade would
+		// otherwise return, is what makes this assignment and the two
+		// closures below that read mux race-free without a mutex: both
+		// only ever run after this line has completed.
+		var mux *realtime.Multiplexer
+		client, err := realtime.UpgradeWithHandler(w, r, hub, topic, appOrigins, logger,
+			func(c *realtime.Client) func([]byte) {
+				mux = realtime.NewMultiplexer(hub, c, t.ID, userID, claims.Roles, duties, logger)
+				return mux.HandleMessage
+			},
+			func() { presence.Remove(presenceKey) },
+			func() { mux.Close() },
+		)
 		if err != nil {
 			logger.Warn("ws/me upgrade failed", "error", err)
 			presence.Remove(presenceKey)
 			return
 		}
+		client.Send(realtime.NewHelloEnvelope(topic))
+
 		// watchSessionValidity uses context.Background() internally by
 		// design, not by oversight: per its doc comment, it runs for the
 		// life of the WebSocket connection, which outlives this request's
@@ -182,6 +285,10 @@ func wsMeHandler(tokenIssuer *auth.TokenIssuer, sessions auth.SessionLookup, hub
 		// same reason watchSessionValidity does above.
 		// #nosec G118 -- see heartbeatPresence's doc comment
 		go heartbeatPresence(client, presence, presenceKey, presenceHeartbeatInterval) //nolint:gosec // see heartbeatPresence's doc comment
+		// watchDutySubscriptions uses context.Background() internally for
+		// the same reason.
+		// #nosec G118 -- see watchDutySubscriptions's doc comment
+		go watchDutySubscriptions(client, mux, dutyRecheckInterval) //nolint:gosec // see watchDutySubscriptions's doc comment
 	}
 }
 
@@ -234,7 +341,7 @@ func wsMonitorHandler(pool *pgxpool.Pool, hub *realtime.Hub, snapshots monitorSn
 			return
 		}
 
-		topic := "monitor:" + t.ID.String()
+		topic := realtime.TopicMonitor(t.ID)
 		client, err := realtime.Upgrade(w, r, hub, topic, appOrigins, logger)
 		if err != nil {
 			logger.Warn("ws/monitor upgrade failed", "error", err)

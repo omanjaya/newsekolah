@@ -463,7 +463,14 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	// why a strict handler can never serve these itself. hub is the same
 	// instance passed into attendance.Register above, so a socket opened
 	// here is visible to the attendance module's monitor presence count.
-	mountRealtimeRoutes(router, pool, tokenIssuer, identityModule.Service, hub, presence, attendanceModule.Service, cfg.AppOrigins, logger)
+	// identityModule.Service is passed twice: once as the session lookup
+	// (unchanged), once as the realtime.DutyLookup /ws/me's topic
+	// multiplexing authorizes duty-scoped subscriptions against (chunk B,
+	// docs/analysis/realtime-plan-2026-09-25.md section 3.2) -- the same
+	// UsersWithDuty method wiring.RegisterNotificationBridge above already
+	// uses for the notification bridge, so this introduces no new
+	// dependency, only a second caller of an existing one.
+	mountRealtimeRoutes(router, pool, tokenIssuer, identityModule.Service, identityModule.Service, hub, presence, attendanceModule.Service, cfg.AppOrigins, logger)
 
 	return router, bg, nil
 }
