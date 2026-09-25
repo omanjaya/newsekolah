@@ -11,8 +11,10 @@ import { useRef, useState } from "react";
 
 import { QueryError } from "../../../components/query-error";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { compressImage } from "../../../lib/media/compress-image";
 import { useCan, useSession } from "../../../lib/session/session-provider";
 import {
+  LEAVE_EVIDENCE_MAX_LONG_EDGE,
   useIssueLeaveLetterMutation,
   useLeaveDocumentUrlMutation,
   useLeaveRequestQuery,
@@ -112,17 +114,21 @@ export function LeaveRequestDetail({ id }: { id: string }): ReactElement {
               className="hidden"
               onChange={(e) => {
                 const file = e.target.files?.[0];
-                if (file)
-                  upload.mutate(
-                    { id, file },
-                    {
-                      onError: fail,
-                      onSuccess: () => {
-                        toast.success(t("evidenceUploaded"));
-                      },
-                    },
-                  );
                 e.target.value = "";
+                if (!file) return;
+                void compressImage(file, { maxLongEdge: LEAVE_EVIDENCE_MAX_LONG_EDGE }).then(
+                  ({ file: evidence }) => {
+                    upload.mutate(
+                      { id, file: evidence },
+                      {
+                        onError: fail,
+                        onSuccess: () => {
+                          toast.success(t("evidenceUploaded"));
+                        },
+                      },
+                    );
+                  },
+                );
               }}
             />
             <Button

@@ -1047,6 +1047,7 @@
           "evidence": "Bukti (opsional)",
           "evidenceAdd": "Ambil atau unggah foto bukti",
           "evidenceRemove": "Hapus bukti terpilih",
+          "evidenceCompressed": "Dikompres menjadi {size}",
           "evidenceHint": "Surat dokter, undangan, atau bukti lain. Bisa juga dilampirkan nanti dari halaman detail.",
           "evidenceUploadFailed": "Pengajuan terkirim, tetapi bukti gagal diunggah. Coba lagi dari halaman detail.",
           "requiredError": "Tanggal dan keterangan wajib diisi.",

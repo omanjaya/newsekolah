@@ -8,6 +8,7 @@ import { useRef, useState } from "react";
 
 import { uploadToPresignedUrl } from "../../../lib/api/presigned-upload";
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { compressImage } from "../../../lib/media/compress-image";
 import {
   useConfirmFaviconUploadMutation,
   useConfirmLogoUploadMutation,
@@ -24,6 +25,16 @@ const ACCEPTED_TYPES = ["image/png", "image/webp", "image/svg+xml"];
 const MAX_BYTES: Record<"logo" | "favicon", number> = {
   logo: 2 * 1024 * 1024,
   favicon: 512 * 1024,
+};
+
+// A school's mark stays legible at 1024px; SVG is untouched by
+// compressImage (it is a vector format, not a raster one) and PNG/WebP
+// are the only raster types apps/api's AllowedBrandingImageTypes accepts
+// -- JPEG is not, so the output mime type must match the input's own
+// family rather than defaulting to JPEG like other upload paths.
+const LOGO_MAX_LONG_EDGE: Record<"logo" | "favicon", number> = {
+  logo: 1024,
+  favicon: 256,
 };
 
 /** One presigned-upload slot for the tenant logo or favicon, sharing the AvatarUpload flow: request URL, PUT, confirm. */
@@ -57,7 +68,20 @@ export function BrandAssetUpload({
       toast.error(apiErrorMessage("UPLOAD_INVALID_FILE_TYPE"));
       return;
     }
-    if (file.size > MAX_BYTES[kind]) {
+
+    // The size check runs after compression, not before: an oversized
+    // original that compression would bring back under the limit should
+    // not be rejected here. SVG passes compressImage untouched, so an
+    // oversized SVG still hits this check on its original size, as before.
+    // file.type is one of ACCEPTED_TYPES, so it is always "image/png",
+    // "image/webp", or "image/svg+xml" -- reusing it as the output mime
+    // keeps compressImage from ever turning an accepted format into one
+    // the API's AllowedBrandingImageTypes rejects (e.g. JPEG).
+    const { file: upload } = await compressImage(file, {
+      maxLongEdge: LOGO_MAX_LONG_EDGE[kind],
+      mimeType: file.type === "image/webp" ? "image/webp" : "image/png",
+    });
+    if (upload.size > MAX_BYTES[kind]) {
       toast.error(apiErrorMessage("UPLOAD_FILE_TOO_LARGE"));
       return;
     }
@@ -65,7 +89,7 @@ export function BrandAssetUpload({
     setProgress(0);
     try {
       const target = await requestUpload.mutateAsync();
-      await uploadToPresignedUrl(target.upload_url, file, setProgress);
+      await uploadToPresignedUrl(target.upload_url, upload, setProgress);
       await confirmUpload.mutateAsync(target.object_key);
       toast.success(t("updated"));
     } catch (error) {

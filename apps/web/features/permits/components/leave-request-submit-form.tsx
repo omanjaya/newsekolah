@@ -8,7 +8,9 @@ import type { ReactElement } from "react";
 import { useRef, useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { compressImage, formatFileSize } from "../../../lib/media/compress-image";
 import {
+  LEAVE_EVIDENCE_MAX_LONG_EDGE,
   type LeaveCategory,
   useSubmitLeaveRequestMutation,
   useUploadEvidenceMutation,
@@ -27,9 +29,21 @@ export function SubmitForm({ onDone }: { onDone: (id: string) => void }): ReactE
   const [startsOn, setStartsOn] = useState("");
   const [endsOn, setEndsOn] = useState("");
   const [evidence, setEvidence] = useState<File | null>(null);
+  const [evidenceWasCompressed, setEvidenceWasCompressed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const sending = submit.isPending || upload.isPending;
+
+  async function pickEvidence(file: File | undefined) {
+    if (!file) {
+      setEvidence(null);
+      setEvidenceWasCompressed(false);
+      return;
+    }
+    const compressed = await compressImage(file, { maxLongEdge: LEAVE_EVIDENCE_MAX_LONG_EDGE });
+    setEvidence(compressed.file);
+    setEvidenceWasCompressed(compressed.wasCompressed);
+  }
 
   async function send() {
     setError(null);
@@ -135,18 +149,26 @@ export function SubmitForm({ onDone }: { onDone: (id: string) => void }): ReactE
           capture="environment"
           className="hidden"
           onChange={(e) => {
-            setEvidence(e.target.files?.[0] ?? null);
+            void pickEvidence(e.target.files?.[0]);
           }}
         />
         {evidence ? (
           <div className="flex items-center justify-between gap-2 rounded-sm border border-border bg-bg px-3 py-2">
-            <span className="truncate text-fg">{evidence.name}</span>
+            <span className="flex min-w-0 flex-col">
+              <span className="truncate text-fg">{evidence.name}</span>
+              {evidenceWasCompressed && (
+                <span className="text-[12px] text-fg-muted">
+                  {t("form.evidenceCompressed", { size: formatFileSize(evidence.size) })}
+                </span>
+              )}
+            </span>
             <button
               type="button"
               aria-label={t("form.evidenceRemove")}
               className="flex size-8 shrink-0 items-center justify-center rounded-xs text-fg-muted hover:bg-surface hover:text-fg"
               onClick={() => {
                 setEvidence(null);
+                setEvidenceWasCompressed(false);
                 if (fileRef.current) fileRef.current.value = "";
               }}
             >

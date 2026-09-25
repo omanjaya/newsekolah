@@ -15,6 +15,12 @@ import {
   useMyLeaveRequestsLive,
 } from "./realtime";
 
+// apps/api's reencodeImage (leaverequest.go) only decodes JPEG/PNG, so
+// the client-side compressed output must stay JPEG (compressImage's
+// default) rather than WebP. Shared by the submit form and the
+// attach-later flow on the detail screen.
+export const LEAVE_EVIDENCE_MAX_LONG_EDGE = 1600;
+
 export type WorkflowInstance = components["schemas"]["WorkflowInstance"];
 export type ExitPermitDetail = components["schemas"]["ExitPermitDetail"];
 export type ExitPermitSummary = components["schemas"]["ExitPermitSummary"];
