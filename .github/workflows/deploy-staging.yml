@@ -97,7 +97,7 @@ jobs:
             echo "::notice::apps/web has no e2e:sim script yet -- skipping the staging simulation suite."
           fi
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         if: steps.check.outputs.present == 'true'
         with:
           node-version: "24"
@@ -106,7 +106,7 @@ jobs:
         if: steps.check.outputs.present == 'true'
         run: corepack enable
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         if: steps.check.outputs.present == 'true'
         with:
           node-version: "24"
