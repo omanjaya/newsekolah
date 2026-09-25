@@ -25,7 +25,7 @@ interface RoleTabsLayoutProps {
 }
 
 /** Shared shell for every role's tab group: same three tabs (home,
- * notifications, profile) in every (student|teacher|staff|parent) directory,
+ * notifications, profile) in every (student|teacher|staff) directory,
  * with an optional raised center action (docs/07-ui-ux.md). */
 export function RoleTabsLayout({ centerAction }: RoleTabsLayoutProps): React.JSX.Element {
   const [sheetVisible, setSheetVisible] = useState(false);
