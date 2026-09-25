@@ -196,11 +196,22 @@ func ensureLibraryMemberTypes(ctx context.Context, svc *libraryservice.Service, 
 
 // ensureLibraryMembers registers the demo student and teacher as library
 // members under their role's member type, unless they already are one.
+// Each gets an explicit, deterministic member_no instead of leaving
+// RegisterMemberInput.MemberNo empty (which asks the service to generate
+// one from the tenant's running member count,
+// createMemberWithGeneratedNo/library/service/members.go): that generator
+// only retries maxMemberNoRetries=5 collisions and this seed's own dev
+// database accumulates members across every re-seed and every other
+// script that has ever registered one against it, so the running count it
+// bases a new number on can already be taken -- observed as "could not
+// generate a unique member number" (domain.ErrMemberNoExhausted) against a
+// long-lived dev database. An explicit member_no sidesteps that shared
+// counter entirely.
 func ensureLibraryMembers(ctx context.Context, svc *libraryservice.Service, tenantID uuid.UUID, users map[string]db.User, memberTypes map[string]librarydomain.MemberType) error {
-	registrations := []struct{ username, memberTypeName string }{
-		{"siswa", "Siswa"},
-		{"siswa2", "Siswa"},
-		{"guru", "Guru & Staf"},
+	registrations := []struct{ username, memberTypeName, memberNo string }{
+		{"siswa", "Siswa", "SEED-SISWA-01"},
+		{"siswa2", "Siswa", "SEED-SISWA-02"},
+		{"guru", "Guru & Staf", "SEED-GURU-01"},
 	}
 	for _, r := range registrations {
 		user, ok := users[r.username]
@@ -219,7 +230,7 @@ func ensureLibraryMembers(ctx context.Context, svc *libraryservice.Service, tena
 			return fmt.Errorf("member type %q not seeded", r.memberTypeName)
 		}
 		if _, err := svc.RegisterMember(ctx, tenantID, libraryservice.RegisterMemberInput{
-			UserID: user.ID, MemberTypeID: memberType.ID,
+			UserID: user.ID, MemberTypeID: memberType.ID, MemberNo: r.memberNo,
 		}); err != nil {
 			return fmt.Errorf("register member %s: %w", r.username, err)
 		}
