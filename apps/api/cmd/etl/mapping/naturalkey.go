@@ -62,15 +62,25 @@ var gradeSequence = map[string]int16{
 }
 
 // ParseGradeFromClassName extracts the grade-level code from a SION class
-// name such as "X-A", "XI IPA 1", or "7B", since SION has no separate
-// grade_levels table: a class name's leading token is the grade. It reports
-// false when the leading token is not one of the known grade codes, which
-// the caller records as a gap instead of guessing a grade level.
+// name such as "X-A", "XI IPA 1", "7B", or "Kelas X1", since SION has no
+// separate grade_levels table: a class name's leading token (after
+// dropping a "Kelas" filler word, see below) is the grade. It reports
+// false when that token is not one of the known grade codes, which the
+// caller records as a gap instead of guessing a grade level.
 func ParseGradeFromClassName(className string) (code string, sequence int16, ok bool) {
 	trimmed := strings.TrimSpace(className)
 	fields := strings.FieldsFunc(trimmed, func(r rune) bool {
 		return r == '-' || r == ' ' || r == '_'
 	})
+	// Drop a leading "Kelas" ("grade"/"class" in Indonesian) filler word:
+	// the same real school names its classes "X-1".."XII-12" in one
+	// academic year but "Kelas X1".."Kelas XII-12" in another (confirmed
+	// migrating its full history end to end, see
+	// docs/analysis/etl-rehearsal-2026-09-25.md) -- the token that
+	// actually carries the grade is the next one, not this filler word.
+	if len(fields) > 1 && strings.EqualFold(fields[0], "kelas") {
+		fields = fields[1:]
+	}
 	if len(fields) == 0 {
 		return "", 0, false
 	}
@@ -78,7 +88,18 @@ func ParseGradeFromClassName(className string) (code string, sequence int16, ok 
 	// A leading run of digits followed by letters ("7B") splits into "7"
 	// and the section; only the digit run is the grade.
 	digits := strings.TrimRightFunc(head, func(r rune) bool { return r < '0' || r > '9' })
-	for _, candidate := range []string{head, digits} {
+	// Symmetrically, a leading run of letters followed directly by digits
+	// ("X1", "XI2", "XII10") splits into "X"/"XI"/"XII" and the section --
+	// the same school glues the section number straight onto the roman
+	// numeral instead of separating it with '-' or ' ' for some grades.
+	var letters string
+	if idx := strings.IndexFunc(head, func(r rune) bool { return r >= '0' && r <= '9' }); idx > 0 {
+		letters = head[:idx]
+	}
+	for _, candidate := range []string{head, digits, letters} {
+		if candidate == "" {
+			continue
+		}
 		if seq, known := gradeSequence[candidate]; known {
 			return candidate, seq, true
 		}

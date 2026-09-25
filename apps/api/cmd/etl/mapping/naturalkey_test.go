@@ -64,6 +64,12 @@ func TestParseGradeFromClassName(t *testing.T) {
 		{"9-A", "9", 9, true},
 		{"Unggulan-1", "", 0, false},
 		{"", "", 0, false},
+		{"Kelas X1", "X", 10, true},
+		{"Kelas X10", "X", 10, true},
+		{"Kelas XI-1", "XI", 11, true},
+		{"Kelas XII-10", "XII", 12, true},
+		{"kelas 7B", "7", 7, true},
+		{"Kelas", "", 0, false},
 	}
 	for _, tc := range cases {
 		code, seq, ok := ParseGradeFromClassName(tc.name)

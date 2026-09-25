@@ -86,10 +86,18 @@ func (s *Source) FetchExitPermits(yearID int64, semesterStart, semesterEnd time.
 // 'approved' or 'out') or are permit_type 'late', for the report's gap
 // line -- see FetchExitPermits' doc comment.
 func (s *Source) CountExitPermitsNotFinal(yearID int64, semesterStart, semesterEnd time.Time) (notFinal, lateType int, err error) {
+	// coalesce(..., 0): MySQL's sum() over zero matching rows (e.g. a
+	// semester with no student_permits rows at all, or none matching the
+	// inner boolean condition) returns NULL, not 0 -- Scan into a plain
+	// int then fails with "converting NULL to int is unsupported". A
+	// semester genuinely having zero not-final or zero 'late' permits is
+	// an entirely ordinary case (confirmed against a real SION database
+	// during the ETL dress rehearsal, docs/analysis/etl-rehearsal-2026-09-25.md),
+	// not something that should abort the whole run.
 	err = s.db.QueryRow(
 		`select
-		   sum(status not in ('completed', 'expired')),
-		   sum(status in ('completed', 'expired') and permit_type = 'late')
+		   coalesce(sum(status not in ('completed', 'expired')), 0),
+		   coalesce(sum(status in ('completed', 'expired') and permit_type = 'late'), 0)
 		 from student_permits
 		 where created_at >= ? and created_at < ?`,
 		semesterStart, semesterEnd,

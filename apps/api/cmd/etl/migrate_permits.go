@@ -209,11 +209,11 @@ func (st *Store) migrateExitPermits(
 			if err := st.tx.QueryRow(ctx,
 				`insert into workflow_instances (
 				   tenant_id, academic_year_id, definition_id, kind, subject_user_id, class_id,
-				   current_stage_index, status, payload, opened_at, closed_at, created_by
-				 ) values ($1, $2, $3, 'exit_permit', $4, $5, 4, $6, $7, $8, $9, $4)
+				   current_stage_index, status, payload, opened_at, local_date, closed_at, created_by
+				 ) values ($1, $2, $3, 'exit_permit', $4, $5, 4, $6, $7, $8, $9, $10, $4)
 				 returning id`,
 				tenantID, academicYearID, definitionID, student.targetUserID, classID,
-				status, payload, openedAt, closedAt,
+				status, payload, openedAt, mapping.LocalDate(p.CreatedAt), closedAt,
 			).Scan(&instanceID); err != nil {
 				return fmt.Errorf("create workflow instance: %w", err)
 			}
@@ -355,11 +355,11 @@ func (st *Store) migrateLeaveRequests(
 			if err := st.tx.QueryRow(ctx,
 				`insert into workflow_instances (
 				   tenant_id, academic_year_id, definition_id, kind, subject_user_id, class_id,
-				   current_stage_index, status, payload, opened_at, closed_at, created_by
-				 ) values ($1, $2, $3, 'leave_request', $4, $5, 2, $6, $7, $8, $9, $4)
+				   current_stage_index, status, payload, opened_at, local_date, closed_at, created_by
+				 ) values ($1, $2, $3, 'leave_request', $4, $5, 2, $6, $7, $8, $9, $10, $4)
 				 returning id`,
 				tenantID, academicYearID, definitionID, student.targetUserID, classID,
-				status, payload, openedAt, closedAt,
+				status, payload, openedAt, mapping.LocalDate(p.CreatedAt), closedAt,
 			).Scan(&instanceID); err != nil {
 				return fmt.Errorf("create workflow instance: %w", err)
 			}
