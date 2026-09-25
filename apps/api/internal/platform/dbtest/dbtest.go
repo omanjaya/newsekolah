@@ -31,10 +31,14 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/migrator"
 )
 
-// appRWPassword matches the fixed password migration 0004 assigns app_rw
+// AppRWPassword matches the fixed password migration 0004 assigns app_rw
 // when it provisions the role (safe here: a disposable Docker container
-// nothing else ever connects to, not a production credential).
-const appRWPassword = "change-me-in-production"
+// nothing else ever connects to, not a production credential). Exported so
+// a test that needs to build its own app_rw DATABASE_URL against this
+// harness's container -- e.g. cmd/bootstrap's end-to-end test, which opens
+// its own pool from an env var rather than taking AppPool directly -- does
+// not have to duplicate the literal.
+const AppRWPassword = "change-me-in-production"
 
 // Postgres is a running test database, ready for both fixture seeding and
 // exercising the code under test through the same RLS policies production
@@ -83,7 +87,7 @@ func Start(t *testing.T) Postgres {
 
 	require.NoError(t, migrator.UpAll(ctx, dsn, adminPool))
 
-	appPool, err := database.NewPool(ctx, RestrictedConnString(dsn, "app_rw", appRWPassword))
+	appPool, err := database.NewPool(ctx, RestrictedConnString(dsn, "app_rw", AppRWPassword))
 	require.NoError(t, err)
 	t.Cleanup(appPool.Close)
 
