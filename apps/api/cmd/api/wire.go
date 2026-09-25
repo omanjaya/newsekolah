@@ -196,7 +196,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 	// construction-order cycle.
 	gradingFlags := &lateBoundGradingFlags{}
 	gradingModule := grading.Register(grading.Dependencies{
-		Pool: pool, Years: schoolModule.Service, Perms: identityModule.Service, Flags: gradingFlags, Clock: clock.Real{},
+		Pool: pool, Years: schoolModule.Service, Perms: identityModule.Service, Flags: gradingFlags, Hub: hub, Clock: clock.Real{},
 	})
 	gradingModule.Service.SetLetterheadSource(wiring.ReportHeaderReports{Svc: schoolModule.Service})
 	disciplineModule := discipline.Register(discipline.Dependencies{
