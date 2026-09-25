@@ -24,6 +24,7 @@
     "test": "pnpm codegen && vitest run"
   },
   "dependencies": {
+    "@newsekolah/api-client": "workspace:*",
     "intl-messageformat": "^11.2.14"
   },
   "devDependencies": {
