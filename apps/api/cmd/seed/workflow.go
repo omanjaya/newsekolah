@@ -2,15 +2,20 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/omanjaya/newsekolah/apps/api/internal/gen/db"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/permits"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/permits/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/school"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/tenant"
 )
 
@@ -52,6 +57,10 @@ func seedWorkflowDefinitions(ctx context.Context, pool *pgxpool.Pool, tenantID u
 		return fmt.Errorf("ensure default workflow definitions: %w", err)
 	}
 
+	if err := seedPermitsPolicy(ctx, pool, tenantID, actorUserID); err != nil {
+		return fmt.Errorf("seed permits policy: %w", err)
+	}
+
 	defs, err := svc.ListDefinitions(ctx, tenantID)
 	if err != nil {
 		return fmt.Errorf("list workflow definitions: %w", err)
@@ -71,6 +80,57 @@ func seedWorkflowDefinitions(ctx context.Context, pool *pgxpool.Pool, tenantID u
 		return fmt.Errorf("replace exit permit definition: %w", err)
 	}
 	logger.Info("exit permit workflow trimmed to duty-scoped stages", "stages", len(exitPermitStages))
+	return nil
+}
+
+// permitsPolicyKind mirrors permits/service/policy.go's unexported
+// policyKindPermits -- cmd/seed has no service-level setter for this
+// tenant policy, so it writes the tenant_policies row directly through the
+// generated queries, same shape the service itself reads
+// (evidenceRequired's permitsPolicyConfig).
+const permitsPolicyKind = "permits"
+
+// seedPermitsPolicy turns off the "leave request needs an attached
+// evidence document before it can be approved or issued" tenant policy
+// (defaults to true, matching the old app -- permits/service/policy.go's
+// evidenceRequired), so the multi-actor simulation's leave-request
+// scenario (apps/web/e2e/simulation) can approve a request without also
+// driving a file upload through the browser. This is ordinary
+// admin-configurable tenant data (docs/02-system-design.md section 4.3),
+// the same toggle a real school's admin would use for a lighter-weight
+// leave process -- not a code change to the evidence requirement itself.
+func seedPermitsPolicy(ctx context.Context, pool *pgxpool.Pool, tenantID, actorUserID uuid.UUID) error {
+	q := db.New(pool)
+	latest, err := q.GetLatestTenantPolicyForPermits(ctx, db.GetLatestTenantPolicyForPermitsParams{
+		TenantID: tenantID, Kind: permitsPolicyKind,
+	})
+	nextVersion := int32(1)
+	if err == nil {
+		nextVersion = latest.Version + 1
+		var cfg struct {
+			EvidenceRequired *bool `json:"evidence_required"`
+		}
+		if json.Unmarshal(latest.Config, &cfg) == nil && cfg.EvidenceRequired != nil && !*cfg.EvidenceRequired {
+			return nil // already off
+		}
+	} else if !notFound(err) {
+		return fmt.Errorf("lookup permits policy: %w", err)
+	}
+
+	required := false
+	config, err := json.Marshal(struct {
+		EvidenceRequired *bool `json:"evidence_required"`
+	}{EvidenceRequired: &required})
+	if err != nil {
+		return fmt.Errorf("encode permits policy: %w", err)
+	}
+	_, err = q.CreateTenantPolicyForPermits(ctx, db.CreateTenantPolicyForPermitsParams{
+		TenantID: tenantID, Kind: permitsPolicyKind, Version: nextVersion, Config: config,
+		EffectiveFrom: database.Date(time.Now()), CreatedBy: pgtype.UUID{Bytes: actorUserID, Valid: true},
+	})
+	if err != nil {
+		return fmt.Errorf("create permits policy: %w", err)
+	}
 	return nil
 }
 
