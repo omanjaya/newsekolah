@@ -13,10 +13,9 @@ import { type UserProfileFields, useUpdateProfileMutation } from "../api";
 /**
  * The student/teacher/staff detail record GET /v1/me now returns as
  * `detail` (docs item 5): common identity fields for everyone with a
- * profile, plus a field group specific to the profile kind. A parent
- * account has no such record (UserProfileFields describes the student's
- * own family columns, not a parent's own profile), so this form only
- * renders for student/teacher/staff.
+ * profile, plus a field group specific to the profile kind. A reader with
+ * no profile row at all (e.g. a bootstrap super admin) has no such
+ * record, so this form only renders for student/teacher/staff.
  */
 export function EditDetailForm(): ReactElement | null {
   const { me } = useSession();

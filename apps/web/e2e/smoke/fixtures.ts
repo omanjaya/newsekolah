@@ -19,7 +19,6 @@ export const ROLE_USERNAMES = {
   guru: "guru",
   gurubk: "gurubk",
   siswa: "siswa",
-  ortu: "ortu",
 } as const;
 
 export type Role = keyof typeof ROLE_USERNAMES;

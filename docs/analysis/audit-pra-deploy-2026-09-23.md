@@ -41,16 +41,22 @@ Delapan peran sistem di-seed per tenant (`super_admin`, `admin`, `principal`, `t
 
 **Diperbarui 25 September 2026** setelah sesi navigasi (`apps/web/lib/navigation.ts`, `navigation-academic.ts`) memberi `leave-requests`, `exit-permits`, `late-arrivals`, `school-classes`, dan `academic-years` izin yang mencerminkan layar sungguhan di baliknya (lihat commit "fix(web): scope permission-free sidebar items to the roles that use them"). Angka Akademik, Kepegawaian, dan Perpustakaan juga bergeser dari versi 23 September karena modul lain (kehadiran staf, ekstrakurikuler, mentoring) menambah item sejak itu -- pergeseran itu bukan bagian dari sesi ini.
 
-| Grup                        | Super admin | Admin                                        | Kepala Sekolah | Guru | Wali kelas | Guru BK | Pustakawan | Staf | Satpam | Orang tua | Siswa |
-| --------------------------- | ----------- | -------------------------------------------- | -------------- | ---- | ---------- | ------- | ---------- | ---- | ------ | --------- | ----- |
-| Akademik (13)               | 12          | 12                                           | 6              | 7    | 7          | 8       | 0          | 2    | 2      | 1         | 5     |
-| Siswa dan kedisiplinan (15) | 13          | 13                                           | 9              | 6    | 7          | 8       | 1          | 6    | 6      | 1         | 5     |
-| Kepegawaian (4)             | 3           | 3                                            | 4              | 1    | 1          | 1       | 1          | 1    | 1      | 0         | 0     |
-| Perpustakaan (17)           | 17          | 17                                           | 6              | 5    | 5          | 5       | 17         | 5    | 5      | 1         | 1     |
-| Tamu dan keuangan (5)       | 5           | 5                                            | 5              | 0    | 0          | 0       | 0          | 5    | 5      | 0         | 0     |
-| Data sekolah (7)            | 7           | 7                                            | 2              | 2    | 2          | 2       | 0          | 2    | 2      | 0         | 0     |
-| Pengaturan (12)             | 12          | 12                                           | 1              | 0    | 0          | 0       | 0          | 0    | 0      | 0         | 0     |
-| Platform (1)                | 1           | 1 (salah, lihat temuan RBAC "Admin Sekolah") | 0              | 0    | 0          | 0       | 0          | 0    | 0      | 0         | 0     |
+**Diperbarui 25 September 2026 (2)**: kolom "Orang tua" dihapus dari matriks
+setelah akun login orang tua dan setiap fitur khusus orang tua dihapus dari
+produk (`docs/analysis/remove-parent-role-2026-09-25.md`) -- data kontak
+wali pada profil siswa tetap ada, hanya akun login dan tautan orang
+tua-siswa yang hilang.
+
+| Grup                        | Super admin | Admin                                        | Kepala Sekolah | Guru | Wali kelas | Guru BK | Pustakawan | Staf | Satpam | Siswa |
+| --------------------------- | ----------- | -------------------------------------------- | -------------- | ---- | ---------- | ------- | ---------- | ---- | ------ | ----- |
+| Akademik (13)               | 12          | 12                                           | 6              | 7    | 7          | 8       | 0          | 2    | 2      | 5     |
+| Siswa dan kedisiplinan (15) | 13          | 13                                           | 9              | 6    | 7          | 8       | 1          | 6    | 6      | 5     |
+| Kepegawaian (4)             | 3           | 3                                            | 4              | 1    | 1          | 1       | 1          | 1    | 1      | 0     |
+| Perpustakaan (17)           | 17          | 17                                           | 6              | 5    | 5          | 5       | 17         | 5    | 5      | 1     |
+| Tamu dan keuangan (5)       | 5           | 5                                            | 5              | 0    | 0          | 0       | 0          | 5    | 5      | 0     |
+| Data sekolah (7)            | 7           | 7                                            | 2              | 2    | 2          | 2       | 0          | 2    | 2      | 0     |
+| Pengaturan (12)             | 12          | 12                                           | 1              | 0    | 0          | 0       | 0          | 0    | 0      | 0     |
+| Platform (1)                | 1           | 1 (salah, lihat temuan RBAC "Admin Sekolah") | 0              | 0    | 0          | 0       | 0          | 0    | 0      | 0     |
 
 Kolom "Kepala Sekolah" ditambahkan 25 September 2026 setelah peran sistem baru `principal` (`authz.RoleDefaults()`, migrasi `0117_principal_role`): sebuah peran pengawas ("sees everything, does not operate") yang mendapat hampir semua izin `view_*` lintas modul plus izin laporan/ekspor dan supervisi guru (`view_supervision` + `manage_supervision`, tugas inti kepala sekolah), tetapi tidak pernah `manage_settings`, `manage_permissions`, `manage_master_data`, `platform_superadmin`, atau layar manajemen pengguna (`view_users`/`view_roles`). Profil kepala sekolah adalah `teacher` (seperti duty `leadership`/Wakil Kepala Sekolah yang sudah ada), jadi item bertanda `profileKinds: ["teacher", "staff"]` (jurnal, presensi mandiri) ikut tampil. Perpustakaan (6, bukan 17) dan Kepegawaian (4, penuh) tampak rendah/tinggi dibanding admin karena kepala sekolah hanya melihat katalog/laporan perpustakaan (bukan sirkulasi/anggota/aturan pinjam) tetapi melihat seluruh grup Kepegawaian (presensi staf, check-in mandiri, dan kedua item supervisi). Dua celah izin yang disengaja, dicatat di komentar `role_defaults.go`: (1) tidak ada izin baca-saja untuk nilai (`manage_grades` menggabungkan lihat dan edit, jadi kepala sekolah tidak melihat gradebook/rapor sama sekali lewat sidebar -- 0 di grup Akademik untuk `grading`/`my-grades`); (2) catatan konseling BK dan konseling wali (mentoring) tidak terbuka lewat API untuk kepala sekolah karena `manage_counseling`/`manage_mentoring` juga menggabungkan baca dan tulis (menulis catatan atas nama BK/wali adalah hak istimewa yang tidak boleh diberikan) -- `docs/08-security.md` mengizinkan kepala sekolah membaca catatan konseling "bila diaktifkan" (visibility `leadership`), tapi katalog izin belum punya pemisahnya; disarankan menambah `view_counseling`/`view_mentoring_notes` baca-saja sebagai tindak lanjut.
 
