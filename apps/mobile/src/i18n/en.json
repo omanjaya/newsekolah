@@ -90,6 +90,8 @@
   "qr.expired": "Expired",
   "qr.renew": "New code",
   "qr.gate": "Gate QR",
+  "qr.entry_scanned_in_class": "{name} just entered {class}",
+  "qr.entry_scanned": "{name} just entered the classroom",
   "permits.exit_title": "Exit permits",
   "permits.request": "Request",
   "permits.destination": "Destination",

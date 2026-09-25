@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Text, TextInput, View } from "react-native";
 import QRCode from "react-native-qrcode-svg";
 import { Button } from "@/components/ui/Button";
 import { showToast } from "@/components/ui/Toast";
 import { useIssueScanToken, type IssuedScanToken, type ScanPurpose } from "@/lib/api/hooks";
 import { encodeScanPayload } from "@/features/scan/payload";
+import { stringField, useLiveEvent, type RealtimeMessage } from "@/lib/realtime";
 import { t } from "@/i18n/t";
 
 const PURPOSES: { purpose: ScanPurpose; label: string }[] = [
@@ -13,11 +14,30 @@ const PURPOSES: { purpose: ScanPurpose; label: string }[] = [
   { purpose: "approve_stage", label: t("qr.purpose_approve") },
 ];
 
+const CLASSROOM_ENTRY_SCANNED_EVENTS = ["classroom_entry_scanned"] as const;
+
 /** Teacher's QR: pick a purpose, show the single-use code, renew when it expires. */
 export function QrSheet(): React.JSX.Element {
   const [purpose, setPurpose] = useState<ScanPurpose>("classroom_entry");
   const [permitCode, setPermitCode] = useState("");
   const issue = useIssueScanToken();
+
+  // apps/api/internal/modules/permits/service/scantoken.go's
+  // classroomEntryScannedEvent pushes to this teacher's own topic the
+  // moment a student scans the code this screen is showing -- there is no
+  // stored notification row for it (docs/analysis/realtime-plan-2026-09-25.md
+  // section 1.5 #2 notes the web client drops it silently today), so a
+  // toast here is the only place the teacher ever sees it.
+  const onClassroomEntryScanned = useCallback((message: RealtimeMessage) => {
+    const studentName = stringField(message, "student_name");
+    if (!studentName) return;
+    const className = stringField(message, "class_name");
+    const text = className
+      ? t("qr.entry_scanned_in_class").replace("{name}", studentName).replace("{class}", className)
+      : t("qr.entry_scanned").replace("{name}", studentName);
+    showToast(text, "success");
+  }, []);
+  useLiveEvent(CLASSROOM_ENTRY_SCANNED_EVENTS, onClassroomEntryScanned);
 
   function mint(next: ScanPurpose) {
     const contextId = next === "approve_stage" ? permitCode.trim() : undefined;
