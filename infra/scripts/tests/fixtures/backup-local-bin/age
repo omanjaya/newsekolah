@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+# Fake `age` for backup-local.bats: a reversible wrapper (not real
+# encryption) so tests can verify what would have been encrypted, and
+# decrypt it back to check manifest correctness, without real age keys.
+# Supports the invocations backup-local.sh (and the tests themselves) make:
+#   age -R <recipient-file> -o <out> <in>   (encrypt)
+#   age -d -i <identity-file> -o <out> <in> (decrypt, used only by tests)
+set -euo pipefail
+
+mode=encrypt
+out=""
+in=""
+key_file=""
+
+args=("$@")
+i=0
+while [[ $i -lt ${#args[@]} ]]; do
+    arg="${args[$i]}"
+    case "$arg" in
+        -d | --decrypt) mode=decrypt ;;
+        -R | --recipients-file)
+            i=$((i + 1))
+            key_file="${args[$i]}"
+            ;;
+        -i | --identity)
+            i=$((i + 1))
+            key_file="${args[$i]}"
+            ;;
+        -o | --output)
+            i=$((i + 1))
+            out="${args[$i]}"
+            ;;
+        *) in="$arg" ;;
+    esac
+    i=$((i + 1))
+done
+
+[[ -n "$key_file" ]] || {
+    echo "fake age: missing -R/-i" >&2
+    exit 1
+}
+[[ -s "$key_file" ]] || {
+    echo "fake age: key file $key_file is missing or empty" >&2
+    exit 1
+}
+[[ -n "$out" && -n "$in" ]] || {
+    echo "fake age: missing -o or input file" >&2
+    exit 1
+}
+[[ -f "$in" ]] || {
+    echo "fake age: input file $in not found" >&2
+    exit 1
+}
+
+if [[ "$mode" == "encrypt" ]]; then
+    {
+        printf 'FAKE-AGE-ENCRYPTED\n'
+        cat "$in"
+    } >"$out"
+else
+    tail -n +2 "$in" >"$out"
+fi

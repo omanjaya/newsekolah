@@ -147,12 +147,48 @@ overwriting object storage too. `--dry-run` only prints the checks it would run.
 
 `infra/scripts/backup-local.sh` is the backup the shared VPS runs today. It
 dumps Postgres (`pg_dump --format=custom` through the compose `postgres`
-service) and archives the MinIO data volume, encrypts both with `age`, and
-keeps them in `/root/backups/newsekolah` for 14 days. `LAST_SUCCESS` in that
+service) and backs up the MinIO bucket, encrypts everything with `age`, and
+keeps it in `/root/backups/newsekolah` for 14 days. `LAST_SUCCESS` in that
 directory holds the time of the last good run. It protects against deleted
 data, a bad migration, or an application bug; it does not survive losing the
 host, so add the offsite `backup.sh` target before production data matters
 for more than one school.
+
+The object storage backup is incremental, not a full daily archive of the
+bucket (a full `tar`+`age` of the bucket every day used to make storage
+backups grow to 14x the bucket size):
+
+1. The bucket is mirrored into a persistent local staging directory
+   (`$BACKUP_DIR/.staging`, plaintext, root-only) using the `pgsty/mc` image
+   as a one-off container on the compose project's own network -- the
+   already-defined `minio-init` service, with its command overridden to run
+   `mc mirror --overwrite --remove` instead of its normal bootstrap. `mc`
+   only transfers objects that changed since the previous run.
+2. Every file in the staging directory is hashed (sha256). If an encrypted
+   blob for that hash does not already exist under `$BACKUP_DIR/objects/`,
+   it gets encrypted there -- content-addressed, so identical content is
+   only ever encrypted and stored once, however many object keys or runs
+   reference it.
+3. Today's manifest (object key -> hash, size, mtime) is written and
+   encrypted (`manifest-<STAMP>.tsv.age`). This is what a restore replays.
+4. A small _unencrypted_ index of just that day's referenced hashes
+   (`manifest-<STAMP>.hashes`, no object keys, no content) is also written.
+   Object keys can be identifying (a file path with a student's name or ID
+   in it), so the key -> hash manifest stays encrypted; a sha256 alone
+   reveals nothing about an object's name or content and is already public
+   as the blob's filename. This host holds no age private key, so it cannot
+   decrypt manifests to see which hashes are still referenced -- the
+   plaintext hash index is what makes retention pruning possible without
+   the key.
+5. Retention deletes dumps, manifests and hash indexes older than
+   `BACKUP_RETENTION_DAYS` (default 14), then deletes any object blob whose
+   hash is not referenced by a manifest still inside that window.
+
+The staging directory is a working mirror, not a backup artifact: it is
+root-only and never copied off this host, which is no worse than the live
+bucket already being plaintext on that same disk. Only
+`postgres-*.dump.age`, `manifest-*.tsv.age` and `objects/` are backups and
+safe to copy elsewhere (with the private key kept separately).
 
 Only the age public key lives on the server
 (`/etc/newsekolah/backup-age-recipient.txt`). The private key stays with the
@@ -174,7 +210,7 @@ echo "age1..." > /etc/newsekolah/backup-age-recipient.txt   # public key only
 `cat /root/backups/newsekolah/LAST_SUCCESS` and
 `tail /var/log/newsekolah-backup.log`.
 
-Restore from a local backup:
+#### Restoring Postgres from a local backup
 
 ```bash
 # on the operator machine, which holds the private key
@@ -193,6 +229,55 @@ operator machine and restored it into a throwaway Postgres 16: schema
 version, roles, users, duty types and permissions matched production. The
 only restore errors were grants to `app_rw`/`app_platform`, which do not
 exist in a bare container and do exist on the real host.
+
+#### Restoring the object storage bucket from a local backup
+
+Both restores below run on the operator machine, which holds the age
+private key -- the server never needs it. `objects/` is content-addressed,
+so it is safe (if slow the first time) to sync the whole store down once and
+reuse it for later restores; only new blobs need re-syncing after that.
+
+**Full bucket restore, to the state as of a given day:**
+
+```bash
+# pick the manifest for the day you want, e.g. the latest one:
+ssh root@HOST 'ls -1 /root/backups/newsekolah/manifest-*.tsv.age' | tail -n1
+STAMP=20260101T020000Z   # from the manifest filename you picked
+
+mkdir -p restore && cd restore
+scp "root@HOST:/root/backups/newsekolah/manifest-${STAMP}.tsv.age" .
+rsync -a root@HOST:/root/backups/newsekolah/objects/ objects/   # or scp -r on first run
+
+age -d -i ~/.config/newsekolah/backup-age-key.txt \
+  -o manifest.tsv "manifest-${STAMP}.tsv.age"
+
+mkdir -p restored
+while IFS=$'\t' read -r key hash size mtime; do
+    blob="objects/${hash:0:2}/${hash}.age"
+    mkdir -p "restored/$(dirname "$key")"
+    age -d -i ~/.config/newsekolah/backup-age-key.txt -o "restored/$key" "$blob"
+    got="$(sha256sum "restored/$key" | cut -d' ' -f1)"
+    [[ "$got" == "$hash" ]] || { echo "CHECKSUM MISMATCH: $key" >&2; exit 1; }
+done <manifest.tsv
+
+# push the reconstructed tree into a live bucket (mc reachable over the
+# loopback port the shared Caddy proxies, or via an SSH tunnel)
+mc alias set target http://127.0.0.1:9011 "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD"
+mc mirror --overwrite restored/ target/newsekolah
+```
+
+**Single-file restore** (same manifest and `objects/` sync, just one key):
+
+```bash
+key="branding/some-school/logo.png"
+line="$(awk -F'\t' -v k="$key" '$1==k {print; exit}' manifest.tsv)"
+hash="$(cut -f2 <<<"$line")"
+mkdir -p "restored/$(dirname "$key")"
+age -d -i ~/.config/newsekolah/backup-age-key.txt \
+  -o "restored/$key" "objects/${hash:0:2}/${hash}.age"
+# upload just that file back, e.g.:
+mc cp "restored/$key" "target/newsekolah/$key"
+```
 
 ### Restore drill
 

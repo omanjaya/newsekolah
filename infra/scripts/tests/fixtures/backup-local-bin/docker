@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+# Fake `docker` for backup-local.bats. Understands only the two invocations
+# infra/scripts/backup-local.sh makes through its `compose()` wrapper:
+#   docker compose ... exec -T postgres pg_dump ...
+#   docker compose ... run --rm --no-deps -T -v HOST:/staging -e K=V \
+#     --entrypoint /bin/sh minio-init -c SCRIPT
+# For `exec`, emits deterministic fake dump bytes to stdout. For `run`,
+# extracts the -v host mount and any -e vars, exports them, and actually
+# runs the container's `-c` script on the host with `sh -c` -- with `mc`
+# resolved to the fake fixture below via PATH -- since that script only
+# talks to `mc`, not the container filesystem. Fails loudly on anything
+# else so an unexpected call surfaces in test output instead of doing
+# nothing silently.
+set -euo pipefail
+
+[[ "${1:-}" == "compose" ]] || {
+    echo "fake docker: expected 'compose', got: $*" >&2
+    exit 1
+}
+shift
+
+sub=""
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --project-directory) shift 2 ;;
+        -f) shift 2 ;;
+        exec | run)
+            sub="$1"
+            shift
+            break
+            ;;
+        *)
+            echo "fake docker: unexpected compose flag: $1" >&2
+            exit 1
+            ;;
+    esac
+done
+
+case "$sub" in
+    exec)
+        printf 'FAKE-PG-DUMP-%s\n' "${FAKE_PG_DUMP_MARKER:-default}"
+        exit 0
+        ;;
+    run)
+        host_dir=""
+        declare -a env_pairs=()
+        script=""
+        while [[ $# -gt 0 ]]; do
+            case "$1" in
+                --rm | --no-deps | -T) shift ;;
+                -v)
+                    host_dir="${2%%:*}"
+                    shift 2
+                    ;;
+                -e)
+                    env_pairs+=("$2")
+                    shift 2
+                    ;;
+                --entrypoint) shift 2 ;;
+                minio-init) shift ;;
+                -c)
+                    script="$2"
+                    shift 2
+                    ;;
+                *) shift ;;
+            esac
+        done
+        [[ -n "$host_dir" ]] || {
+            echo "fake docker: run missing -v mount" >&2
+            exit 1
+        }
+        export FAKE_STAGING_DIR="$host_dir"
+        for pair in "${env_pairs[@]:-}"; do
+            [[ -n "$pair" ]] && export "${pair?}"
+        done
+        sh -c "$script"
+        exit $?
+        ;;
+    *)
+        echo "fake docker: unexpected compose subcommand" >&2
+        exit 1
+        ;;
+esac
