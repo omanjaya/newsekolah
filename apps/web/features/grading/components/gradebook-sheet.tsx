@@ -190,19 +190,23 @@ export function GradebookSheet({
           {t("exportGradebook")}
         </Button>
         <div className="ml-auto flex items-center gap-3">
+          {/* The badge is a read-only status indicator, so every reader
+              (canManage or not) keeps seeing it -- only the edit control
+              below is manage_grades-gated. */}
           <Badge variant={sheet.is_published ? "accent" : "neutral"}>
             {sheet.is_published ? t("publishedBadge") : t("draftBadge")}
           </Badge>
-          <label className="flex items-center gap-2 text-[13px]">
-            <span className="text-fg-muted">{t("publishToggleLabel")}</span>
-            <Switch
-              checked={sheet.is_published}
-              disabled={!canManage}
-              onCheckedChange={(checked) => {
-                setPendingPublish(checked);
-              }}
-            />
-          </label>
+          {canManage && (
+            <label className="flex items-center gap-2 text-[13px]">
+              <span className="text-fg-muted">{t("publishToggleLabel")}</span>
+              <Switch
+                checked={sheet.is_published}
+                onCheckedChange={(checked) => {
+                  setPendingPublish(checked);
+                }}
+              />
+            </label>
+          )}
         </div>
       </div>
 

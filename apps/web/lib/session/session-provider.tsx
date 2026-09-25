@@ -28,9 +28,12 @@ const SessionContext = createContext<SessionContextValue | null>(null);
  * that 401 as "try `/v1/auth/refresh` once, then retry" (see its README),
  * which is exactly the boot-refresh behavior this provider needs — no
  * separate manual refresh call required. After a successful login,
- * `useLogin`'s `onSuccess` invalidates this same `me` query, so this
- * re-fetches (now with the fresh token already in memory) and flips to
- * "authenticated" on its own; no extra wiring needed at the call site.
+ * `useLogin`'s `onSuccess` clears the whole query cache (so a previous
+ * account's data, or a previous account's cached *error* on some other
+ * query, never leaks into the new session -- see that hook's doc comment)
+ * and seeds this same `me` query straight from the login response, so this
+ * flips to "authenticated" on its own with no anonymous gap; no extra
+ * wiring needed at the call site.
  */
 export function SessionProvider({ children }: { children: ReactNode }): ReactElement {
   const client = useApiClient();

@@ -16,17 +16,30 @@ export interface UseLoginOptions {
   onTokens?: (data: LoginResponse) => void;
 }
 
-/** POST /v1/auth/login. Invalidates `me` on success so the shell re-fetches. */
+/**
+ * POST /v1/auth/login. Clears the whole cache first -- the mirror image of
+ * `useLogout`'s `queryClient.clear()` -- then seeds `me` from the login
+ * payload so route guards never observe an anonymous gap between "logged
+ * in" and the refetch landing.
+ *
+ * Without the clear, every query key in this package and the app's own
+ * feature modules (e.g. `["grading","gradebook",classId,subjectId,...]`)
+ * carries no user or tenant discriminator (see query-keys.ts), so signing
+ * into a second account in the same tab -- without an intervening logout,
+ * e.g. an admin testing several roles, or a forced re-login after a
+ * session expired mid-session -- could serve that PREVIOUS account's
+ * cached data, or worse, its cached *error* (a stale 403 that only a
+ * manual retry or `staleTime` expiry would clear), to the newly
+ * authenticated user.
+ */
 export function useLogin(client: NewsekolahApiClient, options: UseLoginOptions = {}) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (body: LoginRequest) => client.POST("/v1/auth/login", { body }),
     onSuccess: (data) => {
       options.onTokens?.(data);
-      // Seed the session from the login payload first so route guards never
-      // observe an anonymous gap between "logged in" and the refetch landing.
+      queryClient.clear();
       queryClient.setQueryData(queryKeys.me(), data.user);
-      void queryClient.invalidateQueries({ queryKey: queryKeys.me() });
     },
   });
 }
