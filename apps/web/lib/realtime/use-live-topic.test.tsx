@@ -20,7 +20,7 @@ vi.mock("./live-socket-provider", () => ({
   }),
 }));
 
-import { useLiveTopic } from "./use-live-topic";
+import { useLiveTopic, useLiveTopics } from "./use-live-topic";
 
 beforeEach(() => {
   state.subscribeCalls = [];
@@ -74,5 +74,55 @@ describe("useLiveTopic", () => {
 
     rerender({ topic: "role:admin" });
     expect(state.subscribeCalls).toEqual(["role:admin"]);
+  });
+});
+
+describe("useLiveTopics", () => {
+  it("subscribes to every topic in a variable-length list", () => {
+    const { unmount } = renderHook(() => {
+      useLiveTopics(["duty:homeroom:class-1", "duty:homeroom:class-2", "duty:counselor"]);
+    });
+
+    expect(state.subscribeCalls).toEqual([
+      "duty:homeroom:class-1",
+      "duty:homeroom:class-2",
+      "duty:counselor",
+    ]);
+    expect(state.unsubscribeCalls).toEqual([]);
+
+    unmount();
+
+    expect(state.unsubscribeCalls).toEqual([
+      "duty:homeroom:class-1",
+      "duty:homeroom:class-2",
+      "duty:counselor",
+    ]);
+  });
+
+  it("drops falsy entries and subscribes to nothing for an all-falsy list", () => {
+    renderHook(() => {
+      useLiveTopics([undefined, "", undefined]);
+    });
+
+    expect(state.subscribeCalls).toEqual([]);
+  });
+
+  it("re-subscribes when the resolved topic set changes", () => {
+    const { rerender } = renderHook(
+      ({ topics }: { topics: (string | undefined)[] }) => {
+        useLiveTopics(topics);
+      },
+      { initialProps: { topics: ["duty:homeroom:class-1"] } },
+    );
+    expect(state.subscribeCalls).toEqual(["duty:homeroom:class-1"]);
+
+    rerender({ topics: ["duty:homeroom:class-1", "duty:homeroom:class-2"] });
+
+    expect(state.unsubscribeCalls).toEqual(["duty:homeroom:class-1"]);
+    expect(state.subscribeCalls).toEqual([
+      "duty:homeroom:class-1",
+      "duty:homeroom:class-1",
+      "duty:homeroom:class-2",
+    ]);
   });
 });
