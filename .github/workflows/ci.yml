@@ -328,6 +328,110 @@ jobs:
         if: steps.changes.outputs.migrations == 'true'
         run: bash infra/scripts/check-migrations.sh apps/api/migrations
 
+  e2e-sim:
+    name: e2e-sim
+    runs-on: ubuntu-latest
+    # The multi-actor "school day" simulation (apps/web/e2e/simulation)
+    # against the real dev docker-compose stack -- not the mocked
+    # playwright.config.ts suite (that one already runs as part of the
+    # web-packages job's `pnpm test`/build). ubuntu-latest ships Docker
+    # and the Compose plugin, so this is feasible without a self-hosted
+    # runner; the trade-off is time (building three dev images plus a
+    # full multi-browser-context run), which is why it only runs when
+    # something it actually exercises changed.
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          filter: blob:none
+
+      - name: Check for relevant changes
+        id: changes
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            sim:
+              - "apps/api/**"
+              - "apps/web/**"
+              - "packages/**"
+              - "openapi/**"
+              - "infra/docker/**"
+              - "pnpm-lock.yaml"
+
+      - uses: actions/setup-node@v4
+        if: steps.changes.outputs.sim == 'true'
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Enable corepack (pnpm 10)
+        if: steps.changes.outputs.sim == 'true'
+        run: corepack enable
+
+      - uses: actions/setup-node@v4
+        if: steps.changes.outputs.sim == 'true'
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: pnpm install
+        if: steps.changes.outputs.sim == 'true'
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        if: steps.changes.outputs.sim == 'true'
+        working-directory: apps/web
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Start the dev stack
+        if: steps.changes.outputs.sim == 'true'
+        run: docker compose -f infra/docker/docker-compose.dev.yml up --build -d postgres redis minio mailpit api web
+
+      - name: Wait for the API to be healthy
+        if: steps.changes.outputs.sim == 'true'
+        run: |
+          for i in $(seq 1 60); do
+            if curl -fsS http://localhost:8080/health >/dev/null 2>&1; then exit 0; fi
+            sleep 2
+          done
+          echo "API never became healthy" >&2
+          docker compose -f infra/docker/docker-compose.dev.yml logs api migrate keygen
+          exit 1
+
+      - name: Wait for the web app to respond
+        if: steps.changes.outputs.sim == 'true'
+        run: |
+          for i in $(seq 1 60); do
+            if curl -fsS http://localhost:3000/login >/dev/null 2>&1; then exit 0; fi
+            sleep 2
+          done
+          echo "web app never responded" >&2
+          docker compose -f infra/docker/docker-compose.dev.yml logs web
+          exit 1
+
+      - name: Seed the demo tenant
+        if: steps.changes.outputs.sim == 'true'
+        run: docker compose -f infra/docker/docker-compose.dev.yml run --rm seed
+
+      - name: Run the simulation
+        if: steps.changes.outputs.sim == 'true'
+        working-directory: apps/web
+        env:
+          SIM_BASE_URL: http://localhost:3000
+          SEED_PASSWORD: "Password123!"
+          CI: "true"
+        run: pnpm e2e:sim
+
+      - name: Upload simulation report
+        if: always() && steps.changes.outputs.sim == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: sim-report
+          path: apps/web/sim-report
+          retention-days: 7
+
+      - name: Dump stack logs on failure
+        if: failure() && steps.changes.outputs.sim == 'true'
+        run: docker compose -f infra/docker/docker-compose.dev.yml logs
+
   emoji-check:
     name: emoji-check
     runs-on: ubuntu-latest

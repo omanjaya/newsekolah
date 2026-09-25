@@ -26,6 +26,12 @@ type AdminDashboard struct {
 	PendingByKind            map[string]int
 	OnlineByRole             map[string]int
 	LoginHistogramByHour     [24]int
+	// AttendanceSubmittedToday/AttendanceTotalToday: how many classes with
+	// a session running right now have submitted attendance, out of how
+	// many such classes exist (attendance.TodaySubmittedCount). Zero/zero
+	// when s.attendance is nil or nothing is currently in session.
+	AttendanceSubmittedToday int
+	AttendanceTotalToday     int
 }
 
 // AdminDashboard composes the four panels. Restricted to admin/super_admin
@@ -62,10 +68,22 @@ func (s *Service) AdminDashboard(ctx context.Context, tenantID uuid.UUID) (Admin
 		}
 	}
 
+	var attendanceSubmitted, attendanceTotal int
+	if s.attendance != nil {
+		// Best-effort, same as presence above: a school that has not yet
+		// gotten to today's first period (or has no attendance data at
+		// all) should still see the rest of the dashboard.
+		if submitted, total, err := s.attendance.TodaySubmittedCount(ctx, tenantID); err == nil {
+			attendanceSubmitted, attendanceTotal = submitted, total
+		}
+	}
+
 	return AdminDashboard{
 		ActiveUsersByProfileKind: activeUsers,
 		PendingByKind:            pending,
 		OnlineByRole:             online,
 		LoginHistogramByHour:     histogram,
+		AttendanceSubmittedToday: attendanceSubmitted,
+		AttendanceTotalToday:     attendanceTotal,
 	}, nil
 }

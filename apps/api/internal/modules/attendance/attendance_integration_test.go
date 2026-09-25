@@ -485,6 +485,59 @@ func TestHomeroomAttendanceBatchesViolationSummary(t *testing.T) {
 	require.Zero(t, student2Entry.ViolationCount, "a student absent from the batch result has no violations")
 }
 
+// TestTodaySubmittedCount covers the admin/principal dashboard's
+// attendance-progress figure (analytics.AdminDashboard's
+// AttendanceSubmittedToday/AttendanceTotalToday): it must count the one
+// class scheduled right now as not yet submitted, then flip to submitted
+// the moment SaveEntries closes that same session -- and must never count
+// a class that belongs to a different tenant.
+func TestTodaySubmittedCount(t *testing.T) {
+	pg := dbtest.Start(t)
+	ctx := context.Background()
+	svc := buildService(pg.AppPool)
+	w := seedWorld(t, ctx, pg.AdminPool, "today-submitted")
+
+	submitted, total, err := svc.TodaySubmittedCount(ctx, w.tenantID)
+	require.NoError(t, err)
+	require.Equal(t, 1, total, "the one class scheduled for the whole of today must be in scope")
+	require.Equal(t, 0, submitted, "nothing has been saved yet")
+
+	actor := service.Actor{UserID: w.teacherID}
+	opened, err := svc.OpenSession(ctx, w.tenantID, actor, w.scheduleTodayID, w.today, domain.SaveModeNormal)
+	require.NoError(t, err)
+
+	submitted, total, err = svc.TodaySubmittedCount(ctx, w.tenantID)
+	require.NoError(t, err)
+	require.Equal(t, 1, total)
+	require.Equal(t, 0, submitted, "opening a session does not submit it")
+
+	_, err = svc.SaveEntries(ctx, w.tenantID, actor, opened.Session.ID, service.SaveEntriesInput{
+		Entries: []service.SaveEntryInput{
+			{StudentUserID: w.student1ID, StatusCode: "H"},
+			{StudentUserID: w.student2ID, StatusCode: "H"},
+		},
+	})
+	require.NoError(t, err)
+
+	submitted, total, err = svc.TodaySubmittedCount(ctx, w.tenantID)
+	require.NoError(t, err)
+	require.Equal(t, 1, total)
+	require.Equal(t, 1, submitted, "the class's session is now submitted")
+
+	// A second tenant's own (unsubmitted) class must never be counted
+	// against the first tenant's total.
+	other := seedWorld(t, ctx, pg.AdminPool, "today-submitted-other")
+	submittedOther, totalOther, err := svc.TodaySubmittedCount(ctx, other.tenantID)
+	require.NoError(t, err)
+	require.Equal(t, 1, totalOther)
+	require.Equal(t, 0, submittedOther)
+
+	submitted, total, err = svc.TodaySubmittedCount(ctx, w.tenantID)
+	require.NoError(t, err)
+	require.Equal(t, 1, total, "the other tenant's class must not leak into this tenant's total")
+	require.Equal(t, 1, submitted)
+}
+
 func TestTenantIsolation(t *testing.T) {
 	pg := dbtest.Start(t)
 	ctx := context.Background()

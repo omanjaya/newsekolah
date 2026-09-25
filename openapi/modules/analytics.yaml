@@ -120,6 +120,18 @@ components:
           minItems: 24
           maxItems: 24
           items: { type: integer }
+        attendance_today:
+          $ref: "#/components/schemas/AttendanceTodayProgress"
+    AttendanceTodayProgress:
+      type: object
+      description: >-
+        How many classes with a session running right now have submitted
+        attendance, out of how many such classes exist. Both zero when
+        nothing is currently in session.
+      required: [submitted, total]
+      properties:
+        submitted: { type: integer }
+        total: { type: integer }
     RiskLevel:
       type: string
       enum: [none, watch, at_risk]

@@ -33,8 +33,44 @@ applies the schema. Both are one-shot services the API waits for, so
 pnpm dev:docker:seed
 ```
 
-That creates the tenant `sma-contoh` with the users `admin`, `guru`,
-`gurubk`, `siswa` and `ortu`, all with the password `Password123!`.
+That creates the tenant `sma-contoh` with one account per role/duty the
+school day needs -- `admin`, `kepsek` (principal), `guru` (homeroom
+teacher of X-A and its Matematika teacher), `gurupiket` (picket duty),
+`gurubk` (counselor duty), `wakepsek` (leadership duty), `satpam`
+(security duty), `pustakawan` (librarian role and duty), and two students
+in X-A, `siswa` and `siswa2` -- all with the password `Password123!`
+(override with `SEED_PASSWORD`). It also seeds an active academic year
+and term, X-A's full-day timetable, a Matematika grading component, and
+a library catalogue with one fully-checked-out title. Re-running it is
+safe (idempotent).
+
+## Simulation
+
+`apps/web/e2e/simulation` is a Playwright suite that logs several of
+those seeded actors in at once, in real browser contexts, and proves a
+cross-role flow (a leave request, an exit permit, attendance, grades, a
+library reservation, and a reconnect after going offline) shows up live
+on another actor's already-open screen -- never against a mocked API,
+always a real running stack.
+
+```bash
+pnpm dev:docker        # start the stack (first run: wait for it to be healthy)
+pnpm dev:docker:seed   # seed sma-contoh (idempotent, safe to re-run)
+pnpm --filter @newsekolah/web e2e:sim
+```
+
+Or, from `apps/web`, pointed at a different stack (SEED_PASSWORD must
+match whatever seeded that stack):
+
+```bash
+SIM_BASE_URL=http://localhost:3000 SEED_PASSWORD=Password123! pnpm e2e:sim
+```
+
+It refuses to run against production (`sion.nouma.id`) or any host
+listed in `SIM_FORBIDDEN_HOSTS` (comma-separated) -- point it at a local
+stack or a disposable staging box only. Trace, video, and screenshots are
+kept on failure, and a readable report lands in `apps/web/sim-report/`
+(`npx playwright show-report sim-report` to open it).
 
 ## Menambah dependensi npm
 

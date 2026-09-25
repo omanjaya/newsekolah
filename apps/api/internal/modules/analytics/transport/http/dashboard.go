@@ -53,5 +53,9 @@ func (h *AnalyticsHandler) GetAdminDashboard(ctx context.Context, _ api.GetAdmin
 		},
 		OnlineByRole:   dashboard.OnlineByRole,
 		LoginHistogram: histogram,
+		AttendanceToday: &api.AttendanceTodayProgress{
+			Submitted: dashboard.AttendanceSubmittedToday,
+			Total:     dashboard.AttendanceTotalToday,
+		},
 	}, nil
 }

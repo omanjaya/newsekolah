@@ -57,6 +57,25 @@ const SIZE_BUTTON_CLASS: Record<NonNullable<BarcodeScannerFieldProps["size"]>, s
 };
 
 /**
+ * A scan token this size never overflows this: "sion:<kind>:<uuid>:<token>"
+ * (apps/web/features/permits/api.ts's encodeScanPayload) -- the longest
+ * kind in use ("approve", 7 chars) plus a 36-character UUID plus a
+ * 43-character token (32 random bytes, URL-safe base64,
+ * apps/api/internal/modules/permits/service/scantoken.go's
+ * IssueScanToken) is 93 characters. The previous cap of 64 silently
+ * truncated that (a browser's native maxLength just drops the excess
+ * keystrokes/pasted characters, no error), so the exact case this field's
+ * own "atau tempel kodenya" ("or paste the code") hint promises -- pasting
+ * the gate QR's full encoded payload when a camera or hardware scanner
+ * is not available -- always failed with a generic "invalid code" from
+ * the server, which had received a hash of the truncated string. A scan
+ * source that only ever submits the bare token (e.g. the approve-stage
+ * scanner, which already knows the instance id from its own props) stays
+ * well under either cap.
+ */
+const MANUAL_ENTRY_MAX_LENGTH = 128;
+
+/**
  * A field that reads a physical barcode scanner (a very fast keyboard
  * ending with Enter) from anywhere on the page, not only while this input
  * has focus, plus an optional camera fallback where the browser exposes
@@ -129,7 +148,7 @@ export function BarcodeScannerField({
           placeholder={placeholder}
           disabled={disabled}
           autoFocus={autoFocus}
-          maxLength={64}
+          maxLength={MANUAL_ENTRY_MAX_LENGTH}
           className={SIZE_INPUT_CLASS[size]}
         />
       </label>

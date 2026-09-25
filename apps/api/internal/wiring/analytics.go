@@ -44,6 +44,10 @@ func (a AnalyticsAttendance) MonthlySummary(ctx context.Context, tenantID, stude
 	return out, nil
 }
 
+func (a AnalyticsAttendance) TodaySubmittedCount(ctx context.Context, tenantID uuid.UUID) (submitted, total int, err error) {
+	return a.Svc.TodaySubmittedCount(ctx, tenantID)
+}
+
 type AnalyticsDiscipline struct{ Svc *disciplineservice.Service }
 
 func (d AnalyticsDiscipline) StudentSummary(ctx context.Context, tenantID, studentID uuid.UUID) (analyticsservice.DisciplineSummary, error) {

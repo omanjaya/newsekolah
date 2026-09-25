@@ -88,6 +88,15 @@ describe("useLateArrivalQueueQuery realtime wiring (integration)", () => {
 
     expect(ws.sentActions()).toContainEqual({ action: "subscribe", topics: ["duty:picket"] });
 
+    // The hello itself resyncs every useLiveInvalidate listener now (live-
+    // socket-provider.tsx's doc comment: even the very first hello can
+    // land after this query's on-mount fetch already ran), so this is
+    // already a second fetch before the late_arrival.opened event below
+    // triggers a third.
+    await waitFor(() => {
+      expect(getMock).toHaveBeenCalledTimes(2);
+    });
+
     act(() => {
       ws.message({
         type: "late_arrival.opened",
@@ -98,7 +107,7 @@ describe("useLateArrivalQueueQuery realtime wiring (integration)", () => {
     });
 
     await waitFor(() => {
-      expect(getMock).toHaveBeenCalledTimes(2);
+      expect(getMock).toHaveBeenCalledTimes(3);
     });
   }, 10_000);
 });
