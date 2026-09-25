@@ -8,6 +8,8 @@ import { useApiClient } from "../../lib/api/client";
 import { API_URL } from "../../lib/env";
 import { useActiveYear } from "../../lib/hooks/use-active-year";
 
+import { useMyGradesLive } from "./realtime";
+
 export type GradingScale = components["schemas"]["GradingScale"];
 export type GradingScaleWrite = components["schemas"]["GradingScaleWrite"];
 export type AssessmentComponent = components["schemas"]["AssessmentComponent"];
@@ -271,6 +273,7 @@ export function useDeleteTPMappingMutation() {
 
 export function useMyGradesQuery(termId?: string) {
   const client = useApiClient();
+  useMyGradesLive();
   return useQuery({
     queryKey: gradingKeys.myGrades(termId),
     queryFn: () =>
