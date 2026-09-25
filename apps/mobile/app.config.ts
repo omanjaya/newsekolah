@@ -44,7 +44,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   android: {
     package: "id.newsekolah.mobile",
     adaptiveIcon: {
-      backgroundColor: "#F7F6F3",
+      backgroundColor: "#F7F6F2",
       foregroundImage: "./assets/images/icon.png",
     },
     // POST_NOTIFICATIONS (Android 13+) is added automatically by the
@@ -60,7 +60,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     [
       "expo-splash-screen",
       {
-        backgroundColor: "#F7F6F3",
+        backgroundColor: "#F7F6F2",
         image: "./assets/images/icon.png",
         imageWidth: 120,
         dark: {
@@ -92,7 +92,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         // prompt, since neither platform lets an app supply custom copy
         // inside that prompt itself).
         icon: "./assets/images/icon.png",
-        color: "#1F3A5F",
+        color: "#0F7A5F",
       },
     ],
   ],

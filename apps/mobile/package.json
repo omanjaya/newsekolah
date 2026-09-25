@@ -14,7 +14,8 @@
     "test": "jest"
   },
   "dependencies": {
-    "@expo-google-fonts/inter": "^0.4.2",
+    "@expo-google-fonts/manrope": "^0.4.2",
+    "@expo-google-fonts/plus-jakarta-sans": "^0.4.2",
     "@newsekolah/api-client": "workspace:*",
     "@newsekolah/i18n": "workspace:*",
     "@newsekolah/schemas": "workspace:*",
@@ -56,6 +57,7 @@
   "devDependencies": {
     "@babel/core": "^7.29.7",
     "@eslint/js": "^9.39.5",
+    "@testing-library/react-native": "^14.0.1",
     "@types/jest": "^30.0.0",
     "@types/node": "^22.20.1",
     "@types/react": "^19.1.17",
