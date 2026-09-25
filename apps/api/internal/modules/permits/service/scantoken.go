@@ -124,17 +124,18 @@ type ScanClassroomEntryResult struct {
 	TeacherName   string
 }
 
-// classroomEntryScannedEvent is the realtime payload pushed to the
-// teacher's own topic (see RealtimePublisher) -- deliberately its own
-// small struct, not an events.Envelope, since this never goes through the
-// persisted notification inbox.
-type classroomEntryScannedEvent struct {
-	Type        string    `json:"type"`
-	StudentName string    `json:"student_name"`
-	NIS         string    `json:"nis"`
-	ClassName   string    `json:"class_name"`
-	Reason      string    `json:"reason"`
-	ScannedAt   time.Time `json:"scanned_at"`
+// classroomEntryScannedPayload is the realtime payload pushed to the
+// teacher's own topic (see RealtimePublisher) under the "classroom_entry_
+// scanned" event type -- ids only, per the platform-wide payload rule
+// (docs/analysis/realtime-plan-2026-09-25.md section 2: "hanya membawa
+// id"); the teacher's client re-fetches the student's name/class through
+// its already-authorized REST endpoint instead of receiving it over the
+// wire. Normalized onto the shared Envelope (Hub.PublishEvent) rather than
+// shaping its own JSON, which is what this event did before (plan section
+// 1.5 #1).
+type classroomEntryScannedPayload struct {
+	StudentUserID uuid.UUID     `json:"student_user_id"`
+	ClassID       uuid.NullUUID `json:"class_id,omitempty"`
 }
 
 // maxReasonLength matches openapi/modules/permits.yaml's
@@ -150,13 +151,9 @@ func (s *Service) ScanClassroomEntry(ctx context.Context, in ScanClassroomEntryI
 	if len(in.Reason) > maxReasonLength {
 		return ScanClassroomEntryResult{}, domain.ErrReasonTooLong
 	}
-	reason := in.Reason
-	if reason == "" {
-		reason = "Izin masuk kelas"
-	}
 
 	var result ScanClassroomEntryResult
-	var evt classroomEntryScannedEvent
+	var payload classroomEntryScannedPayload
 	err := s.withTx(ctx, in.TenantID, func(ctx context.Context) error {
 		isStudent, err := s.repo.IsStudentProfile(ctx, in.TenantID, in.StudentUserID)
 		if err != nil {
@@ -178,30 +175,19 @@ func (s *Service) ScanClassroomEntry(ctx context.Context, in ScanClassroomEntryI
 		}
 		result = ScanClassroomEntryResult{TeacherUserID: token.IssuedByUserID, TeacherName: teacherName}
 
-		studentName, err := s.repo.GetUserName(ctx, in.TenantID, in.StudentUserID)
-		if err != nil {
-			return err
-		}
-		nis, _, err := s.repo.GetStudentNISAndAddress(ctx, in.TenantID, in.StudentUserID)
-		if err != nil {
-			return err
-		}
-		className := ""
+		classID := uuid.NullUUID{}
 		if yearID, ok, err := s.years.GetActiveAcademicYearID(ctx, in.TenantID); err == nil && ok {
 			if enrollment, ok, err := s.repo.GetActiveEnrollment(ctx, in.TenantID, yearID, in.StudentUserID); err == nil && ok {
-				className = enrollment.ClassName
+				classID = uuid.NullUUID{UUID: enrollment.ClassID, Valid: true}
 			}
 		}
-		evt = classroomEntryScannedEvent{
-			Type: "classroom_entry_scanned", StudentName: studentName, NIS: nis, ClassName: className,
-			Reason: reason, ScannedAt: s.clock.Now(),
-		}
+		payload = classroomEntryScannedPayload{StudentUserID: in.StudentUserID, ClassID: classID}
 		return nil
 	})
 	if err != nil {
 		return ScanClassroomEntryResult{}, err
 	}
-	_ = s.realtime.PublishToUser(ctx, in.TenantID, result.TeacherUserID, evt)
+	s.publishToUserTopic(ctx, in.TenantID, result.TeacherUserID, "classroom_entry_scanned", payload)
 	return result, nil
 }
 

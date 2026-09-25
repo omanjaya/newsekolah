@@ -90,6 +90,11 @@ func (s *Service) OpenLateArrival(ctx context.Context, in OpenLateArrivalInput) 
 		return LateArrivalDetail{}, err
 	}
 	s.publish(ctx, LateArrivalOpened{TenantID: in.TenantID, InstanceID: detail.Instance.ID, StudentUserID: in.StudentUserID, ClassID: detail.Instance.ClassID})
+	// Live push to the picket teacher's review queue (docs/analysis/
+	// realtime-plan-2026-09-25.md section 2, opportunity #1) -- every
+	// default definition's late-arrival flow opens on the "duty_teacher"
+	// stage, so this is not stage-conditional the way exit permits are.
+	s.publishToDutyStage(ctx, in.TenantID, uuid.NullUUID{}, "duty_teacher", "late_arrival.opened", instanceEventPayload{InstanceID: detail.Instance.ID})
 	return detail, nil
 }
 
@@ -188,6 +193,7 @@ func (s *Service) ReviewLateArrival(ctx context.Context, in ReviewLateArrivalInp
 		return LateArrivalDetail{}, err
 	}
 	s.publish(ctx, LateArrivalUpdated{TenantID: in.TenantID, InstanceID: in.InstanceID, StudentUserID: detail.Instance.SubjectUserID, Status: string(detail.Instance.Status)})
+	s.publishToDutyStage(ctx, in.TenantID, uuid.NullUUID{}, "duty_teacher", "late_arrival.updated", instanceEventPayload{InstanceID: in.InstanceID})
 	return detail, nil
 }
 
@@ -236,6 +242,7 @@ func (s *Service) LateArrivalScan(ctx context.Context, tenantID, instanceID, stu
 		return LateArrivalDetail{}, err
 	}
 	s.publish(ctx, LateArrivalUpdated{TenantID: tenantID, InstanceID: instanceID, StudentUserID: studentUserID, Status: string(detail.Instance.Status)})
+	s.publishToDutyStage(ctx, tenantID, uuid.NullUUID{}, "duty_teacher", "late_arrival.updated", instanceEventPayload{InstanceID: instanceID})
 	return detail, nil
 }
 

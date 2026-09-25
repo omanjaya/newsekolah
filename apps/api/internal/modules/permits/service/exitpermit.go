@@ -89,6 +89,10 @@ func (s *Service) CreateExitPermit(ctx context.Context, in CreateExitPermitInput
 	}
 
 	s.publish(ctx, ExitPermitStageChanged{TenantID: in.TenantID, InstanceID: inst.ID, StudentUserID: in.StudentUserID, StageKey: "duty_teacher"})
+	// Live push to the duty teacher's review queue (docs/analysis/
+	// realtime-plan-2026-09-25.md section 2, opportunity #2) -- every
+	// default definition's exit-permit flow opens on "duty_teacher".
+	s.publishToDutyStage(ctx, in.TenantID, uuid.NullUUID{}, "duty_teacher", "exit_permit.stage_changed", instanceStageEventPayload{InstanceID: inst.ID, Stage: "duty_teacher"})
 	return inst, perm, nil
 }
 
@@ -161,8 +165,15 @@ func (s *Service) ExitPermitScan(ctx context.Context, tenantID, instanceID, scan
 
 	if isLast {
 		s.publish(ctx, ExitPermitIssued{TenantID: tenantID, InstanceID: instanceID, StudentUserID: updated.SubjectUserID})
+		// The requester waits physically for each stage (plan section 2,
+		// opportunity #2): tell them their permit is fully approved, and
+		// tell security duty it is now awaiting a gate scan.
+		s.publishToUserTopic(ctx, tenantID, updated.SubjectUserID, "exit_permit.issued", instanceStageEventPayload{InstanceID: instanceID, Stage: "issued"})
+		s.publishToDutyStage(ctx, tenantID, uuid.NullUUID{}, "security", "exit_permit.issued", instanceStageEventPayload{InstanceID: instanceID, Stage: "issued"})
 	} else {
 		s.publish(ctx, ExitPermitStageChanged{TenantID: tenantID, InstanceID: instanceID, StudentUserID: updated.SubjectUserID, StageKey: nextStageKey})
+		s.publishToUserTopic(ctx, tenantID, updated.SubjectUserID, "exit_permit.stage_changed", instanceStageEventPayload{InstanceID: instanceID, Stage: nextStageKey})
+		s.publishToDutyStage(ctx, tenantID, uuid.NullUUID{}, nextStageKey, "exit_permit.stage_changed", instanceStageEventPayload{InstanceID: instanceID, Stage: nextStageKey})
 	}
 	return updated, nil
 }
@@ -225,7 +236,16 @@ func (s *Service) IssueGateToken(ctx context.Context, tenantID, instanceID, issu
 		_, err = s.repo.SetExitPermitGateToken(ctx, tenantID, instanceID, result.Token.ID)
 		return err
 	})
-	return result, err
+	if err != nil {
+		return domain.IssueResult{}, err
+	}
+	// Security duty's gate-scan queue gains an entry the moment the token
+	// exists to scan (plan section 2, opportunity #2's "duty:<tenant>:
+	// security untuk tahap gerbang") -- distinct from ExitPermitIssued's
+	// push above, which only means the approval chain finished, not that a
+	// gate token was minted yet.
+	s.publishToDutyStage(ctx, tenantID, uuid.NullUUID{}, "security", "exit_permit.gate_ready", instanceStageEventPayload{InstanceID: instanceID, Stage: "gate"})
+	return result, nil
 }
 
 // GateScan is security scanning the gate token as the student physically
@@ -300,6 +320,8 @@ func (s *Service) GateScan(ctx context.Context, tenantID, instanceID, securityUs
 		return domain.Instance{}, err
 	}
 	s.publish(ctx, ExitPermitExited{TenantID: tenantID, InstanceID: instanceID, StudentUserID: updated.SubjectUserID, SecurityUserID: securityUserID})
+	s.publishToUserTopic(ctx, tenantID, updated.SubjectUserID, "exit_permit.exited", instanceStageEventPayload{InstanceID: instanceID, Stage: "gate"})
+	s.publishToDutyStage(ctx, tenantID, uuid.NullUUID{}, "security", "exit_permit.exited", instanceStageEventPayload{InstanceID: instanceID, Stage: "gate"})
 	return updated, nil
 }
 
