@@ -190,8 +190,9 @@ verify_image_tags() {
 }
 
 previous_image_id() {
-    local service="$1"
-    read_cmd "<previous-${service}-image-id>" "${COMPOSE[@]}" images -q "$service"
+    local service="$1" all
+    all="$(read_cmd "<previous-${service}-image-id>" "${COMPOSE[@]}" images -q "$service")"
+    printf '%s' "$all" | head -n1
 }
 
 fetch_and_checkout() {
