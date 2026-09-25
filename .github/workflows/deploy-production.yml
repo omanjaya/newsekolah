@@ -1,0 +1,101 @@
+name: Deploy production
+
+# Manual only, and gated on the same commit already having a successful
+# staging deploy -- there is no automatic path from a green CI run to
+# production. The `production` GitHub Environment (see infra/README.md
+# "Continuous deployment" for how to set it up) can additionally require
+# reviewer approval before the deploy job starts.
+on:
+  workflow_dispatch:
+    inputs:
+      git_ref:
+        description: "Commit SHA (or branch/tag) to deploy to production"
+        required: false
+        default: main
+
+permissions:
+  contents: read
+
+jobs:
+  resolve:
+    name: resolve
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.sha.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.git_ref }}
+          fetch-depth: 1
+
+      - name: Pin the given ref to a full commit SHA
+        id: sha
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+  verify-staging:
+    name: verify-staging
+    needs: resolve
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+    steps:
+      - name: Require a successful staging deploy for this commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ needs.resolve.outputs.sha }}
+        run: |
+          count=$(gh api "repos/${{ github.repository }}/actions/workflows/deploy-staging.yml/runs?head_sha=${SHA}&status=success" \
+            --jq '.total_count')
+          if [ "$count" -lt 1 ]; then
+            echo "::error::no successful 'Deploy staging' run found for commit ${SHA}. Deploy it to staging first."
+            exit 1
+          fi
+          echo "found ${count} successful staging deploy(s) for ${SHA}"
+
+  deploy:
+    name: deploy
+    needs: [resolve, verify-staging]
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Install the production deploy key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
+
+      - name: Trust the VPS host key
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "${{ secrets.VPS_KNOWN_HOSTS }}" >> ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Deploy to production
+        run: |
+          ssh -o IdentitiesOnly=yes "${{ secrets.VPS_HOST }}" \
+            "deploy.sh production ${{ needs.resolve.outputs.sha }}"
+
+  notify:
+    name: notify
+    needs: [resolve, deploy]
+    runs-on: ubuntu-latest
+    if: always()
+    env:
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+    steps:
+      - name: Post the result to Telegram
+        # secrets cannot be referenced directly in `if:`; job-level env is
+        # the documented way to make "is this secret set" conditional.
+        if: ${{ env.TELEGRAM_BOT_TOKEN != '' && env.TELEGRAM_CHAT_ID != '' }}
+        env:
+          STATUS: ${{ needs.deploy.result }}
+          SHA: ${{ needs.resolve.outputs.sha }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          short_sha="${SHA:0:12}"
+          text="newsekolah production deploy: ${STATUS} (${short_sha}, by ${ACTOR})"
+          curl -fsS -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "text=${text}" \
+            -o /dev/null
