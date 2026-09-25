@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# Fake `mc` for backup-local.bats: just enough of `alias set` and `mirror
+# --overwrite --remove` to exercise backup-local.sh's object mirroring step
+# without a real MinIO server. Uses FAKE_BUCKET_DIR (source, set by the
+# test to represent the current state of the bucket) and FAKE_STAGING_DIR
+# (target, set by the fake docker wrapper from the real -v mount) instead
+# of trusting the alias URL or the literal /staging container path, since
+# neither exists outside a real container.
+set -euo pipefail
+
+case "${1:-}" in
+    alias)
+        # alias set local http://minio:9000 user pass -- nothing to fake.
+        exit 0
+        ;;
+    mirror)
+        : "${FAKE_BUCKET_DIR:?FAKE_BUCKET_DIR not set}"
+        : "${FAKE_STAGING_DIR:?FAKE_STAGING_DIR not set}"
+        mkdir -p "$FAKE_STAGING_DIR"
+
+        if [[ -d "$FAKE_BUCKET_DIR" ]]; then
+            while IFS= read -r -d '' f; do
+                rel="${f#"$FAKE_BUCKET_DIR"/}"
+                mkdir -p "$FAKE_STAGING_DIR/$(dirname "$rel")"
+                cp -p "$f" "$FAKE_STAGING_DIR/$rel"
+            done < <(find "$FAKE_BUCKET_DIR" -type f -print0)
+        fi
+
+        # --remove semantics: drop staged files no longer in the bucket.
+        if [[ -d "$FAKE_STAGING_DIR" ]]; then
+            while IFS= read -r -d '' f; do
+                rel="${f#"$FAKE_STAGING_DIR"/}"
+                [[ -f "$FAKE_BUCKET_DIR/$rel" ]] || rm -f "$f"
+            done < <(find "$FAKE_STAGING_DIR" -type f -print0)
+            find "$FAKE_STAGING_DIR" -mindepth 1 -type d -empty -delete
+        fi
+        exit 0
+        ;;
+    *)
+        echo "fake mc: unexpected invocation: $*" >&2
+        exit 1
+        ;;
+esac
