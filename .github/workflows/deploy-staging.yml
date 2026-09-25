@@ -76,7 +76,7 @@ jobs:
 
       - name: Deploy to staging
         run: |
-          ssh -o IdentitiesOnly=yes "${{ secrets.VPS_HOST }}" \
+          ssh -o BatchMode=yes "${{ secrets.VPS_HOST }}" \
             "deploy.sh staging ${{ steps.sha.outputs.sha }}"
 
   simulate:

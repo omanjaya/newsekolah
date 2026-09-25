@@ -72,7 +72,7 @@ jobs:
 
       - name: Deploy to production
         run: |
-          ssh -o IdentitiesOnly=yes "${{ secrets.VPS_HOST }}" \
+          ssh -o BatchMode=yes "${{ secrets.VPS_HOST }}" \
             "deploy.sh production ${{ needs.resolve.outputs.sha }}"
 
   notify:
