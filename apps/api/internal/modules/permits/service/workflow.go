@@ -180,7 +180,10 @@ func (s *Service) createInstance(ctx context.Context, in newInstanceInput) (doma
 	inst, err := s.repo.CreateInstance(ctx, domain.Instance{
 		TenantID: in.tenantID, AcademicYearID: yearID, DefinitionID: def.ID, Kind: in.kind,
 		SubjectUserID: in.subjectUserID, ClassID: in.classID, Status: domain.StatusInProgress,
-		Payload: in.payload, OpenedAt: s.clock.Now(), CreatedBy: uuid.NullUUID{UUID: in.createdBy, Valid: true},
+		Payload: in.payload, OpenedAt: s.clock.Now(),
+		// LocalDate is the tenant-local calendar day, not the server's
+		// UTC one -- see domain.Instance.LocalDate and migration 0120.
+		LocalDate: s.tenantNow(ctx, in.tenantID), CreatedBy: uuid.NullUUID{UUID: in.createdBy, Valid: true},
 	})
 	if err != nil {
 		return domain.Instance{}, domain.Definition{}, err

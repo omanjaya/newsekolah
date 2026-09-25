@@ -49,10 +49,11 @@ func (s *Service) CreateExitPermit(ctx context.Context, in CreateExitPermitInput
 		// ones that already exited -- the DB unique index enforces this
 		// too (ux_workflow_instances_one_exit_permit_per_day now covers
 		// 'completed'), but this turns the race into a friendly 409
-		// instead of a raw unique-violation. Tenant-local "today", not
-		// the index's fixed-UTC opened_date, so the common case agrees
-		// with the school's own calendar day; the index stays the
-		// backstop for the timezone edge the pre-check cannot close.
+		// instead of a raw unique-violation. Tenant-local "today" here
+		// and the index's local_date (migration 0120) are computed the
+		// same way, so the two always agree on the tenant's own calendar
+		// day; the index stays the backstop for the concurrent race this
+		// pre-check's read-then-write cannot close.
 		if _, ok, err := s.repo.GetExitPermitInstanceForSubjectToday(ctx, in.TenantID, in.StudentUserID, s.tenantNow(ctx, in.TenantID)); err != nil {
 			return err
 		} else if ok {

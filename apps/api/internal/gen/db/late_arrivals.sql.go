@@ -53,7 +53,7 @@ func (q *Queries) CreateLateArrival(ctx context.Context, arg CreateLateArrivalPa
 }
 
 const getInProgressLateArrivalToday = `-- name: GetInProgressLateArrivalToday :one
-select wi.id, wi.tenant_id, wi.academic_year_id, wi.definition_id, wi.kind, wi.subject_user_id, wi.class_id, wi.current_stage_index, wi.status, wi.payload, wi.opened_date, wi.opened_at, wi.closed_at, wi.created_by, wi.created_at, wi.updated_at from workflow_instances wi
+select wi.id, wi.tenant_id, wi.academic_year_id, wi.definition_id, wi.kind, wi.subject_user_id, wi.class_id, wi.current_stage_index, wi.status, wi.payload, wi.opened_date, wi.opened_at, wi.closed_at, wi.created_by, wi.created_at, wi.updated_at, wi.local_date from workflow_instances wi
 where wi.tenant_id = $1
   and wi.kind = 'late_arrival'
   and wi.subject_user_id = $2
@@ -92,6 +92,7 @@ func (q *Queries) GetInProgressLateArrivalToday(ctx context.Context, arg GetInPr
 		&i.CreatedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.LocalDate,
 	)
 	return i, err
 }

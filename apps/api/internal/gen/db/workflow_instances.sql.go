@@ -16,7 +16,7 @@ const advanceWorkflowInstanceStage = `-- name: AdvanceWorkflowInstanceStage :one
 update workflow_instances
 set current_stage_index = $3, status = $4, closed_at = $5
 where tenant_id = $1 and id = $2
-returning id, tenant_id, academic_year_id, definition_id, kind, subject_user_id, class_id, current_stage_index, status, payload, opened_date, opened_at, closed_at, created_by, created_at, updated_at
+returning id, tenant_id, academic_year_id, definition_id, kind, subject_user_id, class_id, current_stage_index, status, payload, opened_date, opened_at, closed_at, created_by, created_at, updated_at, local_date
 `
 
 type AdvanceWorkflowInstanceStageParams struct {
@@ -53,6 +53,7 @@ func (q *Queries) AdvanceWorkflowInstanceStage(ctx context.Context, arg AdvanceW
 		&i.CreatedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.LocalDate,
 	)
 	return i, err
 }
@@ -105,10 +106,10 @@ func (q *Queries) CountWorkflowInstancesForSubjectYear(ctx context.Context, arg 
 const createWorkflowInstance = `-- name: CreateWorkflowInstance :one
 insert into workflow_instances (
   tenant_id, academic_year_id, definition_id, kind, subject_user_id, class_id,
-  current_stage_index, status, payload, opened_at, created_by
+  current_stage_index, status, payload, opened_at, local_date, created_by
 )
-values ($1, $2, $3, $4, $5, $6, 0, 'in_progress', $7, $8, $9)
-returning id, tenant_id, academic_year_id, definition_id, kind, subject_user_id, class_id, current_stage_index, status, payload, opened_date, opened_at, closed_at, created_by, created_at, updated_at
+values ($1, $2, $3, $4, $5, $6, 0, 'in_progress', $7, $8, $9, $10)
+returning id, tenant_id, academic_year_id, definition_id, kind, subject_user_id, class_id, current_stage_index, status, payload, opened_date, opened_at, closed_at, created_by, created_at, updated_at, local_date
 `
 
 type CreateWorkflowInstanceParams struct {
@@ -120,9 +121,15 @@ type CreateWorkflowInstanceParams struct {
 	ClassID        pgtype.UUID        `json:"class_id"`
 	Payload        []byte             `json:"payload"`
 	OpenedAt       pgtype.Timestamptz `json:"opened_at"`
+	LocalDate      pgtype.Date        `json:"local_date"`
 	CreatedBy      pgtype.UUID        `json:"created_by"`
 }
 
+// local_date is the tenant-local calendar day the caller computed at
+// creation time (service.tenantNow), stored explicitly so
+// ux_workflow_instances_one_exit_permit_per_day (migration 0120) and
+// GetExitPermitInstanceForSubjectToday below agree on "today" with the
+// tenant's own calendar, not the server's UTC one.
 func (q *Queries) CreateWorkflowInstance(ctx context.Context, arg CreateWorkflowInstanceParams) (WorkflowInstance, error) {
 	row := q.db.QueryRow(ctx, createWorkflowInstance,
 		arg.TenantID,
@@ -133,6 +140,7 @@ func (q *Queries) CreateWorkflowInstance(ctx context.Context, arg CreateWorkflow
 		arg.ClassID,
 		arg.Payload,
 		arg.OpenedAt,
+		arg.LocalDate,
 		arg.CreatedBy,
 	)
 	var i WorkflowInstance
@@ -153,6 +161,7 @@ func (q *Queries) CreateWorkflowInstance(ctx context.Context, arg CreateWorkflow
 		&i.CreatedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.LocalDate,
 	)
 	return i, err
 }
@@ -161,7 +170,7 @@ const expireHangingWorkflowInstances = `-- name: ExpireHangingWorkflowInstances 
 update workflow_instances
 set status = 'expired', closed_at = now()
 where tenant_id = $1 and status = 'in_progress' and opened_at < $2
-returning id, tenant_id, academic_year_id, definition_id, kind, subject_user_id, class_id, current_stage_index, status, payload, opened_date, opened_at, closed_at, created_by, created_at, updated_at
+returning id, tenant_id, academic_year_id, definition_id, kind, subject_user_id, class_id, current_stage_index, status, payload, opened_date, opened_at, closed_at, created_by, created_at, updated_at, local_date
 `
 
 type ExpireHangingWorkflowInstancesParams struct {
@@ -200,6 +209,7 @@ func (q *Queries) ExpireHangingWorkflowInstances(ctx context.Context, arg Expire
 			&i.CreatedBy,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.LocalDate,
 		); err != nil {
 			return nil, err
 		}
@@ -212,9 +222,9 @@ func (q *Queries) ExpireHangingWorkflowInstances(ctx context.Context, arg Expire
 }
 
 const getExitPermitInstanceForSubjectToday = `-- name: GetExitPermitInstanceForSubjectToday :one
-select id, tenant_id, academic_year_id, definition_id, kind, subject_user_id, class_id, current_stage_index, status, payload, opened_date, opened_at, closed_at, created_by, created_at, updated_at from workflow_instances
+select id, tenant_id, academic_year_id, definition_id, kind, subject_user_id, class_id, current_stage_index, status, payload, opened_date, opened_at, closed_at, created_by, created_at, updated_at, local_date from workflow_instances
 where tenant_id = $1 and kind = 'exit_permit' and subject_user_id = $2
-  and opened_date = $3::date
+  and local_date = $3::date
   and status in ('in_progress', 'approved', 'completed')
 limit 1
 `
@@ -228,11 +238,13 @@ type GetExitPermitInstanceForSubjectTodayParams struct {
 // Regression fix (docs/analysis/backend-inventory.md 1.15): the old app
 // capped a student at one exit-permit request per day "apa pun
 // statusnya" -- including ones that already exited. sqlc.arg('today') is
-// the tenant-local date (s.tenantNow), so this pre-check turns the common
-// case into a friendly 409 in the timezone the school actually operates
-// in; opened_date itself stays the fixed-UTC approximation
-// ux_workflow_instances_one_exit_permit_per_day enforces (see that
-// migration), which still backstops the race this pre-check cannot close.
+// the tenant-local date (s.tenantNow), matched here against local_date,
+// the same tenant-local day the column stores at creation and
+// ux_workflow_instances_one_exit_permit_per_day now indexes (migration
+// 0120) -- this pre-check and the DB backstop agree on what "today"
+// means for the tenant, so this only turns the common case into a
+// friendly 409; the index still backstops the race this pre-check cannot
+// close.
 func (q *Queries) GetExitPermitInstanceForSubjectToday(ctx context.Context, arg GetExitPermitInstanceForSubjectTodayParams) (WorkflowInstance, error) {
 	row := q.db.QueryRow(ctx, getExitPermitInstanceForSubjectToday, arg.TenantID, arg.SubjectUserID, arg.Today)
 	var i WorkflowInstance
@@ -253,12 +265,13 @@ func (q *Queries) GetExitPermitInstanceForSubjectToday(ctx context.Context, arg 
 		&i.CreatedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.LocalDate,
 	)
 	return i, err
 }
 
 const getInProgressWorkflowInstance = `-- name: GetInProgressWorkflowInstance :one
-select id, tenant_id, academic_year_id, definition_id, kind, subject_user_id, class_id, current_stage_index, status, payload, opened_date, opened_at, closed_at, created_by, created_at, updated_at from workflow_instances
+select id, tenant_id, academic_year_id, definition_id, kind, subject_user_id, class_id, current_stage_index, status, payload, opened_date, opened_at, closed_at, created_by, created_at, updated_at, local_date from workflow_instances
 where tenant_id = $1 and kind = $2 and subject_user_id = $3 and status in ('in_progress', 'approved')
 order by opened_at desc
 limit 1
@@ -292,12 +305,13 @@ func (q *Queries) GetInProgressWorkflowInstance(ctx context.Context, arg GetInPr
 		&i.CreatedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.LocalDate,
 	)
 	return i, err
 }
 
 const getWorkflowInstanceByID = `-- name: GetWorkflowInstanceByID :one
-select id, tenant_id, academic_year_id, definition_id, kind, subject_user_id, class_id, current_stage_index, status, payload, opened_date, opened_at, closed_at, created_by, created_at, updated_at from workflow_instances where tenant_id = $1 and id = $2
+select id, tenant_id, academic_year_id, definition_id, kind, subject_user_id, class_id, current_stage_index, status, payload, opened_date, opened_at, closed_at, created_by, created_at, updated_at, local_date from workflow_instances where tenant_id = $1 and id = $2
 `
 
 type GetWorkflowInstanceByIDParams struct {
@@ -325,12 +339,13 @@ func (q *Queries) GetWorkflowInstanceByID(ctx context.Context, arg GetWorkflowIn
 		&i.CreatedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.LocalDate,
 	)
 	return i, err
 }
 
 const getWorkflowInstanceForUpdate = `-- name: GetWorkflowInstanceForUpdate :one
-select id, tenant_id, academic_year_id, definition_id, kind, subject_user_id, class_id, current_stage_index, status, payload, opened_date, opened_at, closed_at, created_by, created_at, updated_at from workflow_instances where tenant_id = $1 and id = $2 for update
+select id, tenant_id, academic_year_id, definition_id, kind, subject_user_id, class_id, current_stage_index, status, payload, opened_date, opened_at, closed_at, created_by, created_at, updated_at, local_date from workflow_instances where tenant_id = $1 and id = $2 for update
 `
 
 type GetWorkflowInstanceForUpdateParams struct {
@@ -358,12 +373,13 @@ func (q *Queries) GetWorkflowInstanceForUpdate(ctx context.Context, arg GetWorkf
 		&i.CreatedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.LocalDate,
 	)
 	return i, err
 }
 
 const listWorkflowInstancesByClassAndKind = `-- name: ListWorkflowInstancesByClassAndKind :many
-select id, tenant_id, academic_year_id, definition_id, kind, subject_user_id, class_id, current_stage_index, status, payload, opened_date, opened_at, closed_at, created_by, created_at, updated_at from workflow_instances
+select id, tenant_id, academic_year_id, definition_id, kind, subject_user_id, class_id, current_stage_index, status, payload, opened_date, opened_at, closed_at, created_by, created_at, updated_at, local_date from workflow_instances
 where tenant_id = $1 and kind = $2 and class_id = $3 and status = 'in_progress'
 order by opened_at
 `
@@ -400,6 +416,7 @@ func (q *Queries) ListWorkflowInstancesByClassAndKind(ctx context.Context, arg L
 			&i.CreatedBy,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.LocalDate,
 		); err != nil {
 			return nil, err
 		}
@@ -412,7 +429,7 @@ func (q *Queries) ListWorkflowInstancesByClassAndKind(ctx context.Context, arg L
 }
 
 const listWorkflowInstancesBySubject = `-- name: ListWorkflowInstancesBySubject :many
-select id, tenant_id, academic_year_id, definition_id, kind, subject_user_id, class_id, current_stage_index, status, payload, opened_date, opened_at, closed_at, created_by, created_at, updated_at from workflow_instances
+select id, tenant_id, academic_year_id, definition_id, kind, subject_user_id, class_id, current_stage_index, status, payload, opened_date, opened_at, closed_at, created_by, created_at, updated_at, local_date from workflow_instances
 where tenant_id = $1 and kind = $2 and subject_user_id = $3
 order by opened_at desc
 limit $4 offset $5
@@ -458,6 +475,7 @@ func (q *Queries) ListWorkflowInstancesBySubject(ctx context.Context, arg ListWo
 			&i.CreatedBy,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.LocalDate,
 		); err != nil {
 			return nil, err
 		}
@@ -492,7 +510,7 @@ const mergeWorkflowInstancePayload = `-- name: MergeWorkflowInstancePayload :one
 update workflow_instances
 set payload = payload || $3
 where tenant_id = $1 and id = $2
-returning id, tenant_id, academic_year_id, definition_id, kind, subject_user_id, class_id, current_stage_index, status, payload, opened_date, opened_at, closed_at, created_by, created_at, updated_at
+returning id, tenant_id, academic_year_id, definition_id, kind, subject_user_id, class_id, current_stage_index, status, payload, opened_date, opened_at, closed_at, created_by, created_at, updated_at, local_date
 `
 
 type MergeWorkflowInstancePayloadParams struct {
@@ -523,6 +541,7 @@ func (q *Queries) MergeWorkflowInstancePayload(ctx context.Context, arg MergeWor
 		&i.CreatedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.LocalDate,
 	)
 	return i, err
 }

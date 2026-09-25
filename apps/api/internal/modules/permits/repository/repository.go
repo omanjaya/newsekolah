@@ -152,7 +152,7 @@ func toInstance(row db.WorkflowInstance) domain.Instance {
 		ID: row.ID, TenantID: row.TenantID, AcademicYearID: row.AcademicYearID, DefinitionID: row.DefinitionID,
 		Kind: domain.Kind(row.Kind), SubjectUserID: row.SubjectUserID, ClassID: pdatabase.UUIDOrNil(row.ClassID),
 		CurrentStageIndex: int(row.CurrentStageIndex), Status: domain.Status(row.Status), Payload: jsonMap(row.Payload),
-		OpenedAt: pdatabase.TimeOrZero(row.OpenedAt), ClosedAt: pdatabase.TimePtr(row.ClosedAt),
+		OpenedAt: pdatabase.TimeOrZero(row.OpenedAt), LocalDate: pdatabase.DateOrZero(row.LocalDate), ClosedAt: pdatabase.TimePtr(row.ClosedAt),
 		CreatedBy: pdatabase.UUIDOrNil(row.CreatedBy), CreatedAt: pdatabase.TimeOrZero(row.CreatedAt), UpdatedAt: pdatabase.TimeOrZero(row.UpdatedAt),
 	}
 }
@@ -161,12 +161,14 @@ func (r *Repository) CreateInstance(ctx context.Context, inst domain.Instance) (
 	row, err := r.queries(ctx).CreateWorkflowInstance(ctx, db.CreateWorkflowInstanceParams{
 		TenantID: inst.TenantID, AcademicYearID: inst.AcademicYearID, DefinitionID: inst.DefinitionID, Kind: string(inst.Kind),
 		SubjectUserID: inst.SubjectUserID, ClassID: pdatabase.NullUUID(inst.ClassID), Payload: mustJSON(inst.Payload),
-		OpenedAt: pdatabase.Timestamptz(inst.OpenedAt), CreatedBy: pdatabase.NullUUID(inst.CreatedBy),
+		OpenedAt: pdatabase.Timestamptz(inst.OpenedAt), LocalDate: pdatabase.Date(inst.LocalDate), CreatedBy: pdatabase.NullUUID(inst.CreatedBy),
 	})
 	if err != nil {
-		// The service pre-checks this with the tenant-local day, but the
-		// index keys on the UTC day, so near midnight the pre-check can
-		// miss and the index is what rejects the duplicate.
+		// The service pre-checks this with the same tenant-local day the
+		// index now keys on (migration 0120), so this only fires on the
+		// concurrent race the pre-check's read-then-write cannot close --
+		// two requests for the same student/day committing between the
+		// pre-check and the insert.
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" && pgErr.ConstraintName == "ux_workflow_instances_one_exit_permit_per_day" {
 			return domain.Instance{}, domain.ErrExitPermitAlreadyToday

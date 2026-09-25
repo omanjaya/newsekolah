@@ -1,9 +1,14 @@
 -- name: CreateWorkflowInstance :one
+-- local_date is the tenant-local calendar day the caller computed at
+-- creation time (service.tenantNow), stored explicitly so
+-- ux_workflow_instances_one_exit_permit_per_day (migration 0120) and
+-- GetExitPermitInstanceForSubjectToday below agree on "today" with the
+-- tenant's own calendar, not the server's UTC one.
 insert into workflow_instances (
   tenant_id, academic_year_id, definition_id, kind, subject_user_id, class_id,
-  current_stage_index, status, payload, opened_at, created_by
+  current_stage_index, status, payload, opened_at, local_date, created_by
 )
-values ($1, $2, $3, $4, $5, $6, 0, 'in_progress', $7, $8, $9)
+values ($1, $2, $3, $4, $5, $6, 0, 'in_progress', $7, $8, $9, $10)
 returning *;
 
 -- name: GetWorkflowInstanceByID :one
@@ -36,14 +41,16 @@ limit 1;
 -- Regression fix (docs/analysis/backend-inventory.md 1.15): the old app
 -- capped a student at one exit-permit request per day "apa pun
 -- statusnya" -- including ones that already exited. sqlc.arg('today') is
--- the tenant-local date (s.tenantNow), so this pre-check turns the common
--- case into a friendly 409 in the timezone the school actually operates
--- in; opened_date itself stays the fixed-UTC approximation
--- ux_workflow_instances_one_exit_permit_per_day enforces (see that
--- migration), which still backstops the race this pre-check cannot close.
+-- the tenant-local date (s.tenantNow), matched here against local_date,
+-- the same tenant-local day the column stores at creation and
+-- ux_workflow_instances_one_exit_permit_per_day now indexes (migration
+-- 0120) -- this pre-check and the DB backstop agree on what "today"
+-- means for the tenant, so this only turns the common case into a
+-- friendly 409; the index still backstops the race this pre-check cannot
+-- close.
 select * from workflow_instances
 where tenant_id = $1 and kind = 'exit_permit' and subject_user_id = $2
-  and opened_date = sqlc.arg('today')::date
+  and local_date = sqlc.arg('today')::date
   and status in ('in_progress', 'approved', 'completed')
 limit 1;
 
