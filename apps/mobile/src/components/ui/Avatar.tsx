@@ -1,12 +1,19 @@
 import { Text, View } from "react-native";
+import { useThemeColors } from "@/theme";
 
 interface AvatarProps {
   name: string;
   size?: number;
+  /** "auto" (default) hashes the name to one of a few colors, useful for
+   * telling people apart in a roster. "accent" always uses the theme's soft
+   * accent circle -- the current user's own avatar in HomeHeader
+   * (docs/design-reference-hijau-segar.html), which stays green regardless
+   * of whose name it is. */
+  variant?: "auto" | "accent";
 }
 
-const DEFAULT_COLOR = "#1F3A5F";
-const PALETTE = ["#3F5F8A", "#6B4A8A", "#2F6B3A", "#8A6D1F", DEFAULT_COLOR, "#B5651D"];
+const DEFAULT_COLOR = "#0F7A5F";
+const PALETTE = ["#3F5F8A", "#6B4A8A", "#2F6B3A", "#A15C00", DEFAULT_COLOR, "#7A3E9D"];
 
 function initialsOf(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -24,17 +31,19 @@ function colorFor(name: string): string {
   return PALETTE[hash % PALETTE.length] ?? DEFAULT_COLOR;
 }
 
-/** Initials only. DESIGN.md: no assumed profile photos; radius 999 is
+/** Initials only -- no assumed profile photos; radius 999 (pill) is
  * reserved for avatars specifically. */
-export function Avatar({ name, size = 40 }: AvatarProps): React.JSX.Element {
-  const backgroundColor = colorFor(name);
+export function Avatar({ name, size = 40, variant = "auto" }: AvatarProps): React.JSX.Element {
+  const colors = useThemeColors();
+  const backgroundColor = variant === "accent" ? colors.accentSoft : colorFor(name);
+  const textColor = variant === "accent" ? colors.accentText : "#FFFFFF";
   return (
     <View
       style={{ width: size, height: size, borderRadius: 9999, backgroundColor }}
       className="items-center justify-center"
       accessibilityLabel={name}
     >
-      <Text style={{ fontSize: size * 0.4 }} className="font-medium text-white">
+      <Text style={{ fontSize: size * 0.36, color: textColor, fontFamily: "Manrope_700Bold" }}>
         {initialsOf(name)}
       </Text>
     </View>

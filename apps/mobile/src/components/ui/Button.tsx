@@ -71,7 +71,7 @@ export function Button({
               ? accentForeground
               : variant === "destructive"
                 ? "#FFFFFF"
-                : "#1F3A5F"
+                : "#0F7A5F"
           }
         />
       ) : (

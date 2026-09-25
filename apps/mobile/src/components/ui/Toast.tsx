@@ -22,7 +22,7 @@ export function showToast(text: string, variant: ToastVariant = "default"): void
 
 const VARIANT_CLASSES: Record<ToastVariant, string> = {
   default: "bg-ink dark:bg-ink-dark",
-  success: "bg-status-present",
+  success: "bg-accent",
   error: "bg-status-absent",
 };
 

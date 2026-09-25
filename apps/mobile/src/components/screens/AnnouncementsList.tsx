@@ -56,7 +56,7 @@ export function AnnouncementsList({ limit }: { limit?: number }): React.JSX.Elem
             )}
           >
             <View className="flex-row items-center gap-2">
-              {item.is_pinned ? <Pin size={14} color="#1F3A5F" /> : null}
+              {item.is_pinned ? <Pin size={14} color="#0F7A5F" /> : null}
               <Text
                 className={cn(
                   "flex-1 text-base text-ink dark:text-ink-dark",

@@ -2,6 +2,7 @@ import { Pressable, Text, View } from "react-native";
 import { ChevronLeft } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
+import { useThemeColors } from "@/theme";
 
 interface ScreenHeaderProps {
   title: string;
@@ -17,6 +18,7 @@ export function ScreenHeader({
   right,
 }: ScreenHeaderProps): React.JSX.Element {
   const insets = useSafeAreaInsets();
+  const colors = useThemeColors();
 
   return (
     <View
@@ -32,10 +34,13 @@ export function ScreenHeader({
             onPress={() => router.back()}
             className="h-11 w-11 items-center justify-center"
           >
-            <ChevronLeft size={20} strokeWidth={1.75} color="#333333" />
+            <ChevronLeft size={20} strokeWidth={1.75} color={colors.text} />
           </Pressable>
         ) : null}
-        <Text className="text-xl font-medium text-ink dark:text-ink-dark" numberOfLines={1}>
+        <Text
+          className="font-heading-semibold text-xl text-ink dark:text-ink-dark"
+          numberOfLines={1}
+        >
           {title}
         </Text>
       </View>
