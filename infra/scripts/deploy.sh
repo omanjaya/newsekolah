@@ -150,7 +150,10 @@ env_value() {
         printf '<%s>' "$key"
         return 0
     fi
-    grep -E "^${key}=" "$ENV_FILE" | tail -n 1 | cut -d= -f2-
+    # A key that is absent is normal (production relies on the compose
+    # defaults for API_IMAGE/WEB_IMAGE); grep's non-zero exit must not
+    # abort the script under `set -euo pipefail`.
+    { grep -E "^${key}=" "$ENV_FILE" || true; } | tail -n 1 | cut -d= -f2-
 }
 
 acquire_lock() {
