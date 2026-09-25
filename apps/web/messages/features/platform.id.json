@@ -85,5 +85,67 @@
       "exportDownload": "Unduh berkas",
       "storageBucket": "Bucket penyimpanan"
     }
+  },
+  "operatorAlerts": {
+    "eyebrow": "Platform",
+    "title": "Notifikasi operator",
+    "subtitle": "Atur pengingat Telegram untuk pemeriksaan kesehatan server, tanpa perlu mengedit berkas di server.",
+    "loadError": "Gagal memuat pengaturan notifikasi operator.",
+    "botSetup": {
+      "title": "Membuat bot Telegram",
+      "step1": "Buka Telegram, cari @BotFather, lalu kirim perintah /newbot.",
+      "step2": "Ikuti instruksinya untuk memberi nama bot dan mendapatkan token akses.",
+      "step3": "Tempel token tersebut pada kolom di bawah, lalu simpan."
+    },
+    "token": {
+      "label": "Token bot Telegram",
+      "placeholderSet": "Token tersimpan",
+      "placeholderUnset": "Tempel token dari BotFather",
+      "show": "Tampilkan token",
+      "hide": "Sembunyikan token",
+      "remove": "Hapus token",
+      "removed": "Token akan dihapus setelah disimpan"
+    },
+    "detect": {
+      "button": "Deteksi chat",
+      "loading": "Mendeteksi...",
+      "empty": "Belum ada chat ditemukan. Kirim pesan apa pun ke bot ini di Telegram, lalu coba lagi.",
+      "error": "Gagal mendeteksi chat. Periksa kembali token bot."
+    },
+    "chatId": {
+      "label": "ID chat Telegram",
+      "placeholder": "Contoh: -1001234567890",
+      "picker": "Pilih dari hasil deteksi"
+    },
+    "test": {
+      "button": "Kirim pesan uji",
+      "success": "Pesan uji berhasil dikirim",
+      "failure": "Gagal mengirim pesan uji"
+    },
+    "enabled": "Aktifkan notifikasi operator",
+    "checks": {
+      "title": "Pemeriksaan yang dikirim",
+      "health": "Kesehatan API",
+      "containers": "Status kontainer",
+      "disk": "Penggunaan disk",
+      "memory": "Penggunaan memori",
+      "backup": "Backup harian",
+      "certificate": "Kedaluwarsa sertifikat",
+      "errors5xx": "Lonjakan error 5xx"
+    },
+    "thresholds": {
+      "title": "Ambang batas",
+      "diskPercent": "Ambang disk (%)",
+      "memoryMb": "Ambang memori (MB)",
+      "backupHours": "Usia maksimum backup (jam)",
+      "certDays": "Peringatan sertifikat (hari)"
+    },
+    "dailySummary": {
+      "title": "Ringkasan harian",
+      "enabled": "Kirim ringkasan harian",
+      "hour": "Jam pengiriman (WITA)"
+    },
+    "save": "Simpan",
+    "saved": "Pengaturan disimpan"
   }
 }

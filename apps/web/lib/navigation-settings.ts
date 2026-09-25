@@ -184,4 +184,13 @@ export const settingsNavItems: NavItem[] = [
     group: NAV_GROUP.platform,
     sidebarPlacement: "footer",
   },
+  {
+    key: "platform-operator-alerts",
+    labelKey: "nav.platform.items.operatorAlerts",
+    href: "/platform/operator-alerts",
+    icon: Bell,
+    permission: "platform_superadmin",
+    group: NAV_GROUP.platform,
+    sidebarPlacement: "footer",
+  },
 ];

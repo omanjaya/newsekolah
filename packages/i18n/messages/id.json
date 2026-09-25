@@ -188,7 +188,8 @@
     "platform": {
       "label": "Platform",
       "items": {
-        "tenants": "Sekolah"
+        "tenants": "Sekolah",
+        "operatorAlerts": "Notifikasi Operator"
       }
     },
     "compact": {

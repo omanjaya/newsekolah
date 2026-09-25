@@ -31,6 +31,12 @@ const telegramMaxBodyBytes = 1 << 20 // 1 MiB
 
 var telegramHTTPClient = &http.Client{Timeout: telegramTimeout}
 
+// telegramAPIBase is "https://api.telegram.org" in production; tests
+// override it (with a package-level var, not a struct field, since every
+// call site already threads a *Service through -- see telegram_test.go)
+// to point at an httptest.Server instead of the real Telegram API.
+var telegramAPIBase = "https://api.telegram.org"
+
 // telegramEnvelope is the {"ok": ..., "result": ..., "description": ...}
 // shape every Telegram Bot API method responds with.
 type telegramEnvelope struct {
@@ -43,7 +49,7 @@ type telegramEnvelope struct {
 // the JSON request payload when non-nil. It never returns an error that
 // embeds token or the request URL.
 func telegramCall(ctx context.Context, token, method string, body any) (json.RawMessage, error) {
-	url := "https://api.telegram.org/bot" + token + "/" + method
+	url := telegramAPIBase + "/bot" + token + "/" + method
 
 	var reqBody io.Reader
 	if body != nil {

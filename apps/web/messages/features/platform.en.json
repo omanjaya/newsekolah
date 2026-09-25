@@ -85,5 +85,67 @@
       "exportDownload": "Download file",
       "storageBucket": "Storage bucket"
     }
+  },
+  "operatorAlerts": {
+    "eyebrow": "Platform",
+    "title": "Operator alerts",
+    "subtitle": "Set up Telegram alerting for server health checks, without editing any files on the server.",
+    "loadError": "Could not load operator alert settings.",
+    "botSetup": {
+      "title": "Create a Telegram bot",
+      "step1": "Open Telegram, search for @BotFather, and send the /newbot command.",
+      "step2": "Follow its prompts to name the bot and get an access token.",
+      "step3": "Paste that token into the field below, then save."
+    },
+    "token": {
+      "label": "Telegram bot token",
+      "placeholderSet": "Token saved",
+      "placeholderUnset": "Paste the token from BotFather",
+      "show": "Show token",
+      "hide": "Hide token",
+      "remove": "Remove token",
+      "removed": "The token will be removed once you save"
+    },
+    "detect": {
+      "button": "Detect chat",
+      "loading": "Detecting...",
+      "empty": "No chats found yet. Send any message to the bot on Telegram, then try again.",
+      "error": "Could not detect chats. Check the bot token."
+    },
+    "chatId": {
+      "label": "Telegram chat id",
+      "placeholder": "e.g. -1001234567890",
+      "picker": "Pick from detected chats"
+    },
+    "test": {
+      "button": "Send test message",
+      "success": "Test message sent",
+      "failure": "Could not send the test message"
+    },
+    "enabled": "Enable operator alerts",
+    "checks": {
+      "title": "Checks to send",
+      "health": "API health",
+      "containers": "Container status",
+      "disk": "Disk usage",
+      "memory": "Memory usage",
+      "backup": "Daily backup",
+      "certificate": "Certificate expiry",
+      "errors5xx": "5xx error spikes"
+    },
+    "thresholds": {
+      "title": "Thresholds",
+      "diskPercent": "Disk threshold (%)",
+      "memoryMb": "Memory threshold (MB)",
+      "backupHours": "Max backup age (hours)",
+      "certDays": "Certificate warning (days)"
+    },
+    "dailySummary": {
+      "title": "Daily summary",
+      "enabled": "Send a daily summary",
+      "hour": "Send hour (WITA)"
+    },
+    "save": "Save",
+    "saved": "Settings saved"
   }
 }

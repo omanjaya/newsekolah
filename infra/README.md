@@ -337,6 +337,43 @@ the same value as `NEXT_PUBLIC_S3_PUBLIC_ORIGIN` for the `web` build/runtime so
 origin as the site itself (already covered by `'self'`), but required if `S3_PUBLIC_ENDPOINT` is
 ever a different origin than the web app.
 
+## Monitoring
+
+`infra/scripts/monitor.sh` is a host cron job (runs outside Docker, directly on the VPS) that
+checks API health, disk space, container status, backup freshness, TLS certificate expiry and a
+spike in 5xx responses, and sends the results to Telegram. It reads its configuration — which
+checks are on, their thresholds, the Telegram chat to notify, the daily summary hour — from
+`GET /internal/monitor-config`, an endpoint served by the same `api` process but deliberately
+outside `openapi/openapi.yaml` and outside `/v1` entirely.
+
+Configure it from the platform console instead of editing files on the server: sign in as a
+platform superadmin, open **Platform > Notifikasi operator**, follow the on-screen steps to create
+a bot with [@BotFather](https://t.me/BotFather), paste the token, use **Deteksi chat** to find the
+chat id, then save. The bot token is sealed with `DATA_ENCRYPTION_KEY` the same way BK counseling
+notes are (docs/08-security.md section 5) and is never returned by any `/v1` response — only
+`telegram_token_set` and a masked last-4-characters hint are.
+
+`/internal/monitor-config` has two independent layers of protection:
+
+- **Network.** It is not in the OpenAPI spec, so it is not one of the paths a shared system
+  Caddy proxies (`@api path /v1/* /health /ws/*` — see "Shared system Caddy (VPS)" above never
+  matches `/internal/*`). On that deployment shape it is reachable only through `api`'s own
+  loopback-published port (`compose.vps.yml`: `127.0.0.1:8081`), i.e. only from processes running
+  on the VPS host itself — exactly where `monitor.sh` runs.
+- **A shared secret.** Set `MONITOR_API_TOKEN` in `.env` (see `infra/docker/.env.prod.example`),
+  generated with:
+  ```
+  openssl rand -hex 32
+  ```
+  and pass the same value to `monitor.sh` (its own config, not committed) as the `X-Monitor-Token`
+  header on every request. The API compares it in constant time and answers `401` on a missing or
+  wrong header. Leaving `MONITOR_API_TOKEN` empty disables the endpoint outright (`404`) — do this
+  on any deployment that never runs the host monitor script.
+
+Unlike the console API, `GET /internal/monitor-config`'s response includes the decrypted Telegram
+bot token: that is its entire purpose (handing `monitor.sh` what it needs to send a message), not
+a leak. Treat `MONITOR_API_TOKEN` with the same care as `DATA_ENCRYPTION_KEY` and never commit it.
+
 ## Staging (shared VPS)
 
 `https://staging.sion.nouma.id` runs the same images and topology as
