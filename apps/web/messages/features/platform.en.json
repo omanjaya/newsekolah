@@ -120,7 +120,9 @@
     "test": {
       "button": "Send test message",
       "success": "Test message sent",
-      "failure": "Could not send the test message"
+      "failure": "Could not send the test message",
+      "needToken": "Enter the bot token first.",
+      "needChat": "Enter a chat id or use Detect chat first."
     },
     "enabled": "Enable operator alerts",
     "checks": {

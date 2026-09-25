@@ -120,7 +120,9 @@
     "test": {
       "button": "Kirim pesan uji",
       "success": "Pesan uji berhasil dikirim",
-      "failure": "Gagal mengirim pesan uji"
+      "failure": "Gagal mengirim pesan uji",
+      "needToken": "Isi token bot terlebih dahulu.",
+      "needChat": "Isi chat ID atau klik Deteksi chat terlebih dahulu."
     },
     "enabled": "Aktifkan notifikasi operator",
     "checks": {

@@ -150,6 +150,10 @@ describe("OperatorAlertsView", () => {
 
   it("reports a failed test message with Telegram's own description", async () => {
     const user = userEvent.setup();
+    mocks.queryState = {
+      ...mocks.queryState,
+      data: { ...baseSettings, telegram_token_set: true, telegram_chat_id: "992495341" },
+    };
     mocks.test.mockResolvedValue({ success: false, error: "chat not found" });
     render(<OperatorAlertsView />);
 
@@ -162,6 +166,10 @@ describe("OperatorAlertsView", () => {
 
   it("reports a successful test message", async () => {
     const user = userEvent.setup();
+    mocks.queryState = {
+      ...mocks.queryState,
+      data: { ...baseSettings, telegram_token_set: true, telegram_chat_id: "992495341" },
+    };
     mocks.test.mockResolvedValue({ success: true });
     render(<OperatorAlertsView />);
 
@@ -170,5 +178,19 @@ describe("OperatorAlertsView", () => {
     await waitFor(() => {
       expect(mocks.toastSuccess).toHaveBeenCalledWith("test.success");
     });
+    expect(mocks.test).toHaveBeenCalledWith({
+      telegramToken: undefined,
+      telegramChatId: "992495341",
+    });
+  });
+
+  it("asks for a token before testing when none is saved or typed", async () => {
+    const user = userEvent.setup();
+    render(<OperatorAlertsView />);
+
+    await user.click(screen.getByRole("button", { name: "test.button" }));
+
+    expect(mocks.toastError).toHaveBeenCalledWith("test.needToken");
+    expect(mocks.test).not.toHaveBeenCalled();
   });
 });

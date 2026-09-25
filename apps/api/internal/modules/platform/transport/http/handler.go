@@ -266,14 +266,23 @@ func (h *PlatformHandler) DetectPlatformOperatorAlertChat(ctx context.Context, r
 	return api.DetectPlatformOperatorAlertChat200JSONResponse{Data: data}, nil
 }
 
-func (h *PlatformHandler) TestPlatformOperatorAlert(ctx context.Context, _ api.TestPlatformOperatorAlertRequestObject) (api.TestPlatformOperatorAlertResponseObject, error) {
-	err := h.service.SendTestOperatorAlert(ctx)
+func (h *PlatformHandler) TestPlatformOperatorAlert(ctx context.Context, request api.TestPlatformOperatorAlertRequestObject) (api.TestPlatformOperatorAlertResponseObject, error) {
+	var tokenOverride, chatOverride string
+	if request.Body != nil {
+		if request.Body.TelegramToken != nil {
+			tokenOverride = *request.Body.TelegramToken
+		}
+		if request.Body.TelegramChatId != nil {
+			chatOverride = *request.Body.TelegramChatId
+		}
+	}
+	err := h.service.SendTestOperatorAlert(ctx, tokenOverride, chatOverride)
 	if err == nil {
 		return api.TestPlatformOperatorAlert200JSONResponse{Success: true}, nil
 	}
-	// domain.ErrTelegramTokenMissing/ErrTelegramChatMissing are
-	// configuration problems (the console should not even have shown the
-	// "send test" button), so they still map to a request error. Only
+	// domain.ErrTelegramTokenMissing/ErrTelegramChatMissing mean neither the
+	// form nor the stored settings supply a value, so they still map to a
+	// request error. Only
 	// Telegram's own answer (ErrTelegramAPI) and a failure to reach it
 	// (ErrTelegramRequest) are reported inside the 200 body, per this
 	// operation's contract: a failed test send is Telegram's answer, not

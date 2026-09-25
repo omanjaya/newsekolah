@@ -150,8 +150,13 @@ func TestOperatorAlertSettings_TokenAndChatMustBeConfiguredForTelegramActions(t 
 	_, err := mod.Service.DetectOperatorAlertChats(ctx, "")
 	require.ErrorIs(t, err, domain.ErrTelegramTokenMissing)
 
-	err = mod.Service.SendTestOperatorAlert(ctx)
+	err = mod.Service.SendTestOperatorAlert(ctx, "", "")
 	require.ErrorIs(t, err, domain.ErrTelegramTokenMissing)
+
+	// An unsaved token typed in the console is accepted as the token, so
+	// the next missing piece reported is the chat id, not the token.
+	err = mod.Service.SendTestOperatorAlert(ctx, "123456:AAEE_unsaved_token", "")
+	require.ErrorIs(t, err, domain.ErrTelegramChatMissing)
 
 	token := "123456:AAEE_another_secret_token"
 	_, err = mod.Service.UpdateOperatorAlertSettings(ctx, uuid.Nil, domain.OperatorAlertSettingsPatch{
@@ -161,6 +166,6 @@ func TestOperatorAlertSettings_TokenAndChatMustBeConfiguredForTelegramActions(t 
 
 	// Token is set but no chat id: SendTestOperatorAlert must refuse with
 	// the chat-specific error, not the token one.
-	err = mod.Service.SendTestOperatorAlert(ctx)
+	err = mod.Service.SendTestOperatorAlert(ctx, "", "")
 	require.ErrorIs(t, err, domain.ErrTelegramChatMissing)
 }

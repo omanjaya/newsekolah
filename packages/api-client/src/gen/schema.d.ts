@@ -25834,7 +25834,16 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** @description Test a token that has not been saved yet. Omitted: uses the currently stored token. */
+                    telegram_token?: string;
+                    /** @description Test a chat id that has not been saved yet. Omitted: uses the currently stored chat id. */
+                    telegram_chat_id?: string;
+                };
+            };
+        };
         responses: {
             /** @description Result of the attempt. Always 200: success=false with an error description is not a request failure, it is Telegram's answer. */
             200: {

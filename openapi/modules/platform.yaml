@@ -299,6 +299,24 @@ paths:
       operationId: testPlatformOperatorAlert
       x-permission: platform_superadmin
       summary: Send a test message to the configured Telegram chat
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                telegram_token:
+                  type: string
+                  description: >-
+                    Test a token that has not been saved yet. Omitted: uses
+                    the currently stored token.
+                telegram_chat_id:
+                  type: string
+                  maxLength: 64
+                  description: >-
+                    Test a chat id that has not been saved yet. Omitted: uses
+                    the currently stored chat id.
       responses:
         "200":
           description: >-

@@ -294,34 +294,32 @@ func (s *Service) resolveTelegramToken(ctx context.Context, override string) (st
 	return token, err
 }
 
-// SendTestOperatorAlert sends testMessageText to the configured chat using
-// the stored token, returning domain.ErrTelegramAPI (wrapping Telegram's
-// own description, safe to display) when Telegram rejects the request.
-func (s *Service) SendTestOperatorAlert(ctx context.Context) error {
-	var token, chatID string
-	err := s.withPlatformTx(ctx, func(ctx context.Context) error {
-		row, err := s.repo.GetOperatorAlertSettings(ctx)
+// SendTestOperatorAlert sends testMessageText to a chat. tokenOverride and
+// chatOverride let the console test values the admin has typed but not
+// saved yet; empty values fall back to the stored settings. It returns
+// domain.ErrTelegramAPI (wrapping Telegram's own description, safe to
+// display) when Telegram rejects the request.
+func (s *Service) SendTestOperatorAlert(ctx context.Context, tokenOverride, chatOverride string) error {
+	token, err := s.resolveTelegramToken(ctx, tokenOverride)
+	if err != nil {
+		return err
+	}
+	chatID := chatOverride
+	if chatID == "" {
+		err := s.withPlatformTx(ctx, func(ctx context.Context) error {
+			row, err := s.repo.GetOperatorAlertSettings(ctx)
+			if err != nil {
+				return err
+			}
+			chatID = row.TelegramChatID
+			return nil
+		})
 		if err != nil {
 			return err
 		}
-		if len(row.TelegramBotTokenEncrypted) == 0 {
-			return domain.ErrTelegramTokenMissing
-		}
-		if row.TelegramChatID == "" {
-			return domain.ErrTelegramChatMissing
-		}
-		if s.alertsSealer == nil {
-			return fmt.Errorf("operator alerts: %w", errSealerNotConfigured)
-		}
-		plain, err := s.alertsSealer.Open(row.TelegramBotTokenEncrypted)
-		if err != nil {
-			return fmt.Errorf("decrypt operator alert telegram token: %w", err)
-		}
-		token, chatID = string(plain), row.TelegramChatID
-		return nil
-	})
-	if err != nil {
-		return err
+	}
+	if chatID == "" {
+		return domain.ErrTelegramChatMissing
 	}
 	return telegramSendMessage(ctx, token, chatID, testMessageText)
 }

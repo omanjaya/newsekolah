@@ -195,6 +195,12 @@ export function useDetectOperatorAlertChatMutation() {
 export function useTestOperatorAlertMutation() {
   const client = useApiClient();
   return useMutation({
-    mutationFn: () => client.POST("/v1/platform/operator-alerts/test"),
+    mutationFn: (draft: { telegramToken?: string; telegramChatId?: string }) =>
+      client.POST("/v1/platform/operator-alerts/test", {
+        body: {
+          ...(draft.telegramToken ? { telegram_token: draft.telegramToken } : {}),
+          ...(draft.telegramChatId ? { telegram_chat_id: draft.telegramChatId } : {}),
+        },
+      }),
   });
 }

@@ -155,8 +155,25 @@ export function OperatorAlertsView(): ReactElement {
   }
 
   async function handleTest() {
+    if (!form) return;
+    // Test what is on screen, saved or not: an unsaved token or chat id is
+    // exactly what the admin wants to check before saving.
+    const hasToken =
+      Boolean(form.telegramToken) ||
+      Boolean(settings?.telegram_token_set && !form.telegramTokenClear);
+    if (!hasToken) {
+      toast.error(t("test.needToken"));
+      return;
+    }
+    if (!form.telegramChatId.trim()) {
+      toast.error(t("test.needChat"));
+      return;
+    }
     try {
-      const result = await test.mutateAsync();
+      const result = await test.mutateAsync({
+        telegramToken: form.telegramToken || undefined,
+        telegramChatId: form.telegramChatId.trim(),
+      });
       if (result.success) {
         toast.success(t("test.success"));
       } else {
