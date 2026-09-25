@@ -6,6 +6,8 @@ import { useQuery } from "@tanstack/react-query";
 
 import { useApiClient } from "../../lib/api/client";
 
+import { useAdminDashboardLive } from "./realtime";
+
 /**
  * The dashboard has no aggregate endpoint of its own yet (docs/03's
  * `modules/reporting` is not built): it reads `/v1/me` only, the same
@@ -27,6 +29,7 @@ export type AdminDashboard = components["schemas"]["AdminDashboard"];
  */
 export function useAdminDashboardQuery(enabled: boolean) {
   const client = useApiClient();
+  useAdminDashboardLive(enabled);
   return useQuery({
     queryKey: queryKeys.adminDashboard(),
     queryFn: () => client.GET("/v1/analytics/admin-dashboard"),
