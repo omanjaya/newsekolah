@@ -269,6 +269,12 @@ async function downloadRecapExport(
   }
 }
 
+// Both mutations below are driven through the shared ReportExportDialog
+// (components/report-export-dialog.tsx), which already shows its own
+// loading state around `onExport` and toasts its own generic error on
+// failure -- errorToast: false avoids a second, generic error toast on
+// top of that.
+
 export function useExportDailyRecapMutation() {
   return useMutation({
     mutationFn: ({ date, options }: { date: string; options: ReportExportOptions }) =>
@@ -278,6 +284,7 @@ export function useExportDailyRecapMutation() {
         `rekap-tamu-${date}`,
         options,
       ),
+    meta: { errorToast: false },
   });
 }
 
@@ -290,5 +297,6 @@ export function useExportMonthlyRecapMutation() {
         `rekap-tamu-${month}`,
         options,
       ),
+    meta: { errorToast: false },
   });
 }

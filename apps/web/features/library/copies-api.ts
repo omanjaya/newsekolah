@@ -95,6 +95,9 @@ export function useCollectionCategoriesQuery() {
   });
 }
 
+// Passed into the shared MasterEntryTab (components/master-entry-tab.tsx),
+// same as the locations mutations below -- see useCreateLibraryLocationMutation's
+// comment.
 export function useCreateCollectionCategoryMutation() {
   const client = useApiClient();
   const invalidate = useInvalidate("collection-categories");
@@ -102,6 +105,7 @@ export function useCreateCollectionCategoryMutation() {
     mutationFn: (body: LibraryMasterEntryWrite) =>
       client.POST("/v1/library/collection-categories", { body }),
     onSuccess: invalidate,
+    meta: { errorToast: false },
   });
 }
 
@@ -112,6 +116,7 @@ export function useUpdateCollectionCategoryMutation() {
     mutationFn: ({ id, ...body }: LibraryMasterEntryWrite & { id: string }) =>
       client.PUT("/v1/library/collection-categories/{id}", { params: { path: { id } }, body }),
     onSuccess: invalidate,
+    meta: { errorToast: false },
   });
 }
 
@@ -122,6 +127,7 @@ export function useDeleteCollectionCategoryMutation() {
     mutationFn: (id: string) =>
       client.DELETE("/v1/library/collection-categories/{id}", { params: { path: { id } } }),
     onSuccess: invalidate,
+    meta: { errorToast: false },
   });
 }
 
@@ -134,12 +140,16 @@ export function useLibraryLocationsQuery() {
   });
 }
 
+// Passed into the shared MasterEntryTab (components/master-entry-tab.tsx),
+// which already toasts its own success/error -- errorToast: false avoids a
+// second, generic error toast on top of that.
 export function useCreateLibraryLocationMutation() {
   const client = useApiClient();
   const invalidate = useInvalidate("locations");
   return useMutation({
     mutationFn: (body: LibraryMasterEntryWrite) => client.POST("/v1/library/locations", { body }),
     onSuccess: invalidate,
+    meta: { errorToast: false },
   });
 }
 
@@ -150,6 +160,7 @@ export function useUpdateLibraryLocationMutation() {
     mutationFn: ({ id, ...body }: LibraryMasterEntryWrite & { id: string }) =>
       client.PUT("/v1/library/locations/{id}", { params: { path: { id } }, body }),
     onSuccess: invalidate,
+    meta: { errorToast: false },
   });
 }
 
@@ -160,6 +171,7 @@ export function useDeleteLibraryLocationMutation() {
     mutationFn: (id: string) =>
       client.DELETE("/v1/library/locations/{id}", { params: { path: { id } } }),
     onSuccess: invalidate,
+    meta: { errorToast: false },
   });
 }
 
