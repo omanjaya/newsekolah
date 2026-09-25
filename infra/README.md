@@ -374,7 +374,7 @@ notes are (docs/08-security.md section 5) and is never returned by any `/v1` res
   ```
   openssl rand -hex 32
   ```
-  and pass the same value to `monitor.sh` (its own config, not committed) as the `X-Monitor-Token`
+  and pass the same value to `monitor.sh` (its own config, not committed) as `MONITOR_API_TOKEN` (sent as `Authorization: Bearer`)
   header on every request. The API compares it in constant time and answers `401` on a missing or
   wrong header. Leaving `MONITOR_API_TOKEN` empty disables the endpoint outright (`404`) — do this
   on any deployment that never runs the host monitor script.
