@@ -49,13 +49,13 @@ type Module struct {
 }
 
 func Register(deps Dependencies) *Module {
-	svc := service.New(deps.Attendance, deps.Discipline, deps.Grading, deps.Permits)
-	svc.SetReportDocDependencies(deps.Academic, deps.Letterhead)
-
 	clk := deps.Clock
 	if clk == nil {
 		clk = clock.Real{}
 	}
+	svc := service.New(deps.Attendance, deps.Discipline, deps.Grading, deps.Permits, clk)
+	svc.SetReportDocDependencies(deps.Academic, deps.Letterhead)
+
 	scheduleRepo := repository.NewSchedule(deps.Pool)
 	scheduleSvc := service.NewScheduleService(deps.Pool, scheduleRepo, svc, deps.Perms, deps.Emails, deps.Storage, clk)
 

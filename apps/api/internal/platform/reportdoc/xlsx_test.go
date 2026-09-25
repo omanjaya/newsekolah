@@ -41,7 +41,9 @@ func TestRenderXLSXBasicLayout(t *testing.T) {
 
 	f, err := excelize.OpenReader(bytes.NewReader(out))
 	require.NoError(t, err)
-	defer f.Close()
+	defer func() {
+		_ = f.Close()
+	}()
 
 	sheets := f.GetSheetList()
 	require.Len(t, sheets, 1)
@@ -92,7 +94,9 @@ func TestRenderXLSXEmbedsLogoAndMultipleSheets(t *testing.T) {
 
 	f, err := excelize.OpenReader(bytes.NewReader(out))
 	require.NoError(t, err)
-	defer f.Close()
+	defer func() {
+		_ = f.Close()
+	}()
 
 	sheets := f.GetSheetList()
 	require.Len(t, sheets, 2)
@@ -116,7 +120,9 @@ func TestRenderXLSXUniqueSheetNames(t *testing.T) {
 
 	f, err := excelize.OpenReader(bytes.NewReader(out))
 	require.NoError(t, err)
-	defer f.Close()
+	defer func() {
+		_ = f.Close()
+	}()
 
 	sheets := f.GetSheetList()
 	require.Len(t, sheets, 2)
@@ -135,7 +141,9 @@ func TestRenderXLSXLetterheadEmphasisIsBoldAndCentered(t *testing.T) {
 	require.NoError(t, err)
 	f, err := excelize.OpenReader(bytes.NewReader(out))
 	require.NoError(t, err)
-	defer f.Close()
+	defer func() {
+		_ = f.Close()
+	}()
 	sheet := f.GetSheetList()[0]
 
 	emphasisStyleID, err := f.GetCellStyle(sheet, "A2")
@@ -175,7 +183,9 @@ func TestRenderXLSXEmptySectionRendersEmptyLabel(t *testing.T) {
 	require.NoError(t, err)
 	f, err := excelize.OpenReader(bytes.NewReader(out))
 	require.NoError(t, err)
-	defer f.Close()
+	defer func() {
+		_ = f.Close()
+	}()
 	sheet := f.GetSheetList()[0]
 
 	// Header row is row 7 for this fixture (2 letterhead lines + title +
@@ -195,7 +205,9 @@ func TestRenderXLSXHeaderRowHeightGrowsForLongLabels(t *testing.T) {
 	require.NoError(t, err)
 	f, err := excelize.OpenReader(bytes.NewReader(out))
 	require.NoError(t, err)
-	defer f.Close()
+	defer func() {
+		_ = f.Close()
+	}()
 	sheet := f.GetSheetList()[0]
 
 	height, err := f.GetRowHeight(sheet, 7) // header row for this fixture
@@ -235,7 +247,9 @@ func TestRenderXLSXSectionColumnsOverridesDocumentColumns(t *testing.T) {
 	require.NoError(t, err)
 	f, err := excelize.OpenReader(bytes.NewReader(out))
 	require.NoError(t, err)
-	defer f.Close()
+	defer func() {
+		_ = f.Close()
+	}()
 
 	sheets := f.GetSheetList()
 	require.Len(t, sheets, 2)
@@ -275,6 +289,8 @@ func TestRenderXLSXNoSections(t *testing.T) {
 	require.NoError(t, err)
 	f, err := excelize.OpenReader(bytes.NewReader(out))
 	require.NoError(t, err)
-	defer f.Close()
+	defer func() {
+		_ = f.Close()
+	}()
 	assert.Len(t, f.GetSheetList(), 1)
 }

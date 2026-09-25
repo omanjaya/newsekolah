@@ -13,6 +13,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/reportdoc"
 )
 
@@ -184,10 +185,14 @@ type Service struct {
 	permits    PermitsReader
 	academic   AcademicReader
 	letterhead reportdoc.LetterheadSource
+	clock      clock.Clock
 }
 
-func New(attendance AttendanceReader, discipline DisciplineReader, grading GradingReader, permits PermitsReader) *Service {
-	return &Service{attendance: attendance, discipline: discipline, grading: grading, permits: permits}
+func New(attendance AttendanceReader, discipline DisciplineReader, grading GradingReader, permits PermitsReader, clk clock.Clock) *Service {
+	if clk == nil {
+		clk = clock.Real{}
+	}
+	return &Service{attendance: attendance, discipline: discipline, grading: grading, permits: permits, clock: clk}
 }
 
 // SetReportDocDependencies wires the reportdoc-backed export path's
@@ -286,7 +291,7 @@ func (s *Service) attachLetterhead(ctx context.Context, tenantID uuid.UUID, args
 	if sig == nil {
 		return
 	}
-	when := time.Now()
+	when := s.clock.Now()
 	if args.Date != nil {
 		when = *args.Date
 	}

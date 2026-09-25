@@ -482,7 +482,7 @@ func New(pool *pgxpool.Pool, repo Repository, members MemberDirectory, settings 
 	}
 	s := &Service{
 		pool: pool, repo: repo, members: members, settings: settings, renderer: documents.NewHTMLPDFRenderer(), clock: clk,
-		isbnCache: newISBNCache(),
+		isbnCache: newISBNCache(clk),
 	}
 	if len(deps) > 0 {
 		d := deps[0]

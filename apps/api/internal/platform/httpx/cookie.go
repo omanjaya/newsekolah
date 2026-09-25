@@ -129,7 +129,7 @@ func (w *legacyCookieCleanupWriter) appendLegacyClear() {
 		return
 	}
 	w.done = true
-	header := w.ResponseWriter.Header()
+	header := w.Header()
 	for _, value := range header.Values("Set-Cookie") {
 		if !strings.HasPrefix(value, RefreshCookieName+"=") {
 			continue

@@ -22,17 +22,6 @@ func nullText(v sql.NullString) pgtype.Text {
 	return pgtype.Text{String: cleaned, Valid: true}
 }
 
-// nullYear converts a source year column to pgtype.Int2, the smallint the
-// target schema's *_profiles.joined_year / entry_year columns use. A year
-// value outside int16's range cannot come from a real calendar year, so it
-// is treated the same as absent rather than wrapped or truncated.
-func nullYear(v sql.NullInt64) pgtype.Int2 {
-	if !v.Valid || v.Int64 < -32768 || v.Int64 > 32767 {
-		return pgtype.Int2{}
-	}
-	return pgtype.Int2{Int16: int16(v.Int64), Valid: true} //nolint:gosec // range-checked above
-}
-
 // toSequence converts a source sort-order column (MySQL INT) to the int16
 // the target schema's sequence columns use. SION periods and grade levels
 // never realistically exceed a few dozen, so an out-of-range value is

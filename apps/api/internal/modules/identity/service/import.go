@@ -472,7 +472,7 @@ func buildImportProfileFields(row domain.ImportRow) (UserProfileFields, []string
 // commitImportRow writes one already-validated row: creates a new user, or
 // writes an update's changed fields onto the matched user, or -- for an
 // unchanged row -- writes nothing at all.
-func (s *Service) commitImportRow(ctx context.Context, tenantID, actorID uuid.UUID, row *evaluatedRow) error {
+func (s *Service) commitImportRow(ctx context.Context, tenantID, _ uuid.UUID, row *evaluatedRow) error {
 	switch row.Action {
 	case domain.ImportActionUnchanged:
 		return nil

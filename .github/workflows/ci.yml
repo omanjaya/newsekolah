@@ -75,10 +75,15 @@ jobs:
 
       - name: golangci-lint
         if: steps.changes.outputs.api == 'true'
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@v9
         with:
           working-directory: apps/api
-          version: latest
+          # Pinned exact v2 release (not "latest"): golangci-lint refuses to
+          # load the config when its own build's Go toolchain is older than
+          # the go.mod directive it is asked to target, so the binary here
+          # must be built with a Go toolchain >= apps/api/go.mod's go 1.26.1
+          # directive. v2.14.0 was built with go1.27.0.
+          version: v2.14.0
 
       - name: go test (race, with testcontainers)
         if: steps.changes.outputs.api == 'true'

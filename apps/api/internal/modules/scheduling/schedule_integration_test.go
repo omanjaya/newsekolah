@@ -413,7 +413,9 @@ func journalDocumentXML(t *testing.T, payload []byte) string {
 		}
 		reader, err := entry.Open()
 		require.NoError(t, err)
-		defer reader.Close()
+		defer func() {
+			_ = reader.Close()
+		}()
 		content, err := io.ReadAll(reader)
 		require.NoError(t, err)
 		return string(content)

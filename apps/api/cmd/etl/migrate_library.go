@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"math"
 	"sort"
 	"time"
 
@@ -23,9 +24,11 @@ func (st *Store) migrateLibraryTitles(ctx context.Context, tenantID uuid.UUID, b
 			isbn = mapping.CleanName(b.ISBN.String)
 		}
 
+		// A publication year outside int32's range cannot come from a real
+		// book, so it is treated the same as absent rather than wrapped.
 		var publishYear any
-		if b.PublicationYear.Valid {
-			publishYear = int32(b.PublicationYear.Int64)
+		if b.PublicationYear.Valid && b.PublicationYear.Int64 >= math.MinInt32 && b.PublicationYear.Int64 <= math.MaxInt32 {
+			publishYear = int32(b.PublicationYear.Int64) //nolint:gosec // range-checked above
 		}
 
 		var existingID uuid.UUID

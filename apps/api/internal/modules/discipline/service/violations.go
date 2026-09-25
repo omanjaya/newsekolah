@@ -240,7 +240,7 @@ const maxViolationAttachments = 3
 // reporter) -- unlike counseling notes, violation records have no
 // per-row visibility of their own; that is enforced by the view_discipline
 // permission on every read.
-func (s *Service) RequestViolationAttachmentUpload(ctx context.Context, tenantID, recordID, actorUserID uuid.UUID) (AttachmentUploadTarget, error) {
+func (s *Service) RequestViolationAttachmentUpload(ctx context.Context, tenantID, recordID, _ uuid.UUID) (AttachmentUploadTarget, error) {
 	if s.storage == nil {
 		return AttachmentUploadTarget{}, domain.ErrReportUnavailable
 	}

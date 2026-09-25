@@ -308,7 +308,9 @@ func TestHashRequestBody(t *testing.T) {
 	if HashRequestBody([]byte("a")) == HashRequestBody([]byte("b")) {
 		t.Fatal("different bodies must hash differently")
 	}
-	if HashRequestBody([]byte("a")) != HashRequestBody([]byte("a")) {
+	first := HashRequestBody([]byte("a"))
+	second := HashRequestBody([]byte("a"))
+	if first != second {
 		t.Fatal("the same body must hash the same way")
 	}
 }

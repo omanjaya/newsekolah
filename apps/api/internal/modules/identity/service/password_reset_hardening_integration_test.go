@@ -19,7 +19,7 @@ import (
 // forgot-password request supersedes the first: the earlier token must no
 // longer confirm a reset once a newer one has been issued.
 func TestRequestPasswordResetInvalidatesPreviousToken(t *testing.T) {
-	pg, svc, _ := setupIdentityTest(t)
+	pg, _, _ := setupIdentityTest(t)
 	ctx := context.Background()
 	tenantID := insertTestTenant(t, pg.AdminPool, "reset-request-test")
 	insertTestUser(t, pg.AdminPool, tenantID, "resetuser")
@@ -34,7 +34,7 @@ func TestRequestPasswordResetInvalidatesPreviousToken(t *testing.T) {
 		return token, hash, nil
 	}
 	repo := repository.New(pg.AppPool)
-	svc = service.New(pg.AppPool, repo, nil, nil, nil, clock.Real{}, service.Config{}, recordingNewRefresh, service.Extras{})
+	svc := service.New(pg.AppPool, repo, nil, nil, nil, clock.Real{}, service.Config{}, recordingNewRefresh, service.Extras{})
 
 	require.NoError(t, svc.RequestPasswordReset(ctx, tenantID, "resetuser", "127.0.0.1"))
 	require.NoError(t, svc.RequestPasswordReset(ctx, tenantID, "resetuser", "127.0.0.1"))

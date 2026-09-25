@@ -416,7 +416,7 @@ func pdfRowHeight(pdf *fpdf.Fpdf, widths []float64, texts []string) float64 {
 		if i >= len(widths) {
 			break
 		}
-		w := widths[i] - 2*pdfCellPadMM
+		w := widths[i] - 2*pdfCellPadMM //nolint:gosec // i is bounds-checked against len(widths) above
 		if w < 5 {
 			w = 5
 		}

@@ -274,8 +274,8 @@ func fetchAll(source *Source, sourceYearID int64, scheduleVersionIDs []int64, pr
 // subjects, enrollments, teaching assignments, duty assignments, periods,
 // schedules.
 func runMigrationSteps(
-	ctx context.Context, st *Store, tenantID uuid.UUID, cfg Config, source *Source,
-	sourceYearID int64, semester int, yearStartDate, yearEndDate time.Time, scheduleVersions []SionScheduleVersion,
+	ctx context.Context, st *Store, tenantID uuid.UUID, cfg Config, _ *Source,
+	_ int64, semester int, yearStartDate, yearEndDate time.Time, scheduleVersions []SionScheduleVersion,
 	tenantLocation *time.Location, d sourceData, report *Report,
 ) error {
 	yearStat := report.Table("academic_years")

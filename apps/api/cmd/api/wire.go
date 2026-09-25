@@ -224,7 +224,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, red
 		// "<tenantID>:<role>:<userID>" by wsMeHandler.
 		Identity: identityModule.Service,
 		Permits:  wiring.AnalyticsPermits{Svc: permitsModule.Service},
-		Presence: wiring.AnalyticsPresence{Presence: presence},
+		Presence: wiring.AnalyticsPresence{Presence: presence, Clock: clock.Real{}},
 		Clock:    clock.Real{},
 	})
 

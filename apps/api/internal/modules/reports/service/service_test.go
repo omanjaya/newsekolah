@@ -89,7 +89,7 @@ func newFixture(t *testing.T) (*service.Service, uuid.UUID, uuid.UUID, uuid.UUID
 		},
 		gradeLevels: map[uuid.UUID]string{gradeLevel: "Kelas X"},
 	}
-	svc := service.New(attendance, nil, nil, nil)
+	svc := service.New(attendance, nil, nil, nil, nil)
 	svc.SetReportDocDependencies(academic, fakeLetterhead{
 		lh:  &reportdoc.Letterhead{Lines: []string{"SMA Negeri 1"}},
 		sig: &reportdoc.Signature{Place: "Denpasar", Signers: []reportdoc.Signer{{RoleLabel: "Kepala Sekolah", Name: "Budi"}}},
@@ -172,7 +172,7 @@ func TestRunDocumentUnknownReportNotFound(t *testing.T) {
 // takes no scope arguments at all.
 func TestRunDocumentOtherKindsHonourFormat(t *testing.T) {
 	permits := fakePermits{}
-	svc := service.New(nil, nil, nil, permits)
+	svc := service.New(nil, nil, nil, permits, nil)
 	out, contentType, err := svc.RunDocument(context.Background(), uuid.New(), service.KindExitPermitsYearly, service.RunArgs{}, reportdoc.Options{Format: reportdoc.FormatPDF}, reportdoc.LocaleID)
 	require.NoError(t, err)
 	assert.Equal(t, service.PDFContentType, contentType)
@@ -204,7 +204,9 @@ func TestRunDocumentLocalizesLabelsAndValues(t *testing.T) {
 
 	f, err := excelize.OpenReader(bytes.NewReader(out))
 	require.NoError(t, err)
-	defer f.Close()
+	defer func() {
+		_ = f.Close()
+	}()
 	sheets := f.GetSheetList()
 	require.Len(t, sheets, 2)
 
@@ -261,7 +263,9 @@ func TestRunDocumentEnglishLocale(t *testing.T) {
 
 	f, err := excelize.OpenReader(bytes.NewReader(out))
 	require.NoError(t, err)
-	defer f.Close()
+	defer func() {
+		_ = f.Close()
+	}()
 	sheet := f.GetSheetList()[0]
 
 	title, err := f.GetCellValue(sheet, "A2")

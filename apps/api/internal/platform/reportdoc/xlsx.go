@@ -661,13 +661,13 @@ func uniqueSheetName(name, fallback string, index int, used map[string]bool) str
 	suffix := 2
 	for used[strings.ToLower(name)] {
 		tail := fmt.Sprintf(" (%d)", suffix)
-		max := 31 - len(tail)
-		if max < 0 {
-			max = 0
+		maxLen := 31 - len(tail)
+		if maxLen < 0 {
+			maxLen = 0
 		}
 		trimmed := base
-		if len(trimmed) > max {
-			trimmed = trimmed[:max]
+		if len(trimmed) > maxLen {
+			trimmed = trimmed[:maxLen]
 		}
 		name = trimmed + tail
 		suffix++
