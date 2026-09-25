@@ -44,17 +44,35 @@ test("exit permit: request -> picket -> counselor -> leadership -> security gate
     const createResponse = student.page.waitForResponse(
       (res) => res.request().method() === "POST" && res.url().includes("/v1/exit-permits"),
     );
-    await dialog.getByLabel("Dari jam").click();
     // The Select's option listbox renders through a portal, as a sibling
     // of the dialog in the DOM/accessibility tree, not a descendant of it
-    // -- scoping this to `dialog` (as the other locators here do) finds
-    // nothing. With 11 periods (cmd/seed's Jam 1-11) the list overflows a
-    // default viewport, and Radix positions it such that Playwright's
-    // pointer-actionability check ("element is outside of the viewport")
-    // never resolves even after scrolling; the first item is already
-    // highlighted on open (Radix default), so selecting it via keyboard
-    // sidesteps the pointer/visibility check entirely.
-    await student.page.keyboard.press("Enter");
+    // -- scoping an option locator to `dialog` (as the other locators
+    // here do) finds nothing. With 11 periods (cmd/seed's Jam 1-11) the
+    // open list also overflows a default viewport, and Radix positions it
+    // such that Playwright's own `.click()` -- plain, `force: true`, or
+    // via a keyboard ArrowDown/Enter that raced the popover's mount and
+    // was silently dropped -- never reliably resolves ("element is
+    // outside of the viewport", even after scrolling: a real click still
+    // needs on-screen coordinates to dispatch a pointer event at).
+    // `.evaluate(el => el.click())` dispatches a real DOM click with no
+    // such requirement; Radix handles it identically for selection.
+    // The `\b` word boundary matters too: getByRole's substring match
+    // normalizes whitespace, so a plain "Jam 1" would also match "Jam 10"
+    // and "Jam 11".
+    await dialog.getByLabel("Dari jam").click();
+    await student.page.getByRole("option", { name: /^Jam 1\b/ }).evaluate((el: HTMLElement) => {
+      el.click();
+    });
+    // Picking "Dari jam" (Jam 1) auto-fills "Sampai jam" with the same
+    // period (exit-permit-panels.tsx's CreateForm: `if (!endId)
+    // setEndId(v)`), but the API requires a real range -- end.Sequence >
+    // start.Sequence (exitpermit.go's validatePeriodRange), rejecting an
+    // equal start/end with a 400 PERIOD_RANGE_INVALID. Pick a later one
+    // explicitly.
+    await dialog.getByLabel("Sampai jam").click();
+    await student.page.getByRole("option", { name: /^Jam 2\b/ }).evaluate((el: HTMLElement) => {
+      el.click();
+    });
     await dialog.getByRole("button", { name: "Ajukan", exact: true }).click();
     const created = (await (await createResponse).json()) as { instance: { id: string } };
     const permitId = created.instance.id;
@@ -68,6 +86,9 @@ test("exit permit: request -> picket -> counselor -> leadership -> security gate
     await picket.page.goto("/exit-permits?tab=approve");
     await picket.page.getByLabel("Kode izin siswa").fill(permitId);
     await picket.page.getByRole("button", { name: "Tampilkan QR persetujuan" }).click();
+    // Minting the stage token is async; wait for the QrPanel's <code> to
+    // actually mount instead of reading the pre-mint DOM.
+    await expect(picket.page.locator("code")).toHaveCount(1, { timeout: 20_000 });
     const picketCode = await picket.page.locator("code").last().textContent();
     expect(picketCode).toBeTruthy();
 
@@ -87,6 +108,7 @@ test("exit permit: request -> picket -> counselor -> leadership -> security gate
       await expect(counselor.page.getByText("Siswa Contoh")).toBeVisible({ timeout: 20_000 });
     });
     await counselor.page.getByRole("button", { name: "Proses" }).click();
+    await expect(counselor.page.locator("code")).toHaveCount(1, { timeout: 20_000 });
     const counselorCode = await counselor.page.locator("code").last().textContent();
     expect(counselorCode).toBeTruthy();
 
@@ -105,6 +127,7 @@ test("exit permit: request -> picket -> counselor -> leadership -> security gate
       await expect(leadership.page.getByText("Siswa Contoh")).toBeVisible({ timeout: 20_000 });
     });
     await leadership.page.getByRole("button", { name: "Proses" }).click();
+    await expect(leadership.page.locator("code")).toHaveCount(1, { timeout: 20_000 });
     const leadershipCode = await leadership.page.locator("code").last().textContent();
     expect(leadershipCode).toBeTruthy();
 
@@ -134,6 +157,11 @@ test("exit permit: request -> picket -> counselor -> leadership -> security gate
     // the "sion:<kind>:<instanceId>:<token>" shape the QR itself encodes
     // (apps/web/features/permits/api.ts's encodeScanPayload).
     await student.page.getByRole("button", { name: "Tampilkan QR gerbang" }).click();
+    // Minting the gate token (gate.mutate) is async; wait for the QrPanel
+    // to actually mount its own <code> (a second one, alongside the
+    // instance id's own) instead of reading whatever is on screen the
+    // instant after the click, which can still be the pre-mint DOM.
+    await expect(student.page.locator("code")).toHaveCount(2, { timeout: 20_000 });
     const gateToken = await student.page.locator("code").last().textContent();
     expect(gateToken).toBeTruthy();
     const gatePayload = `sion:gate:${permitId}:${(gateToken ?? "").trim()}`;
