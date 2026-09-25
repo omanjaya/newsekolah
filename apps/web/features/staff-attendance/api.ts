@@ -9,6 +9,8 @@ import { useApiClient } from "../../lib/api/client";
 import { reportExportExtension, withReportExportParams } from "../../lib/api/report-export-query";
 import { API_URL } from "../../lib/env";
 
+import { useStaffAttendanceTodayLive } from "./realtime";
+
 export type Employee = components["schemas"]["StaffAttendanceEmployee"];
 export type ScheduleDay = components["schemas"]["StaffAttendanceScheduleDay"];
 export type AttendanceRecord = components["schemas"]["StaffAttendanceRecord"];
@@ -56,6 +58,7 @@ export function useReplaceStaffAttendanceScheduleMutation(employeeId: string) {
 
 export function useStaffAttendanceTodayQuery(date: string) {
   const client = useApiClient();
+  useStaffAttendanceTodayLive(date);
   return useQuery({
     queryKey: queryKeys.staffAttendanceToday(date),
     queryFn: () => client.GET("/v1/staff-attendance/today", { params: { query: { date } } }),
