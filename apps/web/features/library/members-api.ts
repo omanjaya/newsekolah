@@ -133,7 +133,7 @@ export function useBulkRegisterLibraryMembersMutation() {
   return useMutation({
     mutationFn: (body: {
       member_type_id: string;
-      role: "student" | "teacher" | "staff" | "parent";
+      role: "student" | "teacher" | "staff";
       class_id?: string;
     }) => client.POST("/v1/library/members/bulk-register", { body }),
     onSuccess: invalidate,

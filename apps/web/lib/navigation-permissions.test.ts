@@ -8,8 +8,8 @@ const grants =
     codes.includes(permission);
 
 describe("canOpenPath", () => {
-  it("refuses the teaching journal to a parent, who lacks its permission", () => {
-    expect(canOpenPath("/journal", grants("view_dashboard"), "parent")).toBe(false);
+  it("refuses the teaching journal to staff who lack its permission", () => {
+    expect(canOpenPath("/journal", grants("view_dashboard"), "staff")).toBe(false);
   });
 
   it("refuses the teaching journal to a student, whose profile it is not for", () => {

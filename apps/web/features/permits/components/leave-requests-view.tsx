@@ -27,7 +27,6 @@ import { useUrlState } from "../../../lib/hooks/use-url-state";
 import { useCan, useSession } from "../../../lib/session/session-provider";
 import { useMyLeaveRequestsQuery } from "../api";
 
-import { GuardianQueue } from "./leave-guardian-queue";
 import { LeaveRequestDetail } from "./leave-request-detail";
 import { SubmitForm } from "./leave-request-submit-form";
 import { ReviewQueue } from "./leave-review-queue";
@@ -38,7 +37,6 @@ export function LeaveRequestsView(): ReactElement {
   const canSubmit = useCan("submit_leave_requests");
   const canReviewStage = useCan("review_leave_requests");
   const canIssueLetter = useCan("issue_leave_letters");
-  const canApproveAsGuardian = useCan("approve_child_leave_requests");
   // GET /v1/leave-requests/review-queue is authorized for
   // review_leave_requests only; a counselor holding issue_leave_letters
   // alone would get a 403, so the queue is only fetched for reviewers.
@@ -50,11 +48,6 @@ export function LeaveRequestsView(): ReactElement {
       value: "queue",
       label: t("tabQueue"),
       content: canReviewStage ? <ReviewQueue /> : <IssuerQueueUnavailable />,
-    },
-    canApproveAsGuardian && {
-      value: "guardianQueue",
-      label: t("tabGuardianQueue"),
-      content: <GuardianQueue />,
     },
     canSubmit && { value: "mine", label: t("tabMine"), content: <MyLeaveRequests /> },
   ].filter((entry): entry is { value: string; label: string; content: ReactElement } =>

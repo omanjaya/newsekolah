@@ -18,7 +18,7 @@ export function permissionForPath(pathname: string): string | undefined {
 /**
  * Whether a reader may open `pathname`: the permission(s) above, plus the
  * profile kinds the registry scopes the page to or excludes it from (a
- * teacher's journal is not a parent's page, and a student's own
+ * teacher's journal is not a student's page, and a student's own
  * view_academic_data does not make a master-data roster theirs, even
  * though the list endpoint accepts any session). Checked before the page
  * mounts, so a refused page fires no requests.

@@ -108,8 +108,7 @@
         "kinds": {
           "teacher": "Guru",
           "staff": "Pegawai",
-          "student": "Siswa",
-          "parent": "Orang tua"
+          "student": "Siswa"
         },
         "loadError": "Ringkasan tidak bisa dimuat. Coba muat ulang halaman.",
         "pendingTitle": "Antrean sekolah",
@@ -991,7 +990,6 @@
         "title": "Izin terencana",
         "tabQueue": "Antrean",
         "tabMine": "Pengajuan saya",
-        "tabGuardianQueue": "Anak saya",
         "noAccessTitle": "Tidak ada akses",
         "noAccessBody": "Peran Anda tidak terlibat dalam alur izin terencana.",
         "issuerQueueUnavailableTitle": "Pengajuan untuk diterbitkan ada di notifikasi",
@@ -1035,16 +1033,6 @@
         "bulkApproveHint": "Aksi massal ini menyetujui tanpa catatan. Pengajuan yang perlu ditolak atau diberi catatan, proses satu per satu.",
         "bulkApproved": "{count, plural, other {# pengajuan disetujui}}",
         "bulkApprovedPartial": "{count} pengajuan disetujui, {failed} gagal. Coba lagi untuk sisanya.",
-        "guardian": {
-          "reviewNote": "Alasan (wajib diisi jika menolak)",
-          "reject": "Tolak",
-          "approve": "Setujui",
-          "rejected": "Pengajuan ditolak",
-          "approved": "Pengajuan disetujui",
-          "reasonRequired": "Alasan wajib diisi untuk menolak.",
-          "queueEmptyTitle": "Tidak ada yang menunggu keputusan Anda",
-          "queueEmptyBody": "Pengajuan izin anak akan tampil di sini saat sampai pada tahap yang membutuhkan persetujuan Anda."
-        },
         "form": {
           "category": "Jenis izin",
           "startsOn": "Mulai",
@@ -1094,8 +1082,7 @@
           "all": "Semua jenis",
           "teacher": "Guru",
           "staff": "Pegawai",
-          "student": "Siswa",
-          "parent": "Orang tua"
+          "student": "Siswa"
         },
         "status": {
           "active": "Aktif",

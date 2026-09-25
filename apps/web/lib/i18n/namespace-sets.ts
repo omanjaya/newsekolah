@@ -81,7 +81,6 @@ const APP_FEATURE_NAMESPACES = [
   "app.dashboardPersona",
   "app.discipline",
   "app.documents",
-  "app.family",
   "app.grading",
   "app.integrations",
   "app.journal",

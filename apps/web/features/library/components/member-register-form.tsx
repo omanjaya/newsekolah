@@ -10,7 +10,7 @@ import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
 import { useDirectoryQuery } from "../../reference/api";
 import { useLibraryMemberTypesQuery, useRegisterLibraryMemberMutation } from "../members-api";
 
-const ROLES = ["student", "teacher", "staff", "parent"] as const;
+const ROLES = ["student", "teacher", "staff"] as const;
 type Role = (typeof ROLES)[number];
 
 /** Registers one existing user (picked by role, then by name) as a library member. */

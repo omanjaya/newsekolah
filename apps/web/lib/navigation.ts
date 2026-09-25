@@ -16,7 +16,6 @@ import {
   ShieldAlert,
   ShieldCheck,
   UserRound,
-  Users,
   UsersRound,
 } from "lucide-react";
 
@@ -29,7 +28,7 @@ import { settingsNavItems } from "./navigation-settings";
 export { navGroupIcons } from "./navigation-groups";
 
 /** Profile kinds a nav item can be restricted to, mirroring `Me["profile_kind"]`. */
-export type NavProfileKind = "student" | "teacher" | "staff" | "parent";
+export type NavProfileKind = "student" | "teacher" | "staff";
 
 export interface NavItem {
   key: string;
@@ -51,10 +50,9 @@ export interface NavItem {
    * once the reader holds any one of these. Used for a screen several
    * duties reach through different actions rather than one shared
    * permission code (e.g. leave requests: a student submitter, a
-   * homeroom/leadership reviewer, a counselor/leadership issuer, and a
-   * parent guardian-approver all use `/leave-requests`, each unlocking a
-   * different tab of it -- see features/permits/components/
-   * leave-requests-view.tsx).
+   * homeroom/leadership reviewer, and a counselor/leadership issuer all
+   * use `/leave-requests`, each unlocking a different tab of it -- see
+   * features/permits/components/leave-requests-view.tsx).
    */
   anyPermission?: string[];
   /**
@@ -137,7 +135,12 @@ export const navigation: NavItem[] = [
     labelKey: "nav.academic.items.homeroomClass",
     href: "/homeroom",
     icon: UsersRound,
+    // view_attendance alone is too broad here -- it also covers a
+    // student's own attendance, so without profileKinds a student sees
+    // (and can open) the homeroom teacher's roster (docs/analysis/
+    // ux-audit-2026-09-25.md finding 2). Same pattern as "journal" above.
     permission: "view_attendance",
+    profileKinds: ["teacher", "staff"],
     group: GROUP.academic,
   },
   {
@@ -208,14 +211,6 @@ export const navigation: NavItem[] = [
     group: GROUP.academic,
   },
   {
-    key: "children",
-    labelKey: "app.family.nav.myChildren",
-    href: "/children",
-    icon: Users,
-    permission: "view_child_attendance",
-    group: GROUP.academic,
-  },
-  {
     key: "violations",
     labelKey: "nav.discipline.items.violations",
     href: "/discipline/violations",
@@ -225,7 +220,7 @@ export const navigation: NavItem[] = [
   },
   {
     key: "my-discipline",
-    labelKey: "app.family.nav.myDiscipline",
+    labelKey: "nav.discipline.items.myDiscipline",
     href: "/my-discipline",
     icon: domainIcons.violation,
     profileKinds: ["student"],
@@ -262,17 +257,12 @@ export const navigation: NavItem[] = [
     href: "/leave-requests",
     icon: ClipboardList,
     // features/permits/components/leave-requests-view.tsx renders whichever
-    // of these four action permissions the reader holds -- a student
-    // submitter, a parent guardian-approver, a homeroom/leadership duty
-    // reviewer, or a counselor/leadership duty letter-issuer -- and shows
-    // its own "no access" empty state to anyone with none of them, so a
-    // role without any of the four never gets a real screen here.
-    anyPermission: [
-      "submit_leave_requests",
-      "review_leave_requests",
-      "issue_leave_letters",
-      "approve_child_leave_requests",
-    ],
+    // of these three action permissions the reader holds -- a student
+    // submitter, a homeroom/leadership duty reviewer, or a
+    // counselor/leadership duty letter-issuer -- and shows its own "no
+    // access" empty state to anyone with none of them, so a role without
+    // any of the three never gets a real screen here.
+    anyPermission: ["submit_leave_requests", "review_leave_requests", "issue_leave_letters"],
     group: GROUP.students,
     showInTabBar: true,
   },
@@ -285,8 +275,8 @@ export const navigation: NavItem[] = [
     // three gates: a student submitter, a teacher/staff approver
     // (issue_scan_tokens -- already a role default for both), and a
     // security-duty gate scanner. Nothing in that view branches on
-    // profile kind, so parents and librarians (who hold none of the
-    // three by default) correctly see neither the item nor a real tab.
+    // profile kind, so a librarian (who holds none of the three by
+    // default) correctly sees neither the item nor a real tab.
     anyPermission: ["submit_leave_requests", "issue_scan_tokens", "scan_exit_permits"],
     group: GROUP.students,
   },
@@ -301,13 +291,9 @@ export const navigation: NavItem[] = [
     // server-side to the duty teacher who opened the instance, or a
     // manage_attendance admin/super admin), and gives everyone else --
     // students, who scan the duty teacher's QR to self-report -- the
-    // "mine" flow instead. `profileKinds` would be the natural fit, but
-    // an allow-list would also hide this from an admin/super admin
-    // created with no profile row at all (e.g. cmd/bootstrap's account,
-    // which has full manage_attendance and can genuinely use the review
-    // queue); exclude the one profile kind with no use for either flow
-    // instead.
-    excludeProfileKinds: ["parent"],
+    // "mine" flow instead. Every remaining profile kind has a use for one
+    // of the two flows, so no `excludeProfileKinds`/`profileKinds` is
+    // needed here.
     group: GROUP.students,
   },
   {
@@ -353,7 +339,7 @@ export const navigation: NavItem[] = [
     // account kinds it is not for instead of narrowing the permission,
     // which would take the roster away from teachers and staff who need
     // it too.
-    excludeProfileKinds: ["student", "parent"],
+    excludeProfileKinds: ["student"],
     group: GROUP.masterData,
   },
   {
