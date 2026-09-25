@@ -1306,6 +1306,7 @@
     "reserve": {
       "heading": "Reservasi",
       "emptyBody": "Belum ada reservasi. Cari judul di bawah untuk memesan.",
+      "emptyBodyDisabled": "Belum ada reservasi.",
       "queuePosition": "Antrean ke-{position}",
       "status": {
         "waiting": "Menunggu",

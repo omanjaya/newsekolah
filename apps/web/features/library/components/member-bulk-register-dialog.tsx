@@ -7,6 +7,7 @@ import type { ReactElement } from "react";
 import { useState } from "react";
 
 import { useApiErrorMessage } from "../../../lib/i18n/api-error-message";
+import { useCan } from "../../../lib/session/session-provider";
 import { useClassesQuery } from "../../reference/api";
 import {
   type LibraryBulkRegisterResult,
@@ -29,7 +30,12 @@ export function MemberBulkRegisterDialog({
   const tRole = useTranslations("app.library.members.roles");
   const apiErrorMessage = useApiErrorMessage();
   const memberTypes = useLibraryMemberTypesQuery();
-  const classes = useClassesQuery();
+  // Narrowing bulk registration to one class is a convenience, not a
+  // requirement (the role alone is enough to register everyone) -- so a
+  // role without view_academic_data (e.g. the librarian) just registers
+  // by role instead of firing a request the API will 403 on.
+  const canViewClasses = useCan("view_academic_data");
+  const classes = useClassesQuery(canViewClasses);
   const bulkRegister = useBulkRegisterLibraryMembersMutation();
 
   const [role, setRole] = useState<Role>("student");
@@ -127,7 +133,7 @@ export function MemberBulkRegisterDialog({
                 }}
               />
             </label>
-            {role === "student" && (
+            {role === "student" && canViewClasses && (
               <label className="flex flex-col gap-1 text-[13px]">
                 <span className="font-medium">{t("classOptional")}</span>
                 <Select

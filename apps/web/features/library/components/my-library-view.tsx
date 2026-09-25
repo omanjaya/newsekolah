@@ -63,7 +63,9 @@ export function MyLibraryView(): ReactElement {
     );
   }
 
-  const unpaidViolations = data.violations.filter((v) => v.status === "unpaid");
+  // A violation can be marked "unpaid" with a Rp0 amount (e.g. a waived
+  // fine); only a positive amount is actually owed and worth surfacing.
+  const unpaidViolations = data.violations.filter((v) => v.status === "unpaid" && v.amount > 0);
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
