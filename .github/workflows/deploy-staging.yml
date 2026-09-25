@@ -124,7 +124,7 @@ jobs:
         if: steps.check.outputs.present == 'true'
         env:
           SIM_BASE_URL: https://staging.sion.nouma.id
-          STAGING_SEED_PASSWORD: ${{ secrets.STAGING_SEED_PASSWORD }}
+          SEED_PASSWORD: ${{ secrets.STAGING_SEED_PASSWORD }}
         run: pnpm --filter @newsekolah/web e2e:sim
 
       - name: Upload the simulation report
