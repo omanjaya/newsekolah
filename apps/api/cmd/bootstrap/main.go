@@ -21,6 +21,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/config"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/migrator"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/telemetry"
 )
 
@@ -126,6 +127,24 @@ func run(logger *slog.Logger, tenantSlug, tenantName, educationLevel, adminUsern
 		}
 		if err := tq.AssignUserRole(ctx, db.AssignUserRoleParams{UserID: user.ID, RoleID: role.ID, TenantID: tenant.ID, IsPrimary: true}); err != nil {
 			return fmt.Errorf("assign super_admin role: %w", err)
+		}
+
+		// Beyond super_admin (the one role this command creates itself,
+		// above) and the tenant row, a fresh install otherwise has none of
+		// the system roles or duty types every other provisioning path
+		// (platform console's CreateTenant, cmd/seed) creates -- an admin
+		// could not grant anyone the teacher/student/parent/staff/
+		// librarian/admin roles, and no homeroom/counselor/picket/
+		// leadership/security/librarian duty existed until the next
+		// deploy's migrate ran (migrator.PostUp calls the same routine for
+		// every existing tenant). Calling it here, inside this same
+		// transaction, makes a fresh install complete immediately instead
+		// of waiting on that; database.WithTenantTx's ambient-transaction
+		// reuse (see its doc comment) means this joins the transaction
+		// already open around this closure rather than opening a second
+		// one, so the whole tenant is still all-or-nothing.
+		if err := migrator.EnsureTenantDefaults(ctx, pool, tenant.ID); err != nil {
+			return fmt.Errorf("ensure tenant defaults: %w", err)
 		}
 
 		token, err = randomToken(32)

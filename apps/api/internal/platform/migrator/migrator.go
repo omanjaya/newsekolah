@@ -11,6 +11,7 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
 	"github.com/riverqueue/river/rivermigrate"
@@ -49,9 +50,16 @@ func Up(databaseURL string) error {
 	return nil
 }
 
-// PostUp runs River's own schema migrations and upserts the static
-// permission catalog (internal/platform/authz/permissions.go). It expects
-// Up to have already run.
+// PostUp runs River's own schema migrations, upserts the static
+// permission catalog (internal/platform/authz/permissions.go), then brings
+// every tenant's roles and duty types up to date: first EnsureTenantDefaults
+// creates whatever system role or duty type a tenant is still missing (a
+// tenant bootstrapped before the module that introduced it, since
+// cmd/bootstrap only ever creates super_admin -- see EnsureTenantDefaults's
+// doc comment), then syncSystemRoleDefaults additively grants every
+// existing system role whatever default permission it does not have yet,
+// including the roles EnsureTenantDefaults just created. It expects Up to
+// have already run.
 func PostUp(ctx context.Context, pool *pgxpool.Pool) error {
 	riverMigrator, err := rivermigrate.New(riverpgxv5.New(pool), nil)
 	if err != nil {
@@ -69,17 +77,26 @@ func PostUp(ctx context.Context, pool *pgxpool.Pool) error {
 			return fmt.Errorf("upsert permission %s: %w", p.Code, err)
 		}
 	}
-	return syncSystemRoleDefaults(ctx, pool)
+
+	tenantIDs, err := queries.ListTenantIDs(ctx)
+	if err != nil {
+		return fmt.Errorf("list tenants: %w", err)
+	}
+	for _, tenantID := range tenantIDs {
+		if err := EnsureTenantDefaults(ctx, pool, tenantID); err != nil {
+			return fmt.Errorf("ensure tenant defaults for %s: %w", tenantID, err)
+		}
+	}
+	return syncSystemRoleDefaults(ctx, pool, tenantIDs)
 }
 
 // syncSystemRoleDefaults grants every system role the permissions its
 // default set gained since the tenant was created. It only ever adds rows,
-// so an admin's customisations (granted or revoked) survive each deploy.
-func syncSystemRoleDefaults(ctx context.Context, pool *pgxpool.Pool) error {
-	tenantIDs, err := db.New(pool).ListTenantIDs(ctx)
-	if err != nil {
-		return fmt.Errorf("list tenants: %w", err)
-	}
+// so an admin's customisations (granted or revoked) survive each deploy --
+// unless the permission being added is itself still in the role's default
+// set, in which case a revoked grant is restored; see EnsureTenantDefaults
+// for the routine that instead never touches an existing role at all.
+func syncSystemRoleDefaults(ctx context.Context, pool *pgxpool.Pool, tenantIDs []uuid.UUID) error {
 	defaults := map[string][]string{}
 	for _, rd := range authz.RoleDefaults() {
 		defaults[rd.Slug] = rd.Permissions
