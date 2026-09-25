@@ -9,6 +9,8 @@ import { useApiClient } from "../../lib/api/client";
 import { reportExportExtension, withReportExportParams } from "../../lib/api/report-export-query";
 import { API_URL } from "../../lib/env";
 
+import { useVisitorBoardLive } from "./realtime";
+
 export type ExpectedGuest = components["schemas"]["ExpectedGuest"];
 export type ExpectedGuestWrite = components["schemas"]["ExpectedGuestWrite"];
 export type Visit = components["schemas"]["Visit"];
@@ -42,6 +44,7 @@ function useInvalidateVisitors() {
 
 export function useVisitorBoardQuery() {
   const client = useApiClient();
+  useVisitorBoardLive();
   return useQuery({
     queryKey: keys.board(),
     queryFn: () => client.GET("/v1/visitors/board"),
