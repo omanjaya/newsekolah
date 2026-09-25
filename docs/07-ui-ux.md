@@ -1,6 +1,22 @@
 # 07. UI/UX
 
-Arah visual ada di [DESIGN.md](../DESIGN.md). Dokumen ini membahas struktur pengalaman: siapa memakai apa, navigasi, alur utama, dan standar interaksi. Implementasi mengikuti `DESIGN.md`, termasuk aksesibilitas dan tampilan mobile.
+Dokumen ini membahas struktur pengalaman: siapa memakai apa, navigasi, alur utama, dan standar interaksi, plus (bagian 0) arah visual yang dipakai di seluruh peran. Referensi visual mentah: `docs/design-reference-hijau-segar.html` (artboard statis, gaya inline adalah sumber kebenaran tampilan).
+
+## 0. Arah visual: Hijau Segar
+
+Dipilih 2026-09-25 sebagai arah untuk semua peran, menjawab kesan UI lama yang datar untuk siswa SMA. Fondasi (token, komponen `packages/ui`, shell aplikasi) sudah diterapkan; redesain per layar menyusul di tugas lain.
+
+**Warna.** Latar netral hangat `--color-bg` `#F7F6F2`, permukaan kartu `--color-surface` putih dengan ring 1px `--color-border` `#EAE8E1` (garis pemisah halus pakai `--color-line` `#E6E4DD`, sedikit lebih gelap dari ring). Teks `--color-fg` `#1B1D1A`, teks sekunder `--color-fg-muted` `#5E625B`. Aksen teal-hijau `--color-accent` `#0F7A5F` dengan versi lembut `--color-accent-soft` `#DDF2EA` + teks di atasnya `--color-accent-soft-fg` `#0B3B2E`, dan versi pekat untuk hover/pressed `--color-accent-strong`. Lima warna kategori (`--color-category-{green,amber,purple,blue,red}`, masing-masing punya `-soft` dan `-soft-fg`) dipakai untuk ikon dalam lingkaran lembut (kartu statistik, avatar inisial) berdasarkan topik, bukan status. Warna semantik `success`/`warning`/`danger`/`info` adalah alias ke `green`/`amber`/`red`/`blue`. Status presensi (`--color-status-*`) memetakan ke palet yang sama. Setiap pasangan token (teks pada latar, ikon pada latar lembut) diperiksa WCAG AA otomatis oleh `packages/ui-tokens/scripts/contrast-check.ts` (94 pasang, `pnpm --filter @newsekolah/ui-tokens test`).
+
+**Mode gelap** memakai charcoal hangat (`--color-bg` `#171613`, `--color-surface` `#211F1B`) dengan aksen hijau yang dicerahkan (`#2FD6A0`) supaya tetap kontras, dan setiap chip lembut jadi tint alpha-rendah dari warnanya di latar gelap. Mekanisme ganti tema (`data-theme`, `prefers-color-scheme`) tidak berubah.
+
+**Aksen tenant.** Sekolah yang mengganti warna mereknya tetap menimpa `--color-accent`/`--color-accent-fg` lewat `--tenant-accent`/`--tenant-accent-dark` (`TenantProvider`, `lib/tenant/accent.ts`); default platform sekarang `#0F7A5F`, bukan navy `#1F3A5F` lama. Token turunan (`accent-soft`, `accent-strong`, warna kategori) sengaja tetap milik sistem, bukan ikut warna tenant -- itu bahasa dekoratif platform, sama seperti warna kategori lain, dan komponen yang butuh warna tenant murni (garis penanda item aktif di sidebar, gradasi panel login) tetap membaca `--color-accent` langsung.
+
+**Radius.** Kartu `--radius-lg` (20px), kontrol (tombol, input, popover) `--radius-md` (14px), badge/pill/tab aktif/avatar `--radius-full`. Elemen kecil (checkbox, skeleton) tetap `--radius-xs`/`--radius-sm`.
+
+**Tipografi.** Manrope (600/700/800) untuk judul dan angka besar (`font-heading`), Plus Jakarta Sans (400-700) untuk teks isi (`font-sans`) -- keduanya dimuat via `next/font` (self-hosted, sesuai `font-src 'self'` di CSP), menggantikan "Inter" yang sebelumnya cuma disebut di fallback tanpa pernah benar-benar dimuat.
+
+**Komponen bersama** (`packages/ui`) yang sudah dipetakan ke token ini: `Button` (varian primary/secondary/ghost/danger, tinggi sentuh 44px), `Card` (baru: `CardHeader`/`Title`/`Description`/`Content`/`Footer`), `Badge` (pill lembut per kategori/semantik), `Input`/`Select`/`Textarea`, `Tabs` (pill aktif), `Avatar` (inisial dari palet kategori), `Stat`/`StatGrid` (ikon-dalam-lingkaran + angka Manrope), `DataTable` (kontainer kartu, hover baris, seleksi lembut), `Dialog`/`Sheet`, `EmptyState`. `Toast` dan komponen unggah berkas sengaja tidak disentuh (dimiliki tugas lain saat ini).
 
 ## 1. Persona dan tugas utama
 
