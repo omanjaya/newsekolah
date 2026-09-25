@@ -188,7 +188,8 @@
     "platform": {
       "label": "Platform",
       "items": {
-        "tenants": "Schools"
+        "tenants": "Schools",
+        "operatorAlerts": "Operator Alerts"
       }
     },
     "compact": {

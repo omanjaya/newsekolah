@@ -17,7 +17,7 @@ import (
 // single-tenant mode none of them should ever be reached, so a nil
 // dereference inside a test case is itself proof the guard was skipped.
 func newGuardedService(mode config.TenancyMode) *Service {
-	return New(nil, nil, nil, nil, nil, clock.Frozen{At: time.Unix(0, 0)}, mode, "")
+	return New(nil, nil, nil, nil, nil, clock.Frozen{At: time.Unix(0, 0)}, mode, "", nil)
 }
 
 // TestTenancyModeRefusal is the table test the task calls for: every

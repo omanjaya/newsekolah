@@ -1115,6 +1115,29 @@ type NotificationsDefault struct {
 	CreatedAt      pgtype.Timestamptz `json:"created_at"`
 }
 
+type OperatorAlertSetting struct {
+	ID                        int16              `json:"id"`
+	Enabled                   bool               `json:"enabled"`
+	TelegramBotTokenEncrypted []byte             `json:"telegram_bot_token_encrypted"`
+	TelegramBotTokenKeyID     string             `json:"telegram_bot_token_key_id"`
+	TelegramChatID            string             `json:"telegram_chat_id"`
+	CheckHealth               bool               `json:"check_health"`
+	CheckContainers           bool               `json:"check_containers"`
+	CheckDisk                 bool               `json:"check_disk"`
+	CheckMemory               bool               `json:"check_memory"`
+	CheckBackup               bool               `json:"check_backup"`
+	CheckCertificate          bool               `json:"check_certificate"`
+	CheckErrors5xx            bool               `json:"check_errors_5xx"`
+	DiskThresholdPercent      int16              `json:"disk_threshold_percent"`
+	MemoryThresholdMb         int32              `json:"memory_threshold_mb"`
+	BackupMaxAgeHours         int32              `json:"backup_max_age_hours"`
+	CertExpiryDays            int32              `json:"cert_expiry_days"`
+	DailySummaryEnabled       bool               `json:"daily_summary_enabled"`
+	DailySummaryHour          int16              `json:"daily_summary_hour"`
+	UpdatedAt                 pgtype.Timestamptz `json:"updated_at"`
+	UpdatedBy                 pgtype.UUID        `json:"updated_by"`
+}
+
 type PasswordReset struct {
 	ID        uuid.UUID          `json:"id"`
 	TenantID  uuid.UUID          `json:"tenant_id"`

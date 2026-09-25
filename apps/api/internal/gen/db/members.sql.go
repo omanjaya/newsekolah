@@ -397,7 +397,7 @@ type ListLibraryMemberCandidatesRow struct {
 	UserName string    `json:"user_name"`
 }
 
-// Users of one role (student|teacher|staff|parent) not yet registered as a
+// Users of one role (student|teacher|staff) not yet registered as a
 // library member, optionally narrowed to one class (role must be student
 // when class_id is set) -- the bulk-register candidate list (old app
 // library_members.go:783-859).

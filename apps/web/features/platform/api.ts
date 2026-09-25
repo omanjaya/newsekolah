@@ -14,6 +14,13 @@ export type PlatformModule = components["schemas"]["PlatformModule"];
 export type PlatformModuleFlag = components["schemas"]["PlatformModuleFlag"];
 export type PlatformExport = components["schemas"]["PlatformExport"];
 export type PlatformEducationLevel = components["schemas"]["PlatformEducationLevel"];
+export type PlatformOperatorAlertSettings = components["schemas"]["PlatformOperatorAlertSettings"];
+export type PlatformOperatorAlertSettingsUpdate =
+  components["schemas"]["PlatformOperatorAlertSettingsUpdate"];
+export type PlatformOperatorAlertChatCandidate =
+  components["schemas"]["PlatformOperatorAlertChatCandidate"];
+export type PlatformOperatorAlertTestResult =
+  components["schemas"]["PlatformOperatorAlertTestResult"];
 
 /**
  * Query keys local to this feature (not added to the shared
@@ -26,6 +33,7 @@ const keys = {
   flags: (tenantId: string) => ["platform", "tenants", tenantId, "flags"] as const,
   export: (tenantId: string, exportId: string) =>
     ["platform", "tenants", tenantId, "exports", exportId] as const,
+  operatorAlerts: () => ["platform", "operator-alerts"] as const,
 };
 
 function useInvalidatePlatform() {
@@ -152,5 +160,41 @@ export function useExportQuery(tenantId: string, exportId: string) {
       const status = query.state.data?.status;
       return status === "pending" || status === "running" ? 2000 : false;
     },
+  });
+}
+
+export function useOperatorAlertSettingsQuery() {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: keys.operatorAlerts(),
+    queryFn: () => client.GET("/v1/platform/operator-alerts"),
+  });
+}
+
+export function useUpdateOperatorAlertSettingsMutation() {
+  const client = useApiClient();
+  const invalidate = useInvalidatePlatform();
+  return useMutation({
+    mutationFn: (body: PlatformOperatorAlertSettingsUpdate) =>
+      client.PUT("/v1/platform/operator-alerts", { body }),
+    onSuccess: invalidate,
+  });
+}
+
+/** Pass an empty string to preview candidate chats for the currently stored token. */
+export function useDetectOperatorAlertChatMutation() {
+  const client = useApiClient();
+  return useMutation({
+    mutationFn: (telegramToken: string) =>
+      client.POST("/v1/platform/operator-alerts/detect-chat", {
+        body: telegramToken ? { telegram_token: telegramToken } : {},
+      }),
+  });
+}
+
+export function useTestOperatorAlertMutation() {
+  const client = useApiClient();
+  return useMutation({
+    mutationFn: () => client.POST("/v1/platform/operator-alerts/test"),
   });
 }

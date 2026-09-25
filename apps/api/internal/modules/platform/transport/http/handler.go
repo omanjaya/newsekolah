@@ -19,14 +19,18 @@ type PlatformHandler struct{ service *service.Service }
 func New(svc *service.Service) *PlatformHandler { return &PlatformHandler{service: svc} }
 
 var errorMap = map[error]*httpx.Error{
-	domain.ErrTenancyDisabled: httpx.ErrPlatformTenancyDisabled,
-	domain.ErrTenantNotFound:  httpx.ErrPlatformTenantNotFound,
-	domain.ErrSlugTaken:       httpx.ErrPlatformSlugTaken,
-	domain.ErrDomainTaken:     httpx.ErrPlatformDomainTaken,
-	domain.ErrUnknownModule:   httpx.ErrPlatformUnknownModule,
-	domain.ErrExportNotFound:  httpx.ErrPlatformExportNotFound,
-	domain.ErrStorageDisabled: httpx.ErrPlatformStorageDisabled,
-	domain.ErrInvalidInput:    httpx.ErrValidation,
+	domain.ErrTenancyDisabled:      httpx.ErrPlatformTenancyDisabled,
+	domain.ErrTenantNotFound:       httpx.ErrPlatformTenantNotFound,
+	domain.ErrSlugTaken:            httpx.ErrPlatformSlugTaken,
+	domain.ErrDomainTaken:          httpx.ErrPlatformDomainTaken,
+	domain.ErrUnknownModule:        httpx.ErrPlatformUnknownModule,
+	domain.ErrExportNotFound:       httpx.ErrPlatformExportNotFound,
+	domain.ErrStorageDisabled:      httpx.ErrPlatformStorageDisabled,
+	domain.ErrInvalidInput:         httpx.ErrValidation,
+	domain.ErrTelegramTokenMissing: httpx.ErrPlatformTelegramTokenMissing,
+	domain.ErrTelegramChatMissing:  httpx.ErrPlatformTelegramChatMissing,
+	domain.ErrTelegramAPI:          httpx.ErrPlatformTelegramAPIError,
+	domain.ErrTelegramRequest:      httpx.ErrPlatformTelegramUnreachable,
 }
 
 func mapError(err error) error {
@@ -192,4 +196,91 @@ func (h *PlatformHandler) GetPlatformTenantExport(ctx context.Context, request a
 		return nil, mapError(err)
 	}
 	return api.GetPlatformTenantExport200JSONResponse(toAPIExport(view)), nil
+}
+
+func toAPIOperatorAlertSettings(view domain.OperatorAlertSettingsView) api.PlatformOperatorAlertSettings {
+	out := api.PlatformOperatorAlertSettings{
+		Enabled: view.Enabled, TelegramChatId: view.TelegramChatID, TelegramTokenSet: view.TelegramTokenSet,
+		CheckHealth: view.CheckHealth, CheckContainers: view.CheckContainers, CheckDisk: view.CheckDisk,
+		CheckMemory: view.CheckMemory, CheckBackup: view.CheckBackup, CheckCertificate: view.CheckCertificate,
+		CheckErrors5xx:       view.CheckErrors5xx,
+		DiskThresholdPercent: view.DiskThresholdPercent, MemoryThresholdMb: view.MemoryThresholdMB,
+		BackupMaxAgeHours: view.BackupMaxAgeHours, CertExpiryDays: view.CertExpiryDays,
+		DailySummaryEnabled: view.DailySummaryEnabled, DailySummaryHour: view.DailySummaryHour,
+		UpdatedAt: view.UpdatedAt,
+	}
+	if view.TelegramTokenHint != "" {
+		out.TelegramTokenHint = &view.TelegramTokenHint
+	}
+	if view.UpdatedBy.Valid {
+		id := openapi_types.UUID(view.UpdatedBy.UUID)
+		out.UpdatedBy = &id
+	}
+	return out
+}
+
+func (h *PlatformHandler) GetPlatformOperatorAlertSettings(ctx context.Context, _ api.GetPlatformOperatorAlertSettingsRequestObject) (api.GetPlatformOperatorAlertSettingsResponseObject, error) {
+	view, err := h.service.GetOperatorAlertSettings(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return api.GetPlatformOperatorAlertSettings200JSONResponse(toAPIOperatorAlertSettings(view)), nil
+}
+
+func (h *PlatformHandler) UpdatePlatformOperatorAlertSettings(ctx context.Context, request api.UpdatePlatformOperatorAlertSettingsRequestObject) (api.UpdatePlatformOperatorAlertSettingsResponseObject, error) {
+	b := request.Body
+	patch := domain.OperatorAlertSettingsPatch{
+		Enabled: b.Enabled, TelegramToken: b.TelegramToken, TelegramChatID: b.TelegramChatId,
+		CheckHealth: b.CheckHealth, CheckContainers: b.CheckContainers, CheckDisk: b.CheckDisk,
+		CheckMemory: b.CheckMemory, CheckBackup: b.CheckBackup, CheckCertificate: b.CheckCertificate,
+		CheckErrors5xx:       b.CheckErrors5xx,
+		DiskThresholdPercent: b.DiskThresholdPercent, MemoryThresholdMB: b.MemoryThresholdMb,
+		BackupMaxAgeHours: b.BackupMaxAgeHours, CertExpiryDays: b.CertExpiryDays,
+		DailySummaryEnabled: b.DailySummaryEnabled, DailySummaryHour: b.DailySummaryHour,
+	}
+	if b.TelegramTokenClear != nil {
+		patch.ClearTelegramToken = *b.TelegramTokenClear
+	}
+
+	actorUserID, _ := httpx.UserIDFromContext(ctx)
+	view, err := h.service.UpdateOperatorAlertSettings(ctx, actorUserID, patch)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return api.UpdatePlatformOperatorAlertSettings200JSONResponse(toAPIOperatorAlertSettings(view)), nil
+}
+
+func (h *PlatformHandler) DetectPlatformOperatorAlertChat(ctx context.Context, request api.DetectPlatformOperatorAlertChatRequestObject) (api.DetectPlatformOperatorAlertChatResponseObject, error) {
+	var override string
+	if request.Body != nil && request.Body.TelegramToken != nil {
+		override = *request.Body.TelegramToken
+	}
+	candidates, err := h.service.DetectOperatorAlertChats(ctx, override)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	data := make([]api.PlatformOperatorAlertChatCandidate, len(candidates))
+	for i, c := range candidates {
+		data[i] = api.PlatformOperatorAlertChatCandidate{Id: c.ID, Type: c.Type, Title: c.Title}
+	}
+	return api.DetectPlatformOperatorAlertChat200JSONResponse{Data: data}, nil
+}
+
+func (h *PlatformHandler) TestPlatformOperatorAlert(ctx context.Context, _ api.TestPlatformOperatorAlertRequestObject) (api.TestPlatformOperatorAlertResponseObject, error) {
+	err := h.service.SendTestOperatorAlert(ctx)
+	if err == nil {
+		return api.TestPlatformOperatorAlert200JSONResponse{Success: true}, nil
+	}
+	// domain.ErrTelegramTokenMissing/ErrTelegramChatMissing are
+	// configuration problems (the console should not even have shown the
+	// "send test" button), so they still map to a request error. Only
+	// Telegram's own answer (ErrTelegramAPI) and a failure to reach it
+	// (ErrTelegramRequest) are reported inside the 200 body, per this
+	// operation's contract: a failed test send is Telegram's answer, not
+	// this request failing.
+	if errors.Is(err, domain.ErrTelegramTokenMissing) || errors.Is(err, domain.ErrTelegramChatMissing) {
+		return nil, mapError(err)
+	}
+	msg := err.Error()
+	return api.TestPlatformOperatorAlert200JSONResponse{Success: false, Error: &msg}, nil
 }

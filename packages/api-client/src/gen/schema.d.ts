@@ -6643,6 +6643,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/platform/operator-alerts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Platform-wide operator alerting settings (Telegram), never the bot token */
+        get: operations["getPlatformOperatorAlertSettings"];
+        /** Partially update operator alerting settings */
+        put: operations["updatePlatformOperatorAlertSettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform/operator-alerts/detect-chat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** List candidate Telegram chats from the bot's recent updates */
+        post: operations["detectPlatformOperatorAlertChat"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform/operator-alerts/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send a test message to the configured Telegram chat */
+        post: operations["testPlatformOperatorAlert"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/reports": {
         parameters: {
             query?: never;
@@ -11200,6 +11252,62 @@ export interface components {
             created_at: string;
             /** Format: date-time */
             completed_at?: string;
+        };
+        PlatformOperatorAlertSettings: {
+            enabled: boolean;
+            telegram_chat_id: string;
+            telegram_token_set: boolean;
+            /** @description Masked hint of the stored token (e.g. "****1234"); absent when no token is stored. */
+            telegram_token_hint?: string;
+            check_health: boolean;
+            check_containers: boolean;
+            check_disk: boolean;
+            check_memory: boolean;
+            check_backup: boolean;
+            check_certificate: boolean;
+            check_errors_5xx: boolean;
+            disk_threshold_percent: number;
+            memory_threshold_mb: number;
+            backup_max_age_hours: number;
+            cert_expiry_days: number;
+            daily_summary_enabled: boolean;
+            daily_summary_hour: number;
+            /** Format: date-time */
+            updated_at: string;
+            /** Format: uuid */
+            updated_by?: string;
+        };
+        PlatformOperatorAlertSettingsUpdate: {
+            enabled?: boolean;
+            /** @description A new token to seal and store, replacing any existing one. */
+            telegram_token?: string;
+            /** @description Set true to remove the stored token. Mutually exclusive with telegram_token. */
+            telegram_token_clear?: boolean;
+            telegram_chat_id?: string;
+            check_health?: boolean;
+            check_containers?: boolean;
+            check_disk?: boolean;
+            check_memory?: boolean;
+            check_backup?: boolean;
+            check_certificate?: boolean;
+            check_errors_5xx?: boolean;
+            disk_threshold_percent?: number;
+            memory_threshold_mb?: number;
+            backup_max_age_hours?: number;
+            cert_expiry_days?: number;
+            daily_summary_enabled?: boolean;
+            daily_summary_hour?: number;
+        };
+        PlatformOperatorAlertChatCandidate: {
+            /** Format: int64 */
+            id: number;
+            type: string;
+            title: string;
+        };
+        PlatformOperatorAlertTestResult: {
+            success: boolean;
+            /** @description Telegram's own error description when success is false. Never the token. */
+            error?: string;
         };
         /** @enum {string} */
         ReportArgumentKind: "class" | "grade_level" | "subject" | "date" | "term";
@@ -25630,6 +25738,110 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+        };
+    };
+    getPlatformOperatorAlertSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Operator alert settings */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformOperatorAlertSettings"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    updatePlatformOperatorAlertSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlatformOperatorAlertSettingsUpdate"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformOperatorAlertSettings"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    detectPlatformOperatorAlertChat: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** @description Test a token that has not been saved yet. Omitted: uses the currently stored token. */
+                    telegram_token?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Candidate chats */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["PlatformOperatorAlertChatCandidate"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    testPlatformOperatorAlert: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Result of the attempt. Always 200: success=false with an error description is not a request failure, it is Telegram's answer. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformOperatorAlertTestResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
         };
     };
     listReports: {

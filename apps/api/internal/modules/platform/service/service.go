@@ -18,6 +18,7 @@ import (
 	"github.com/omanjaya/newsekolah/apps/api/internal/modules/platform/domain"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/clock"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/config"
+	"github.com/omanjaya/newsekolah/apps/api/internal/platform/crypto"
 	"github.com/omanjaya/newsekolah/apps/api/internal/platform/database"
 )
 
@@ -43,6 +44,9 @@ type Repository interface {
 	ExportUsersCSV(ctx context.Context, tenantID uuid.UUID) ([][]string, error)
 	ExportAcademicYearsCSV(ctx context.Context, tenantID uuid.UUID) ([][]string, error)
 	ExportClassesCSV(ctx context.Context, tenantID uuid.UUID) ([][]string, error)
+
+	GetOperatorAlertSettings(ctx context.Context) (EncryptedOperatorAlertSettingsRow, error)
+	UpdateOperatorAlertSettings(ctx context.Context, row EncryptedOperatorAlertSettingsRow) (EncryptedOperatorAlertSettingsRow, error)
 }
 
 // AdminInput is what the console asks for about a new tenant's first
@@ -103,10 +107,16 @@ type Service struct {
 	clock   clock.Clock
 	mode    config.TenancyMode
 	bucket  string
+	// alertsSealer seals/opens the operator alerts Telegram bot token
+	// (operator_alerts.go), the same crypto.Sealer counseling notes use.
+	// nil in a process that never wired one (e.g. some unit tests), in
+	// which case a token write refuses with errSealerNotConfigured instead
+	// of silently storing plaintext.
+	alertsSealer *crypto.Sealer
 }
 
-func New(pool *pgxpool.Pool, repo Repository, admin IdentityProvisioner, jobs JobInserter, storage Storage, clk clock.Clock, mode config.TenancyMode, bucket string) *Service {
-	return &Service{pool: pool, repo: repo, admin: admin, jobs: jobs, storage: storage, clock: clk, mode: mode, bucket: bucket}
+func New(pool *pgxpool.Pool, repo Repository, admin IdentityProvisioner, jobs JobInserter, storage Storage, clk clock.Clock, mode config.TenancyMode, bucket string, alertsSealer *crypto.Sealer) *Service {
+	return &Service{pool: pool, repo: repo, admin: admin, jobs: jobs, storage: storage, clock: clk, mode: mode, bucket: bucket, alertsSealer: alertsSealer}
 }
 
 // guard refuses every operation outright in single-tenant mode: one school
