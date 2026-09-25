@@ -8,7 +8,7 @@
 // of the platform_superadmin console API, has no user session, and is
 // authenticated by a single shared secret instead
 // (config.Config.MonitorAPIToken, compared in constant time against the
-// request's X-Monitor-Token header). It is also outside /v1, and the
+// request's X-Monitor-Token or Authorization: Bearer header). It is also outside /v1, and the
 // system Caddy on a shared VPS only proxies /v1, /health and /ws to the
 // API (infra/README.md "Shared system Caddy (VPS)") -- so on that
 // deployment shape this endpoint is reachable only through the API
@@ -28,6 +28,7 @@ package main
 import (
 	"crypto/subtle"
 	"net/http"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 
@@ -38,32 +39,40 @@ import (
 
 // monitorConfigResponse is the JSON body GET /internal/monitor-config
 // returns: every operator alert setting, plus the decrypted Telegram bot
-// token. Field names match the platform console's own PlatformOperatorAlertSettings
-// schema (openapi/modules/platform.yaml) wherever a field exists on both,
-// so infra/scripts/monitor.sh and the console agree on vocabulary, with
-// telegram_bot_token added and telegram_token_set/telegram_token_hint
-// dropped (the monitor script needs the token itself, not a hint of it).
+// token. Its nested shape is the contract infra/scripts/lib/monitor-lib.sh
+// parses with jq (checks.*, thresholds.*, daily_summary.*); change both
+// together.
 type monitorConfigResponse struct {
 	Enabled bool `json:"enabled"`
 
 	TelegramBotToken string `json:"telegram_bot_token"`
 	TelegramChatID   string `json:"telegram_chat_id"`
 
-	CheckHealth      bool `json:"check_health"`
-	CheckContainers  bool `json:"check_containers"`
-	CheckDisk        bool `json:"check_disk"`
-	CheckMemory      bool `json:"check_memory"`
-	CheckBackup      bool `json:"check_backup"`
-	CheckCertificate bool `json:"check_certificate"`
-	CheckErrors5xx   bool `json:"check_errors_5xx"`
+	Checks       monitorChecks       `json:"checks"`
+	Thresholds   monitorThresholds   `json:"thresholds"`
+	DailySummary monitorDailySummary `json:"daily_summary"`
+}
 
-	DiskThresholdPercent int `json:"disk_threshold_percent"`
-	MemoryThresholdMB    int `json:"memory_threshold_mb"`
-	BackupMaxAgeHours    int `json:"backup_max_age_hours"`
-	CertExpiryDays       int `json:"cert_expiry_days"`
+type monitorChecks struct {
+	Health      bool `json:"health"`
+	Containers  bool `json:"containers"`
+	Disk        bool `json:"disk"`
+	Memory      bool `json:"memory"`
+	Backup      bool `json:"backup"`
+	Certificate bool `json:"certificate"`
+	Errors5xx   bool `json:"errors_5xx"`
+}
 
-	DailySummaryEnabled bool `json:"daily_summary_enabled"`
-	DailySummaryHour    int  `json:"daily_summary_hour"`
+type monitorThresholds struct {
+	DiskPercent       int `json:"disk_percent"`
+	MemoryMB          int `json:"memory_mb"`
+	BackupMaxAgeHours int `json:"backup_max_age_hours"`
+	CertDays          int `json:"cert_days"`
+}
+
+type monitorDailySummary struct {
+	Enabled  bool `json:"enabled"`
+	HourWITA int  `json:"hour_wita"`
 }
 
 func toMonitorConfigResponse(cfg domain.OperatorAlertConfig) monitorConfigResponse {
@@ -73,15 +82,30 @@ func toMonitorConfigResponse(cfg domain.OperatorAlertConfig) monitorConfigRespon
 		TelegramBotToken: cfg.TelegramBotToken,
 		TelegramChatID:   cfg.TelegramChatID,
 
-		CheckHealth: cfg.CheckHealth, CheckContainers: cfg.CheckContainers, CheckDisk: cfg.CheckDisk,
-		CheckMemory: cfg.CheckMemory, CheckBackup: cfg.CheckBackup, CheckCertificate: cfg.CheckCertificate,
-		CheckErrors5xx: cfg.CheckErrors5xx,
-
-		DiskThresholdPercent: cfg.DiskThresholdPercent, MemoryThresholdMB: cfg.MemoryThresholdMB,
-		BackupMaxAgeHours: cfg.BackupMaxAgeHours, CertExpiryDays: cfg.CertExpiryDays,
-
-		DailySummaryEnabled: cfg.DailySummaryEnabled, DailySummaryHour: cfg.DailySummaryHour,
+		Checks: monitorChecks{
+			Health: cfg.CheckHealth, Containers: cfg.CheckContainers, Disk: cfg.CheckDisk,
+			Memory: cfg.CheckMemory, Backup: cfg.CheckBackup, Certificate: cfg.CheckCertificate,
+			Errors5xx: cfg.CheckErrors5xx,
+		},
+		Thresholds: monitorThresholds{
+			DiskPercent: cfg.DiskThresholdPercent, MemoryMB: cfg.MemoryThresholdMB,
+			BackupMaxAgeHours: cfg.BackupMaxAgeHours, CertDays: cfg.CertExpiryDays,
+		},
+		DailySummary: monitorDailySummary{Enabled: cfg.DailySummaryEnabled, HourWITA: cfg.DailySummaryHour},
 	}
+}
+
+// monitorToken returns the shared secret from either header the monitor
+// script may send: "Authorization: Bearer <token>" (what monitor-lib.sh
+// uses) or "X-Monitor-Token: <token>".
+func monitorToken(r *http.Request) string {
+	if v := r.Header.Get("X-Monitor-Token"); v != "" {
+		return v
+	}
+	if v, ok := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer "); ok {
+		return v
+	}
+	return ""
 }
 
 // mountMonitorConfigRoute wires GET /internal/monitor-config onto router
@@ -97,7 +121,7 @@ func mountMonitorConfigRoute(router chi.Router, svc *service.Service, token stri
 
 func monitorConfigHandler(svc *service.Service, token string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		supplied := r.Header.Get("X-Monitor-Token")
+		supplied := monitorToken(r)
 		if supplied == "" || subtle.ConstantTimeCompare([]byte(supplied), []byte(token)) != 1 {
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return

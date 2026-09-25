@@ -151,5 +151,16 @@ func TestMonitorConfigEndpoint(t *testing.T) {
 		// allowed (expected) to carry the field, just never a stale/wrong
 		// value silently.
 		require.Contains(t, config, "telegram_bot_token")
+		// Nested shape parsed by infra/scripts/lib/monitor-lib.sh.
+		require.Contains(t, config, "checks")
+		require.Contains(t, config, "thresholds")
+		require.Contains(t, config, "daily_summary")
+		require.Contains(t, config["checks"], "errors_5xx")
+		require.Contains(t, config["thresholds"], "disk_percent")
+		require.Contains(t, config["daily_summary"], "hour_wita")
+
+		rec = doJSON(t, router, http.MethodGet, "/internal/monitor-config", nil,
+			map[string]string{"Authorization": "Bearer " + cfg.MonitorAPIToken})
+		require.Equal(t, http.StatusOK, rec.Code, "the monitor script's Bearer header must be accepted")
 	})
 }
