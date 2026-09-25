@@ -142,7 +142,10 @@
         "activeAccountLabel": "akun aktif",
         "queueType": "Jenis pengajuan",
         "queueCount": "Menunggu",
-        "openQueue": "Buka antrean"
+        "openQueue": "Buka antrean",
+        "attendanceTodayTitle": "Presensi kelas berjalan",
+        "attendanceTodayProgress": "{submitted} dari {total} kelas sudah presensi",
+        "attendanceTodayEmpty": "Tidak ada kelas yang sedang berjalan saat ini."
       },
       "overviewNote": "Ringkasan operasional dan informasi sekolah hari ini.",
       "tasksNote": "Antrean yang membutuhkan tindakan Anda"

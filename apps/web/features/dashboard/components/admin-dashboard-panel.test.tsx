@@ -37,6 +37,34 @@ describe("dashboard operational sections", () => {
     expect(screen.queryByRole("table")).not.toBeInTheDocument();
   });
 
+  it("shows the classes-in-session attendance progress on the summary panel", () => {
+    query.mockReturnValue({
+      data: {
+        active_users: { teacher: 5, staff: 2, student: 40 },
+        attendance_today: { submitted: 3, total: 5 },
+      },
+    });
+    render(<AdminDashboardPanel roles={roles} section="summary" />);
+    expect(screen.getByText("attendanceTodayProgress")).toBeInTheDocument();
+  });
+
+  it("shows an empty state when no class is currently in session", () => {
+    query.mockReturnValue({
+      data: {
+        active_users: { teacher: 5, staff: 2, student: 40 },
+        attendance_today: { submitted: 0, total: 0 },
+      },
+    });
+    render(<AdminDashboardPanel roles={roles} section="summary" />);
+    expect(screen.getByText("attendanceTodayEmpty")).toBeInTheDocument();
+  });
+
+  it("falls back to the empty state when attendance_today is missing entirely", () => {
+    query.mockReturnValue({ data: { active_users: { teacher: 5, staff: 2, student: 40 } } });
+    render(<AdminDashboardPanel roles={roles} section="summary" />);
+    expect(screen.getByText("attendanceTodayEmpty")).toBeInTheDocument();
+  });
+
   it("keeps request types and pending counts together in the queue table", () => {
     query.mockReturnValue({
       data: { pending: { leave_request: 3, exit_permit: 2, late_arrival: 0 } },

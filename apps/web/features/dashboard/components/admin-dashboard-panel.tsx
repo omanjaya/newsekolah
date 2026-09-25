@@ -58,6 +58,7 @@ export function AdminDashboardPanel({
     );
 
   if (section === "summary") {
+    const attendanceToday = data.attendance_today;
     return (
       <section
         aria-label={t("activeUsersTitle")}
@@ -77,6 +78,21 @@ export function AdminDashboardPanel({
             </div>
           ))}
         </dl>
+        {/* attendance.submitted (docs/analysis/realtime-plan-2026-09-25.md
+            section 2 opportunity #6) live-invalidates this panel's query
+            (useAdminDashboardLive) -- this is the only content on the
+            dashboard that figure ever actually changes. */}
+        <div className="flex items-center justify-between gap-3 border-t border-border px-3 py-2.5 text-[13px] sm:px-4">
+          <span className="text-fg-muted">{t("attendanceTodayTitle")}</span>
+          <span className="tabular-nums text-fg">
+            {attendanceToday && attendanceToday.total > 0
+              ? t("attendanceTodayProgress", {
+                  submitted: attendanceToday.submitted,
+                  total: attendanceToday.total,
+                })
+              : t("attendanceTodayEmpty")}
+          </span>
+        </div>
       </section>
     );
   }

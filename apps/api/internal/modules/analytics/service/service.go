@@ -33,6 +33,10 @@ type AcademicYearReader interface {
 // "Komunikasi antar modul").
 type AttendanceReader interface {
 	MonthlySummary(ctx context.Context, tenantID, studentID uuid.UUID, month string) ([]DayStatus, error)
+	// TodaySubmittedCount backs the admin dashboard's attendance-progress
+	// figure: how many classes with a session running right now have
+	// submitted attendance, out of how many such classes exist.
+	TodaySubmittedCount(ctx context.Context, tenantID uuid.UUID) (submitted, total int, err error)
 }
 
 // DayStatus is one calendar day's materialized attendance status for a

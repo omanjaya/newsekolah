@@ -142,7 +142,10 @@
         "activeAccountLabel": "active accounts",
         "queueType": "Request type",
         "queueCount": "Pending",
-        "openQueue": "Open queue"
+        "openQueue": "Open queue",
+        "attendanceTodayTitle": "Attendance in progress",
+        "attendanceTodayProgress": "{submitted} of {total} classes have submitted",
+        "attendanceTodayEmpty": "No class is currently in session."
       },
       "overviewNote": "Today’s school operations and updates.",
       "tasksNote": "Queues assigned to you"

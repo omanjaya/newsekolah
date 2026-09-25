@@ -87,6 +87,40 @@ func (s *Service) GetMonitorSnapshot(ctx context.Context, tenantID uuid.UUID) (M
 	return out, err
 }
 
+// TodaySubmittedCount reports how many classes with a session running
+// right now have already submitted attendance, out of how many such
+// classes exist -- the same "current period" scope GetMonitorSnapshot
+// uses for its cards, reused here instead of a new query so the admin/
+// principal dashboard's progress figure (docs/analysis/realtime-plan-
+// 2026-09-25.md section 2 opportunity #6) always agrees with what
+// /monitor shows for the same moment. A class with no schedule right now
+// is excluded from total, since it can never be "submitted" or not.
+func (s *Service) TodaySubmittedCount(ctx context.Context, tenantID uuid.UUID) (submitted, total int, err error) {
+	err = s.withTx(ctx, tenantID, func(ctx context.Context) error {
+		yearID, err := s.activeAcademicYear(ctx, tenantID)
+		if err != nil {
+			return err
+		}
+		loc := s.tenantLocation(ctx, tenantID)
+		now := s.clock.Now().In(loc)
+		today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, loc)
+		dayOfWeek := domain.IsoWeekday(now)
+
+		cards, err := s.repo.ListCurrentPeriodScheduleCards(ctx, tenantID, yearID, dayOfWeek, today, now)
+		if err != nil {
+			return err
+		}
+		total = len(cards)
+		for _, c := range cards {
+			if c.Submitted {
+				submitted++
+			}
+		}
+		return nil
+	})
+	return submitted, total, err
+}
+
 // GetMonitorPresence reports who currently has a realtime socket open, per
 // the injected PresenceReader -- platform/realtime's Presence tracker if
 // the caller wired one in, or a plain hub connection count otherwise (see

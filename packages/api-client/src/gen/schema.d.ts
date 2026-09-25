@@ -8492,6 +8492,12 @@ export interface components {
             };
             /** @description Exactly 24 entries, index = UTC hour of day, value = successful logins in that hour over the last 7 days. */
             login_histogram: number[];
+            attendance_today?: components["schemas"]["AttendanceTodayProgress"];
+        };
+        /** @description How many classes with a session running right now have submitted attendance, out of how many such classes exist. Both zero when nothing is currently in session. */
+        AttendanceTodayProgress: {
+            submitted: number;
+            total: number;
         };
         /** @enum {string} */
         RiskLevel: "none" | "watch" | "at_risk";
