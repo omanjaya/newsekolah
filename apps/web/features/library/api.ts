@@ -7,6 +7,8 @@ import { getAccessToken } from "../../lib/api/access-token";
 import { useApiClient } from "../../lib/api/client";
 import { API_URL } from "../../lib/env";
 
+import { useMemberReservationsLive } from "./realtime";
+
 export type LibraryTitle = components["schemas"]["LibraryTitle"];
 export type LibraryTitleWrite = components["schemas"]["LibraryTitleWrite"];
 export type LibraryCopy = components["schemas"]["LibraryCopy"];
@@ -330,6 +332,7 @@ export function useReservationQueueQuery(titleId: string) {
 
 export function useMemberReservationsQuery(userId: string) {
   const client = useApiClient();
+  useMemberReservationsLive(userId);
   return useQuery({
     queryKey: keys.memberReservations(userId),
     queryFn: () =>

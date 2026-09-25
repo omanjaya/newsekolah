@@ -56,6 +56,7 @@ function useLiveSocketConnection(): RealtimeConnection {
   return connection;
 }
 
-// Exported only for the two hook modules in this directory -- screens
-// import useLiveInvalidate/useLiveTopic, never this.
+// Exported only for the hook modules in this directory (useLiveInvalidate,
+// useLiveTopic, useLiveTopics, useLiveEvent) -- screens import those,
+// never this.
 export { useLiveSocketConnection };

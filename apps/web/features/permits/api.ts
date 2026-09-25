@@ -5,6 +5,16 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { useApiClient } from "../../lib/api/client";
 
+import {
+  useExitPermitDetailLive,
+  useExitPermitReviewQueueLive,
+  useLateArrivalQueueLive,
+  useLeaveReviewQueueLive,
+  useLeaveRequestDetailLive,
+  useMyExitPermitsLive,
+  useMyLeaveRequestsLive,
+} from "./realtime";
+
 export type WorkflowInstance = components["schemas"]["WorkflowInstance"];
 export type ExitPermitDetail = components["schemas"]["ExitPermitDetail"];
 export type ExitPermitSummary = components["schemas"]["ExitPermitSummary"];
@@ -69,6 +79,7 @@ export function useScanClassroomEntryMutation() {
 
 export function useMyExitPermitsQuery(enabled = true) {
   const client = useApiClient();
+  useMyExitPermitsLive();
   return useQuery({
     queryKey: queryKeys.exitPermits(),
     queryFn: () => client.GET("/v1/exit-permits", { params: { query: { limit: 50 } } }),
@@ -78,6 +89,7 @@ export function useMyExitPermitsQuery(enabled = true) {
 
 export function useExitPermitQuery(id: string) {
   const client = useApiClient();
+  useExitPermitDetailLive(id);
   return useQuery({
     queryKey: queryKeys.exitPermit(id),
     queryFn: () =>
@@ -93,6 +105,7 @@ export function useExitPermitQuery(id: string) {
 /** Permits waiting at whichever stage the caller's role covers: their own approval, or a security gate scan. */
 export function useExitPermitReviewQueueQuery(enabled = true) {
   const client = useApiClient();
+  useExitPermitReviewQueueLive(enabled);
   return useQuery({
     queryKey: queryKeys.exitPermitReviewQueue(),
     queryFn: () => client.GET("/v1/exit-permits/review-queue"),
@@ -214,6 +227,7 @@ export function useLateArrivalQuery(id: string) {
 
 export function useLateArrivalQueueQuery(enabled = true) {
   const client = useApiClient();
+  useLateArrivalQueueLive(enabled);
   return useQuery({
     queryKey: queryKeys.lateArrivalQueue(),
     queryFn: () => client.GET("/v1/late-arrivals/review-queue"),
@@ -284,6 +298,7 @@ export function useScanLateArrivalStageMutation() {
 
 export function useMyLeaveRequestsQuery(enabled = true) {
   const client = useApiClient();
+  useMyLeaveRequestsLive();
   return useQuery({
     queryKey: queryKeys.leaveRequests(),
     queryFn: () => client.GET("/v1/leave-requests", { params: { query: { limit: 50 } } }),
@@ -293,6 +308,7 @@ export function useMyLeaveRequestsQuery(enabled = true) {
 
 export function useLeaveRequestQuery(id: string) {
   const client = useApiClient();
+  useLeaveRequestDetailLive(id);
   return useQuery({
     queryKey: queryKeys.leaveRequest(id),
     queryFn: () =>
@@ -303,6 +319,7 @@ export function useLeaveRequestQuery(id: string) {
 
 export function useLeaveReviewQueueQuery(enabled = true) {
   const client = useApiClient();
+  useLeaveReviewQueueLive(enabled);
   return useQuery({
     queryKey: queryKeys.leaveReviewQueue(),
     queryFn: () => client.GET("/v1/leave-requests/review-queue"),
