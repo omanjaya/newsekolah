@@ -112,6 +112,11 @@ Keputusan ini sengaja. Jangan diubah balik tanpa membaca alasannya.
 
 Sisa dari pekerjaan ini: redesain layar per peran di web, sekitar 20 layar mobile yang belum memakai font Plus Jakarta Sans, dan kebijakan retensi foto bukti yang menunggu keputusan.
 
+## Pembaruan 27 September: beranda per peran dan data SION di VPS
+
+- **Beranda web per peran** (branch `feat/dashboard-redesign`, spec `docs/superpowers/specs/2026-09-26-dashboard-per-peran-design.md`, rencana `docs/superpowers/plans/2026-09-26-dashboard-per-peran.md`): layout A Hijau Segar (hero "sekarang", 4 `StatTile`, dua kolom), disusun dari blok persona di `apps/web/features/dashboard/home/` (guru, wali kelas, siswa, pimpinan, pustakawan, piket, BK). Komponen baru `HeroCard` dan `StatTile` di `packages/ui`. Diperiksa di browser dengan akun seed; temuan yang diperbaiki: jadwal siswa mengabaikan hari (switch `ListSchedules` di server mendahulukan `class_id` sebelum `day_of_week`, kini difilter di klien; bug server belum disentuh), judul buku siswa memicu 403 (`/v1/library/me` kini menyertakan `title_name`/`title_author`), kartu siswa berisiko digerbang `view_early_warning`, persona pustakawan/piket dari role/duty bukan izin. Sisa: `my-library-reservations.tsx` masih memanggil `/v1/library/titles/{id}` untuk siswa (403 laten).
+- **Data asli SION dimigrasikan ke VPS** lewat `cmd/etl` (sumber: dump `pecalang` dari `sion-legacydb`, data per 28 Agustus 2026) ke tenant `sion`, semester 2025/2026 genap lalu 2026/2027 ganjil, sebagai `app_rw`. Staging dikosongkan lebih dulu (akun demo seed hilang); production dibackup ke `/root/sion-backups/pre-etl-20260926T165247Z.dump`. Hasil identik di keduanya: 2.518 pengguna, 72 kelas, 12.475 sesi dan 159.538 entri presensi, 6.829 jurnal, 13.070 pinjaman; gagal 4.059 (genap) dan 15 (ganjil), semuanya celah sumber yang sudah tercatat di gladi bersih. Tahun ajaran 2026/2027 semester ganjil diaktifkan. Log dan laporan JSON di `/root/sion-backups/etl-20260927/`. Semua akun hasil migrasi berpassword acak dan wajib reset; admin production tidak berubah passwordnya.
+
 ## Yang tersisa
 
 Diurutkan dari yang paling berdampak bagi pengguna.
