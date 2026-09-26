@@ -78,23 +78,31 @@ export function useStudentBlock(me: Me, active: boolean): PersonaBlock {
   }, [periods.data]);
 
   const lessons = useMemo<Lesson[]>(() => {
-    return (schedules.data?.data ?? [])
-      .map((block): Lesson | null => {
-        const start = periodsBySequence.get(block.start_seq);
-        const end = periodsBySequence.get(block.end_seq);
-        if (!start || !end) return null;
-        return {
-          key: block.schedule_ids.join("-"),
-          start: parseClock(start.starts_at),
-          end: parseClock(end.ends_at),
-          startLabel: start.starts_at.slice(0, 5),
-          endLabel: end.ends_at.slice(0, 5),
-          subjectId: block.subject_id,
-          teacherUserId: block.teacher_user_id,
-        };
-      })
-      .filter((lesson): lesson is Lesson => lesson !== null);
-  }, [schedules.data, periodsBySequence]);
+    return (
+      (schedules.data?.data ?? [])
+        // day_of_week alone (sent by useSchedulesQuery) is not enough: the API
+        // ignores it whenever class_id is also present (its ListSchedules
+        // switch matches class_id first), so a class with one lesson per day
+        // otherwise renders every weekday's row as if it were today's. Filter
+        // client-side regardless of what the server already narrowed.
+        .filter((block) => block.day_of_week === dayOfWeek)
+        .map((block): Lesson | null => {
+          const start = periodsBySequence.get(block.start_seq);
+          const end = periodsBySequence.get(block.end_seq);
+          if (!start || !end) return null;
+          return {
+            key: block.schedule_ids.join("-"),
+            start: parseClock(start.starts_at),
+            end: parseClock(end.ends_at),
+            startLabel: start.starts_at.slice(0, 5),
+            endLabel: end.ends_at.slice(0, 5),
+            subjectId: block.subject_id,
+            teacherUserId: block.teacher_user_id,
+          };
+        })
+        .filter((lesson): lesson is Lesson => lesson !== null)
+    );
+  }, [schedules.data, periodsBySequence, dayOfWeek]);
 
   if (!active) return EMPTY_BLOCK;
 

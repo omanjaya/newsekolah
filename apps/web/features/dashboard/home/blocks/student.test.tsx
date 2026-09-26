@@ -228,6 +228,112 @@ describe("useStudentBlock", () => {
     expect(result.current.hero?.chip).toContain("10");
   });
 
+  it("shows only today's lessons and picks the hero from them, ignoring blocks on other weekdays", () => {
+    vi.useFakeTimers();
+    // 2026-09-26T01:30:00Z is 08:30 in Asia/Jakarta (UTC+7), a Saturday
+    // (ISO weekday 6).
+    vi.setSystemTime(new Date("2026-09-26T01:30:00Z"));
+
+    mocks.schedules.mockReturnValue({
+      ...idleQuery,
+      isSuccess: true,
+      data: {
+        data: [
+          // Monday's block: an earlier future start than today's block, so
+          // an unfiltered pick-next would wrongly surface it as the hero.
+          {
+            schedule_ids: ["s-mon"],
+            class_id: "c1",
+            subject_id: "history",
+            teacher_user_id: "t1",
+            day_of_week: 1,
+            start_seq: 3,
+            end_seq: 3,
+            source: "manual",
+          },
+          // Today (Saturday, day_of_week 6): the only block that should
+          // appear in "Jadwal hari ini" and drive the hero.
+          {
+            schedule_ids: ["s-sat"],
+            class_id: "c1",
+            subject_id: "science",
+            teacher_user_id: "t2",
+            day_of_week: 6,
+            start_seq: 4,
+            end_seq: 4,
+            source: "manual",
+          },
+          // Every other weekday repeats the same slot as Monday (the
+          // reported bug: one lesson per day rendered as 7 identical rows).
+          {
+            schedule_ids: ["s-tue"],
+            class_id: "c1",
+            subject_id: "history",
+            teacher_user_id: "t1",
+            day_of_week: 2,
+            start_seq: 3,
+            end_seq: 3,
+            source: "manual",
+          },
+        ],
+      },
+    });
+    mocks.periods.mockReturnValue({
+      ...idleQuery,
+      isSuccess: true,
+      data: {
+        data: [
+          {
+            id: "p3",
+            template_id: "tpl",
+            name: "3",
+            sequence: 3,
+            starts_at: "08:40",
+            ends_at: "09:20",
+            is_break: false,
+          },
+          {
+            id: "p4",
+            template_id: "tpl",
+            name: "4",
+            sequence: 4,
+            starts_at: "09:20",
+            ends_at: "10:00",
+            is_break: false,
+          },
+        ],
+      },
+    });
+    mocks.subjects.mockReturnValue({
+      ...idleQuery,
+      isSuccess: true,
+      data: {
+        data: [
+          { id: "history", code: "SEJ", name: "Sejarah" },
+          { id: "science", code: "IPA", name: "IPA" },
+        ],
+      },
+    });
+    mocks.teachers.mockReturnValue({
+      ...idleQuery,
+      isSuccess: true,
+      data: {
+        data: [
+          { id: "t1", name: "Bu Sari", username: "sari" },
+          { id: "t2", name: "Pak Budi", username: "budi" },
+        ],
+      },
+    });
+
+    const { result } = renderHook(() => useStudentBlock(me(), true));
+
+    expect(result.current.hero?.title).toBe("IPA");
+
+    render(<>{result.current.left.find((slot) => slot.key === "student.schedule")?.node}</>);
+    expect(screen.getByText("IPA")).toBeInTheDocument();
+    expect(screen.queryByText("Sejarah")).not.toBeInTheDocument();
+  });
+
   it("computes a 75% attendance rate for 3 of 4 known days", () => {
     mocks.calendar.mockReturnValue({
       ...idleQuery,
