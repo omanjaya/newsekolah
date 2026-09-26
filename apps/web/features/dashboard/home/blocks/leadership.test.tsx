@@ -145,7 +145,8 @@ describe("useLeadershipBlock", () => {
     expect(screen.getByRole("button")).toBeInTheDocument();
   });
 
-  it("lists the top at-risk students by score in the right column", () => {
+  it("lists the top at-risk students by score in the right column when permitted", () => {
+    const meWithPermission: Me = { ...me, permissions: ["view_early_warning"] };
     directoryQuery.mockReturnValue({
       data: { data: [{ id: "s1", name: "Siswa Satu" }] },
     });
@@ -167,11 +168,19 @@ describe("useLeadershipBlock", () => {
       refetch: vi.fn(),
     });
 
-    const { result } = renderHook(() => useLeadershipBlock(me, true));
+    const { result } = renderHook(() => useLeadershipBlock(meWithPermission, true));
     const atRiskSlot = result.current.right.find((slot) => slot.key === "school.atRisk");
     render(<>{atRiskSlot?.node}</>);
 
+    expect(atRiskQuery).toHaveBeenCalledWith(true);
     expect(screen.getByText("Siswa Satu")).toBeInTheDocument();
     expect(screen.getByText("X-A")).toBeInTheDocument();
+  });
+
+  it("hides the at-risk card entirely and disables its query without view_early_warning (admin/principal seed accounts get a 403 on it)", () => {
+    const { result } = renderHook(() => useLeadershipBlock(me, true));
+
+    expect(atRiskQuery).toHaveBeenCalledWith(false);
+    expect(result.current.right.some((slot) => slot.key === "school.atRisk")).toBe(false);
   });
 });

@@ -50,10 +50,15 @@ const PENDING_LINKS = [
  * `admin-dashboard-panel.tsx` rather than duplicating them (Task 5 of
  * docs/superpowers/plans/2026-09-26-dashboard-per-peran.md).
  */
-export function useLeadershipBlock(_me: Me, active: boolean): PersonaBlock {
+export function useLeadershipBlock(me: Me, active: boolean): PersonaBlock {
   const t = useTranslations("app.dashboardSchool.leadership");
   const dashboard = useAdminDashboardQuery(active);
-  const atRisk = useAtRiskStudentsQuery(active);
+  // GET /v1/analytics/at-risk-students requires view_early_warning, which
+  // the admin/principal seed accounts do not hold (it returns 403 for
+  // them): the query only runs, and the card only renders, for a caller who
+  // actually has it.
+  const canViewAtRisk = me.permissions.includes("view_early_warning");
+  const atRisk = useAtRiskStudentsQuery(active && canViewAtRisk);
   const students = useDirectoryQuery("student", active);
   const studentMap = useLookup(students.data?.data);
   const classes = useClassesQuery(active);
@@ -151,20 +156,24 @@ export function useLeadershipBlock(_me: Me, active: boolean): PersonaBlock {
         />
       ),
     },
-    {
-      key: "school.atRisk",
-      node: (
-        <AtRiskCard
-          key="school.atRisk"
-          isLoading={atRisk.isLoading}
-          isError={atRisk.isError}
-          refetch={atRisk.refetch}
-          rows={atRiskRows}
-          studentMap={studentMap}
-          classMap={classMap}
-        />
-      ),
-    },
+    ...(canViewAtRisk
+      ? [
+          {
+            key: "school.atRisk",
+            node: (
+              <AtRiskCard
+                key="school.atRisk"
+                isLoading={atRisk.isLoading}
+                isError={atRisk.isError}
+                refetch={atRisk.refetch}
+                rows={atRiskRows}
+                studentMap={studentMap}
+                classMap={classMap}
+              />
+            ),
+          },
+        ]
+      : []),
   ];
 
   return { hero, tiles, left, right };
