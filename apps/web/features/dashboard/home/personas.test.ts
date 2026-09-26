@@ -61,16 +61,47 @@ describe("resolvePersonas", () => {
       ).has("leadership"),
     ).toBe(true);
   });
-  it("detects librarian and counselor", () => {
+  it("detects librarian by duty and counselor", () => {
     const p = resolvePersonas(
       me({
-        permissions: ["manage_library_circulation"],
-        duties: [{ slug: "counselor", scope_kind: "school" }],
+        duties: [
+          { slug: "librarian", scope_kind: "school" },
+          { slug: "counselor", scope_kind: "school" },
+        ],
       }),
     );
     expect([...p].sort()).toEqual(["counselor", "librarian"]);
   });
+  it("detects librarian by role slug", () => {
+    const p = resolvePersonas(
+      me({ roles: [{ id: "r", slug: "librarian", name: "Pustakawan", is_primary: true }] }),
+    );
+    expect([...p]).toEqual(["librarian"]);
+  });
   it("returns nothing for a parent", () => {
     expect(resolvePersonas(me({ profile_kind: "parent" })).size).toBe(0);
+  });
+  it("does not treat every permission holder as librarian or picket: an admin with all permissions is only leadership", () => {
+    const p = resolvePersonas(
+      me({
+        roles: [{ id: "r", slug: "admin", name: "Admin", is_primary: true }],
+        permissions: [
+          "manage_attendance",
+          "manage_library_circulation",
+          "issue_scan_tokens",
+          "view_early_warning",
+        ],
+      }),
+    );
+    expect([...p]).toEqual(["leadership"]);
+  });
+  it("does not grant picket to a teacher holding issue_scan_tokens without the picket duty", () => {
+    const p = resolvePersonas(
+      me({
+        profile_kind: "teacher",
+        permissions: ["manage_attendance", "issue_scan_tokens"],
+      }),
+    );
+    expect([...p]).toEqual(["teacher"]);
   });
 });
