@@ -74,6 +74,8 @@ export { StatusBadge, type StatusBadgeProps, type StatusName } from "./component
 export { Avatar, type AvatarProps } from "./components/avatar.js";
 export { Skeleton } from "./components/skeleton.js";
 export { Stat, StatGrid, type StatProps, type StatGridProps } from "./components/stat.js";
+export { HeroCard, type HeroCardProps } from "./components/hero-card.js";
+export { StatTile, type StatTileProps, type StatTileTone } from "./components/stat-tile.js";
 export { EmptyState, type EmptyStateProps } from "./components/empty-state.js";
 export { SafeHtml, type SafeHtmlProps } from "./components/safe-html.js";
 export {
