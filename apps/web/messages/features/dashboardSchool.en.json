@@ -1,0 +1,65 @@
+{
+  "leadership": {
+    "hero": {
+      "eyebrow": "Today",
+      "title": "{submitted} of {total} sessions checked in",
+      "meta": "{pending} sessions not yet submitted",
+      "action": "Open monitor"
+    },
+    "tiles": {
+      "sessions": "Sessions checked in",
+      "pending": "Awaiting review",
+      "users": "Active users",
+      "online": "Online now"
+    },
+    "queue": {
+      "title": "School queue",
+      "type": "Request type",
+      "count": "Pending",
+      "open": "Open queue",
+      "labels": {
+        "leave_request": "Leave request",
+        "exit_permit": "Exit permit",
+        "late_arrival": "Late arrival"
+      }
+    },
+    "activity": {
+      "title": "Login activity",
+      "peak": "Busiest at {hour} with {count} logins",
+      "chartLabel": "Bar chart of logins per hour. {total} logins total, busiest at {hour} with {count} logins.",
+      "barLabel": "At {hour}: {count} logins",
+      "empty": "No logins recorded for this period yet.",
+      "onlineTitle": "Online now",
+      "onlineEmpty": "Nobody is connected right now.",
+      "roleNames": {
+        "super_admin": "Super Admin",
+        "admin": "School Admin",
+        "teacher": "Teacher",
+        "staff": "Staff",
+        "student": "Student",
+        "parent": "Parent",
+        "librarian": "Librarian",
+        "principal": "Principal"
+      }
+    },
+    "atRisk": {
+      "title": "At-risk students",
+      "viewAll": "View all",
+      "empty": "No at-risk students right now.",
+      "unknownStudent": "Unknown student"
+    }
+  },
+  "librarian": {
+    "hero": {
+      "eyebrow": "Circulation desk",
+      "title": "{loans} borrowed · {returns} returned",
+      "meta": "{overdue} overdue",
+      "action": "Open circulation desk"
+    },
+    "tile": "Overdue",
+    "overdue": {
+      "title": "Longest overdue",
+      "empty": "No overdue loans."
+    }
+  }
+}

@@ -9,12 +9,17 @@ import { useLibraryDashboardLive } from "./realtime";
 
 export type LibraryDashboard = components["schemas"]["LibraryDashboard"];
 
-/** Summary counts, latest activity, longest overdue, popular titles, and a 30-day trend. */
-export function useLibraryDashboardQuery() {
+/**
+ * Summary counts, latest activity, longest overdue, popular titles, and a
+ * 30-day trend. `enabled` lets a caller that only sometimes holds the
+ * librarian persona (the per-role home) skip the request entirely.
+ */
+export function useLibraryDashboardQuery(enabled = true) {
   const client = useApiClient();
-  useLibraryDashboardLive();
+  useLibraryDashboardLive(enabled);
   return useQuery({
     queryKey: ["library", "dashboard"],
     queryFn: () => client.GET("/v1/library/dashboard"),
+    enabled,
   });
 }

@@ -23,11 +23,12 @@ const keys = {
   policy: () => ["analytics", "policy"] as const,
 };
 
-export function useAtRiskStudentsQuery() {
+export function useAtRiskStudentsQuery(enabled = true) {
   const client = useApiClient();
   return useQuery({
     queryKey: keys.atRiskStudents(),
     queryFn: () => client.GET("/v1/analytics/at-risk-students"),
+    enabled,
   });
 }
 
