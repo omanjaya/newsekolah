@@ -1668,6 +1668,80 @@ func (q *Queries) ListLoansForMember(ctx context.Context, arg ListLoansForMember
 	return items, nil
 }
 
+const listLoansForMemberWithTitle = `-- name: ListLoansForMemberWithTitle :many
+select l.id, l.tenant_id, l.copy_id, l.title_id, l.member_user_id, l.checked_out_by, l.borrowed_at, l.due_on, l.returned_at, l.checked_in_by, l.renewal_count, l.status, l.fine_amount, l.fine_paid_at, l.active_copy_id, l.created_at, l.updated_at, l.channel, t.title as title_name, t.author as title_author
+from library_loans l
+join library_titles t on t.id = l.title_id
+where l.tenant_id = $1 and l.member_user_id = $2 and ($5::bool or l.status = 'active')
+order by l.borrowed_at desc
+limit $3 offset $4
+`
+
+type ListLoansForMemberWithTitleParams struct {
+	TenantID        uuid.UUID `json:"tenant_id"`
+	MemberUserID    uuid.UUID `json:"member_user_id"`
+	Limit           int32     `json:"limit"`
+	Offset          int32     `json:"offset"`
+	IncludeReturned bool      `json:"include_returned"`
+}
+
+type ListLoansForMemberWithTitleRow struct {
+	LibraryLoan LibraryLoan `json:"library_loan"`
+	TitleName   string      `json:"title_name"`
+	TitleAuthor string      `json:"title_author"`
+}
+
+// GET /v1/library/me's own view of a member's loans, title joined in so the
+// card can show a book's name without a separate GET
+// /v1/library/titles/{id} call the member (view_own_library_loans only,
+// not view_library) is not permitted to make.
+func (q *Queries) ListLoansForMemberWithTitle(ctx context.Context, arg ListLoansForMemberWithTitleParams) ([]ListLoansForMemberWithTitleRow, error) {
+	rows, err := q.db.Query(ctx, listLoansForMemberWithTitle,
+		arg.TenantID,
+		arg.MemberUserID,
+		arg.Limit,
+		arg.Offset,
+		arg.IncludeReturned,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListLoansForMemberWithTitleRow{}
+	for rows.Next() {
+		var i ListLoansForMemberWithTitleRow
+		if err := rows.Scan(
+			&i.LibraryLoan.ID,
+			&i.LibraryLoan.TenantID,
+			&i.LibraryLoan.CopyID,
+			&i.LibraryLoan.TitleID,
+			&i.LibraryLoan.MemberUserID,
+			&i.LibraryLoan.CheckedOutBy,
+			&i.LibraryLoan.BorrowedAt,
+			&i.LibraryLoan.DueOn,
+			&i.LibraryLoan.ReturnedAt,
+			&i.LibraryLoan.CheckedInBy,
+			&i.LibraryLoan.RenewalCount,
+			&i.LibraryLoan.Status,
+			&i.LibraryLoan.FineAmount,
+			&i.LibraryLoan.FinePaidAt,
+			&i.LibraryLoan.ActiveCopyID,
+			&i.LibraryLoan.CreatedAt,
+			&i.LibraryLoan.UpdatedAt,
+			&i.LibraryLoan.Channel,
+			&i.TitleName,
+			&i.TitleAuthor,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listLoansInPeriod = `-- name: ListLoansInPeriod :many
 select id, tenant_id, copy_id, title_id, member_user_id, checked_out_by, borrowed_at, due_on, returned_at, checked_in_by, renewal_count, status, fine_amount, fine_paid_at, active_copy_id, created_at, updated_at, channel from library_loans
 where tenant_id = $1 and borrowed_at >= $2 and borrowed_at < $3

@@ -238,6 +238,18 @@ where tenant_id = $1 and member_user_id = $2 and (sqlc.arg(include_returned)::bo
 order by borrowed_at desc
 limit $3 offset $4;
 
+-- name: ListLoansForMemberWithTitle :many
+-- GET /v1/library/me's own view of a member's loans, title joined in so the
+-- card can show a book's name without a separate GET
+-- /v1/library/titles/{id} call the member (view_own_library_loans only,
+-- not view_library) is not permitted to make.
+select sqlc.embed(l), t.title as title_name, t.author as title_author
+from library_loans l
+join library_titles t on t.id = l.title_id
+where l.tenant_id = $1 and l.member_user_id = $2 and (sqlc.arg(include_returned)::bool or l.status = 'active')
+order by l.borrowed_at desc
+limit $3 offset $4;
+
 -- name: ListOverdueLoans :many
 select * from library_loans
 where tenant_id = $1 and status = 'active' and due_on < $2

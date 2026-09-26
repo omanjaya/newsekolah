@@ -11,7 +11,6 @@ import { useMemo, type ReactElement } from "react";
 import { QueryError } from "../../../../components/query-error";
 import { todayInZone, useMyCalendarQuery } from "../../../attendance/api";
 import { useMyGradesQuery } from "../../../grading/api";
-import { LibraryTitleName } from "../../../library/components/library-title-name";
 import { useMyLibraryProfileQuery } from "../../../library/me-api";
 import { useMyLeaveRequestsQuery } from "../../../permits/api";
 import { WorkflowStatusBadge } from "../../../permits/components/workflow-stepper";
@@ -321,7 +320,7 @@ export function useStudentBlock(me: Me, active: boolean): PersonaBlock {
               return (
                 <li key={loan.id} className="flex items-center justify-between gap-2 text-[13px]">
                   <span className="min-w-0 truncate text-fg">
-                    <LibraryTitleName titleId={loan.title_id} />
+                    {loan.title_name ?? loan.title_id}
                   </span>
                   <span className={cn("shrink-0", overdue ? "text-danger" : "text-fg-muted")}>
                     {formatDate(loan.due_on, { locale, timeZone })}

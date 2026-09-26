@@ -1097,6 +1097,11 @@ type Querier interface {
 	// library_circulation.go:1998-2090 daily 07:00 job).
 	ListLoansDueForReminder(ctx context.Context, arg ListLoansDueForReminderParams) ([]LibraryLoan, error)
 	ListLoansForMember(ctx context.Context, arg ListLoansForMemberParams) ([]LibraryLoan, error)
+	// GET /v1/library/me's own view of a member's loans, title joined in so the
+	// card can show a book's name without a separate GET
+	// /v1/library/titles/{id} call the member (view_own_library_loans only,
+	// not view_library) is not permitted to make.
+	ListLoansForMemberWithTitle(ctx context.Context, arg ListLoansForMemberWithTitleParams) ([]ListLoansForMemberWithTitleRow, error)
 	ListLoansInPeriod(ctx context.Context, arg ListLoansInPeriodParams) ([]LibraryLoan, error)
 	ListLoansInPeriodWithTitle(ctx context.Context, arg ListLoansInPeriodWithTitleParams) ([]ListLoansInPeriodWithTitleRow, error)
 	ListLocations(ctx context.Context, tenantID uuid.UUID) ([]LibraryLocation, error)

@@ -123,6 +123,26 @@ func (r *Repository) ListLoansForMember(ctx context.Context, tenantID, memberID 
 	return toLoans(rows), nil
 }
 
+// ListLoansForMemberWithTitle is ListLoansForMember plus each loan's title
+// name/author, for GET /v1/library/me: the member cannot call GET
+// /v1/library/titles/{id} themselves (view_library, not their
+// view_own_library_loans), so the title is joined in here instead.
+func (r *Repository) ListLoansForMemberWithTitle(ctx context.Context, tenantID, memberID uuid.UUID, includeReturned bool, limit, offset int) ([]domain.Loan, error) {
+	rows, err := r.queries(ctx).ListLoansForMemberWithTitle(ctx, db.ListLoansForMemberWithTitleParams{
+		TenantID: tenantID, MemberUserID: memberID, IncludeReturned: includeReturned, Limit: int32(limit), Offset: int32(offset), //nolint:gosec // clamped
+	})
+	if err != nil {
+		return nil, fmt.Errorf("list loans for member with title: %w", err)
+	}
+	out := make([]domain.Loan, len(rows))
+	for i, row := range rows {
+		loan := toLoan(row.LibraryLoan)
+		loan.TitleName, loan.TitleAuthor = row.TitleName, row.TitleAuthor
+		out[i] = loan
+	}
+	return out, nil
+}
+
 func (r *Repository) ListOverdueLoans(ctx context.Context, tenantID uuid.UUID, asOf time.Time) ([]domain.Loan, error) {
 	rows, err := r.queries(ctx).ListOverdueLoans(ctx, db.ListOverdueLoansParams{TenantID: tenantID, DueOn: pdatabase.Date(asOf)})
 	if err != nil {

@@ -10632,6 +10632,9 @@ export interface components {
             fine_paid_at?: string;
             /** @enum {string} */
             channel?: "desk" | "self_service" | "mobile";
+            /** @description The title's name, present only on GET /v1/library/me (active_loans, history): a member holding only view_own_library_loans cannot call GET /v1/library/titles/{titleId} (view_library) themselves. */
+            title_name?: string;
+            title_author?: string;
         };
         /** @enum {string} */
         LibraryReservationStatus: "waiting" | "ready" | "fulfilled" | "cancelled" | "expired";

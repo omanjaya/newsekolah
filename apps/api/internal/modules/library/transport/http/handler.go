@@ -298,6 +298,15 @@ func toAPILoan(l domain.Loan) api.LibraryLoan {
 		Status: api.LibraryLoanStatus(l.Status), FineAmount: l.FineAmount, ReturnedAt: l.ReturnedAt, FinePaidAt: l.FinePaidAt,
 		Channel: &channel,
 	}
+	// Only ListLoansForMemberWithTitle (GET /v1/library/me) populates these
+	// on the domain.Loan; every other read leaves them zero-valued, so the
+	// wire field stays absent (omitempty) rather than an empty string.
+	if l.TitleName != "" {
+		out.TitleName = &l.TitleName
+	}
+	if l.TitleAuthor != "" {
+		out.TitleAuthor = &l.TitleAuthor
+	}
 	return out
 }
 

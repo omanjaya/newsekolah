@@ -53,8 +53,14 @@ vi.mock("../../../library/me-api", () => ({
   useMyLibraryProfileQuery: mocks.library,
 }));
 
-vi.mock("../../../library/components/library-title-name", () => ({
-  LibraryTitleName: ({ titleId }: { titleId: string }) => titleId,
+// A student only holds view_own_library_loans, never view_library: the
+// library card must never resolve a loan's title through this hook (GET
+// /v1/library/titles/{titleId}), which 403s for them. Throwing here turns
+// any regression into a loud test failure instead of a silent UUID.
+vi.mock("../../../library/api", () => ({
+  useLibraryTitleQuery: () => {
+    throw new Error("useLibraryTitleQuery must not be called from the student dashboard block");
+  },
 }));
 
 import { EMPTY_BLOCK, type Me } from "../types";
@@ -390,6 +396,39 @@ describe("useStudentBlock", () => {
     render(<>{libraryNode}</>);
 
     expect(screen.getByText("libraryEmpty")).toBeInTheDocument();
+  });
+
+  it("shows the loan's title text from /v1/library/me, never a raw title id", () => {
+    mocks.library.mockReturnValue({
+      ...idleQuery,
+      isSuccess: true,
+      data: {
+        active_loans: [
+          {
+            id: "loan1",
+            copy_id: "copy1",
+            title_id: "11111111-1111-1111-1111-111111111111",
+            title_name: "Matematika Dasar",
+            member_user_id: "u1",
+            borrowed_at: "2026-09-01T00:00:00Z",
+            due_on: "2026-10-01",
+            renewal_count: 0,
+            status: "active",
+            fine_amount: 0,
+          },
+        ],
+        history: [],
+        reservations: [],
+        violations: [],
+      },
+    });
+
+    const { result } = renderHook(() => useStudentBlock(me(), true));
+    const libraryNode = result.current.right.find((slot) => slot.key === "student.library")?.node;
+    render(<>{libraryNode}</>);
+
+    expect(screen.getByText("Matematika Dasar")).toBeInTheDocument();
+    expect(screen.queryByText("11111111-1111-1111-1111-111111111111")).not.toBeInTheDocument();
   });
 
   it("shows no tiles while the tile data sources are still loading", () => {
