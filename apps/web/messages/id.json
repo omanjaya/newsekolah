@@ -74,81 +74,15 @@
     "dashboard": {
       "title": "Beranda",
       "greeting": "Selamat datang, {name}",
-      "academicYearLabel": "Tahun ajaran aktif",
       "noAcademicYear": "Belum ada tahun ajaran aktif",
-      "tasksTitle": "Perlu tindakan",
-      "tasksClear": "Tidak ada yang menunggu Anda saat ini.",
       "tiles": {
-        "attendance": {
-          "label": "Presensi belum dikirim",
-          "hint": "dari {total} sesi hari ini"
-        },
-        "late": {
-          "label": "Keterlambatan",
-          "hint": "menunggu tinjauan Anda"
-        },
-        "leave": {
-          "label": "Pengajuan izin",
-          "hint": "menunggu tinjauan Anda"
-        },
         "notifications": {
           "label": "Notifikasi",
           "hint": "belum dibaca"
         }
       },
-      "todayTitle": "Sesi hari ini",
-      "todayProgress": "{submitted} dari {total} sesi sudah dikirim",
-      "todayEmpty": "Tidak ada sesi mengajar hari ini.",
-      "openAttendance": "Buka presensi",
-      "submitted": "Tersimpan",
-      "pending": "Belum diisi",
       "announcementsTitle": "Pengumuman terbaru",
-      "openAnnouncements": "Lihat semua",
-      "footerHint": "Data di halaman ini diperbarui otomatis dari modul presensi, perizinan, dan komunikasi.",
-      "admin": {
-        "activeUsersTitle": "Warga sekolah",
-        "activeUsersNote": "Akun aktif menurut jenis profil",
-        "kinds": {
-          "teacher": "Guru",
-          "staff": "Pegawai",
-          "student": "Siswa"
-        },
-        "loadError": "Ringkasan tidak bisa dimuat. Coba muat ulang halaman.",
-        "pendingTitle": "Antrean sekolah",
-        "pendingNote": "Menunggu diproses, oleh siapa pun yang berwenang",
-        "pendingLabels": {
-          "leave_request": "Izin terencana",
-          "exit_permit": "Izin keluar",
-          "late_arrival": "Keterlambatan"
-        },
-        "onlineTitle": "Sedang daring",
-        "onlineEmpty": "Tidak ada yang sedang terhubung saat ini.",
-        "roleNames": {
-          "super_admin": "Super Admin",
-          "admin": "Admin Sekolah",
-          "teacher": "Guru",
-          "staff": "Pegawai",
-          "student": "Siswa",
-          "parent": "Orang Tua",
-          "librarian": "Pustakawan",
-          "principal": "Kepala Sekolah"
-        },
-        "loginHistogramTitle": "Aktivitas login",
-        "loginHistogramNote": "Dijumlahkan per jam dari tujuh hari terakhir",
-        "loginPeak": "Paling ramai pukul {hour} dengan {count} login",
-        "loginChartLabel": "Grafik batang login per jam. Total {total} login, paling ramai pukul {hour} dengan {count} login.",
-        "loginBarLabel": "Pukul {hour}: {count} login",
-        "histogramEmpty": "Belum ada login tercatat pada periode ini.",
-        "activeAccountLabel": "akun aktif",
-        "queueType": "Jenis pengajuan",
-        "queueCount": "Menunggu",
-        "openQueue": "Buka antrean",
-        "attendanceTodayTitle": "Presensi kelas berjalan",
-        "attendanceTodayProgress": "{submitted} dari {total} kelas sudah presensi",
-        "attendanceTodayEmpty": "Tidak ada kelas yang sedang berjalan saat ini."
-      },
-      "overviewNote": "Ringkasan operasional dan informasi sekolah hari ini.",
-      "tasksNote": "Antrean yang membutuhkan tindakan Anda"
+      "openAnnouncements": "Lihat semua"
     },
     "profile": {
       "title": "Profil",

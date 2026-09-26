@@ -1,126 +1,121 @@
 "use client";
 
-import { Badge, Button, Skeleton } from "@newsekolah/ui";
+import {
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  HeroCard,
+  Skeleton,
+  StatTile,
+} from "@newsekolah/ui";
+import { Bell } from "lucide-react";
 import Link from "next/link";
 import { useFormatter, useTranslations } from "next-intl";
-import type { ReactElement } from "react";
+import { Fragment, type ReactElement } from "react";
 
 import { QueryError } from "../../../components/query-error";
-import { useCan } from "../../../lib/session/session-provider";
 import { AnnouncementFeed } from "../../announcements/components/announcement-feed";
-import { todayInZone, useTodaySessionsQuery } from "../../attendance/api";
 import { useUnreadCountQuery } from "../../notifications/api";
-import { useLateArrivalQueueQuery, useLeaveReviewQueueQuery } from "../../permits/api";
-import { useClassesQuery, useLookup, useSubjectsQuery } from "../../reference/api";
 import { useDashboardData } from "../api";
+import { useCounselorBlock } from "../home/blocks/counselor";
+import { useHomeroomBlock } from "../home/blocks/homeroom";
+import { useLeadershipBlock } from "../home/blocks/leadership";
+import { useLibrarianBlock } from "../home/blocks/librarian";
+import { usePicketBlock } from "../home/blocks/picket";
+import { useStudentBlock } from "../home/blocks/student";
+import { useTeacherBlock } from "../home/blocks/teacher";
+import { collectBlocks } from "../home/compose";
+import { resolvePersonas } from "../home/personas";
+import type { Me, PersonaBlock, PersonaKey } from "../home/types";
 
-import { ActionTiles, type ActionTile } from "./action-tiles";
-import { AdminDashboardPanel } from "./admin-dashboard-panel";
-import { DailyTaskShortcut, selectDailyTask } from "./daily-task-shortcut";
-import { SectionCard } from "./section-card";
-import { TodaySessionsCard } from "./today-sessions-card";
+/**
+ * Stand-in `Me` while `/v1/me` is still loading. Every persona hook is
+ * called unconditionally on every render (rules of hooks), each reading
+ * `me.tenant.timezone` or `me.permissions` to build its own query key even
+ * while its `active` flag keeps the query disabled, so this needs those
+ * fields to exist before the real `me` arrives.
+ */
+const LOADING_ME = { tenant: { timezone: "UTC" }, permissions: [], duties: [] } as unknown as Me;
 
-/** School totals lead into personal queues, operational tables, and updates. */
+/**
+ * The combined per-role home: every persona the signed-in user holds
+ * stacks its own block, the most urgent hero and the top four stat tiles
+ * across all of them win the fold. Replaces the single permission-driven
+ * view (docs/superpowers/plans/2026-09-26-dashboard-per-peran.md Task 7).
+ */
 export function DashboardView(): ReactElement {
   const { data: me, isLoading, isError, refetch } = useDashboardData();
   const t = useTranslations("app.dashboard");
   const format = useFormatter();
-  const canManageAttendance = useCan("manage_attendance");
-  const canReviewLeave = useCan("review_leave_requests");
-  const canManageCirculation = useCan("manage_library_circulation");
-  const canIssueScanTokens = useCan("issue_scan_tokens");
-  const canViewAcademicData = useCan("view_academic_data");
-  const canViewOwnGrades = useCan("view_own_grades");
-  const sessions = useTodaySessionsQuery(
-    { date: todayInZone(me?.tenant.timezone) },
-    canManageAttendance,
-  );
-  const lateQueue = useLateArrivalQueueQuery(canManageAttendance);
-  // GET /v1/leave-requests/review-queue is gated server-side on
-  // review_leave_requests specifically (openapi/modules/permits.yaml); a
-  // counselor duty grants issue_leave_letters without it, and querying this
-  // for them only produced a 403 the dashboard then rendered as a task-list
-  // error (docs/07-ui-ux.md's "layar pertama ... tanpa scroll" promise, not
-  // an error card on first load).
-  const leaveQueue = useLeaveReviewQueueQuery(canReviewLeave);
+
+  const personas = me ? resolvePersonas(me) : new Set<PersonaKey>();
+  const active = (key: PersonaKey) => personas.has(key);
+  const blockMe = me ?? LOADING_ME;
+
+  // Fixed order per the plan: teacher, homeroom, student, leadership,
+  // picket, counselor, librarian. Left/right slots render in this order.
+  const teacher = useTeacherBlock(blockMe, active("teacher"));
+  const homeroom = useHomeroomBlock(blockMe, active("homeroom"));
+  const student = useStudentBlock(blockMe, active("student"));
+  const leadership = useLeadershipBlock(blockMe, active("leadership"));
+  const picket = usePicketBlock(blockMe, active("picket"));
+  const counselor = useCounselorBlock(blockMe, active("counselor"));
+  const librarian = useLibrarianBlock(blockMe, active("librarian"));
   const unread = useUnreadCountQuery(Boolean(me));
-  const classes = useClassesQuery(canManageAttendance);
-  const subjects = useSubjectsQuery(canManageAttendance);
-  const classMap = useLookup(classes.data?.data);
-  const subjectMap = useLookup(subjects.data?.data);
 
   if (isError) return <QueryError retry={() => refetch()} className="m-4" />;
 
   if (isLoading || !me) {
     return (
-      <div className="flex flex-col gap-6 p-4 md:p-6" aria-busy="true">
+      <div className="mx-auto flex max-w-[1280px] flex-col gap-4 p-4 md:p-6" aria-busy="true">
         <Skeleton className="h-16 w-full" />
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Skeleton className="h-28 w-full" />
-          <Skeleton className="h-28 w-full" />
-          <Skeleton className="h-28 w-full" />
-          <Skeleton className="h-28 w-full" />
+        <Skeleton className="h-36 w-full" />
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <Skeleton className="h-[104px] w-full" />
+          <Skeleton className="h-[104px] w-full" />
+          <Skeleton className="h-[104px] w-full" />
+          <Skeleton className="h-[104px] w-full" />
         </div>
-        <Skeleton className="h-40 w-full" />
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
+          <Skeleton className="h-64 w-full" />
+          <Skeleton className="h-64 w-full" />
+        </div>
       </div>
     );
   }
 
-  const taskQueries = [
-    unread,
-    ...(canManageAttendance ? [sessions, lateQueue] : []),
-    ...(canReviewLeave ? [leaveQueue] : []),
-  ];
-  const tasksFailed = taskQueries.some((query) => query.isError);
-  const tasksLoading = taskQueries.some((query) => query.isLoading);
-  const todaySessions = sessions.data?.data ?? [];
-  const pendingSessions = todaySessions.filter((s) => !s.submitted_at);
-  const dailyTask = selectDailyTask({
-    canManageAttendance,
-    canManageCirculation,
-    canIssueScanTokens,
-    canViewAcademicData,
-    canViewOwnGrades,
-    profileKind: me.profile_kind,
-  });
-  const tiles: ActionTile[] = [
-    ...(canManageAttendance
-      ? [
-          {
-            key: "attendance",
-            href: "/attendance",
-            label: t("tiles.attendance.label"),
-            count: pendingSessions.length,
-            hint: t("tiles.attendance.hint", { total: todaySessions.length }),
-          },
-          {
-            key: "late",
-            href: "/late-arrivals",
-            label: t("tiles.late.label"),
-            count: lateQueue.data?.data.length ?? 0,
-            hint: t("tiles.late.hint"),
-          },
-        ]
-      : []),
-    ...(canReviewLeave
-      ? [
-          {
-            key: "leave",
-            href: "/leave-requests",
-            label: t("tiles.leave.label"),
-            count: leaveQueue.data?.data.length ?? 0,
-            hint: t("tiles.leave.hint"),
-          },
-        ]
-      : []),
-    {
-      key: "notifications",
-      href: "/notifications",
-      label: t("tiles.notifications.label"),
-      count: unread.data?.count ?? 0,
-      hint: t("tiles.notifications.hint"),
-    },
-  ];
+  // Notifications never depend on an active persona: it is the guaranteed
+  // filler tile (priority 0) so the tile row is never empty.
+  const notifications: PersonaBlock = {
+    tiles: [
+      {
+        key: "common.notifications",
+        priority: 0,
+        label: t("tiles.notifications.label"),
+        value: String(unread.data?.count ?? 0),
+        hint: t("tiles.notifications.hint"),
+        href: "/notifications",
+        icon: Bell,
+        tone: "purple",
+      },
+    ],
+    left: [],
+    right: [],
+  };
+
+  const { hero, tiles, left, right } = collectBlocks([
+    teacher,
+    homeroom,
+    student,
+    leadership,
+    picket,
+    counselor,
+    librarian,
+    notifications,
+  ]);
 
   return (
     <div className="mx-auto flex max-w-[1280px] flex-col gap-4 p-4 md:p-6">
@@ -135,10 +130,9 @@ export function DashboardView(): ReactElement {
               timeZone: me.tenant.timezone,
             })}
           </p>
-          <h1 className="text-[24px] leading-tight font-medium tracking-tight text-fg">
+          <h1 className="font-heading text-[28px] font-bold tracking-tight text-fg">
             {t("greeting", { name: me.name })}
           </h1>
-          <p className="mt-1 text-[13px] text-fg-muted">{t("overviewNote")}</p>
         </div>
         <div className="flex items-center gap-3 md:flex-col md:items-end md:gap-1.5">
           <div className="flex flex-wrap gap-1.5">
@@ -154,46 +148,74 @@ export function DashboardView(): ReactElement {
         </div>
       </header>
 
-      <AdminDashboardPanel roles={me.roles} section="summary" />
+      {hero && (
+        <HeroCard
+          eyebrow={hero.eyebrow}
+          title={hero.title}
+          meta={hero.meta}
+          chip={hero.chip}
+          action={
+            hero.action && (
+              <Button asChild>
+                <Link href={hero.action.href}>{hero.action.label}</Link>
+              </Button>
+            )
+          }
+        />
+      )}
 
-      <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
-        <div className="flex min-w-0 flex-col gap-4">
-          {dailyTask && dailyTask !== "attendance" && <DailyTaskShortcut task={dailyTask} />}
-          <SectionCard title={t("tasksTitle")} note={t("tasksNote")}>
-            {tasksFailed ? (
-              <QueryError retry={() => Promise.all(taskQueries.map((query) => query.refetch()))} />
-            ) : tasksLoading ? (
-              <Skeleton className="h-32 w-full" aria-busy="true" />
-            ) : (
-              <ActionTiles tiles={tiles} clearLabel={t("tasksClear")} />
-            )}
-          </SectionCard>
-          {canManageAttendance && (sessions.isLoading || todaySessions.length > 0) && (
-            <TodaySessionsCard
-              sessions={todaySessions}
-              isLoading={sessions.isLoading}
-              classMap={classMap}
-              subjectMap={subjectMap}
-              enabled={canManageAttendance}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {tiles.map((tile) =>
+          tile.href ? (
+            <Link
+              key={tile.key}
+              href={tile.href}
+              className="rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2"
+            >
+              <StatTile
+                icon={tile.icon}
+                tone={tile.tone}
+                value={tile.value}
+                label={tile.label}
+                hint={tile.hint}
+              />
+            </Link>
+          ) : (
+            <StatTile
+              key={tile.key}
+              icon={tile.icon}
+              tone={tile.tone}
+              value={tile.value}
+              label={tile.label}
+              hint={tile.hint}
             />
-          )}
-          <AdminDashboardPanel roles={me.roles} section="queue" />
+          ),
+        )}
+      </div>
+
+      <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
+        <div className="flex min-w-0 flex-col gap-4">
+          {left.map((slot) => (
+            <Fragment key={slot.key}>{slot.node}</Fragment>
+          ))}
         </div>
         <div className="flex min-w-0 flex-col gap-4">
-          <SectionCard
-            title={t("announcementsTitle")}
-            action={
+          {right.map((slot) => (
+            <Fragment key={slot.key}>{slot.node}</Fragment>
+          ))}
+          <Card>
+            <CardHeader className="flex-row items-center justify-between gap-3">
+              <CardTitle>{t("announcementsTitle")}</CardTitle>
               <Button asChild variant="ghost" size="sm">
                 <Link href="/announcements">{t("openAnnouncements")}</Link>
               </Button>
-            }
-          >
-            <AnnouncementFeed limit={3} compact />
-          </SectionCard>
-          <AdminDashboardPanel roles={me.roles} section="activity" />
+            </CardHeader>
+            <CardContent className="pt-0">
+              <AnnouncementFeed limit={3} compact />
+            </CardContent>
+          </Card>
         </div>
       </div>
-      <p className="border-t border-border pt-3 text-[12px] text-fg-muted">{t("footerHint")}</p>
     </div>
   );
 }

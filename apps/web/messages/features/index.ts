@@ -25,8 +25,6 @@ import calendarEn from "./calendar.en.json";
 import calendarId from "./calendar.id.json";
 import dashboardDutyEn from "./dashboardDuty.en.json";
 import dashboardDutyId from "./dashboardDuty.id.json";
-import dashboardPersonaEn from "./dashboardPersona.en.json";
-import dashboardPersonaId from "./dashboardPersona.id.json";
 import dashboardSchoolEn from "./dashboardSchool.en.json";
 import dashboardSchoolId from "./dashboardSchool.id.json";
 import dashboardStudentEn from "./dashboardStudent.en.json";
@@ -89,11 +87,6 @@ registerFeatureMessages({ namespace: "activities", id: activitiesId, en: activit
 registerFeatureMessages({ namespace: "analytics", id: analyticsId, en: analyticsEn });
 registerFeatureMessages({ namespace: "account", id: accountId, en: accountEn });
 registerFeatureMessages({ namespace: "calendar", id: calendarId, en: calendarEn });
-registerFeatureMessages({
-  namespace: "dashboardPersona",
-  id: dashboardPersonaId,
-  en: dashboardPersonaEn,
-});
 registerFeatureMessages({ namespace: "dashboardDuty", id: dashboardDutyId, en: dashboardDutyEn });
 registerFeatureMessages({
   namespace: "dashboardSchool",
