@@ -78,6 +78,7 @@ const APP_FEATURE_NAMESPACES = [
   "app.audit",
   "app.billing",
   "app.calendar",
+  "app.dashboardDuty",
   "app.dashboardPersona",
   "app.discipline",
   "app.documents",
