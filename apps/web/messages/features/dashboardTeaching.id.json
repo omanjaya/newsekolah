@@ -1,0 +1,46 @@
+{
+  "teacher": {
+    "card": {
+      "title": "Mengajar hari ini",
+      "action": "Buka presensi",
+      "empty": "Tidak ada sesi hari ini",
+      "statusSubmitted": "Tersimpan",
+      "statusPending": "Belum diisi"
+    },
+    "tiles": {
+      "pendingLabel": "Presensi belum diisi",
+      "pendingHint": "dari {total} sesi hari ini"
+    },
+    "hero": {
+      "nowEyebrow": "Sekarang",
+      "nowMeta": "{start}-{end} · presensi belum dikirim",
+      "nowChip": "berjalan {minutes} menit",
+      "nowAction": "Isi presensi",
+      "nextEyebrow": "Berikutnya",
+      "nextMeta": "{start}-{end}",
+      "nextChip": "{minutes} menit lagi",
+      "nextAction": "Buka presensi"
+    }
+  },
+  "homeroom": {
+    "card": {
+      "title": "Wali kelas {className}",
+      "titleFallback": "Wali kelas",
+      "action": "Tinjau izin",
+      "empty": "Tidak ada izin menunggu",
+      "noStatus": "Belum ada data presensi hari ini",
+      "review": "Tinjau"
+    },
+    "tiles": {
+      "leaveLabel": "Izin kelas menunggu",
+      "rateLabel": "Kehadiran kelas",
+      "rateHint": "hadir {className} hari ini"
+    },
+    "hero": {
+      "eyebrow": "Wali kelas {className}",
+      "eyebrowFallback": "Wali kelas",
+      "title": "{count} izin menunggu tinjauan",
+      "action": "Tinjau izin"
+    }
+  }
+}

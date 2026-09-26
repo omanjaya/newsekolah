@@ -1,0 +1,46 @@
+{
+  "teacher": {
+    "card": {
+      "title": "Teaching today",
+      "action": "Open attendance",
+      "empty": "No sessions today",
+      "statusSubmitted": "Saved",
+      "statusPending": "Not filled in"
+    },
+    "tiles": {
+      "pendingLabel": "Attendance not filled in",
+      "pendingHint": "out of {total} sessions today"
+    },
+    "hero": {
+      "nowEyebrow": "Now",
+      "nowMeta": "{start}-{end} · attendance not submitted",
+      "nowChip": "running for {minutes} min",
+      "nowAction": "Fill in attendance",
+      "nextEyebrow": "Next",
+      "nextMeta": "{start}-{end}",
+      "nextChip": "in {minutes} min",
+      "nextAction": "Open attendance"
+    }
+  },
+  "homeroom": {
+    "card": {
+      "title": "Homeroom {className}",
+      "titleFallback": "Homeroom",
+      "action": "Review leave requests",
+      "empty": "No leave requests waiting",
+      "noStatus": "No attendance data yet today",
+      "review": "Review"
+    },
+    "tiles": {
+      "leaveLabel": "Class leave requests waiting",
+      "rateLabel": "Class attendance",
+      "rateHint": "present in {className} today"
+    },
+    "hero": {
+      "eyebrow": "Homeroom {className}",
+      "eyebrowFallback": "Homeroom",
+      "title": "{count} leave requests await review",
+      "action": "Review leave requests"
+    }
+  }
+}
