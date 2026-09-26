@@ -13,11 +13,12 @@ function useInvalidateMyProfile() {
 }
 
 /** The current user's own library profile: active loans, history, reservations, and fines. */
-export function useMyLibraryProfileQuery() {
+export function useMyLibraryProfileQuery(enabled = true) {
   const client = useApiClient();
   return useQuery({
     queryKey: ["library", "me"],
     queryFn: () => client.GET("/v1/library/me"),
+    enabled,
   });
 }
 
