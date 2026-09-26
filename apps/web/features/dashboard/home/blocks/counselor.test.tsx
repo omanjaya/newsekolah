@@ -103,6 +103,51 @@ describe("useCounselorBlock", () => {
     expect(result.current.tiles.find((t) => t.key === "counselor.leave")?.value).toBe("2");
   });
 
+  it("does not render the leave section, only the SP section, without review_leave_requests", () => {
+    const meWithoutReview = { permissions: ["issue_warning_letters"] } as unknown as Me;
+    leaveReviewQueueQuery.mockReturnValue(refetchable({}));
+    spCandidatesQuery.mockReturnValue(
+      refetchable({
+        data: {
+          data: [
+            { student_user_id: "s1", student_name: "Siswa A", class_name: "X-A", total_points: 10 },
+          ],
+        },
+      }),
+    );
+
+    const { result } = renderHook(() => useCounselorBlock(meWithoutReview, true));
+    render(<>{result.current.left.map((slot) => slot.node)}</>);
+
+    expect(screen.queryByText("counselor.leaveSectionTitle")).not.toBeInTheDocument();
+    expect(screen.getByText("counselor.spSectionTitle")).toBeInTheDocument();
+    expect(result.current.tiles.find((t) => t.key === "counselor.leave")).toBeUndefined();
+  });
+
+  it("does not render the SP section, only the leave section, without issue_warning_letters", () => {
+    const meWithoutIssue = { permissions: ["review_leave_requests"] } as unknown as Me;
+    leaveReviewQueueQuery.mockReturnValue(refetchable({ data: { data: [] } }));
+    spCandidatesQuery.mockReturnValue(refetchable({}));
+
+    const { result } = renderHook(() => useCounselorBlock(meWithoutIssue, true));
+    render(<>{result.current.left.map((slot) => slot.node)}</>);
+
+    expect(screen.getByText("counselor.leaveSectionTitle")).toBeInTheDocument();
+    expect(screen.queryByText("counselor.spSectionTitle")).not.toBeInTheDocument();
+    expect(result.current.tiles.find((t) => t.key === "counselor.sp")).toBeUndefined();
+  });
+
+  it("returns no left slot when neither permission is held", () => {
+    const meWithNeither = { permissions: [] } as unknown as Me;
+    leaveReviewQueueQuery.mockReturnValue(refetchable({}));
+    spCandidatesQuery.mockReturnValue(refetchable({}));
+
+    const { result } = renderHook(() => useCounselorBlock(meWithNeither, true));
+
+    expect(result.current.left).toEqual([]);
+    expect(result.current.tiles).toEqual([]);
+  });
+
   it("shows a retry action and no tiles when the leave queue fails", () => {
     const refetch = vi.fn();
     leaveReviewQueueQuery.mockReturnValue(refetchable({ isError: true, refetch }));

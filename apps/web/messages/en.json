@@ -74,81 +74,15 @@
     "dashboard": {
       "title": "Home",
       "greeting": "Welcome, {name}",
-      "academicYearLabel": "Active academic year",
       "noAcademicYear": "No active academic year yet",
-      "tasksTitle": "Needs your action",
-      "tasksClear": "Nothing is waiting on you right now.",
       "tiles": {
-        "attendance": {
-          "label": "Attendance not submitted",
-          "hint": "of {total} sessions today"
-        },
-        "late": {
-          "label": "Late arrivals",
-          "hint": "awaiting your review"
-        },
-        "leave": {
-          "label": "Leave requests",
-          "hint": "awaiting your review"
-        },
         "notifications": {
           "label": "Notifications",
           "hint": "unread"
         }
       },
-      "todayTitle": "Today's sessions",
-      "todayProgress": "{submitted} of {total} sessions submitted",
-      "todayEmpty": "No teaching sessions today.",
-      "openAttendance": "Open attendance",
-      "submitted": "Saved",
-      "pending": "Not filled",
       "announcementsTitle": "Latest announcements",
-      "openAnnouncements": "View all",
-      "footerHint": "This page updates automatically from the attendance, permits and communication modules.",
-      "admin": {
-        "activeUsersTitle": "School members",
-        "activeUsersNote": "Active accounts by profile kind",
-        "kinds": {
-          "teacher": "Teachers",
-          "staff": "Staff",
-          "student": "Students"
-        },
-        "loadError": "The summary could not load. Try reloading the page.",
-        "pendingTitle": "School queues",
-        "pendingNote": "Waiting to be handled, by anyone authorised",
-        "pendingLabels": {
-          "leave_request": "Planned leave",
-          "exit_permit": "Exit permits",
-          "late_arrival": "Late arrivals"
-        },
-        "onlineTitle": "Online now",
-        "onlineEmpty": "Nobody is connected right now.",
-        "roleNames": {
-          "super_admin": "Super Admin",
-          "admin": "School Admin",
-          "teacher": "Teacher",
-          "staff": "Staff",
-          "student": "Student",
-          "parent": "Parent",
-          "librarian": "Librarian",
-          "principal": "Principal"
-        },
-        "loginHistogramTitle": "Sign-in activity",
-        "loginHistogramNote": "Summed per hour over the last seven days",
-        "loginPeak": "Busiest at {hour} with {count} sign-ins",
-        "loginChartLabel": "Bar chart of sign-ins per hour. {total} sign-ins in total, busiest at {hour} with {count}.",
-        "loginBarLabel": "{hour}: {count} sign-ins",
-        "histogramEmpty": "No sign-ins recorded in this period yet.",
-        "activeAccountLabel": "active accounts",
-        "queueType": "Request type",
-        "queueCount": "Pending",
-        "openQueue": "Open queue",
-        "attendanceTodayTitle": "Attendance in progress",
-        "attendanceTodayProgress": "{submitted} of {total} classes have submitted",
-        "attendanceTodayEmpty": "No class is currently in session."
-      },
-      "overviewNote": "Today’s school operations and updates.",
-      "tasksNote": "Queues assigned to you"
+      "openAnnouncements": "View all"
     },
     "profile": {
       "title": "Profile",

@@ -84,7 +84,15 @@ export function useTeacherBlock(me: Me, active: boolean): PersonaBlock {
       end: parseClock(periodMap.get(session.end_period_id)?.ends_at ?? "00:00"),
     }));
     const now = minutesInZone(new Date(), me.tenant.timezone);
-    const picked = pickCurrentOrNext(ranges, now);
+    // The running session still highlights in the card below even once it is
+    // submitted; the hero, though, has nothing left to ask for from it, so it
+    // is excluded from the pick and the hero falls through to whatever is
+    // still open today (not yet started, or running and unsubmitted).
+    runningId = ranges.find((r) => r.start <= now && now < r.end)?.session.id;
+    const eligible = ranges.filter(
+      (r) => r.start > now || (r.start <= now && now < r.end && !r.session.submitted_at),
+    );
+    const picked = pickCurrentOrNext(eligible, now);
 
     if (picked) {
       const { session, start } = picked.item;
@@ -95,18 +103,17 @@ export function useTeacherBlock(me: Me, active: boolean): PersonaBlock {
       const endLabel = periodMap.get(session.end_period_id)?.ends_at ?? "--:--";
 
       if (picked.state === "now") {
-        runningId = session.id;
-        if (!session.submitted_at) {
-          block.hero = {
-            key: "teacher.now",
-            priority: HERO_PRIORITY.teacherNowPending,
-            eyebrow: t("hero.nowEyebrow"),
-            title,
-            meta: t("hero.nowMeta", { start: startLabel, end: endLabel }),
-            chip: t("hero.nowChip", { minutes: Math.max(0, now - start) }),
-            action: { label: t("hero.nowAction"), href: "/attendance" },
-          };
-        }
+        // `eligible` only keeps a running session here when it is still
+        // unsubmitted, so this branch never needs to re-check that.
+        block.hero = {
+          key: "teacher.now",
+          priority: HERO_PRIORITY.teacherNowPending,
+          eyebrow: t("hero.nowEyebrow"),
+          title,
+          meta: t("hero.nowMeta", { start: startLabel, end: endLabel }),
+          chip: t("hero.nowChip", { minutes: Math.max(0, now - start) }),
+          action: { label: t("hero.nowAction"), href: "/attendance" },
+        };
       } else {
         block.hero = {
           key: "teacher.next",

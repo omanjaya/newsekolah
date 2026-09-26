@@ -79,7 +79,6 @@ const APP_FEATURE_NAMESPACES = [
   "app.billing",
   "app.calendar",
   "app.dashboardDuty",
-  "app.dashboardPersona",
   "app.dashboardSchool",
   "app.dashboardStudent",
   "app.dashboardTeaching",

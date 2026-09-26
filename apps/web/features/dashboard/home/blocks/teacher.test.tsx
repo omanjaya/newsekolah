@@ -147,6 +147,76 @@ describe("useTeacherBlock", () => {
     expect(result.current.hero).toBeUndefined();
   });
 
+  it("falls back to the next unsubmitted session once the running one is submitted", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-09-26T01:50:00Z")); // 08:50 in Asia/Jakarta
+
+    sessionsQuery.mockReturnValue({
+      data: {
+        data: [
+          session({
+            id: "s1",
+            start_period_id: "p2",
+            end_period_id: "p2",
+            submitted_at: "2026-09-26T01:00:00Z",
+          }),
+          session({
+            id: "s2",
+            class_id: "c2",
+            subject_id: "sub2",
+            start_period_id: "p3",
+            end_period_id: "p3",
+            submitted_at: undefined,
+          }),
+        ],
+      },
+      isLoading: false,
+      isError: false,
+      isSuccess: true,
+      refetch: vi.fn(),
+    });
+    periodsQuery.mockReturnValue({
+      data: {
+        data: [
+          ...PERIODS,
+          {
+            id: "p3",
+            template_id: "t1",
+            name: "Jam 3",
+            sequence: 3,
+            starts_at: "09:20",
+            ends_at: "10:00",
+            is_break: false,
+          },
+        ],
+      },
+      isSuccess: true,
+      isLoading: false,
+      isError: false,
+    });
+    classesQuery.mockReturnValue({
+      data: {
+        data: [
+          { id: "c1", name: "X-A" },
+          { id: "c2", name: "X-B" },
+        ],
+      },
+    });
+    subjectsQuery.mockReturnValue({
+      data: {
+        data: [
+          { id: "sub1", name: "Matematika" },
+          { id: "sub2", name: "Fisika" },
+        ],
+      },
+    });
+
+    const { result } = renderHook(() => useTeacherBlock(me, true));
+
+    expect(result.current.hero?.priority).toBe(HERO_PRIORITY.teacherNext);
+    expect(result.current.hero?.title).toBe("Fisika · X-B");
+  });
+
   it("counts only unsubmitted sessions in the pending tile", () => {
     sessionsQuery.mockReturnValue({
       data: {
