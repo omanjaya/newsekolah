@@ -1,10 +1,7 @@
 import type { components } from "@newsekolah/api-client";
+import type { StatTileTone } from "@newsekolah/ui";
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
-
-// Mirrors @newsekolah/ui's StatTile tone; declared locally until Task 1 (built in
-// parallel) exports it from @newsekolah/ui.
-export type StatTileTone = "green" | "amber" | "purple" | "blue" | "red";
 
 export type Me = components["schemas"]["Me"];
 
