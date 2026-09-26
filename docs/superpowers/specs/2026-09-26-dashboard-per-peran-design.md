@@ -10,7 +10,7 @@ Ganti `apps/web/features/dashboard/components/dashboard-view.tsx` (satu tampilan
 
 - **Layout A** (dipilih lewat mockup): header sapaan, hero "sekarang" selebar konten, baris 4 stat tile, lalu grid dua kolom `xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]`: blok kerja di kiri, kolom samping (pengumuman, aktivitas) di kanan. Di bawah `xl` satu kolom. Border kartu tetap memakai token yang ada (`border-border`); tidak ada perubahan token.
 - **Satu beranda gabungan** untuk pengguna multi-peran: blok setiap peran yang dimiliki ditumpuk; hero diambil dari peran paling mendesak.
-- **Tanpa backend baru**, kecuali membuka endpoint dashboard admin untuk kepala sekolah. Data yang belum ada endpoint-nya dihitung di klien dari hook yang ada, atau diganti angka yang tersedia.
+- **Tanpa backend baru**. Data yang belum ada endpoint-nya dihitung di klien dari hook yang ada, atau diganti angka yang tersedia.
 
 ## Persona dan isi
 
@@ -46,8 +46,8 @@ Setiap query hanya aktif bila persona terkait aktif (parameter `enabled`), agar 
 
 ## Arsitektur kode
 
-- `apps/web/features/dashboard/personas.ts` -- fungsi murni `resolvePersonas(me, can)` mengembalikan daftar persona aktif; `pickHero(candidates)` memilih hero menurut prioritas; `mergeTiles(tiles)` mengambil 4 teratas. Diuji unit (`personas.test.ts`, `hero.test.ts`).
-- `apps/web/features/dashboard/blocks/<persona>/` -- per persona satu hook `use<Persona>Block()` yang mengembalikan `{ hero?, tiles, left, right, isLoading, isError, refetch }` dan komponen bloknya. Blok tidak tahu persona lain.
+- `apps/web/features/dashboard/home/personas.ts` -- fungsi murni `resolvePersonas(me, can)` mengembalikan daftar persona aktif; `pickHero(candidates)` memilih hero menurut prioritas; `mergeTiles(tiles)` mengambil 4 teratas. Diuji unit (`personas.test.ts`, `hero.test.ts`).
+- `apps/web/features/dashboard/home/blocks/<persona>.tsx` -- per persona satu hook `use<Persona>Block()` yang mengembalikan `{ hero?, tiles, left, right, isLoading, isError, refetch }` dan komponen bloknya. Blok tidak tahu persona lain.
 - `apps/web/features/dashboard/components/dashboard-view.tsx` -- hanya menyusun: header, `HeroCard`, `StatTileRow`, dua kolom. Error/loading per blok (satu blok gagal tidak menjatuhkan halaman; pakai `QueryError` di blok itu).
 - Komponen bersama baru di `packages/ui` (dipakai ulang layar lain): `HeroCard` (latar `accent-soft`, label kecil, judul Manrope, meta, aksi utama, chip waktu opsional) dan `StatTile` (ikon Lucide dalam lingkaran lembut warna kategori, angka Manrope, label, tautan opsional). `Stat` yang ada tetap. Keduanya dengan story Storybook.
 - Kode lama yang tergantikan (`action-tiles.tsx`, `daily-task-shortcut.tsx`, `section-card.tsx`, `today-sessions-card.tsx`, `admin-dashboard-panel.tsx`) dihapus atau diserap ke blok; test lama dipindah ke blok yang menggantikannya.
@@ -55,7 +55,7 @@ Setiap query hanya aktif bila persona terkait aktif (parameter `enabled`), agar 
 
 ## Backend
 
-- `apps/api/internal/modules/analytics/transport/http/dashboard.go` `isAdminCaller`: izinkan juga kepala sekolah, dengan cara yang sama seperti kepala sekolah direpresentasikan di authz (role `principal` yang sudah dicek web dan `realtime.ts`, atau duty pimpinan). Tambah test handler untuk kepala sekolah boleh dan guru ditolak.
+Tidak ada perubahan. `isAdminCaller` (`apps/api/internal/modules/analytics/transport/http/dashboard.go`) sudah mengizinkan role `principal` (Kepala Sekolah) selain `admin`/`super_admin`.
 
 ## Error, loading, kosong
 
@@ -67,7 +67,6 @@ Setiap query hanya aktif bila persona terkait aktif (parameter `enabled`), agar 
 
 - Unit: `resolvePersonas`, `pickHero`, `mergeTiles`, hitung sesi berjalan/berikutnya, pelajaran berikutnya siswa, % hadir dari kalender.
 - Komponen: tiap blok dengan data tiruan (pola `admin-dashboard-panel.test.tsx`); `HeroCard`/`StatTile` di `packages/ui`.
-- Go: test handler akses dashboard admin.
 - Pemeriksaan visual di browser dengan akun seed `guru`, `siswa`, `admin`, `kepsek`, `pustakawan`, `gurupiket`, `gurubk` (password `Password123!`), tanpa scroll untuk hero + tile di 1440x900.
 - Validasi akhir: `pnpm typecheck && pnpm lint && pnpm test`, `go test ./...`.
 
