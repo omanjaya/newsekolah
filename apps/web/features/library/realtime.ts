@@ -31,8 +31,8 @@ function useLibrarianTopic(enabled: boolean): void {
 }
 
 /** The circulation desk's landing dashboard (`/library`), which today's activity feeds through. */
-export function useLibraryDashboardLive(): void {
-  useLibrarianTopic(true);
+export function useLibraryDashboardLive(enabled = true): void {
+  useLibrarianTopic(enabled);
   useLiveInvalidate(LIBRARY_RESERVATION_EVENTS, [["library", "dashboard"]]);
 }
 

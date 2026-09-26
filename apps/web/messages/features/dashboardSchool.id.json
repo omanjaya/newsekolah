@@ -1,0 +1,65 @@
+{
+  "leadership": {
+    "hero": {
+      "eyebrow": "Hari ini",
+      "title": "{submitted} dari {total} sesi sudah dipresensi",
+      "meta": "{pending} sesi belum diisi",
+      "action": "Lihat monitor"
+    },
+    "tiles": {
+      "sessions": "Sesi dipresensi",
+      "pending": "Menunggu tinjauan",
+      "users": "Pengguna aktif",
+      "online": "Sedang online"
+    },
+    "queue": {
+      "title": "Antrean sekolah",
+      "type": "Jenis pengajuan",
+      "count": "Menunggu",
+      "open": "Buka antrean",
+      "labels": {
+        "leave_request": "Izin terencana",
+        "exit_permit": "Izin keluar",
+        "late_arrival": "Keterlambatan"
+      }
+    },
+    "activity": {
+      "title": "Aktivitas login",
+      "peak": "Paling ramai pukul {hour} dengan {count} login",
+      "chartLabel": "Grafik batang login per jam. Total {total} login, paling ramai pukul {hour} dengan {count} login.",
+      "barLabel": "Pukul {hour}: {count} login",
+      "empty": "Belum ada login tercatat pada periode ini.",
+      "onlineTitle": "Sedang daring",
+      "onlineEmpty": "Tidak ada yang sedang terhubung saat ini.",
+      "roleNames": {
+        "super_admin": "Super Admin",
+        "admin": "Admin Sekolah",
+        "teacher": "Guru",
+        "staff": "Pegawai",
+        "student": "Siswa",
+        "parent": "Orang Tua",
+        "librarian": "Pustakawan",
+        "principal": "Kepala Sekolah"
+      }
+    },
+    "atRisk": {
+      "title": "Siswa berisiko",
+      "viewAll": "Lihat semua",
+      "empty": "Tidak ada siswa berisiko saat ini.",
+      "unknownStudent": "Siswa tidak dikenal"
+    }
+  },
+  "librarian": {
+    "hero": {
+      "eyebrow": "Meja sirkulasi",
+      "title": "{loans} pinjam · {returns} kembali",
+      "meta": "{overdue} terlambat",
+      "action": "Buka meja sirkulasi"
+    },
+    "tile": "Terlambat",
+    "overdue": {
+      "title": "Terlambat terlama",
+      "empty": "Tidak ada peminjaman terlambat."
+    }
+  }
+}
