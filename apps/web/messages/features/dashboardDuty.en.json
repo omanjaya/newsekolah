@@ -1,0 +1,29 @@
+{
+  "picket": {
+    "heroEyebrow": "Duty today",
+    "heroTitle": "{count} late-arriving students waiting",
+    "heroAction": "Open scanner",
+    "cardTitle": "Duty",
+    "tileLateLabel": "Late arrivals waiting",
+    "tileExitLabel": "Exit permits waiting",
+    "lateSectionTitle": "Late arrivals",
+    "lateEmpty": "No late arrivals today.",
+    "exitSectionTitle": "Exit permits",
+    "exitEmpty": "No exit permits waiting.",
+    "seeAll": "See all"
+  },
+  "counselor": {
+    "heroEyebrow": "Counseling",
+    "heroTitle": "{count} leave requests waiting at the counseling stage",
+    "heroAction": "Review requests",
+    "cardTitle": "Counseling",
+    "tileLeaveLabel": "Requests at the counseling stage",
+    "tileSpLabel": "Warning letter candidates",
+    "leaveSectionTitle": "Leave requests",
+    "leaveEmpty": "No leave requests waiting at the counseling stage.",
+    "spSectionTitle": "Warning letter candidates",
+    "spEmpty": "No warning letter candidates.",
+    "seeAll": "See all",
+    "review": "Review"
+  }
+}

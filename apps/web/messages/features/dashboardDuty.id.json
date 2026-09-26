@@ -1,0 +1,29 @@
+{
+  "picket": {
+    "heroEyebrow": "Piket hari ini",
+    "heroTitle": "{count} siswa terlambat menunggu",
+    "heroAction": "Buka pemindai",
+    "cardTitle": "Piket",
+    "tileLateLabel": "Terlambat menunggu",
+    "tileExitLabel": "Izin keluar menunggu",
+    "lateSectionTitle": "Terlambat",
+    "lateEmpty": "Tidak ada siswa terlambat hari ini.",
+    "exitSectionTitle": "Izin keluar",
+    "exitEmpty": "Tidak ada izin keluar menunggu.",
+    "seeAll": "Lihat semua"
+  },
+  "counselor": {
+    "heroEyebrow": "BK",
+    "heroTitle": "{count} izin menunggu tahap BK",
+    "heroAction": "Tinjau izin",
+    "cardTitle": "BK",
+    "tileLeaveLabel": "Izin tahap BK",
+    "tileSpLabel": "Kandidat SP",
+    "leaveSectionTitle": "Izin",
+    "leaveEmpty": "Tidak ada izin yang menunggu tahap BK.",
+    "spSectionTitle": "Kandidat SP",
+    "spEmpty": "Tidak ada kandidat surat peringatan.",
+    "seeAll": "Lihat semua",
+    "review": "Tinjau"
+  }
+}

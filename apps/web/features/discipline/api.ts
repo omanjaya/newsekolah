@@ -270,7 +270,7 @@ export interface SPCandidateFilters {
  * reached at least the first level, with the levels already issued so the
  * UI can offer only the next due one (the API refuses skipping levels).
  */
-export function useSPCandidatesQuery(filters: SPCandidateFilters) {
+export function useSPCandidatesQuery(filters: SPCandidateFilters, enabled = true) {
   const client = useApiClient();
   return useQuery({
     queryKey: keys.spCandidates(filters),
@@ -286,6 +286,7 @@ export function useSPCandidatesQuery(filters: SPCandidateFilters) {
           },
         },
       }),
+    enabled,
   });
 }
 
