@@ -1,0 +1,20 @@
+{
+  "heroNowEyebrow": "In progress",
+  "heroNextEyebrow": "Next lesson",
+  "heroChipUnit": "minutes left",
+  "heroAction": "View schedule",
+  "attendanceLabel": "Attendance",
+  "attendanceHint": "this month",
+  "leaveLabel": "Leave in review",
+  "loansLabel": "Books borrowed",
+  "loansHint": "Due {date}",
+  "gradesLabel": "New grades",
+  "gradesHint": "published",
+  "scheduleTitle": "Today's schedule",
+  "scheduleEmpty": "No lessons today",
+  "leaveTitle": "My leave requests",
+  "leaveAction": "Request leave",
+  "leaveEmpty": "No leave requests yet",
+  "libraryTitle": "Library",
+  "libraryEmpty": "No books currently borrowed"
+}

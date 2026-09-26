@@ -1,0 +1,20 @@
+{
+  "heroNowEyebrow": "Sedang berlangsung",
+  "heroNextEyebrow": "Pelajaran berikutnya",
+  "heroChipUnit": "menit lagi",
+  "heroAction": "Lihat jadwal",
+  "attendanceLabel": "Kehadiran",
+  "attendanceHint": "bulan ini",
+  "leaveLabel": "Izin diproses",
+  "loansLabel": "Buku dipinjam",
+  "loansHint": "Jatuh tempo {date}",
+  "gradesLabel": "Nilai baru",
+  "gradesHint": "nilai terbit",
+  "scheduleTitle": "Jadwal hari ini",
+  "scheduleEmpty": "Tidak ada pelajaran hari ini",
+  "leaveTitle": "Izin saya",
+  "leaveAction": "Ajukan izin",
+  "leaveEmpty": "Belum ada pengajuan izin",
+  "libraryTitle": "Perpustakaan",
+  "libraryEmpty": "Tidak ada buku yang sedang dipinjam"
+}

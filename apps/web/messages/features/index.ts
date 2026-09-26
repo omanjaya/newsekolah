@@ -29,6 +29,8 @@ import dashboardPersonaEn from "./dashboardPersona.en.json";
 import dashboardPersonaId from "./dashboardPersona.id.json";
 import dashboardSchoolEn from "./dashboardSchool.en.json";
 import dashboardSchoolId from "./dashboardSchool.id.json";
+import dashboardStudentEn from "./dashboardStudent.en.json";
+import dashboardStudentId from "./dashboardStudent.id.json";
 import dashboardTeachingEn from "./dashboardTeaching.en.json";
 import dashboardTeachingId from "./dashboardTeaching.id.json";
 import disciplineEn from "./discipline.en.json";
@@ -102,6 +104,11 @@ registerFeatureMessages({
   namespace: "dashboardTeaching",
   id: dashboardTeachingId,
   en: dashboardTeachingEn,
+});
+registerFeatureMessages({
+  namespace: "dashboardStudent",
+  id: dashboardStudentId,
+  en: dashboardStudentEn,
 });
 registerFeatureMessages({ namespace: "billing", id: billingId, en: billingEn });
 registerFeatureMessages({ namespace: "discipline", id: disciplineId, en: disciplineEn });

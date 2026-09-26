@@ -289,13 +289,14 @@ export function useDeleteTPMappingMutation() {
 
 // Student's own grades.
 
-export function useMyGradesQuery(termId?: string) {
+export function useMyGradesQuery(termId?: string, enabled = true) {
   const client = useApiClient();
   useMyGradesLive();
   return useQuery({
     queryKey: gradingKeys.myGrades(termId),
     queryFn: () =>
       client.GET("/v1/me/grades", { params: { query: termId ? { term_id: termId } : {} } }),
+    enabled,
   });
 }
 
