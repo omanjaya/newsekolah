@@ -30,3 +30,6 @@ apps/web/test-results/
 
 # Local UX audit screenshots (too large for git)
 docs/analysis/ux-audit-2026-09-25/
+
+# Brainstorming companion mockups
+.superpowers/
